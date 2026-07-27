@@ -3,7 +3,7 @@
 ## Directory overview
 
 ```
-braille-card-and-cylinder-stl-generator/
+braille-cylinder-stl-generator/
 ├── app/                      Main application package
 │   ├── geometry/             Geometry generation (dots, plates, cylinders)
 │   ├── api.py                API route handlers

@@ -1,6 +1,6 @@
-# Braille STL Generator
+# Braille Cylinder STL Generator
 
-[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator/releases/tag/v2.1.0)
+[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v2.1.0)
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial-red.svg)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 
@@ -14,7 +14,12 @@ The goal is to make braille labels and cards accessible to anyone with a 3D prin
 - Generates STL files for cylindrical braille labels (jars, bottles, containers, etc.)
 - All STL generation runs in the browser — nothing gets uploaded
 - Shows a 3D preview before you download
-- Flat business card plates are temporarily disabled while I rework that feature
+
+Flat business card plates are **parked**, not in development here — the code is
+still in the repo but disabled in the UI. See
+[KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) for why. Directly readable braille cards
+already ship as their own tool:
+[braille-wedge-card-openscad](https://github.com/BrennenJohnston/braille-wedge-card-openscad).
 
 ## Quick start
 
@@ -92,7 +97,7 @@ Pre-commit hooks are included — run `pre-commit install` to set them up.
 **Using the app:**
 
 - [Cylinder Guide](docs/guides/CYLINDER_GUIDE.md) — measuring containers, setting parameters, worked examples
-- [Business Card Guide](docs/guides/BUSINESS_CARD_TRANSLATION_GUIDE.md) — what to include and formatting rules, quoted verbatim from the BANA *Business Cards Fact Sheet* (approved March 2024). Flat cards are temporarily disabled.
+- [Business Card Guide](docs/guides/BUSINESS_CARD_TRANSLATION_GUIDE.md) — what to include and formatting rules, quoted verbatim from the BANA *Business Cards Fact Sheet* (approved March 2024). Flat cards are parked; the formatting rules still apply to cylinder text.
 
 **Working on the code:**
 

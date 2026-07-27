@@ -169,7 +169,7 @@ User Input → liblouis Worker → Braille Unicode
 ### 1.4 File Structure Map
 
 ```
-braille-card-and-cylinder-stl-generator/
+braille-cylinder-stl-generator/
 ├── backend.py                 # Main Flask app (1415 lines)
 │   ├── Flask app setup        # Lines 75-169
 │   ├── Rate limiter (Redis)   # Lines 147-169 ← PROBLEM

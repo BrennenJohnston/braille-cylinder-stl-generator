@@ -136,7 +136,7 @@ Determinism requirements:
 
 Create a **new repo** for the general tool (recommended):
 
-- `braille-card-and-cylinder-stl-generator` stays stable/production
+- `braille-cylinder-stl-generator` stays stable/production
 - new repo: `openscad-web-bridge` (tool + templates + examples)
 
 The new repo can vendor a “blank” template derived from this project’s UX/accessibility patterns, but must not introduce breaking changes into the existing app.

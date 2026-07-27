@@ -34,7 +34,7 @@ def download_pdf(url: str, dest: Path) -> None:
     print(f'[fetch] {url}')
     req = urllib.request.Request(
         url,
-        headers={'User-Agent': 'braille-card-and-cylinder-stl-generator/fetch_bana'},
+        headers={'User-Agent': 'braille-cylinder-stl-generator/fetch_bana'},
     )
     with urllib.request.urlopen(req, timeout=60) as resp:
         data = resp.read()

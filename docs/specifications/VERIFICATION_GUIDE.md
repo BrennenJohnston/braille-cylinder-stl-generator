@@ -123,7 +123,7 @@ netstat -ano | findstr :5001
 ### Import Errors
 ```bash
 # Ensure you're in project root
-cd C:\Users\WATAP\Documents\github\braille-card-and-cylinder-stl-generator
+cd C:\Users\WATAP\Documents\github\braille-cylinder-stl-generator
 
 # Check Python path
 python -c "import sys; print('\n'.join(sys.path))"

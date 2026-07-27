@@ -1,5 +1,5 @@
 @echo off
-cd /d "c:\Users\WATAP\Documents\github\braille-card-and-cylinder-stl-generator"
+cd /d "c:\Users\WATAP\Documents\github\braille-cylinder-stl-generator"
 echo === GIT STATUS === > git_results.txt
 git status >> git_results.txt 2>&1
 echo. >> git_results.txt

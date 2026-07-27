@@ -152,16 +152,29 @@ Thanks to Tobi Weinberg for kick-starting the project. Based on [tobiwg/braile-c
 
 ## [Unreleased]
 
+### Changed
+- **Repository renamed to `braille-cylinder-stl-generator`.** The UI has
+  generated cylinders only since v2.0.0, so "card-and-cylinder" no longer
+  described the tool. GitHub redirects the old URLs, and the deployed Vercel
+  URL is unchanged — existing links and QR codes keep working. `package.json`,
+  the README title, badges, `PROJECT_STRUCTURE.md`, the in-app GitHub links,
+  and the workspace file all follow the new name.
+- **Flat business card plates are documented as parked, not "temporarily
+  disabled".** They will not return in this repo; see
+  [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md). Directly readable braille cards
+  already ship as
+  [braille-wedge-card-openscad](https://github.com/BrennenJohnston/braille-wedge-card-openscad).
+
 ### Planned
 - Additional language support
 - Custom dot shape options
 - Batch processing
 - OpenSCAD export option
 
-[2.1.0]: https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator/releases/tag/v2.1.0
-[2.0.0]: https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator/releases/tag/v2.0.0
-[1.3.0]: https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator/releases/tag/v1.3.0
-[1.2.0]: https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator/releases/tag/v1.2.0
-[1.1.0]: https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator/releases/tag/v1.1.0
-[1.0.0]: https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator/releases/tag/v1.0.0
-[Unreleased]: https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v2.1.0
+[2.0.0]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v2.0.0
+[1.3.0]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v1.3.0
+[1.2.0]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v1.2.0
+[1.1.0]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v1.1.0
+[1.0.0]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v1.0.0
+[Unreleased]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/compare/v2.1.0...HEAD
