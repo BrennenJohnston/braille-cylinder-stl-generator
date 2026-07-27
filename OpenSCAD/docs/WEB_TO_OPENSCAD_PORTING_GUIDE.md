@@ -986,12 +986,12 @@ python scripts/generate_web_fixtures.py --web-url https://...
 
 This guide is based on the Braille Cylinder STL Generator project:
 
-- **Repository**: `braille-stl-generator-openscad`
-- **Web Generator**: `braille-card-and-cylinder-stl-generator`
+- **Repository**: `braille-cylinder-stl-generator-openscad`
+- **Web Generator**: `braille-cylinder-stl-generator`
 
 Key files to study:
 
-1. `Braille_Card_And_Cylinder_STL_Generator.scad` - OpenSCAD implementation
+1. `Braille_Cylinder_STL_Generator.scad` - OpenSCAD implementation
 2. `tests/parameter_mapping.json` - Parameter mapping schema
 3. `tests/cross_platform_validation.py` - Test suite
 4. `scripts/generate_web_fixtures.py` - Fixture generator

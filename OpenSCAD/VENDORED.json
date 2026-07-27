@@ -1,0 +1,26 @@
+{
+  "$comment": "Provenance for the vendored OpenSCAD copy. Every file below is copied verbatim from the upstream repository at the recorded tag. Edit them upstream, never here. tests/test_vendored_openscad.py fails if the .scad hash drifts from this record.",
+  "upstream_repo": "https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad",
+  "upstream_tag": "v2.4.0",
+  "upstream_commit": "808d16bedafdc9d5f62cdc1f7a24c48419e87a5e",
+  "upstream_release_date": "2026-07-27",
+  "vendored_on": "2026-07-27",
+  "canonical": "upstream",
+  "files": {
+    "Braille_Cylinder_STL_Generator.scad": {
+      "upstream_path": "makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad",
+      "sha256": "c83b9295dc641d36bdad7dbc134f82f324256803d2c6a810e18df188b9ba8196",
+      "note": "The MakerWorld single-file build is vendored rather than the dual-file desktop build, so the download is self-contained (no include <presets.scad>). Renamed on copy: this repo ships one file, so the _MakerWorld_v2 suffix would only confuse."
+    },
+    "LICENSE": { "upstream_path": "LICENSE" },
+    "PARAMETER_MAPPING.md": {
+      "upstream_path": "docs/PARAMETER_MAPPING.md",
+      "note": "One sentence edited on copy: upstream says 'this repository contains only the OpenSCAD cylinder generator', which is false here."
+    },
+    "docs/MAKERWORLD_QUICK_START.md": { "upstream_path": "docs/MAKERWORLD_QUICK_START.md" },
+    "docs/MakerWorld_Quick_Start_Guide.pdf": { "upstream_path": "docs/MakerWorld_Quick_Start_Guide.pdf" },
+    "docs/OPENSCAD_COORDINATE_SYSTEM_SPECIFICATIONS.md": { "upstream_path": "docs/OPENSCAD_COORDINATE_SYSTEM_SPECIFICATIONS.md" },
+    "docs/QUICK_START_TESTING.md": { "upstream_path": "docs/QUICK_START_TESTING.md" },
+    "docs/WEB_TO_OPENSCAD_PORTING_GUIDE.md": { "upstream_path": "docs/WEB_TO_OPENSCAD_PORTING_GUIDE.md" }
+  }
+}

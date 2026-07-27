@@ -53,12 +53,20 @@ There's a **Help** button inside the app that walks you through choosing what to
 
 ## OpenSCAD version
 
-Prefer working offline or want full parametric control? An OpenSCAD version of this tool is included in the [`OpenSCAD/`](OpenSCAD/) folder.
+Prefer working offline or want full parametric control? The OpenSCAD version is
+maintained in its own repository —
+**[braille-cylinder-stl-generator-openscad](https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad)**
+— and a copy of its latest release is vendored into [`OpenSCAD/`](OpenSCAD/)
+here so you can download it without leaving the site.
 
-- [`OpenSCAD/Braille_Card_And_Cylinder_STL_Generator.scad`](OpenSCAD/Braille_Card_And_Cylinder_STL_Generator.scad) — the main script (open this in [OpenSCAD](https://openscad.org/) and use the Customizer panel)
+- [`OpenSCAD/Braille_Cylinder_STL_Generator.scad`](OpenSCAD/Braille_Cylinder_STL_Generator.scad) — one self-contained script (open in [OpenSCAD](https://openscad.org/) and use the Customizer panel; it also uploads straight to MakerWorld's Parametric Model Maker)
 - [`OpenSCAD/README.md`](OpenSCAD/README.md) — quick start, parameters, troubleshooting
+- [`OpenSCAD/VENDORED.json`](OpenSCAD/VENDORED.json) — which upstream tag this copy came from
 - [`OpenSCAD/PARAMETER_MAPPING.md`](OpenSCAD/PARAMETER_MAPPING.md) — how OpenSCAD parameters correspond to the web UI controls
-- [`OpenSCAD/docs/`](OpenSCAD/docs/) — coordinate system reference, web-to-OpenSCAD porting guide, testing notes
+- [`OpenSCAD/docs/`](OpenSCAD/docs/) — MakerWorld quick start, coordinate system reference, porting guide, testing notes
+
+Issues and pull requests for the OpenSCAD program belong upstream. Nothing in
+`OpenSCAD/` should be edited here — `tests/test_vendored_openscad.py` fails if it is.
 
 The web app translates automatically; the OpenSCAD version needs you to translate manually (using [Branah.com](https://www.branah.com/braille-translator)), but it works without an internet connection and integrates with existing CAD workflows.
 

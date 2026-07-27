@@ -24,7 +24,7 @@ python -m playwright install chromium
 ### Basic Test Run (Baseline Tolerances)
 
 ```bash
-# Run all 11 cylinder tests
+# Run all 14 cylinder tests
 pytest tests/cross_platform_validation.py -v
 
 # Run specific test
@@ -164,6 +164,14 @@ Minimal fixtures for bug diagnosis (1 row, no text):
 Custom geometry:
 
 - `cylinder_rounded_emboss_custom_cutout`
+
+### Preset / Multiline Coverage (3 tests)
+
+Multi-line render path and 0.3mm paper-thickness preset:
+
+- `cylinder_rounded_emboss_multiline`
+- `cylinder_rounded_emboss_03mm`
+- `cylinder_rounded_counter_03mm`
 
 ## Debugging Geometry Issues
 
