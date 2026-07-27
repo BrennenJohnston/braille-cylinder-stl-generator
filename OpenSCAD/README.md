@@ -1,4 +1,4 @@
-﻿# Braille Cylinder STL Generator (OpenSCAD) — vendored copy
+# Braille Cylinder STL Generator (OpenSCAD) — vendored copy
 
 > **This folder is a vendored copy, not the source of truth.**
 >
