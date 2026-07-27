@@ -21,6 +21,19 @@ still in the repo but disabled in the UI. See
 already ship as their own tool:
 [braille-wedge-card-openscad](https://github.com/BrennenJohnston/braille-wedge-card-openscad).
 
+## The device these cylinders go into
+
+The cylinders this app generates are the interchangeable plates for the
+[**Custom Braille Embosser**](https://github.com/BrennenJohnston/custom-braille-embosser-3d-printing-project)
+— a hand-operated braille embosser built from ten snap-fit 3D-printed parts, with
+no fasteners, springs, glue, or electronics, for about $3–6 of filament. Generate
+an embossing plate and its matching counter plate at the same card-stock
+thickness, print both, and snap them into the holders. That repo has the device's
+CAD sources, print profiles, and build documentation.
+
+You can also use the cylinders on their own as tactile labels for jars, bottles,
+and containers.
+
 ## Quick start
 
 ### Running locally
