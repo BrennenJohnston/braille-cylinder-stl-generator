@@ -18,6 +18,37 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# -----------------------------------------------------------------------------
+# TACTILE INDICATOR CONSTANTS
+# -----------------------------------------------------------------------------
+# Ported verbatim from the OpenSCAD version so both generators produce the same
+# arrow; see OpenSCAD/Braille_Cylinder_STL_Generator.scad "TACTILE INDICATOR
+# CONSTANTS" and docs/specifications/RECESS_INDICATOR_SPECIFICATIONS.md.
+
+# Clear zone required either side of the indicator, on top of its own width,
+# before the seam gap is considered too tight (2 mm dot zone per neighbouring
+# cell plus 1 mm of margin).
+TACTILE_MIN_GAP_MARGIN = 5.0
+
+# Radial thickness of the working prism the arrow outline is extruded into. Must
+# exceed raise + recess depth + base embed so the prism always straddles the
+# shell surface; the shell band intersection is what sets the actual depth.
+TACTILE_PRISM_SPAN = 6.0
+
+# How far the raised arrow's base sinks below the shell surface, so the union
+# with the shell is a solid overlap rather than a coplanar touch.
+TACTILE_BASE_EMBED = 0.2
+
+# How far the recess cutter projects past the shell surface, so the cut opening
+# never leaves coplanar faces behind.
+TACTILE_RECESS_OVERCUT = 1.0
+
+# The grid is centred on angle 0, so the middle of the seam gap — the arc between
+# the last and first cell measured the long way round — is always exactly 180°.
+# That is also the fixed point of the counter plate's angle-negating mirror, so
+# the arrow and its recess line up by construction.
+TACTILE_SEAM_THETA = math.pi
+
 
 def extract_card_geometry_spec(
     lines: list[str],
@@ -369,7 +400,13 @@ def extract_cylinder_geometry_spec(
 
     radius = diameter / 2
 
-    # Calculate grid layout parameters (needed for polygon alignment)
+    # Row indicator style. Tactile drops the marker columns entirely and puts one
+    # raised arrow (emboss) / matching recess (counter) per row in the seam gap.
+    tactile_on = str(getattr(settings, 'indicator_mode', 'visual')).lower() == 'tactile'
+
+    # Calculate grid layout parameters (needed for polygon alignment).
+    # settings.grid_columns is the TOTAL column count: in visual mode the frontend
+    # has already added the marker columns, in tactile mode it adds none.
     grid_width = (settings.grid_columns - 1) * settings.cell_spacing
     grid_angle = grid_width / radius
     start_angle = -grid_angle / 2
@@ -409,6 +446,7 @@ def extract_cylinder_geometry_spec(
     spec: dict[str, Any] = {
         'shape_type': 'cylinder',
         'plate_type': plate_type,
+        'indicator_mode': 'tactile' if tactile_on else 'visual',
         'cylinder': {
             'radius': radius,
             'height': height,
@@ -417,7 +455,25 @@ def extract_cylinder_geometry_spec(
         },
         'dots': [],
         'markers': [],
+        'warnings': [],
     }
+
+    # Seam gap: the arc between the last and first cell centers, measured the long
+    # way around through the seam, where the tactile indicator sits. Warn (do not
+    # fail) when the gap can no longer hold the indicator plus a clear zone either
+    # side of it, matching the OpenSCAD version's behavior.
+    if tactile_on:
+        tactile_width = float(getattr(settings, 'tactile_indicator_width', 4.0))
+        seam_gap_mm = math.pi * diameter - grid_width
+        if seam_gap_mm < tactile_width + TACTILE_MIN_GAP_MARGIN:
+            warning = (
+                f'Tactile indicator needs a seam gap of at least '
+                f'{tactile_width + TACTILE_MIN_GAP_MARGIN:.1f} mm; this layout leaves '
+                f'{seam_gap_mm:.1f} mm. Reduce the number of braille cells, increase the '
+                f'cylinder diameter, or narrow the indicator.'
+            )
+            spec['warnings'].append(warning)
+            logger.warning(warning)
 
     # Dot positioning with angular offsets for columns, linear for rows
     dot_col_angle_offsets = [-dot_spacing_angle / 2, dot_spacing_angle / 2]
@@ -458,25 +514,33 @@ def extract_cylinder_geometry_spec(
             y_pos = first_row_center_y - (row_num * settings.line_spacing) + settings.braille_y_adjust
             y_local = y_pos - (height / 2.0)
 
+            if tactile_on:
+                # The recess the emboss plate's raised arrow nests into. It sits at
+                # 180°, the fixed point of this plate's angle-negating mirror, so it
+                # needs no mirroring of its own.
+                spec['markers'].append(_create_tactile_indicator_spec(y_local, radius, settings, is_recess=True))
+
             # Add markers (same column positions as embossing, but mirrored direction)
             # Triangle marker at column 0 (first position, same as embossing).
-            # Always created; the alignment triangles have no user-facing toggle.
+            # Always created in visual mode; the alignment triangles have no
+            # user-facing toggle. Tactile mode has no marker columns at all.
             # Use rotate_180=True for counter plate to properly align with embosser plate
-            triangle_angle = apply_seam_mirrored(start_angle)
-            marker_spec = _create_cylinder_marker_spec(
-                triangle_angle,
-                y_local,
-                radius,
-                settings,
-                'triangle',
-                original_lines,
-                row_num,
-                plate_type='negative',
-                rotate_180=True,
-            )
-            spec['markers'].append(marker_spec)
+            if not tactile_on:
+                triangle_angle = apply_seam_mirrored(start_angle)
+                marker_spec = _create_cylinder_marker_spec(
+                    triangle_angle,
+                    y_local,
+                    radius,
+                    settings,
+                    'triangle',
+                    original_lines,
+                    row_num,
+                    plate_type='negative',
+                    rotate_180=True,
+                )
+                spec['markers'].append(marker_spec)
 
-            if getattr(settings, 'indicator_shapes', 1):
+            if not tactile_on and getattr(settings, 'indicator_shapes', 1):
                 # Rectangle (square) placeholder marker at column 1 (second position),
                 # gated by the Indicator Letters toggle.
                 # Counter plates ALWAYS use rectangle placeholders, not character indicators
@@ -497,8 +561,7 @@ def extract_cylinder_geometry_spec(
 
             # Generate all 6 dots for all TEXT cells (same layout as embossing)
             # Uses mirrored angular direction so dots flow clockwise
-            # Reserved marker columns: 2 with indicator letters on, 1 (triangle only) when off
-            reserved = 2 if getattr(settings, 'indicator_shapes', 1) else 1
+            reserved = _reserved_marker_columns(settings, tactile_on)
             num_text_cols = settings.grid_columns - reserved
             for col_num in range(num_text_cols):
                 # Braille cells start after the reserved marker columns
@@ -526,24 +589,30 @@ def extract_cylinder_geometry_spec(
             y_pos = first_row_center_y - (row_num * settings.line_spacing) + settings.braille_y_adjust
             y_local = y_pos - (height / 2.0)
 
-            # Indicators:
+            if tactile_on:
+                # Raised alignment arrow in the seam gap, apex toward the cylinder
+                # top so a blind user can feel which end is up.
+                spec['markers'].append(_create_tactile_indicator_spec(y_local, radius, settings, is_recess=False))
+
+            # Indicators (visual mode only — tactile has no marker columns):
             # - Triangle at column 0 (first position) - ALWAYS created (no user toggle)
             # - Character indicator (or rectangle fallback) at column 1 (second position),
             #   gated by the Indicator Letters toggle
-            triangle_angle = apply_seam(start_angle)
-            triangle_spec = _create_cylinder_marker_spec(
-                triangle_angle,
-                y_local,
-                radius,
-                settings,
-                'triangle',
-                original_lines,
-                row_num,
-                plate_type='positive',
-            )
-            spec['markers'].append(triangle_spec)
+            if not tactile_on:
+                triangle_angle = apply_seam(start_angle)
+                triangle_spec = _create_cylinder_marker_spec(
+                    triangle_angle,
+                    y_local,
+                    radius,
+                    settings,
+                    'triangle',
+                    original_lines,
+                    row_num,
+                    plate_type='positive',
+                )
+                spec['markers'].append(triangle_spec)
 
-            if getattr(settings, 'indicator_shapes', 1):
+            if not tactile_on and getattr(settings, 'indicator_shapes', 1):
                 # Character (or rectangle fallback) at column 1 (second position)
                 char_col_angle = apply_seam(start_angle + cell_spacing_angle)
                 if original_lines and row_num < len(original_lines):
@@ -596,10 +665,9 @@ def extract_cylinder_geometry_spec(
             if not has_braille:
                 continue
 
-            # Reserved marker columns: triangle at col 0 (always) plus the indicator
-            # letter at col 1 when the Indicator Letters toggle is on.
-            # Braille content starts after the reserved columns.
-            reserved = 2 if getattr(settings, 'indicator_shapes', 1) else 1
+            # Braille content starts after the reserved marker columns (none in
+            # tactile mode).
+            reserved = _reserved_marker_columns(settings, tactile_on)
             max_cols = max(0, settings.grid_columns - reserved)
             chars = list(line.strip())[:max_cols]
 
@@ -623,8 +691,81 @@ def extract_cylinder_geometry_spec(
                     dot_spec = _create_cylinder_dot_spec(dot_angle, dot_y, radius, settings, plate_type='positive')
                     spec['dots'].append(dot_spec)
 
-    logger.info(f'Cylinder geometry spec: {len(spec["dots"])} dots, {len(spec["markers"])} markers')
+    logger.info(
+        f'Cylinder geometry spec ({spec["indicator_mode"]} indicators): '
+        f'{len(spec["dots"])} dots, {len(spec["markers"])} markers'
+    )
     return spec
+
+
+def _reserved_marker_columns(settings: Any, tactile_on: bool) -> int:
+    """
+    Number of leading grid columns consumed by row markers.
+
+    Tactile mode: 0 — the indicator lives in the seam gap, so every column is text.
+    Visual mode: 2 with indicator letters on (triangle at col 0, letter at col 1),
+    or 1 when off (the alignment triangle is always present).
+    """
+    if tactile_on:
+        return 0
+    return 2 if getattr(settings, 'indicator_shapes', 1) else 1
+
+
+def _create_tactile_indicator_spec(y_local: float, radius: float, settings: Any, is_recess: bool) -> dict[str, Any]:
+    """
+    Create one tactile row indicator spec at the seam-gap centre (180°).
+
+    Port of the OpenSCAD `tactile_raised` / `tactile_recess_cut` modules. Both are
+    the same construction: an isosceles arrow outline (symmetric around the
+    cylinder, apex toward the top) extruded radially through the shell surface,
+    then intersected with a band concentric with the shell. The band is what makes
+    the raise and the recess depth radially uniform — a flat 4 mm prism on a
+    15.4 mm radius would otherwise lose ~0.13 mm at its edges to the chord sagitta,
+    which is large next to a 0.2 mm nesting margin.
+
+    Args:
+        y_local: Height position relative to cylinder center
+        radius: Cylinder radius
+        settings: CardSettings
+        is_recess: True for the counter plate's recess (subtracted, grown by the
+            clearance and extra depth), False for the emboss plate's raised arrow
+            (unioned).
+    """
+    theta = TACTILE_SEAM_THETA
+    width = float(getattr(settings, 'tactile_indicator_width', 4.0))
+    length = float(getattr(settings, 'tactile_indicator_length', 5.0))
+    raise_mm = float(getattr(settings, 'tactile_indicator_raise', 0.8))
+
+    if is_recess:
+        # Grown in the plane and radially so the arrow still enters the recess when
+        # the two cylinders are slightly out of register.
+        clearance = float(getattr(settings, 'tactile_recess_clearance', 0.2))
+        extra_depth = float(getattr(settings, 'tactile_recess_extra_depth', 0.2))
+        inner_radius = radius - raise_mm - extra_depth
+        outer_radius = radius + TACTILE_RECESS_OVERCUT
+        outline_delta = clearance
+    else:
+        clearance = 0.0
+        extra_depth = 0.0
+        inner_radius = radius - TACTILE_BASE_EMBED
+        outer_radius = radius + raise_mm
+        outline_delta = 0.0
+
+    return {
+        'type': 'cylinder_tactile_arrow',
+        'x': radius * math.cos(theta),
+        'y': y_local,
+        'z': radius * math.sin(theta),
+        'theta': theta,
+        'radius': radius,
+        'width': width,
+        'length': length,
+        'outline_delta': outline_delta,
+        'inner_radius': inner_radius,
+        'outer_radius': outer_radius,
+        'prism_span': TACTILE_PRISM_SPAN,
+        'is_recess': is_recess,
+    }
 
 
 def _create_cylinder_dot_spec(

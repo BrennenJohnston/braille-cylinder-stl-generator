@@ -1147,6 +1147,153 @@ function createCylinderCharacterMarkerManifold(spec) {
 }
 
 /**
+ * Offset a closed counter-clockwise polygon outward by `delta` with mitered
+ * corners — the same construction as OpenSCAD's offset(delta = ...), which keeps
+ * corners sharp instead of rounding them.
+ *
+ * Each vertex becomes the intersection of its two adjacent edges after both have
+ * been pushed out along their outward normals. Done analytically rather than via
+ * CrossSection.offset() because the arrow's apex is sharper than Manifold's
+ * default miter limit, which would silently square it off.
+ */
+function offsetPolygonMiter(points, delta) {
+    if (!delta) return points;
+
+    const n = points.length;
+    const edges = [];
+    for (let i = 0; i < n; i++) {
+        const p = points[i];
+        const q = points[(i + 1) % n];
+        const dx = q[0] - p[0];
+        const dy = q[1] - p[1];
+        const len = Math.hypot(dx, dy) || 1;
+        const ex = dx / len;
+        const ey = dy / len;
+        // (ey, -ex) is the outward normal of an edge on a counter-clockwise ring
+        edges.push({ px: p[0] + delta * ey, py: p[1] - delta * ex, ex, ey });
+    }
+
+    const result = [];
+    for (let i = 0; i < n; i++) {
+        const incoming = edges[(i - 1 + n) % n];
+        const outgoing = edges[i];
+        const denom = incoming.ex * outgoing.ey - incoming.ey * outgoing.ex;
+        if (Math.abs(denom) < 1e-9) {
+            // Collinear edges: the offset lines coincide, so either point will do
+            result.push([outgoing.px, outgoing.py]);
+            continue;
+        }
+        const t = ((outgoing.px - incoming.px) * outgoing.ey - (outgoing.py - incoming.py) * outgoing.ex) / denom;
+        result.push([incoming.px + t * incoming.ex, incoming.py + t * incoming.ey]);
+    }
+    return result;
+}
+
+/**
+ * Create one tactile row indicator on the cylinder surface using Manifold.
+ *
+ * Port of the OpenSCAD tactile_raised / tactile_recess_cut modules: an isosceles
+ * arrow outline (symmetric circumferentially, apex toward the cylinder top) is
+ * extruded radially through the shell surface, then intersected with a band
+ * concentric with the shell. The band is what makes the raise and the recess
+ * depth radially uniform — a flat 4 mm prism on a 15.4 mm radius would otherwise
+ * lose ~0.13 mm at its edges to the chord sagitta, large next to a 0.2 mm
+ * nesting margin. Band segments match the shell's 64 so the two tessellate
+ * identically and their radial difference is constant across the whole arrow.
+ *
+ * The caller unions the result into the emboss plate (is_recess false) or
+ * subtracts it from the counter plate (is_recess true).
+ */
+function createCylinderTactileArrowManifold(spec) {
+    const {
+        y, theta, radius: cylRadius, width, length,
+        outline_delta: outlineDelta, inner_radius: innerRadius,
+        outer_radius: outerRadius, prism_span: prismSpan, is_recess: isRecess,
+    } = spec;
+
+    if (!isFinite(theta) || !isFinite(cylRadius) || cylRadius <= 0 || !(width > 0) || !(length > 0)) {
+        console.warn('createCylinderTactileArrowManifold: Invalid parameters');
+        return null;
+    }
+    if (!(outerRadius > innerRadius)) {
+        console.warn('createCylinderTactileArrowManifold: Empty shell band, skipping indicator');
+        return null;
+    }
+
+    // CRITICAL: Negate theta to match Three.js coordinate convention, as every
+    // other cylinder primitive does. theta is 180 degrees here, which is its own
+    // negation, so this is a no-op in practice - kept for consistency.
+    // See BRAILLE_SPACING_SPECIFICATIONS.md Section 10: Coordinate Systems
+    const adjustedTheta = -theta;
+    const span = (prismSpan > 0) ? prismSpan : 6.0;
+    const delta = outlineDelta || 0;
+
+    let arrow = null;
+    let band = null;
+
+    try {
+        // Outline in the local frame: +X circumferential, +Y toward the cylinder
+        // top. Wound counter-clockwise so offsetPolygonMiter grows it outward.
+        const outline = offsetPolygonMiter([
+            [-width / 2, -length / 2],
+            [width / 2, -length / 2],
+            [0, length / 2],
+        ], delta);
+
+        const crossSection = new CrossSection([outline], 'Positive');
+        const extruded = Manifold.extrude(crossSection, span);
+        crossSection.delete();
+
+        // Center the radial extent on the origin so the prism reaches span/2 both
+        // outward and inward once placed on the surface.
+        const centered = extruded.translate([0, 0, -span / 2]);
+        extruded.delete();
+
+        // rotate(90, 0, 0): local +Y (axial) -> world +Z, local +Z (extrusion,
+        // i.e. radial) -> world -Y. Then rotate about Z by theta + 90 to aim that
+        // -Y radial direction at theta.
+        const upright = centered.rotate(90, 0, 0);
+        centered.delete();
+
+        const thetaDeg = adjustedTheta * 180 / Math.PI;
+        const aimed = upright.rotate(0, 0, thetaDeg + 90);
+        upright.delete();
+
+        const posZ = isFinite(y) ? y : 0;
+        const prism = aimed.translate([
+            cylRadius * Math.cos(adjustedTheta),
+            cylRadius * Math.sin(adjustedTheta),
+            posZ,
+        ]);
+        aimed.delete();
+
+        // Band tall enough to cover the arrow's axial extent, centered on it.
+        const bandHeight = length + 2 * delta + 2;
+        const bandOuter = createManifoldCylinder(bandHeight, outerRadius, 64);
+        const bandInner = createManifoldCylinder(bandHeight + 2, innerRadius, 64);
+        const bandAtOrigin = bandOuter.subtract(bandInner);
+        bandOuter.delete();
+        bandInner.delete();
+        band = bandAtOrigin.translate([0, 0, posZ]);
+        bandAtOrigin.delete();
+
+        arrow = Manifold.intersection(prism, band);
+        prism.delete();
+        band.delete();
+        band = null;
+
+        console.log(`createCylinderTactileArrowManifold: ${isRecess ? 'recess' : 'raised arrow'} at y=${posZ.toFixed(2)}, radii ${innerRadius.toFixed(2)}..${outerRadius.toFixed(2)}`);
+        return arrow;
+
+    } catch (error) {
+        console.error('createCylinderTactileArrowManifold error:', error.message, error.stack);
+        if (arrow) arrow.delete();
+        if (band) band.delete();
+        return null;
+    }
+}
+
+/**
  * Create cylinder shell with polygonal cutout using Manifold
  */
 function createCylinderShellManifold(spec) {
@@ -1311,8 +1458,11 @@ function processGeometrySpec(spec) {
             console.log(`Manifold CSG Worker: Created ${successCount}/${dots.length} dots successfully`);
         }
 
-        // Collect marker manifolds
+        // Collect marker manifolds. Markers are subtracted, with one exception:
+        // the tactile indicator on the emboss plate is a raised arrow, so it is
+        // unioned instead (spec sets is_recess false).
         const markerManifolds = [];
+        const raisedMarkerManifolds = [];
 
         if (markers && markers.length > 0) {
             console.log(`Manifold CSG Worker: Creating ${markers.length} markers`);
@@ -1351,6 +1501,9 @@ function processGeometrySpec(spec) {
                     } else if (markerSpec.type === 'cylinder_character') {
                         console.log('Processing cylinder_character marker:', markerSpec);
                         markerManifold = createCylinderCharacterMarkerManifold(markerSpec);
+                    } else if (markerSpec.type === 'cylinder_tactile_arrow') {
+                        console.log('Processing cylinder_tactile_arrow marker:', markerSpec);
+                        markerManifold = createCylinderTactileArrowManifold(markerSpec);
                     } else if (markerSpec.type === 'rect') {
                         const { x, y, z, width, height, depth } = markerSpec;
                         const box = createManifoldBox(width, height, depth, true);
@@ -1373,7 +1526,11 @@ function processGeometrySpec(spec) {
                     }
 
                     if (markerManifold) {
-                        markerManifolds.push(markerManifold);
+                        if (markerSpec.is_recess === false) {
+                            raisedMarkerManifolds.push(markerManifold);
+                        } else {
+                            markerManifolds.push(markerManifold);
+                        }
                         markerSuccessCount++;
                         console.log(`Manifold CSG Worker: Marker ${i} created successfully`);
                     } else {
@@ -1415,7 +1572,22 @@ function processGeometrySpec(spec) {
             }
         }
 
-        // Process markers (always subtract)
+        // Process raised markers (tactile emboss indicator) before the cuts, so a
+        // recess can never be filled back in by an arrow added afterwards.
+        if (raisedMarkerManifolds.length > 0) {
+            console.log(`Manifold CSG Worker: Processing ${raisedMarkerManifolds.length} raised markers`);
+            const unionedRaised = batchUnionManifold(raisedMarkerManifolds);
+
+            if (unionedRaised) {
+                const newResult = result.add(unionedRaised);
+                result.delete();
+                unionedRaised.delete();
+                result = newResult;
+                console.log('Manifold CSG Worker: Added raised tactile indicators');
+            }
+        }
+
+        // Process markers (subtract)
         if (markerManifolds.length > 0) {
             console.log(`Manifold CSG Worker: Processing ${markerManifolds.length} markers`);
             const unionedMarkers = batchUnionManifold(markerManifolds);

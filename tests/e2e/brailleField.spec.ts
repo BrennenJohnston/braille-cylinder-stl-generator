@@ -1,0 +1,192 @@
+/**
+ * E2E tests for the editable Unicode braille field.
+ *
+ * The field's contract is the safety-critical part: whenever it holds content,
+ * those exact cells are what get embossed - no liblouis pass, no re-wrapping.
+ * These tests pin that contract by intercepting the /geometry_spec request and
+ * asserting on the braille lines actually sent.
+ *
+ * The phone-number case is the one that prompted the feature: 206-543-4779 is
+ * correctly 15 cells with three number signs under UEB (a hyphen ends numeric
+ * mode), which does not fit a 13-cell row. Editing it down to 13 cells by hand
+ * must be honoured verbatim.
+ *
+ * @see docs/specifications/BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md
+ */
+
+import { test, expect, type Page } from '@playwright/test';
+
+const NUMBER_SIGN = '\u283C';
+// 206.543.4779 in UEB: one number sign, periods keeping numeric mode. 13 cells.
+// Cells: ⠼ 2 0 6 . 5 4 3 . 4 7 7 9
+const PHONE_13_CELLS =
+  '\u283C\u2803\u281A\u280B\u2832\u2811\u2819\u2809\u2832\u2819\u281B\u281B\u280A';
+
+/** Load the app and wait for the inline init script and liblouis worker to settle. */
+async function openApp(page: Page) {
+  await page.goto('/');
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForLoadState('networkidle');
+  await page.waitForSelector('#braille-unicode');
+  // Manual placement exposes the per-row English inputs. Selected explicitly
+  // because the markup ships with Auto checked.
+  await page.locator('input[name="placement_mode"][value="manual"]').check();
+  await expect(page.locator('#line1')).toBeVisible();
+}
+
+/**
+ * Capture the braille lines sent to /geometry_spec. The request is aborted so
+ * the test never waits on Manifold WASM or a full CSG run.
+ */
+async function interceptGeometrySpec(page: Page) {
+  const state: { lines: string[] | null; called: boolean } = { lines: null, called: false };
+  await page.route('**/geometry_spec', async (route) => {
+    state.called = true;
+    try {
+      state.lines = route.request().postDataJSON()?.lines ?? null;
+    } catch {
+      state.lines = null;
+    }
+    await route.abort();
+  });
+  return state;
+}
+
+/**
+ * Press Translate to Braille and wait for the field to fill.
+ *
+ * The liblouis worker also loads asynchronously and the button reports
+ * "Liblouis worker not initialized" if pressed too early — again reliably on
+ * Firefox. Retry rather than assume a fixed warm-up time.
+ */
+async function translateToBraille(page: Page) {
+  const field = page.locator('#braille-unicode');
+  for (let attempt = 0; attempt < 15; attempt++) {
+    await page.locator('#translate-to-braille-btn').click();
+    for (let waited = 0; waited < 4000; waited += 200) {
+      if ((await field.inputValue()) !== '') return;
+      await page.waitForTimeout(200);
+    }
+    const status = await page.locator('#braille-unicode-status').textContent();
+    if (status && !/[Ll]iblouis|not initialized|unavailable/.test(status)) {
+      throw new Error(`Translate to Braille reported: ${status}`);
+    }
+    await page.waitForTimeout(1000);
+  }
+  throw new Error('The liblouis worker never became ready');
+}
+
+/**
+ * Click Generate and wait for the request to reach /geometry_spec.
+ *
+ * The Manifold worker signals readiness asynchronously and cylinder generation
+ * fails fast with "requires the Manifold 3D engine" when it is not ready yet —
+ * reliably so on Firefox, which is slower to spin up the module worker. The app
+ * tells the user to try again in exactly that case, so the test does the same.
+ * Any other error is a real failure and is surfaced immediately.
+ */
+async function generate(page: Page, state: { called: boolean }) {
+  for (let attempt = 0; attempt < 15; attempt++) {
+    await page.locator('#action-btn').click();
+    for (let waited = 0; waited < 3000 && !state.called; waited += 100) {
+      await page.waitForTimeout(100);
+    }
+    if (state.called) return;
+
+    const error = await page.locator('#error-text').textContent();
+    if (error && !/Manifold 3D engine/.test(error)) {
+      throw new Error(`Generation was blocked before reaching /geometry_spec: ${error}`);
+    }
+    await page.waitForTimeout(1000);
+  }
+  throw new Error('The Manifold worker never became ready');
+}
+
+test.describe('Editable Unicode braille field', () => {
+  // Same rationale as silentTruncation.spec.ts: WebKit on Linux CI parses this
+  // page (large inline script plus vendored workers) noticeably slower.
+  test.describe.configure({ timeout: 120_000 });
+
+  test('translates a hyphenated phone number to 15 cells with three number signs', async ({ page }) => {
+    await openApp(page);
+
+    await page.locator('#line1').fill('206-543-4779');
+    await translateToBraille(page);
+
+    // Correct UEB, not a bug: a hyphen ends numeric mode, so the sign repeats
+    // for each group and the number no longer fits a 13-cell row.
+    const translated = (await page.locator('#braille-unicode').inputValue()).split('\n')[0];
+    expect(translated.length).toBe(15);
+    expect([...translated].filter((c) => c === NUMBER_SIGN)).toHaveLength(3);
+  });
+
+  test('sends hand-edited cells verbatim to /geometry_spec', async ({ page }) => {
+    await openApp(page);
+
+    await page.locator('#line1').fill('206-543-4779');
+    await translateToBraille(page);
+
+    // Edit the 15-cell result down to the 13 cells that fit a default row.
+    const field = page.locator('#braille-unicode');
+    await field.fill(PHONE_13_CELLS);
+    await expect(page.locator('#braille-unicode-status')).toContainText('Edited');
+
+    const spec = await interceptGeometrySpec(page);
+    await generate(page, spec);
+
+    expect(spec.lines?.[0]).toBe(PHONE_13_CELLS);
+  });
+
+  test('uses pasted braille verbatim with the English inputs left empty', async ({ page }) => {
+    await openApp(page);
+
+    const pasted = '\u2813\u2811\u280B\u280B\u2815';  // hello
+    await page.locator('#braille-unicode').fill(pasted);
+
+    const spec = await interceptGeometrySpec(page);
+    await generate(page, spec);
+
+    expect(spec.lines?.[0]).toBe(pasted);
+  });
+
+  test('blocks generation when the field contains non-braille characters', async ({ page }) => {
+    await openApp(page);
+
+    const spec = await interceptGeometrySpec(page);
+    await page.locator('#braille-unicode').fill('hello');
+    await page.locator('#action-btn').click();
+
+    await expect(page.locator('#error-text')).toContainText('not a braille character', { timeout: 15_000 });
+    expect(spec.called).toBe(false);
+  });
+
+  test('blocks generation when a field line is longer than the available cells', async ({ page }) => {
+    await openApp(page);
+
+    const spec = await interceptGeometrySpec(page);
+    // 14 cells against the default 13-cell row
+    await page.locator('#braille-unicode').fill('\u2801'.repeat(14));
+    await page.locator('#action-btn').click();
+
+    await expect(page.locator('#error-text')).toContainText('the maximum is 13', { timeout: 15_000 });
+    expect(spec.called).toBe(false);
+  });
+
+  test('clears a pristine field when the English text changes, but keeps hand-edits', async ({ page }) => {
+    await openApp(page);
+
+    await page.locator('#line1').fill('hello');
+    await translateToBraille(page);
+
+    const field = page.locator('#braille-unicode');
+
+    // Pristine: the field only mirrors the translation, so it must not go stale
+    await page.locator('#line1').fill('world');
+    await expect(field).toHaveValue('');
+
+    // Dirty: a hand-edit outranks the English inputs
+    await field.fill('\u2801\u2803');
+    await page.locator('#line1').fill('something else entirely');
+    await expect(field).toHaveValue('\u2801\u2803');
+  });
+});

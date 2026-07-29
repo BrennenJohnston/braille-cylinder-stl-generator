@@ -53,6 +53,28 @@ Parametric Model Maker. See [`docs/MAKERWORLD_QUICK_START.md`](docs/MAKERWORLD_Q
 not include automatic translation — the web app's liblouis integration is what
 you give up by working offline.
 
+The reverse gap has closed: as of 2026-07-29 the web app has a **Braille
+(Unicode)** field that accepts pasted braille and uses it verbatim, so the
+paste-braille-directly workflow below now works there too. The app also offers
+`indicator_mode` = Tactile, matching this program. Feature parity between the two
+versions is therefore: translation is web-only, everything else is in both.
+
+### Phone numbers: hyphens versus periods
+
+Both versions render exactly the cells you give them, so this is a translation
+question — but it is the most common surprise, so it is worth stating in both
+places. Under UEB a period or comma **keeps** numeric mode, while a hyphen or
+parenthesis **ends** it:
+
+| Typed | Braille | Cells | Number signs |
+|---|---|---|---|
+| `206.543.4779` | `⠼⠃⠚⠋⠲⠑⠙⠉⠲⠙⠛⠛⠊` | 13 | 1 |
+| `206-543-4779` | `⠼⠃⠚⠋⠤⠼⠑⠙⠉⠤⠼⠙⠛⠛⠊` | 15 | 3 |
+
+The 15-cell form is correct UEB, not a translator bug, and it will not fit a
+13-cell row. Convert the hyphens to periods as BANA advises, or delete the extra
+cells by hand before pasting.
+
 ## Quick start
 
 1. **Translate your text** at <https://www.branah.com/braille-translator>:

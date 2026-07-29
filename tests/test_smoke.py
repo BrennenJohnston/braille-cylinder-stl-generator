@@ -321,6 +321,236 @@ def test_validation_negative_plate_skips_column_check(client):
 
 
 # =============================================================================
+# Tactile Row Indicator Mode (cylinder only)
+# =============================================================================
+#
+# Ported from the OpenSCAD version: instead of recessed markers in the first
+# cells of each row, one arrow per row sits in the seam gap - raised on the
+# embossing plate, recessed on the counter plate. See
+# docs/specifications/RECESS_INDICATOR_SPECIFICATIONS.md.
+
+
+TACTILE_CYLINDER_PARAMS = {'diameter': 60.0, 'height': 40.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0}
+
+
+def _tactile_spec(client, plate_type: str, lines: list[str], **settings_overrides):
+    settings = {'grid_rows': 4, 'grid_columns': 4, 'indicator_mode': 'tactile'}
+    settings.update(settings_overrides)
+    payload = {
+        'lines': lines,
+        'plate_type': plate_type,
+        'shape_type': 'cylinder',
+        'grade': 'g1',
+        'settings': settings,
+        'cylinder_params': TACTILE_CYLINDER_PARAMS,
+    }
+    resp = client.post('/geometry_spec', json=payload, headers={'Content-Type': 'application/json'})
+    assert resp.status_code == 200, resp.data
+    return resp.get_json()
+
+
+def test_tactile_mode_drops_marker_columns_on_positive(client):
+    """Tactile mode frees the marker columns: all grid_columns hold text."""
+    lines = ['⠁⠃⠉⠙', '', '', '']  # 4 cells == grid_columns, which only fits with 0 reserved
+    data = _tactile_spec(client, 'positive', lines)
+
+    assert data['indicator_mode'] == 'tactile'
+    # No triangle/letter markers - only one tactile arrow per row
+    assert [m['type'] for m in data['markers']] == ['cylinder_tactile_arrow'] * 4
+    # Every column carried text, so every raised dot is present
+    assert len(data['dots']) == _count_raised_dots(lines)
+
+
+def test_tactile_mode_drops_marker_columns_on_negative(client):
+    """Counter plate in tactile mode recesses every cell and every arrow."""
+    data = _tactile_spec(client, 'negative', ['', '', '', ''], recess_shape=1)
+
+    settings = CardSettings(grid_rows=4, grid_columns=4, indicator_mode='tactile')
+    assert [m['type'] for m in data['markers']] == ['cylinder_tactile_arrow'] * 4
+    assert all(m['is_recess'] is True for m in data['markers'])
+    # reserved == 0, so all 4 columns get recesses
+    assert len(data['dots']) == settings.grid_rows * settings.grid_columns * 6
+
+
+def test_tactile_arrow_is_raised_on_positive_and_recessed_on_negative(client):
+    """The pair only nests if the emboss arrow is unioned and the counter cut."""
+    positive = _tactile_spec(client, 'positive', ['⠁', '', '', ''])['markers'][0]
+    negative = _tactile_spec(client, 'negative', ['', '', '', ''])['markers'][0]
+
+    radius = TACTILE_CYLINDER_PARAMS['diameter'] / 2
+
+    assert positive['is_recess'] is False
+    assert positive['outer_radius'] == pytest.approx(radius + 0.8)  # tactile_indicator_raise
+    assert positive['inner_radius'] == pytest.approx(radius - 0.2)  # TACTILE_BASE_EMBED
+    assert positive['outline_delta'] == pytest.approx(0.0)
+
+    assert negative['is_recess'] is True
+    # Recess is grown radially by raise + extra depth, and in-plane by the clearance
+    assert negative['inner_radius'] == pytest.approx(radius - 0.8 - 0.2)
+    assert negative['outer_radius'] == pytest.approx(radius + 1.0)  # TACTILE_RECESS_OVERCUT
+    assert negative['outline_delta'] == pytest.approx(0.2)  # tactile_recess_clearance
+
+
+def test_tactile_arrow_sits_at_the_seam_gap_centre_on_both_plates(client):
+    """
+    180 degrees is the fixed point of the counter plate's angle-negating mirror,
+    so the arrow and its recess line up without any extra bookkeeping.
+    """
+    import math
+
+    positive = _tactile_spec(client, 'positive', ['⠁', '', '', ''])['markers']
+    negative = _tactile_spec(client, 'negative', ['', '', '', ''])['markers']
+
+    for marker in positive + negative:
+        assert marker['theta'] == pytest.approx(math.pi)
+
+    # One indicator per row, at the same row pitch the visual markers use
+    assert [m['y'] for m in positive] == pytest.approx([m['y'] for m in negative])
+    assert len({round(m['y'], 6) for m in positive}) == 4
+
+
+def test_tactile_gap_warning_when_seam_gap_too_small(client):
+    """
+    Warn (do not fail) when the seam gap can no longer hold the indicator plus a
+    clear zone either side, matching the OpenSCAD version.
+    """
+    # 14 cells at 6.5 mm on the default 30.75 mm cylinder leaves
+    # 96.6 - 84.5 = 12.1 mm, comfortably over the 4 + 5 mm the arrow needs.
+    roomy = {
+        'lines': ['', '', '', ''],
+        'plate_type': 'negative',
+        'shape_type': 'cylinder',
+        'grade': 'g1',
+        'settings': {'grid_rows': 4, 'grid_columns': 14, 'cell_spacing': 6.5, 'indicator_mode': 'tactile'},
+        'cylinder_params': {'diameter': 30.75, 'height': 52.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0},
+    }
+    resp = client.post('/geometry_spec', json=roomy, headers={'Content-Type': 'application/json'})
+    assert resp.status_code == 200, resp.data
+    assert resp.get_json()['warnings'] == []
+
+    # 16 cells leaves 96.6 - 97.5 = -0.9 mm: no gap at all.
+    payload = {
+        'lines': ['', '', '', ''],
+        'plate_type': 'negative',
+        'shape_type': 'cylinder',
+        'grade': 'g1',
+        'settings': {'grid_rows': 4, 'grid_columns': 16, 'cell_spacing': 6.5, 'indicator_mode': 'tactile'},
+        'cylinder_params': {'diameter': 30.75, 'height': 52.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0},
+    }
+    resp = client.post('/geometry_spec', json=payload, headers={'Content-Type': 'application/json'})
+    assert resp.status_code == 200, resp.data
+    warnings = resp.get_json()['warnings']
+    assert any('seam gap' in w for w in warnings), warnings
+
+
+def test_visual_mode_emits_no_tactile_arrows(client):
+    """Default (visual) mode must be untouched by the tactile port."""
+    payload = {
+        'lines': ['⠁⠃', '', '', ''],
+        'plate_type': 'positive',
+        'shape_type': 'cylinder',
+        'grade': 'g1',
+        'settings': {'grid_rows': 4, 'grid_columns': 4},
+        'cylinder_params': TACTILE_CYLINDER_PARAMS,
+    }
+    resp = client.post('/geometry_spec', json=payload, headers={'Content-Type': 'application/json'})
+    assert resp.status_code == 200, resp.data
+    data = resp.get_json()
+
+    assert data['indicator_mode'] == 'visual'
+    assert data['warnings'] == []
+    assert not any(m['type'] == 'cylinder_tactile_arrow' for m in data['markers'])
+    assert len(data['markers']) == 4 * 2  # triangle + letter/square per row
+
+
+def test_tactile_mode_column_validation_allows_full_width(client):
+    """
+    A line filling every column is valid in tactile mode but overflows in visual
+    mode, where marker columns are reserved.
+    """
+    line = '⠁⠃⠉⠙'  # exactly grid_columns
+    base = {
+        'lines': [line, '', '', ''],
+        'plate_type': 'positive',
+        'shape_type': 'cylinder',
+        'grade': 'g1',
+        'cylinder_params': TACTILE_CYLINDER_PARAMS,
+    }
+
+    tactile = client.post(
+        '/geometry_spec',
+        json={**base, 'settings': {'grid_rows': 4, 'grid_columns': 4, 'indicator_mode': 'tactile'}},
+        headers={'Content-Type': 'application/json'},
+    )
+    assert tactile.status_code == 200, tactile.data
+
+    visual = client.post(
+        '/geometry_spec',
+        json={**base, 'settings': {'grid_rows': 4, 'grid_columns': 4}},
+        headers={'Content-Type': 'application/json'},
+    )
+    assert visual.status_code == 400, visual.data
+
+
+def test_indicator_mode_rejects_unknown_value(client):
+    """A typo must be rejected, not silently treated as tactile."""
+    payload = {
+        'lines': ['⠁', '', '', ''],
+        'plate_type': 'positive',
+        'shape_type': 'cylinder',
+        'grade': 'g1',
+        'settings': {'grid_rows': 4, 'grid_columns': 4, 'indicator_mode': 'tactilee'},
+        'cylinder_params': TACTILE_CYLINDER_PARAMS,
+    }
+    resp = client.post('/geometry_spec', json=payload, headers={'Content-Type': 'application/json'})
+    assert resp.status_code == 400, resp.data
+    assert 'indicator_mode' in resp.get_json()['error']
+
+
+def test_tactile_settings_defaults_match_openscad():
+    """
+    The two generators must produce the same arrow, so these five numbers are
+    byte-for-byte the OpenSCAD defaults (see OpenSCAD [Indicator Mode] block).
+    """
+    settings = CardSettings()
+    assert settings.indicator_mode == 'visual'
+    assert settings.tactile_indicator_width == 4.0
+    assert settings.tactile_indicator_length == 5.0
+    assert settings.tactile_indicator_raise == 0.8
+    assert settings.tactile_recess_clearance == 0.2
+    assert settings.tactile_recess_extra_depth == 0.2
+
+
+def test_schema_and_models_agree_on_indicator_fields():
+    """
+    settings.schema.json is the single source of truth for settings, so its
+    defaults must match CardSettings. Drift between the two is the failure the
+    cross-validation checklist in .cursorrules exists to catch.
+    """
+    import json
+    from pathlib import Path
+
+    schema_path = Path(__file__).resolve().parents[1] / 'settings.schema.json'
+    indicators = json.loads(schema_path.read_text(encoding='utf-8'))['properties']['indicators']['properties']
+    settings = CardSettings()
+
+    assert indicators['indicator_mode']['enum'] == ['visual', 'tactile']
+    assert indicators['indicator_mode']['default'] == settings.indicator_mode
+
+    for field in (
+        'tactile_indicator_width',
+        'tactile_indicator_length',
+        'tactile_indicator_raise',
+        'tactile_recess_clearance',
+        'tactile_recess_extra_depth',
+    ):
+        assert field in indicators, f'{field} missing from settings.schema.json'
+        assert indicators[field]['default'] == getattr(settings, field), (
+            f'{field} default disagrees between settings.schema.json and CardSettings'
+        )
+
+
+# =============================================================================
 # PR-8: braille_to_dots() Strict Mode Tests (Defense-in-Depth)
 # =============================================================================
 

@@ -188,7 +188,22 @@ def validate_settings(settings_data: Any) -> bool:
         'cone_counter_dot_flat_hat': (float, 0.0, 5.0),
         'counter_dot_depth': (float, 0.0, 5.0),
         'indicator_shapes': (int, 0, 1),
+        # Tactile indicator mode (cylinder only). Ranges mirror the OpenSCAD sliders.
+        'tactile_indicator_width': (float, 2.0, 10.0),
+        'tactile_indicator_length': (float, 2.0, 15.0),
+        'tactile_indicator_raise': (float, 0.0, 2.0),
+        'tactile_recess_clearance': (float, 0.0, 1.0),
+        'tactile_recess_extra_depth': (float, 0.0, 1.0),
     }
+
+    # indicator_mode is a string enum, so it cannot go through the numeric loop below.
+    if 'indicator_mode' in settings_data:
+        mode = settings_data['indicator_mode']
+        if str(mode).strip().lower() not in ('visual', 'tactile'):
+            raise ValidationError(
+                "Setting 'indicator_mode' must be 'visual' or 'tactile'",
+                {'key': 'indicator_mode', 'value': mode, 'valid_options': ['visual', 'tactile']},
+            )
 
     for key, value in settings_data.items():
         if key not in allowed_settings:
@@ -348,6 +363,7 @@ def validate_line_lengths(
     grid_columns: int,
     shape_type: str,
     indicator_shapes: int = 0,
+    indicator_mode: str = 'visual',
 ) -> bool:
     """
     Validate that braille lines do not exceed available grid columns.
@@ -361,6 +377,7 @@ def validate_line_lengths(
         grid_columns: Total grid columns (including reserved columns)
         shape_type: 'card' or 'cylinder'
         indicator_shapes: 1 if indicators enabled, 0 otherwise
+        indicator_mode: 'visual' (marker columns) or 'tactile' (no marker columns)
 
     Returns:
         True if all lines fit within available columns
@@ -370,9 +387,10 @@ def validate_line_lengths(
     """
     if shape_type == 'cylinder':
         # Cylinders reserve marker columns:
+        # - tactile mode: 0 columns (the indicator lives in the seam gap)
         # - indicator letters ON: 2 columns (triangle at col 0, letter at col 1)
         # - indicator letters OFF: 1 column (the alignment triangle is always present)
-        reserved = 2 if indicator_shapes else 1
+        reserved = 0 if str(indicator_mode).lower() == 'tactile' else (2 if indicator_shapes else 1)
         available_columns = max(0, grid_columns - reserved)
     else:
         # Cards: all grid_columns are available for braille
