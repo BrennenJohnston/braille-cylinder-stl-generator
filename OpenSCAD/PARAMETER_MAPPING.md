@@ -7,12 +7,14 @@ This document maps the OpenSCAD customizer parameters to the web-based braille g
 ## Overview
 
 The OpenSCAD version has been updated to match the web-based generator's UI parameters. The only differences are:
-1. OpenSCAD requires **pre-translated Unicode braille** characters (no automatic translation)
+1. OpenSCAD requires **pre-translated Unicode braille** characters (no automatic translation). The web app can now take pre-translated braille too — it has a Braille (Unicode) field that is used verbatim — so this is a one-way gap: translation is web-only, direct braille input works in both.
 2. OpenSCAD is **cylinder-only** (card support removed)
 
 ## Translation Workflow
 
-1. **Web App**: Automatic translation using Liblouis (Grade 1 or Grade 2)
+1. **Web App**: Automatic translation using Liblouis (Grade 1 or Grade 2), or
+   paste pre-translated braille into its Braille (Unicode) field, which is used
+   verbatim — the same workflow as below
 2. **OpenSCAD**: Manual translation required at https://www.branah.com/braille-translator
    - User must select Grade 1 or Grade 2 manually
    - Copy Unicode braille output
@@ -36,17 +38,27 @@ The OpenSCAD version has been updated to match the web-based generator's UI para
 
 ### Indicator Mode
 
-Every parameter in this section is OpenSCAD-only — the web app has no tactile
-indicator mode, so all six map to `"web_api_name": null`.
+This mode originated here and the web app has since ported it, so every
+parameter below now has a web equivalent under the same name. The web app's
+runtime settings field names are identical; only the enum casing differs
+(`"Visual"`/`"Tactile"` here, `visual`/`tactile` on the wire). In
+`settings.schema.json` they live under `indicators.*`, and the web UI presents
+them as **Row Indicator Style** plus a **Tactile Indicator Dimensions** group in
+Expert Mode.
 
-| OpenSCAD Parameter | Default | Range / Values | Notes |
-|--------------------|---------|----------------|-------|
-| `indicator_mode` | `"Visual"` | `"Visual"`, `"Tactile"` | `Visual` = recessed marker cells at the start of each row (current behavior). `Tactile` = raised arrow on the emboss plate + matching recess on the counter plate, in the seam gap. See Note 3. |
-| `tactile_indicator_width` | 4.0 mm | 2–10 mm | Indicator width around the cylinder |
-| `tactile_indicator_length` | 5.0 mm | 2–15 mm | Indicator length along the cylinder axis; the default matches the 5 mm braille dot field height |
-| `tactile_indicator_raise` | 0.8 mm | 0–2 mm | How far the emboss arrow stands proud. Kept below the braille dot height so the dots carry the rolling pressure |
-| `tactile_recess_clearance` | 0.2 mm | 0–1 mm | Outline margin around the counter recess |
-| `tactile_recess_extra_depth` | 0.2 mm | 0–1 mm | Counter recess depth beyond the raise; 0 = exact same-depth nesting |
+| OpenSCAD Parameter | `web_api_name` | Default | Range / Values | Notes |
+|--------------------|----------------|---------|----------------|-------|
+| `indicator_mode` | `indicator_mode` | `"Visual"` | `"Visual"`, `"Tactile"` | `Visual` = recessed marker cells at the start of each row (current behavior). `Tactile` = raised arrow on the emboss plate + matching recess on the counter plate, in the seam gap. See Note 3. |
+| `tactile_indicator_width` | `tactile_indicator_width` | 4.0 mm | 2–10 mm | Indicator width around the cylinder |
+| `tactile_indicator_length` | `tactile_indicator_length` | 5.0 mm | 2–15 mm | Indicator length along the cylinder axis; the default matches the 5 mm braille dot field height |
+| `tactile_indicator_raise` | `tactile_indicator_raise` | 0.8 mm | 0–2 mm | How far the emboss arrow stands proud. Kept below the braille dot height so the dots carry the rolling pressure |
+| `tactile_recess_clearance` | `tactile_recess_clearance` | 0.2 mm | 0–1 mm | Outline margin around the counter recess |
+| `tactile_recess_extra_depth` | `tactile_recess_extra_depth` | 0.2 mm | 0–1 mm | Counter recess depth beyond the raise; 0 = exact same-depth nesting |
+
+Defaults are asserted equal on the web side
+(`tests/test_smoke.py::test_tactile_settings_defaults_match_openscad`), so the
+two generators produce the same arrow. Change a default here and that test fails
+there — deliberately.
 
 The five tactile sliders are **not** preset-driven — same policy as
 `grid_columns`. The paper-thickness presets describe paper and dot geometry;
@@ -293,7 +305,7 @@ All default values match the web-based generator's defaults (0.4mm paper preset 
 
 ## References
 
-- Web-based Generator: https://braille-card-and-cylinder-stl-gener.vercel.app
+- Web-based Generator: https://braille-cylinder-stl-generator.vercel.app
 - Web App Source: https://github.com/BrennenJohnston/braille-cylinder-stl-generator
 - OpenSCAD Version: https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad
 - Branah Braille Translator: https://www.branah.com/braille-translator

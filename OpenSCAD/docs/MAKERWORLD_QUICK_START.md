@@ -61,9 +61,21 @@ needed for the whole number. For example, `206.616.7678` translates to:
 
 > `⠼⠃⠚⠋⠲⠋⠁⠋⠲⠛⠋⠛⠓` — exactly **13 cells**, which fits the default row.
 
-Some online translators repeat the number sign after each period. That output
-is non-standard and wastes cells — if your translation shows more than one
-`⠼` in a phone number, it likely will not fit.
+**Why the hyphens have to go.** A period keeps numeric mode, but a **hyphen or
+parenthesis ends it**, so every hyphen-separated group needs a fresh number
+sign. `206-543-4779` translates to:
+
+> `⠼⠃⠚⠋⠤⠼⠑⠙⠉⠤⠼⠙⠛⠛⠊` — **15 cells** with three `⠼`, which will not fit.
+
+That is correct UEB, not a translator bug: there is no setting anywhere that
+removes those signs. Retype the number with periods and it drops to 13 cells, or
+delete the extra cells by hand before pasting.
+
+Separately, some online translators repeat the number sign after each *period*
+too. That output is non-standard and wastes cells. So if your translation shows
+more than one `⠼` in a phone number, check which cause you have: hyphens in the
+input (retype with periods) or a translator adding signs after periods (switch
+translators).
 
 **Splitting a long number across two rows:** divide after a period and begin
 the next row with a fresh number sign:
