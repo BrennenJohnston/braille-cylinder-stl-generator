@@ -88,7 +88,11 @@ The only abbreviations BANA explicitly names are **lib**, **amer**, and **nat**.
 
 The numeric indicator (`#`) is added by the braille translator; do not type it yourself.
 
-**Why only one number sign?** In UEB, a period (or comma) inside a number keeps numeric mode active, so the digits after it do not need another number sign (`⠼`). For example, `206.616.7678` translates to `⠼⠃⠚⠋⠲⠋⠁⠋⠲⠛⠋⠛⠓` — exactly 13 braille cells, which fits a default 13-cell row. This is what BANA means by "eliminating the need to repeat numeric indicators." Some online translators repeat the number sign after each period; that output is non-standard and uses extra cells. The app has an off-by-default **"Repeat number sign after each period in numbers (non-standard)"** toggle under the text input area if you need to match such output.
+**Why only one number sign?** In UEB, a period (or comma) inside a number keeps numeric mode active, so the digits after it do not need another number sign (`⠼`). For example, `206.616.7678` translates to `⠼⠃⠚⠋⠲⠋⠁⠋⠲⠛⠋⠛⠓` — exactly 13 braille cells, which fits a default 13-cell row. This is what BANA means by "eliminating the need to repeat numeric indicators."
+
+**Why hyphens give you three number signs.** A hyphen or parenthesis **ends** numeric mode, unlike a period, so every hyphen-separated group needs a fresh `⠼`. `206-543-4779` therefore translates to `⠼⠃⠚⠋⠤⠼⠑⠙⠉⠤⠼⠙⠛⠛⠊` — 15 cells, which will not fit a 13-cell row and wraps to a second line. That is correct UEB from liblouis, and no app setting removes those signs. Convert the hyphens to periods as BANA advises, or edit the cells by hand in the **Braille (Unicode)** field under the text inputs.
+
+Separately, some online translators repeat the number sign after each *period* too; that output is non-standard and uses extra cells. The **Number Signs** control under the text input area has an off-by-default "Repeat the number sign after each period (non-standard)" option if you need to match such output.
 
 **Splitting a long number across two rows:** if a phone number will not fit on one row, divide it after a period and begin the next row with the remaining digits — the translator automatically adds a new number sign (`⠼`) at the start of the new row. For example, typing `206.616.` on one line and `7678` on the next produces `⠼⠃⠚⠋⠲⠋⠁⠋⠲` then `⠼⠛⠋⠛⠓`, the same pattern used in BANA's worked examples.
 

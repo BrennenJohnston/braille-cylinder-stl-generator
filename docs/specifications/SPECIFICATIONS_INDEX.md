@@ -64,6 +64,8 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 - BANA-aware word wrapping algorithm
 - Per-line text input with language selection
 - Language selection menu and table discovery
+- Capitalized Letters and Number Signs radio groups (§6.1, §6.2)
+- Editable Unicode braille field: state machine, validation, verbatim generation path (§6.3)
 - Translation pipeline data flow
 - Backend request structure
 
@@ -72,6 +74,7 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 - Dynamic line inputs
 - Per-line language dropdowns
 - Original lines for indicator characters
+- `#braille-unicode` field (authoritative when non-empty; bypasses liblouis)
 
 #### [BRAILLE_TRANSLATION_PREVIEW_SPECIFICATIONS.md](./BRAILLE_TRANSLATION_PREVIEW_SPECIFICATIONS.md)
 **Status:** ✅ Complete
@@ -177,9 +180,11 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 #### [RECESS_INDICATOR_SPECIFICATIONS.md](./RECESS_INDICATOR_SPECIFICATIONS.md)
 **Status:** ✅ Complete
 **Covers:**
+- Row Indicator Style (`indicator_mode`: `visual` | `tactile`)
 - Triangle marker geometry and positioning
 - Rectangle marker geometry and positioning
 - Character marker (alphanumeric) geometry
+- Tactile seam indicator: raised arrow / matching recess (§4, ported from OpenSCAD)
 - Embossing vs counter plate differences
 - Cylinder-specific marker placement
 - Coordinate system conversions
@@ -189,7 +194,8 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 - Triangle apex direction (right for emboss, left for counter)
 - Rectangle marker fallback logic
 - 8×8 bitmap font for Manifold characters
-- Column layout with indicators enabled
+- Column layout with indicators enabled, and with tactile mode (0 marker columns)
+- Tactile shell-band construction and the seam-gap warning
 
 ---
 
@@ -627,6 +633,8 @@ Section Reference: SURFACE_DIMENSIONS_SPECIFICATIONS.md (Section 2.1)
 **Cylinder angular calculations?** → BRAILLE_SPACING_SPECIFICATIONS (Section 5)
 **Dot numbering?** → BRAILLE_SPACING_SPECIFICATIONS (Section 1)
 **Marker positioning?** → RECESS_INDICATOR_SPECIFICATIONS (Sections 1-3)
+**Tactile seam indicator / `indicator_mode`?** → RECESS_INDICATOR_SPECIFICATIONS (Section 4)
+**Editable braille field?** → BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS (Section 6.3)
 **High contrast mode?** → UI_INTERFACE_CORE_SPECIFICATIONS (Section 1.3)
 **Preview brightness/contrast?** → UI_INTERFACE_CORE_SPECIFICATIONS (Section 3.8)
 **STL preview label?** → UI_INTERFACE_CORE_SPECIFICATIONS (Section 3.7)
@@ -669,6 +677,7 @@ Section Reference: SURFACE_DIMENSIONS_SPECIFICATIONS.md (Section 2.1)
 | 2024-12-07 | Added Bug 7 (Cylinder rounded dot floating) to Known Issues as FIXED; fix applied in csg-worker-manifold.js |
 | 2025-12-08 | Updated UI_INTERFACE_CORE_SPECIFICATIONS.md v1.3: Added STL Preview Label (Section 3.7) and Preview Display Settings with brightness/contrast controls (Section 3.8) |
 | 2025-12-08 | **BUG FIX:** Manifold worker integration completed. Frontend now uses dual-worker architecture: csg-worker.js for cards, csg-worker-manifold.js for cylinders (guarantees manifold output). Updated Web Worker Coverage section. |
+| 2026-07-29 | Added the editable Unicode braille field (BRAILLE_TEXT_INPUT §6.3) and converted the Repeat Number Sign checkbox to a Number Signs radio group (§6.2). Ported the OpenSCAD tactile row indicator into the app: RECESS_INDICATOR_SPECIFICATIONS v3.0 §4, plus `indicators.indicator_mode` and five `indicators.tactile_*` fields in SETTINGS_SCHEMA §3.6. |
 
 ---
 

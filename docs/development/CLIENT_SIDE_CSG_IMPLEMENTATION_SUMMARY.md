@@ -164,7 +164,7 @@ const useManifolWorker = shapeType === 'cylinder' && manifoldWorkerReady;
 ## File Structure
 
 ```
-braille-card-and-cylinder-stl-generator/
+braille-cylinder-stl-generator/
 ├── static/
 │   ├── vendor/
 │   │   ├── three-bvh-csg/

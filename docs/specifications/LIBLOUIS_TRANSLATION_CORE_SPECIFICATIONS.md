@@ -565,15 +565,24 @@ async function translateWithLiblouis(text, grade, tableName) {
 }
 ```
 
-### UI Post-Processing: Repeat Number Sign Toggle (Non-Standard, Default Off)
+### UI Post-Processing: Number Signs Radio Group (Non-Standard Option, Default Off)
 
 `translateWithLiblouis()` in `public/index.html` applies one optional post-processing step to the worker's translation result before returning it: `applyNumberSignRepeat()`.
 
 - Standard UEB (and liblouis with `en-ueb-g1.ctb`/`en-ueb-g2.ctb`) treats `.` and `,` as numeric-mode continuation characters (`numericmodechars .,`), so `206.616.7678` yields ONE number sign: `⠼⠃⠚⠋⠲⠋⠁⠋⠲⠛⠋⠛⠓` (13 cells).
-- When the user enables the "Repeat number sign after each period in numbers (non-standard)" checkbox (`#repeat_number_sign`, persisted as `braille_prefs_repeat_number_sign`), a `⠼` is re-inserted after every period/comma that is followed by a digit cell, matching some online translators at the cost of extra cells.
+- A **hyphen or parenthesis is not** a numeric-mode continuation character, so `206-543-4779` correctly yields THREE number signs: `⠼⠃⠚⠋⠤⠼⠑⠙⠉⠤⠼⠙⠛⠛⠊` (15 cells). This is unmodified liblouis output and no app setting changes it.
+- When the user selects "Repeat the number sign after each period (non-standard)" (`input[name="repeat_number_sign"][value="on"]`, persisted as `braille_prefs_repeat_number_sign`), a `⠼` is re-inserted after every period/comma that is followed by a digit cell, matching some online translators at the cost of extra cells.
 - The post-processing is centralized inside `translateWithLiblouis()` so the preview, computer shorthand, BANA auto-wrap length measurement, overflow detection, and STL generation all consume the identical string. The liblouis worker itself is never modified.
 
 See `BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md` section 6.2 for the full UI/behavior specification.
+
+### Bypass: Editable Unicode Braille Field
+
+Translation is **100% liblouis and stays that way**, but the user may opt out of translation entirely. When the Braille (Unicode) field (`#braille-unicode`) is non-empty, `form.onsubmit` uses its lines verbatim and never calls `translateWithLiblouis()`; `original_lines` is sent as `null`. The field is populated either by the Translate to Braille button (which runs the normal pipeline) or by the user pasting braille directly.
+
+This is a bypass of translation, not an alternative translator: the app never rewrites braille the user typed, and it never guesses what English text produced it.
+
+See `BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md` section 6.3.
 
 ### Manual Mode Translation
 

@@ -522,7 +522,9 @@ def geometry_spec():
             # Default matches CardSettings (indicator letters on). Geometry uses the
             # same default, so validation must agree to avoid over/under-counting.
             indicator_shapes = int(settings_data.get('indicator_shapes', 1))
-            validate_line_lengths(lines, grid_columns, shape_type, indicator_shapes)
+            # Tactile indicator mode has no marker columns, so all grid columns are text.
+            indicator_mode = str(settings_data.get('indicator_mode', 'visual')).lower()
+            validate_line_lengths(lines, grid_columns, shape_type, indicator_shapes, indicator_mode)
 
         # Extract geometry spec
         if shape_type == 'card':

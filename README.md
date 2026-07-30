@@ -1,6 +1,6 @@
-# Braille STL Generator
+# Braille Cylinder STL Generator
 
-[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator/releases/tag/v2.1.0)
+[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v2.1.0)
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial-red.svg)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 
@@ -14,7 +14,29 @@ The goal is to make braille labels and cards accessible to anyone with a 3D prin
 - Generates STL files for cylindrical braille labels (jars, bottles, containers, etc.)
 - All STL generation runs in the browser — nothing gets uploaded
 - Shows a 3D preview before you download
-- Flat business card plates are temporarily disabled while I rework that feature
+
+Flat business card plates are **parked**, not in development here — the code is
+still in the repo but disabled in the UI. See
+[KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) for why. Directly readable braille cards
+already ship as their own tool:
+[braille-wedge-card-openscad](https://github.com/BrennenJohnston/braille-wedge-card-openscad).
+
+## The device these cylinders go into
+
+The cylinders this app generates are the interchangeable plates for the
+**Custom Braille Embosser** — a hand-operated braille embosser built from ten
+snap-fit 3D-printed parts, with no fasteners, springs, glue, or electronics, for
+about $3–6 of filament. Generate an embossing plate and its matching counter
+plate at the same card-stock thickness, print both, and snap them into the
+holders.
+
+Build files, print profiles, and documentation for the device are on
+[Printables](https://www.printables.com/model/1742352-custom-braille-card-embosser-hand-operated),
+[MakerWorld](https://makerworld.com/en/models/2881581-custom-braille-card-embosser-hand-operated),
+and [Thingiverse](https://www.thingiverse.com/thing:7365273).
+
+You can also use the cylinders on their own as tactile labels for jars, bottles,
+and containers.
 
 ## Quick start
 
@@ -48,12 +70,20 @@ There's a **Help** button inside the app that walks you through choosing what to
 
 ## OpenSCAD version
 
-Prefer working offline or want full parametric control? An OpenSCAD version of this tool is included in the [`OpenSCAD/`](OpenSCAD/) folder.
+Prefer working offline or want full parametric control? The OpenSCAD version is
+maintained in its own repository —
+**[braille-cylinder-stl-generator-openscad](https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad)**
+— and a copy of its latest release is vendored into [`OpenSCAD/`](OpenSCAD/)
+here so you can download it without leaving the site.
 
-- [`OpenSCAD/Braille_Card_And_Cylinder_STL_Generator.scad`](OpenSCAD/Braille_Card_And_Cylinder_STL_Generator.scad) — the main script (open this in [OpenSCAD](https://openscad.org/) and use the Customizer panel)
+- [`OpenSCAD/Braille_Cylinder_STL_Generator.scad`](OpenSCAD/Braille_Cylinder_STL_Generator.scad) — one self-contained script (open in [OpenSCAD](https://openscad.org/) and use the Customizer panel; it also uploads straight to MakerWorld's Parametric Model Maker)
 - [`OpenSCAD/README.md`](OpenSCAD/README.md) — quick start, parameters, troubleshooting
+- [`OpenSCAD/VENDORED.json`](OpenSCAD/VENDORED.json) — which upstream tag this copy came from
 - [`OpenSCAD/PARAMETER_MAPPING.md`](OpenSCAD/PARAMETER_MAPPING.md) — how OpenSCAD parameters correspond to the web UI controls
-- [`OpenSCAD/docs/`](OpenSCAD/docs/) — coordinate system reference, web-to-OpenSCAD porting guide, testing notes
+- [`OpenSCAD/docs/`](OpenSCAD/docs/) — MakerWorld quick start, coordinate system reference, porting guide, testing notes
+
+Issues and pull requests for the OpenSCAD program belong upstream. Nothing in
+`OpenSCAD/` should be edited here — `tests/test_vendored_openscad.py` fails if it is.
 
 The web app translates automatically; the OpenSCAD version needs you to translate manually (using [Branah.com](https://www.branah.com/braille-translator)), but it works without an internet connection and integrates with existing CAD workflows.
 
@@ -92,7 +122,7 @@ Pre-commit hooks are included — run `pre-commit install` to set them up.
 **Using the app:**
 
 - [Cylinder Guide](docs/guides/CYLINDER_GUIDE.md) — measuring containers, setting parameters, worked examples
-- [Business Card Guide](docs/guides/BUSINESS_CARD_TRANSLATION_GUIDE.md) — what to include and formatting rules, quoted verbatim from the BANA *Business Cards Fact Sheet* (approved March 2024). Flat cards are temporarily disabled.
+- [Business Card Guide](docs/guides/BUSINESS_CARD_TRANSLATION_GUIDE.md) — what to include and formatting rules, quoted verbatim from the BANA *Business Cards Fact Sheet* (approved March 2024). Flat cards are parked; the formatting rules still apply to cylinder text.
 
 **Working on the code:**
 

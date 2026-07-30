@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Editable Unicode braille field.** A new "Braille (Unicode)" textarea sits under the text inputs with a **Translate to Braille** button. Whenever it holds content, those exact cells are what get embossed — generation uses the lines verbatim and skips liblouis. Two uses: fixing a translation by hand (most often deleting the repeated number signs from a hyphenated phone number so it fits one row), and pasting braille directly with the English boxes left empty, which is the parity feature braille readers were missing versus the OpenSCAD version. Edits are locked against being overwritten by later English edits; only the Translate button replaces them, and every state change is announced through a polite live region. Non-braille characters and over-long lines block generation with the offending line number and cell count.
+- **Tactile row indicator for cylinders**, ported from the OpenSCAD version. A new "Row Indicator Style" control under "Select Plate to Generate" offers *Visual markers* (default, unchanged) or *Tactile seam arrow*: one raised arrow per row on the embossing plate and a matching recess on the counter plate, both centred in the seam gap at 180° with the apex toward the cylinder top. A blind user can find the alignment point and tell which end is up by touch, and raised-versus-recessed identifies which cylinder they are holding. Tactile mode removes the marker cells entirely, so every cell in the row is available for text. The arrow is deliberately lower than the braille dots so the dots carry the rolling pressure. New settings `indicator_mode` plus five `tactile_*` dimensions, with defaults byte-for-byte identical to the OpenSCAD parameters, exposed in Expert Mode. The UI warns live when the seam gap can no longer hold the arrow.
+- `tests/e2e/brailleField.spec.ts` and `tests/e2e/tactileIndicator.spec.ts` — end-to-end coverage asserting on the payload actually sent to `/geometry_spec`, so the "used verbatim" and column-arithmetic contracts cannot regress silently.
+
 ### Changed
+- **"Repeat number sign" checkbox is now a "Number Signs" radio group.** The single checkbox read as a *prevent repetition* switch, so users reported the app adding number signs it refused to remove. The two outcomes are now stated explicitly, and the help text names the real cause: under UEB a period keeps numeric mode but a **hyphen or parenthesis ends it**, so `206-543-4779` correctly needs three number signs (15 cells, wraps to two rows) while `206.543.4779` needs one (13 cells, fits). That is correct liblouis output, not a bug — the remedies are retyping with periods or editing cells in the new braille field. The stored preference values are unchanged, so existing settings still restore.
 - BANA business card guidance is now reproduced verbatim from the *Business Cards Fact Sheet* (approved March 2024) in `docs/guides/BUSINESS_CARD_TRANSLATION_GUIDE.md`, the Directions dropdown in `templates/index.html`, and the "What to Include", "Formatting", and "Examples" help panels in `public/index.html`.
 - The Business Card Guide now shows BANA's published Grade 2 braille (in Unicode U+2800–U+28FF) alongside the app-specific Grade 1 "what to type" hint for each of BANA's nine worked examples, so users can see the source cells directly without needing to open the PDF.
 - The in-app Examples panel in `public/index.html` likewise shows the BANA Grade 2 braille verbatim for each of its three example cards, with an `aria-label` describing each rendering for screen readers.
@@ -152,16 +158,54 @@ Thanks to Tobi Weinberg for kick-starting the project. Based on [tobiwg/braile-c
 
 ## [Unreleased]
 
+### Fixed
+- **The vendored `OpenSCAD/` copy told contributors the wrong thing.** Its README
+  claimed the standalone repo was "no longer the active home for this project"
+  and asked for issues here. The opposite is true: the standalone repo holds the
+  dual-file desktop build, the cross-platform fixture suite, and the CI. It also
+  shipped a May-2026 snapshot named `Braille_Card_And_Cylinder_STL_Generator.scad`
+  — a file that generates cylinders only.
+
+### Changed
+- **`OpenSCAD/` refreshed to upstream `v2.4.0` and documented as a vendored
+  copy.** The vendored file is now the upstream MakerWorld single-file build
+  (presets inlined, no `include`), renamed to
+  `Braille_Cylinder_STL_Generator.scad` since this folder ships exactly one file.
+  That build is self-contained, so the download works standalone *and* uploads
+  directly to MakerWorld. Ships tactile indicator mode, the 13-cell default
+  capacity, and the counted `TEXT TOO LONG` warning.
+- **`OpenSCAD/VENDORED.json` records provenance** — upstream repo, tag, full
+  commit sha, release date, copy date, and a SHA-256 per file, with each file's
+  upstream path.
+- **`tests/test_vendored_openscad.py` (4 tests) guards against silent drift** —
+  the `.scad` must hash to what `VENDORED.json` records, every file in the folder
+  must be accounted for, the provenance must name a resolvable tag and full sha,
+  and the README must still state that upstream is canonical. Detecting a *newer*
+  upstream release needs the network, so that is a release-checklist item in
+  [docs/deployment/DEPLOYMENT_CHECKLIST.md](docs/deployment/DEPLOYMENT_CHECKLIST.md)
+  instead.
+- **Repository renamed to `braille-cylinder-stl-generator`.** The UI has
+  generated cylinders only since v2.0.0, so "card-and-cylinder" no longer
+  described the tool. GitHub redirects the old URLs, and the deployed Vercel
+  URL is unchanged — existing links and QR codes keep working. `package.json`,
+  the README title, badges, `PROJECT_STRUCTURE.md`, the in-app GitHub links,
+  and the workspace file all follow the new name.
+- **Flat business card plates are documented as parked, not "temporarily
+  disabled".** They will not return in this repo; see
+  [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md). Directly readable braille cards
+  already ship as
+  [braille-wedge-card-openscad](https://github.com/BrennenJohnston/braille-wedge-card-openscad).
+
 ### Planned
 - Additional language support
 - Custom dot shape options
 - Batch processing
 - OpenSCAD export option
 
-[2.1.0]: https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator/releases/tag/v2.1.0
-[2.0.0]: https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator/releases/tag/v2.0.0
-[1.3.0]: https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator/releases/tag/v1.3.0
-[1.2.0]: https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator/releases/tag/v1.2.0
-[1.1.0]: https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator/releases/tag/v1.1.0
-[1.0.0]: https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator/releases/tag/v1.0.0
-[Unreleased]: https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v2.1.0
+[2.0.0]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v2.0.0
+[1.3.0]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v1.3.0
+[1.2.0]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v1.2.0
+[1.1.0]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v1.1.0
+[1.0.0]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v1.0.0
+[Unreleased]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/compare/v2.1.0...HEAD

@@ -10,6 +10,20 @@ v2.0.0 has no external service dependencies. The server is Flask serving static 
 | Server dependencies | Flask, Flask-CORS |
 | Required secrets | None (all env vars are optional) |
 
+## Before you release
+
+- [ ] **Refresh the vendored OpenSCAD copy if upstream has a newer release.**
+      Compare [`OpenSCAD/VENDORED.json`](../../OpenSCAD/VENDORED.json)'s
+      `upstream_tag` against the latest tag on
+      [braille-cylinder-stl-generator-openscad](https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad/releases).
+      If it is behind, copy that release's
+      `makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad` (plus any
+      changed docs) into `OpenSCAD/`, update every field in `VENDORED.json`
+      including the new `sha256`, and re-run `pytest tests/test_vendored_openscad.py`.
+      Nothing automated can detect this drift — the check needs the network, so
+      it lives here instead of in CI. A stale copy is how the vendored README
+      ended up claiming the upstream repo was dead.
+
 ## Deploying to Vercel
 
 ### 1. Connect and deploy

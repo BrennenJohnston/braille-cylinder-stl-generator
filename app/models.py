@@ -221,6 +221,14 @@ class CardSettings:
             'cylinder_counter_plate_overcut_mm': 0.05,
             # Indicator shapes (row start/end markers) toggle
             'indicator_shapes': 1,
+            # Tactile indicator mode dimensions (cylinder only). Values mirror the
+            # OpenSCAD version's defaults exactly; see OpenSCAD parameter block
+            # `[Indicator Mode]` and RECESS_INDICATOR_SPECIFICATIONS.md.
+            'tactile_indicator_width': 4.0,
+            'tactile_indicator_length': 5.0,
+            'tactile_indicator_raise': 0.8,
+            'tactile_recess_clearance': 0.2,
+            'tactile_recess_extra_depth': 0.2,
         }
 
         # Set attributes from kwargs or defaults, while being tolerant of "empty" inputs
@@ -236,6 +244,13 @@ class CardSettings:
                 val = float(raw_val)
 
             setattr(self, key, val)
+
+        # Row indicator style. Kept out of the numeric loop above because it is a
+        # string enum, not a measurement. Anything unrecognized falls back to the
+        # visual markers so a bad value can never silently drop the alignment
+        # triangles the mounting device depends on.
+        indicator_mode = str(kwargs.get('indicator_mode') or 'visual').strip().lower()
+        self.indicator_mode = indicator_mode if indicator_mode in ('visual', 'tactile') else 'visual'
 
         # Ensure attributes that represent counts are integers
         self.grid_columns = int(self.grid_columns)

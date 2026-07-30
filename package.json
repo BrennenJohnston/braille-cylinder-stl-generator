@@ -1,7 +1,7 @@
 {
-  "name": "braille-card-and-cylinder-stl-generator",
+  "name": "braille-cylinder-stl-generator",
   "version": "2.1.0",
-  "description": "Web application for generating 3D-printable STL files for braille embossing plates and cylinders",
+  "description": "Web application for generating 3D-printable STL files for braille embossing cylinders",
   "private": true,
   "license": "SEE LICENSE IN LICENSE",
   "author": {
@@ -10,12 +10,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator.git"
+    "url": "https://github.com/BrennenJohnston/braille-cylinder-stl-generator.git"
   },
   "bugs": {
-    "url": "https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator/issues"
+    "url": "https://github.com/BrennenJohnston/braille-cylinder-stl-generator/issues"
   },
-  "homepage": "https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator#readme",
+  "homepage": "https://github.com/BrennenJohnston/braille-cylinder-stl-generator#readme",
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=9.0.0"

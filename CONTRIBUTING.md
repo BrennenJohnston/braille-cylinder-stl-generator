@@ -7,8 +7,8 @@ Thanks for your interest in contributing. Here's how to get set up.
 1. Fork the repo and clone it:
 
 ```bash
-git clone https://github.com/<YOUR-USERNAME>/braille-card-and-cylinder-stl-generator.git
-cd braille-card-and-cylinder-stl-generator
+git clone https://github.com/<YOUR-USERNAME>/braille-cylinder-stl-generator.git
+cd braille-cylinder-stl-generator
 ```
 
 2. Set up a virtual environment and install dependencies:

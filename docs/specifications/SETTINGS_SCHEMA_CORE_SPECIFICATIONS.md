@@ -112,6 +112,8 @@ This section lists canonical field names, high-level types, and brief rules. See
 ### 3.1 Text & Translation
 - text.lines: array<string>
   - Required. Each entry MUST be Unicode braille (U+2800–U+28FF). See validation pipeline.
+  - The frontend fills this either from liblouis or, when the Braille (Unicode) field is
+    non-empty, from that field verbatim. In the latter case `text.original_lines` is `null`.
 - text.languages: array<string>
   - Optional. Per-line table IDs; falls back to `text.default_language`.
 - text.default_language: string
@@ -197,16 +199,38 @@ See: `BRAILLE_DOT_ADJUSTMENTS_SPECIFICATIONS.md`, `BRAILLE_DOT_SHAPE_SPECIFICATI
 ### 3.6 Recess Indicators
 - indicators.enabled: boolean (gates ONLY the indicator letter on the emboss plate and
   the matching square on the counter plate; the triangle alignment indicators are always
-  generated and have no user-facing toggle)
+  generated and have no user-facing toggle). Ignored in tactile mode.
+- indicators.indicator_mode: "visual" | "tactile" (default: "visual"; cylinder only)
 - indicators.type: "triangle" | "rectangle" | "character"
 - indicators.depth_mm: number (default: 0.6)
 - indicators.character: string (single alphanumeric for character marker)
 - indicators.size_scale: number (scales relative to `spacing.dot_spacing_mm`)
 - indicators.rotate_180: boolean (applies for counter plate on cylinder)
 
-Reserved columns (flat `indicator_shapes` runtime field, 0 or 1):
+Tactile mode dimensions (mm; defaults are byte-for-byte the OpenSCAD version's, so the two
+generators produce the same arrow):
+- indicators.tactile_indicator_width: number, 2–10 (default: 4.0) — width around the cylinder
+- indicators.tactile_indicator_length: number, 2–15 (default: 5.0) — length along the axis
+- indicators.tactile_indicator_raise: number, 0–2 (default: 0.8) — emboss arrow height above the surface
+- indicators.tactile_recess_clearance: number, 0–1 (default: 0.2) — counter recess outline margin
+- indicators.tactile_recess_extra_depth: number, 0–1 (default: 0.2) — counter recess depth beyond the raise
+
+All eleven fields appear **flat** in the runtime settings payload under the same names
+(`indicator_mode`, `tactile_indicator_width`, …), matching the OpenSCAD parameter names.
+`indicators.enabled` is the one exception: its runtime name is `indicator_shapes` (0 or 1).
+
+Reserved marker columns per row:
+- indicator_mode = "tactile": 0 columns — the indicator sits in the seam gap — 14 text cells at defaults (15 leaves too little gap)
 - indicator_shapes = 1 (On): 2 marker columns reserved per row (letter + triangle) — 13 text cells at defaults
 - indicator_shapes = 0 (Off): 1 marker column reserved per row (triangle only) — 14 text cells at defaults
+
+Cross-field notes:
+- `indicator_mode` is geometry-affecting and column-count-affecting: it changes
+  `validate_line_lengths()` availability, the frontend `grid_columns` payload arithmetic,
+  and BANA auto-wrap width.
+- Tactile mode warns (does not reject) when
+  `π × diameter − (grid_columns − 1) × cell_spacing < tactile_indicator_width + 5.0`.
+  The warning is returned in the geometry spec's `warnings` array and shown live in the UI.
 
 See: `RECESS_INDICATOR_SPECIFICATIONS.md`.
 
@@ -395,3 +419,4 @@ Before completing any task involving settings:
 
 - 2025-12-06 — Initial creation. Consolidated settings schema across specs; added high-level JSON Schema, normalization and validation rules, and examples.
 - 2025-12-06 — Added Development Guidelines (Section 9); added `cache_version` field to schema; added default values to schema properties.
+- 2026-07-29 — Added `indicators.indicator_mode` and the five `indicators.tactile_*` dimensions for the tactile row indicator ported from the OpenSCAD version (Section 3.6), and noted the Braille (Unicode) field's effect on `text.lines` / `text.original_lines` (Section 3.1).

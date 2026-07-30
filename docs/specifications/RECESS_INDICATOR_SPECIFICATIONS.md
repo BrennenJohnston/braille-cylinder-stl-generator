@@ -2,12 +2,28 @@
 
 ## Overview
 
-This document provides **strict specifications** for the three types of recessed indicators used in the braille card and cylinder STL generator. These indicators are always **subtracted** (recessed) into both positive (embossing) and negative (counter) plates.
+This document provides **strict specifications** for the recessed indicators used in the braille card and cylinder STL generator, plus the tactile seam indicator that replaces them on cylinders.
 
-The indicators serve as tactile guides for visually impaired users and must maintain precise orientation and positioning across all generation methods:
+The three **visual** indicator types (triangle, rectangle, character) are always **subtracted** (recessed) into both positive (embossing) and negative (counter) plates. They must maintain precise orientation and positioning across all generation methods:
 - Python backend (`backend.py`)
 - Standard CSG Worker (`csg-worker.js` using three-bvh-csg)
 - Manifold CSG Worker (`csg-worker-manifold.js` using Manifold WASM)
+
+### Row Indicator Style (`indicator_mode`)
+
+Cylinders offer two mutually exclusive styles, selected by the user-facing **"Row Indicator Style"** control (runtime field `indicator_mode`, `visual` | `tactile`, default `visual`). Cylinder diameter, height, and cutout are identical either way, so **both plates of a pair must use the same style**.
+
+| | `visual` (default) | `tactile` |
+|---|---|---|
+| Where | Marker cells at the start of every row | One indicator per row, centred in the seam gap at 180° |
+| Emboss plate | Recessed triangle (+ square when `indicator_shapes` is on) | **Raised** arrow, apex toward the cylinder top |
+| Counter plate | Mirrored recesses | Matching arrow **recess** the arrow nests into |
+| Cells used for markers | 2 (on) or 1 (off) | **0** |
+| `indicator_shapes` | Gates the square | Ignored |
+
+Tactile mode exists so a blind user can align the two cylinders unaided: the arrow is one continuous wedge, nothing like a braille dot, and its point tells them which end is up on either plate, while raised-versus-recessed tells them which cylinder they are holding. See [§4 Tactile Seam Indicator](#4-tactile-seam-indicator-cylinders-only) for the geometry.
+
+`indicator_mode` is cylinder-only; cards ignore it and the UI hides the control when the shape is a card.
 
 ### Indicator Letters Toggle (`indicator_shapes`)
 
@@ -21,11 +37,16 @@ The **triangle alignment indicators are ALWAYS generated** regardless of the tog
 They are critical to the mechanical device the part mounts into and have no
 user-facing option to disable.
 
+In `visual` mode only. Tactile mode has no marker columns at all, so the toggle is ignored.
+
 Reserved marker columns per row:
-| Toggle | Reserved columns | Text cells at defaults |
-|--------|------------------|------------------------|
-| On (1) | 2 (letter + triangle) | 13 |
-| Off (0) | 1 (triangle only) | 14 |
+| Mode / Toggle | Reserved columns | Text cells at defaults |
+|---------------|------------------|------------------------|
+| `visual`, toggle On (1) | 2 (letter + triangle) | 13 |
+| `visual`, toggle Off (0) | 1 (triangle only) | 14 |
+| `tactile` | 0 | 14 (15 leaves too little seam gap) |
+
+The single source for this arithmetic is `_reserved_marker_columns(settings, tactile_on)` in `app/geometry_spec.py`, mirrored by `getReservedMarkerColumns()` in `public/index.html` and the `reserved` calculation in `validate_line_lengths()`.
 
 ---
 
@@ -444,6 +465,117 @@ To verify correct character rendering:
 
 ---
 
+## 4. Tactile Seam Indicator (Cylinders Only)
+
+### Purpose
+
+Selected by `indicator_mode = "tactile"`. Replaces the marker columns with one indicator per braille row placed in the seam gap: **raised** on the embossing plate, **recessed** on the counter plate. A blind user can find the alignment point and tell which end is up by touch, and the freed marker cells become text capacity.
+
+Ported from `OpenSCAD/Braille_Cylinder_STL_Generator.scad` (`tactile_raised`, `tactile_recess_cut`). The two implementations must stay in lockstep; parameter defaults are asserted equal in `tests/test_smoke.py::test_tactile_settings_defaults_match_openscad`.
+
+### Why It Works
+
+Two properties make the raised/recessed pair nest:
+
+- **Position.** The braille grid is centred on angle 0, so the midpoint of the gap between the last and first cell — measured the long way round through the seam — is always exactly **180°**. 180° is also the fixed point of the counter plate's angle-negating mirror (`apply_seam_mirrored`), so the arrow and its recess line up radially by construction, at any rotation of the paired cylinders, with no extra bookkeeping.
+- **Shape.** An isosceles triangle **symmetric circumferentially**, apex toward the cylinder **top**. Circumferential symmetry means the mirrored recess has the same outline as the arrow, so the two nest instead of colliding. Axial asymmetry means the point is felt as "up" on both plates, while raised-versus-recessed identifies which cylinder is in hand.
+
+The raise (0.8 mm) is deliberately **less than the braille dot height** (1.0 mm at defaults) so the dots, never the indicator, carry the rolling pressure.
+
+### Parameters
+
+Runtime fields, flat in the settings payload; schema home is `indicators.*` in `settings.schema.json`. Names and defaults are identical to the OpenSCAD parameters.
+
+| Field | Default | Range | Meaning |
+|-------|---------|-------|---------|
+| `tactile_indicator_width` | 4.0 mm | 2–10 | Width measured around the cylinder |
+| `tactile_indicator_length` | 5.0 mm | 2–15 | Length along the cylinder axis (matches the 5 mm height of a dot field) |
+| `tactile_indicator_raise` | 0.8 mm | 0–2 | How far the emboss arrow stands proud of the surface |
+| `tactile_recess_clearance` | 0.2 mm | 0–1 | Outline margin added around the counter recess |
+| `tactile_recess_extra_depth` | 0.2 mm | 0–1 | Counter recess depth added on top of the raise (0 = exact same-depth nesting) |
+
+Derived constants (`app/geometry_spec.py`, mirroring the `.scad`):
+
+| Constant | Value | Purpose |
+|----------|-------|---------|
+| `TACTILE_MIN_GAP_MARGIN` | 5.0 mm | Clear zone required either side of the indicator (2 mm dot zone per neighbouring cell + 1 mm margin) |
+| `TACTILE_PRISM_SPAN` | 6.0 mm | Radial thickness of the working prism the outline is extruded into |
+| `TACTILE_BASE_EMBED` | 0.2 mm | How far the raised arrow's base sinks below the surface, so the union is a solid overlap not a coplanar touch |
+| `TACTILE_RECESS_OVERCUT` | 1.0 mm | How far the recess cutter projects past the surface, so the opening leaves no coplanar faces |
+| `TACTILE_SEAM_THETA` | π | Seam-gap centre |
+
+### Geometry Specification
+
+`_create_tactile_indicator_spec()` emits one marker per row into `spec['markers']`:
+
+```python
+{
+    'type': 'cylinder_tactile_arrow',
+    'x': radius * cos(pi), 'y': y_local, 'z': radius * sin(pi),
+    'theta': pi,                # seam-gap centre; its own negation
+    'radius': radius,
+    'width': tactile_indicator_width,
+    'length': tactile_indicator_length,
+    'outline_delta': ...,       # in-plane growth (recess only)
+    'inner_radius': ...,        # shell band, inner
+    'outer_radius': ...,        # shell band, outer
+    'prism_span': 6.0,
+    'is_recess': bool,          # False = union into emboss, True = subtract from counter
+}
+```
+
+Band radii, with `R` = cylinder radius:
+
+| Plate | `inner_radius` | `outer_radius` | `outline_delta` |
+|-------|----------------|----------------|-----------------|
+| Emboss (`is_recess: false`) | `R − TACTILE_BASE_EMBED` | `R + raise` | 0 |
+| Counter (`is_recess: true`) | `R − raise − extra_depth` | `R + TACTILE_RECESS_OVERCUT` | `clearance` |
+
+Row pitch is identical to the visual markers: `first_row_center_y − row * line_spacing + braille_y_adjust`, converted to `y_local`.
+
+### CSG Construction (`createCylinderTactileArrowManifold`)
+
+1. Build the outline in the local frame — **+X circumferential, +Y toward the cylinder top** — wound counter-clockwise: `[(-w/2, -l/2), (w/2, -l/2), (0, l/2)]`.
+2. Grow it by `outline_delta` using `offsetPolygonMiter()`, an analytic mitered offset equivalent to OpenSCAD's `offset(delta = ...)`. Done analytically rather than via `CrossSection.offset()` because the arrow's apex (≈44° at defaults) is sharper than Manifold's default miter limit of 2, which would silently square it off.
+3. Extrude by `prism_span` and centre the radial extent on the origin.
+4. `rotate(90, 0, 0)`: local +Y (axial) → world +Z, local +Z (extrusion, i.e. radial) → world −Y. Then `rotate(0, 0, θ + 90)` aims that radial direction at θ.
+5. Translate to `(R cos θ, R sin θ, y)` so the prism straddles the surface, reaching `prism_span/2` both outward and inward.
+6. **Intersect with a shell band** — an annulus between `inner_radius` and `outer_radius`, tessellated at **64 segments to match the shell**. This is what makes the raise and the recess depth radially uniform: a flat 4 mm prism on a 15.4 mm radius would otherwise lose ~0.13 mm at its edges to the chord sagitta, which is large next to a 0.2 mm nesting margin. Sharing the segment count means band and shell tessellate identically, so their radial difference is constant across the whole arrow.
+
+`processGeometrySpec()` splits markers by `is_recess`: `is_recess === false` markers are unioned into the base (before the subtractive pass, so a recess can never be filled back in), everything else is subtracted. Visual markers all carry `is_recess: true`, and flat-card markers omit the field, so both keep their existing subtract-only behavior.
+
+### Seam Gap Check
+
+```
+seam_gap_mm = π × diameter − (total_grid_columns − 1) × cell_spacing
+required    = tactile_indicator_width + TACTILE_MIN_GAP_MARGIN
+```
+
+When `seam_gap_mm < required` the layout is **warned about, not rejected** — matching the OpenSCAD version, which renders a 3D "TACTILE GAP TOO SMALL" label:
+
+- **Backend:** the message is appended to `spec['warnings']` (a list, always present, empty in visual mode) and logged.
+- **Frontend:** `updateTactileGapWarning()` shows it live in `#tactile-gap-warning` (`role="status"`, `aria-live="polite"`), recomputed whenever the diameter, cell spacing, cell count, indicator width, or mode changes. Generation is not blocked.
+
+At defaults (30.8 mm diameter, 6.5 mm cell spacing, 4 mm indicator) the gap needs ≥ 9 mm: 14 cells leave 12.1 mm and pass; 15 cells leave 5.6 mm and warn.
+
+### Column Layout
+
+**Both plates, tactile mode:**
+```
+Columns 0 to N-1:   Braille content (no shift; reserved = 0)
+Seam gap at 180°:   One tactile indicator per row
+
+Where N = grid_columns
+Available braille columns = N
+```
+
+### Coverage
+
+- `tests/test_smoke.py` — marker columns dropped on both plates, arrow raised on positive and recessed on negative with the correct band radii, θ = π on both plates at identical row heights, gap warning, visual mode unaffected, full-width row accepted in tactile but rejected in visual, unknown `indicator_mode` rejected, defaults matching OpenSCAD, schema/model default agreement.
+- `tests/e2e/tactileIndicator.spec.ts` — payload column arithmetic and tactile parameters, 14-cell row accepted in tactile and blocked in visual, live gap warning, Expert Mode dimension visibility.
+
+---
+
 ## Differences Between Embossing Plate and Universal Counter Plate
 
 ### CRITICAL: Card Counter Plates Use ONLY Rectangles (Never Character Indicators)
@@ -781,6 +913,20 @@ When implementing or modifying indicator code, verify:
    - Triangle apexes should point toward each other
    - All features should align when plates are pressed together
 
+### Tactile Mode Tests
+
+1. **Emboss plate, `indicator_mode = tactile`**
+   - Expected: no triangles or squares; one raised arrow per row at 180°, apex toward the cylinder top; braille starting at column 0
+   - Measured on the exported STL: maximum radius at the seam is `R + 0.8`; overall maximum radius is `R + 1.0` (the dots, which must stay taller than the arrow)
+
+2. **Counter plate, `indicator_mode = tactile`**
+   - Expected: no triangles or squares; one arrow recess per row at 180°, same row heights as the emboss arrows; recesses for every cell in every column
+   - Measured on the exported STL: maximum radius equals `R` exactly — nothing protrudes
+
+3. **Verify nesting by visual inspection**
+   - Both plates' arrows sit at the same angular position and row heights, so the raised arrow enters the recess
+   - The arrow must sit lower than the braille dots
+
 ---
 
 ## Version History
@@ -790,6 +936,7 @@ When implementing or modifying indicator code, verify:
 | 2024-10-11 | 1.0 | Initial documentation during Phase 0 refactoring |
 | 2024-12-06 | 2.0 | Expanded with Manifold WASM implementation details, coordinate system documentation, common bugs |
 | 2024-12-06 | 2.1 | Changed character marker depth from 1.0mm to 0.5mm; Added Section 3.1 with detailed Manifold WASM character generation specifications including bitmap font format, pixel-to-box conversion algorithm, horizontal mirroring requirements, and coordinate system details |
+| 2026-07-29 | 3.0 | Added Section 4: Tactile Seam Indicator, ported from the OpenSCAD version. Documented `indicator_mode` (`visual` \| `tactile`), the five tactile parameters, the shell-band construction, the seam-gap warning, and tactile column layout and test cases |
 
 ---
 

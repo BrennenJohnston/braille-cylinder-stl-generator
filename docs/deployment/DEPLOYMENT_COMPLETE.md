@@ -34,7 +34,9 @@
 
 ### Vercel Dashboard
 1. Go to your Vercel dashboard
-2. Find your project: `braille-card-and-cylinder-stl-generator`
+2. Find your project: `braille-card-and-cylinder-stl-generator` (the Vercel
+   project keeps its original name so the deployed URL stays valid; the GitHub
+   repo is now `braille-cylinder-stl-generator`)
 3. Watch the deployment progress
 4. Check build logs for any issues
 

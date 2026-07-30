@@ -132,10 +132,21 @@
 
     "indicators": {
       "type": "object",
-      "description": "Row indicator markers. 'enabled' gates only the indicator letter (emboss) / square (counter) column; the triangle alignment indicators are always generated.",
+      "description": "Row indicator markers. In visual mode 'enabled' gates only the indicator letter (emboss) / square (counter) column; the triangle alignment indicators are always generated. In tactile mode there are no marker columns at all and 'enabled' is ignored.",
       "additionalProperties": false,
       "properties": {
         "enabled": { "type": "boolean", "default": true },
+        "indicator_mode": {
+          "type": "string",
+          "enum": ["visual", "tactile"],
+          "default": "visual",
+          "description": "Cylinder only. visual = recessed triangle (plus optional letter square) in marker cells at the start of each row. tactile = raised arrow on the emboss plate and a matching recess on the counter plate, centred in the seam gap at 180 degrees with the apex toward the cylinder top; removes the marker columns and ignores 'enabled'."
+        },
+        "tactile_indicator_width": { "type": "number", "minimum": 2, "maximum": 10, "default": 4.0, "description": "Tactile only: indicator width measured around the cylinder (mm)" },
+        "tactile_indicator_length": { "type": "number", "minimum": 2, "maximum": 15, "default": 5.0, "description": "Tactile only: indicator length measured along the cylinder axis (mm)" },
+        "tactile_indicator_raise": { "type": "number", "minimum": 0, "maximum": 2, "default": 0.8, "description": "Tactile only: how far the emboss plate's arrow stands proud of the surface (mm). Keep below the braille dot height so the dots carry the rolling pressure." },
+        "tactile_recess_clearance": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.2, "description": "Tactile only: outline margin added around the counter plate's recess (mm)" },
+        "tactile_recess_extra_depth": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.2, "description": "Tactile only: counter recess depth added on top of the arrow raise (mm)" },
         "type": { "type": "string", "enum": ["triangle", "rectangle", "character"] },
         "depth_mm": { "type": "number", "minimum": 0, "default": 0.6 },
         "character": { "type": "string", "minLength": 1, "maxLength": 1 },

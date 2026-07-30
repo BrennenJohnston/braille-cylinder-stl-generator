@@ -1,2 +1,8 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# The vendored OpenSCAD copy is byte-provenance-tracked: OpenSCAD/VENDORED.json
+# records a SHA-256 per file and tests/test_vendored_openscad.py checks it. Line
+# ending conversion would change those bytes, so a fresh Windows clone would
+# fail the check for no real reason. Never normalize this folder.
+OpenSCAD/** -text

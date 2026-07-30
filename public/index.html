@@ -156,7 +156,10 @@
             --btn-success-hover-bg: #02fe05; /* Green */
             --btn-secondary-bg: #ff6600;
             --btn-tertiary-bg: #ff6600;
-            --error-bg: #ff0000;
+            /* Error text is green on black (15.2:1) with a red border carrying the
+               severity. The previous green-on-red pairing measured 2.89:1, failing
+               WCAG AA in the one theme whose entire purpose is contrast. */
+            --error-bg: #000000;
             --error-border: #ff0000;
             --error-text: #02fe05; /* Green instead of white */
             --info-bg: #0000ff;
@@ -562,6 +565,36 @@
             font-style: italic;
             margin-bottom: 1em;
             text-align: center;
+        }
+
+        /* Inline warning shown beneath a control (as opposed to the overlay
+           #error-message). Uses the audited error palette rather than a fixed
+           colour so it keeps 4.5:1 contrast in light, dark, and high-contrast
+           themes — a hardcoded warm red reads at 1.8:1 on the dark surface. */
+        .inline-warning {
+            color: var(--error-text);
+            background: var(--error-bg);
+            border: 1px solid var(--error-border);
+            border-radius: 6px;
+            padding: 0.5em 0.7em;
+        }
+
+        /* High contrast errors sit on black, so the red border is the only thing
+           marking severity. Give it enough weight to read as one. */
+        [data-theme="high-contrast"] #error-message,
+        [data-theme="high-contrast"] .inline-warning {
+            border-width: 3px;
+        }
+
+        /* Same idea for the "this needs your attention" state of an inline
+           status line (e.g. the braille field reporting hand-edits). */
+        .inline-notice {
+            color: var(--info-text);
+            background: var(--info-bg);
+            border: 1px solid var(--info-border);
+            border-radius: 6px;
+            padding: 0.3em 0.6em;
+            font-weight: 600;
         }
 
         /* High contrast text styling */
@@ -2702,7 +2735,7 @@
                 </div>
 
                 <!-- GitHub Link Button -->
-                <a href="https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator"
+                <a href="https://github.com/BrennenJohnston/braille-cylinder-stl-generator"
                    class="btn btn-sm github-link"
                    target="_blank"
                    rel="noopener noreferrer"
@@ -2791,7 +2824,7 @@
                 <div class="info-panel">
                     <p><strong>What Does This Program Do?</strong></p>
                     <p>Generates custom braille embossing plates for cylinders (labels, containers) and flat cards.
-                       <a href="https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+                       <a href="https://github.com/BrennenJohnston/braille-cylinder-stl-generator" target="_blank" rel="noopener noreferrer">View on GitHub</a>
                     </p>
                     <p style="font-size: 0.9em;"><em>Note: Cylinder shapes are currently available. Flat cards are temporarily disabled.</em></p>
 
@@ -2857,15 +2890,38 @@
                                  style="margin-top: 0.6em; color: #059669; display: none;">
                                 <strong>Note:</strong> Capital letters in your text will not be translated because "Capitalized Letters" is disabled. Enable it above if you need capitals in braille.
                             </div>
-                            <!-- Repeat number sign toggle (non-standard UEB behavior, default off) -->
-                            <div class="line-input-mode-toggle" style="margin-top: 0.8em; display: flex; align-items: flex-start; gap: 0.5em; flex-wrap: wrap;">
-                                <label style="display: inline-flex; align-items: center; gap: 0.4em;" for="repeat_number_sign">
-                                    <input type="checkbox" id="repeat_number_sign" name="repeat_number_sign" aria-describedby="repeat-number-sign-note">
-                                    Repeat number sign after each period in numbers (non-standard)
+                            <!-- Number sign style (non-standard repetition available, default off) -->
+                            <div class="line-input-mode-toggle" style="margin-top: 0.8em; display: flex; align-items: flex-start; gap: 0.5em; flex-wrap: wrap;" role="radiogroup" aria-labelledby="number-sign-label">
+                                <span id="number-sign-label" class="line-label" style="margin: 0; flex-basis: 100%;">Number Signs:</span>
+                                <label style="display: inline-flex; align-items: center; gap: 0.4em;">
+                                    <input type="radio" name="repeat_number_sign" value="off" id="repeat_number_sign_off" checked aria-describedby="number-sign-off-desc">
+                                    One number sign per number <span style="font-weight: normal; opacity: 0.85;">(standard UEB)</span>
                                 </label>
+                                <label style="display: inline-flex; align-items: center; gap: 0.4em;">
+                                    <input type="radio" name="repeat_number_sign" value="on" id="repeat_number_sign_on" aria-describedby="number-sign-on-desc">
+                                    Repeat the number sign after each period <span style="font-weight: normal; opacity: 0.85;">(non-standard)</span>
+                                </label>
+                                <span id="number-sign-off-desc" class="sr-only">Standard Unified English Braille output from liblouis. A period or comma inside a number keeps numeric mode, so one number sign covers the whole number.</span>
+                                <span id="number-sign-on-desc" class="sr-only">Re-inserts a number sign after every period or comma inside a number, matching some online translators. Uses extra braille cells and is not standard Unified English Braille.</span>
                                 <div id="repeat-number-sign-note" class="grade-note" style="margin: 0; font-size: 0.85em; flex-basis: 100%;">
-                                    Standard UEB uses one number sign per number because periods and commas keep numeric mode. Turning this on matches some online translators but uses extra braille cells.
+                                    Neither option removes number signs. Under UEB a <strong>hyphen or parenthesis ends numeric mode</strong>, so <code>206-543-4779</code> correctly needs three number signs (15 cells) and will wrap to a second row — that is correct liblouis output, not a bug. Type the BANA form <code>206.543.4779</code> instead and it fits 13 cells with a single number sign. To remove cells by hand, edit the Braille (Unicode) field below.
                                 </div>
+                            </div>
+                            <!-- Editable Unicode braille field: the authoritative text when non-empty -->
+                            <div class="braille-field" style="margin-top: 1em;">
+                                <label for="braille-unicode" class="line-label">Braille (Unicode) — one line per row</label>
+                                <textarea id="braille-unicode" name="braille_unicode" rows="4" lang="und-Brai"
+                                          style="width: 100%; resize: vertical; font-size: 1.4em; line-height: 1.6;"
+                                          autocomplete="off" spellcheck="false"
+                                          aria-describedby="braille-unicode-help braille-unicode-status"></textarea>
+                                <div style="margin-top: 0.5em; display: flex; align-items: center; gap: 0.8em; flex-wrap: wrap;">
+                                    <button type="button" id="translate-to-braille-btn">Translate to Braille</button>
+                                    <span id="braille-unicode-status" class="grade-note" style="margin: 0; font-size: 0.85em;"></span>
+                                </div>
+                                <div id="braille-unicode-help" class="grade-note" style="margin-top: 0.6em; font-size: 0.85em;">
+                                    Accepts braille characters only (U+2800–U+28FF). Press <strong>Translate to Braille</strong> to fill this field from the text above, then edit any cell you want to change — or paste braille straight in and leave the text boxes empty. <strong>Whenever this field has content it is used exactly as written</strong>, so what you read here is what gets embossed. Clear it to go back to translating the text above.
+                                </div>
+                                <div id="braille-unicode-live" class="sr-only" role="status" aria-live="polite"></div>
                             </div>
                         </fieldset>
                     </div>
@@ -2931,6 +2987,32 @@
                                 </label>
                                 <span id="counter-plate-desc" class="sr-only">Creates recessed dots to support embossing process</span>
 
+                            </div>
+                        </fieldset>
+                    </div>
+
+                    <!-- Row Indicator Style (cylinder only) -->
+                    <div class="grade-selection" id="indicator-mode-selection">
+                        <fieldset>
+                            <legend class="grade-label">Row Indicator Style</legend>
+                            <div class="radio-group" role="radiogroup" aria-required="true">
+                                <label class="radio-option">
+                                    <input type="radio" name="indicator_mode" value="visual" checked aria-describedby="indicator-mode-visual-desc">
+                                    <span class="radio-text">Visual markers</span>
+                                </label>
+                                <span id="indicator-mode-visual-desc" class="sr-only">Default. A recessed triangle, plus the optional indicator letter, in marker cells at the start of every row. Uses one or two braille cells per row.</span>
+                                <label class="radio-option">
+                                    <input type="radio" name="indicator_mode" value="tactile" aria-describedby="indicator-mode-tactile-desc">
+                                    <span class="radio-text">Tactile seam arrow</span>
+                                </label>
+                                <span id="indicator-mode-tactile-desc" class="sr-only">A raised arrow on the embossing plate and a matching recess on the counter plate, centred in the gap at the cylinder seam with the point toward the top. Uses no braille cells, so every cell in the row is available for text.</span>
+                            </div>
+                            <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
+                                <strong>Tactile</strong> lets a blind user find the alignment point and tell which end is up by touch: the arrow is one continuous wedge, nothing like a braille dot, and raised-versus-recessed tells you which cylinder you are holding. It also frees the marker cells for text. Both plates of a pair must use the same style.
+                            </div>
+                            <div id="tactile-gap-warning" class="grade-note inline-warning" role="status" aria-live="polite"
+                                 style="margin-top: 0.6em; display: none;">
+                                <strong>Warning:</strong> <span id="tactile-gap-message"></span>
                             </div>
                         </fieldset>
                     </div>
@@ -3048,9 +3130,43 @@
                                             </label>
                                         </div>
                                         <div class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
-                                            When On: each row includes an indicator letter in the indicator area (with a matching square on the counter plate), so 2 cells per row are reserved. When Off: the letter and square are removed, freeing 1 extra cell per row for braille text. The triangle alignment indicators are always included.
+                                            When On: each row includes an indicator letter in the indicator area (with a matching square on the counter plate), so 2 cells per row are reserved. When Off: the letter and square are removed, freeing 1 extra cell per row for braille text. The triangle alignment indicators are always included. Ignored when Row Indicator Style is set to Tactile, which has no marker cells.
                                         </div>
                                     </fieldset>
+                                </div>
+
+                                <!-- Tactile Indicator Dimensions -->
+                                <div class="grade-selection" id="tactile-indicator-dimensions">
+                                    <label class="grade-label" style="font-size: 1.2em; font-weight: 700;">Tactile Indicator Dimensions</label>
+                                    <div class="grade-note" style="margin-bottom: 6px; font-size: 0.85em;">
+                                        Used only when Row Indicator Style is <strong>Tactile seam arrow</strong>. Defaults match the OpenSCAD version exactly.
+                                    </div>
+                                    <div>
+                                        <label for="tactile_indicator_width">Indicator width around the cylinder (mm):</label>
+                                        <input type="number" id="tactile_indicator_width" name="tactile_indicator_width" value="4.0" step="0.1" min="2" max="10" style="width: 110px;" autocomplete="off">
+                                    </div>
+                                    <div style="margin-top: 6px;">
+                                        <label for="tactile_indicator_length">Indicator length along the cylinder axis (mm):</label>
+                                        <input type="number" id="tactile_indicator_length" name="tactile_indicator_length" value="5.0" step="0.1" min="2" max="15" style="width: 110px;" autocomplete="off">
+                                    </div>
+                                    <div style="margin-top: 6px;">
+                                        <label for="tactile_indicator_raise">Arrow raise above the surface (mm):</label>
+                                        <input type="number" id="tactile_indicator_raise" name="tactile_indicator_raise" value="0.8" step="0.1" min="0" max="2" style="width: 110px;" autocomplete="off">
+                                        <div class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
+                                            Keep this below the braille dot height so the dots — not the indicator — carry the rolling pressure.
+                                        </div>
+                                    </div>
+                                    <div style="margin-top: 6px;">
+                                        <label for="tactile_recess_clearance">Counter recess outline clearance (mm):</label>
+                                        <input type="number" id="tactile_recess_clearance" name="tactile_recess_clearance" value="0.2" step="0.05" min="0" max="1" style="width: 110px;" autocomplete="off">
+                                    </div>
+                                    <div style="margin-top: 6px;">
+                                        <label for="tactile_recess_extra_depth">Counter recess extra depth (mm):</label>
+                                        <input type="number" id="tactile_recess_extra_depth" name="tactile_recess_extra_depth" value="0.2" step="0.05" min="0" max="1" style="width: 110px;" autocomplete="off">
+                                        <div class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
+                                            Raise the clearance or the extra depth if the arrow binds instead of nesting. Large values thin the wall between the recess and the polygonal cutout.
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -4215,6 +4331,7 @@
                     input.addEventListener('input', () => {
                         resetToGenerateState();
                         updateCapsWarning();
+                        onSourceTextChangedForBrailleField();
                     });
                 }
             }
@@ -4234,26 +4351,32 @@
                 const gridColumnsLabel = document.getElementById('grid_columns_label');
                 const gridColumnsNote = document.getElementById('grid_columns_note');
                 const indicatorOn = document.querySelector('input[name="indicator_shapes"]:checked')?.value === '1';
+                const tactile = isTactileIndicatorOn();
 
                 // Store current value before update
                 const currentValue = parseInt(gridColumnsInput.value);
 
-                if (plateType === 'positive') {
-                    // Embossing plate - available cells depend on indicator letters toggle
-                    gridColumnsLabel.textContent = 'Number of Available Braille Cells:';
-                    gridColumnsNote.style.display = 'block';
+                gridColumnsNote.style.display = 'block';
+                gridColumnsLabel.textContent = plateType === 'positive'
+                    ? 'Number of Available Braille Cells:'
+                    : 'Available Braille Cells for Text:';
+
+                if (tactile) {
+                    // Tactile mode has no marker cells: every column is text, and the
+                    // freed space widens the seam gap the arrow sits in. 15 leaves too
+                    // little gap on the default cylinder, so 14 is the recommendation.
+                    gridColumnsNote.textContent = 'Tactile seam arrow: no cells are reserved for markers, so every cell in the row is available for text.';
+                    gridColumnsInput.value = '14';
+                } else if (plateType === 'positive') {
                     gridColumnsNote.textContent = indicatorOn
                         ? 'For embossing plates: 2 cells per row are reserved for the indicator letter and alignment triangle.'
                         : 'Indicator letters off: 1 cell per row is reserved for the alignment triangle; the freed cell is available for text.';
                     // Always normalize the dial to the recommended default to avoid drift
                     gridColumnsInput.value = indicatorOn ? '13' : '14';
                 } else {
-                    // Counter plate - available cells depend on indicator letters toggle
-                    gridColumnsLabel.textContent = 'Available Braille Cells for Text:';
                     gridColumnsNote.textContent = indicatorOn
                         ? 'For counter plates: 2 cells per row are reserved for the indicator square and alignment triangle, leaving 13 cells available for text.'
                         : 'Indicator letters off: 1 cell per row is reserved for the alignment triangle, leaving 14 cells available for text.';
-                    gridColumnsNote.style.display = 'block';
                     // Always normalize the dial to the recommended default to avoid drift
                     gridColumnsInput.value = indicatorOn ? '13' : '14';
                 }
@@ -4658,9 +4781,9 @@
             return capsEnabled ? text : text.toLowerCase();
         }
 
-        // Whether the non-standard "repeat number sign after periods" toggle is on
+        // Whether the non-standard "repeat number sign after periods" option is selected
         function isRepeatNumberSignOn() {
-            return document.getElementById('repeat_number_sign')?.checked === true;
+            return document.querySelector('input[name="repeat_number_sign"]:checked')?.value === 'on';
         }
 
         // Non-standard post-processing: re-insert a number sign (⠼) after a period
@@ -4684,6 +4807,188 @@
                 if (!DIGITS.includes(ch)) numeric = false;
             }
             return out;
+        }
+
+        // =====================================================================
+        // EDITABLE UNICODE BRAILLE FIELD
+        // =====================================================================
+        // Whenever this field holds content it is the authoritative braille:
+        // generation uses its lines verbatim and skips liblouis entirely. That
+        // keeps the promise that what the user reads in the box is what gets
+        // embossed, and it gives braille readers the same paste-braille-directly
+        // workflow the OpenSCAD version has.
+        //
+        // Two states:
+        //   pristine - the field mirrors a translation, so editing the English
+        //              text clears it (nothing the user typed is lost).
+        //   dirty    - hand-edited. Only the Translate to Braille button may
+        //              overwrite it, and doing so is announced.
+        const BRAILLE_UNICODE_START = 0x2800;
+        const BRAILLE_UNICODE_END = 0x28FF;
+        let brailleFieldDirty = false;
+
+        function isBrailleUnicodeChar(ch) {
+            const code = ch.codePointAt(0);
+            return code >= BRAILLE_UNICODE_START && code <= BRAILLE_UNICODE_END;
+        }
+
+        function getBrailleFieldValue() {
+            return document.getElementById('braille-unicode')?.value || '';
+        }
+
+        // One entry per row, trailing spaces removed (they are invisible in the
+        // field but would count as cells downstream).
+        function getBrailleFieldLines() {
+            return getBrailleFieldValue().split('\n').map(line => line.replace(/\s+$/, ''));
+        }
+
+        function isBrailleFieldActive() {
+            return getBrailleFieldValue().trim().length > 0;
+        }
+
+        function announceBrailleField(message) {
+            const live = document.getElementById('braille-unicode-live');
+            if (live) live.textContent = message;
+        }
+
+        // `highlight` marks states the user should notice (hand-edits, errors).
+        // It uses the theme-aware .inline-notice palette rather than a fixed
+        // colour, which would fail contrast on the dark surface.
+        function setBrailleFieldStatus(message, highlight = false) {
+            const status = document.getElementById('braille-unicode-status');
+            if (!status) return;
+            status.textContent = message;
+            status.classList.toggle('inline-notice', highlight && message !== '');
+        }
+
+        // Returns an error string for the first problem found, or null when the
+        // field is safe to emboss. Checked before generation so a bad paste can
+        // never reach the geometry pipeline.
+        function validateBrailleFieldLines(lines, availableColumns, availableRows) {
+            const filled = [];
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                for (const ch of line) {
+                    if (ch === ' ') continue;
+                    if (!isBrailleUnicodeChar(ch)) {
+                        return `Line ${i + 1} of the Braille (Unicode) field contains "${ch}", which is not a braille character. ` +
+                               'Only braille characters (U+2800–U+28FF) and spaces are allowed. ' +
+                               'Use Translate to Braille, or paste Unicode braille rather than plain text.';
+                    }
+                }
+                const cells = line.trim().length;
+                if (cells > availableColumns) {
+                    return `Line ${i + 1} of the Braille (Unicode) field is ${cells} cells; the maximum is ${availableColumns}. ` +
+                           'Delete cells, move them to another row, or raise the number of available braille cells in Expert Mode.';
+                }
+                if (cells > 0) filled.push(i + 1);
+            }
+            if (filled.length === 0) {
+                return 'The Braille (Unicode) field has no braille cells. Enter braille, or clear the field to translate the text above instead.';
+            }
+            if (lines.length > availableRows) {
+                return `The Braille (Unicode) field has ${lines.length} lines but only ${availableRows} rows are available. ` +
+                       'Remove lines, or raise the number of braille lines in Expert Mode.';
+            }
+            return null;
+        }
+
+        // Runs the same pipeline generation uses (capitalization -> liblouis ->
+        // BANA wrapping in auto mode) and writes the result into the field, one
+        // row per line.
+        async function translateIntoBrailleField() {
+            const tableName = document.getElementById('language-table')?.value || 'en-ueb-g1.ctb';
+            const placementMode = document.querySelector('input[name="placement_mode"]:checked')?.value || 'manual';
+            const rows = parseInt(document.getElementById('grid_rows').value) || 4;
+
+            if (placementMode === 'auto') {
+                const src = (document.getElementById('auto-text')?.value || '').trim();
+                if (!src) return { error: 'Enter text in the Auto Placement box first, then press Translate to Braille.' };
+                const wrap = await banaAutoWrap(src, getAvailableColumns(), rows, tableName);
+                if (wrap.error) {
+                    return { error: (wrap.warnings && wrap.warnings.length) ? wrap.warnings.join(' ') : 'Unable to wrap text per BANA rules.' };
+                }
+                return { lines: wrap.brailleLines, warnings: wrap.warnings || [] };
+            }
+
+            const sourceLines = getDynamicLineValues();
+            if (!sourceLines.some(line => line && line.trim())) {
+                return { error: 'Enter text in at least one line above, then press Translate to Braille.' };
+            }
+            const brailleLines = [];
+            for (let i = 0; i < sourceLines.length; i++) {
+                const line = (sourceLines[i] || '').trim();
+                if (!line) { brailleLines.push(''); continue; }
+                const perLineTable = document.getElementById(`line_lang_${i + 1}`)?.value || tableName;
+                brailleLines.push(await translateWithLiblouis(applyCapitalizationSetting(line), 'g2', perLineTable));
+            }
+            return { lines: brailleLines, warnings: [] };
+        }
+
+        // Drop trailing empty rows so the field shows only the rows in use.
+        function trimTrailingEmptyLines(lines) {
+            const out = [...lines];
+            while (out.length > 0 && !out[out.length - 1].trim()) out.pop();
+            return out;
+        }
+
+        function wireBrailleField() {
+            const field = document.getElementById('braille-unicode');
+            const button = document.getElementById('translate-to-braille-btn');
+            if (!field || !button) return;
+
+            field.addEventListener('input', () => {
+                const wasDirty = brailleFieldDirty;
+                brailleFieldDirty = true;
+                resetToGenerateState();
+                if (isBrailleFieldActive()) {
+                    setBrailleFieldStatus('Edited — will be used as-is', true);
+                    if (!wasDirty) announceBrailleField('Braille field edited. It will be used exactly as written.');
+                } else {
+                    brailleFieldDirty = false;
+                    setBrailleFieldStatus('Empty — the text above will be translated');
+                    announceBrailleField('Braille field cleared. The text above will be translated instead.');
+                }
+            });
+
+            button.addEventListener('click', async () => {
+                const originalLabel = button.textContent;
+                button.disabled = true;
+                button.textContent = 'Translating…';
+                try {
+                    const result = await translateIntoBrailleField();
+                    if (result.error) {
+                        setBrailleFieldStatus(result.error, true);
+                        announceBrailleField(result.error);
+                        return;
+                    }
+                    field.value = trimTrailingEmptyLines(result.lines).join('\n');
+                    brailleFieldDirty = false;
+                    const note = result.warnings.length ? ` ${result.warnings.join(' ')}` : '';
+                    setBrailleFieldStatus(`Filled from translation — edit any cell you want to change.${note}`);
+                    announceBrailleField('Braille field updated from translation.');
+                    resetToGenerateState();
+                } catch (error) {
+                    log.error('Translate to Braille failed:', error);
+                    const message = `Translation failed: ${error.message || error}`;
+                    setBrailleFieldStatus(message, true);
+                    announceBrailleField(message);
+                } finally {
+                    button.disabled = false;
+                    button.textContent = originalLabel;
+                }
+            });
+        }
+
+        // Called when the English inputs change. A pristine field only mirrors a
+        // translation, so it is cleared rather than left silently stale; a dirty
+        // field is never touched.
+        function onSourceTextChangedForBrailleField() {
+            if (brailleFieldDirty || !isBrailleFieldActive()) return;
+            const field = document.getElementById('braille-unicode');
+            if (field) field.value = '';
+            setBrailleFieldStatus('Cleared because the text changed — press Translate to Braille to refresh');
+            announceBrailleField('Braille field cleared because the text changed. Press Translate to Braille to refresh it.');
         }
 
         // Update the capitalization warning visibility based on toggle state and input content
@@ -4725,10 +5030,74 @@
             return document.querySelector('input[name="indicator_shapes"]:checked')?.value === '1';
         }
 
+        // Clear zone required either side of the tactile indicator, on top of its own
+        // width, before the seam gap counts as too tight (2 mm dot zone per
+        // neighbouring cell plus 1 mm of margin). Mirrors TACTILE_MIN_GAP_MARGIN in
+        // app/geometry_spec.py and the OpenSCAD version.
+        const TACTILE_MIN_GAP_MARGIN_MM = 5.0;
+
+        // Row Indicator Style: tactile puts one arrow per row in the seam gap
+        // instead of markers in the first cells of the row.
+        function isTactileIndicatorOn() {
+            return document.querySelector('input[name="indicator_mode"]:checked')?.value === 'tactile';
+        }
+
+        // Leading grid columns consumed by row markers. The braille cell dial shows
+        // text cells only, so this is what gets added on top of it for the backend.
+        function getReservedMarkerColumns() {
+            if (isTactileIndicatorOn()) return 0;
+            return isIndicatorsOn() ? 2 : 1;
+        }
+
         function getAvailableColumns() {
             const gridColumnsValue = parseInt(document.getElementById('grid_columns').value) || 11;
             // The UI dial shows usable text cells; use it directly for wrapping
             return gridColumnsValue;
+        }
+
+        // Show the Row Indicator Style control only for cylinders (the tactile arrow
+        // has no meaning on a flat card) and reveal its dimensions only when chosen.
+        function updateIndicatorModeUI() {
+            const shapeType = document.querySelector('input[name="shape_type"]:checked')?.value || 'cylinder';
+            const container = document.getElementById('indicator-mode-selection');
+            if (container) container.style.display = shapeType === 'cylinder' ? '' : 'none';
+
+            const dimensions = document.getElementById('tactile-indicator-dimensions');
+            if (dimensions) dimensions.style.display = isTactileIndicatorOn() ? '' : 'none';
+
+            updateTactileGapWarning();
+        }
+
+        // The tactile arrow sits in the arc between the last and first cell of a row,
+        // measured the long way round through the seam. Warn when that gap can no
+        // longer hold the arrow plus a clear zone either side of it. Mirrors the
+        // OpenSCAD TACTILE_MIN_GAP_MARGIN check; generation is not blocked.
+        function updateTactileGapWarning() {
+            const warningDiv = document.getElementById('tactile-gap-warning');
+            const warningMsg = document.getElementById('tactile-gap-message');
+            if (!warningDiv || !warningMsg) return;
+
+            const shapeType = document.querySelector('input[name="shape_type"]:checked')?.value || 'cylinder';
+            if (!isTactileIndicatorOn() || shapeType !== 'cylinder') {
+                warningDiv.style.display = 'none';
+                return;
+            }
+
+            const diameter = parseFloat(document.getElementById('cylinder_diameter_mm')?.value) || 30.75;
+            const cellSpacing = parseFloat(document.getElementById('cell_spacing')?.value) || 6.5;
+            const totalColumns = getAvailableColumns() + getReservedMarkerColumns();
+            const indicatorWidth = parseFloat(document.getElementById('tactile_indicator_width')?.value) || 4.0;
+            const seamGap = Math.PI * diameter - (totalColumns - 1) * cellSpacing;
+            const required = indicatorWidth + TACTILE_MIN_GAP_MARGIN_MM;
+
+            if (seamGap < required) {
+                warningMsg.textContent = `The tactile indicator needs a seam gap of at least ${required.toFixed(1)} mm, ` +
+                    `but this layout leaves ${seamGap.toFixed(1)} mm. Reduce the number of braille cells, ` +
+                    'increase the cylinder diameter, or narrow the indicator in Expert Mode.';
+                warningDiv.style.display = 'block';
+            } else {
+                warningDiv.style.display = 'none';
+            }
         }
 
         function getTotalCellsAvailable() {
@@ -4928,17 +5297,41 @@
         }));
 
         // Update UI on relevant changes to show/compute warnings
-        ['grid_rows','grid_columns','cell_spacing','line_spacing','cylinder_diameter_mm','cylinder_height_mm','indicator_shapes']
+        ['grid_rows','grid_columns','cell_spacing','line_spacing','cylinder_diameter_mm','cylinder_height_mm','indicator_shapes','tactile_indicator_width']
             .forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
                     el.addEventListener('input', () => {
+                        updateTactileGapWarning();
                         if (document.querySelector('input[name="placement_mode"]:checked')?.value === 'auto') {
                             computeAutoOverflow();
                         }
                     });
                 }
             });
+
+        // Row Indicator Style changes the number of marker columns, so it changes
+        // text capacity, wrapping, and the seam gap the arrow needs.
+        document.querySelectorAll('input[name="indicator_mode"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                persistValue('braille_prefs_indicator_mode', document.querySelector('input[name="indicator_mode"]:checked').value);
+                resetToGenerateState();
+                // Column count first: the gap warning depends on the normalized dial
+                if (typeof window.updateGridColumnsForPlateType === 'function') {
+                    window.updateGridColumnsForPlateType();
+                }
+                updateIndicatorModeUI();
+                if (document.querySelector('input[name="placement_mode"]:checked')?.value === 'auto') {
+                    computeAutoOverflow();
+                }
+            });
+        });
+
+        document.querySelectorAll('input[name="shape_type"]').forEach(radio => {
+            radio.addEventListener('change', updateIndicatorModeUI);
+        });
+
+        updateIndicatorModeUI();
 
         async function computeAutoOverflow() {
             autoWarning.style.display = 'none';
@@ -4966,8 +5359,11 @@
                 resetToGenerateState();
                 computeAutoOverflow();
                 updateCapsWarning();
+                onSourceTextChangedForBrailleField();
             });
         }
+
+        wireBrailleField();
 
         // Initialize placement UI
         updatePlacementUI();
@@ -4988,6 +5384,12 @@
                 'braille_prefs_combined_shape',
                 'braille_prefs_placement_mode',
                 'braille_prefs_indicator_shapes',
+                'braille_prefs_indicator_mode',
+                'braille_prefs_tactile_indicator_width',
+                'braille_prefs_tactile_indicator_length',
+                'braille_prefs_tactile_indicator_raise',
+                'braille_prefs_tactile_recess_clearance',
+                'braille_prefs_tactile_recess_extra_depth',
                 'braille_prefs_capitalize_letters',
                 'braille_prefs_repeat_number_sign',
                 'braille_prefs_expert_visible',
@@ -5044,17 +5446,26 @@
                 const radio = document.querySelector(`input[name="indicator_shapes"][value="${savedIndicator}"]`);
                 if (radio) radio.checked = true;
             }
+            // Row Indicator Style (visual/tactile)
+            const savedIndicatorMode = readPersisted('braille_prefs_indicator_mode');
+            if (savedIndicatorMode === 'visual' || savedIndicatorMode === 'tactile') {
+                const radio = document.querySelector(`input[name="indicator_mode"][value="${savedIndicatorMode}"]`);
+                if (radio) radio.checked = true;
+            }
             // Capitalized Letters setting
             const savedCaps = readPersisted('braille_prefs_capitalize_letters');
             if (savedCaps === 'enabled' || savedCaps === 'disabled') {
                 const radio = document.querySelector(`input[name="capitalize_letters"][value="${savedCaps}"]`);
                 if (radio) radio.checked = true;
             }
-            // Repeat number sign toggle (default off)
+            // Number sign style (default off = standard UEB). The stored '1'/'0'
+            // values predate the radio group and are kept so existing preferences
+            // still restore.
             const savedRepeatNumSign = readPersisted('braille_prefs_repeat_number_sign');
             if (savedRepeatNumSign === '1' || savedRepeatNumSign === '0') {
-                const checkbox = document.getElementById('repeat_number_sign');
-                if (checkbox) checkbox.checked = savedRepeatNumSign === '1';
+                const value = savedRepeatNumSign === '1' ? 'on' : 'off';
+                const radio = document.querySelector(`input[name="repeat_number_sign"][value="${value}"]`);
+                if (radio) radio.checked = true;
             }
             // Shape type
             const savedShape = readPersisted('braille_prefs_shape_type');
@@ -5131,7 +5542,12 @@
                 ['cylinder_height_mm','braille_prefs_cylinder_height_mm'],
                 ['cylinder_polygonal_cutout_radius_mm','braille_prefs_cylinder_polygonal_cutout_radius_mm'],
                 ['cylinder_polygonal_cutout_sides','braille_prefs_cylinder_polygonal_cutout_sides'],
-                ['seam_offset_deg','braille_prefs_seam_offset_deg']
+                ['seam_offset_deg','braille_prefs_seam_offset_deg'],
+                ['tactile_indicator_width','braille_prefs_tactile_indicator_width'],
+                ['tactile_indicator_length','braille_prefs_tactile_indicator_length'],
+                ['tactile_indicator_raise','braille_prefs_tactile_indicator_raise'],
+                ['tactile_recess_clearance','braille_prefs_tactile_recess_clearance'],
+                ['tactile_recess_extra_depth','braille_prefs_tactile_recess_extra_depth']
             ];
             map.forEach(([id,key]) => {
                 const v = readPersisted(key);
@@ -5151,6 +5567,7 @@
             // grid_columns handled last to avoid preserve conversion
             const savedCols = readPersisted('braille_prefs_grid_columns');
             updateShapeSettings();
+            updateIndicatorModeUI();
             updateGridColumnsForPlateType(true);
             if (savedCols !== null && savedCols !== undefined) {
                 const gridColsEl = document.getElementById('grid_columns');
@@ -5186,18 +5603,17 @@
                     }
                 });
             });
-            // Repeat number sign toggle
-            const repeatNumSignCheckbox = document.getElementById('repeat_number_sign');
-            if (repeatNumSignCheckbox) {
-                repeatNumSignCheckbox.addEventListener('change', () => {
-                    persistValue('braille_prefs_repeat_number_sign', repeatNumSignCheckbox.checked ? '1' : '0');
+            // Number sign style
+            document.querySelectorAll('input[name="repeat_number_sign"]').forEach(radio => {
+                radio.addEventListener('change', () => {
+                    persistValue('braille_prefs_repeat_number_sign', isRepeatNumberSignOn() ? '1' : '0');
                     resetToGenerateState();
                     // Extra number signs change cell counts; recalc overflow in auto mode
                     if (document.querySelector('input[name="placement_mode"]:checked')?.value === 'auto') {
                         computeAutoOverflow();
                     }
                 });
-            }
+            });
             // Shape type
             document.querySelectorAll('input[name="shape_type"]').forEach(r => {
                 r.addEventListener('change', () => persistValue('braille_prefs_shape_type', document.querySelector('input[name="shape_type"]:checked').value));
@@ -5253,7 +5669,12 @@
                 ['cylinder_height_mm','braille_prefs_cylinder_height_mm'],
                 ['cylinder_polygonal_cutout_radius_mm','braille_prefs_cylinder_polygonal_cutout_radius_mm'],
                 ['cylinder_polygonal_cutout_sides','braille_prefs_cylinder_polygonal_cutout_sides'],
-                ['seam_offset_deg','braille_prefs_seam_offset_deg']
+                ['seam_offset_deg','braille_prefs_seam_offset_deg'],
+                ['tactile_indicator_width','braille_prefs_tactile_indicator_width'],
+                ['tactile_indicator_length','braille_prefs_tactile_indicator_length'],
+                ['tactile_indicator_raise','braille_prefs_tactile_indicator_raise'],
+                ['tactile_recess_clearance','braille_prefs_tactile_recess_clearance'],
+                ['tactile_recess_extra_depth','braille_prefs_tactile_recess_extra_depth']
             ];
             map.forEach(([id,key]) => {
                 const el = document.getElementById(id);
@@ -5319,6 +5740,7 @@
                 expertToggleBtn.classList.remove('active');
                 updateShapeSettings();
                 updateGridColumnsForPlateType();
+                updateIndicatorModeUI();
                 checkCylinderOverflow();
                 resetToGenerateState();
 
@@ -6208,11 +6630,41 @@
             const languageSelect = document.getElementById('language-table');
             const tableName = languageSelect?.value || 'en-ueb-g1.ctb';
 
+            // The Braille (Unicode) field wins whenever it has content: its lines
+            // are embossed exactly as written, with no liblouis pass.
+            const useBrailleField = isBrailleFieldActive();
+
             // Translate text to braille only for positive plates
             let translatedLines = [];
             let perLineLanguageTables = [];
             let translationErrors = [];
-            if (plateType === 'positive') {
+            if (plateType === 'positive' && useBrailleField) {
+                const brailleLines = getBrailleFieldLines();
+                const availableRows = parseInt(document.getElementById('grid_rows').value) || 4;
+                const validationError = validateBrailleFieldLines(brailleLines, getAvailableColumns(), availableRows);
+                if (validationError) {
+                    errorText.textContent = validationError;
+                    errorDiv.style.display = 'flex';
+                    errorDiv.className = 'error-message';
+                    resetToGenerateState();
+                    return;
+                }
+                translatedLines = brailleLines;
+                perLineLanguageTables = new Array(brailleLines.length).fill(tableName);
+                // Receipt parity with the translated path (PR-10), so an incorrect
+                // braille report can be traced even when liblouis was bypassed.
+                log.debug('Translation receipt:', JSON.stringify({
+                    timestamp: new Date().toISOString(),
+                    source: 'braille-unicode-field',
+                    edited: brailleFieldDirty,
+                    brailleLines: translatedLines,
+                    settings: {
+                        grid_columns: parseInt(document.getElementById('grid_columns').value),
+                        grid_rows: parseInt(document.getElementById('grid_rows').value),
+                        shape_type: document.querySelector('input[name="shape_type"]:checked')?.value || 'card',
+                    },
+                }, null, 2));
+            } else if (plateType === 'positive') {
                 if (placementMode === 'manual') {
                     // Per-line translation
                     perLineLanguageTables = new Array(lines.length).fill(tableName);
@@ -6381,10 +6833,9 @@
             const settings = {
                 // The dial shows usable text cells. Add the marker columns on top:
                 // +2 when indicator letters are ON (letter + triangle), +1 when OFF
-                // (the alignment triangle column is always present).
-                grid_columns: (document.querySelector('input[name="indicator_shapes"]:checked')?.value === '1')
-                    ? String(parseInt(document.getElementById('grid_columns').value) + 2)
-                    : String(parseInt(document.getElementById('grid_columns').value) + 1),
+                // (the alignment triangle column is always present), +0 in tactile
+                // mode (the indicator lives in the seam gap, not in a cell).
+                grid_columns: String(parseInt(document.getElementById('grid_columns').value) + getReservedMarkerColumns()),
                 grid_rows: document.getElementById('grid_rows').value,
                 cell_spacing: document.getElementById('cell_spacing').value,
                 line_spacing: document.getElementById('line_spacing').value,
@@ -6429,7 +6880,14 @@
                 rounded_dot_dome_diameter: document.getElementById('rounded_dot_dome_diameter')?.value || '1.5',
                 rounded_dot_dome_height: document.getElementById('rounded_dot_dome_height')?.value || '0.6',
                 // New: indicator shapes toggle
-                indicator_shapes: (document.querySelector('input[name="indicator_shapes"]:checked')?.value === '1') ? 1 : 0
+                indicator_shapes: (document.querySelector('input[name="indicator_shapes"]:checked')?.value === '1') ? 1 : 0,
+                // Row Indicator Style and the tactile arrow dimensions (cylinder only)
+                indicator_mode: isTactileIndicatorOn() ? 'tactile' : 'visual',
+                tactile_indicator_width: document.getElementById('tactile_indicator_width')?.value || '4.0',
+                tactile_indicator_length: document.getElementById('tactile_indicator_length')?.value || '5.0',
+                tactile_indicator_raise: document.getElementById('tactile_indicator_raise')?.value || '0.8',
+                tactile_recess_clearance: document.getElementById('tactile_recess_clearance')?.value || '0.2',
+                tactile_recess_extra_depth: document.getElementById('tactile_recess_extra_depth')?.value || '0.2'
             };
 
             // Debug: Log the settings being sent
@@ -6444,10 +6902,11 @@
             log.debug('Shape values - combined:', currentCombinedShape, 'dot_shape:', currentDotShape, 'recess_shape:', currentRecessShape, 'use_rounded_dots:', settings.use_rounded_dots);
             // Rounded-dome inputs are always visible for embossing plate; no dynamic toggle
 
-            // Check if at least one line has content (only for positive plates)
+            // Check if at least one line has content (only for positive plates).
+            // The braille field supplies its own content and was already validated.
             const hasContent = placementMode === 'manual' ? lines.some(l => l && l.trim()) : ((originalLines[0] || '').trim().length > 0);
-            if (plateType === 'positive' && !hasContent) {
-                errorText.textContent = 'Please enter text in at least one line.';
+            if (plateType === 'positive' && !useBrailleField && !hasContent) {
+                errorText.textContent = 'Please enter text in at least one line, or paste braille into the Braille (Unicode) field.';
                 errorDiv.style.display = 'flex';
                 return;
             }
@@ -6561,9 +7020,13 @@
             log.debug('Shape Type:', shapeType);
             log.debug('Cylinder Params:', cylinderParams);
 
-            // Build original_lines for indicators
+            // Build original_lines for indicators. Braille pasted straight into the
+            // field has no English source to derive an indicator letter from, so we
+            // send null and the backend falls back to the square placeholder.
             let originalForIndicators = null;
-            if (placementMode === 'manual') {
+            if (useBrailleField) {
+                originalForIndicators = null;
+            } else if (placementMode === 'manual') {
                 originalForIndicators = lines;
             } else {
                 const srcAuto = (document.getElementById('auto-text')?.value || '').trim();
@@ -7747,7 +8210,7 @@
                             <tbody>
                                 <tr><td><strong>Placement Mode</strong></td><td>Auto Placement (handles wrapping)</td></tr>
                                 <tr><td><strong>Capitalized Letters</strong></td><td>Disabled (default) — saves space</td></tr>
-                                <tr><td><strong>Repeat number sign</strong></td><td>Off (default) — standard UEB uses one number sign per number; turn on only to match non-standard online translators</td></tr>
+                                <tr><td><strong>Number Signs</strong></td><td>One number sign per number (default) — standard UEB; choose the repeating option only to match non-standard online translators</td></tr>
                                 <tr><td><strong>Language</strong></td><td>English (UEB) uncontracted — clearest for names/contact info</td></tr>
                             </tbody>
                         </table>
@@ -7775,7 +8238,8 @@
                         </blockquote>
                         <p><strong>In this app:</strong> type <code>123.456.7890</code> (no parentheses, periods between groups). The numeric indicator is added by the translator.</p>
                         <p><strong>Why only one number sign?</strong> In Unified English Braille, a period (or comma) inside a number keeps "numeric mode" active, so the digits after it do not need another number sign (<code lang="und-Brai">⠼</code>). For example, <code>206.616.7678</code> translates to <code lang="und-Brai">⠼⠃⠚⠋⠲⠋⠁⠋⠲⠛⠋⠛⠓</code> — exactly 13 braille cells, which fits a default row. This is correct UEB, matching BANA's guidance above. The Computer shorthand in the translation preview reflects this: digits after each period stay digits (<code>2 0 6 . 6 1 6 . 7 6 7 8</code>).</p>
-                        <p><strong>Some online translators repeat the number sign</strong> after each period. That output is non-standard and uses extra braille cells. If you need to match it, enable the <strong>"Repeat number sign after each period in numbers (non-standard)"</strong> checkbox under the text input area — but be aware the longer result may no longer fit on one row.</p>
+                        <p><strong>Why hyphens and parentheses give you three number signs.</strong> UEB numeric mode survives a period or comma, but a <strong>hyphen or parenthesis terminates it</strong>, so the digits after each one need a fresh number sign. <code>206-543-4779</code> therefore translates to <code lang="und-Brai">⠼⠃⠚⠋⠤⠼⠑⠙⠉⠤⠼⠙⠛⠛⠊</code> — 15 cells with three <code lang="und-Brai">⠼</code>, which will not fit a 13-cell row and wraps to a second line. That is <em>correct</em> UEB from liblouis, not a bug, and no setting in this app removes those signs. Retype the number in BANA's period form (<code>206.543.4779</code>) and it becomes 13 cells with one number sign. If you must keep the hyphens and still fit one row, translate first and then delete the extra cells by hand in the <strong>Braille (Unicode)</strong> field under the text inputs — that field is used exactly as you leave it.</p>
+                        <p><strong>Some online translators repeat the number sign</strong> after each period as well. That output is non-standard and uses extra braille cells. If you need to match it, choose <strong>"Repeat the number sign after each period (non-standard)"</strong> under <strong>Number Signs</strong> in the text input area — but be aware the longer result may no longer fit on one row.</p>
                         <p><strong>Splitting a long number across two rows:</strong> if a phone number will not fit on one row, divide it after a period, and begin the next row with a new number sign (<code lang="und-Brai">⠼</code>) — the translator adds it automatically when the row starts with digits. For example, <code>206.616.</code> on one row and <code>7678</code> on the next produces <code lang="und-Brai">⠼⠃⠚⠋⠲⠋⠁⠋⠲</code> then <code lang="und-Brai">⠼⠛⠋⠛⠓</code>, following the same pattern as BANA's worked examples.</p>
 
                         <h4>E-mail Addresses (BANA, verbatim)</h4>
@@ -7946,9 +8410,9 @@ f 505.312.4225</pre>
                             <p><strong>Result:</strong> 2 rows on a 75mm cylinder (~13 cells per row). Initials save space.</p>
                         </div>
 
-                        <p><a href="https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator/blob/main/docs/guides/BUSINESS_CARD_TRANSLATION_GUIDE.md#worked-examples--grade-1-what-to-type-hints" target="_blank" rel="noopener noreferrer">See Grade 1 "what to type" hints for all nine BANA examples in the full guide →</a></p>
+                        <p><a href="https://github.com/BrennenJohnston/braille-cylinder-stl-generator/blob/main/docs/guides/BUSINESS_CARD_TRANSLATION_GUIDE.md#worked-examples--grade-1-what-to-type-hints" target="_blank" rel="noopener noreferrer">See Grade 1 "what to type" hints for all nine BANA examples in the full guide →</a></p>
                         <p><a href="https://www.brailleauthority.org/sites/default/files/2024-10/Business%20Cards%20Fact%20Sheet.pdf" target="_blank" rel="noopener noreferrer">See BANA's original Grade 2 worked examples in the Fact Sheet (PDF) →</a></p>
-                        <p><a href="https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator/blob/main/docs/guides/CYLINDER_GUIDE.md#worked-examples" target="_blank" rel="noopener noreferrer">See more cylinder examples in the full guide →</a></p>
+                        <p><a href="https://github.com/BrennenJohnston/braille-cylinder-stl-generator/blob/main/docs/guides/CYLINDER_GUIDE.md#worked-examples" target="_blank" rel="noopener noreferrer">See more cylinder examples in the full guide →</a></p>
 
                         <div class="help-tab-sources">
                             <p><small><strong>Sources:</strong> Business card examples take the content decisions from the <a href="https://www.brailleauthority.org/sites/default/files/2024-10/Business%20Cards%20Fact%20Sheet.pdf" target="_blank" rel="noopener noreferrer">BANA <em>Business Cards Fact Sheet</em></a> (approved March 2024) and translate them into Grade 1 input for this app; BANA's published examples are Grade 2 and live in the PDF. Cylinder examples are based on <a href="https://www.brailleauthority.org/size-and-spacing-braille-characters" target="_blank" rel="noopener noreferrer">BANA <em>Size and Spacing of Braille Characters</em></a>.</small></p>
@@ -7970,10 +8434,10 @@ f 505.312.4225</pre>
 
                         <h4>This Application</h4>
                         <ul>
-                            <li><a href="https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator" target="_blank" rel="noopener noreferrer">GitHub Repository</a></li>
-                            <li><a href="https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator/blob/main/docs/guides/CYLINDER_GUIDE.md" target="_blank" rel="noopener noreferrer">Full Cylinder Guide</a></li>
-                            <li><a href="https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator/blob/main/docs/guides/BUSINESS_CARD_TRANSLATION_GUIDE.md" target="_blank" rel="noopener noreferrer">Full Business Card Translation Guide</a></li>
-                            <li><a href="https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator/blob/main/README.md" target="_blank" rel="noopener noreferrer">Project Documentation</a></li>
+                            <li><a href="https://github.com/BrennenJohnston/braille-cylinder-stl-generator" target="_blank" rel="noopener noreferrer">GitHub Repository</a></li>
+                            <li><a href="https://github.com/BrennenJohnston/braille-cylinder-stl-generator/blob/main/docs/guides/CYLINDER_GUIDE.md" target="_blank" rel="noopener noreferrer">Full Cylinder Guide</a></li>
+                            <li><a href="https://github.com/BrennenJohnston/braille-cylinder-stl-generator/blob/main/docs/guides/BUSINESS_CARD_TRANSLATION_GUIDE.md" target="_blank" rel="noopener noreferrer">Full Business Card Translation Guide</a></li>
+                            <li><a href="https://github.com/BrennenJohnston/braille-cylinder-stl-generator/blob/main/README.md" target="_blank" rel="noopener noreferrer">Project Documentation</a></li>
                         </ul>
 
                         <h4>For Complex Cases</h4>

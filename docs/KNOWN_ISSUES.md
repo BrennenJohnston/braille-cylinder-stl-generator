@@ -1,6 +1,22 @@
 # Known Issues
 
-No major issues are currently tracked.
+## Flat business card plates are parked
+
+Flat card generation is disabled in the UI (since December 2025) and will not be
+re-enabled in this repo. The card geometry code, specs, and the BANA formatting
+guide are all still present, but the feature is parked, not in progress.
+
+Why: the flat-card path depended on the Vercel Blob storage flow that v2.0.0
+removed, and the emboss/counter card pair is a different enough tool from the
+cylinder that it deserves its own repo rather than a second mode here. This
+repo is now the **cylinder** generator, and its name says so.
+
+Where card work continues instead:
+
+- [braille-wedge-card-openscad](https://github.com/BrennenJohnston/braille-wedge-card-openscad)
+  — directly readable braille cards, printed leaning at 75°. Shipping today.
+- A flat emboss/counter card plate tool may return as its own repo. Nothing is
+  scheduled.
 
 ## Resolved (historical)
 
@@ -14,4 +30,4 @@ These issues existed in v1.x and were resolved by removing the systems entirely 
 
 ## Reporting issues
 
-Check [GitHub Issues](https://github.com/BrennenJohnston/braille-card-and-cylinder-stl-generator/issues) first, then open a new issue with steps to reproduce, browser/OS info, and any console errors.
+Check [GitHub Issues](https://github.com/BrennenJohnston/braille-cylinder-stl-generator/issues) first, then open a new issue with steps to reproduce, browser/OS info, and any console errors.

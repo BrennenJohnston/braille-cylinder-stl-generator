@@ -58,6 +58,15 @@ The text input and language selection controls are located at the top of the mai
 │  │  │ [Auto Placement Text Input or Manual Line Inputs]   │   │  │
 │  │  └─────────────────────────────────────────────────────┘   │  │
 │  │                                                             │  │
+│  │  Capitalized Letters: ( ) Enabled  (•) Disabled             │  │
+│  │  Number Signs: (•) One per number  ( ) Repeat after period   │  │
+│  │                                                             │  │
+│  │  Braille (Unicode) — one line per row                       │  │
+│  │  ┌─────────────────────────────────────────────────────┐   │  │
+│  │  │ ⠼⠃⠚⠋⠲⠑⠙⠉⠲⠙⠛⠛⠊                                    │   │  │
+│  │  └─────────────────────────────────────────────────────┘   │  │
+│  │  [Translate to Braille]  Edited — will be used as-is        │  │
+│  │                                                             │  │
 │  └─────────────────────────────────────────────────────────────┘  │
 │                                                                   │
 │  ┌─ Select Language: ─────────────────────────────────────────┐  │
@@ -65,8 +74,16 @@ The text input and language selection controls are located at the top of the mai
 │  │  Default: English (UEB)...aligned with BANA guidance...    │  │
 │  └─────────────────────────────────────────────────────────────┘  │
 │                                                                   │
+│  ┌─ Card Thickness ───────────────────────────────────────────┐  │
+│  │  (•) 0.4mm    ( ) 0.3mm    ( ) Custom                      │  │
+│  └─────────────────────────────────────────────────────────────┘  │
+│                                                                   │
 │  ┌─ Select Plate to Generate ─────────────────────────────────┐  │
 │  │  (•) Embossing Plate    ( ) Universal Counter Plate        │  │
+│  └─────────────────────────────────────────────────────────────┘  │
+│                                                                   │
+│  ┌─ Row Indicator Style ──────────────────────── (cylinder) ──┐  │
+│  │  (•) Visual markers    ( ) Tactile seam arrow              │  │
 │  └─────────────────────────────────────────────────────────────┘  │
 │                                                                   │
 └──────────────────────────────────────────────────────────────────┘
@@ -78,13 +95,23 @@ The text input and language selection controls are located at the top of the mai
    - Informational note about contracted braille
    - Placement Mode toggle (radio buttons)
    - Text input area (dynamic based on mode)
+   - Capitalized Letters radio group (§6.1)
+   - Number Signs radio group (§6.2)
+   - Braille (Unicode) field with its Translate to Braille button (§6.3)
 
 2. **Select Language** (fieldset with legend)
    - Master language dropdown
    - Help text explaining default choice
 
-3. **Select Plate to Generate** (fieldset with legend)
+3. **Card Thickness** (fieldset with legend)
+   - 0.4mm / 0.3mm / Custom preset radio buttons
+
+4. **Select Plate to Generate** (fieldset with legend)
    - Embossing Plate / Counter Plate radio buttons
+
+5. **Row Indicator Style** (fieldset with legend, cylinder only)
+   - Visual markers / Tactile seam arrow radio buttons
+   - See `RECESS_INDICATOR_SPECIFICATIONS.md` §4
 
 ---
 
@@ -717,32 +744,59 @@ if (savedCaps === 'enabled' || savedCaps === 'disabled') {
 
 ---
 
-## 6.2. Repeat Number Sign Toggle
+## 6.2. Number Signs Radio Group
 
 ### Purpose
 
-The **Repeat number sign after each period in numbers** toggle lets users force a number sign (`⠼`) to be re-inserted after every period or comma inside a number. This is **non-standard** behavior: it exists only to match the output of some online translators.
+The **Number Signs** radio group selects between standard UEB output and a **non-standard** variant that re-inserts a number sign (`⠼`) after every period or comma inside a number. The non-standard option exists only to match the output of some online translators.
+
+Options (`name="repeat_number_sign"`):
+
+| Value | Label | Behavior |
+|-------|-------|----------|
+| `off` (default) | One number sign per number (standard UEB) | liblouis output, unmodified |
+| `on` | Repeat the number sign after each period (non-standard) | `applyNumberSignRepeat()` post-processing |
 
 ### Rationale
 
-Standard UEB defines the period and comma as numeric-mode continuation characters (`numericmodechars .,` in `en-ueb-g1.ctb`), so a number like `206.616.7678` translates with a **single** number sign: `⠼⠃⠚⠋⠲⠋⠁⠋⠲⠛⠋⠛⠓` (13 cells). Some online translators instead repeat the number sign after each period, producing a longer, non-standard result. The toggle reproduces that output for users who need to match it, at the cost of extra braille cells.
+Standard UEB defines the period and comma as numeric-mode continuation characters (`numericmodechars .,` in `en-ueb-g1.ctb`), so a number like `206.616.7678` translates with a **single** number sign: `⠼⠃⠚⠋⠲⠋⠁⠋⠲⠛⠋⠛⠓` (13 cells). Some online translators instead repeat the number sign after each period, producing a longer, non-standard result. The `on` option reproduces that output for users who need to match it, at the cost of extra braille cells.
 
-- **Default:** Unchecked (off) — standard UEB output.
-- The toggle is UI-only translation post-processing, exactly like the Capitalized Letters toggle: no settings schema or `CardSettings` change is involved.
+- **Default:** `off` — standard UEB output.
+- This is UI-only translation post-processing, exactly like the Capitalized Letters toggle: no settings schema or `CardSettings` change is involved.
+
+### Why this is a radio group, not a checkbox
+
+The control was a single checkbox (`Repeat number sign after each period in numbers`) until 2026-07-29. Users read it as a *prevent repetition* switch and reported the app "adding extra number signs" that the checkbox would not remove. The radio group states both outcomes explicitly, and the help note names the actual cause.
+
+**Neither option ever removes a number sign.** The repetition users encounter with phone numbers comes from UEB itself: numeric mode survives a period or comma but is **terminated by a hyphen or parenthesis**, so each hyphen-separated group needs a fresh `⠼`.
+
+| Input | Braille | Cells | Number signs |
+|-------|---------|-------|--------------|
+| `206.543.4779` | `⠼⠃⠚⠋⠲⠑⠙⠉⠲⠙⠛⠛⠊` | 13 | 1 |
+| `206-543-4779` | `⠼⠃⠚⠋⠤⠼⠑⠙⠉⠤⠼⠙⠛⠛⠊` | 15 | 3 |
+
+The 15-cell form is **correct liblouis output**, not a bug, and it wraps to a second row on a 13-cell cylinder. The two remedies the UI offers are: retype the number in BANA's period form, or edit the cells by hand in the Braille (Unicode) field (§6.3).
 
 ### UI Location and HTML Structure
 
-Located within the "Enter Text for Braille Translation" fieldset, immediately after the capitalization warning (`#caps-warning`):
+Located within the "Enter Text for Braille Translation" fieldset, immediately after the capitalization warning (`#caps-warning`), matching the adjacent Capitalized Letters pattern:
 
 ```html
-<!-- Repeat number sign toggle (non-standard UEB behavior, default off) -->
-<div class="line-input-mode-toggle" style="margin-top: 0.8em; display: flex; align-items: flex-start; gap: 0.5em; flex-wrap: wrap;">
-    <label style="display: inline-flex; align-items: center; gap: 0.4em;" for="repeat_number_sign">
-        <input type="checkbox" id="repeat_number_sign" name="repeat_number_sign" aria-describedby="repeat-number-sign-note">
-        Repeat number sign after each period in numbers (non-standard)
+<!-- Number sign style (non-standard repetition available, default off) -->
+<div class="line-input-mode-toggle" style="..." role="radiogroup" aria-labelledby="number-sign-label">
+    <span id="number-sign-label" class="line-label" style="margin: 0; flex-basis: 100%;">Number Signs:</span>
+    <label style="display: inline-flex; align-items: center; gap: 0.4em;">
+        <input type="radio" name="repeat_number_sign" value="off" id="repeat_number_sign_off" checked aria-describedby="number-sign-off-desc">
+        One number sign per number <span style="font-weight: normal; opacity: 0.85;">(standard UEB)</span>
     </label>
-    <div id="repeat-number-sign-note" class="grade-note" style="margin: 0; font-size: 0.85em; flex-basis: 100%;">
-        Standard UEB uses one number sign per number because periods and commas keep numeric mode. Turning this on matches some online translators but uses extra braille cells.
+    <label style="display: inline-flex; align-items: center; gap: 0.4em;">
+        <input type="radio" name="repeat_number_sign" value="on" id="repeat_number_sign_on" aria-describedby="number-sign-on-desc">
+        Repeat the number sign after each period <span style="font-weight: normal; opacity: 0.85;">(non-standard)</span>
+    </label>
+    <span id="number-sign-off-desc" class="sr-only">...</span>
+    <span id="number-sign-on-desc" class="sr-only">...</span>
+    <div id="repeat-number-sign-note" class="grade-note" style="...">
+        Neither option removes number signs. Under UEB a <strong>hyphen or parenthesis ends numeric mode</strong>, ...
     </div>
 </div>
 ```
@@ -751,7 +805,7 @@ Located within the "Enter Text for Braille Translation" fieldset, immediately af
 
 ```javascript
 function isRepeatNumberSignOn() {
-    return document.getElementById('repeat_number_sign')?.checked === true;
+    return document.querySelector('input[name="repeat_number_sign"]:checked')?.value === 'on';
 }
 
 function applyNumberSignRepeat(braille) {
@@ -781,16 +835,108 @@ function applyNumberSignRepeat(braille) {
 ### State Persistence
 
 - **Persistence key:** `braille_prefs_repeat_number_sign`
-- **Values:** `'1'` (on) or `'0'` (off)
+- **Values:** `'1'` (on) or `'0'` (off). These predate the radio group and are deliberately unchanged so existing stored preferences still restore; `applyPersistedSettings()` maps `'1'` → the `on` radio and `'0'` → the `off` radio.
 - Restored in `applyPersistedSettings()`, wired in `wirePersistenceListeners()`, and included in the `clearAllPersistence()` key list.
-- Changing the toggle calls `resetToGenerateState()` and recomputes auto-mode overflow (extra number signs change cell counts).
+- Changing the selection calls `resetToGenerateState()` and recomputes auto-mode overflow (extra number signs change cell counts).
 
 ### Example Behavior
 
-| Input | Toggle | Resulting Braille | Cells |
-|-------|--------|-------------------|-------|
+| Input | Selection | Resulting Braille | Cells |
+|-------|-----------|-------------------|-------|
 | `206.616.7678` | Off (default) | `⠼⠃⠚⠋⠲⠋⠁⠋⠲⠛⠋⠛⠓` | 13 (standard UEB) |
 | `206.616.7678` | On | `⠼⠃⠚⠋⠲⠼⠋⠁⠋⠲⠼⠛⠋⠛⠓` | 15 (non-standard) |
+
+---
+
+## 6.3. Editable Unicode Braille Field
+
+### Purpose
+
+The **Braille (Unicode)** textarea (`#braille-unicode`) gives users direct control of the cells that get embossed. It serves two audiences:
+
+1. **Sighted users who need to fix a translation by hand** — most often deleting the repeated number signs and hyphen cells from a phone number so it fits one row (§6.2).
+2. **Braille readers**, who can paste Unicode braille straight in and never touch the English inputs. This is parity with the OpenSCAD version, where pre-translated braille is the only input mode.
+
+### The Core Contract (safety-critical)
+
+> **Whenever the field is non-empty, its lines are used exactly as written.** Generation skips liblouis entirely, so what the user reads in the box is what gets embossed.
+
+There is no silent reconciliation between the English inputs and the field, and no re-wrapping of edited lines. That is the property the state machine below exists to protect.
+
+### UI Structure
+
+Inside the "Enter Text for Braille Translation" fieldset, after the Number Signs group:
+
+| Element | ID | Role |
+|---------|----|------|
+| Textarea | `braille-unicode` | 4 rows, `lang="und-Brai"`, `aria-describedby="braille-unicode-help braille-unicode-status"` |
+| Translate button | `translate-to-braille-btn` | Fills the field from the English inputs |
+| Visible status | `braille-unicode-status` | Current state in plain words |
+| Help text | `braille-unicode-help` | Allowed range, how the field is used |
+| Live region | `braille-unicode-live` | `class="sr-only" role="status" aria-live="polite"` |
+
+### State Machine
+
+| State | Meaning | English text edit | Translate button |
+|-------|---------|-------------------|------------------|
+| `pristine` (`brailleFieldDirty === false`) | Field mirrors a translation, or is empty | **Clears** the field and announces why | Refills |
+| `dirty` (`brailleFieldDirty === true`) | Hand-edited or pasted | **Never touched** | Overwrites, announces, returns to `pristine` |
+
+A pristine field is cleared rather than left stale because its content is machine-generated: nothing the user typed is lost, and the field can never silently disagree with the English text it claims to mirror. A dirty field outranks the English inputs unconditionally.
+
+Status and live-region messages:
+
+| Trigger | Visible status | Announced |
+|---------|----------------|-----------|
+| User edits the field | `Edited — will be used as-is` | "Braille field edited. It will be used exactly as written." |
+| User clears the field | `Empty — the text above will be translated` | "Braille field cleared. The text above will be translated instead." |
+| Translate button succeeds | `Filled from translation — edit any cell you want to change.` | "Braille field updated from translation." |
+| English text changes while pristine | `Cleared because the text changed — press Translate to Braille to refresh` | "Braille field cleared because the text changed. Press Translate to Braille to refresh it." |
+
+### Translate to Braille
+
+`translateIntoBrailleField()` runs the same pipeline generation uses, so the field is filled with exactly what would otherwise have been embossed:
+
+- **Manual placement:** `applyCapitalizationSetting()` → `translateWithLiblouis()` per line, using each row's per-line language table.
+- **Auto placement:** `banaAutoWrap()` against `getAvailableColumns()`, one wrapped row per line.
+
+Trailing empty rows are dropped so the field shows only the rows in use.
+
+### Validation Before Generation
+
+`validateBrailleFieldLines(lines, availableColumns, availableRows)` runs in `form.onsubmit` before any request is made, and returns the first problem as a message for `#error-message` (`role="alert"`):
+
+| Check | Message |
+|-------|---------|
+| Every non-space character in U+2800–U+28FF | `Line N of the Braille (Unicode) field contains "X", which is not a braille character. …` |
+| Line length ≤ available columns | `Line N of the Braille (Unicode) field is 15 cells; the maximum is 13. …` |
+| At least one braille cell present | `The Braille (Unicode) field has no braille cells. …` |
+| Line count ≤ available rows | `The Braille (Unicode) field has N lines but only M rows are available. …` |
+
+Spaces are permitted (they are blank cells; `braille_to_dots(' ')` returns an empty pattern). Trailing spaces are stripped per line before counting, because they are invisible in the field but would count as cells downstream. Cell counts use `line.trim().length`, matching the cylinder path's `len(line.strip())` in `validate_line_lengths()`.
+
+The existing post-translation column gate still runs afterwards as defense-in-depth.
+
+### Generation Path
+
+In `form.onsubmit`:
+
+```javascript
+const useBrailleField = isBrailleFieldActive();
+if (plateType === 'positive' && useBrailleField) {
+    // validate, then use the lines verbatim
+    translatedLines = getBrailleFieldLines();
+}
+```
+
+- `original_lines` is sent as `null`: pasted braille has no English source to derive an indicator letter from, so `extract_cylinder_geometry_spec()` falls back to the square placeholder (its existing `else` branch for absent `original_lines`).
+- The "Please enter text in at least one line" guard is bypassed, since the field supplies its own content.
+- A translation receipt is still logged (PR-10 parity) with `source: 'braille-unicode-field'` and the dirty flag, so an incorrect-braille report can be traced even though liblouis was bypassed.
+- The field is **not** persisted to `localStorage`: it holds content, not a preference.
+
+### Coverage
+
+`tests/e2e/brailleField.spec.ts` intercepts `/geometry_spec` and asserts on the braille lines actually sent: the 15-cell hyphenated phone number, a hand-edit down to 13 cells surviving verbatim, direct paste with empty English inputs, both validation blocks, and the pristine-clears / dirty-survives behavior.
 
 ---
 
