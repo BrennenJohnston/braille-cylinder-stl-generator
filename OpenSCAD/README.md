@@ -5,8 +5,8 @@
 > | | |
 > |---|---|
 > | **Canonical repo** | [BrennenJohnston/braille-cylinder-stl-generator-openscad](https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad) |
-> | **Vendored from** | tag `v2.4.0` (commit `808d16b`, released 2026-07-27) |
-> | **Copied on** | 2026-07-27 |
+> | **Vendored from** | tag `v2.4.1` (commit `f31c101`, released 2026-07-29) |
+> | **Copied on** | 2026-07-29 |
 > | **Machine-readable provenance** | [`VENDORED.json`](VENDORED.json) |
 >
 > The standalone repo **is** the active home for this program: it holds the
@@ -43,7 +43,7 @@ Parametric Model Maker. See [`docs/MAKERWORLD_QUICK_START.md`](docs/MAKERWORLD_Q
 
 | Version | Link | Use case |
 |---------|------|----------|
-| **Web app** | [braille-card-and-cylinder-stl-gener.vercel.app](https://braille-card-and-cylinder-stl-gener.vercel.app) | Browser-based, automatic translation |
+| **Web app** | [braille-cylinder-stl-generator.vercel.app](https://braille-cylinder-stl-generator.vercel.app) | Browser-based, automatic translation |
 | **OpenSCAD (canonical)** | [braille-cylinder-stl-generator-openscad](https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad) | Offline use, full parametric control, tests |
 | **Web app source** | [braille-cylinder-stl-generator](https://github.com/BrennenJohnston/braille-cylinder-stl-generator) | This repository |
 
@@ -201,7 +201,7 @@ Issues with the web app, or with this vendored copy being stale, belong
 
 ## References
 
-1. Web generator: <https://braille-card-and-cylinder-stl-gener.vercel.app>
+1. Web generator: <https://braille-cylinder-stl-generator.vercel.app>
 2. Branah translator: <https://www.branah.com/braille-translator>
 3. BANA size and spacing: <https://brailleauthority.org/size-and-spacing-braille-characters>
 4. NLS Specification 800: <https://www.loc.gov/nls/>

@@ -40,6 +40,10 @@ and containers.
 
 ## Quick start
 
+### Using the hosted app
+
+Open <https://braille-cylinder-stl-generator.vercel.app> — nothing to install.
+
 ### Running locally
 
 ```bash

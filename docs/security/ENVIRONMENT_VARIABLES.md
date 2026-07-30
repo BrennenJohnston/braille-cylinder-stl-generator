@@ -10,7 +10,7 @@ If you want tighter security, set these:
 
 ```bash
 FLASK_ENV=production
-PRODUCTION_DOMAIN=https://your-domain.vercel.app
+PRODUCTION_DOMAIN=https://braille-cylinder-stl-generator.vercel.app
 ```
 
 ## Variable reference
@@ -27,7 +27,7 @@ PRODUCTION_DOMAIN=https://your-domain.vercel.app
 Your production URL for CORS. Include the protocol (`https://`), no trailing slash. If not set, the app logs a warning and allows all origins.
 
 ```bash
-PRODUCTION_DOMAIN=https://braille-generator.vercel.app
+PRODUCTION_DOMAIN=https://braille-cylinder-stl-generator.vercel.app
 ```
 
 ### LOG_LEVEL

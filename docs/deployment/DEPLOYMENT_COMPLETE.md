@@ -34,9 +34,10 @@
 
 ### Vercel Dashboard
 1. Go to your Vercel dashboard
-2. Find your project: `braille-card-and-cylinder-stl-generator` (the Vercel
-   project keeps its original name so the deployed URL stays valid; the GitHub
-   repo is now `braille-cylinder-stl-generator`)
+2. Find your project: `braille-cylinder-stl-generator`, deployed at
+   <https://braille-cylinder-stl-generator.vercel.app>. The original project
+   (`braille-card-and-cylinder-stl-gener.vercel.app`) predates the repo rename
+   and is no longer the deployment target.
 3. Watch the deployment progress
 4. Check build logs for any issues
 
@@ -53,13 +54,13 @@
 
 #### 1. Health Check
 ```
-https://your-app.vercel.app/health
+https://braille-cylinder-stl-generator.vercel.app/health
 ```
 **Expected:** `{"status": "ok", "message": "Vercel backend is running"}`
 
 #### 2. Liblouis Tables
 ```
-https://your-app.vercel.app/liblouis/tables
+https://braille-cylinder-stl-generator.vercel.app/liblouis/tables
 ```
 **Expected:** JSON with list of translation tables
 

@@ -85,7 +85,7 @@
 // =============================================================================
 //  [1] Web-based Generator (with automatic translation): 
 //      https://github.com/BrennenJohnston/braille-cylinder-stl-generator
-//      https://braille-card-and-cylinder-stl-gener.vercel.app
+//      https://braille-cylinder-stl-generator.vercel.app
 //  [2] Branah Braille Translator: https://www.branah.com/braille-translator
 //  [3] BANA — Size and Spacing: https://brailleauthority.org/size-and-spacing-braille-characters
 //  [4] NLS — Specification 800: https://www.loc.gov/nls/
