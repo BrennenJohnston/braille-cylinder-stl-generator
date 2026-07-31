@@ -303,7 +303,7 @@ Notes: the accented `í` in Ruíz is brailled with the UEB accent group (`⠘⠌
 
 This is the list of corrections to apply downstream. Each item is anchored to the verified prose or example above.
 
-1. **`docs/guides/BUSINESS_CARD_TRANSLATION_GUIDE.md`, line 303** asserts "We adapted them for Grade 1." BANA's examples are Grade 2. The right behaviour per the user's "C" choice is to keep our Grade 1 *"what to type"* adaptations but be honest that BANA's published examples are Grade 2 and link out to the Fact Sheet for the originals. Remove the implication that we are reproducing BANA's worked examples.
+1. **`docs/guides/BUSINESS_CARD_TRANSLATION_GUIDE.md`, line 303** asserts "We adapted them for Grade 1." BANA's examples are Grade 2. **Resolved by changing the app itself:** the default translation table is now `en-ueb-g2.ctb`, so the app emits the same code BANA publishes and the Grade 1 framing is gone from the guide. The remaining caveat to state is that BANA's transcribers made per-card cell-level judgement calls that an automatic translation will not always reproduce, so the *cells* can still differ even though the *code* matches.
 
 2. **Same guide, lines 86 – 168 (Formatting Guidelines):** rule statements for phone, e-mail, web, names, and organizations are paraphrased. Per the user's fidelity policy, these must be replaced by short verbatim quotes (or close paraphrase explicitly attributed in-line). Specific corrections:
    - Phone "Best/OK/Poor" table mis-states BANA. BANA's rule is a single prescription: *"Omit extra characters such as parentheses. Convert the hyphens to periods to retain the natural sub-units of the phone number… Do not remove the numeric indicator unless absolutely necessary."*
@@ -327,7 +327,7 @@ This is the list of corrections to apply downstream. Each item is anchored to th
 
 7. **`public/index.html` "Formatting" panel (lines ~7547 – 7586):** same dot-5 omission as `templates/index.html`. The Best/OK/Avoid email-wrap ladder labels are our wording, not BANA's; rewrite to match BANA's three categories (after punctuation / between syllables or alpha-numeric / between letters of a syllable, least desirable).
 
-8. **`public/index.html` "Examples" panel (lines ~7642 – 7713):** examples 1, 2, and 3 are *our* Grade 1 paraphrases of BANA examples 1, 4, and 7. Either reproduce BANA's print/Grade 2/Grade 1 triple, or (per the user's "C" choice) keep our paraphrase but be explicit that the originals are Grade 2 and link to the Fact Sheet.
+8. **`public/index.html` "Examples" panel (lines ~7642 – 7713):** examples 1, 2, and 3 are *our* paraphrases of BANA examples 1, 4, and 7. Now that the app defaults to Grade 2, the panel quotes BANA's braille verbatim beside a "what to type" hint and links to the Fact Sheet, with the same per-card-judgement caveat as item 1.
 
 9. **`README.md` line 92:** mentions the Business Card Guide but does not cite BANA's source year. Add "(BANA Business Cards Fact Sheet, March 2024)" once.
 

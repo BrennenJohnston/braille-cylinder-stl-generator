@@ -5,6 +5,10 @@ let liblouisInstance = null;
 let liblouisReady = false;
 let recentLogs = [];
 
+// Used only when the caller sends no table name. Contracted UEB matches the
+// app's first-run default and BANA's Guidelines for Brailling Business Cards.
+const DEFAULT_TABLE = 'en-ueb-g2.ctb';
+
 // Import liblouis scripts with error handling
 try {
     console.log('Worker: Attempting to load liblouis scripts from static directory...');
@@ -206,7 +210,7 @@ self.onmessage = async function(e) {
                 if (tableName) {
                     selectedTable = tableName;
                 } else {
-                    selectedTable = grade === 'g2' ? 'en-ueb-g2.ctb' : 'en-ueb-g1.ctb';
+                    selectedTable = grade === 'g1' ? 'en-ueb-g1.ctb' : DEFAULT_TABLE;
                 }
 
                 console.log('Worker: Translating text:', text, 'with table:', selectedTable);
@@ -248,7 +252,7 @@ self.onmessage = async function(e) {
                 }
 
                 const braille = data.braille;
-                const backTable = data.tableName || 'en-ueb-g1.ctb';
+                const backTable = data.tableName || DEFAULT_TABLE;
 
                 // unicode.dis is what makes liblouis read the U+2800 block as
                 // braille cells rather than as literal characters, so the same

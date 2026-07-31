@@ -2922,7 +2922,8 @@
                             <div id="auto-input-container" style="display: none;">
                                 <label for="auto-text" class="line-label">Auto Placement Text</label>
                                 <textarea id="auto-text" rows="4" placeholder="Type all your text here. It will be translated to braille and auto-wrapped across rows based on available cells." style="width: 100%; resize: vertical;" autocomplete="off"></textarea>
-                                <div id="auto-overflow-warning" class="grade-note" style="margin-top: 0.6em; color: #d73502; display: none;">
+                                <div id="auto-overflow-warning" class="grade-note" role="status" aria-live="polite"
+                                     style="margin-top: 0.6em; color: #d73502; display: none;">
                                     <strong>Warning:</strong> <span id="auto-overflow-message"></span>
                                 </div>
                             </div>
@@ -2964,13 +2965,13 @@
                             <div style="margin-bottom: 0.8em;">
                                 <label for="language-table" class="sr-only">Select braille language table</label>
                                 <select id="language-table" name="language_table" class="language-select" aria-describedby="language-help">
-                                    <option value="en-ueb-g2.ctb">English (UEB), United States — contracted (grade 2)</option>
-                                    <option value="en-ueb-g1.ctb" selected>English (UEB), United States — uncontracted (grade 1)</option>
+                                    <option value="en-ueb-g2.ctb" selected>English (UEB), United States — contracted (grade 2)</option>
+                                    <option value="en-ueb-g1.ctb">English (UEB), United States — uncontracted (grade 1)</option>
                                     <option value="en-us-g2.ctb">English (EBAE), United States — contracted (grade 2)</option>
                                     <option value="en-us-g1.ctb">English (EBAE), United States — uncontracted (grade 1)</option>
                                 </select>
                                 <div id="language-help" class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
-                                    Default: English (UEB), United States — uncontracted (grade 1). Chosen to align with BANA guidance for business cards and to minimize ambiguity for names, emails, and short contact info. Use contracted (grade 2) only when space is limited.
+                                    Default: English (UEB), United States — contracted (grade 2). The BANA <em>Guidelines for Brailling Business Cards</em> (March 2024) says to follow <em>The Rules of Unified English Braille</em>, and every worked example in that fact sheet is contracted UEB. Contractions also pack more of a name, phone number, or e-mail address into the 13–14 cells a card row allows. Switch to uncontracted (grade 1) only if your reader has asked for it.
                                 </div>
                             </div>
                         </fieldset>
@@ -3335,7 +3336,8 @@
                                             Rotates the starting position of braille text around the cylinder
                                         </div>
                                     </div>
-                                    <div id="cylinder-overflow-warning" class="grade-note" style="margin-top: 10px; color: #d73502; display: none;">
+                                    <div id="cylinder-overflow-warning" class="grade-note" role="status" aria-live="polite"
+                                         style="margin-top: 10px; color: #d73502; display: none;">
                                         <strong>Warning:</strong> <span id="cylinder-overflow-message"></span>
                                     </div>
                                 </div>
@@ -3567,6 +3569,13 @@
             }
         }
 
+        // Contracted UEB is what BANA's Guidelines for Brailling Business Cards
+        // (March 2024) transcribes every worked example in, so it is the table a
+        // first-time user gets. Every fallback in this file resolves to it, which
+        // keeps a missing or not-yet-populated dropdown from quietly switching
+        // the reader to a different code.
+        const DEFAULT_LANGUAGE_TABLE = 'en-ueb-g2.ctb';
+
         async function loadLanguageOptions() {
             const select = document.getElementById('language-table');
             if (!select) return;
@@ -3752,13 +3761,14 @@
 
             select.appendChild(otherGroup);
 
-            // Default to UEB grade 1 unless user has a saved preference (business card-friendly)
+            // First-run default is BANA's: contracted UEB. A saved preference
+            // outranks it, so a returning user keeps the table they picked.
             try {
                 const saved = localStorage.getItem('braille_prefs_language_table');
                 const hasSaved = saved && Array.from(select.options).some(o => o.value === saved);
-                select.value = hasSaved ? saved : 'en-ueb-g1.ctb';
+                select.value = hasSaved ? saved : DEFAULT_LANGUAGE_TABLE;
             } catch (e) {
-                select.value = 'en-ueb-g1.ctb';
+                select.value = DEFAULT_LANGUAGE_TABLE;
             }
         }
 
@@ -3766,12 +3776,6 @@
         loadLanguageOptions().then(() => {
             try {
                 const select = document.getElementById('language-table');
-                // Force default to English (UEB) uncontracted grade 1 if available
-                try {
-                    const desiredDefault = 'en-ueb-g1.ctb';
-                    const hasDesired = Array.from(select.options).some(o => o.value === desiredDefault);
-                    if (hasDesired) select.value = desiredDefault;
-                } catch (e) {}
                 select.addEventListener('change', () => {
                     try { localStorage.setItem('braille_prefs_language_table', select.value); } catch (e) {}
                     // Keep per-line language dropdowns in sync with available options
@@ -4446,6 +4450,28 @@
             actionBtn.disabled = false;
         }
 
+        // The overlay carries three kinds of message and only one of them is the
+        // user's to fix. A blocking validation notice ("line 2 exceeds 13 cells")
+        // describes the settings as they were when Generate was pressed, so it
+        // stops being true the moment anything changes and has to go — leaving it
+        // up tells the user their correction did nothing. Progress and preset
+        // notices (.info) own their own lifetime, and the browser-capability
+        // warning is a permanent child of the overlay, so the box itself stays
+        // visible whenever that warning is present.
+        function dismissStaleValidationMessage() {
+            if (!errorDiv || errorDiv.style.display === 'none') return;
+            if (errorDiv.classList.contains('info')) return;
+            errorText.textContent = '';
+            const errorSubtext = document.getElementById('error-subtext');
+            if (errorSubtext) {
+                errorSubtext.textContent = '';
+                errorSubtext.style.display = 'none';
+            }
+            if (!errorDiv.querySelector('.capability-warning')) {
+                errorDiv.style.display = 'none';
+            }
+        }
+
         // Function to set button to download state
         function setToDownloadState() {
             actionBtn.textContent = 'Download STL';
@@ -4499,7 +4525,7 @@
 
             if (isBrailleFieldActive()) {
                 try {
-                    const tableName = document.getElementById('language-table')?.value || 'en-ueb-g1.ctb';
+                    const tableName = document.getElementById('language-table')?.value || DEFAULT_LANGUAGE_TABLE;
                     for (const line of getBrailleFieldLines()) {
                         if (!line.trim()) continue;
                         const word = firstWordOf([await backTranslateWithLiblouis(line, tableName)]);
@@ -4558,13 +4584,20 @@
 
 
 
-        // Any control inside the form invalidates the STL that was last built, so
-        // the Generate/Download button is reset by delegation on the form itself.
-        // The previous hand-maintained list of inputs silently missed controls
-        // added later (the tactile indicator dials, for one); delegation covers
-        // every current and future field with no extra bookkeeping.
+        // Any control inside the form invalidates the STL that was last built and
+        // can invalidate any warning on screen, so both are handled by delegation
+        // on the form itself. The previous hand-maintained lists of inputs
+        // silently missed controls added later (the tactile indicator dials never
+        // reset the button; the cell dial and the language dropdown never
+        // refreshed the overflow warnings), which left warnings up after the user
+        // had already fixed what they complained about. Delegation covers every
+        // current and future field with no extra bookkeeping.
         ['input', 'change'].forEach(eventName => {
-            form.addEventListener(eventName, resetToGenerateState);
+            form.addEventListener(eventName, () => {
+                resetToGenerateState();
+                dismissStaleValidationMessage();
+                refreshLiveWarnings();
+            });
         });
 
         // The braille cell dial auto-fills with the recommended capacity for the
@@ -4625,17 +4658,15 @@
         // Expose for other handlers safely
         try { window.updateGridColumnsForPlateType = updateGridColumnsForPlateType; } catch (e) {}
 
-        // Re-attached whenever the line inputs are rebuilt from grid_rows.
+        // Re-attached whenever the line inputs are rebuilt from grid_rows. The
+        // warnings these inputs feed are refreshed by the form-level delegation;
+        // only the braille field's mirror needs a per-input hook.
         function addInputChangeListeners() {
             const gridRows = parseInt(document.getElementById('grid_rows').value) || 4;
             for (let i = 1; i <= gridRows; i++) {
                 const input = document.getElementById(`line${i}`);
                 if (input) {
-                    input.addEventListener('input', () => {
-                        updateCapsWarning();
-                        onSourceTextChangedForBrailleField();
-                        checkCylinderOverflow();
-                    });
+                    input.addEventListener('input', onSourceTextChangedForBrailleField);
                 }
             }
         }
@@ -4657,9 +4688,6 @@
                     const roundedGroup = document.getElementById('rounded_dot_group');
                     if (roundedGroup) roundedGroup.style.display = '';
                     updateShapeSettings();
-                    if (document.querySelector('input[name="placement_mode"]:checked')?.value === 'auto') {
-                        computeAutoOverflow();
-                    }
                 });
             });
 
@@ -4667,23 +4695,13 @@
             updateGridColumnsForPlateType();
             // Wire indicator toggle listeners
             document.querySelectorAll('input[name="indicator_shapes"]').forEach(radio => {
-                radio.addEventListener('change', function() {
-                    updateGridColumnsForPlateType();
-                    if (document.querySelector('input[name="placement_mode"]:checked')?.value === 'auto') {
-                        computeAutoOverflow();
-                    }
-                });
+                radio.addEventListener('change', updateGridColumnsForPlateType);
             });
 
             // Shape type radio buttons
+            // Do not persist shape selection; always reset on reload
             document.querySelectorAll('input[name="shape_type"]').forEach(radio => {
-                radio.addEventListener('change', function() {
-                    updateShapeSettings();
-                    if (document.querySelector('input[name="placement_mode"]:checked')?.value === 'auto') {
-                        computeAutoOverflow();
-                    }
-                    // Do not persist shape selection; always reset on reload
-                });
+                radio.addEventListener('change', updateShapeSettings);
             });
 
             // Combined shape selection - sets both emboss and counter shapes
@@ -4754,21 +4772,6 @@
                 }
             });
 
-            // Cylinder parameter inputs re-run the capacity check
-            const cylinderInputs = [
-                'cylinder_diameter_mm',
-                'cylinder_height_mm',
-                'cylinder_polygonal_cutout_radius_mm',
-                'cylinder_polygonal_cutout_sides',
-                'seam_offset_deg'
-            ];
-
-            cylinderInputs.forEach(inputId => {
-                const input = document.getElementById(inputId);
-                if (input) {
-                    input.addEventListener('input', checkCylinderOverflow);
-                }
-            });
         }
 
         // Function to show/hide cylinder settings based on shape selection
@@ -4848,7 +4851,7 @@
             const runId = ++cylinderOverflowRun;
             const cols = getAvailableColumns();
             const lines = getDynamicLineValues();
-            const tableName = document.getElementById('language-table')?.value || 'en-ueb-g1.ctb';
+            const tableName = document.getElementById('language-table')?.value || DEFAULT_LANGUAGE_TABLE;
 
             (async () => {
                 const problems = [];
@@ -4910,11 +4913,10 @@
             document.querySelectorAll('.line-language-select').forEach(sel => {
                 const previous = sel.value;
                 sel.innerHTML = optionsHTML;
-                // Prefer keeping prior choice; otherwise prefer English UEB Grade 1; otherwise fallback to master
+                // Prefer keeping prior choice; otherwise the BANA default; otherwise fallback to master
                 const hasPrev = previous && Array.from(sel.options).some(o => o.value === previous);
-                const desiredDefault = 'en-ueb-g1.ctb';
-                const hasDesired = Array.from(sel.options).some(o => o.value === desiredDefault);
-                sel.value = hasPrev ? previous : (hasDesired ? desiredDefault : masterValue);
+                const hasDesired = Array.from(sel.options).some(o => o.value === DEFAULT_LANGUAGE_TABLE);
+                sel.value = hasPrev ? previous : (hasDesired ? DEFAULT_LANGUAGE_TABLE : masterValue);
             });
         }
 
@@ -4997,6 +4999,13 @@
         const BRAILLE_UNICODE_START = 0x2800;
         const BRAILLE_UNICODE_END = 0x28FF;
         let brailleFieldDirty = false;
+        // The problem the status line is currently reporting, so it is announced
+        // once when it appears rather than on every keystroke that keeps it true.
+        let brailleFieldProblem = null;
+        // Set when a pristine field was emptied because the English text changed,
+        // so the status line can keep saying why instead of falling back to the
+        // generic empty message.
+        let brailleFieldAutoCleared = false;
 
         function isBrailleUnicodeChar(ch) {
             const code = ch.codePointAt(0);
@@ -5030,6 +5039,35 @@
             if (!status) return;
             status.textContent = message;
             status.classList.toggle('inline-notice', highlight && message !== '');
+        }
+
+        // What the status line says when the field has nothing wrong with it.
+        function brailleFieldBaselineStatus() {
+            if (!isBrailleFieldActive()) {
+                return brailleFieldAutoCleared
+                    ? 'Cleared because the text changed — press Translate to Braille to refresh'
+                    : 'Empty — the text above will be translated';
+            }
+            return brailleFieldDirty
+                ? 'Edited — will be used as-is'
+                : 'Filled from translation — edit any cell you want to change.';
+        }
+
+        // Holds the field to the same rules generation enforces, live: a paste
+        // that is not braille, or a row longer than the plate allows, is reported
+        // while the user is still looking at the field instead of at Generate
+        // time. Capacity comes from the row and cell dials, so this runs on every
+        // form change too — raising a dial has to retire the warning it caused.
+        function updateBrailleFieldStatus() {
+            const availableRows = parseInt(document.getElementById('grid_rows')?.value) || 4;
+            const problem = isBrailleFieldActive()
+                ? validateBrailleFieldLines(getBrailleFieldLines(), getAvailableColumns(), availableRows)
+                : null;
+            setBrailleFieldStatus(problem || brailleFieldBaselineStatus(), Boolean(problem) || brailleFieldDirty);
+            if (problem !== brailleFieldProblem) {
+                brailleFieldProblem = problem;
+                if (problem) announceBrailleField(problem);
+            }
         }
 
         // Returns an error string for the first problem found, or null when the
@@ -5068,7 +5106,7 @@
         // BANA wrapping in auto mode) and writes the result into the field, one
         // row per line.
         async function translateIntoBrailleField() {
-            const tableName = document.getElementById('language-table')?.value || 'en-ueb-g1.ctb';
+            const tableName = document.getElementById('language-table')?.value || DEFAULT_LANGUAGE_TABLE;
             const placementMode = document.querySelector('input[name="placement_mode"]:checked')?.value || 'manual';
             const rows = parseInt(document.getElementById('grid_rows').value) || 4;
 
@@ -5120,7 +5158,7 @@
                 }
             }
 
-            const tableName = document.getElementById('language-table')?.value || 'en-ueb-g1.ctb';
+            const tableName = document.getElementById('language-table')?.value || DEFAULT_LANGUAGE_TABLE;
             const placementMode = document.querySelector('input[name="placement_mode"]:checked')?.value || 'manual';
 
             const textLines = [];
@@ -5153,15 +5191,16 @@
 
             field.addEventListener('input', () => {
                 const wasDirty = brailleFieldDirty;
-                brailleFieldDirty = true;
+                brailleFieldDirty = isBrailleFieldActive();
+                brailleFieldAutoCleared = false;
                 resetToGenerateState();
-                if (isBrailleFieldActive()) {
-                    setBrailleFieldStatus('Edited — will be used as-is', true);
-                    if (!wasDirty) announceBrailleField('Braille field edited. It will be used exactly as written.');
-                } else {
-                    brailleFieldDirty = false;
-                    setBrailleFieldStatus('Empty — the text above will be translated');
+                updateBrailleFieldStatus();
+                // A problem announces itself; do not talk over it.
+                if (brailleFieldProblem) return;
+                if (!brailleFieldDirty) {
                     announceBrailleField('Braille field cleared. The text above will be translated instead.');
+                } else if (!wasDirty) {
+                    announceBrailleField('Braille field edited. It will be used exactly as written.');
                 }
             });
 
@@ -5178,6 +5217,7 @@
                     }
                     field.value = trimTrailingEmptyLines(result.lines).join('\n');
                     brailleFieldDirty = false;
+                    brailleFieldAutoCleared = false;
                     const note = result.warnings.length ? ` ${result.warnings.join(' ')}` : '';
                     setBrailleFieldStatus(`Filled from translation — edit any cell you want to change.${note}`);
                     announceBrailleField('Braille field updated from translation.');
@@ -5206,10 +5246,10 @@
                         announceBrailleField(result.error);
                         return;
                     }
-                    updateCapsWarning();
                     // Writing the inputs from script fires no input event, so the
-                    // button is reset by hand here.
+                    // button and the warnings are refreshed by hand here.
                     resetToGenerateState();
+                    refreshLiveWarnings();
                     const message = 'Text above filled from this braille. The braille here is still what gets embossed.';
                     setBrailleFieldStatus(message);
                     announceBrailleField(message);
@@ -5232,7 +5272,8 @@
             if (brailleFieldDirty || !isBrailleFieldActive()) return;
             const field = document.getElementById('braille-unicode');
             if (field) field.value = '';
-            setBrailleFieldStatus('Cleared because the text changed — press Translate to Braille to refresh');
+            brailleFieldAutoCleared = true;
+            updateBrailleFieldStatus();
             announceBrailleField('Braille field cleared because the text changed. Press Translate to Braille to refresh it.');
         }
 
@@ -5613,24 +5654,7 @@
             resetToGenerateState();
         }
 
-        placementRadios.forEach(r => r.addEventListener('change', () => {
-            updatePlacementUI();
-            updateCapsWarning();
-        }));
-
-        // Update UI on relevant changes to show/compute warnings
-        ['grid_rows','grid_columns','cell_spacing','line_spacing','cylinder_diameter_mm','cylinder_height_mm','indicator_shapes','tactile_indicator_width']
-            .forEach(id => {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.addEventListener('input', () => {
-                        checkPhysicalFit();
-                        if (document.querySelector('input[name="placement_mode"]:checked')?.value === 'auto') {
-                            computeAutoOverflow();
-                        }
-                    });
-                }
-            });
+        placementRadios.forEach(r => r.addEventListener('change', updatePlacementUI));
 
         // Row Indicator Style changes the number of marker columns, so it changes
         // text capacity, wrapping, and the seam gap the arrow needs.
@@ -5643,9 +5667,6 @@
                     window.updateGridColumnsForPlateType();
                 }
                 updateIndicatorModeUI();
-                if (document.querySelector('input[name="placement_mode"]:checked')?.value === 'auto') {
-                    computeAutoOverflow();
-                }
             });
         });
 
@@ -5674,7 +5695,7 @@
         async function computeAutoOverflowNow() {
             const runId = ++autoOverflowRun;
             const languageSelect = document.getElementById('language-table');
-            const tableName = languageSelect?.value || 'en-ueb-g1.ctb';
+            const tableName = languageSelect?.value || DEFAULT_LANGUAGE_TABLE;
             const src = (autoText?.value || '').trim();
             if (!src) {
                 autoWarning.style.display = 'none';
@@ -5717,13 +5738,34 @@
             }
         }
 
-        if (autoText) {
-            autoText.addEventListener('input', () => {
-                resetToGenerateState();
+        // Re-runs every live warning against the settings as they stand right now.
+        // They are evaluated together because they share inputs: the cell dial
+        // feeds the overflow warnings and the seam-gap warning, the language table
+        // changes how many cells a line takes, the row count bounds the braille
+        // field. Evaluating one at a time is what let a warning survive the edit
+        // that fixed it. The two overflow boxes describe different inputs, so only
+        // the one for the active placement mode may be on screen.
+        function refreshLiveWarnings() {
+            checkPhysicalFit();
+            updateCapsWarning();
+            updateBrailleFieldStatus();
+
+            const placementMode = document.querySelector('input[name="placement_mode"]:checked')?.value || 'manual';
+            if (placementMode === 'auto') {
+                const cylinderWarning = document.getElementById('cylinder-overflow-warning');
+                if (cylinderWarning) cylinderWarning.style.display = 'none';
                 computeAutoOverflow();
-                updateCapsWarning();
-                onSourceTextChangedForBrailleField();
-            });
+            } else {
+                if (autoWarning) {
+                    autoWarning.style.display = 'none';
+                    autoWarningMsg.textContent = '';
+                }
+                checkCylinderOverflow();
+            }
+        }
+
+        if (autoText) {
+            autoText.addEventListener('input', onSourceTextChangedForBrailleField);
         }
 
         wireBrailleField();
@@ -5963,23 +6005,12 @@
             document.querySelectorAll('input[name="capitalize_letters"]').forEach(radio => {
                 radio.addEventListener('change', () => {
                     persistValue('braille_prefs_capitalize_letters_v2', document.querySelector('input[name="capitalize_letters"]:checked').value);
-                    resetToGenerateState();
-                    updateCapsWarning();
-                    // Recalculate overflow if in auto mode (caps affect cell count)
-                    if (document.querySelector('input[name="placement_mode"]:checked')?.value === 'auto') {
-                        computeAutoOverflow();
-                    }
                 });
             });
             // Number sign style
             document.querySelectorAll('input[name="repeat_number_sign"]').forEach(radio => {
                 radio.addEventListener('change', () => {
                     persistValue('braille_prefs_repeat_number_sign', isRepeatNumberSignOn() ? '1' : '0');
-                    resetToGenerateState();
-                    // Extra number signs change cell counts; recalc overflow in auto mode
-                    if (document.querySelector('input[name="placement_mode"]:checked')?.value === 'auto') {
-                        computeAutoOverflow();
-                    }
                 });
             });
             // Shape type
@@ -6064,6 +6095,9 @@
         try { wirePersistenceListeners(); } catch (e) {}
         // After restoring persisted settings, update placement UI to reflect restored mode
         try { updatePlacementUI(); } catch (e) {}
+        // Restored settings are written straight to the DOM and fire no events, so
+        // the warnings are seeded by hand against whatever came back from storage.
+        try { refreshLiveWarnings(); } catch (e) {}
 
         // Reset to defaults button
         const resetBtn = document.getElementById('reset-defaults-btn');
@@ -6073,12 +6107,12 @@
                 // Reset selects to their default option values
                 const selectEls = Array.from(document.querySelectorAll('select'));
                 selectEls.forEach(sel => { sel.value = sel.options[0]?.value || sel.defaultValue; });
-                // Ensure language resets to UEB Grade 1
+                // Ensure language resets to the BANA default (contracted UEB)
                 try {
                     const langSelect = document.getElementById('language-table');
                     if (langSelect) {
-                        langSelect.value = 'en-ueb-g1.ctb';
-                        try { localStorage.setItem('braille_prefs_language_table', 'en-ueb-g1.ctb'); } catch (e) {}
+                        langSelect.value = DEFAULT_LANGUAGE_TABLE;
+                        try { localStorage.setItem('braille_prefs_language_table', DEFAULT_LANGUAGE_TABLE); } catch (e) {}
                     }
                 } catch (e) {}
                 // Reset thickness preset to default (0.4mm)
@@ -6110,8 +6144,8 @@
                 clearGridColumnsDirty();
                 updateGridColumnsForPlateType();
                 updateIndicatorModeUI();
-                checkCylinderOverflow();
                 resetToGenerateState();
+                refreshLiveWarnings();
 
                 // Inform the user to refresh the page to fully reset preview and state
                 try {
@@ -6320,8 +6354,8 @@
             // count, so the dial goes back to auto-filling from the recommendation.
             try { clearGridColumnsDirty(); } catch (e) {}
             try { updateGridColumnsForPlateType(); } catch (e) {}
-            try { checkCylinderOverflow(); } catch (e) {}
             try { resetToGenerateState(); } catch (e) {}
+            try { refreshLiveWarnings(); } catch (e) {}
 
             // Show confirmation message
             try {
@@ -7010,7 +7044,7 @@
             const plateTypeEl = document.querySelector('input[name="plate_type"]:checked');
             const plateType = plateTypeEl ? plateTypeEl.value : 'positive';
             const languageSelect = document.getElementById('language-table');
-            const tableName = languageSelect?.value || 'en-ueb-g1.ctb';
+            const tableName = languageSelect?.value || DEFAULT_LANGUAGE_TABLE;
 
             // The Braille (Unicode) field wins whenever it has content: its lines
             // are embossed exactly as written, with no liblouis pass.
@@ -7808,6 +7842,9 @@
                 if (errorDiv && errorText) {
                     errorText.textContent = 'Web worker failed to initialize. Braille translation preview is disabled on this deployment.';
                     errorDiv.style.display = 'flex';
+                    // Not something the user can correct in the form, so it is
+                    // marked .info to survive dismissStaleValidationMessage().
+                    errorDiv.className = 'error-message info';
                 }
             }
 
@@ -8545,9 +8582,9 @@
                             <tbody>
                                 <tr><td><strong>Placement Mode</strong></td><td>Auto Placement (handles wrapping)</td></tr>
                                 <tr><td><strong>Row Indicator Style</strong></td><td>Visual markers (default); choose Tactile seam arrow to free the marker cells and give a blind user a touch alignment point</td></tr>
-                                <tr><td><strong>Capitalized Letters</strong></td><td>Disabled (default) — saves space. Found under <strong>Translation Options</strong> in Expert Mode</td></tr>
+                                <tr><td><strong>Capitalized Letters</strong></td><td>Enabled (default); disable it under <strong>Translation Options</strong> in Expert Mode to save one cell per capital, which is BANA's first suggestion when a name will not fit</td></tr>
                                 <tr><td><strong>Number Signs</strong></td><td>One number sign per number (default) — standard UEB; choose the repeating option only to match non-standard online translators. Also under <strong>Translation Options</strong></td></tr>
-                                <tr><td><strong>Language</strong></td><td>English (UEB) uncontracted — clearest for names/contact info</td></tr>
+                                <tr><td><strong>Language</strong></td><td>English (UEB) contracted, grade 2 (default) — what BANA's Business Cards Fact Sheet uses, and it fits more into each row</td></tr>
                             </tbody>
                         </table>
 
@@ -8670,7 +8707,7 @@
                     <div class="help-panel" role="tabpanel" aria-labelledby="tab-examples" id="helpPanelExamples" hidden>
                         <h3>Real-World Examples</h3>
                         <div class="help-notice help-notice-info">
-                            <strong>About these business card examples:</strong> BANA's own worked examples are in <em>Grade 2 (contracted)</em> braille and use cell-level strategies that vary case by case. The "what to type" hints below take BANA's <em>content decisions</em> (which fields to omit, how to split a name) and translate them into Grade 1 input for this app, which defaults to uncontracted braille. <a href="https://www.brailleauthority.org/sites/default/files/2024-10/Business%20Cards%20Fact%20Sheet.pdf" target="_blank" rel="noopener noreferrer">Read BANA's original Grade 2 examples in the Fact Sheet (PDF) →</a>
+                            <strong>About these business card examples:</strong> BANA's own worked examples are in <em>Grade 2 (contracted)</em> braille, which is also this app's default translation, so what you type below comes out in the same code BANA published. BANA's transcribers also used cell-level strategies that vary case by case, so the exact cells can still differ; the "what to type" hints capture BANA's <em>content decisions</em> (which fields to omit, how to split a name). <a href="https://www.brailleauthority.org/sites/default/files/2024-10/Business%20Cards%20Fact%20Sheet.pdf" target="_blank" rel="noopener noreferrer">Read BANA's original examples in the Fact Sheet (PDF) →</a>
                         </div>
 
                         <h4>Example 1: Organization redundant with e-mail (BANA Example 1)</h4>
@@ -8683,7 +8720,7 @@
 ⠓⠕⠛⠺⠜⠞⠎⠀⠎⠡⠕⠕⠇
 ⠓⠜⠗⠽⠈⠁⠐
 ⠓⠕⠛⠺⠜⠞⠎⠲⠫⠥</pre>
-                            <p><strong>What to type in this app (Grade 1):</strong></p>
+                            <p><strong>What to type in this app:</strong></p>
                             <pre>harry potter
 harry@hogwarts.edu</pre>
                             <p><strong>Result:</strong> 2-3 lines. E-mail may wrap after <code>@</code> with a dot-5 continuation indicator.</p>
@@ -8699,7 +8736,7 @@ harry@hogwarts.edu</pre>
 ⠠⠎⠡⠊⠍⠍⠑⠇⠋⠢⠝⠊⠛
 ⠇⠲⠎⠡⠊⠍⠍⠑⠇⠋⠢⠝⠊⠛
 ⠈⠁⠥⠎⠁⠉⠑⠲⠜⠍⠽</pre>
-                            <p><strong>What to type in this app (Grade 1):</strong></p>
+                            <p><strong>What to type in this app:</strong></p>
                             <pre>liesel a.
 schimmelfennig
 l.schimmelfennig@usace.army</pre>
@@ -8716,7 +8753,7 @@ l.schimmelfennig@usace.army</pre>
 ⠁⠇⠃⠥⠟⠥⠻⠟⠥⠑⠀⠰⠁⠉
 ⠉⠼⠑⠚⠑⠲⠉⠁⠃⠲⠙⠃⠃⠙
 ⠋⠼⠑⠚⠑⠲⠉⠁⠃⠲⠙⠃⠃⠑</pre>
-                            <p><strong>What to type in this app (Grade 1):</strong></p>
+                            <p><strong>What to type in this app:</strong></p>
                             <pre>fran rikard
 albuquerque ac
 c 505.312.4224
@@ -8742,7 +8779,7 @@ f 505.312.4225</pre>
                             <p><strong>Type:</strong></p>
                             <pre>amoxicillin
 500mg</pre>
-                            <p><strong>Result:</strong> 2 rows. "amoxicillin" uses 11 braille cells, within the default 13-cell row; abbreviate to "amox" if you add more per-row content.</p>
+                            <p><strong>Result:</strong> 2 rows. "amoxicillin" is at most 11 braille cells (fewer once contracted), within the default 13-cell row; abbreviate to "amox" if you add more per-row content.</p>
                         </div>
 
                         <h4>Example 6: Water Bottle ID Tag</h4>
@@ -8755,12 +8792,12 @@ f 505.312.4225</pre>
                             <p><strong>Result:</strong> 2 rows on a 75mm cylinder (~13 cells per row). Initials save space.</p>
                         </div>
 
-                        <p><a href="https://github.com/BrennenJohnston/braille-cylinder-stl-generator/blob/main/docs/guides/BUSINESS_CARD_TRANSLATION_GUIDE.md#worked-examples--grade-1-what-to-type-hints" target="_blank" rel="noopener noreferrer">See Grade 1 "what to type" hints for all nine BANA examples in the full guide →</a></p>
-                        <p><a href="https://www.brailleauthority.org/sites/default/files/2024-10/Business%20Cards%20Fact%20Sheet.pdf" target="_blank" rel="noopener noreferrer">See BANA's original Grade 2 worked examples in the Fact Sheet (PDF) →</a></p>
+                        <p><a href="https://github.com/BrennenJohnston/braille-cylinder-stl-generator/blob/main/docs/guides/BUSINESS_CARD_TRANSLATION_GUIDE.md#worked-examples--bana-braille--what-to-type" target="_blank" rel="noopener noreferrer">See "what to type" hints for all nine BANA examples in the full guide →</a></p>
+                        <p><a href="https://www.brailleauthority.org/sites/default/files/2024-10/Business%20Cards%20Fact%20Sheet.pdf" target="_blank" rel="noopener noreferrer">See BANA's original worked examples in the Fact Sheet (PDF) →</a></p>
                         <p><a href="https://github.com/BrennenJohnston/braille-cylinder-stl-generator/blob/main/docs/guides/CYLINDER_GUIDE.md#worked-examples" target="_blank" rel="noopener noreferrer">See more cylinder examples in the full guide →</a></p>
 
                         <div class="help-tab-sources">
-                            <p><small><strong>Sources:</strong> Business card examples take the content decisions from the <a href="https://www.brailleauthority.org/sites/default/files/2024-10/Business%20Cards%20Fact%20Sheet.pdf" target="_blank" rel="noopener noreferrer">BANA <em>Business Cards Fact Sheet</em></a> (approved March 2024) and translate them into Grade 1 input for this app; BANA's published examples are Grade 2 and live in the PDF. Cylinder examples are based on <a href="https://www.brailleauthority.org/size-and-spacing-braille-characters" target="_blank" rel="noopener noreferrer">BANA <em>Size and Spacing of Braille Characters</em></a>.</small></p>
+                            <p><small><strong>Sources:</strong> Business card examples take the content decisions from the <a href="https://www.brailleauthority.org/sites/default/files/2024-10/Business%20Cards%20Fact%20Sheet.pdf" target="_blank" rel="noopener noreferrer">BANA <em>Business Cards Fact Sheet</em></a> (approved March 2024); the braille shown alongside them is BANA's own, quoted verbatim from the PDF. Cylinder examples are based on <a href="https://www.brailleauthority.org/size-and-spacing-braille-characters" target="_blank" rel="noopener noreferrer">BANA <em>Size and Spacing of Braille Characters</em></a>.</small></p>
                         </div>
                     </div>
 

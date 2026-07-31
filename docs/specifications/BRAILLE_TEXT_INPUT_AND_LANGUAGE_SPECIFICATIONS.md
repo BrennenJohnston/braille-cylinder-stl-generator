@@ -69,7 +69,7 @@ The text input and language selection controls are located at the top of the mai
 │  └─────────────────────────────────────────────────────────────┘  │
 │                                                                   │
 │  ┌─ Select Language: ─────────────────────────────────────────┐  │
-│  │  [English (UEB), United States — uncontracted (grade 1) ▼] │  │
+│  │  [English (UEB), United States — contracted (grade 2) ▼]   │  │
 │  │  Default: English (UEB)...aligned with BANA guidance...    │  │
 │  └─────────────────────────────────────────────────────────────┘  │
 │                                                                   │
@@ -342,16 +342,16 @@ function createDynamicLineInputs(numLines) {
 │                                                                   │
 │  Placement Mode: ( ) Auto Placement  (•) Manual Placement         │
 │                                                                   │
-│  Line 1 Translation  [English (UEB) — uncontracted (grade 1) ▼]  │
+│  Line 1 Translation  [English (UEB) — contracted (grade 2) ▼]    │
 │  Line 1              [John Smith________________________]         │
 │                                                                   │
-│  Line 2 Translation  [English (UEB) — uncontracted (grade 1) ▼]  │
+│  Line 2 Translation  [English (UEB) — contracted (grade 2) ▼]    │
 │  Line 2              [123 Main Street___________________]         │
 │                                                                   │
 │  Line 3 Translation  [French — contracted (grade 2) ▼]           │
 │  Line 3              [Bonjour____________________________]        │
 │                                                                   │
-│  Line 4 Translation  [English (UEB) — uncontracted (grade 1) ▼]  │
+│  Line 4 Translation  [English (UEB) — contracted (grade 2) ▼]    │
 │  Line 4              [__________________________________ ]        │
 │                                                                   │
 └───────────────────────────────────────────────────────────────────┘
@@ -424,16 +424,18 @@ The master language selection dropdown controls:
         <div style="margin-bottom: 0.8em;">
             <select id="language-table" name="language_table" class="language-select"
                 aria-describedby="language-help">
-                <option value="en-ueb-g2.ctb">English (UEB), United States — contracted (grade 2)</option>
-                <option value="en-ueb-g1.ctb" selected>English (UEB), United States — uncontracted (grade 1)</option>
+                <option value="en-ueb-g2.ctb" selected>English (UEB), United States — contracted (grade 2)</option>
+                <option value="en-ueb-g1.ctb">English (UEB), United States — uncontracted (grade 1)</option>
                 <option value="en-us-g2.ctb">English (EBAE), United States — contracted (grade 2)</option>
                 <option value="en-us-g1.ctb">English (EBAE), United States — uncontracted (grade 1)</option>
             </select>
             <div id="language-help" class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
-                Default: English (UEB), United States — uncontracted (grade 1).
-                Chosen to align with BANA guidance for business cards and to minimize
-                ambiguity for names, emails, and short contact info.
-                Use contracted (grade 2) only when space is limited.
+                Default: English (UEB), United States — contracted (grade 2). The BANA
+                <em>Guidelines for Brailling Business Cards</em> (March 2024) says to follow
+                <em>The Rules of Unified English Braille</em>, and every worked example in that
+                fact sheet is contracted UEB. Contractions also pack more of a name, phone
+                number, or e-mail address into the 13–14 cells a card row allows. Switch to
+                uncontracted (grade 1) only if your reader has asked for it.
             </div>
         </div>
     </fieldset>
@@ -444,10 +446,21 @@ The master language selection dropdown controls:
 
 | Option | Value | Description | Selected |
 |--------|-------|-------------|----------|
-| English (UEB) G2 | `en-ueb-g2.ctb` | Unified English Braille, contracted | No |
-| **English (UEB) G1** | `en-ueb-g1.ctb` | Unified English Braille, uncontracted | **Yes (default)** |
+| **English (UEB) G2** | `en-ueb-g2.ctb` | Unified English Braille, contracted | **Yes (default)** |
+| English (UEB) G1 | `en-ueb-g1.ctb` | Unified English Braille, uncontracted | No |
 | English (EBAE) G2 | `en-us-g2.ctb` | English Braille American Edition, contracted | No |
 | English (EBAE) G1 | `en-us-g1.ctb` | English Braille American Edition, uncontracted | No |
+
+The default is fixed by `DEFAULT_LANGUAGE_TABLE` in `public/index.html`; every fallback in
+that file resolves to the same constant. It is the first-run value only — a table the user
+picks is persisted under `braille_prefs_language_table` and restored ahead of the default on
+later visits.
+
+**Rationale (BANA):** *Guidelines for Brailling Business Cards*, approved March 2024,
+instructs transcribers to "Follow *The Rules of Unified English Braille*" and to "Work with a
+UEB-certified transcriber", and transcribes all nine of its worked examples in contracted
+(grade 2) UEB. See `docs/guides/_bana_business_cards_verified_source.md` for the verified
+transcription.
 
 ### Dynamic Table Loading
 
@@ -552,11 +565,10 @@ function syncLineLanguageSelects() {
         const previous = sel.value;
         sel.innerHTML = optionsHTML;  // Copy all options from master
 
-        // Priority: keep prior choice > prefer English UEB G1 > fallback to master
+        // Priority: keep prior choice > the BANA default > fallback to master
         const hasPrev = previous && Array.from(sel.options).some(o => o.value === previous);
-        const desiredDefault = 'en-ueb-g1.ctb';
-        const hasDesired = Array.from(sel.options).some(o => o.value === desiredDefault);
-        sel.value = hasPrev ? previous : (hasDesired ? desiredDefault : masterValue);
+        const hasDesired = Array.from(sel.options).some(o => o.value === DEFAULT_LANGUAGE_TABLE);
+        sel.value = hasPrev ? previous : (hasDesired ? DEFAULT_LANGUAGE_TABLE : masterValue);
     });
 }
 ```
@@ -566,16 +578,16 @@ function syncLineLanguageSelects() {
 When a per-line language select is populated:
 
 1. **Previous Value** — If the select had a prior value that still exists in options, keep it
-2. **English UEB G1** — If no prior value, prefer `en-ueb-g1.ctb` (most common for business cards)
+2. **`DEFAULT_LANGUAGE_TABLE`** — If no prior value, prefer `en-ueb-g2.ctb` (the BANA default)
 3. **Master Value** — Fallback to whatever the master select has chosen
 
 ### Visual Example
 
 ```
-Line 1 Translation  [English (UEB) — uncontracted ▼]   ← Same as master
+Line 1 Translation  [English (UEB) — contracted ▼]     ← Same as master
 Line 2 Translation  [French — contracted (grade 2) ▼]  ← User changed
 Line 3 Translation  [German — uncontracted ▼]          ← User changed
-Line 4 Translation  [English (UEB) — uncontracted ▼]   ← Default
+Line 4 Translation  [English (UEB) — contracted ▼]     ← Default
 ```
 
 ---
@@ -1081,7 +1093,7 @@ per_line_language_tables = data.get('per_line_language_tables', None)
 | `settings` | `object` | All dimensional parameters | `{grid_columns: 15, ...}` |
 | `shape_type` | `string` | `"card"` or `"cylinder"` | `"cylinder"` |
 | `cylinder_params` | `object` | Cylinder-specific parameters | `{diameter: 30.75, ...}` |
-| `per_line_language_tables` | `string[]` | Liblouis table used for each line | `["en-ueb-g1.ctb", ...]` |
+| `per_line_language_tables` | `string[]` | Liblouis table used for each line | `["en-ueb-g2.ctb", ...]` |
 
 ### Example Request (Auto Mode)
 
@@ -1093,7 +1105,7 @@ per_line_language_tables = data.get('per_line_language_tables', None)
     "plate_type": "positive",
     "grade": "g2",
     "shape_type": "cylinder",
-    "per_line_language_tables": ["en-ueb-g1.ctb", "en-ueb-g1.ctb", "en-ueb-g1.ctb", "en-ueb-g1.ctb"],
+    "per_line_language_tables": ["en-ueb-g2.ctb", "en-ueb-g2.ctb", "en-ueb-g2.ctb", "en-ueb-g2.ctb"],
     "settings": {
         "grid_columns": "17",
         "grid_rows": "4",
@@ -1118,7 +1130,7 @@ per_line_language_tables = data.get('per_line_language_tables', None)
     "plate_type": "positive",
     "grade": "g2",
     "shape_type": "cylinder",
-    "per_line_language_tables": ["en-ueb-g1.ctb", "fr-bfu-g2.ctb", "en-ueb-g1.ctb", "en-ueb-g1.ctb"],
+    "per_line_language_tables": ["en-ueb-g2.ctb", "fr-bfu-g2.ctb", "en-ueb-g2.ctb", "en-ueb-g2.ctb"],
     "settings": { ... }
 }
 ```
@@ -1518,7 +1530,7 @@ if original_lines and row_num < len(original_lines):
 ```javascript
 // Frontend collects:
 const src = "John Smith 123 Main Street Anytown USA";
-const wrap = await banaAutoWrap(src, 15, 4, 'en-ueb-g1.ctb');
+const wrap = await banaAutoWrap(src, 15, 4, 'en-ueb-g2.ctb');
 
 // wrap result:
 {
@@ -1533,7 +1545,7 @@ const wrap = await banaAutoWrap(src, 15, 4, 'en-ueb-g1.ctb');
     lines: ["⠚⠕⠓⠝ ⠎⠍⠊⠞⠓ ⠼⠁⠃⠉", "⠍⠁⠊⠝ ⠎⠞⠗⠑⠑⠞", "⠁⠝⠽⠞⠕⠺⠝ ⠥⠎⠁", ""],
     original_lines: ["John Smith 123", "Main Street", "Anytown USA", ""],
     placement_mode: "auto",
-    per_line_language_tables: ["en-ueb-g1.ctb", "en-ueb-g1.ctb", "en-ueb-g1.ctb", "en-ueb-g1.ctb"],
+    per_line_language_tables: ["en-ueb-g2.ctb", "en-ueb-g2.ctb", "en-ueb-g2.ctb", "en-ueb-g2.ctb"],
     // ... other fields
 }
 ```
@@ -1560,7 +1572,7 @@ for (let i = 0; i < lines.length; i++) {
     lines: ["⠚⠕⠓⠝ ⠎⠍⠊⠞⠓", "⠃⠕⠝⠚⠕⠥⠗", "", "⠉⠕⠝⠞⠁⠉⠞ ⠍⠑"],
     original_lines: ["John Smith", "Bonjour", "", "Contact Me"],
     placement_mode: "manual",
-    per_line_language_tables: ["en-ueb-g1.ctb", "fr-bfu-g2.ctb", "en-ueb-g1.ctb", "en-ueb-g1.ctb"],
+    per_line_language_tables: ["en-ueb-g2.ctb", "fr-bfu-g2.ctb", "en-ueb-g2.ctb", "en-ueb-g2.ctb"],
     // ... other fields
 }
 ```
@@ -1788,7 +1800,7 @@ async function banaAutoWrap(src, cols, rows, tableName) {
 
 **Specification states:**
 - Copies options from master `#language-table`
-- Priority: prior value > `en-ueb-g1.ctb` > master value
+- Priority: prior value > `DEFAULT_LANGUAGE_TABLE` (`en-ueb-g2.ctb`) > master value
 
 **Implementation verified:**
 ```javascript
@@ -1800,9 +1812,8 @@ function syncLineLanguageSelects() {
         const previous = sel.value;
         sel.innerHTML = optionsHTML;
         const hasPrev = previous && Array.from(sel.options).some(o => o.value === previous);
-        const desiredDefault = 'en-ueb-g1.ctb';
-        const hasDesired = Array.from(sel.options).some(o => o.value === desiredDefault);
-        sel.value = hasPrev ? previous : (hasDesired ? desiredDefault : masterValue);
+        const hasDesired = Array.from(sel.options).some(o => o.value === DEFAULT_LANGUAGE_TABLE);
+        sel.value = hasPrev ? previous : (hasDesired ? DEFAULT_LANGUAGE_TABLE : masterValue);
     });
 }
 ```

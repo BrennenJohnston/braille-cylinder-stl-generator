@@ -119,7 +119,9 @@ This section lists canonical field names, high-level types, and brief rules. See
 - text.languages: array<string>
   - Optional. Per-line table IDs; falls back to `text.default_language`.
 - text.default_language: string
-  - Default language table (e.g., `en-ueb-g1`).
+  - Default language table. Defaults to `en-ueb-g2.ctb` (English UEB, contracted / grade 2),
+    matching the BANA *Guidelines for Brailling Business Cards* (March 2024), whose worked
+    examples are all contracted UEB.
 - text.original_lines: array<string>
   - Optional. Original pre-translation lines for indicators and preview context.
 - text.auto_wrap: boolean
@@ -318,7 +320,7 @@ Card, positive (emboss, rounded):
   "placement_mode": "auto",
   "text": {
     "lines": ["⠓⠑⠇⠇⠕ ⠺⠕⠗⠇⠙"],
-    "default_language": "en-ueb-g1",
+    "default_language": "en-ueb-g2.ctb",
     "auto_wrap": true
   },
   "spacing": {

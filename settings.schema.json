@@ -23,7 +23,7 @@
           "items": { "type": "string", "pattern": "^[\\u2800-\\u28FF\\s]*$" }
         },
         "languages": { "type": "array", "items": { "type": "string" } },
-        "default_language": { "type": "string" },
+        "default_language": { "type": "string", "default": "en-ueb-g2.ctb" },
         "original_lines": { "type": "array", "items": { "type": "string" } },
         "auto_wrap": { "type": "boolean" }
       }

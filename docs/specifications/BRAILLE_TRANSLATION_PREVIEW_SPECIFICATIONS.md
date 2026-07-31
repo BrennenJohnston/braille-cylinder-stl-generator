@@ -241,7 +241,8 @@ case 'translate':
     const { text, grade, tableName } = data;
 
     // Use provided table or default based on grade
-    let selectedTable = tableName || (grade === 'g2' ? 'en-ueb-g2.ctb' : 'en-ueb-g1.ctb');
+    // DEFAULT_TABLE = 'en-ueb-g2.ctb' (contracted UEB, the app's first-run default)
+    let selectedTable = tableName || (grade === 'g1' ? 'en-ueb-g1.ctb' : DEFAULT_TABLE);
 
     // Ensure unicode braille output by prepending unicode.dis
     const tableChain = selectedTable.indexOf('unicode.dis') !== -1
@@ -613,12 +614,15 @@ Each table entry contains:
 
 ```javascript
 const defaultValues = new Set([
-    'en-ueb-g2.ctb',  // Unified English Braille Grade 2
+    'en-ueb-g2.ctb',  // Unified English Braille Grade 2 — selected on first run
     'en-ueb-g1.ctb',  // Unified English Braille Grade 1
     'en-us-g2.ctb',   // English US Grade 2 (EBAE)
     'en-us-g1.ctb'    // English US Grade 1 (EBAE)
 ]);
 ```
+
+The selected entry is `DEFAULT_LANGUAGE_TABLE` (`en-ueb-g2.ctb`) unless
+`localStorage.braille_prefs_language_table` holds a table the user picked earlier.
 
 ### Frontend Table Loading
 

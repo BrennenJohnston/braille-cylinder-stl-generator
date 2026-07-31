@@ -6,7 +6,7 @@
 
 > **Status:** Flat business card generation is currently temporarily disabled while we improve this feature. This guide is preserved for when the feature returns. In the meantime, see [CYLINDER_GUIDE.md](CYLINDER_GUIDE.md) for creating braille cylinders (labels, containers).
 
-This guide helps you create effective braille business cards using the Braille STL Generator. It quotes the Braille Authority of North America (BANA) Fact Sheet for every normative rule, and gives Grade 1 *"what to type into this app"* hints for each BANA example. **BANA's own published examples are Grade 2 (contracted) braille and are not reproduced here — see the Fact Sheet PDF for the originals.**
+This guide helps you create effective braille business cards using the Braille STL Generator. It quotes the Braille Authority of North America (BANA) Fact Sheet for every normative rule, and gives *"what to type into this app"* hints for each BANA example. BANA's published examples are Grade 2 (contracted) UEB, which is also this app's default translation, so the app's output is in the same code — though BANA's transcribers applied cell-level judgement that liblouis will not always reproduce exactly.
 
 ## The most important decision
 
@@ -126,15 +126,15 @@ The dot-5 line continuation indicator is preferred; omitting it is BANA's "last 
 
 Same shape as the e-mail rule, with the preferred division points being colon, period, and slash. If the domain is clear without it, omit `https://` or `www.` to save cells.
 
-## Worked examples — BANA Grade 2 braille + Grade 1 "what to type"
+## Worked examples — BANA braille + "what to type"
 
 Each example below shows three things, in order:
 
 1. **Print card** — what was on the original print business card.
 2. **BANA Grade 2 braille** — the cells BANA published in the Fact Sheet, reproduced verbatim in Unicode (U+2800–U+28FF) from the verified visual transcription. **Best viewed in a system font that has good support for Unicode braille** (Segoe UI Symbol, Apple Symbols, DejaVu Sans, etc. — most modern OSes render these glyphs out of the box).
-3. **What to type in this app** — Grade 1 "what to type" hint that captures BANA's content decisions (which fields to omit, how to split a name); the app then translates this with liblouis.
+3. **What to type in this app** — the hint that captures BANA's content decisions (which fields to omit, how to split a name); the app then translates this with liblouis.
 
-BANA's published braille is Grade 2 (contracted). This app defaults to Grade 1 (uncontracted) for clarity on names and contact info, so the cells the app emits will look different from BANA's even when the *content decisions* match.
+BANA's published braille is Grade 2 (contracted) and so is this app's default table, so the code matches. The exact cells can still differ: BANA's transcribers made per-card judgement calls (dropping a capital indicator here, choosing a division point there) that an automatic translation does not reproduce.
 
 ### Example 1 — Omit organization (appears in e-mail domain), wrap e-mail
 
@@ -390,21 +390,23 @@ number needs, so one fits on a single row.
 | Setting | Value | Reason |
 |---------|-------|--------|
 | Placement Mode | Auto Placement | Handles wrapping automatically (your line breaks are kept — each input line starts a new row) and applies BANA's punctuation-first division preference where it can |
-| Language | English (UEB) — uncontracted (grade 1) | Clearer for names, e-mail, and contact info |
+| Language | English (UEB) — contracted (grade 2) | The app default, and the code BANA uses throughout the Fact Sheet; contractions also buy back cells on a 13-cell row |
 | Capitalized Letters | Disabled (for tight cards) | Saves cells per BANA's "remove the capital indicators" strategy; the app default is Enabled |
 | Braille Cells | 13 (visual, either indicator-letter setting) / 14 (tactile) | The per-mode recommendation the app fills in automatically |
 | Braille Lines | 4 | BANA's typical layout |
 | Indicator Letters | On | Reserves a second marker cell for the row's first letter. The 13-cell recommendation is the same either way; turning it Off drops the row to 14 total columns and widens the seam gap rather than adding text capacity (the alignment triangle is always included) |
 
-### When to use Grade 2 (contracted)
+### When to switch to Grade 1 (uncontracted)
 
-BANA's worked examples are Grade 2. Use it only when:
+Grade 2 is the default because BANA instructs transcribers to "Follow *The Rules of Unified
+English Braille*" and every worked example in the Fact Sheet is contracted. Switch to
+uncontracted only when:
 
-- You have exhausted the space-saving strategies in the "Names" and "Organization" sections above
-- The card owner understands contracted braille will be used
-- The content is mostly common English words
+- The card owner or their reader has asked for uncontracted braille
+- The card is going to someone still learning braille
 
-Contracted braille can make names, e-mail addresses, and web addresses harder to read because their letter sequences may collide with English contractions.
+Be aware of the cost: uncontracted braille takes more cells, so content that fit BANA's
+13-cell rows may no longer fit.
 
 ## Resources
 

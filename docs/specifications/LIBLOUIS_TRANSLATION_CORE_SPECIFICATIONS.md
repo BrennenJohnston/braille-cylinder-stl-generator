@@ -358,8 +358,8 @@ the geometry that gets produced.
 | Table | Purpose | Required |
 |-------|---------|----------|
 | `unicode.dis` | Forces Unicode braille output (U+2800–U+28FF) | **YES** |
-| `en-ueb-g1.ctb` | English UEB uncontracted | Default |
-| `en-ueb-g2.ctb` | English UEB contracted | Optional |
+| `en-ueb-g2.ctb` | English UEB contracted (grade 2) | **Default** — matches BANA's *Guidelines for Brailling Business Cards* (March 2024) |
+| `en-ueb-g1.ctb` | English UEB uncontracted (grade 1) | Optional |
 
 ### Table File Format
 
@@ -674,7 +674,7 @@ case 'translate':
     if (tableName) {
         selectedTable = tableName;
     } else {
-        selectedTable = grade === 'g2' ? 'en-ueb-g2.ctb' : 'en-ueb-g1.ctb';
+        selectedTable = grade === 'g1' ? 'en-ueb-g1.ctb' : DEFAULT_TABLE;  // DEFAULT_TABLE = 'en-ueb-g2.ctb'
     }
 
     console.log('Worker: Translating text:', text, 'with table:', selectedTable);
