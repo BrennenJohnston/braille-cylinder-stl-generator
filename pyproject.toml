@@ -50,6 +50,11 @@ test = [
 [tool.ruff]
 line-length = 120
 target-version = "py312"
+# Ruff 0.16 formats Python code blocks inside Markdown by default. Our docs use those
+# blocks to quote code from other sources verbatim, so they are not ours to restyle.
+# OpenSCAD/ is a verbatim copy of an upstream tag whose bytes are hash-guarded by
+# tests/test_vendored_openscad.py; reformatting anything in it would break that guard.
+extend-exclude = ["*.md", "OpenSCAD"]
 
 [tool.ruff.lint]
 select = [
