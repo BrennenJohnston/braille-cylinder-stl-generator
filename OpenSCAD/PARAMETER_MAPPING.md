@@ -203,9 +203,7 @@ and the polygonal cutout are unchanged — only surface features differ.
   lose ~0.13 mm at its edges to the chord sagitta — large next to the 0.2 mm
   nesting margin.
 - **Capacity.** No marker cells, so `actual_grid_columns == grid_columns` and
-  up to 14 text cells fit the default cylinder, though 13 is the recommended
-  layout (14 leaves the arrow tighter than is comfortable in practice).
-  `indicators` is ignored.
+  up to 14 text cells fit the default cylinder. `indicators` is ignored.
 - **Seam-gap guard.** When the gap drops below
   `tactile_indicator_width + 5 mm`, both plates render a red
   `TACTILE GAP TOO SMALL: <gap>mm` extrusion above the cylinder and the desktop
@@ -229,7 +227,7 @@ and the polygonal cutout are unchanged — only surface features differ.
 
 All default values match the web-based generator's defaults (0.4mm paper preset applied on load):
 - Cylinder: 30.8mm diameter × 52mm height
-- Grid: 13 text cells × 4 rows (in Visual indicator mode with Indicator Letters ON, 2 additional cells are reserved = 15 total; with Indicator Letters OFF only the triangle cell is reserved and 14 text cells are recommended; Tactile indicator mode reserves none but still recommends 13, since 14 crowds the seam gap the arrow sits in)
+- Grid: 13 text cells × 4 rows (in Visual indicator mode with Indicator Letters ON, 2 additional cells are reserved = 15 total; with Indicator Letters OFF only the triangle cell is reserved; Tactile indicator mode reserves none — either narrower layout fits up to 14 text cells on the default cylinder)
 - Spacing matches BANA specifications
 - Default shape: Rounded (the dropdown still offers Cone)
 - Default indicator mode: Visual (the dropdown still offers Tactile)

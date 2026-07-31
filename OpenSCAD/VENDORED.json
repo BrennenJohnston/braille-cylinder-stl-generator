@@ -1,5 +1,5 @@
 {
-  "$comment": "Provenance for the vendored OpenSCAD copy. Every file below is copied verbatim from the upstream repository at the recorded tag. Edit them upstream, never here. tests/test_vendored_openscad.py fails if the .scad hash drifts from this record.",
+  "$comment": "Provenance for the vendored OpenSCAD copy. Every file below is copied verbatim from the upstream repository at the recorded tag, except where a note says otherwise. Edit them upstream, never here. Each sha256 is of the bytes this repo ships, which for a file with an 'edited on copy' note is deliberately not the upstream hash; tests/test_vendored_openscad.py fails if any file drifts from its record.",
   "upstream_repo": "https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad",
   "upstream_tag": "v2.4.1",
   "upstream_commit": "f31c101356963b4b0d4b12ccae3934ec9dd1aa5c",
@@ -12,15 +12,34 @@
       "sha256": "d10c617f7d030e1e0a788f0492fbcec5c6fd2a34e562b3ffacb9b68c42dbed46",
       "note": "The MakerWorld single-file build is vendored rather than the dual-file desktop build, so the download is self-contained (no include <presets.scad>). Renamed on copy: this repo ships one file, so the _MakerWorld_v2 suffix would only confuse."
     },
-    "LICENSE": { "upstream_path": "LICENSE" },
+    "LICENSE": {
+      "upstream_path": "LICENSE",
+      "sha256": "a33076793221c63e9f3a21f295da07766a5a5071513066a649d1bd5acfc42af8"
+    },
     "PARAMETER_MAPPING.md": {
       "upstream_path": "docs/PARAMETER_MAPPING.md",
-      "note": "One sentence edited on copy: upstream says 'this repository contains only the OpenSCAD cylinder generator', which is false here."
+      "sha256": "e317fd7f146666b3f09e8e01c819fb25c420b26b503a68619ecc02c8079f0608",
+      "note": "One sentence edited on copy: upstream says 'this repository contains only the OpenSCAD cylinder generator', which is false here. The hash covers the edited copy, so it still catches later drift."
     },
-    "docs/MAKERWORLD_QUICK_START.md": { "upstream_path": "docs/MAKERWORLD_QUICK_START.md" },
-    "docs/MakerWorld_Quick_Start_Guide.pdf": { "upstream_path": "docs/MakerWorld_Quick_Start_Guide.pdf" },
-    "docs/OPENSCAD_COORDINATE_SYSTEM_SPECIFICATIONS.md": { "upstream_path": "docs/OPENSCAD_COORDINATE_SYSTEM_SPECIFICATIONS.md" },
-    "docs/QUICK_START_TESTING.md": { "upstream_path": "docs/QUICK_START_TESTING.md" },
-    "docs/WEB_TO_OPENSCAD_PORTING_GUIDE.md": { "upstream_path": "docs/WEB_TO_OPENSCAD_PORTING_GUIDE.md" }
+    "docs/MAKERWORLD_QUICK_START.md": {
+      "upstream_path": "docs/MAKERWORLD_QUICK_START.md",
+      "sha256": "88df50e801bc62b64aac9cf7d03f6a1ce967317706758d098774ba322f01810c"
+    },
+    "docs/MakerWorld_Quick_Start_Guide.pdf": {
+      "upstream_path": "docs/MakerWorld_Quick_Start_Guide.pdf",
+      "sha256": "38c04fb47598b0a0067af32fed5ebf1b2051c12dacf02149574c38331f6f7299"
+    },
+    "docs/OPENSCAD_COORDINATE_SYSTEM_SPECIFICATIONS.md": {
+      "upstream_path": "docs/OPENSCAD_COORDINATE_SYSTEM_SPECIFICATIONS.md",
+      "sha256": "97c70d60e27696acbaa7e754ed3a81f59612cf2f81bf352958aa069a508c26df"
+    },
+    "docs/QUICK_START_TESTING.md": {
+      "upstream_path": "docs/QUICK_START_TESTING.md",
+      "sha256": "4b61ad6d0ca1fd8e5b33f8d24aab4ce478aa825e7b533a5510bf39ea4a331a4b"
+    },
+    "docs/WEB_TO_OPENSCAD_PORTING_GUIDE.md": {
+      "upstream_path": "docs/WEB_TO_OPENSCAD_PORTING_GUIDE.md",
+      "sha256": "cdf9b187f0c8664ae4be3f1eacc1772532f4d53a3f25764eff3950126b2c5d16"
+    }
   }
 }

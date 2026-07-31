@@ -19,7 +19,8 @@ v2.0.0 has no external service dependencies. The server is Flask serving static 
       If it is behind, copy that release's
       `makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad` (plus any
       changed docs) into `OpenSCAD/`, update every field in `VENDORED.json`
-      including the new `sha256`, and re-run `pytest tests/test_vendored_openscad.py`.
+      including a fresh `sha256` for **each** file you copied, and re-run
+      `pytest tests/test_vendored_openscad.py`.
       Nothing automated can detect this drift — the check needs the network, so
       it lives here instead of in CI. A stale copy is how the vendored README
       ended up claiming the upstream repo was dead.
