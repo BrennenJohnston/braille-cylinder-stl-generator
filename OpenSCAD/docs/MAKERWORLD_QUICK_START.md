@@ -142,8 +142,9 @@ Choose Tactile when a blind user needs to align the two cylinders unaided:
   from the counter without sighted help.
 - It is deliberately shallower than the braille dots (0.8 mm vs 1.0 mm), so the
   dots still do the embossing and the indicator leaves at most a faint mark.
-- With no marker cells, up to **14 text cells** fit the default cylinder. The
-  `indicators` toggle is ignored.
+- With no marker cells, up to **14 text cells** fit the default cylinder, but
+  **13** is the recommended row: 14 leaves the arrow a tighter seam gap than is
+  comfortable. The `indicators` toggle is ignored.
 
 Five sliders tune the fit if you need them: `tactile_indicator_width`,
 `tactile_indicator_length`, `tactile_indicator_raise`,
@@ -162,8 +163,9 @@ validated — raise the two recess values if the plates bind.
   cylinder (~96.8 mm circumference) fits that with room left for the seam
   gap. A larger diameter adds margin around the seam rather than more cells —
   raise `grid_columns` yourself if you want longer rows on a bigger cylinder.
-  With Indicator Letters Off (triangle cell only) — or in Tactile mode, which
-  has no marker cells — up to 14 text cells fit the default cylinder.
+  With Indicator Letters Off (triangle cell only) up to 14 text cells fit the
+  default cylinder. Tactile mode has no marker cells at all, but 13 is still
+  the recommended row there so the arrow keeps a comfortable seam gap.
 - Print cylinders standing upright for the best dot quality, and use
   `seam_offset_degrees` to rotate the seam away from your text.
 
@@ -198,7 +200,8 @@ warning shows the measured gap and appears on both plates. At the default
 cylinder size the gap is 18.8 mm at 13 text cells and 12.3 mm at 14; 15 cells
 leaves only 5.8 mm and trips the warning. Fixes, in order of preference:
 
-1. **Lower `grid_columns`** back to 14 or fewer.
+1. **Lower `grid_columns`** back to 13, the recommended tactile row (14 also
+   clears the warning, with less room to spare).
 2. **Raise `cylinder_diameter_mm`** if you are labelling a larger container.
 3. **Narrow `tactile_indicator_width`** (Indicator Mode section) — but a
    narrower arrow is harder to find by touch, so treat this as a last resort.

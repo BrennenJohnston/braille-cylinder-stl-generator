@@ -150,7 +150,7 @@ seam_offset_degrees = 0.0; // [0:1:360] Seam offset (degrees) — Rotates starti
 
 /* [Expert Mode - Braille Spacing] */
 // --- Braille Dimensions ---
-grid_columns = 13; // [1:1:20] Text capacity in braille cells per row (matches the web app default of 13 text cells; in Visual indicator mode, 2 extra marker cells are added when Indicator Letters are On, or 1 extra cell for the always-present alignment triangle when Off — up to 14 text cells fit the default cylinder with Indicator Letters Off. Tactile indicator mode adds no marker cells, so up to 14 text cells fit the default cylinder; 15 leaves too little seam gap for the indicator)
+grid_columns = 13; // [1:1:20] Text capacity in braille cells per row (matches the web app default of 13 text cells; in Visual indicator mode, 2 extra marker cells are added when Indicator Letters are On, or 1 extra cell for the always-present alignment triangle when Off — up to 14 text cells fit the default cylinder with Indicator Letters Off. Tactile indicator mode adds no marker cells, but 13 is still the recommended row: 14 fits and 15 leaves too little seam gap for the indicator)
 grid_rows = 4; // [1:1:10] Number of lines of braille
 cell_spacing = 6.5; // [2:0.1:15] Horizontal spacing between cells (mm)
 line_spacing = 10.0; // [5:0.1:25] Vertical spacing between lines (mm)

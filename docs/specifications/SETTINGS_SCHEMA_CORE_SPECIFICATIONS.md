@@ -226,7 +226,7 @@ Thickness). The five `tactile_*` dials live in the **Tactile Indicator Dimension
 of Expert Mode, which is hidden entirely unless tactile mode is selected.
 
 Reserved marker columns per row:
-- indicator_mode = "tactile": 0 columns — the indicator sits in the seam gap — 14 text cells at defaults (15 leaves too little gap)
+- indicator_mode = "tactile": 0 columns — the indicator sits in the seam gap — 13 text cells recommended at defaults (14 also fits; 15 leaves too little gap)
 - indicator_shapes = 1 (On): 2 marker columns reserved per row (letter + triangle) — 13 text cells at defaults
 - indicator_shapes = 0 (Off): 1 marker column reserved per row (triangle only) — 14 text cells at defaults
 

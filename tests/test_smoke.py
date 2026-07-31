@@ -416,6 +416,8 @@ def test_tactile_gap_warning_when_seam_gap_too_small(client):
     """
     # 14 cells at 6.5 mm on the default 30.75 mm cylinder leaves
     # 96.6 - 84.5 = 12.1 mm, comfortably over the 4 + 5 mm the arrow needs.
+    # The UI recommends 13 for tactile mode; 14 is still a valid layout, which
+    # is exactly what this case pins.
     roomy = {
         'lines': ['', '', '', ''],
         'plate_type': 'negative',

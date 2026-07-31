@@ -195,7 +195,8 @@ All theme-dependent colors are defined using CSS custom properties (variables) o
     --shadow-medium: rgba(49,130,206,0.18);
 
     /* STL Preview colors - CRITICAL FOR 3D VIEWING */
-    --stl-mesh-color: #6699cc;
+    --stl-mesh-color: #5580b3;
+    --stl-edge-color: #020617;
     --stl-background: #f1f5f9;
     --stl-ambient-light: #888888;
     --stl-directional-light: #ffffff;
@@ -253,6 +254,7 @@ All theme-dependent colors are defined using CSS custom properties (variables) o
 
     /* STL Preview colors */
     --stl-mesh-color: #90cdf4;
+    --stl-edge-color: #1a202c;
     --stl-background: #2d3748;
     --stl-ambient-light: #666666;
     --stl-directional-light: #ffffff;
@@ -312,6 +314,7 @@ All theme-dependent colors are defined using CSS custom properties (variables) o
 
     /* STL Preview - CRITICAL SETTINGS FOR LOW VISION */
     --stl-mesh-color: #00ffff;              /* Bright cyan mesh */
+    --stl-edge-color: #000000;              /* Near-maximum contrast on cyan */
     --stl-background: #000000;              /* Pure black background */
     --stl-ambient-light: #666666;           /* Reduced ambient to prevent washing out */
     --stl-directional-light: #e6e6e6;       /* Slightly dimmed for better contrast */
@@ -647,7 +650,8 @@ const styles = getComputedStyle(document.documentElement);
 const stlBackground = styles.getPropertyValue('--stl-background').trim() || '#f1f5f9';
 const stlAmbientLight = styles.getPropertyValue('--stl-ambient-light').trim() || '#888888';
 const stlDirectionalLight = styles.getPropertyValue('--stl-directional-light').trim() || '#ffffff';
-const stlMeshColor = styles.getPropertyValue('--stl-mesh-color').trim() || '#6699cc';
+const stlMeshColor = styles.getPropertyValue('--stl-mesh-color').trim() || '#5580b3';
+const stlEdgeColor = styles.getPropertyValue('--stl-edge-color').trim() || '#020617';
 const stlAmbientIntensity = parseFloat(styles.getPropertyValue('--stl-ambient-intensity').trim()) || 0.5;
 const stlDirectionalIntensity = parseFloat(styles.getPropertyValue('--stl-directional-intensity').trim()) || 1.0;
 
@@ -659,12 +663,29 @@ scene.background = new THREE.Color(stlBackground);
 
 | Variable | Light Mode | Dark Mode | High Contrast |
 |----------|------------|-----------|---------------|
-| `--stl-mesh-color` | `#6699cc` (Steel Blue) | `#90cdf4` (Light Blue) | `#00ffff` (Bright Cyan) |
+| `--stl-mesh-color` | `#5580b3` (Steel Blue) | `#90cdf4` (Light Blue) | `#00ffff` (Bright Cyan) |
+| `--stl-edge-color` | `#020617` (Slate 950) | `#1a202c` (Near Black) | `#000000` (Pure Black) |
 | `--stl-background` | `#f1f5f9` (Light Gray) | `#2d3748` (Dark Gray) | `#000000` (Pure Black) |
 | `--stl-ambient-light` | `#888888` | `#666666` | `#666666` |
 | `--stl-directional-light` | `#ffffff` | `#ffffff` | `#e6e6e6` |
 | `--stl-ambient-intensity` | `0.5` | `0.6` | `0.4` |
 | `--stl-directional-intensity` | `1.0` | `0.9` | `0.8` |
+
+#### Contrast Requirements (WCAG 2.2 SC 1.4.11 Non-text Contrast)
+
+The mesh is a non-text graphical object and must reach 3:1 against the viewer
+background. Edge overlay lines render 1px wide, so per W3C Low Vision Task Force
+guidance for thin strokes they are held to the 4.5:1 text threshold against the
+mesh colour they are drawn on.
+
+| Theme | Mesh vs Background | Edge vs Mesh |
+|-------|--------------------|--------------|
+| Light | 3.7:1 | 4.9:1 |
+| Dark | 7.0:1 | 9.5:1 |
+| High Contrast | 16.7:1 | 16.7:1 |
+
+The light theme's mesh colour was `#6699cc` until 2026-07, which measured 2.7:1
+and failed SC 1.4.11.
 
 ### 3.3 High Contrast Mode Lighting
 
@@ -713,17 +734,40 @@ scene.add(new THREE.AmbientLight(
 ));
 ```
 
-#### High Contrast Material Properties
+#### Material Properties
+
+`STL_MATERIAL_SETTINGS` in `public/index.html` is the single source for the
+preview `MeshPhongMaterial` per theme. `loadSTL()`, `update3DSceneColors()`, and
+`updatePreviewDisplaySettings()` all read from it, and `createStlMaterial()` is
+the only place a preview material is constructed.
 
 ```javascript
-if (currentTheme === 'high-contrast') {
-    mesh.material.specular = new THREE.Color(0xffffff);  // White specular highlights
-    mesh.material.shininess = 300;  // Higher shininess for sharper highlights
-} else {
-    mesh.material.specular = new THREE.Color(0x111111);  // Standard specular
-    mesh.material.shininess = 200;  // Standard shininess
+const STL_MATERIAL_SETTINGS = {
+    default: { specular: 0x111111, shininess: 30 },
+    'high-contrast': { specular: 0x333333, shininess: 60 }
+};
+
+function createStlMaterial(theme, meshColor) {
+    const settings = getStlMaterialSettings(theme);
+    return new THREE.MeshPhongMaterial({
+        color: new THREE.Color(meshColor),
+        specular: settings.specular,
+        shininess: settings.shininess,
+        flatShading: true,          // Faceted, slicer-style STL display
+        side: THREE.DoubleSide,
+        polygonOffset: true,        // Keeps the edge overlay clear of z-fighting
+        polygonOffsetFactor: 1,
+        polygonOffsetUnits: 1
+    });
 }
 ```
+
+These are matte to semi-matte, matching how slicers and mesh viewers
+(PrusaSlicer, Cura, MeshLab, the three.js editor) present an STL. Until 2026-07
+the values were shininess 200 (standard) / 300 (high contrast) with a white
+specular, which threw broad highlights across the plate that swallowed the dot
+geometry the preview exists to show. Form definition comes from the three-point
+lighting above instead.
 
 ### 3.4 Camera and Controls
 
@@ -962,11 +1006,11 @@ The label serves to:
 - Reduce user confusion about the panel's purpose
 - **Positioned at top as overlay** to maximize visibility without taking extra space below the viewer
 
-### 3.8 Preview Display Settings (Brightness and Contrast)
+### 3.8 Preview Display Settings (Brightness, Contrast, and Edge Outlines)
 
-User-adjustable brightness and contrast controls allow customization of how the 3D preview appears. These settings affect **only the visual preview** and do not modify the exported STL file.
+User-adjustable brightness, contrast, and edge-outline controls allow customization of how the 3D preview appears. These settings affect **only the visual preview** and do not modify the exported STL file.
 
-**UI Pattern:** Non-cycling **stepper controls** (`−` / `+`) with live value displays. Buttons disable at bounds (levels 1 and 5) and reuse the font-size control styling for consistent keyboard and screen reader behavior.
+**UI Pattern:** Non-cycling **stepper controls** (`−` / `+`) with live value displays for brightness and contrast, plus a single **toggle button** for edge outlines. All three reuse the font-size control styling for consistent keyboard and screen reader behavior; the steppers disable at bounds (levels 1 and 5).
 
 #### Control Overview
 
@@ -974,26 +1018,31 @@ User-adjustable brightness and contrast controls allow customization of how the 
 |---------|---------|-------|---------|---------------|
 | **Brightness** | Adjusts overall light intensity | 1-5 | 3 (Normal) | Non-cycling; +/- buttons disable at min/max |
 | **Contrast** | Adjusts ambient vs directional light ratio | 1-5 | 3 (Normal) | Non-cycling; +/- buttons disable at min/max |
+| **Edges** | Draws feature-edge outlines over the shaded surface | On/Off | Off | `aria-pressed` toggle button |
 
 #### Brightness Levels
 
+Recalibrated 2026-02-02: stakeholder feedback said the old "Very Bright" (1.4×) read as visually normal, so 1.4× became level 3 and the range extended around it.
+
 | Level | Name | Multiplier | Description |
 |-------|------|------------|-------------|
-| 1 | Very Dim | 0.6× | Significantly reduced lighting |
-| 2 | Dim | 0.8× | Slightly reduced lighting |
-| 3 | Normal | 1.0× | **Default** - Base theme lighting |
-| 4 | Bright | 1.2× | Slightly increased lighting |
-| 5 | Very Bright | 1.4× | Significantly increased lighting |
+| 1 | Very Dim | 0.7× | Significantly reduced lighting |
+| 2 | Dim | 1.0× | Old Normal baseline |
+| 3 | Normal | 1.4× | **Default** - Recalibrated from old Very Bright |
+| 4 | Bright | 1.9× | Extended range |
+| 5 | Very Bright | 2.5× | Maximum for high visibility needs |
 
 #### Contrast Levels
 
-| Level | Name | Ambient Ratio | Directional Ratio | Effect |
-|-------|------|---------------|-------------------|--------|
-| 1 | Very Low | 1.4× | 0.6× | Flat, even lighting |
-| 2 | Low | 1.2× | 0.8× | Soft shadows |
-| 3 | Normal | 1.0× | 1.0× | **Default** - Balanced lighting |
-| 4 | High | 0.8× | 1.2× | More defined shadows |
-| 5 | Very High | 0.6× | 1.4× | Dramatic lighting with strong shadows |
+Shininess offsets are added to the per-theme `STL_MATERIAL_SETTINGS.shininess` base (30 standard, 60 high contrast). They were rescaled in 2026-07 alongside the matte material: the previous `-40 … +220` range was written for a base of 200 and pushed even level 3 into mirror territory. There is deliberately **no floor** on the resulting shininess, which would defeat the low base.
+
+| Level | Name | Ambient Ratio | Directional Ratio | Specular Intensity | Shininess Offset | Effect |
+|-------|------|---------------|-------------------|--------------------|------------------|--------|
+| 1 | Very Low | 1.0× | 1.0× | 0.6× | −15 | Flat, even lighting |
+| 2 | Low | 0.8× | 1.2× | 1.0× | −5 | Soft shadows |
+| 3 | Normal | 0.6× | 1.4× | 1.6× | +10 | **Default** - Balanced lighting |
+| 4 | High | 0.4× | 1.7× | 2.2× | +30 | More defined shadows |
+| 5 | Very High | 0.25× | 2.0× | 2.8× | +60 | Dramatic lighting with strong shadows |
 
 #### HTML Structure (Stepper)
 
@@ -1029,6 +1078,14 @@ User-adjustable brightness and contrast controls allow customization of how the 
             </button>
         </div>
     </div>
+
+    <div class="preview-control-group">
+        <button type="button" id="edges-toggle" class="font-size-btn preview-toggle-btn"
+                aria-pressed="false" aria-controls="viewer"
+                title="Outline the model edges for a higher-contrast view">
+            Edges
+        </button>
+    </div>
 </div>
 ```
 
@@ -1038,13 +1095,13 @@ User-adjustable brightness and contrast controls allow customization of how the 
 let previewBrightnessLevel = 3;
 let previewContrastLevel = 3;
 
-const BRIGHTNESS_MULTIPLIERS = { 1: 0.6, 2: 0.8, 3: 1.0, 4: 1.2, 5: 1.4 };
+const BRIGHTNESS_MULTIPLIERS = { 1: 0.7, 2: 1.0, 3: 1.4, 4: 1.9, 5: 2.5 };
 const CONTRAST_SETTINGS = {
-    1: { ambientRatio: 1.4, directionalRatio: 0.6, specularIntensity: 0.3, shininessOffset: -80 },
-    2: { ambientRatio: 1.2, directionalRatio: 0.8, specularIntensity: 0.6, shininessOffset: -40 },
-    3: { ambientRatio: 1.0, directionalRatio: 1.0, specularIntensity: 1.0, shininessOffset: 0 },
-    4: { ambientRatio: 0.8, directionalRatio: 1.2, specularIntensity: 1.3, shininessOffset: 40 },
-    5: { ambientRatio: 0.6, directionalRatio: 1.4, specularIntensity: 1.6, shininessOffset: 80 }
+    1: { ambientRatio: 1.0,  directionalRatio: 1.0, specularIntensity: 0.6, shininessOffset: -15 },
+    2: { ambientRatio: 0.8,  directionalRatio: 1.2, specularIntensity: 1.0, shininessOffset: -5 },
+    3: { ambientRatio: 0.6,  directionalRatio: 1.4, specularIntensity: 1.6, shininessOffset: 10 },
+    4: { ambientRatio: 0.4,  directionalRatio: 1.7, specularIntensity: 2.2, shininessOffset: 30 },
+    5: { ambientRatio: 0.25, directionalRatio: 2.0, specularIntensity: 2.8, shininessOffset: 60 }
 };
 
 const brightnessLevelNames = { 1: 'Very Dim', 2: 'Dim', 3: 'Normal', 4: 'Bright', 5: 'Very Bright' };
@@ -1172,6 +1229,34 @@ updateContrastStepper();
     text-align: center;
 }
 
+/* Edge outline toggle - same stepper metrics, but wide enough for a word */
+.preview-toggle-btn {
+    min-width: 4em;
+    min-height: 1.6em;
+    padding: 0.2em 0.6em;
+}
+
+/* Same WCAG-AA active blues the Expert Mode toggles use */
+.preview-toggle-btn.active {
+    background: #1e4976;
+    color: #fff;
+    border-color: #1e4976;
+}
+
+[data-theme="dark"] .preview-toggle-btn.active {
+    background: #1e5a8a;
+    border-color: #1e5a8a;
+}
+
+/* Cyan rather than the yellow the shared .font-size-btn hover already uses, so
+   pressed and hovered are never the same swatch */
+[data-theme="high-contrast"] .preview-toggle-btn.active,
+[data-theme="high-contrast"] .preview-toggle-btn.active:hover {
+    background: #00ffff !important;
+    color: #000000 !important;
+    border: 2px solid #00ffff !important;
+}
+
 [data-theme="high-contrast"] .preview-controls-title,
 [data-theme="high-contrast"] .preview-control-label {
     color: #02fe05 !important;
@@ -1204,6 +1289,60 @@ updateContrastStepper();
 }
 ```
 
+#### Edge Outlines (Feature-Edge Overlay)
+
+WCAG technique G174 endorses offering a user control that switches to a
+higher-contrast presentation. Edge rendering is how slicers and CAD viewers
+expose structure independently of lighting, so the **Edges** toggle draws the
+model's feature edges as lines over the shaded surface.
+
+A full triangle wireframe (`wireframe: true`) is deliberately **not** offered: a
+braille plate runs to tens of thousands of facets and reads as noise.
+`THREE.EdgesGeometry` with a threshold angle of 22° keeps dot silhouettes and
+plate corners while dropping the tessellation seams of the curved surface.
+
+```javascript
+const STL_EDGE_THRESHOLD_ANGLE = 22;
+
+let edgesOverlay = null;
+let edgesVisible = false;
+
+// Built lazily: EdgesGeometry walks every triangle, so it is only paid for
+// once the user actually asks for outlines.
+function refreshEdgesOverlay() {
+    disposeEdgesOverlay();
+    if (!edgesVisible || !mesh || !mesh.geometry) return;
+
+    const edgeColor = getStlThemeColor('--stl-edge-color', '#020617');
+    edgesOverlay = new THREE.LineSegments(
+        new THREE.EdgesGeometry(mesh.geometry, STL_EDGE_THRESHOLD_ANGLE),
+        new THREE.LineBasicMaterial({ color: new THREE.Color(edgeColor) })
+    );
+    // Parented to the mesh so it inherits every camera-fitting transform
+    mesh.add(edgesOverlay);
+}
+
+function applyEdgesVisibility(visible) {
+    edgesVisible = Boolean(visible);
+    refreshEdgesOverlay();
+    updateEdgesToggle();   // aria-pressed + .active class
+    render();
+}
+```
+
+Lifecycle wiring in `public/index.html`:
+
+| Event | Handling |
+|-------|----------|
+| STL loaded (`loadSTL`) | `refreshEdgesOverlay()` after the mesh is added — rebuilds against the new geometry, or disposes and stops if the toggle is off |
+| Theme change (`update3DSceneColors`) | Recolours the existing overlay material from `--stl-edge-color` |
+| WebGL context restore | The reload path recreates the mesh with `createStlMaterial()` and calls `refreshEdgesOverlay()` |
+| Toggle click | `applyEdgesVisibility(!edgesVisible)` |
+
+Z-fighting between the lines and the facets they trace is prevented by
+`polygonOffset` on the mesh material (see `createStlMaterial()` above), not by
+nudging the overlay's position.
+
 #### Integration with Theme System
 
 The brightness and contrast settings work in conjunction with the theme system:
@@ -1227,13 +1366,15 @@ if (typeof updatePreviewDisplaySettings === 'function') {
 
 - **ARIA Labels**: Dynamic labels on +/- buttons reflect current level and action (e.g., "Decrease brightness (current Normal)")
 - **Live Value Announcements**: Value displays use `role="status"` + `aria-live="polite"` to announce changes without duplicate overlays
+- **Toggle State**: The Edges button follows the ARIA toggle-button pattern — a static accessible name ("Edges") with `aria-pressed` carrying the state, so no extra live region is needed
 - **Keyboard Navigation**: Native buttons with disabled states at bounds; Enter/Space activates, Shift+Tab/Tab respects grouping
 - **Focus Indicators**: Clear 3px focus outlines with offset for visibility
 - **High Contrast Mode**: Labels inherit high-contrast colors; buttons reuse font-size control styling that already meets WCAG AA
+- **Active State Colors**: The pressed Edges button uses the same WCAG-AA blues as the Expert Mode toggles (`#1e4976` light, `#1e5a8a` dark, both white-on-blue above 7:1). In high contrast it fills with cyan and black text at 16.7:1 — deliberately *not* the yellow that `.font-size-btn:hover` already uses, so pressed and hovered are never the same swatch. Pressed is a solid fill against an outlined unpressed state, so the distinction survives without colour
 
 #### Non-Persistence Policy
 
-Brightness and contrast settings are **not persisted** across sessions. This is consistent with the theme and font size policies:
+Brightness, contrast, and edge-outline settings are **not persisted** across sessions. This is consistent with the theme and font size policies:
 - Settings reset to defaults (level 3) on page load
 - Provides consistent starting experience for all users
 - Users with specific needs can quickly adjust as needed

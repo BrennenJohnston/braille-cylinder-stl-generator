@@ -88,7 +88,12 @@
             --info-text: #1e40af;
             --shadow-light: rgba(49,130,206,0.10);
             --shadow-medium: rgba(49,130,206,0.18);
-            --stl-mesh-color: #6699cc;
+            /* 3.7:1 against --stl-background, clearing WCAG 2.2 SC 1.4.11 (3:1).
+               The former #6699cc measured 2.7:1. */
+            --stl-mesh-color: #5580b3;
+            /* Edge overlay lines render 1px wide, so they are held to the 4.5:1
+               text threshold against the mesh they sit on: 4.9:1 here. */
+            --stl-edge-color: #020617;
             --stl-background: #f1f5f9;
             --stl-ambient-light: #888888;
             --stl-directional-light: #ffffff;
@@ -127,7 +132,8 @@
             --info-text: #bee3f8;
             --shadow-light: rgba(0,0,0,0.3);
             --shadow-medium: rgba(0,0,0,0.5);
-            --stl-mesh-color: #90cdf4;
+            --stl-mesh-color: #90cdf4; /* 7.0:1 against --stl-background */
+            --stl-edge-color: #1a202c; /* 9.5:1 against the mesh colour */
             --stl-background: #2d3748;
             --stl-ambient-light: #666666;
             --stl-directional-light: #ffffff;
@@ -167,7 +173,8 @@
             --info-text: #02fe05; /* Green instead of white */
             --shadow-light: transparent;
             --shadow-medium: transparent;
-            --stl-mesh-color: #00ffff; /* Bright cyan for high contrast */
+            --stl-mesh-color: #00ffff; /* Bright cyan, 16.7:1 against black */
+            --stl-edge-color: #000000; /* 16.7:1 against the cyan mesh */
             --stl-background: #000000; /* Keep black background */
             --stl-ambient-light: #666666; /* Reduced ambient light to prevent washing out */
             --stl-directional-light: #e6e6e6; /* Slightly dimmed directional light for better contrast */
@@ -1160,7 +1167,10 @@
             -webkit-backdrop-filter: blur(6px);
             border-top: 1px solid var(--border-primary);
             border-radius: 0 0 16px 16px;
-            flex-wrap: nowrap;
+            /* Wraps rather than clipping: the row fits on one line at every font
+               size up to 150%, and at 200% the groups break onto a second line
+               instead of running off the edge of the viewer. */
+            flex-wrap: wrap;
         }
 
         /* Preview Control Group (for each setting) */
@@ -1197,6 +1207,37 @@
             font-size: 0.7em !important;
             text-align: center;
             border-radius: 4px !important;
+        }
+
+        /* Edge outline toggle - same stepper metrics, but wide enough for a word */
+        .preview-toggle-btn {
+            min-width: 4em !important;
+            min-height: 1.6em !important;
+            padding: 0.2em 0.6em !important;
+            font-size: 0.7em !important;
+            border-radius: 4px !important;
+        }
+
+        /* Same WCAG-AA active blues the Expert Mode toggles use */
+        .preview-toggle-btn.active {
+            background: #1e4976;
+            color: #fff;
+            border-color: #1e4976;
+        }
+
+        [data-theme="dark"] .preview-toggle-btn.active {
+            background: #1e5a8a;
+            border-color: #1e5a8a;
+        }
+
+        /* Cyan rather than the yellow the shared .font-size-btn hover already
+           uses, so pressed and hovered are never the same swatch. Pressed is a
+           solid fill against the unpressed outline, which reads without colour. */
+        [data-theme="high-contrast"] .preview-toggle-btn.active,
+        [data-theme="high-contrast"] .preview-toggle-btn.active:hover {
+            background: #00ffff !important;
+            color: #000000 !important;
+            border: 2px solid #00ffff !important;
         }
 
         [data-theme="high-contrast"] .preview-display-controls {
@@ -2823,6 +2864,13 @@
                                 </button>
                             </div>
                         </div>
+                        <div class="preview-control-group">
+                            <button type="button" id="edges-toggle" class="font-size-btn preview-toggle-btn"
+                                    aria-pressed="false" aria-controls="viewer"
+                                    title="Outline the model edges for a higher-contrast view">
+                                Edges
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div id="viewer-instructions" class="sr-only">
@@ -3736,6 +3784,52 @@
         let renderer, scene, camera, mesh, controls;
         let lastSTLUrl = null;
 
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // STL PREVIEW MATERIAL - single source for the MeshPhongMaterial per theme
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // Matte to semi-matte, matching how slicers and mesh viewers (PrusaSlicer,
+        // Cura, MeshLab) present an STL. The previous shininess of 200/300 with a
+        // white specular threw broad highlights across the plate that swallowed the
+        // very dot geometry the preview exists to show; form definition comes from
+        // the three-point lighting instead.
+        const STL_MATERIAL_SETTINGS = {
+            default: { specular: 0x111111, shininess: 30 },
+            'high-contrast': { specular: 0x333333, shininess: 60 }
+        };
+
+        // Feature-edge overlay: only edges whose adjacent faces meet at more than
+        // this angle are drawn, which keeps dot silhouettes and plate corners while
+        // dropping the tessellation seams of a curved surface.
+        const STL_EDGE_THRESHOLD_ANGLE = 22;
+
+        let edgesOverlay = null;
+        let edgesVisible = false;
+
+        function getStlMaterialSettings(theme) {
+            return STL_MATERIAL_SETTINGS[theme] || STL_MATERIAL_SETTINGS.default;
+        }
+
+        function getStlThemeColor(variableName, fallback) {
+            const value = getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
+            return value || fallback;
+        }
+
+        function createStlMaterial(theme, meshColor) {
+            const settings = getStlMaterialSettings(theme);
+            return new THREE.MeshPhongMaterial({
+                color: new THREE.Color(meshColor),
+                specular: settings.specular,
+                shininess: settings.shininess,
+                flatShading: true,
+                side: THREE.DoubleSide,
+                // Pushes the shaded surface fractionally back in depth so the edge
+                // overlay is not chewed up by z-fighting with the facets it traces.
+                polygonOffset: true,
+                polygonOffsetFactor: 1,
+                polygonOffsetUnits: 1
+            });
+        }
+
         // Production logging - only log errors in production
         const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
         const log = {
@@ -3869,7 +3963,8 @@
                 const stlBackground = styles.getPropertyValue('--stl-background').trim() || '#f1f5f9';
                 const stlAmbientLight = styles.getPropertyValue('--stl-ambient-light').trim() || '#888888';
                 const stlDirectionalLight = styles.getPropertyValue('--stl-directional-light').trim() || '#ffffff';
-                const stlMeshColor = styles.getPropertyValue('--stl-mesh-color').trim() || '#6699cc';
+                const stlMeshColor = styles.getPropertyValue('--stl-mesh-color').trim() || '#5580b3';
+                const stlEdgeColor = styles.getPropertyValue('--stl-edge-color').trim() || '#020617';
                 const stlAmbientIntensity = parseFloat(styles.getPropertyValue('--stl-ambient-intensity').trim()) || 0.5;
                 const stlDirectionalIntensity = parseFloat(styles.getPropertyValue('--stl-directional-intensity').trim()) || 1.0;
 
@@ -3924,19 +4019,17 @@
 
                 // Update mesh color and material properties if mesh exists
                 if (mesh && mesh.material) {
-                    const currentTheme = document.documentElement.getAttribute('data-theme');
+                    const materialSettings = getStlMaterialSettings(currentTheme);
                     mesh.material.color = new THREE.Color(stlMeshColor);
-
-                    // Update specular properties for high contrast mode
-                    if (currentTheme === 'high-contrast') {
-                        mesh.material.specular = new THREE.Color(0xffffff); // White specular highlights
-                        mesh.material.shininess = 300; // Higher shininess for sharper highlights
-                    } else {
-                        mesh.material.specular = new THREE.Color(0x111111); // Standard specular
-                        mesh.material.shininess = 200; // Standard shininess
-                    }
-
+                    mesh.material.specular = new THREE.Color(materialSettings.specular);
+                    mesh.material.shininess = materialSettings.shininess;
                     mesh.material.needsUpdate = true;
+                }
+
+                // Recolour the feature-edge overlay for the new theme
+                if (edgesOverlay && edgesOverlay.material) {
+                    edgesOverlay.material.color = new THREE.Color(stlEdgeColor);
+                    edgesOverlay.material.needsUpdate = true;
                 }
 
                 // Store original light intensities for brightness/contrast adjustments
@@ -3985,12 +4078,15 @@
         // Lower ambient + higher directional = higher contrast
         // Recalibrated 2026-02-02: Stakeholder feedback indicated old "Very High" settings
         // appeared as visually "Normal". New scale centers old level 5 as Normal with extended range.
+        // Shininess offsets rescaled to the matte STL_MATERIAL_SETTINGS base: the old
+        // -40..+220 range was built for a base of 200 and pushed even level 3 into
+        // mirror territory.
         const CONTRAST_SETTINGS = {
-            1: { ambientRatio: 1.0, directionalRatio: 1.0, specularIntensity: 0.6, shininessOffset: -40 },  // Very low contrast (flatter lighting)
-            2: { ambientRatio: 0.8, directionalRatio: 1.2, specularIntensity: 1.0, shininessOffset: 20 },   // Low contrast
-            3: { ambientRatio: 0.6, directionalRatio: 1.4, specularIntensity: 1.6, shininessOffset: 80 },   // Normal (default) - recalibrated from old Very High
-            4: { ambientRatio: 0.4, directionalRatio: 1.7, specularIntensity: 2.2, shininessOffset: 150 },  // High contrast (new extended range)
-            5: { ambientRatio: 0.25, directionalRatio: 2.0, specularIntensity: 2.8, shininessOffset: 220 }  // Very high contrast (maximum definition)
+            1: { ambientRatio: 1.0, directionalRatio: 1.0, specularIntensity: 0.6, shininessOffset: -15 },  // Very low contrast (flatter lighting)
+            2: { ambientRatio: 0.8, directionalRatio: 1.2, specularIntensity: 1.0, shininessOffset: -5 },   // Low contrast
+            3: { ambientRatio: 0.6, directionalRatio: 1.4, specularIntensity: 1.6, shininessOffset: 10 },   // Normal (default) - recalibrated from old Very High
+            4: { ambientRatio: 0.4, directionalRatio: 1.7, specularIntensity: 2.2, shininessOffset: 30 },   // High contrast (new extended range)
+            5: { ambientRatio: 0.25, directionalRatio: 2.0, specularIntensity: 2.8, shininessOffset: 60 }   // Very high contrast (maximum definition)
         };
 
         // Brightness and Contrast level names
@@ -4083,17 +4179,17 @@
             // Update mesh material properties for contrast
             if (mesh && mesh.material) {
                 const currentTheme = document.documentElement.getAttribute('data-theme');
-                const baseShininess = currentTheme === 'high-contrast' ? 300 : 200;
-                const baseSpecular = currentTheme === 'high-contrast' ? 0xffffff : 0x111111;
+                const materialSettings = getStlMaterialSettings(currentTheme);
 
-                // Adjust specular for contrast
+                // The per-theme specular is a neutral grey, so one channel carries it
+                const baseSpecularChannel = materialSettings.specular & 0xff;
                 const specularBrightness = Math.min(255, Math.floor(
-                    (currentTheme === 'high-contrast' ? 255 : 17) * contrastSettings.specularIntensity
+                    baseSpecularChannel * contrastSettings.specularIntensity
                 ));
                 mesh.material.specular = new THREE.Color(
                     specularBrightness << 16 | specularBrightness << 8 | specularBrightness
                 );
-                mesh.material.shininess = Math.max(50, baseShininess + contrastSettings.shininessOffset);
+                mesh.material.shininess = materialSettings.shininess + contrastSettings.shininessOffset;
                 mesh.material.needsUpdate = true;
             }
 
@@ -4214,6 +4310,59 @@
         previewContrastLevel = clampPreviewLevel(previewContrastLevel);
         updateBrightnessStepper();
         updateContrastStepper();
+
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // EDGE OUTLINES - user-switchable higher-contrast presentation (WCAG G174)
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // Draws the model's feature edges as lines over the shaded surface, the way
+        // slicers and CAD viewers expose structure independently of the lighting. A
+        // full triangle wireframe is deliberately not offered: a braille plate runs to
+        // tens of thousands of facets and reads as noise.
+        //
+        // Off by default and not persisted, matching how the theme is handled.
+
+        function disposeEdgesOverlay() {
+            if (!edgesOverlay) return;
+            if (edgesOverlay.parent) edgesOverlay.parent.remove(edgesOverlay);
+            edgesOverlay.geometry.dispose();
+            edgesOverlay.material.dispose();
+            edgesOverlay = null;
+        }
+
+        // Built lazily: EdgesGeometry walks every triangle, so it is only paid for
+        // once the user actually asks for outlines.
+        function refreshEdgesOverlay() {
+            disposeEdgesOverlay();
+            if (!edgesVisible || !mesh || !mesh.geometry) return;
+
+            const edgeColor = getStlThemeColor('--stl-edge-color', '#020617');
+            edgesOverlay = new THREE.LineSegments(
+                new THREE.EdgesGeometry(mesh.geometry, STL_EDGE_THRESHOLD_ANGLE),
+                new THREE.LineBasicMaterial({ color: new THREE.Color(edgeColor) })
+            );
+            // Parented to the mesh so it inherits every camera-fitting transform
+            mesh.add(edgesOverlay);
+        }
+
+        function updateEdgesToggle() {
+            const button = document.getElementById('edges-toggle');
+            if (!button) return;
+            button.setAttribute('aria-pressed', edgesVisible ? 'true' : 'false');
+            button.classList.toggle('active', edgesVisible);
+        }
+
+        function applyEdgesVisibility(visible) {
+            edgesVisible = Boolean(visible);
+            refreshEdgesOverlay();
+            updateEdgesToggle();
+            if (typeof render === 'function') render();
+        }
+
+        const edgesToggleBtn = document.getElementById('edges-toggle');
+        if (edgesToggleBtn) {
+            edgesToggleBtn.addEventListener('click', () => applyEdgesVisibility(!edgesVisible));
+        }
+        updateEdgesToggle();
 
         // Font size adjustment functionality
         const fontSizes = [75, 87.5, 100, 112.5, 125, 150, 175, 200];
@@ -4440,10 +4589,11 @@
             let recommended;
             if (tactile) {
                 // Tactile mode has no marker cells: every column is text, and the
-                // freed space widens the seam gap the arrow sits in. 15 leaves too
-                // little gap on the default cylinder, so 14 is the recommendation.
+                // freed space widens the seam gap the arrow sits in. 14 still fits
+                // the seam-gap arithmetic but proved too tight in practice, so 13
+                // is the recommendation; users who want 14 can still set it.
                 explanation = 'Tactile seam arrow: no cells are reserved for markers, so every cell in the row is available for text.';
-                recommended = '14';
+                recommended = '13';
             } else if (plateType === 'positive') {
                 explanation = indicatorOn
                     ? 'For embossing plates: 2 cells per row are reserved for the indicator letter and alignment triangle.'
@@ -6604,13 +6754,11 @@
                     const loader = new STLLoader();
                     loader.load(lastGeneratedSTLUrl, (geometry) => {
                         if (mesh) scene.remove(mesh);
-                        const material = new THREE.MeshPhongMaterial({
-                            color: 0xaaaaaa,
-                            specular: 0x111111,
-                            shininess: 30
-                        });
-                        mesh = new THREE.Mesh(geometry, material);
+                        const theme = document.documentElement.getAttribute('data-theme');
+                        const meshColor = getStlThemeColor('--stl-mesh-color', '#5580b3');
+                        mesh = new THREE.Mesh(geometry, createStlMaterial(theme, meshColor));
                         scene.add(mesh);
+                        refreshEdgesOverlay();
                     });
                 }
             }, false);
@@ -7268,35 +7416,15 @@
                 const isCylinder = shapeType === 'cylinder' || height > Math.max(width, depth) * 1.5;
 
                 // Get theme-appropriate mesh color with proper fallback
-                const styles = getComputedStyle(document.documentElement);
-                const meshColorVar = styles.getPropertyValue('--stl-mesh-color').trim();
-                const meshColor = meshColorVar || '#6699cc';
-                // Enhanced material for high contrast mode
+                const meshColor = getStlThemeColor('--stl-mesh-color', '#5580b3');
                 const currentTheme = document.documentElement.getAttribute('data-theme');
-                let material;
 
-                if (currentTheme === 'high-contrast') {
-                    // High contrast material with enhanced specular highlights
-                    material = new THREE.MeshPhongMaterial({
-                        color: new THREE.Color(meshColor),
-                        specular: 0xffffff, // White specular highlights for maximum contrast
-                        shininess: 300, // Higher shininess for sharper highlights
-                        flatShading: true,
-                        side: THREE.DoubleSide
-                    });
-                } else {
-                    // Standard material for other themes
-                    material = new THREE.MeshPhongMaterial({
-                        color: new THREE.Color(meshColor),
-                        specular: 0x111111,
-                        shininess: 200,
-                        flatShading: true,
-                        side: THREE.DoubleSide
-                    });
-                }
-                mesh = new THREE.Mesh(geometry, material);
+                mesh = new THREE.Mesh(geometry, createStlMaterial(currentTheme, meshColor));
                 mesh.rotation.x = 0;
                 scene.add(mesh);
+
+                // Rebuild the edge outlines against the new geometry (no-op when off)
+                refreshEdgesOverlay();
 
                 // Adjust camera position based on object type using CAMERA_SETTINGS
                 if (isCylinder) {

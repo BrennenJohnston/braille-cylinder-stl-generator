@@ -84,16 +84,16 @@ test.describe('Row Indicator Style', () => {
 
     await page.locator('input[name="indicator_mode"][value="tactile"]').check();
     // The dial normalizes to the recommended tactile capacity
-    await expect(page.locator('#grid_columns')).toHaveValue('14');
+    await expect(page.locator('#grid_columns')).toHaveValue('13');
 
     const spec = await interceptGeometrySpec(page);
-    await page.locator('#braille-unicode').fill('\u2801'.repeat(14));
+    await page.locator('#braille-unicode').fill('\u2801'.repeat(13));
     await generate(page, spec);
 
     const settings = spec.body?.settings as Record<string, unknown>;
     expect(settings.indicator_mode).toBe('tactile');
     // No marker columns: the dial value passes through untouched
-    expect(settings.grid_columns).toBe('14');
+    expect(settings.grid_columns).toBe('13');
     // Compared numerically: the Card Thickness preset owns these dials, so the
     // string the input happens to hold ("4" vs "4.0") is not part of the contract.
     expect(Number(settings.tactile_indicator_width)).toBe(4.0);
@@ -113,12 +113,23 @@ test.describe('Row Indicator Style', () => {
     await page.locator('#action-btn').click();
     await expect(page.locator('#error-text')).toContainText('the maximum is 13', { timeout: 15_000 });
 
-    // Tactile mode: all 14 columns are text, so the same row is fine
+    // Tactile mode recommends 13, but 14 still fits the seam-gap arithmetic, so
+    // raising the dial by hand is allowed and every column is then text.
     await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+    await page.evaluate(() => {
+      const panel = document.getElementById('expert-settings');
+      if (panel) panel.style.display = 'block';
+      const spacing = document.getElementById('expert-panel-spacing');
+      if (spacing) { spacing.style.display = 'block'; spacing.hidden = false; }
+    });
+    await page.locator('#grid_columns').fill('14');
+    await expect(page.locator('#tactile-gap-warning')).toBeHidden();
+
     const spec = await interceptGeometrySpec(page);
     await generate(page, spec);
 
     expect((spec.body?.lines as string[])[0]).toBe(fourteenCells);
+    expect((spec.body?.settings as Record<string, unknown>).grid_columns).toBe('14');
   });
 
   test('warns when the seam gap can no longer hold the indicator', async ({ page }) => {
@@ -142,7 +153,7 @@ test.describe('Row Indicator Style', () => {
     await expect(page.locator('#tactile-gap-message')).toContainText('seam gap');
 
     // Back to a layout that fits
-    await page.locator('#grid_columns').fill('14');
+    await page.locator('#grid_columns').fill('13');
     await expect(warning).toBeHidden();
   });
 

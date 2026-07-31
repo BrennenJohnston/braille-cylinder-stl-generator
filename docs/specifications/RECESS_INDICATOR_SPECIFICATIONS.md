@@ -44,7 +44,7 @@ Reserved marker columns per row:
 |---------------|------------------|------------------------|
 | `visual`, toggle On (1) | 2 (letter + triangle) | 13 |
 | `visual`, toggle Off (0) | 1 (triangle only) | 14 |
-| `tactile` | 0 | 14 (15 leaves too little seam gap) |
+| `tactile` | 0 | 13 recommended (14 fits; 15 leaves too little seam gap) |
 
 The single source for this arithmetic is `_reserved_marker_columns(settings, tactile_on)` in `app/geometry_spec.py`, mirrored by `getReservedMarkerColumns()` in `public/index.html` and the `reserved` calculation in `validate_line_lengths()`.
 
@@ -562,7 +562,7 @@ When `seam_gap_mm < required` the layout is **warned about, not rejected** — m
 - **Backend:** the message is appended to `spec['warnings']` (a list, always present, empty in visual mode) and logged.
 - **Frontend:** `updateTactileGapWarning()` shows it live in `#tactile-gap-warning` (`role="status"`, `aria-live="polite"`), recomputed whenever the diameter, cell spacing, cell count, indicator width, or mode changes. Generation is not blocked.
 
-At defaults (30.8 mm diameter, 6.5 mm cell spacing, 4 mm indicator) the gap needs ≥ 9 mm: 14 cells leave 12.1 mm and pass; 15 cells leave 5.6 mm and warn.
+At defaults (30.8 mm diameter, 6.5 mm cell spacing, 4 mm indicator) the gap needs ≥ 9 mm: 13 cells leave 18.6 mm and 14 cells leave 12.1 mm, both passing; 15 cells leave 5.6 mm and warn. The UI recommends 13 because 14 proved too tight in practice, but 14 remains a valid layout the user can dial in.
 
 ### Column Layout
 
@@ -578,7 +578,7 @@ Available braille columns = N
 ### Coverage
 
 - `tests/test_smoke.py` — marker columns dropped on both plates, arrow raised on positive and recessed on negative with the correct band radii, θ = π on both plates at identical row heights, gap warning, visual mode unaffected, full-width row accepted in tactile but rejected in visual, unknown `indicator_mode` rejected, defaults matching OpenSCAD, schema/model default agreement.
-- `tests/e2e/tactileIndicator.spec.ts` — payload column arithmetic and tactile parameters, 14-cell row accepted in tactile and blocked in visual, live gap warning, Expert Mode dimension visibility.
+- `tests/e2e/tactileIndicator.spec.ts` — payload column arithmetic and tactile parameters, the 13-cell tactile recommendation, a hand-dialled 14-cell row accepted in tactile and blocked in visual, live gap warning, Expert Mode dimension visibility.
 
 ---
 
