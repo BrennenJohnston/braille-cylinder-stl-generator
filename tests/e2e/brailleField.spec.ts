@@ -9,8 +9,7 @@
  * The phone-number case is the one that prompted the feature: 206-543-4779 is
  * correctly 15 cells with three number signs under UEB (a hyphen ends numeric
  * mode), which does not fit any row at the defaults. Editing it down to the 13
- * cells that fit a tactile-mode row (the visual default is 12 text cells) must
- * be honoured verbatim.
+ * cells that fit a default row must be honoured verbatim.
  *
  * @see docs/specifications/BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md
  */
@@ -129,15 +128,14 @@ test.describe('Editable Unicode braille field', () => {
   test('sends hand-edited cells verbatim to /geometry_spec', async ({ page }) => {
     await openApp(page);
 
-    // Tactile mode rows hold 13 text cells (the visual default is 12), which
-    // is what the hand-edited phone number needs.
-    await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+    // The default visual row holds 13 text cells, which is exactly what the
+    // hand-edited phone number needs.
     await expect(page.locator('#grid_columns')).toHaveValue('13');
 
     await page.locator('#line1').fill('206-543-4779');
     await translateToBraille(page);
 
-    // Edit the 15-cell result down to the 13 cells that fit a tactile row.
+    // Edit the 15-cell result down to the 13 cells that fit a default row.
     const field = page.locator('#braille-unicode');
     await field.fill(PHONE_13_CELLS);
     await expect(page.locator('#braille-unicode-status')).toContainText('Edited');
@@ -195,11 +193,11 @@ test.describe('Editable Unicode braille field', () => {
     await openApp(page);
 
     const spec = await interceptGeometrySpec(page);
-    // 14 cells against the default 12-text-cell row
+    // 14 cells against the default 13-text-cell row
     await page.locator('#braille-unicode').fill('\u2801'.repeat(14));
     await page.locator('#action-btn').click();
 
-    await expect(page.locator('#error-text')).toContainText('the maximum is 12', { timeout: 15_000 });
+    await expect(page.locator('#error-text')).toContainText('the maximum is 13', { timeout: 15_000 });
     expect(spec.called).toBe(false);
   });
 
