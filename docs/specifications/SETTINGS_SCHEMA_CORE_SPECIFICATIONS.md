@@ -113,7 +113,9 @@ This section lists canonical field names, high-level types, and brief rules. See
 - text.lines: array<string>
   - Required. Each entry MUST be Unicode braille (U+2800–U+28FF). See validation pipeline.
   - The frontend fills this either from liblouis or, when the Braille (Unicode) field is
-    non-empty, from that field verbatim. In the latter case `text.original_lines` is `null`.
+    non-empty, from that field verbatim. Even then `text.original_lines` carries the English
+    inputs when they are non-empty (for indicator letters); it is `null` only when braille
+    was pasted with the English inputs left empty.
 - text.languages: array<string>
   - Optional. Per-line table IDs; falls back to `text.default_language`.
 - text.default_language: string

@@ -956,14 +956,14 @@ if (plateType === 'positive' && useBrailleField) {
 }
 ```
 
-- `original_lines` is sent as `null`: pasted braille has no English source to derive an indicator letter from, so `extract_cylinder_geometry_spec()` falls back to the square placeholder (its existing `else` branch for absent `original_lines`).
+- `original_lines` still carries the English inputs (manual lines or auto text) when they are non-empty, so each row's indicator letter survives the braille-field bypass — the field is normally filled from that same text via Translate to Braille. Only braille pasted with the English inputs left empty has no source to derive a letter from; then `original_lines` is sent as `null` and `extract_cylinder_geometry_spec()` falls back to the square placeholder (its existing `else` branch for absent `original_lines`).
 - The "Please enter text in at least one line" guard is bypassed, since the field supplies its own content.
 - A translation receipt is still logged (PR-10 parity) with `source: 'braille-unicode-field'` and the dirty flag, so an incorrect-braille report can be traced even though liblouis was bypassed.
 - The field is **not** persisted to `localStorage`: it holds content, not a preference.
 
 ### Coverage
 
-`tests/e2e/brailleField.spec.ts` intercepts `/geometry_spec` and asserts on the braille lines actually sent: the 15-cell hyphenated phone number, a hand-edit down to 13 cells surviving verbatim, direct paste with empty English inputs, both validation blocks, the pristine-clears / dirty-survives behavior, and the Translate to Text round trip (pasted braille reaches `line1` as English while the braille field stays byte-identical).
+`tests/e2e/brailleField.spec.ts` intercepts `/geometry_spec` and asserts on the braille lines actually sent: the 15-cell hyphenated phone number, a hand-edit down to 13 cells surviving verbatim, direct paste with empty English inputs, both validation blocks, the pristine-clears / dirty-survives behavior, and the Translate to Text round trip (pasted braille reaches `line1` as English while the braille field stays byte-identical). It also pins the `original_lines` contract: the English lines are still sent for indicator letters when the field was filled from them, and `null` is sent for direct paste with empty English inputs.
 
 ---
 

@@ -610,7 +610,7 @@ See `BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md` section 6.2 for the full
 
 ### Bypass: Editable Unicode Braille Field
 
-Translation is **100% liblouis and stays that way**, but the user may opt out of translation entirely. When the Braille (Unicode) field (`#braille-unicode`) is non-empty, `form.onsubmit` uses its lines verbatim and never calls `translateWithLiblouis()`; `original_lines` is sent as `null`. The field is populated either by the Translate to Braille button (which runs the normal pipeline) or by the user pasting braille directly.
+Translation is **100% liblouis and stays that way**, but the user may opt out of translation entirely. When the Braille (Unicode) field (`#braille-unicode`) is non-empty, `form.onsubmit` uses its lines verbatim and never calls `translateWithLiblouis()`; `original_lines` still carries the English inputs when they are non-empty (they drive the per-row indicator letters) and is sent as `null` only when braille was pasted with the English inputs left empty. The field is populated either by the Translate to Braille button (which runs the normal pipeline) or by the user pasting braille directly.
 
 This is a bypass of translation, not an alternative translator: the app never rewrites braille the user typed, and it never guesses what English text produced it.
 

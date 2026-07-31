@@ -35,17 +35,22 @@ async function openApp(page: Page) {
 }
 
 /**
- * Capture the braille lines sent to /geometry_spec. The request is aborted so
- * the test never waits on Manifold WASM or a full CSG run.
+ * Capture the braille lines and indicator source lines sent to /geometry_spec.
+ * The request is aborted so the test never waits on Manifold WASM or a full
+ * CSG run.
  */
 async function interceptGeometrySpec(page: Page) {
-  const state: { lines: string[] | null; called: boolean } = { lines: null, called: false };
+  const state: { lines: string[] | null; originalLines: string[] | null; called: boolean } =
+    { lines: null, originalLines: null, called: false };
   await page.route('**/geometry_spec', async (route) => {
     state.called = true;
     try {
-      state.lines = route.request().postDataJSON()?.lines ?? null;
+      const body = route.request().postDataJSON();
+      state.lines = body?.lines ?? null;
+      state.originalLines = body?.original_lines ?? null;
     } catch {
       state.lines = null;
+      state.originalLines = null;
     }
     await route.abort();
   });
@@ -147,6 +152,26 @@ test.describe('Editable Unicode braille field', () => {
     await generate(page, spec);
 
     expect(spec.lines?.[0]).toBe(pasted);
+    // No English source: the backend must get null so it falls back to the
+    // square placeholder instead of inventing an indicator letter.
+    expect(spec.originalLines).toBeNull();
+  });
+
+  test('keeps the English lines for indicator letters when the braille field is filled', async ({ page }) => {
+    await openApp(page);
+
+    // The guided workflow: type English, press Translate to Braille, generate.
+    // The braille field wins for the embossed cells, but the indicator letter
+    // for each row must still come from the English source — this used to be
+    // nulled out, degrading every row's letter to a blank rectangle.
+    await page.locator('#line1').fill('hello');
+    await translateToBraille(page);
+
+    const spec = await interceptGeometrySpec(page);
+    await generate(page, spec);
+
+    expect(await page.locator('#braille-unicode').inputValue()).not.toBe('');
+    expect(spec.originalLines?.[0]).toBe('hello');
   });
 
   test('blocks generation when the field contains non-braille characters', async ({ page }) => {

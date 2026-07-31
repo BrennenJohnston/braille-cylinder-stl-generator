@@ -7290,14 +7290,16 @@
             log.debug('Shape Type:', shapeType);
             log.debug('Cylinder Params:', cylinderParams);
 
-            // Build original_lines for indicators. Braille pasted straight into the
-            // field has no English source to derive an indicator letter from, so we
-            // send null and the backend falls back to the square placeholder.
+            // Build original_lines for indicators. Indicator letters are derived
+            // from the English source (line inputs or auto text) even when the
+            // Braille (Unicode) field supplies the embossed cells, because that
+            // field is normally filled from the same English text via Translate
+            // to Braille. Only braille pasted with the English inputs left empty
+            // has no source to derive a letter from; then we send null and the
+            // backend falls back to the square placeholder.
             let originalForIndicators = null;
-            if (useBrailleField) {
-                originalForIndicators = null;
-            } else if (placementMode === 'manual') {
-                originalForIndicators = lines;
+            if (placementMode === 'manual') {
+                originalForIndicators = lines.some(l => l && l.trim()) ? lines : null;
             } else {
                 const srcAuto = (document.getElementById('auto-text')?.value || '').trim();
                 const tokens = srcAuto.split(/\s+/).filter(Boolean);
