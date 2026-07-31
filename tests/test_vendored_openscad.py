@@ -7,11 +7,15 @@ download the offline version without leaving the site; it is not a fork, and
 nothing in it should ever be edited here.
 
 The failure mode this catches is the one that actually happened: someone
-tweaks the vendored .scad in place, or the copy quietly ages past the release
-it claims to be, and the two versions diverge with no record of it. So:
+tweaks a vendored file in place, or the copy quietly ages past the release it
+claims to be, and the two versions diverge with no record of it. So:
 
-- the .scad must hash to exactly what VENDORED.json records, and
+- every vendored file must hash to exactly what VENDORED.json records, and
 - VENDORED.json must stay complete and internally consistent with the tree.
+
+The hash check originally covered only the .scad, which let a wording edit to
+two of the vendored docs ride along unnoticed while the .scad failure was the
+only thing CI reported. Every file carries a hash now.
 
 Neither check can tell you whether a *newer* upstream release exists — that
 needs the network. Refreshing the copy is a release-checklist step; see
@@ -31,37 +35,68 @@ PROVENANCE_FILE = VENDOR_DIR / 'VENDORED.json'
 SCAD_NAME = 'Braille_Cylinder_STL_Generator.scad'
 
 
-@pytest.fixture(scope='module')
-def provenance():
-    assert PROVENANCE_FILE.exists(), (
-        f'{PROVENANCE_FILE.relative_to(REPO_ROOT)} is missing. The vendored '
-        'OpenSCAD copy must record which upstream tag it came from.'
-    )
+def _load_provenance():
+    if not PROVENANCE_FILE.exists():
+        return None
     return json.loads(PROVENANCE_FILE.read_text(encoding='utf-8'))
 
 
-def test_vendored_scad_matches_recorded_hash(provenance):
+# Read at import time so each vendored file gets its own test case, which keeps
+# a failure naming the file that drifted rather than the first one checked.
+PROVENANCE = _load_provenance()
+RECORDED_FILES = sorted(PROVENANCE['files']) if PROVENANCE else []
+
+
+@pytest.fixture(scope='module')
+def provenance():
+    assert PROVENANCE is not None, (
+        f'{PROVENANCE_FILE.relative_to(REPO_ROOT)} is missing. The vendored '
+        'OpenSCAD copy must record which upstream tag it came from.'
+    )
+    return PROVENANCE
+
+
+@pytest.mark.parametrize('relative_path', RECORDED_FILES)
+def test_vendored_file_matches_recorded_hash(provenance, relative_path):
     """
-    The vendored .scad must be byte-identical to the release it claims to be.
+    Every vendored file must be byte-identical to what VENDORED.json records.
 
     A mismatch means either the file was edited here (don't — edit upstream and
     re-vendor) or the copy was refreshed without updating VENDORED.json.
+
+    For a file whose record carries an 'edited on copy' note the hash is of the
+    adjusted copy, not of upstream, so this still catches drift either way.
     """
-    scad = VENDOR_DIR / SCAD_NAME
-    assert scad.exists(), f'{SCAD_NAME} is missing from OpenSCAD/'
+    vendored = VENDOR_DIR / relative_path
+    assert vendored.exists(), f'{relative_path} is recorded in VENDORED.json but missing from OpenSCAD/'
 
-    expected = provenance['files'][SCAD_NAME]['sha256']
-    actual = hashlib.sha256(scad.read_bytes()).hexdigest()
+    expected = provenance['files'][relative_path].get('sha256')
+    assert expected, (
+        f'VENDORED.json records {relative_path} without a sha256. Every '
+        'vendored file needs one, otherwise it can be edited here without any '
+        'check noticing.'
+    )
 
+    actual = hashlib.sha256(vendored.read_bytes()).hexdigest()
     assert actual == expected, (
-        f'{SCAD_NAME} does not match the hash recorded in VENDORED.json for '
-        f'upstream {provenance["upstream_tag"]}.\n'
+        f'{relative_path} does not match the hash recorded in VENDORED.json '
+        f'for upstream {provenance["upstream_tag"]}.\n'
         f'  recorded: {expected}\n'
         f'  actual:   {actual}\n'
         'Do not edit the vendored copy. Change it upstream in '
         'braille-cylinder-stl-generator-openscad, tag a release, then re-vendor '
         'and update VENDORED.json.'
     )
+
+
+def test_the_scad_itself_is_still_vendored(provenance):
+    """
+    The per-file hash checks only cover what VENDORED.json happens to list, so
+    they would all pass if the .scad were dropped from the folder and the
+    record at the same time. It is the one file the folder exists to ship.
+    """
+    assert SCAD_NAME in provenance['files'], f'VENDORED.json no longer records {SCAD_NAME}'
+    assert (VENDOR_DIR / SCAD_NAME).exists(), f'{SCAD_NAME} is missing from OpenSCAD/'
 
 
 def test_every_vendored_file_is_recorded(provenance):

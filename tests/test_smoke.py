@@ -380,13 +380,13 @@ def test_tactile_arrow_is_raised_on_positive_and_recessed_on_negative(client):
     radius = TACTILE_CYLINDER_PARAMS['diameter'] / 2
 
     assert positive['is_recess'] is False
-    assert positive['outer_radius'] == pytest.approx(radius + 0.8)  # tactile_indicator_raise
+    assert positive['outer_radius'] == pytest.approx(radius + 0.5)  # tactile_indicator_raise
     assert positive['inner_radius'] == pytest.approx(radius - 0.2)  # TACTILE_BASE_EMBED
     assert positive['outline_delta'] == pytest.approx(0.0)
 
     assert negative['is_recess'] is True
     # Recess is grown radially by raise + extra depth, and in-plane by the clearance
-    assert negative['inner_radius'] == pytest.approx(radius - 0.8 - 0.2)
+    assert negative['inner_radius'] == pytest.approx(radius - 0.5 - 0.2)
     assert negative['outer_radius'] == pytest.approx(radius + 1.0)  # TACTILE_RECESS_OVERCUT
     assert negative['outline_delta'] == pytest.approx(0.2)  # tactile_recess_clearance
 
@@ -416,6 +416,8 @@ def test_tactile_gap_warning_when_seam_gap_too_small(client):
     """
     # 14 cells at 6.5 mm on the default 30.75 mm cylinder leaves
     # 96.6 - 84.5 = 12.1 mm, comfortably over the 4 + 5 mm the arrow needs.
+    # The UI recommends 13 for tactile mode; 14 is still a valid layout, which
+    # is exactly what this case pins.
     roomy = {
         'lines': ['', '', '', ''],
         'plate_type': 'negative',
@@ -507,16 +509,16 @@ def test_indicator_mode_rejects_unknown_value(client):
     assert 'indicator_mode' in resp.get_json()['error']
 
 
-def test_tactile_settings_defaults_match_openscad():
+def test_tactile_settings_defaults():
     """
-    The two generators must produce the same arrow, so these five numbers are
-    byte-for-byte the OpenSCAD defaults (see OpenSCAD [Indicator Mode] block).
+    These five numbers are also written into both Card Thickness presets in
+    public/index.html, so a change here has to be mirrored there.
     """
     settings = CardSettings()
     assert settings.indicator_mode == 'visual'
     assert settings.tactile_indicator_width == 4.0
-    assert settings.tactile_indicator_length == 5.0
-    assert settings.tactile_indicator_raise == 0.8
+    assert settings.tactile_indicator_length == 10.0
+    assert settings.tactile_indicator_raise == 0.5
     assert settings.tactile_recess_clearance == 0.2
     assert settings.tactile_recess_extra_depth == 0.2
 

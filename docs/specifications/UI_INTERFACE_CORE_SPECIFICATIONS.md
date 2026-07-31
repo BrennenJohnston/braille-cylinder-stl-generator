@@ -101,13 +101,16 @@ def index_explicit():
    - 4.4 [Touch and Mobile Accessibility](#44-touch-and-mobile-accessibility)
    - 4.5 [Toggle Button ARIA Requirements](#45-toggle-button-aria-requirements)
    - 4.6 [Reduced Motion Support](#46-reduced-motion-support)
+   - 4.7 [Two-Way Translation Controls](#47-two-way-translation-controls)
 5. [Scrollbar Customization](#5-scrollbar-customization)
-   - 5.1 [Form Section Scrollbar](#51-form-section-scrollbar)
+   - 5.1 [Form Scroll Area Scrollbar](#51-form-scroll-area-scrollbar)
    - 5.2 [Global Page Scrollbar](#52-global-page-scrollbar)
    - 5.3 [Theme-Specific Scrollbar Styles](#53-theme-specific-scrollbar-styles)
 6. [Button State Management](#6-button-state-management)
    - 6.1 [Action Button States](#61-action-button-states)
-   - 6.2 [High Contrast Button Styling](#62-high-contrast-button-styling)
+   - 6.2 [Resetting on Settings Changes](#62-resetting-on-settings-changes)
+   - 6.3 [Action Button Placement](#63-action-button-placement)
+   - 6.4 [High Contrast Button Styling](#64-high-contrast-button-styling)
 7. [Layout Responsiveness](#7-layout-responsiveness)
    - 7.1 [Desktop Two-Column Layout](#71-desktop-two-column-layout)
    - 7.2 [Mobile Stacked Layout](#72-mobile-stacked-layout)
@@ -192,7 +195,8 @@ All theme-dependent colors are defined using CSS custom properties (variables) o
     --shadow-medium: rgba(49,130,206,0.18);
 
     /* STL Preview colors - CRITICAL FOR 3D VIEWING */
-    --stl-mesh-color: #6699cc;
+    --stl-mesh-color: #5580b3;
+    --stl-edge-color: #020617;
     --stl-background: #f1f5f9;
     --stl-ambient-light: #888888;
     --stl-directional-light: #ffffff;
@@ -250,6 +254,7 @@ All theme-dependent colors are defined using CSS custom properties (variables) o
 
     /* STL Preview colors */
     --stl-mesh-color: #90cdf4;
+    --stl-edge-color: #1a202c;
     --stl-background: #2d3748;
     --stl-ambient-light: #666666;
     --stl-directional-light: #ffffff;
@@ -309,6 +314,7 @@ All theme-dependent colors are defined using CSS custom properties (variables) o
 
     /* STL Preview - CRITICAL SETTINGS FOR LOW VISION */
     --stl-mesh-color: #00ffff;              /* Bright cyan mesh */
+    --stl-edge-color: #000000;              /* Near-maximum contrast on cyan */
     --stl-background: #000000;              /* Pure black background */
     --stl-ambient-light: #666666;           /* Reduced ambient to prevent washing out */
     --stl-directional-light: #e6e6e6;       /* Slightly dimmed for better contrast */
@@ -644,7 +650,8 @@ const styles = getComputedStyle(document.documentElement);
 const stlBackground = styles.getPropertyValue('--stl-background').trim() || '#f1f5f9';
 const stlAmbientLight = styles.getPropertyValue('--stl-ambient-light').trim() || '#888888';
 const stlDirectionalLight = styles.getPropertyValue('--stl-directional-light').trim() || '#ffffff';
-const stlMeshColor = styles.getPropertyValue('--stl-mesh-color').trim() || '#6699cc';
+const stlMeshColor = styles.getPropertyValue('--stl-mesh-color').trim() || '#5580b3';
+const stlEdgeColor = styles.getPropertyValue('--stl-edge-color').trim() || '#020617';
 const stlAmbientIntensity = parseFloat(styles.getPropertyValue('--stl-ambient-intensity').trim()) || 0.5;
 const stlDirectionalIntensity = parseFloat(styles.getPropertyValue('--stl-directional-intensity').trim()) || 1.0;
 
@@ -656,12 +663,29 @@ scene.background = new THREE.Color(stlBackground);
 
 | Variable | Light Mode | Dark Mode | High Contrast |
 |----------|------------|-----------|---------------|
-| `--stl-mesh-color` | `#6699cc` (Steel Blue) | `#90cdf4` (Light Blue) | `#00ffff` (Bright Cyan) |
+| `--stl-mesh-color` | `#5580b3` (Steel Blue) | `#90cdf4` (Light Blue) | `#00ffff` (Bright Cyan) |
+| `--stl-edge-color` | `#020617` (Slate 950) | `#1a202c` (Near Black) | `#000000` (Pure Black) |
 | `--stl-background` | `#f1f5f9` (Light Gray) | `#2d3748` (Dark Gray) | `#000000` (Pure Black) |
 | `--stl-ambient-light` | `#888888` | `#666666` | `#666666` |
 | `--stl-directional-light` | `#ffffff` | `#ffffff` | `#e6e6e6` |
 | `--stl-ambient-intensity` | `0.5` | `0.6` | `0.4` |
 | `--stl-directional-intensity` | `1.0` | `0.9` | `0.8` |
+
+#### Contrast Requirements (WCAG 2.2 SC 1.4.11 Non-text Contrast)
+
+The mesh is a non-text graphical object and must reach 3:1 against the viewer
+background. Edge overlay lines render 1px wide, so per W3C Low Vision Task Force
+guidance for thin strokes they are held to the 4.5:1 text threshold against the
+mesh colour they are drawn on.
+
+| Theme | Mesh vs Background | Edge vs Mesh |
+|-------|--------------------|--------------|
+| Light | 3.7:1 | 4.9:1 |
+| Dark | 7.0:1 | 9.5:1 |
+| High Contrast | 16.7:1 | 16.7:1 |
+
+The light theme's mesh colour was `#6699cc` until 2026-07, which measured 2.7:1
+and failed SC 1.4.11.
 
 ### 3.3 High Contrast Mode Lighting
 
@@ -710,17 +734,40 @@ scene.add(new THREE.AmbientLight(
 ));
 ```
 
-#### High Contrast Material Properties
+#### Material Properties
+
+`STL_MATERIAL_SETTINGS` in `public/index.html` is the single source for the
+preview `MeshPhongMaterial` per theme. `loadSTL()`, `update3DSceneColors()`, and
+`updatePreviewDisplaySettings()` all read from it, and `createStlMaterial()` is
+the only place a preview material is constructed.
 
 ```javascript
-if (currentTheme === 'high-contrast') {
-    mesh.material.specular = new THREE.Color(0xffffff);  // White specular highlights
-    mesh.material.shininess = 300;  // Higher shininess for sharper highlights
-} else {
-    mesh.material.specular = new THREE.Color(0x111111);  // Standard specular
-    mesh.material.shininess = 200;  // Standard shininess
+const STL_MATERIAL_SETTINGS = {
+    default: { specular: 0x111111, shininess: 30 },
+    'high-contrast': { specular: 0x333333, shininess: 60 }
+};
+
+function createStlMaterial(theme, meshColor) {
+    const settings = getStlMaterialSettings(theme);
+    return new THREE.MeshPhongMaterial({
+        color: new THREE.Color(meshColor),
+        specular: settings.specular,
+        shininess: settings.shininess,
+        flatShading: true,          // Faceted, slicer-style STL display
+        side: THREE.DoubleSide,
+        polygonOffset: true,        // Keeps the edge overlay clear of z-fighting
+        polygonOffsetFactor: 1,
+        polygonOffsetUnits: 1
+    });
 }
 ```
+
+These are matte to semi-matte, matching how slicers and mesh viewers
+(PrusaSlicer, Cura, MeshLab, the three.js editor) present an STL. Until 2026-07
+the values were shininess 200 (standard) / 300 (high contrast) with a white
+specular, which threw broad highlights across the plate that swallowed the dot
+geometry the preview exists to show. Form definition comes from the three-point
+lighting above instead.
 
 ### 3.4 Camera and Controls
 
@@ -959,11 +1006,11 @@ The label serves to:
 - Reduce user confusion about the panel's purpose
 - **Positioned at top as overlay** to maximize visibility without taking extra space below the viewer
 
-### 3.8 Preview Display Settings (Brightness and Contrast)
+### 3.8 Preview Display Settings (Brightness, Contrast, and Edge Outlines)
 
-User-adjustable brightness and contrast controls allow customization of how the 3D preview appears. These settings affect **only the visual preview** and do not modify the exported STL file.
+User-adjustable brightness, contrast, and edge-outline controls allow customization of how the 3D preview appears. These settings affect **only the visual preview** and do not modify the exported STL file.
 
-**UI Pattern:** Non-cycling **stepper controls** (`−` / `+`) with live value displays. Buttons disable at bounds (levels 1 and 5) and reuse the font-size control styling for consistent keyboard and screen reader behavior.
+**UI Pattern:** Non-cycling **stepper controls** (`−` / `+`) with live value displays for brightness and contrast, plus a single **toggle button** for edge outlines. All three reuse the font-size control styling for consistent keyboard and screen reader behavior; the steppers disable at bounds (levels 1 and 5).
 
 #### Control Overview
 
@@ -971,26 +1018,31 @@ User-adjustable brightness and contrast controls allow customization of how the 
 |---------|---------|-------|---------|---------------|
 | **Brightness** | Adjusts overall light intensity | 1-5 | 3 (Normal) | Non-cycling; +/- buttons disable at min/max |
 | **Contrast** | Adjusts ambient vs directional light ratio | 1-5 | 3 (Normal) | Non-cycling; +/- buttons disable at min/max |
+| **Edges** | Draws feature-edge outlines over the shaded surface | On/Off | On | `aria-pressed` toggle button |
 
 #### Brightness Levels
 
+Recalibrated 2026-02-02: stakeholder feedback said the old "Very Bright" (1.4×) read as visually normal, so 1.4× became level 3 and the range extended around it.
+
 | Level | Name | Multiplier | Description |
 |-------|------|------------|-------------|
-| 1 | Very Dim | 0.6× | Significantly reduced lighting |
-| 2 | Dim | 0.8× | Slightly reduced lighting |
-| 3 | Normal | 1.0× | **Default** - Base theme lighting |
-| 4 | Bright | 1.2× | Slightly increased lighting |
-| 5 | Very Bright | 1.4× | Significantly increased lighting |
+| 1 | Very Dim | 0.7× | Significantly reduced lighting |
+| 2 | Dim | 1.0× | Old Normal baseline |
+| 3 | Normal | 1.4× | **Default** - Recalibrated from old Very Bright |
+| 4 | Bright | 1.9× | Extended range |
+| 5 | Very Bright | 2.5× | Maximum for high visibility needs |
 
 #### Contrast Levels
 
-| Level | Name | Ambient Ratio | Directional Ratio | Effect |
-|-------|------|---------------|-------------------|--------|
-| 1 | Very Low | 1.4× | 0.6× | Flat, even lighting |
-| 2 | Low | 1.2× | 0.8× | Soft shadows |
-| 3 | Normal | 1.0× | 1.0× | **Default** - Balanced lighting |
-| 4 | High | 0.8× | 1.2× | More defined shadows |
-| 5 | Very High | 0.6× | 1.4× | Dramatic lighting with strong shadows |
+Shininess offsets are added to the per-theme `STL_MATERIAL_SETTINGS.shininess` base (30 standard, 60 high contrast). They were rescaled in 2026-07 alongside the matte material: the previous `-40 … +220` range was written for a base of 200 and pushed even level 3 into mirror territory. There is deliberately **no floor** on the resulting shininess, which would defeat the low base.
+
+| Level | Name | Ambient Ratio | Directional Ratio | Specular Intensity | Shininess Offset | Effect |
+|-------|------|---------------|-------------------|--------------------|------------------|--------|
+| 1 | Very Low | 1.0× | 1.0× | 0.6× | −15 | Flat, even lighting |
+| 2 | Low | 0.8× | 1.2× | 1.0× | −5 | Soft shadows |
+| 3 | Normal | 0.6× | 1.4× | 1.6× | +10 | **Default** - Balanced lighting |
+| 4 | High | 0.4× | 1.7× | 2.2× | +30 | More defined shadows |
+| 5 | Very High | 0.25× | 2.0× | 2.8× | +60 | Dramatic lighting with strong shadows |
 
 #### HTML Structure (Stepper)
 
@@ -1026,6 +1078,14 @@ User-adjustable brightness and contrast controls allow customization of how the 
             </button>
         </div>
     </div>
+
+    <div class="preview-control-group">
+        <button type="button" id="edges-toggle" class="font-size-btn preview-toggle-btn active"
+                aria-pressed="true" aria-controls="viewer"
+                title="Outline the model edges for a higher-contrast view">
+            Edges
+        </button>
+    </div>
 </div>
 ```
 
@@ -1035,13 +1095,13 @@ User-adjustable brightness and contrast controls allow customization of how the 
 let previewBrightnessLevel = 3;
 let previewContrastLevel = 3;
 
-const BRIGHTNESS_MULTIPLIERS = { 1: 0.6, 2: 0.8, 3: 1.0, 4: 1.2, 5: 1.4 };
+const BRIGHTNESS_MULTIPLIERS = { 1: 0.7, 2: 1.0, 3: 1.4, 4: 1.9, 5: 2.5 };
 const CONTRAST_SETTINGS = {
-    1: { ambientRatio: 1.4, directionalRatio: 0.6, specularIntensity: 0.3, shininessOffset: -80 },
-    2: { ambientRatio: 1.2, directionalRatio: 0.8, specularIntensity: 0.6, shininessOffset: -40 },
-    3: { ambientRatio: 1.0, directionalRatio: 1.0, specularIntensity: 1.0, shininessOffset: 0 },
-    4: { ambientRatio: 0.8, directionalRatio: 1.2, specularIntensity: 1.3, shininessOffset: 40 },
-    5: { ambientRatio: 0.6, directionalRatio: 1.4, specularIntensity: 1.6, shininessOffset: 80 }
+    1: { ambientRatio: 1.0,  directionalRatio: 1.0, specularIntensity: 0.6, shininessOffset: -15 },
+    2: { ambientRatio: 0.8,  directionalRatio: 1.2, specularIntensity: 1.0, shininessOffset: -5 },
+    3: { ambientRatio: 0.6,  directionalRatio: 1.4, specularIntensity: 1.6, shininessOffset: 10 },
+    4: { ambientRatio: 0.4,  directionalRatio: 1.7, specularIntensity: 2.2, shininessOffset: 30 },
+    5: { ambientRatio: 0.25, directionalRatio: 2.0, specularIntensity: 2.8, shininessOffset: 60 }
 };
 
 const brightnessLevelNames = { 1: 'Very Dim', 2: 'Dim', 3: 'Normal', 4: 'Bright', 5: 'Very Bright' };
@@ -1169,6 +1229,34 @@ updateContrastStepper();
     text-align: center;
 }
 
+/* Edge outline toggle - same stepper metrics, but wide enough for a word */
+.preview-toggle-btn {
+    min-width: 4em;
+    min-height: 1.6em;
+    padding: 0.2em 0.6em;
+}
+
+/* Same WCAG-AA active blues the Expert Mode toggles use */
+.preview-toggle-btn.active {
+    background: #1e4976;
+    color: #fff;
+    border-color: #1e4976;
+}
+
+[data-theme="dark"] .preview-toggle-btn.active {
+    background: #1e5a8a;
+    border-color: #1e5a8a;
+}
+
+/* Cyan rather than the yellow the shared .font-size-btn hover already uses, so
+   pressed and hovered are never the same swatch */
+[data-theme="high-contrast"] .preview-toggle-btn.active,
+[data-theme="high-contrast"] .preview-toggle-btn.active:hover {
+    background: #00ffff !important;
+    color: #000000 !important;
+    border: 2px solid #00ffff !important;
+}
+
 [data-theme="high-contrast"] .preview-controls-title,
 [data-theme="high-contrast"] .preview-control-label {
     color: #02fe05 !important;
@@ -1201,6 +1289,65 @@ updateContrastStepper();
 }
 ```
 
+#### Edge Outlines (Feature-Edge Overlay)
+
+WCAG technique G174 endorses offering a user control that switches to a
+higher-contrast presentation. Edge rendering is how slicers and CAD viewers
+expose structure independently of lighting, so the **Edges** toggle draws the
+model's feature edges as lines over the shaded surface.
+
+A full triangle wireframe (`wireframe: true`) is deliberately **not** offered: a
+braille plate runs to tens of thousands of facets and reads as noise.
+`THREE.EdgesGeometry` with a threshold angle of 22° keeps dot silhouettes and
+plate corners while dropping the tessellation seams of the curved surface.
+
+The overlay is **on by default**, because the outlines are what make the dot and
+marker shapes legible without relying on the shading. The static markup carries
+`aria-pressed="true"` and the `active` class so the button is styled pressed
+before any script runs.
+
+```javascript
+const STL_EDGE_THRESHOLD_ANGLE = 22;
+
+let edgesOverlay = null;
+let edgesVisible = true;
+
+// EdgesGeometry walks every triangle, so this is skipped entirely while the
+// overlay is switched off rather than built and hidden.
+function refreshEdgesOverlay() {
+    disposeEdgesOverlay();
+    if (!edgesVisible || !mesh || !mesh.geometry) return;
+
+    const edgeColor = getStlThemeColor('--stl-edge-color', '#020617');
+    edgesOverlay = new THREE.LineSegments(
+        new THREE.EdgesGeometry(mesh.geometry, STL_EDGE_THRESHOLD_ANGLE),
+        new THREE.LineBasicMaterial({ color: new THREE.Color(edgeColor) })
+    );
+    // Parented to the mesh so it inherits every camera-fitting transform
+    mesh.add(edgesOverlay);
+}
+
+function applyEdgesVisibility(visible) {
+    edgesVisible = Boolean(visible);
+    refreshEdgesOverlay();
+    updateEdgesToggle();   // aria-pressed + .active class
+    render();
+}
+```
+
+Lifecycle wiring in `public/index.html`:
+
+| Event | Handling |
+|-------|----------|
+| STL loaded (`loadSTL`) | `refreshEdgesOverlay()` after the mesh is added — rebuilds against the new geometry, or disposes and stops if the toggle is off |
+| Theme change (`update3DSceneColors`) | Recolours the existing overlay material from `--stl-edge-color` |
+| WebGL context restore | The reload path recreates the mesh with `createStlMaterial()` and calls `refreshEdgesOverlay()` |
+| Toggle click | `applyEdgesVisibility(!edgesVisible)` |
+
+Z-fighting between the lines and the facets they trace is prevented by
+`polygonOffset` on the mesh material (see `createStlMaterial()` above), not by
+nudging the overlay's position.
+
 #### Integration with Theme System
 
 The brightness and contrast settings work in conjunction with the theme system:
@@ -1224,14 +1371,16 @@ if (typeof updatePreviewDisplaySettings === 'function') {
 
 - **ARIA Labels**: Dynamic labels on +/- buttons reflect current level and action (e.g., "Decrease brightness (current Normal)")
 - **Live Value Announcements**: Value displays use `role="status"` + `aria-live="polite"` to announce changes without duplicate overlays
+- **Toggle State**: The Edges button follows the ARIA toggle-button pattern — a static accessible name ("Edges") with `aria-pressed` carrying the state, so no extra live region is needed
 - **Keyboard Navigation**: Native buttons with disabled states at bounds; Enter/Space activates, Shift+Tab/Tab respects grouping
 - **Focus Indicators**: Clear 3px focus outlines with offset for visibility
 - **High Contrast Mode**: Labels inherit high-contrast colors; buttons reuse font-size control styling that already meets WCAG AA
+- **Active State Colors**: The pressed Edges button uses the same WCAG-AA blues as the Expert Mode toggles (`#1e4976` light, `#1e5a8a` dark, both white-on-blue above 7:1). In high contrast it fills with cyan and black text at 16.7:1 — deliberately *not* the yellow that `.font-size-btn:hover` already uses, so pressed and hovered are never the same swatch. Pressed is a solid fill against an outlined unpressed state, so the distinction survives without colour
 
 #### Non-Persistence Policy
 
-Brightness and contrast settings are **not persisted** across sessions. This is consistent with the theme and font size policies:
-- Settings reset to defaults (level 3) on page load
+Brightness, contrast, and edge-outline settings are **not persisted** across sessions. This is consistent with the theme and font size policies:
+- Settings reset to defaults on page load (brightness and contrast to level 3, edge outlines to on)
 - Provides consistent starting experience for all users
 - Users with specific needs can quickly adjust as needed
 
@@ -1518,6 +1667,24 @@ When `aria-expanded` changes, screen readers automatically announce the new stat
 - "expanded" when `aria-expanded="true"`
 - "collapsed" when `aria-expanded="false"`
 
+#### Expert Mode Submenus
+
+All six submenus use the identical `.expert-submenu-toggle` markup and are wired by one
+handler (`initExpertSubmenus()`), which sets `aria-expanded`, toggles `.active`, flips the
+`▼`/`▲` icon, and moves focus into the panel on open. A new submenu needs only the markup:
+
+| Order | Submenu | `aria-controls` | Notes |
+|-------|---------|-----------------|-------|
+| 1 | Shape Selection | `expert-panel-shapes` | |
+| 2 | Braille Spacing | `expert-panel-spacing` | |
+| 3 | Braille Dot Adjustments | `expert-panel-dots` | |
+| 4 | Surface Dimensions | `expert-panel-dimensions` | |
+| 5 | Tactile Indicator Dimensions | `expert-panel-tactile` | Whole accordion hidden unless Row Indicator Style is *Tactile seam arrow* |
+| 6 | Translation Options | `expert-panel-translation` | Capitalized Letters and Number Signs |
+
+Active toggles use `#1e4976` (light, 6.1:1 with white) and `#1e5a8a` (dark, 4.7:1), not
+`--border-focus`, which is only 3.7:1 and fails WCAG AA for the button label.
+
 ### 4.6 Reduced Motion Support
 
 The application respects the user's operating system preference for reduced motion (`prefers-reduced-motion` media query) in compliance with WCAG 2.1 Success Criterion 2.3.3.
@@ -1608,40 +1775,71 @@ updateRenderingMode();
 1. Settings → Accessibility → Motion
 2. Toggle "Reduce Motion" on
 
+### 4.7 Two-Way Translation Controls
+
+The text entry area and the Braille (Unicode) box translate in both directions, with one
+button under each:
+
+| Button | Direction | Effect |
+|--------|-----------|--------|
+| `#translate-to-braille-btn` — "Translate to Braille ↓" | text → braille | Runs the same pipeline generation uses (capitalization, liblouis, BANA wrapping in auto mode) and writes one row per line into `#braille-unicode` |
+| `#translate-to-text-btn` — "Translate to Text ↑" | braille → text | Back-translates each braille line through the worker's `backTranslate` message and writes the result into the Auto Placement box (auto mode) or `line1`…`lineN` (manual mode) |
+
+Both buttons sit directly under the box they read from, so the arrow in the label matches
+the direction the content moves on screen. Neither button changes the contract: whenever
+`#braille-unicode` holds content, those exact cells are what get embossed, and
+"Translate to Text" deliberately leaves the braille untouched.
+
+Accessibility requirements:
+
+- Both are `<button type="button" class="btn-translate">` with `aria-describedby` pointing
+  at `#braille-unicode-help`, which explains the pair.
+- Progress and outcome are announced through the existing `#braille-unicode-live`
+  (`role="status" aria-live="polite"`) region, and shown visually in
+  `#braille-unicode-status`. Errors set the highlighted variant of the status text rather
+  than a colour-only cue.
+- Each button disables itself and shows "Translating…" while the worker runs, then restores
+  its label in a `finally` block so a worker failure can never leave it stuck.
+
 ---
 
 ## 5. Scrollbar Customization
 
-### 5.1 Form Section Scrollbar
+### 5.1 Form Scroll Area Scrollbar
 
-The form section (right column on desktop) has a custom scrollbar for visibility:
+The right column is split in two: `.form-section` is the panel (never scrolls) and
+`.form-scroll` is the scrolling body inside it. The scrollbar therefore belongs to
+`.form-scroll`, and it remains the only scrollbar on the page — see §7.1.
 
 ```css
-.form-section {
-    scrollbar-gutter: stable;        /* Reserve space for scrollbar */
+.form-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
     scrollbar-width: auto;           /* Firefox */
     scrollbar-color: #3182ce #e2e8f0; /* Firefox: thumb track */
 }
 
 /* WebKit browsers */
-.form-section::-webkit-scrollbar {
+.form-scroll::-webkit-scrollbar {
     width: var(--scrollbar-width);   /* 18px */
 }
 
-.form-section::-webkit-scrollbar-track {
+.form-scroll::-webkit-scrollbar-track {
     background: #e2e8f0;
     border-radius: 8px;
     border: 2px solid #3182ce;
 }
 
-.form-section::-webkit-scrollbar-thumb {
+.form-scroll::-webkit-scrollbar-thumb {
     background: linear-gradient(180deg, #4299e1, #3182ce);
     border-radius: 10px;
     border: 2px solid #ffffff;
     box-shadow: 0 3px 6px rgba(49, 130, 206, 0.4);
 }
 
-.form-section::-webkit-scrollbar-thumb:hover {
+.form-scroll::-webkit-scrollbar-thumb:hover {
     background: #2563eb;
 }
 ```
@@ -1670,16 +1868,16 @@ body::-webkit-scrollbar-thumb {
 
 **Dark Theme:**
 ```css
-[data-theme="dark"] .form-section {
+[data-theme="dark"] .form-scroll {
     scrollbar-color: #63b3ed #2d3748 !important;
 }
 
-[data-theme="dark"] .form-section::-webkit-scrollbar-track {
+[data-theme="dark"] .form-scroll::-webkit-scrollbar-track {
     background: #2d3748 !important;
     border: 1px solid #63b3ed !important;
 }
 
-[data-theme="dark"] .form-section::-webkit-scrollbar-thumb {
+[data-theme="dark"] .form-scroll::-webkit-scrollbar-thumb {
     background: linear-gradient(180deg, #90cdf4, #63b3ed) !important;
     border: 2px solid #1a202c !important;
 }
@@ -1687,16 +1885,16 @@ body::-webkit-scrollbar-thumb {
 
 **High Contrast:**
 ```css
-[data-theme="high-contrast"] .form-section {
+[data-theme="high-contrast"] .form-scroll {
     scrollbar-color: var(--text-secondary) var(--bg-tertiary) !important;
 }
 
-[data-theme="high-contrast"] .form-section::-webkit-scrollbar-track {
+[data-theme="high-contrast"] .form-scroll::-webkit-scrollbar-track {
     background: var(--bg-tertiary) !important;
     border: 2px solid var(--border-secondary) !important;
 }
 
-[data-theme="high-contrast"] .form-section::-webkit-scrollbar-thumb {
+[data-theme="high-contrast"] .form-scroll::-webkit-scrollbar-thumb {
     background: linear-gradient(180deg, var(--text-secondary), var(--text-primary)) !important;
     box-shadow: none !important;
 }
@@ -1713,6 +1911,12 @@ The main action button has two states: **Generate** and **Download**.
 ```javascript
 // Generate state (blue, prompts user to create STL)
 function resetToGenerateState() {
+    // Idempotent - see "Why this must be idempotent" below
+    if (actionBtn.getAttribute('data-state') === 'generate' &&
+        !actionBtn.disabled &&
+        actionBtn.style.opacity === '1') {
+        return;
+    }
     actionBtn.textContent = 'Generate STL';
     actionBtn.className = 'generate-state';
     actionBtn.setAttribute('data-state', 'generate');
@@ -1743,7 +1947,56 @@ Generation complete → Button shows "Download STL" (download-state)
 User modifies any input → Button returns to "Generate STL" (generate-state)
 ```
 
-### 6.2 High Contrast Button Styling
+### 6.2 Resetting on Settings Changes
+
+The last transition is safety-critical: a stale STL must never be downloadable under
+settings it was not built with. It is implemented as **event delegation on the form**, not
+as a list of inputs:
+
+```javascript
+['input', 'change'].forEach(eventName => {
+    form.addEventListener(eventName, resetToGenerateState);
+});
+```
+
+This covers every current and future control in `#braille-form` automatically. The previous
+hand-maintained list of element IDs silently missed controls added later — the tactile
+indicator dials among them — so any new control must **not** re-introduce a per-input
+listener; adding it to the form is enough.
+
+Two consequences to keep in mind:
+
+- `#action-btn` lives **outside** the form (in `.action-footer`), so pressing it never
+  triggers the reset it would otherwise fire on itself.
+- Values written by script (presets, `updateGridColumnsForPlateType()`, the Translate to
+  Text button) do not fire `input`/`change`, so those paths call `resetToGenerateState()`
+  explicitly.
+
+#### Why this must be idempotent
+
+`resetToGenerateState()` returns early when the button is already in the generate state.
+That guard is load-bearing, not an optimization.
+
+A `<textarea>` or `<input>` fires its `change` event on blur — which happens on the very
+mousedown that presses the action button. Delegation therefore runs the reset *between*
+mousedown and mouseup on the button being pressed. If the reset rewrites `textContent` and
+`className` at that moment, **WebKit dispatches no `click` event at all**: mousedown and
+mouseup both land, and the click is silently dropped. The user types their text, presses
+Generate, and nothing happens — on Safari only, and only on the first press after typing.
+
+The same reasoning rules out a transform-based hover effect on this button
+(`#action-btn` animates colour and shadow only): anything that moves the element under the
+pointer reproduces the dropped click. Pinned by
+`tests/e2e/formLayout.spec.ts` ("acts on the first click even when a text field still has
+focus").
+
+### 6.3 Action Button Placement
+
+`#action-btn` sits in `.action-footer`, a fixed bar below `.form-scroll`. It is always
+visible: on desktop because it is a flex sibling of the scroll area, on mobile because the
+footer is `position: sticky; bottom: 0`. See §7.1.
+
+### 6.4 High Contrast Button Styling
 
 See Section 1.3 for complete high contrast button specifications.
 
@@ -1753,35 +2006,81 @@ See Section 1.3 for complete high contrast button specifications.
 
 ### 7.1 Desktop Two-Column Layout
 
+The viewport is locked (`body` and `.main-layout` are `overflow: hidden`), so the page has
+exactly one scrollbar: `.form-scroll`. The form column is a three-part flex column — panel,
+scrolling body, pinned footer:
+
 ```css
 .content-area {
     display: flex;
-    gap: 2.5em;
+    gap: 1.5em;
     width: 100%;
+    flex: 1;
+    min-height: 0;      /* Lets the flex children shrink and scroll */
+    overflow: hidden;
 }
 
-/* Left Column - Preview (45% width) */
+/* Left Column - Preview */
 .preview-section {
-    flex: 0 0 45%;
-    position: sticky;
-    top: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
 }
 
-/* Right Column - Form (55% width) */
+/* Right Column - Form panel: never scrolls itself */
 .form-section {
-    flex: 0 0 calc(55% - 2em);
-    max-height: calc(100vh - 10em);
-    overflow-y: scroll;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Scrolling body of the form column */
+.form-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Pinned action bar - always in view */
+.action-footer {
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: center;
+    padding-top: 0.6em;
+    padding-bottom: env(safe-area-inset-bottom);
+    border-top: 1px solid var(--border-primary);
+    background: var(--bg-secondary);
 }
 ```
 
+**Invariant:** `.form-scroll` must be the only scrollable descendant of `.form-section`.
+Giving `.form-section` its own `overflow-y` again would nest a second scrollbar inside the
+first, which is what the split exists to prevent. Pinned by
+`tests/e2e/formLayout.spec.ts`.
+
 ### 7.2 Mobile Stacked Layout
+
+Below 768px the page itself scrolls, so the panel must not clip and the scroll area must not
+create a second scroll context. The footer becomes sticky instead of flex-pinned:
 
 ```css
 @media (max-width: 768px) {
+    .main-layout {
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;   /* See the sticky-ancestor note below */
+    }
+
     .content-area {
         flex-direction: column;
         gap: 1.5em;
+        overflow: visible;
     }
 
     .preview-section {
@@ -1794,6 +2093,19 @@ See Section 1.3 for complete high contrast button specifications.
         flex: 1;
         width: 100%;
         max-height: none;
+        overflow: visible;
+    }
+
+    .form-scroll {
+        overflow: visible;
+    }
+
+    .action-footer {
+        position: sticky;
+        bottom: 0;
+        z-index: 5;
+        padding-bottom: calc(0.4em + env(safe-area-inset-bottom));
+        box-shadow: 0 -4px 12px var(--shadow-light);
     }
 
     #viewer {
@@ -1807,6 +2119,16 @@ See Section 1.3 for complete high contrast button specifications.
     }
 }
 ```
+
+**Sticky-ancestor constraint:** every ancestor of `.action-footer` between it and the page
+must keep `overflow: visible` on **both** axes below 768px. A sticky element positions
+against its nearest scrolling ancestor, and `overflow-x: hidden` alone is enough to make one
+(the other axis computes to `auto`). `.main-layout` previously carried
+`overflow-y: auto; overflow-x: hidden` on mobile; because that element never actually
+scrolls, the footer silently stopped sticking and simply sat at the end of the document —
+which looks like working layout until you scroll. `<body>` already clips horizontally, so
+nothing is lost by making the inner containers visible. Pinned by
+`tests/e2e/formLayout.spec.ts`.
 
 ### 7.3 iOS Safe Area Handling
 
@@ -2106,6 +2428,7 @@ Low vision users benefit from enhanced depth perception:
 | 1.6 | 2026-01-05 | Replaced brightness/contrast click-through toggles with +/- stepper controls, added live value display, and refreshed accessibility guidance |
 | 1.7 | 2026-01-05 | Added critical warning section about HTML file locations — must edit `public/index.html` (served by Flask), not `templates/index.html` (legacy/not served) |
 | 1.8 | 2026-01-05 | **Cross-Browser UI Hardening:** Added Section 3.9 (WebGL Context Recovery), Section 4.5 (Toggle Button ARIA Requirements), Section 4.6 (Reduced Motion Support), and Section 7.3 (iOS Safe Area Handling) to document new accessibility and cross-browser compatibility features |
+| 1.9 | 2026-07-30 | **Form column restructure:** Split `.form-section` into a non-scrolling panel plus `.form-scroll` and a pinned `.action-footer`, so `#action-btn` is always in view (Sections 5.1, 6.3, 7.1, 7.2). Documented the form-level event delegation that resets the button on any settings change (Section 6.2), the six Expert Mode submenus and their contrast-safe active colours (Section 4.5), and the two-way translation buttons (new Section 4.7) |
 
 ---
 

@@ -113,7 +113,9 @@ This section lists canonical field names, high-level types, and brief rules. See
 - text.lines: array<string>
   - Required. Each entry MUST be Unicode braille (U+2800–U+28FF). See validation pipeline.
   - The frontend fills this either from liblouis or, when the Braille (Unicode) field is
-    non-empty, from that field verbatim. In the latter case `text.original_lines` is `null`.
+    non-empty, from that field verbatim. Even then `text.original_lines` carries the English
+    inputs when they are non-empty (for indicator letters); it is `null` only when braille
+    was pasted with the English inputs left empty.
 - text.languages: array<string>
   - Optional. Per-line table IDs; falls back to `text.default_language`.
 - text.default_language: string
@@ -132,6 +134,11 @@ See: `BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md`, `LIBLOUIS_TRANSLATION_
 See: `STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md`.
 
 ### 3.3 Spacing & Layout
+- spacing.grid_columns: integer (>= 1, default: 14) — TOTAL columns per row,
+  including reserved marker columns. The UI dial counts text cells only and
+  adds `getReservedMarkerColumns()` before sending (visual default: 12 text
+  + 2 markers = 14). See section 3.6 for the per-mode reserved counts.
+- spacing.grid_rows: integer (>= 1, default: 4)
 - spacing.dot_spacing_mm: number (>= 0)
 - spacing.cell_spacing_mm: number (>= 0)
 - spacing.line_spacing_mm: number (>= 0)
@@ -140,6 +147,8 @@ See: `STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md`.
 
 Notes:
 - Dot numbering and cell layout are fixed by standard; not user-configurable.
+- `grid_columns`/`grid_rows` appear flat in the runtime settings payload under
+  the same names, matching `CardSettings`.
 
 See: `BRAILLE_SPACING_SPECIFICATIONS.md`.
 
@@ -207,11 +216,13 @@ See: `BRAILLE_DOT_ADJUSTMENTS_SPECIFICATIONS.md`, `BRAILLE_DOT_SHAPE_SPECIFICATI
 - indicators.size_scale: number (scales relative to `spacing.dot_spacing_mm`)
 - indicators.rotate_180: boolean (applies for counter plate on cylinder)
 
-Tactile mode dimensions (mm; defaults are byte-for-byte the OpenSCAD version's, so the two
-generators produce the same arrow):
+Tactile mode dimensions (mm). Both Card Thickness presets apply the same five values —
+the arrow is sized by the finger that reads it, not by the print layer height — so a change
+here must land in `settings.schema.json`, `app/models.py`, the HTML input defaults, and
+**both** `THICKNESS_PRESETS` entries:
 - indicators.tactile_indicator_width: number, 2–10 (default: 4.0) — width around the cylinder
-- indicators.tactile_indicator_length: number, 2–15 (default: 5.0) — length along the axis
-- indicators.tactile_indicator_raise: number, 0–2 (default: 0.8) — emboss arrow height above the surface
+- indicators.tactile_indicator_length: number, 2–15 (default: 10.0) — length along the axis
+- indicators.tactile_indicator_raise: number, 0–2 (default: 0.5) — emboss arrow height above the surface
 - indicators.tactile_recess_clearance: number, 0–1 (default: 0.2) — counter recess outline margin
 - indicators.tactile_recess_extra_depth: number, 0–1 (default: 0.2) — counter recess depth beyond the raise
 
@@ -219,18 +230,32 @@ All eleven fields appear **flat** in the runtime settings payload under the same
 (`indicator_mode`, `tactile_indicator_width`, …), matching the OpenSCAD parameter names.
 `indicators.enabled` is the one exception: its runtime name is `indicator_shapes` (0 or 1).
 
-Reserved marker columns per row:
-- indicator_mode = "tactile": 0 columns — the indicator sits in the seam gap — 14 text cells at defaults (15 leaves too little gap)
-- indicator_shapes = 1 (On): 2 marker columns reserved per row (letter + triangle) — 13 text cells at defaults
-- indicator_shapes = 0 (Off): 1 marker column reserved per row (triangle only) — 14 text cells at defaults
+UI location: `indicator_mode` is a main-form control (**Row Indicator Style**, above Card
+Thickness). The five `tactile_*` dials live in the **Tactile Indicator Dimensions** submenu
+of Expert Mode, which is hidden entirely unless tactile mode is selected.
+
+Reserved marker columns per row. The UI dial counts TEXT cells only; the payload
+`grid_columns` adds the reserved columns on top. The total (text + markers) must fit
+the circumference: at the defaults (30.75 mm diameter, 6.5 mm cell spacing) that is
+`floor(96.6 / 6.5) = 14` total columns.
+- indicator_mode = "tactile": 0 columns — the indicator sits in the seam gap — 13 text cells recommended at defaults (14 also fits the seam-gap arithmetic but proved too tight in practice; 15 leaves too little gap)
+- indicator_shapes = 1 (On): 2 marker columns reserved per row (letter + triangle) — 12 text cells at defaults (12 + 2 = 14 total)
+- indicator_shapes = 0 (Off): 1 marker column reserved per row (triangle only) — 13 text cells at defaults (13 + 1 = 14 total)
 
 Cross-field notes:
 - `indicator_mode` is geometry-affecting and column-count-affecting: it changes
   `validate_line_lengths()` availability, the frontend `grid_columns` payload arithmetic,
   and BANA auto-wrap width.
+- Every per-row capacity check (auto-wrap width, auto/manual overflow warnings, the
+  Braille (Unicode) field validation, and the generate-time gate) derives from the same
+  text-cell dial (`getAvailableColumns()` in the UI); there are no independent capacity
+  formulas.
 - Tactile mode warns (does not reject) when
   `π × diameter − (grid_columns − 1) × cell_spacing < tactile_indicator_width + 5.0`.
   The warning is returned in the geometry spec's `warnings` array and shown live in the UI.
+- Visual mode warns (does not reject) when the total columns no longer physically fit:
+  `π × diameter − (grid_columns − 1) × cell_spacing < cell_spacing`, i.e.
+  `grid_columns × cell_spacing > π × diameter` (frontend `checkPhysicalFit()`).
 
 See: `RECESS_INDICATOR_SPECIFICATIONS.md`.
 
@@ -420,3 +445,4 @@ Before completing any task involving settings:
 - 2025-12-06 — Initial creation. Consolidated settings schema across specs; added high-level JSON Schema, normalization and validation rules, and examples.
 - 2025-12-06 — Added Development Guidelines (Section 9); added `cache_version` field to schema; added default values to schema properties.
 - 2026-07-29 — Added `indicators.indicator_mode` and the five `indicators.tactile_*` dimensions for the tactile row indicator ported from the OpenSCAD version (Section 3.6), and noted the Braille (Unicode) field's effect on `text.lines` / `text.original_lines` (Section 3.1).
+- 2026-07-30 — Changed `indicators.tactile_indicator_length` to 10.0 and `indicators.tactile_indicator_raise` to 0.5; recorded that both Card Thickness presets now carry all five tactile dimensions, and documented where each indicator control lives in the UI (Section 3.6).

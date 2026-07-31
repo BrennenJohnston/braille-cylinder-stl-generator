@@ -71,13 +71,14 @@ Braille cylinders are commonly used for:
 
 Each row holds a fixed number of braille cells in this app:
 
-- **13 text cells per row** by default (2 additional cells are reserved for the indicator letter and the triangle alignment indicator)
-- **14 text cells per row** when Indicator Letters is turned off (the alignment triangle is always included)
+- **12 text cells per row** by default (2 additional cells are reserved for the indicator letter and the triangle alignment indicator, for 14 columns in total)
+- **13 text cells per row** when Indicator Letters is turned off (the alignment triangle is always included, for 14 columns in total)
+- **13 text cells per row** in Tactile indicator mode (no marker cells; the arrow sits in the seam gap)
 - Cells are spaced 6.5mm center-to-center
 
-The cylinder's circumference determines whether that layout fits physically. The default 13-cell layout (plus indicators) needs about 91mm of circumference; the default 30.8mm-diameter cylinder (~96.8mm circumference) fits it with room left over for the seam gap. A larger diameter adds margin around the seam rather than more cells per row.
+The cylinder's circumference determines whether that layout fits physically. The default 14-column layout needs about 91mm of circumference (14 × 6.5mm); the default 30.8mm-diameter cylinder (~96.8mm circumference) fits it with room left over for the seam gap. A larger diameter adds margin around the seam rather than more cells per row. The app warns live when the dialed columns no longer fit.
 
-**Phone number tip:** a 10-digit phone number formatted per BANA guidance (`206.616.7678`) translates to exactly 13 cells — one number sign, ten digits, two periods — so it fits a default row. UEB keeps numeric mode across the periods, so only one number sign is needed. If a longer number will not fit, split it after a period and start the next row with the remaining digits; the translator adds a new number sign (`⠼`) automatically (e.g., `⠼⠃⠚⠋⠲⠋⠁⠋⠲` then `⠼⠛⠋⠛⠓`).
+**Phone number tip:** a 10-digit phone number formatted per BANA guidance (`206.616.7678`) translates to exactly 13 cells — one number sign, ten digits, two periods. UEB keeps numeric mode across the periods, so only one number sign is needed. That fits a 13-cell row (Tactile mode, or Indicator Letters off); in the 12-cell visual default it wraps instead — split it after a period and start the next row with the remaining digits; the translator adds a new number sign (`⠼`) automatically (e.g., `⠼⠃⠚⠋⠲⠋⠁⠋⠲` then `⠼⠛⠋⠛⠓`).
 
 ## Key Parameters Explained
 
@@ -197,7 +198,7 @@ These examples show **what to type** into the application for common cylinder us
 
 **Goal:** Label a spice jar (diameter ~55mm) so it can be identified by touch.
 
-**Container measurement:** Circumference ~173mm ÷ π ≈ 55mm diameter — comfortably fits the default 13-cell rows.
+**Container measurement:** Circumference ~173mm ÷ π ≈ 55mm diameter — comfortably fits the default rows (12–13 text cells).
 
 **Decision:** A single word is all that's needed — just the spice name.
 
@@ -221,7 +222,7 @@ cinnamon
 
 **Goal:** Label a prescription bottle (diameter ~40mm) with drug name and dosage.
 
-**Container measurement:** Circumference ~126mm ÷ π ≈ 40mm diameter — fits the default 13-cell rows.
+**Container measurement:** Circumference ~126mm ÷ π ≈ 40mm diameter — fits the default rows (12–13 text cells).
 
 **Decision:** Two key pieces — medication name and dosage.
 
@@ -238,7 +239,7 @@ amoxicillin
 | Placement Mode | Auto Placement |
 | Capitalized Letters | Disabled |
 
-**Result:** 2 rows. "amoxicillin" uses 11 braille cells, within the default 13-cell row; abbreviate to "amox" if you add more per-row content.
+**Result:** 2 rows. "amoxicillin" uses 11 braille cells, within the default row capacity (12–13 text cells); abbreviate to "amox" if you add more per-row content.
 
 ---
 
@@ -246,7 +247,7 @@ amoxicillin
 
 **Goal:** Identify a personal water bottle (diameter ~75mm) at a shared workplace.
 
-**Container measurement:** Circumference ~235mm ÷ π ≈ 75mm diameter — fits the default 13-cell rows with generous seam margin.
+**Container measurement:** Circumference ~235mm ÷ π ≈ 75mm diameter — fits the default rows (12–13 text cells) with generous seam margin.
 
 **Decision:** Name plus one contact method. Omit organization — not needed to identify a personal item.
 

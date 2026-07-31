@@ -8,8 +8,9 @@
  *
  * The phone-number case is the one that prompted the feature: 206-543-4779 is
  * correctly 15 cells with three number signs under UEB (a hyphen ends numeric
- * mode), which does not fit a 13-cell row. Editing it down to 13 cells by hand
- * must be honoured verbatim.
+ * mode), which does not fit any row at the defaults. Editing it down to the 13
+ * cells that fit a tactile-mode row (the visual default is 12 text cells) must
+ * be honoured verbatim.
  *
  * @see docs/specifications/BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md
  */
@@ -35,17 +36,22 @@ async function openApp(page: Page) {
 }
 
 /**
- * Capture the braille lines sent to /geometry_spec. The request is aborted so
- * the test never waits on Manifold WASM or a full CSG run.
+ * Capture the braille lines and indicator source lines sent to /geometry_spec.
+ * The request is aborted so the test never waits on Manifold WASM or a full
+ * CSG run.
  */
 async function interceptGeometrySpec(page: Page) {
-  const state: { lines: string[] | null; called: boolean } = { lines: null, called: false };
+  const state: { lines: string[] | null; originalLines: string[] | null; called: boolean } =
+    { lines: null, originalLines: null, called: false };
   await page.route('**/geometry_spec', async (route) => {
     state.called = true;
     try {
-      state.lines = route.request().postDataJSON()?.lines ?? null;
+      const body = route.request().postDataJSON();
+      state.lines = body?.lines ?? null;
+      state.originalLines = body?.original_lines ?? null;
     } catch {
       state.lines = null;
+      state.originalLines = null;
     }
     await route.abort();
   });
@@ -123,10 +129,15 @@ test.describe('Editable Unicode braille field', () => {
   test('sends hand-edited cells verbatim to /geometry_spec', async ({ page }) => {
     await openApp(page);
 
+    // Tactile mode rows hold 13 text cells (the visual default is 12), which
+    // is what the hand-edited phone number needs.
+    await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+    await expect(page.locator('#grid_columns')).toHaveValue('13');
+
     await page.locator('#line1').fill('206-543-4779');
     await translateToBraille(page);
 
-    // Edit the 15-cell result down to the 13 cells that fit a default row.
+    // Edit the 15-cell result down to the 13 cells that fit a tactile row.
     const field = page.locator('#braille-unicode');
     await field.fill(PHONE_13_CELLS);
     await expect(page.locator('#braille-unicode-status')).toContainText('Edited');
@@ -140,13 +151,33 @@ test.describe('Editable Unicode braille field', () => {
   test('uses pasted braille verbatim with the English inputs left empty', async ({ page }) => {
     await openApp(page);
 
-    const pasted = '\u2813\u2811\u280B\u280B\u2815';  // hello
+    const pasted = '\u2813\u2811\u2807\u2807\u2815';  // hello
     await page.locator('#braille-unicode').fill(pasted);
 
     const spec = await interceptGeometrySpec(page);
     await generate(page, spec);
 
     expect(spec.lines?.[0]).toBe(pasted);
+    // No English source: the backend must get null so it falls back to the
+    // square placeholder instead of inventing an indicator letter.
+    expect(spec.originalLines).toBeNull();
+  });
+
+  test('keeps the English lines for indicator letters when the braille field is filled', async ({ page }) => {
+    await openApp(page);
+
+    // The guided workflow: type English, press Translate to Braille, generate.
+    // The braille field wins for the embossed cells, but the indicator letter
+    // for each row must still come from the English source — this used to be
+    // nulled out, degrading every row's letter to a blank rectangle.
+    await page.locator('#line1').fill('hello');
+    await translateToBraille(page);
+
+    const spec = await interceptGeometrySpec(page);
+    await generate(page, spec);
+
+    expect(await page.locator('#braille-unicode').inputValue()).not.toBe('');
+    expect(spec.originalLines?.[0]).toBe('hello');
   });
 
   test('blocks generation when the field contains non-braille characters', async ({ page }) => {
@@ -164,11 +195,11 @@ test.describe('Editable Unicode braille field', () => {
     await openApp(page);
 
     const spec = await interceptGeometrySpec(page);
-    // 14 cells against the default 13-cell row
+    // 14 cells against the default 12-text-cell row
     await page.locator('#braille-unicode').fill('\u2801'.repeat(14));
     await page.locator('#action-btn').click();
 
-    await expect(page.locator('#error-text')).toContainText('the maximum is 13', { timeout: 15_000 });
+    await expect(page.locator('#error-text')).toContainText('the maximum is 12', { timeout: 15_000 });
     expect(spec.called).toBe(false);
   });
 
@@ -188,5 +219,28 @@ test.describe('Editable Unicode braille field', () => {
     await field.fill('\u2801\u2803');
     await page.locator('#line1').fill('something else entirely');
     await expect(field).toHaveValue('\u2801\u2803');
+  });
+
+  test('back-translates pasted braille into the English inputs', async ({ page }) => {
+    await openApp(page);
+
+    // hello, in uncontracted UEB: h e l l o
+    await page.locator('#braille-unicode').fill('\u2813\u2811\u2807\u2807\u2815');
+
+    // Same warm-up problem as Translate to Braille: the worker loads async.
+    const line1 = page.locator('#line1');
+    for (let attempt = 0; attempt < 15; attempt++) {
+      await page.locator('#translate-to-text-btn').click();
+      for (let waited = 0; waited < 4000; waited += 200) {
+        if ((await line1.inputValue()) !== '') break;
+        await page.waitForTimeout(200);
+      }
+      if ((await line1.inputValue()) !== '') break;
+      await page.waitForTimeout(1000);
+    }
+
+    await expect(line1).toHaveValue('hello');
+    // The braille stays untouched: it is still what gets embossed
+    await expect(page.locator('#braille-unicode')).toHaveValue('\u2813\u2811\u2807\u2807\u2815');
   });
 });

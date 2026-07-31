@@ -733,8 +733,8 @@ def _create_tactile_indicator_spec(y_local: float, radius: float, settings: Any,
     """
     theta = TACTILE_SEAM_THETA
     width = float(getattr(settings, 'tactile_indicator_width', 4.0))
-    length = float(getattr(settings, 'tactile_indicator_length', 5.0))
-    raise_mm = float(getattr(settings, 'tactile_indicator_raise', 0.8))
+    length = float(getattr(settings, 'tactile_indicator_length', 10.0))
+    raise_mm = float(getattr(settings, 'tactile_indicator_raise', 0.5))
 
     if is_recess:
         # Grown in the plane and radially so the arrow still enters the recess when

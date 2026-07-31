@@ -169,7 +169,12 @@ class CardSettings:
             'card_height': 52,
             'card_thickness': 2.0,
             # Grid parameters
-            'grid_columns': 13,  # 11 text cells + 2 reserved for indicators = 13 total (fits 90mm card)
+            # grid_columns counts TOTAL columns including reserved marker
+            # columns. The UI dial shows text cells only and adds the markers
+            # on top before sending: default is 12 text + 2 markers = 14 total
+            # (visual mode with indicator letters), which fits the default
+            # 30.75 mm cylinder (14 x 6.5 mm = 91 mm <= pi x 30.75 = 96.6 mm).
+            'grid_columns': 14,
             'grid_rows': 4,
             'cell_spacing': 6.5,  # Project brief default
             'line_spacing': 10.0,
@@ -221,12 +226,12 @@ class CardSettings:
             'cylinder_counter_plate_overcut_mm': 0.05,
             # Indicator shapes (row start/end markers) toggle
             'indicator_shapes': 1,
-            # Tactile indicator mode dimensions (cylinder only). Values mirror the
-            # OpenSCAD version's defaults exactly; see OpenSCAD parameter block
-            # `[Indicator Mode]` and RECESS_INDICATOR_SPECIFICATIONS.md.
+            # Tactile indicator mode dimensions (cylinder only). See
+            # RECESS_INDICATOR_SPECIFICATIONS.md; both Card Thickness presets
+            # apply the same values.
             'tactile_indicator_width': 4.0,
-            'tactile_indicator_length': 5.0,
-            'tactile_indicator_raise': 0.8,
+            'tactile_indicator_length': 10.0,
+            'tactile_indicator_raise': 0.5,
             'tactile_recess_clearance': 0.2,
             'tactile_recess_extra_depth': 0.2,
         }

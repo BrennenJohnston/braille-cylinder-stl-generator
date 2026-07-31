@@ -86,8 +86,8 @@ Frontend Only
 
 ### Source Code Location
 
-- `public/index.html`: Lines ~4222-4295
-- `templates/index.html`: Lines ~4011-4084
+- `public/index.html`: the `THICKNESS_PRESETS` object (search for `const THICKNESS_PRESETS`)
+- `templates/index.html` is a deprecated stale copy and is not maintained
 
 ### Complete Preset Values
 
@@ -95,7 +95,7 @@ Frontend Only
 const THICKNESS_PRESETS = {
     '0.4': {
         // Braille Spacing
-        grid_columns: 13,
+        grid_columns: 11,
         grid_rows: 4,
         cell_spacing: 6.5,
         line_spacing: 10.0,
@@ -133,12 +133,19 @@ const THICKNESS_PRESETS = {
         // Card/Plate Dimensions
         card_width: 90,
         card_height: 52,
-        card_thickness: 2.0
+        card_thickness: 2.0,
+
+        // Tactile Indicator Dimensions
+        tactile_indicator_width: 4.0,
+        tactile_indicator_length: 10.0,
+        tactile_indicator_raise: 0.5,
+        tactile_recess_clearance: 0.2,
+        tactile_recess_extra_depth: 0.2
     },
 
     '0.3': {
         // Braille Spacing
-        grid_columns: 15,  // More characters possible with finer layers
+        grid_columns: 11,
         grid_rows: 4,
         cell_spacing: 6.5,
         line_spacing: 10.0,
@@ -176,16 +183,27 @@ const THICKNESS_PRESETS = {
         // Card/Plate Dimensions (same as 0.4mm)
         card_width: 90,
         card_height: 52,
-        card_thickness: 2.0
+        card_thickness: 2.0,
+
+        // Tactile Indicator Dimensions (same as 0.4mm)
+        tactile_indicator_width: 4.0,
+        tactile_indicator_length: 10.0,
+        tactile_indicator_raise: 0.5,
+        tactile_recess_clearance: 0.2,
+        tactile_recess_extra_depth: 0.2
     }
 };
 ```
+
+The tactile indicator dimensions are **identical in both presets**: the arrow is sized by
+the finger that reads it, not by the print layer height. They are still listed in both
+entries so that selecting either preset restores them, and so that hand-editing one of them
+flips the selector to Custom like every other preset-controlled dial.
 
 ### Key Differences Between Presets
 
 | Parameter | 0.4mm | 0.3mm | Rationale |
 |-----------|-------|-------|-----------|
-| `grid_columns` | 13 | 15 | Finer layers allow more characters |
 | `rounded_dot_base_diameter` | 1.5 | 1.2 | Smaller for finer detail |
 | `rounded_dot_base_height` | 0.5 | 0.4 | Lower profile for 0.3mm layers |
 | `rounded_dot_dome_diameter` | 1.0 | 0.8 | Proportionally smaller |
@@ -433,7 +451,7 @@ All 26 preset-controlled inputs have event listeners attached:
 
 ### Complete Parameter List
 
-The preset system controls **26 parameters** across 5 categories:
+The preset system controls **32 parameters** across 8 categories:
 
 #### A. Braille Spacing (7 parameters)
 - `grid_columns` — Number of braille cells (characters)
@@ -475,6 +493,18 @@ The preset system controls **26 parameters** across 5 categories:
 - `card_width` — Card width (mm)
 - `card_height` — Card height (mm)
 - `card_thickness` — Card thickness (mm)
+
+These three have no visible controls: the cylinder has no flat plate, but the backend schema
+still requires the fields, so hidden inputs carry the schema defaults.
+
+#### H. Tactile Indicator Dimensions (5 parameters)
+- `tactile_indicator_width` — Arrow width around the cylinder (mm)
+- `tactile_indicator_length` — Arrow length along the cylinder axis (mm)
+- `tactile_indicator_raise` — Emboss arrow height above the surface (mm)
+- `tactile_recess_clearance` — Counter recess outline margin (mm)
+- `tactile_recess_extra_depth` — Counter recess depth beyond the raise (mm)
+
+Same values in both presets; see `RECESS_INDICATOR_SPECIFICATIONS.md` §4.
 
 ### Braille Dot Shape Default (Rounded)
 
@@ -594,6 +624,7 @@ All preset-controlled parameters are located in Expert Mode submenus:
 
 ```
 Expert Mode (dropdown)
+├── Shape Selection
 ├── Braille Spacing
 │   ├── grid_columns, grid_rows
 │   ├── cell_spacing, line_spacing, dot_spacing
@@ -603,9 +634,11 @@ Expert Mode (dropdown)
 │   ├── Cone Shape (3 params)
 │   ├── Counter Bowl (2 params)
 │   └── Counter Cone (3 params)
-└── Surface Dimensions
-    ├── Cylinder (5 params)
-    └── Plate (3 params)
+├── Surface Dimensions
+│   ├── Cylinder (5 params)
+│   └── Plate (3 params, hidden - schema carriers only)
+├── Tactile Indicator Dimensions (5 params; shown only in tactile mode)
+└── Translation Options (not preset-controlled)
 ```
 
 ---
@@ -737,10 +770,11 @@ The preset system is designed to **never fail visibly**:
 | 2025-12-07 | 1.1 | Documented critical bug fix: preset now applies on page load to ensure consistency between HTML defaults and preset values. Added dual event listener strategy (change + click). |
 | 2025-12-07 | 1.2 | Updated 0.3mm preset values: All dot dimensions reduced for finer detail (rounded base: 1.5→1.2, heights reduced, emboss cone: 1.5→1.2, counter depths reduced). |
 | 2025-12-07 | 1.3 | Added "Custom" radio button feature. Automatically detects when parameter values deviate from presets and switches to "Custom". Added `checkPresetMatch()`, `detectCurrentPreset()`, and `updatePresetSelection()` functions. Updated HTML structure and event listener documentation. |
+| 2026-07-30 | 1.4 | Added the five tactile indicator dimensions to both presets (32 parameters total). Corrected the documented `grid_columns` values to the 11 actually shipped, dropped the stale line-number and `templates/index.html` references, and updated the Expert Mode submenu map for the Tactile Indicator Dimensions and Translation Options submenus. Presets also now feed the `{preset}` segment of STL file names. |
 
 ---
 
-**Document Version**: 1.3
+**Document Version**: 1.4
 **Created**: 2025-12-07
 **Purpose**: Specification for Card Thickness Preset System (frontend convenience feature)
 **Status**: ✅ Complete

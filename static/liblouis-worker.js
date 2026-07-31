@@ -127,7 +127,7 @@ self.onmessage = async function(e) {
 
     // === SECURITY: Message validation (defense against malformed messages) ===
     // Allowlist of valid message types
-    const ALLOWED_TYPES = ['init', 'translate'];
+    const ALLOWED_TYPES = ['init', 'translate', 'backTranslate'];
     if (!type || !ALLOWED_TYPES.includes(type)) {
         self.postMessage({
             id: id,
@@ -161,6 +161,26 @@ self.onmessage = async function(e) {
                 id: id,
                 type: 'translate',
                 result: { success: false, error: 'Missing required field: text' }
+            });
+            return;
+        }
+    }
+
+    // For 'backTranslate' type, the payload carries braille instead of text
+    if (type === 'backTranslate') {
+        if (!data || typeof data !== 'object') {
+            self.postMessage({
+                id: id,
+                type: 'backTranslate',
+                result: { success: false, error: 'Invalid backTranslate data: expected an object' }
+            });
+            return;
+        }
+        if (typeof data.braille !== 'string') {
+            self.postMessage({
+                id: id,
+                type: 'backTranslate',
+                result: { success: false, error: 'Missing required field: braille' }
             });
             return;
         }
@@ -221,7 +241,44 @@ self.onmessage = async function(e) {
                     throw new Error(message);
                 }
                 break;
-                
+
+            case 'backTranslate': {
+                if (!liblouisReady || !liblouisInstance) {
+                    throw new Error('Liblouis not initialized');
+                }
+
+                const braille = data.braille;
+                const backTable = data.tableName || 'en-ueb-g1.ctb';
+
+                // unicode.dis is what makes liblouis read the U+2800 block as
+                // braille cells rather than as literal characters, so the same
+                // chain used for translation is used in reverse.
+                const backChain = backTable.indexOf('unicode.dis') !== -1
+                    ? backTable
+                    : ('unicode.dis,' + backTable);
+
+                console.log('Worker: Back-translating braille with table:', backChain);
+
+                try {
+                    const text = liblouisInstance.backTranslateString(backChain, braille);
+                    if (typeof text !== 'string') {
+                        throw new Error('Liblouis returned no text');
+                    }
+                    self.postMessage({ id, type: 'backTranslate', result: { success: true, text: text } });
+                } catch (e) {
+                    var backLogTail = '';
+                    try {
+                        var backTail = recentLogs.slice(-8).join('\n');
+                        if (backTail) {
+                            backLogTail = '\nRecent liblouis logs:\n' + backTail;
+                        }
+                    } catch (_) {}
+                    throw new Error('Back-translation failed for table ' + backTable + ': ' +
+                        (e && e.message ? e.message : 'Unknown error') + backLogTail);
+                }
+                break;
+            }
+
             default:
                 throw new Error('Unknown message type: ' + type);
         }

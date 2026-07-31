@@ -18,10 +18,9 @@ braille-cylinder-stl-generator/
 │   ├── development/          Dev notes and implementation guides
 │   ├── guides/               User-facing guides (cylinder, business card)
 │   └── security/             Security docs and audit reports
-├── public/                   Production HTML (served on Vercel)
+├── public/                   Production HTML (served on Vercel and by Flask locally)
 ├── scripts/                  Utility scripts
 ├── static/                   Frontend JS, CSS, Web Workers, liblouis tables
-├── templates/                Dev HTML (served by Flask locally)
 ├── tests/                    Test suite
 │   ├── fixtures/             Golden STL files for regression tests
 │   ├── test_smoke.py         Endpoint smoke tests
@@ -60,10 +59,7 @@ The server is minimal — just Flask serving static files and one JSON endpoint.
 - **`static/workers/csg-worker-manifold.js`** — Web Worker using Manifold WASM for cylinders
 - **`static/liblouis-worker.js`** — Web Worker for braille translation
 - **Three.js** — 3D preview rendering
-- **`public/index.html`** — Production build (served by Vercel)
-- **`templates/index.html`** — Dev build (served by Flask)
-
-These two HTML files must stay in sync.
+- **`public/index.html`** — The single HTML build, served both on Vercel and by Flask locally (`send_from_directory('public', 'index.html')`). The former `templates/index.html` twin was an unserved stale copy and has been removed.
 
 ### API endpoints
 

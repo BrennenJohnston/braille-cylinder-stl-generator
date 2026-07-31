@@ -66,7 +66,7 @@ BANA's general principles, verbatim:
 
 **In this app**, the order maps to typing decisions:
 
-1. Remove capital indicators — type the name in lowercase, or leave the **Capitalized Letters** toggle disabled (default).
+1. Remove capital indicators — type the name in lowercase, or set the **Capitalized Letters** toggle in Expert Mode to Disabled (the app default is Enabled).
 2. Remove the middle initial — type `Jane Smith` rather than `Jane M. Smith`.
 3. Use an initial for the first name — type `J. Smith`.
 4. Continue onto a second line in cell 1 — split the name across two of the four available lines.
@@ -88,9 +88,9 @@ The only abbreviations BANA explicitly names are **lib**, **amer**, and **nat**.
 
 The numeric indicator (`#`) is added by the braille translator; do not type it yourself.
 
-**Why only one number sign?** In UEB, a period (or comma) inside a number keeps numeric mode active, so the digits after it do not need another number sign (`⠼`). For example, `206.616.7678` translates to `⠼⠃⠚⠋⠲⠋⠁⠋⠲⠛⠋⠛⠓` — exactly 13 braille cells, which fits a default 13-cell row. This is what BANA means by "eliminating the need to repeat numeric indicators."
+**Why only one number sign?** In UEB, a period (or comma) inside a number keeps numeric mode active, so the digits after it do not need another number sign (`⠼`). For example, `206.616.7678` translates to `⠼⠃⠚⠋⠲⠋⠁⠋⠲⠛⠋⠛⠓` — exactly 13 braille cells, which fits a 13-cell row (the tactile-mode default; the visual-mode default is 12 text cells). This is what BANA means by "eliminating the need to repeat numeric indicators."
 
-**Why hyphens give you three number signs.** A hyphen or parenthesis **ends** numeric mode, unlike a period, so every hyphen-separated group needs a fresh `⠼`. `206-543-4779` therefore translates to `⠼⠃⠚⠋⠤⠼⠑⠙⠉⠤⠼⠙⠛⠛⠊` — 15 cells, which will not fit a 13-cell row and wraps to a second line. That is correct UEB from liblouis, and no app setting removes those signs. Convert the hyphens to periods as BANA advises, or edit the cells by hand in the **Braille (Unicode)** field under the text inputs.
+**Why hyphens give you three number signs.** A hyphen or parenthesis **ends** numeric mode, unlike a period, so every hyphen-separated group needs a fresh `⠼`. `206-543-4779` therefore translates to `⠼⠃⠚⠋⠤⠼⠑⠙⠉⠤⠼⠙⠛⠛⠊` — 15 cells, which will not fit a 12- or 13-cell row and wraps to a second line. That is correct UEB from liblouis, and no app setting removes those signs. Convert the hyphens to periods as BANA advises, or edit the cells by hand in the **Braille (Unicode)** field under the text inputs.
 
 Separately, some online translators repeat the number sign after each *period* too; that output is non-standard and uses extra cells. The **Number Signs** control under the text input area has an off-by-default "Repeat the number sign after each period (non-standard)" option if you need to match such output.
 
@@ -375,19 +375,25 @@ The **Preview Braille Translation** button is inside Expert Mode:
 
 | State | Behaviour | When to use |
 |-------|-----------|-------------|
-| Disabled (default) | Text is converted to lowercase before translation; no braille capital indicators are inserted | Standard for space-constrained business cards (matches BANA's "remove the capital indicators" strategy) |
-| Enabled | Capitals are preserved; each adds one indicator cell | When the card owner has explicitly asked for capitalization |
+| Enabled (default) | Capitals are preserved; each adds one indicator cell (two per fully-capitalized word) | Default — what you type is what gets translated |
+| Disabled | Text is converted to lowercase before translation; no braille capital indicators are inserted | Space-constrained cards (matches BANA's "remove the capital indicators" strategy); saves one cell per capital letter, two per fully-capitalized word |
 
 ### Recommended settings
 
+The **Braille Cells** dial counts *text* cells per row; the marker columns are
+added on top automatically. At the default cylinder size, 14 total columns is
+the physical maximum, so the recommendations are 12 text cells with indicator
+letters On (12 + 2 markers), 13 with letters Off (13 + 1), and 13 in Tactile
+mode (no marker cells).
+
 | Setting | Value | Reason |
 |---------|-------|--------|
-| Placement Mode | Auto Placement | Handles wrapping automatically and applies BANA's punctuation-first division preference where it can |
+| Placement Mode | Auto Placement | Handles wrapping automatically (your line breaks are kept — each input line starts a new row) and applies BANA's punctuation-first division preference where it can |
 | Language | English (UEB) — uncontracted (grade 1) | Clearer for names, e-mail, and contact info |
-| Capitalized Letters | Disabled | Saves cells per BANA's "remove the capital indicators" strategy |
-| Braille Cells | 13 | Matches BANA's lower bound for typical card stock |
+| Capitalized Letters | Disabled (for tight cards) | Saves cells per BANA's "remove the capital indicators" strategy; the app default is Enabled |
+| Braille Cells | 12 (visual) / 13 (tactile or letters Off) | The per-mode recommendation the app fills in automatically |
 | Braille Lines | 4 | BANA's typical layout |
-| Indicator Letters | On | Reserves a second marker cell for the row's first letter; turning it Off frees 1 cell per row (the alignment triangle is always included) |
+| Indicator Letters | On | Reserves a second marker cell for the row's first letter; turning it Off frees 1 cell per row for text (the alignment triangle is always included) |
 
 ### When to use Grade 2 (contracted)
 

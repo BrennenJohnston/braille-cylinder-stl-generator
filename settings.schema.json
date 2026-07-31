@@ -34,6 +34,8 @@
       "description": "Braille spacing and layout parameters",
       "additionalProperties": false,
       "properties": {
+        "grid_columns": { "type": "integer", "minimum": 1, "default": 14, "description": "TOTAL grid columns per row, including reserved marker columns. The UI dial counts text cells only and adds the markers before sending: visual mode with indicator letters reserves 2 columns (default 12 text + 2 = 14), letters off reserves 1 (13 text + 1 = 14), tactile reserves 0 (13 text). The total must fit the surface: total x cell_spacing_mm + seam gap <= pi x cylinder_diameter_mm." },
+        "grid_rows": { "type": "integer", "minimum": 1, "default": 4, "description": "Number of braille rows on the plate" },
         "dot_spacing_mm": { "type": "number", "minimum": 0, "default": 2.5 },
         "cell_spacing_mm": { "type": "number", "minimum": 0, "default": 6.5 },
         "line_spacing_mm": { "type": "number", "minimum": 0, "default": 10.0 },
@@ -143,8 +145,8 @@
           "description": "Cylinder only. visual = recessed triangle (plus optional letter square) in marker cells at the start of each row. tactile = raised arrow on the emboss plate and a matching recess on the counter plate, centred in the seam gap at 180 degrees with the apex toward the cylinder top; removes the marker columns and ignores 'enabled'."
         },
         "tactile_indicator_width": { "type": "number", "minimum": 2, "maximum": 10, "default": 4.0, "description": "Tactile only: indicator width measured around the cylinder (mm)" },
-        "tactile_indicator_length": { "type": "number", "minimum": 2, "maximum": 15, "default": 5.0, "description": "Tactile only: indicator length measured along the cylinder axis (mm)" },
-        "tactile_indicator_raise": { "type": "number", "minimum": 0, "maximum": 2, "default": 0.8, "description": "Tactile only: how far the emboss plate's arrow stands proud of the surface (mm). Keep below the braille dot height so the dots carry the rolling pressure." },
+        "tactile_indicator_length": { "type": "number", "minimum": 2, "maximum": 15, "default": 10.0, "description": "Tactile only: indicator length measured along the cylinder axis (mm)" },
+        "tactile_indicator_raise": { "type": "number", "minimum": 0, "maximum": 2, "default": 0.5, "description": "Tactile only: how far the emboss plate's arrow stands proud of the surface (mm). Keep below the braille dot height so the dots carry the rolling pressure." },
         "tactile_recess_clearance": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.2, "description": "Tactile only: outline margin added around the counter plate's recess (mm)" },
         "tactile_recess_extra_depth": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.2, "description": "Tactile only: counter recess depth added on top of the arrow raise (mm)" },
         "type": { "type": "string", "enum": ["triangle", "rectangle", "character"] },

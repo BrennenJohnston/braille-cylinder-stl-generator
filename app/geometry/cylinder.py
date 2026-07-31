@@ -1,6 +1,12 @@
 """
 Cylinder geometry generation.
 
+LEGACY: not reachable from any live route. The backend serves geometry via
+app/geometry_spec.py (extract_cylinder_geometry_spec) and CSG runs client-side.
+This module predates the Row Indicator Style feature and does not handle
+indicator_mode / reserved marker columns; consult app/geometry_spec.py before
+reusing any layout math from here.
+
 This module handles generation of cylindrical braille surfaces, including
 shell creation, dot mapping, and recess operations.
 """
