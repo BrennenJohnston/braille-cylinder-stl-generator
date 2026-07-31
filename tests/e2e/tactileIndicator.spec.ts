@@ -94,11 +94,13 @@ test.describe('Row Indicator Style', () => {
     expect(settings.indicator_mode).toBe('tactile');
     // No marker columns: the dial value passes through untouched
     expect(settings.grid_columns).toBe('14');
-    expect(settings.tactile_indicator_width).toBe('4.0');
-    expect(settings.tactile_indicator_length).toBe('5.0');
-    expect(settings.tactile_indicator_raise).toBe('0.8');
-    expect(settings.tactile_recess_clearance).toBe('0.2');
-    expect(settings.tactile_recess_extra_depth).toBe('0.2');
+    // Compared numerically: the Card Thickness preset owns these dials, so the
+    // string the input happens to hold ("4" vs "4.0") is not part of the contract.
+    expect(Number(settings.tactile_indicator_width)).toBe(4.0);
+    expect(Number(settings.tactile_indicator_length)).toBe(10.0);
+    expect(Number(settings.tactile_indicator_raise)).toBe(0.5);
+    expect(Number(settings.tactile_recess_clearance)).toBe(0.2);
+    expect(Number(settings.tactile_recess_extra_depth)).toBe(0.2);
   });
 
   test('tactile mode accepts a 14-cell row that visual mode rejects', async ({ page }) => {
@@ -147,11 +149,13 @@ test.describe('Row Indicator Style', () => {
   test('tactile dimensions are hidden until tactile mode is selected', async ({ page }) => {
     await openApp(page);
 
+    // The dials live in their own Expert Mode submenu, whose whole accordion is
+    // hidden while the visual markers are selected.
     await page.evaluate(() => {
       const panel = document.getElementById('expert-settings');
       if (panel) panel.style.display = 'block';
-      const shapes = document.getElementById('expert-panel-shapes');
-      if (shapes) { shapes.style.display = 'block'; shapes.hidden = false; }
+      const tactile = document.getElementById('expert-panel-tactile');
+      if (tactile) { tactile.style.display = 'block'; tactile.hidden = false; }
     });
 
     const dimensions = page.locator('#tactile-indicator-dimensions');

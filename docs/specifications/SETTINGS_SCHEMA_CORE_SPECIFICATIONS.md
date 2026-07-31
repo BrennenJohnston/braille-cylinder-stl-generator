@@ -207,17 +207,23 @@ See: `BRAILLE_DOT_ADJUSTMENTS_SPECIFICATIONS.md`, `BRAILLE_DOT_SHAPE_SPECIFICATI
 - indicators.size_scale: number (scales relative to `spacing.dot_spacing_mm`)
 - indicators.rotate_180: boolean (applies for counter plate on cylinder)
 
-Tactile mode dimensions (mm; defaults are byte-for-byte the OpenSCAD version's, so the two
-generators produce the same arrow):
+Tactile mode dimensions (mm). Both Card Thickness presets apply the same five values —
+the arrow is sized by the finger that reads it, not by the print layer height — so a change
+here must land in `settings.schema.json`, `app/models.py`, the HTML input defaults, and
+**both** `THICKNESS_PRESETS` entries:
 - indicators.tactile_indicator_width: number, 2–10 (default: 4.0) — width around the cylinder
-- indicators.tactile_indicator_length: number, 2–15 (default: 5.0) — length along the axis
-- indicators.tactile_indicator_raise: number, 0–2 (default: 0.8) — emboss arrow height above the surface
+- indicators.tactile_indicator_length: number, 2–15 (default: 10.0) — length along the axis
+- indicators.tactile_indicator_raise: number, 0–2 (default: 0.5) — emboss arrow height above the surface
 - indicators.tactile_recess_clearance: number, 0–1 (default: 0.2) — counter recess outline margin
 - indicators.tactile_recess_extra_depth: number, 0–1 (default: 0.2) — counter recess depth beyond the raise
 
 All eleven fields appear **flat** in the runtime settings payload under the same names
 (`indicator_mode`, `tactile_indicator_width`, …), matching the OpenSCAD parameter names.
 `indicators.enabled` is the one exception: its runtime name is `indicator_shapes` (0 or 1).
+
+UI location: `indicator_mode` is a main-form control (**Row Indicator Style**, above Card
+Thickness). The five `tactile_*` dials live in the **Tactile Indicator Dimensions** submenu
+of Expert Mode, which is hidden entirely unless tactile mode is selected.
 
 Reserved marker columns per row:
 - indicator_mode = "tactile": 0 columns — the indicator sits in the seam gap — 14 text cells at defaults (15 leaves too little gap)
@@ -420,3 +426,4 @@ Before completing any task involving settings:
 - 2025-12-06 — Initial creation. Consolidated settings schema across specs; added high-level JSON Schema, normalization and validation rules, and examples.
 - 2025-12-06 — Added Development Guidelines (Section 9); added `cache_version` field to schema; added default values to schema properties.
 - 2026-07-29 — Added `indicators.indicator_mode` and the five `indicators.tactile_*` dimensions for the tactile row indicator ported from the OpenSCAD version (Section 3.6), and noted the Braille (Unicode) field's effect on `text.lines` / `text.original_lines` (Section 3.1).
+- 2026-07-30 — Changed `indicators.tactile_indicator_length` to 10.0 and `indicators.tactile_indicator_raise` to 0.5; recorded that both Card Thickness presets now carry all five tactile dimensions, and documented where each indicator control lives in the UI (Section 3.6).

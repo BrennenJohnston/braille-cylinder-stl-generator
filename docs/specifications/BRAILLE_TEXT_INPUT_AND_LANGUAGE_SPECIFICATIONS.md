@@ -57,21 +57,24 @@ The text input and language selection controls are located at the top of the mai
 │  │  ┌─────────────────────────────────────────────────────┐   │  │
 │  │  │ [Auto Placement Text Input or Manual Line Inputs]   │   │  │
 │  │  └─────────────────────────────────────────────────────┘   │  │
-│  │                                                             │  │
-│  │  Capitalized Letters: ( ) Enabled  (•) Disabled             │  │
-│  │  Number Signs: (•) One per number  ( ) Repeat after period   │  │
+│  │  [Translate to Braille ↓]                                   │  │
+│  │  Capitalization and number-sign options are in Expert Mode. │  │
 │  │                                                             │  │
 │  │  Braille (Unicode) — one line per row                       │  │
 │  │  ┌─────────────────────────────────────────────────────┐   │  │
 │  │  │ ⠼⠃⠚⠋⠲⠑⠙⠉⠲⠙⠛⠛⠊                                    │   │  │
 │  │  └─────────────────────────────────────────────────────┘   │  │
-│  │  [Translate to Braille]  Edited — will be used as-is        │  │
+│  │  [Translate to Text ↑]  Edited — will be used as-is         │  │
 │  │                                                             │  │
 │  └─────────────────────────────────────────────────────────────┘  │
 │                                                                   │
 │  ┌─ Select Language: ─────────────────────────────────────────┐  │
 │  │  [English (UEB), United States — uncontracted (grade 1) ▼] │  │
 │  │  Default: English (UEB)...aligned with BANA guidance...    │  │
+│  └─────────────────────────────────────────────────────────────┘  │
+│                                                                   │
+│  ┌─ Row Indicator Style ──────────────────────── (cylinder) ──┐  │
+│  │  (•) Visual markers    ( ) Tactile seam arrow              │  │
 │  └─────────────────────────────────────────────────────────────┘  │
 │                                                                   │
 │  ┌─ Card Thickness ───────────────────────────────────────────┐  │
@@ -82,12 +85,13 @@ The text input and language selection controls are located at the top of the mai
 │  │  (•) Embossing Plate    ( ) Universal Counter Plate        │  │
 │  └─────────────────────────────────────────────────────────────┘  │
 │                                                                   │
-│  ┌─ Row Indicator Style ──────────────────────── (cylinder) ──┐  │
-│  │  (•) Visual markers    ( ) Tactile seam arrow              │  │
-│  └─────────────────────────────────────────────────────────────┘  │
-│                                                                   │
 └──────────────────────────────────────────────────────────────────┘
 ```
+
+The two entry areas share one visual treatment and translate in both directions: the button
+under each box moves content toward the other, matching the arrow in its label. The
+**Capitalized Letters** and **Number Signs** radio groups moved into the **Translation
+Options** submenu of Expert Mode; a short note in their old place points there.
 
 ### Visual Hierarchy
 
@@ -95,23 +99,23 @@ The text input and language selection controls are located at the top of the mai
    - Informational note about contracted braille
    - Placement Mode toggle (radio buttons)
    - Text input area (dynamic based on mode)
-   - Capitalized Letters radio group (§6.1)
-   - Number Signs radio group (§6.2)
-   - Braille (Unicode) field with its Translate to Braille button (§6.3)
+   - **Translate to Braille ↓** button (§6.3)
+   - Pointer to the Expert Mode Translation Options submenu (§6.1, §6.2)
+   - Braille (Unicode) field with its **Translate to Text ↑** button (§6.3)
 
 2. **Select Language** (fieldset with legend)
    - Master language dropdown
    - Help text explaining default choice
 
-3. **Card Thickness** (fieldset with legend)
-   - 0.4mm / 0.3mm / Custom preset radio buttons
-
-4. **Select Plate to Generate** (fieldset with legend)
-   - Embossing Plate / Counter Plate radio buttons
-
-5. **Row Indicator Style** (fieldset with legend, cylinder only)
+3. **Row Indicator Style** (fieldset with legend, cylinder only)
    - Visual markers / Tactile seam arrow radio buttons
    - See `RECESS_INDICATOR_SPECIFICATIONS.md` §4
+
+4. **Card Thickness** (fieldset with legend)
+   - 0.4mm / 0.3mm / Custom preset radio buttons
+
+5. **Select Plate to Generate** (fieldset with legend)
+   - Embossing Plate / Counter Plate radio buttons
 
 ---
 
@@ -588,11 +592,11 @@ In braille, capital letters require additional indicator cells (e.g., dot-6 pref
 
 ### UI Location
 
-The toggle is located **within the "Enter Text for Braille Translation" fieldset**, immediately after the dynamic line inputs container and before the closing `</fieldset>` tag. This places it below the text input area but within the same logical grouping, before the language selection.
+The toggle lives in the **Translation Options** submenu of Expert Mode (`#expert-panel-translation`), together with the Number Signs group (§6.2) and the capitalization warning (`#caps-warning`). It sits there because it is a translation setting, not a text-entry one, and because the main form now leads straight from the text box into the Braille (Unicode) box. A note where it used to sit points readers to Expert Mode.
 
 ### HTML Structure
 
-**Source:** `public/index.html` (lines ~2363-2382)
+**Source:** `public/index.html`, inside `#expert-panel-translation`
 
 ```html
 <!-- Capitalized Letters toggle -->
@@ -779,7 +783,7 @@ The 15-cell form is **correct liblouis output**, not a bug, and it wraps to a se
 
 ### UI Location and HTML Structure
 
-Located within the "Enter Text for Braille Translation" fieldset, immediately after the capitalization warning (`#caps-warning`), matching the adjacent Capitalized Letters pattern:
+Located in the **Translation Options** submenu of Expert Mode (`#expert-panel-translation`), immediately after the capitalization warning (`#caps-warning`), matching the adjacent Capitalized Letters pattern:
 
 ```html
 <!-- Number sign style (non-standard repetition available, default off) -->
@@ -865,12 +869,13 @@ There is no silent reconciliation between the English inputs and the field, and 
 
 ### UI Structure
 
-Inside the "Enter Text for Braille Translation" fieldset, after the Number Signs group:
+Inside the "Enter Text for Braille Translation" fieldset, directly below the text entry area. The two boxes share one visual treatment (the braille box differs only in glyph size) with one translate button under each, so the pair reads as a single two-way control:
 
 | Element | ID | Role |
 |---------|----|------|
+| Translate to Braille ↓ | `translate-to-braille-btn` | Under the text box: fills the braille field from the English inputs |
 | Textarea | `braille-unicode` | 4 rows, `lang="und-Brai"`, `aria-describedby="braille-unicode-help braille-unicode-status"` |
-| Translate button | `translate-to-braille-btn` | Fills the field from the English inputs |
+| Translate to Text ↑ | `translate-to-text-btn` | Under the braille box: back-translates the braille into the English inputs |
 | Visible status | `braille-unicode-status` | Current state in plain words |
 | Help text | `braille-unicode-help` | Allowed range, how the field is used |
 | Live region | `braille-unicode-live` | `class="sr-only" role="status" aria-live="polite"` |
@@ -901,6 +906,28 @@ Status and live-region messages:
 - **Auto placement:** `banaAutoWrap()` against `getAvailableColumns()`, one wrapped row per line.
 
 Trailing empty rows are dropped so the field shows only the rows in use.
+
+### Translate to Text
+
+`fillTextFromBrailleField()` is the reverse direction. Each braille line goes through the
+worker's `backTranslate` message (`liblouis.backTranslateString`, see
+`LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md` §3), and the results are written into the
+Auto Placement box (auto mode, one line per row) or into `line1`…`lineN` (manual mode, using
+each row's per-line language table).
+
+Three properties matter:
+
+- **The braille field is not modified.** Back-translation is lossy — contractions and capital
+  indicators do not survive a round trip — so letting it write back into the braille would
+  break the core contract above. It writes only into the English inputs.
+- **Non-braille input is rejected first**, with the same message style as the generation-time
+  validator, so the worker is never handed plain text.
+- **The button resets the action button by hand.** Setting `input.value` from script fires no
+  `input` event, so the form-level delegation that normally resets Generate/Download
+  (`UI_INTERFACE_CORE_SPECIFICATIONS.md` §6.2) does not fire here.
+
+The same back-translation supplies the `{name}` segment of the STL file name when braille was
+pasted with no source text (`STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md` §7).
 
 ### Validation Before Generation
 
@@ -936,7 +963,7 @@ if (plateType === 'positive' && useBrailleField) {
 
 ### Coverage
 
-`tests/e2e/brailleField.spec.ts` intercepts `/geometry_spec` and asserts on the braille lines actually sent: the 15-cell hyphenated phone number, a hand-edit down to 13 cells surviving verbatim, direct paste with empty English inputs, both validation blocks, and the pristine-clears / dirty-survives behavior.
+`tests/e2e/brailleField.spec.ts` intercepts `/geometry_spec` and asserts on the braille lines actually sent: the 15-cell hyphenated phone number, a hand-edit down to 13 cells surviving verbatim, direct paste with empty English inputs, both validation blocks, the pristine-clears / dirty-survives behavior, and the Translate to Text round trip (pasted braille reaches `line1` as English while the braille field stays byte-identical).
 
 ---
 
@@ -1853,7 +1880,7 @@ None required. All implementations match the specification exactly.
 
 ---
 
-*Document Version: 1.1*
-*Last Updated: 2024-12-06*
+*Document Version: 1.2*
+*Last Updated: 2026-07-30 — Capitalized Letters and Number Signs moved to the Expert Mode Translation Options submenu; the Braille (Unicode) field gained a Translate to Text button and now sits directly under the matching text box*
 *Verification Completed: 2024-12-06*
 *Source Priority: backend.py > wsgi.py > csg-worker.js > Manifold WASM*

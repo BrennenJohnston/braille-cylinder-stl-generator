@@ -713,111 +713,68 @@ if (isCylinder) {
 
 ## 7. File Naming Conventions
 
-### Embossing Plate Naming Pattern
+### Naming Pattern
 
 ```
-Embossing_Plate_[first_word].stl
+Embossing_Cylinder_{preset}_{name}.stl
+Counter_Cylinder_{preset}_{name}.stl
 ```
 
-The embossing plate filename uses the **first word** from the text input field (Line 1 is prioritized, then other lines as fallback).
-
-### Counter Plate Naming Pattern
-
-```
-Universal_Counter_Plate_[counter].stl
-```
-
-Counter plates use a **session-based sequential counter** that increments with each download. The counter resets when the page is refreshed.
-
-### Counter Limits
-
-| Aspect | Value | Rationale |
-|--------|-------|-----------|
-| Initial Value | 1 | First download starts at 1 |
-| Maximum Value | 999 | Reasonable limit for single session |
-| Overflow Behavior | Wraps to 1 | Prevents excessively long filenames |
-| Persistence | Session only | Resets on page refresh |
+Both plates of a pair therefore differ only in their first word, and both carry the print
+settings and the content in the name — so a folder of downloads stays sortable and a plate
+can be matched to the counter plate it was designed against without opening either file.
 
 ### Components
 
-| Plate Type | Component | Description | Example |
-|------------|-----------|-------------|---------|
-| Embossing | `Embossing_Plate_` | Fixed prefix | `Embossing_Plate_` |
-| Embossing | `first_word` | First word from text input, sanitized | `brennen` |
-| Counter | `Universal_Counter_Plate_` | Fixed prefix | `Universal_Counter_Plate_` |
-| Counter | `counter` | Sequential download number (1-999) | `1`, `2`, `42` |
+| Component | Source | Values |
+|-----------|--------|--------|
+| Prefix | `plate_type` | `Embossing_Cylinder` (positive) or `Counter_Cylinder` (negative) |
+| `{preset}` | Selected Card Thickness preset | `0.4`, `0.3`, or `Custom` (the custom option has no single numeric value) |
+| `{name}` | First word of the source text, sanitized | `brennen`, `cinnamon`, … or `untitled` |
 
-### First Word Extraction
+### Name Derivation
 
-The first word is extracted from the first non-empty line of text input:
+`{name}` is resolved in this order:
 
-```javascript
-function extractFirstWord(text) {
-    // Split by whitespace and get the first word
-    const words = text.trim().split(/\s+/);
-    return words[0] || '';
-}
-```
+1. **First word of the source text.** Manual placement scans `line1`…`lineN` for the first
+   non-empty line; auto placement uses the Auto Placement Text box.
+2. **Back-translated braille.** When the user pasted braille into the Braille (Unicode)
+   field and left the text boxes empty, the braille is back-translated through the liblouis
+   worker (`backTranslate`) and the first word of the result is used. Without this a
+   braille-only workflow — which the field explicitly supports — would produce nothing but
+   `untitled` files.
+3. **`untitled`.** Last resort: no text, no braille, or the worker is unavailable.
+
+Counter plates use the same derivation as embossing plates. They are geometrically
+universal, but naming them after the same text keeps a generated pair together.
 
 ### Sanitization Rules
 
 ```javascript
-function sanitizeFilename(text) {
-    return text
+function sanitizeFilenameWord(word) {
+    return (word || '')
+        .substring(0, 30)              // Limit length
         .replace(/[^\w\s-]/g, '')      // Remove special characters
         .replace(/[-\s]+/g, '_')       // Replace spaces/hyphens with underscore
-        .replace(/^_+|_+$/g, '')       // Trim leading/trailing underscores
-        .substring(0, 30);              // Limit length
+        .replace(/^_+|_+$/g, '');      // Trim leading/trailing underscores
 }
 
-function generateEmbossingFilename(lines) {
-    // Find first non-empty line
-    for (const line of lines) {
-        if (line.trim()) {
-            // Extract first word and sanitize
-            const firstWord = line.trim().split(/\s+/)[0];
-            const sanitized = sanitizeFilename(firstWord);
-            if (sanitized) {
-                return `Embossing_Plate_${sanitized}.stl`;
-            }
-        }
-    }
-    // Fallback if no text
-    return 'Embossing_Plate_untitled.stl';
-}
-
-// Session-based counter for counter plate downloads
-let counterPlateDownloadCounter = 0;
-const COUNTER_PLATE_MAX = 999;
-
-function generateCounterFilename() {
-    // Increment counter (wraps at max)
-    counterPlateDownloadCounter = (counterPlateDownloadCounter % COUNTER_PLATE_MAX) + 1;
-    return `Universal_Counter_Plate_${counterPlateDownloadCounter}.stl`;
+async function buildStlFilename(plateType) {
+    const prefix = plateType === 'positive' ? 'Embossing_Cylinder' : 'Counter_Cylinder';
+    return `${prefix}_${getThicknessPresetSegment()}_${await deriveStlNameSegment()}.stl`;
 }
 ```
 
 ### Examples
 
-#### Embossing Plates
-
-| Text Input | First Word | Filename |
-|------------|------------|----------|
-| "brennen johnston watap@uw.edu" | brennen | `Embossing_Plate_brennen.stl` |
-| "John Smith" | John | `Embossing_Plate_John.stl` |
-| "Hello World!" | Hello | `Embossing_Plate_Hello.stl` |
-| "" (empty) | — | `Embossing_Plate_untitled.stl` |
-| "123 Main St." | 123 | `Embossing_Plate_123.stl` |
-
-#### Counter Plates
-
-| Download # | Filename |
-|------------|----------|
-| 1st download | `Universal_Counter_Plate_1.stl` |
-| 2nd download | `Universal_Counter_Plate_2.stl` |
-| 42nd download | `Universal_Counter_Plate_42.stl` |
-| 999th download | `Universal_Counter_Plate_999.stl` |
-| 1000th download | `Universal_Counter_Plate_1.stl` (wraps) |
+| Plate | Preset | Input | Filename |
+|-------|--------|-------|----------|
+| Embossing | 0.4 | "Hello World" | `Embossing_Cylinder_0.4_Hello.stl` |
+| Counter | 0.4 | "Hello World" | `Counter_Cylinder_0.4_Hello.stl` |
+| Embossing | 0.3 | "cinnamon jar" | `Embossing_Cylinder_0.3_cinnamon.stl` |
+| Embossing | Custom | "amoxicillin" | `Embossing_Cylinder_Custom_amoxicillin.stl` |
+| Embossing | 0.4 | ⠓⠑⠇⠇⠕ pasted, no text | `Embossing_Cylinder_0.4_hello.stl` (back-translated) |
+| Counter | 0.4 | nothing entered | `Counter_Cylinder_0.4_untitled.stl` |
 
 ---
 
@@ -1345,6 +1302,7 @@ async function test_geometry_consistency() {
 | 1.1 | 2024-12-08 | **BUG FIX:** CSG worker integration. Frontend now properly initializes CSG worker and uses client-side generation exclusively. Server-side fallback disabled. Updated Sections 1, 2, and 9. |
 | 1.2 | 2024-12-08 | **BUG FIX:** Manifold worker integration. Cylinders now use `csg-worker-manifold.js` for guaranteed manifold output. Added dual-worker architecture with automatic shape-based routing. |
 | 1.3 | 2024-12-08 | **NO FALLBACK ENFORCEMENT:** Removed fallback from Manifold to standard worker for cylinders. Cylinder generation now requires Manifold worker; displays error if unavailable. Updated Sections 9 and 12. |
+| 1.4 | 2026-07-30 | **FILE NAMING:** Replaced `Embossing_Plate_{word}` / `Universal_Counter_Plate_{counter}` with `Embossing_Cylinder_{preset}_{name}` / `Counter_Cylinder_{preset}_{name}`. The session counter is gone; counter plates are named from the same text, and braille-only input is back-translated for the name. Rewrote Section 7. |
 
 ---
 

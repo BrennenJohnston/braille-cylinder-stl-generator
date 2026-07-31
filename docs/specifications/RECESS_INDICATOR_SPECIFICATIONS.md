@@ -471,7 +471,7 @@ To verify correct character rendering:
 
 Selected by `indicator_mode = "tactile"`. Replaces the marker columns with one indicator per braille row placed in the seam gap: **raised** on the embossing plate, **recessed** on the counter plate. A blind user can find the alignment point and tell which end is up by touch, and the freed marker cells become text capacity.
 
-Ported from `OpenSCAD/Braille_Cylinder_STL_Generator.scad` (`tactile_raised`, `tactile_recess_cut`). The two implementations must stay in lockstep; parameter defaults are asserted equal in `tests/test_smoke.py::test_tactile_settings_defaults_match_openscad`.
+Ported from `OpenSCAD/Braille_Cylinder_STL_Generator.scad` (`tactile_raised`, `tactile_recess_cut`). The two implementations share the same geometry; the web version's dimension defaults are pinned by `tests/test_smoke.py::test_tactile_settings_defaults` and duplicated in both `THICKNESS_PRESETS` entries in `public/index.html`.
 
 ### Why It Works
 
@@ -480,19 +480,25 @@ Two properties make the raised/recessed pair nest:
 - **Position.** The braille grid is centred on angle 0, so the midpoint of the gap between the last and first cell — measured the long way round through the seam — is always exactly **180°**. 180° is also the fixed point of the counter plate's angle-negating mirror (`apply_seam_mirrored`), so the arrow and its recess line up radially by construction, at any rotation of the paired cylinders, with no extra bookkeeping.
 - **Shape.** An isosceles triangle **symmetric circumferentially**, apex toward the cylinder **top**. Circumferential symmetry means the mirrored recess has the same outline as the arrow, so the two nest instead of colliding. Axial asymmetry means the point is felt as "up" on both plates, while raised-versus-recessed identifies which cylinder is in hand.
 
-The raise (0.8 mm) is deliberately **less than the braille dot height** (1.0 mm at defaults) so the dots, never the indicator, carry the rolling pressure.
+The raise (0.5 mm) is deliberately **less than the braille dot height** (1.0 mm at defaults) so the dots, never the indicator, carry the rolling pressure.
 
 ### Parameters
 
-Runtime fields, flat in the settings payload; schema home is `indicators.*` in `settings.schema.json`. Names and defaults are identical to the OpenSCAD parameters.
+Runtime fields, flat in the settings payload; schema home is `indicators.*` in `settings.schema.json`. Names match the OpenSCAD parameters.
 
 | Field | Default | Range | Meaning |
 |-------|---------|-------|---------|
 | `tactile_indicator_width` | 4.0 mm | 2–10 | Width measured around the cylinder |
-| `tactile_indicator_length` | 5.0 mm | 2–15 | Length along the cylinder axis (matches the 5 mm height of a dot field) |
-| `tactile_indicator_raise` | 0.8 mm | 0–2 | How far the emboss arrow stands proud of the surface |
+| `tactile_indicator_length` | 10.0 mm | 2–15 | Length along the cylinder axis — long enough for a fingertip to read the direction of the point in one pass |
+| `tactile_indicator_raise` | 0.5 mm | 0–2 | How far the emboss arrow stands proud of the surface |
 | `tactile_recess_clearance` | 0.2 mm | 0–1 | Outline margin added around the counter recess |
 | `tactile_recess_extra_depth` | 0.2 mm | 0–1 | Counter recess depth added on top of the raise (0 = exact same-depth nesting) |
+
+These five values are also written into **both** Card Thickness presets (`THICKNESS_PRESETS` in `public/index.html`), identically: the arrow is sized by the finger that reads it, not by the print layer height. Changing a default therefore means changing four places — `settings.schema.json`, `app/models.py`, the HTML input defaults, and both preset entries.
+
+### UI Location
+
+The five dials live in their own **Tactile Indicator Dimensions** submenu of Expert Mode (fifth, after Surface Dimensions). The whole submenu is hidden unless **Row Indicator Style** is set to *Tactile seam arrow*, since the dials do nothing in visual mode.
 
 Derived constants (`app/geometry_spec.py`, mirroring the `.scad`):
 
@@ -917,7 +923,7 @@ When implementing or modifying indicator code, verify:
 
 1. **Emboss plate, `indicator_mode = tactile`**
    - Expected: no triangles or squares; one raised arrow per row at 180°, apex toward the cylinder top; braille starting at column 0
-   - Measured on the exported STL: maximum radius at the seam is `R + 0.8`; overall maximum radius is `R + 1.0` (the dots, which must stay taller than the arrow)
+   - Measured on the exported STL: maximum radius at the seam is `R + 0.5`; overall maximum radius is `R + 1.0` (the dots, which must stay taller than the arrow)
 
 2. **Counter plate, `indicator_mode = tactile`**
    - Expected: no triangles or squares; one arrow recess per row at 180°, same row heights as the emboss arrows; recesses for every cell in every column
@@ -937,6 +943,7 @@ When implementing or modifying indicator code, verify:
 | 2024-12-06 | 2.0 | Expanded with Manifold WASM implementation details, coordinate system documentation, common bugs |
 | 2024-12-06 | 2.1 | Changed character marker depth from 1.0mm to 0.5mm; Added Section 3.1 with detailed Manifold WASM character generation specifications including bitmap font format, pixel-to-box conversion algorithm, horizontal mirroring requirements, and coordinate system details |
 | 2026-07-29 | 3.0 | Added Section 4: Tactile Seam Indicator, ported from the OpenSCAD version. Documented `indicator_mode` (`visual` \| `tactile`), the five tactile parameters, the shell-band construction, the seam-gap warning, and tactile column layout and test cases |
+| 2026-07-30 | 3.1 | Tactile defaults changed to `tactile_indicator_length` 10.0 mm and `tactile_indicator_raise` 0.5 mm; all five dimensions added to both Card Thickness presets; the dials moved into their own Expert Mode submenu shown only in tactile mode |
 
 ---
 

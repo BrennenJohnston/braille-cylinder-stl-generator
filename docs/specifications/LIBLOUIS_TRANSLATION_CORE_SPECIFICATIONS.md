@@ -279,7 +279,11 @@ async function initializeLiblouis() {
 | Type | Description | Data Fields |
 |------|-------------|-------------|
 | `init` | Initialize worker | (none) |
-| `translate` | Translate text | `text`, `grade`, `tableName` |
+| `translate` | Translate text to braille | `text`, `grade`, `tableName` |
+| `backTranslate` | Translate braille back to text | `braille`, `tableName` |
+
+`ALLOWED_TYPES` in `static/liblouis-worker.js` is the allowlist; a type outside it is
+rejected before any liblouis call, and each type validates its own required data field.
 
 **Request Format:**
 
@@ -308,6 +312,34 @@ async function initializeLiblouis() {
     }
 }
 ```
+
+### Back-Translation (`backTranslate`)
+
+Calls `liblouisInstance.backTranslateString(tableChain, braille)` — exposed by
+`static/liblouis/easy-api.js`, which routes it to `lou_backTranslateString`. The table chain
+is built exactly as the forward pass builds it, `unicode.dis` first, because that is what
+makes liblouis read the U+2800 block as braille cells rather than as literal characters.
+
+```javascript
+// Request
+{ id: Number, type: 'backTranslate', data: { braille: String, tableName: String } }
+
+// Response
+{ id: Number, type: 'backTranslate', result: { success: Boolean, text: String, error: String } }
+```
+
+Two callers in `public/index.html`:
+
+1. **"Translate to Text ↑"** — fills the text entry area from the Braille (Unicode) field so
+   a reader can check pasted braille in English. The braille field is left untouched: it
+   remains the authority for what gets embossed.
+2. **STL file naming** — when braille was pasted with no source text, the first word of the
+   back-translation supplies the `{name}` segment of the download filename. See
+   `STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md` §7.
+
+Back-translation is **never** part of the generation path. It is a convenience for reading
+and naming only, so a lossy round-trip (contractions, capital indicators) can never change
+the geometry that gets produced.
 
 ---
 
@@ -1478,8 +1510,8 @@ Tables are processed left-to-right:
 
 ---
 
-*Document Version: 1.1*
-*Last Updated: 2024-12-06*
+*Document Version: 1.2*
+*Last Updated: 2026-07-30 — added the `backTranslate` worker message (braille → text) used by the "Translate to Text" button and by STL file naming*
 *Cross-System Compliance Verification Completed: 2024-12-06*
 *Total Components Verified: 28*
 *Compliance Rate: 100%*

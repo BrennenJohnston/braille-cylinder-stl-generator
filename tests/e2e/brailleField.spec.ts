@@ -140,7 +140,7 @@ test.describe('Editable Unicode braille field', () => {
   test('uses pasted braille verbatim with the English inputs left empty', async ({ page }) => {
     await openApp(page);
 
-    const pasted = '\u2813\u2811\u280B\u280B\u2815';  // hello
+    const pasted = '\u2813\u2811\u2807\u2807\u2815';  // hello
     await page.locator('#braille-unicode').fill(pasted);
 
     const spec = await interceptGeometrySpec(page);
@@ -188,5 +188,28 @@ test.describe('Editable Unicode braille field', () => {
     await field.fill('\u2801\u2803');
     await page.locator('#line1').fill('something else entirely');
     await expect(field).toHaveValue('\u2801\u2803');
+  });
+
+  test('back-translates pasted braille into the English inputs', async ({ page }) => {
+    await openApp(page);
+
+    // hello, in uncontracted UEB: h e l l o
+    await page.locator('#braille-unicode').fill('\u2813\u2811\u2807\u2807\u2815');
+
+    // Same warm-up problem as Translate to Braille: the worker loads async.
+    const line1 = page.locator('#line1');
+    for (let attempt = 0; attempt < 15; attempt++) {
+      await page.locator('#translate-to-text-btn').click();
+      for (let waited = 0; waited < 4000; waited += 200) {
+        if ((await line1.inputValue()) !== '') break;
+        await page.waitForTimeout(200);
+      }
+      if ((await line1.inputValue()) !== '') break;
+      await page.waitForTimeout(1000);
+    }
+
+    await expect(line1).toHaveValue('hello');
+    // The braille stays untouched: it is still what gets embossed
+    await expect(page.locator('#braille-unicode')).toHaveValue('\u2813\u2811\u2807\u2807\u2815');
   });
 });

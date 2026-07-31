@@ -101,13 +101,16 @@ def index_explicit():
    - 4.4 [Touch and Mobile Accessibility](#44-touch-and-mobile-accessibility)
    - 4.5 [Toggle Button ARIA Requirements](#45-toggle-button-aria-requirements)
    - 4.6 [Reduced Motion Support](#46-reduced-motion-support)
+   - 4.7 [Two-Way Translation Controls](#47-two-way-translation-controls)
 5. [Scrollbar Customization](#5-scrollbar-customization)
-   - 5.1 [Form Section Scrollbar](#51-form-section-scrollbar)
+   - 5.1 [Form Scroll Area Scrollbar](#51-form-scroll-area-scrollbar)
    - 5.2 [Global Page Scrollbar](#52-global-page-scrollbar)
    - 5.3 [Theme-Specific Scrollbar Styles](#53-theme-specific-scrollbar-styles)
 6. [Button State Management](#6-button-state-management)
    - 6.1 [Action Button States](#61-action-button-states)
-   - 6.2 [High Contrast Button Styling](#62-high-contrast-button-styling)
+   - 6.2 [Resetting on Settings Changes](#62-resetting-on-settings-changes)
+   - 6.3 [Action Button Placement](#63-action-button-placement)
+   - 6.4 [High Contrast Button Styling](#64-high-contrast-button-styling)
 7. [Layout Responsiveness](#7-layout-responsiveness)
    - 7.1 [Desktop Two-Column Layout](#71-desktop-two-column-layout)
    - 7.2 [Mobile Stacked Layout](#72-mobile-stacked-layout)
@@ -1518,6 +1521,24 @@ When `aria-expanded` changes, screen readers automatically announce the new stat
 - "expanded" when `aria-expanded="true"`
 - "collapsed" when `aria-expanded="false"`
 
+#### Expert Mode Submenus
+
+All six submenus use the identical `.expert-submenu-toggle` markup and are wired by one
+handler (`initExpertSubmenus()`), which sets `aria-expanded`, toggles `.active`, flips the
+`▼`/`▲` icon, and moves focus into the panel on open. A new submenu needs only the markup:
+
+| Order | Submenu | `aria-controls` | Notes |
+|-------|---------|-----------------|-------|
+| 1 | Shape Selection | `expert-panel-shapes` | |
+| 2 | Braille Spacing | `expert-panel-spacing` | |
+| 3 | Braille Dot Adjustments | `expert-panel-dots` | |
+| 4 | Surface Dimensions | `expert-panel-dimensions` | |
+| 5 | Tactile Indicator Dimensions | `expert-panel-tactile` | Whole accordion hidden unless Row Indicator Style is *Tactile seam arrow* |
+| 6 | Translation Options | `expert-panel-translation` | Capitalized Letters and Number Signs |
+
+Active toggles use `#1e4976` (light, 6.1:1 with white) and `#1e5a8a` (dark, 4.7:1), not
+`--border-focus`, which is only 3.7:1 and fails WCAG AA for the button label.
+
 ### 4.6 Reduced Motion Support
 
 The application respects the user's operating system preference for reduced motion (`prefers-reduced-motion` media query) in compliance with WCAG 2.1 Success Criterion 2.3.3.
@@ -1608,40 +1629,71 @@ updateRenderingMode();
 1. Settings → Accessibility → Motion
 2. Toggle "Reduce Motion" on
 
+### 4.7 Two-Way Translation Controls
+
+The text entry area and the Braille (Unicode) box translate in both directions, with one
+button under each:
+
+| Button | Direction | Effect |
+|--------|-----------|--------|
+| `#translate-to-braille-btn` — "Translate to Braille ↓" | text → braille | Runs the same pipeline generation uses (capitalization, liblouis, BANA wrapping in auto mode) and writes one row per line into `#braille-unicode` |
+| `#translate-to-text-btn` — "Translate to Text ↑" | braille → text | Back-translates each braille line through the worker's `backTranslate` message and writes the result into the Auto Placement box (auto mode) or `line1`…`lineN` (manual mode) |
+
+Both buttons sit directly under the box they read from, so the arrow in the label matches
+the direction the content moves on screen. Neither button changes the contract: whenever
+`#braille-unicode` holds content, those exact cells are what get embossed, and
+"Translate to Text" deliberately leaves the braille untouched.
+
+Accessibility requirements:
+
+- Both are `<button type="button" class="btn-translate">` with `aria-describedby` pointing
+  at `#braille-unicode-help`, which explains the pair.
+- Progress and outcome are announced through the existing `#braille-unicode-live`
+  (`role="status" aria-live="polite"`) region, and shown visually in
+  `#braille-unicode-status`. Errors set the highlighted variant of the status text rather
+  than a colour-only cue.
+- Each button disables itself and shows "Translating…" while the worker runs, then restores
+  its label in a `finally` block so a worker failure can never leave it stuck.
+
 ---
 
 ## 5. Scrollbar Customization
 
-### 5.1 Form Section Scrollbar
+### 5.1 Form Scroll Area Scrollbar
 
-The form section (right column on desktop) has a custom scrollbar for visibility:
+The right column is split in two: `.form-section` is the panel (never scrolls) and
+`.form-scroll` is the scrolling body inside it. The scrollbar therefore belongs to
+`.form-scroll`, and it remains the only scrollbar on the page — see §7.1.
 
 ```css
-.form-section {
-    scrollbar-gutter: stable;        /* Reserve space for scrollbar */
+.form-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
     scrollbar-width: auto;           /* Firefox */
     scrollbar-color: #3182ce #e2e8f0; /* Firefox: thumb track */
 }
 
 /* WebKit browsers */
-.form-section::-webkit-scrollbar {
+.form-scroll::-webkit-scrollbar {
     width: var(--scrollbar-width);   /* 18px */
 }
 
-.form-section::-webkit-scrollbar-track {
+.form-scroll::-webkit-scrollbar-track {
     background: #e2e8f0;
     border-radius: 8px;
     border: 2px solid #3182ce;
 }
 
-.form-section::-webkit-scrollbar-thumb {
+.form-scroll::-webkit-scrollbar-thumb {
     background: linear-gradient(180deg, #4299e1, #3182ce);
     border-radius: 10px;
     border: 2px solid #ffffff;
     box-shadow: 0 3px 6px rgba(49, 130, 206, 0.4);
 }
 
-.form-section::-webkit-scrollbar-thumb:hover {
+.form-scroll::-webkit-scrollbar-thumb:hover {
     background: #2563eb;
 }
 ```
@@ -1670,16 +1722,16 @@ body::-webkit-scrollbar-thumb {
 
 **Dark Theme:**
 ```css
-[data-theme="dark"] .form-section {
+[data-theme="dark"] .form-scroll {
     scrollbar-color: #63b3ed #2d3748 !important;
 }
 
-[data-theme="dark"] .form-section::-webkit-scrollbar-track {
+[data-theme="dark"] .form-scroll::-webkit-scrollbar-track {
     background: #2d3748 !important;
     border: 1px solid #63b3ed !important;
 }
 
-[data-theme="dark"] .form-section::-webkit-scrollbar-thumb {
+[data-theme="dark"] .form-scroll::-webkit-scrollbar-thumb {
     background: linear-gradient(180deg, #90cdf4, #63b3ed) !important;
     border: 2px solid #1a202c !important;
 }
@@ -1687,16 +1739,16 @@ body::-webkit-scrollbar-thumb {
 
 **High Contrast:**
 ```css
-[data-theme="high-contrast"] .form-section {
+[data-theme="high-contrast"] .form-scroll {
     scrollbar-color: var(--text-secondary) var(--bg-tertiary) !important;
 }
 
-[data-theme="high-contrast"] .form-section::-webkit-scrollbar-track {
+[data-theme="high-contrast"] .form-scroll::-webkit-scrollbar-track {
     background: var(--bg-tertiary) !important;
     border: 2px solid var(--border-secondary) !important;
 }
 
-[data-theme="high-contrast"] .form-section::-webkit-scrollbar-thumb {
+[data-theme="high-contrast"] .form-scroll::-webkit-scrollbar-thumb {
     background: linear-gradient(180deg, var(--text-secondary), var(--text-primary)) !important;
     box-shadow: none !important;
 }
@@ -1713,6 +1765,12 @@ The main action button has two states: **Generate** and **Download**.
 ```javascript
 // Generate state (blue, prompts user to create STL)
 function resetToGenerateState() {
+    // Idempotent - see "Why this must be idempotent" below
+    if (actionBtn.getAttribute('data-state') === 'generate' &&
+        !actionBtn.disabled &&
+        actionBtn.style.opacity === '1') {
+        return;
+    }
     actionBtn.textContent = 'Generate STL';
     actionBtn.className = 'generate-state';
     actionBtn.setAttribute('data-state', 'generate');
@@ -1743,7 +1801,56 @@ Generation complete → Button shows "Download STL" (download-state)
 User modifies any input → Button returns to "Generate STL" (generate-state)
 ```
 
-### 6.2 High Contrast Button Styling
+### 6.2 Resetting on Settings Changes
+
+The last transition is safety-critical: a stale STL must never be downloadable under
+settings it was not built with. It is implemented as **event delegation on the form**, not
+as a list of inputs:
+
+```javascript
+['input', 'change'].forEach(eventName => {
+    form.addEventListener(eventName, resetToGenerateState);
+});
+```
+
+This covers every current and future control in `#braille-form` automatically. The previous
+hand-maintained list of element IDs silently missed controls added later — the tactile
+indicator dials among them — so any new control must **not** re-introduce a per-input
+listener; adding it to the form is enough.
+
+Two consequences to keep in mind:
+
+- `#action-btn` lives **outside** the form (in `.action-footer`), so pressing it never
+  triggers the reset it would otherwise fire on itself.
+- Values written by script (presets, `updateGridColumnsForPlateType()`, the Translate to
+  Text button) do not fire `input`/`change`, so those paths call `resetToGenerateState()`
+  explicitly.
+
+#### Why this must be idempotent
+
+`resetToGenerateState()` returns early when the button is already in the generate state.
+That guard is load-bearing, not an optimization.
+
+A `<textarea>` or `<input>` fires its `change` event on blur — which happens on the very
+mousedown that presses the action button. Delegation therefore runs the reset *between*
+mousedown and mouseup on the button being pressed. If the reset rewrites `textContent` and
+`className` at that moment, **WebKit dispatches no `click` event at all**: mousedown and
+mouseup both land, and the click is silently dropped. The user types their text, presses
+Generate, and nothing happens — on Safari only, and only on the first press after typing.
+
+The same reasoning rules out a transform-based hover effect on this button
+(`#action-btn` animates colour and shadow only): anything that moves the element under the
+pointer reproduces the dropped click. Pinned by
+`tests/e2e/formLayout.spec.ts` ("acts on the first click even when a text field still has
+focus").
+
+### 6.3 Action Button Placement
+
+`#action-btn` sits in `.action-footer`, a fixed bar below `.form-scroll`. It is always
+visible: on desktop because it is a flex sibling of the scroll area, on mobile because the
+footer is `position: sticky; bottom: 0`. See §7.1.
+
+### 6.4 High Contrast Button Styling
 
 See Section 1.3 for complete high contrast button specifications.
 
@@ -1753,35 +1860,81 @@ See Section 1.3 for complete high contrast button specifications.
 
 ### 7.1 Desktop Two-Column Layout
 
+The viewport is locked (`body` and `.main-layout` are `overflow: hidden`), so the page has
+exactly one scrollbar: `.form-scroll`. The form column is a three-part flex column — panel,
+scrolling body, pinned footer:
+
 ```css
 .content-area {
     display: flex;
-    gap: 2.5em;
+    gap: 1.5em;
     width: 100%;
+    flex: 1;
+    min-height: 0;      /* Lets the flex children shrink and scroll */
+    overflow: hidden;
 }
 
-/* Left Column - Preview (45% width) */
+/* Left Column - Preview */
 .preview-section {
-    flex: 0 0 45%;
-    position: sticky;
-    top: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
 }
 
-/* Right Column - Form (55% width) */
+/* Right Column - Form panel: never scrolls itself */
 .form-section {
-    flex: 0 0 calc(55% - 2em);
-    max-height: calc(100vh - 10em);
-    overflow-y: scroll;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Scrolling body of the form column */
+.form-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Pinned action bar - always in view */
+.action-footer {
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: center;
+    padding-top: 0.6em;
+    padding-bottom: env(safe-area-inset-bottom);
+    border-top: 1px solid var(--border-primary);
+    background: var(--bg-secondary);
 }
 ```
 
+**Invariant:** `.form-scroll` must be the only scrollable descendant of `.form-section`.
+Giving `.form-section` its own `overflow-y` again would nest a second scrollbar inside the
+first, which is what the split exists to prevent. Pinned by
+`tests/e2e/formLayout.spec.ts`.
+
 ### 7.2 Mobile Stacked Layout
+
+Below 768px the page itself scrolls, so the panel must not clip and the scroll area must not
+create a second scroll context. The footer becomes sticky instead of flex-pinned:
 
 ```css
 @media (max-width: 768px) {
+    .main-layout {
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;   /* See the sticky-ancestor note below */
+    }
+
     .content-area {
         flex-direction: column;
         gap: 1.5em;
+        overflow: visible;
     }
 
     .preview-section {
@@ -1794,6 +1947,19 @@ See Section 1.3 for complete high contrast button specifications.
         flex: 1;
         width: 100%;
         max-height: none;
+        overflow: visible;
+    }
+
+    .form-scroll {
+        overflow: visible;
+    }
+
+    .action-footer {
+        position: sticky;
+        bottom: 0;
+        z-index: 5;
+        padding-bottom: calc(0.4em + env(safe-area-inset-bottom));
+        box-shadow: 0 -4px 12px var(--shadow-light);
     }
 
     #viewer {
@@ -1807,6 +1973,16 @@ See Section 1.3 for complete high contrast button specifications.
     }
 }
 ```
+
+**Sticky-ancestor constraint:** every ancestor of `.action-footer` between it and the page
+must keep `overflow: visible` on **both** axes below 768px. A sticky element positions
+against its nearest scrolling ancestor, and `overflow-x: hidden` alone is enough to make one
+(the other axis computes to `auto`). `.main-layout` previously carried
+`overflow-y: auto; overflow-x: hidden` on mobile; because that element never actually
+scrolls, the footer silently stopped sticking and simply sat at the end of the document —
+which looks like working layout until you scroll. `<body>` already clips horizontally, so
+nothing is lost by making the inner containers visible. Pinned by
+`tests/e2e/formLayout.spec.ts`.
 
 ### 7.3 iOS Safe Area Handling
 
@@ -2106,6 +2282,7 @@ Low vision users benefit from enhanced depth perception:
 | 1.6 | 2026-01-05 | Replaced brightness/contrast click-through toggles with +/- stepper controls, added live value display, and refreshed accessibility guidance |
 | 1.7 | 2026-01-05 | Added critical warning section about HTML file locations — must edit `public/index.html` (served by Flask), not `templates/index.html` (legacy/not served) |
 | 1.8 | 2026-01-05 | **Cross-Browser UI Hardening:** Added Section 3.9 (WebGL Context Recovery), Section 4.5 (Toggle Button ARIA Requirements), Section 4.6 (Reduced Motion Support), and Section 7.3 (iOS Safe Area Handling) to document new accessibility and cross-browser compatibility features |
+| 1.9 | 2026-07-30 | **Form column restructure:** Split `.form-section` into a non-scrolling panel plus `.form-scroll` and a pinned `.action-footer`, so `#action-btn` is always in view (Sections 5.1, 6.3, 7.1, 7.2). Documented the form-level event delegation that resets the button on any settings change (Section 6.2), the six Expert Mode submenus and their contrast-safe active colours (Section 4.5), and the two-way translation buttons (new Section 4.7) |
 
 ---
 
