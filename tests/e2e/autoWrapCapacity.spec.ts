@@ -16,7 +16,7 @@
  * - Capitalization defaults to Enabled; disabling it in Expert Mode saves the
  *   capital-indicator cells, which is exactly what makes this sample fit.
  *
- * Sample text (tactile mode, 13 text cells, 4 rows):
+ * Sample text (default visual mode, 13 text cells, 4 rows):
  * - caps disabled: rows need 12/12/13/13 cells - fits, no warning
  * - caps enabled (default): lines 1-2 exceed 13 cells, 6 rows needed - warn
  *
@@ -106,8 +106,7 @@ test.describe('Auto-placement capacity and wrapping', () => {
   test('business card sample: per-line warning with caps, fits without', async ({ page }) => {
     await openApp(page);
 
-    // Tactile seam arrow: no marker columns, dial normalizes to 13 text cells
-    await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+    // Visual markers (the default): the dial recommends 13 text cells per row
     await expect(page.locator('#grid_columns')).toHaveValue('13');
 
     await page.locator('#auto-text').fill(SAMPLE_TEXT);

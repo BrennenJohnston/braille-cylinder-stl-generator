@@ -67,7 +67,7 @@ test.describe('Row Indicator Style', () => {
     await openApp(page);
 
     await expect(page.locator('input[name="indicator_mode"][value="visual"]')).toBeChecked();
-    await expect(page.locator('#grid_columns')).toHaveValue('12');
+    await expect(page.locator('#grid_columns')).toHaveValue('13');
 
     const spec = await interceptGeometrySpec(page);
     await page.locator('#braille-unicode').fill('\u2801\u2803');
@@ -75,9 +75,25 @@ test.describe('Row Indicator Style', () => {
 
     const settings = spec.body?.settings as Record<string, unknown>;
     expect(settings.indicator_mode).toBe('visual');
-    // Dial shows 12 text cells; +2 marker columns for the letter and triangle.
-    // 14 total columns is the most that fits the default 30.75 mm cylinder.
-    expect(settings.grid_columns).toBe('14');
+    // Dial shows 13 text cells; +2 marker columns for the letter and triangle.
+    // 15 total columns still leaves 5.6 mm across the seam of the default
+    // 30.75 mm cylinder, more than the 4.5 mm a cell's dots occupy.
+    expect(settings.grid_columns).toBe('15');
+  });
+
+  test('neither recommended layout trips the seam-gap warning', async ({ page }) => {
+    await openApp(page);
+
+    // The recommended layouts are the ones users see first, so a warning here
+    // would be permanent furniture. Visual mode's 13 text cells reach 15 total
+    // columns, which is past the old "one full cell spacing" threshold but well
+    // clear of the dot footprint the seam actually has to hold.
+    const warning = page.locator('#tactile-gap-warning');
+    await expect(warning).toBeHidden();
+
+    await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+    await expect(page.locator('#grid_columns')).toHaveValue('14');
+    await expect(warning).toBeHidden();
   });
 
   test('tactile mode frees the marker columns and sends the tactile parameters', async ({ page }) => {
@@ -85,16 +101,16 @@ test.describe('Row Indicator Style', () => {
 
     await page.locator('input[name="indicator_mode"][value="tactile"]').check();
     // The dial normalizes to the recommended tactile capacity
-    await expect(page.locator('#grid_columns')).toHaveValue('13');
+    await expect(page.locator('#grid_columns')).toHaveValue('14');
 
     const spec = await interceptGeometrySpec(page);
-    await page.locator('#braille-unicode').fill('\u2801'.repeat(13));
+    await page.locator('#braille-unicode').fill('\u2801'.repeat(14));
     await generate(page, spec);
 
     const settings = spec.body?.settings as Record<string, unknown>;
     expect(settings.indicator_mode).toBe('tactile');
     // No marker columns: the dial value passes through untouched
-    expect(settings.grid_columns).toBe('13');
+    expect(settings.grid_columns).toBe('14');
     // Compared numerically: the Card Thickness preset owns these dials, so the
     // string the input happens to hold ("4" vs "4.0") is not part of the contract.
     expect(Number(settings.tactile_indicator_width)).toBe(4.0);
@@ -109,21 +125,15 @@ test.describe('Row Indicator Style', () => {
 
     const fourteenCells = '\u2801'.repeat(14);
 
-    // Visual mode: 12 text cells available, so 14 is blocked
+    // Visual mode: 13 text cells available, so 14 is blocked
     await page.locator('#braille-unicode').fill(fourteenCells);
     await page.locator('#action-btn').click();
-    await expect(page.locator('#error-text')).toContainText('the maximum is 12', { timeout: 15_000 });
+    await expect(page.locator('#error-text')).toContainText('the maximum is 13', { timeout: 15_000 });
 
-    // Tactile mode recommends 13, but 14 still fits the seam-gap arithmetic, so
-    // raising the dial by hand is allowed and every column is then text.
+    // Tactile mode frees both marker columns, so its recommended 14 text cells
+    // take the row without touching the dial.
     await page.locator('input[name="indicator_mode"][value="tactile"]').check();
-    await page.evaluate(() => {
-      const panel = document.getElementById('expert-settings');
-      if (panel) panel.style.display = 'block';
-      const spacing = document.getElementById('expert-panel-spacing');
-      if (spacing) { spacing.style.display = 'block'; spacing.hidden = false; }
-    });
-    await page.locator('#grid_columns').fill('14');
+    await expect(page.locator('#grid_columns')).toHaveValue('14');
     await expect(page.locator('#tactile-gap-warning')).toBeHidden();
 
     const spec = await interceptGeometrySpec(page);
@@ -154,7 +164,7 @@ test.describe('Row Indicator Style', () => {
     await expect(page.locator('#tactile-gap-message')).toContainText('seam gap');
 
     // Back to a layout that fits
-    await page.locator('#grid_columns').fill('13');
+    await page.locator('#grid_columns').fill('14');
     await expect(warning).toBeHidden();
   });
 

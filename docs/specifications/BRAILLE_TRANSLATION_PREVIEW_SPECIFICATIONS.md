@@ -550,7 +550,7 @@ The system calculates available cells and warns when text exceeds capacity:
 
 ```javascript
 function getAvailableColumns() {
-    const gridColumnsValue = parseInt(document.getElementById('grid_columns').value) || 12;
+    const gridColumnsValue = parseInt(document.getElementById('grid_columns').value) || 13;
     return gridColumnsValue;  // UI dial shows usable text cells directly
 }
 ```

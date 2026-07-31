@@ -3170,9 +3170,9 @@
                                     <label class="grade-label" style="font-size: 1.2em; font-weight: 700;">Braille Dimensions</label>
                                     <div>
                                         <label for="grid_columns" id="grid_columns_label">Number of Braille Cells (Characters):</label>
-                                        <input type="number" id="grid_columns" name="grid_columns" value="12" style="width: 110px;" autocomplete="off">
+                                        <input type="number" id="grid_columns" name="grid_columns" value="13" style="width: 110px;" autocomplete="off">
                                         <div id="grid_columns_note" class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
-                                            For embossing plates: 2 cells per row are reserved for the indicator letter and alignment triangle, so the recommended 12 text cells use 14 columns in total. Recommended value: 12.
+                                            For embossing plates: 2 cells per row are reserved for the indicator letter and alignment triangle, so the recommended 13 text cells use 15 columns in total. Recommended value: 13.
                                         </div>
                                     </div>
                                     <div style="margin-top: 6px;">
@@ -4591,26 +4591,30 @@
                 : 'Available Braille Cells for Text:';
 
             // Capacity contract: the dial counts TEXT cells only; marker columns
-            // are added on top for the payload. The total (text + markers) must
-            // fit the cylinder circumference: at the 30.75 mm default that is
-            // floor(96.6 / 6.5) = 14 columns. Hence 12 text cells with letters
-            // on (12+2=14), 13 with letters off (13+1=14), and 13 in tactile
-            // mode (13+0; 14 also fits but proved too tight in practice).
+            // are added on top for the payload. Visual mode recommends 13 text
+            // cells because that is what a phone number takes on one row: 13 in
+            // UEB when written with periods (⠼⠃⠚⠋⠲⠋⠁⠋⠲⠛⠋⠛⠓ for 206.616.7678),
+            // and 13 for the hyphenated form once the repeated number signs are
+            // edited out in the Braille (Unicode) field. With indicator letters
+            // on that is 15 total columns, which still clears the seam by more
+            // than a dot footprint on the default 30.75 mm cylinder (see
+            // checkPhysicalFit). Tactile mode reserves no marker columns, so its
+            // 14 text cells are 14 total.
             let explanation;
             let recommended;
             if (tactile) {
-                explanation = 'Tactile seam arrow: no cells are reserved for markers, so every cell in the row is available for text — 13 usable text cells at the recommended value.';
-                recommended = '13';
+                explanation = 'Tactile seam arrow: no cells are reserved for markers, so every cell in the row is available for text — 14 usable text cells at the recommended value.';
+                recommended = '14';
             } else if (plateType === 'positive') {
                 explanation = indicatorOn
-                    ? 'For embossing plates: 2 cells per row are reserved for the indicator letter and alignment triangle, so the recommended 12 text cells use 14 columns in total.'
+                    ? 'For embossing plates: 2 cells per row are reserved for the indicator letter and alignment triangle, so the recommended 13 text cells use 15 columns in total.'
                     : 'Indicator letters off: 1 cell per row is reserved for the alignment triangle, so the recommended 13 text cells use 14 columns in total.';
-                recommended = indicatorOn ? '12' : '13';
+                recommended = '13';
             } else {
                 explanation = indicatorOn
-                    ? 'For counter plates: 2 cells per row are reserved for the indicator square and alignment triangle, so the recommended 12 text cells use 14 columns in total.'
+                    ? 'For counter plates: 2 cells per row are reserved for the indicator square and alignment triangle, so the recommended 13 text cells use 15 columns in total.'
                     : 'Indicator letters off: 1 cell per row is reserved for the alignment triangle, so the recommended 13 text cells use 14 columns in total.';
-                recommended = indicatorOn ? '12' : '13';
+                recommended = '13';
             }
 
             if (!preserveValue && !gridColumnsDirty) {
@@ -5291,7 +5295,7 @@
         }
 
         function getAvailableColumns() {
-            const gridColumnsValue = parseInt(document.getElementById('grid_columns').value) || 12;
+            const gridColumnsValue = parseInt(document.getElementById('grid_columns').value) || 13;
             // The UI dial shows usable text cells; use it directly for wrapping
             return gridColumnsValue;
         }
@@ -5316,9 +5320,8 @@
         //   seamGap = π × diameter − (totalColumns − 1) × cellSpacing
         // Tactile mode: the gap must hold the arrow plus a clear zone either side
         // (mirrors the OpenSCAD TACTILE_MIN_GAP_MARGIN check).
-        // Visual mode: the gap must be at least one cell spacing, i.e.
-        // totalColumns × cellSpacing ≤ π × diameter, or the last cell of a row
-        // collides with the first across the seam.
+        // Visual mode: the gap must hold one cell's dot footprint, so the last
+        // cell of a row cannot collide with the first across the seam.
         // Warns only; generation is not blocked.
         function checkPhysicalFit() {
             const warningDiv = document.getElementById('tactile-gap-warning');
@@ -5347,14 +5350,28 @@
                     warningDiv.style.display = 'block';
                     return;
                 }
-            } else if (seamGap < cellSpacing) {
-                const reserved = getReservedMarkerColumns();
-                warningMsg.textContent = `This layout needs ${totalColumns} columns (${getAvailableColumns()} text + ` +
-                    `${reserved} marker) at ${cellSpacing} mm spacing, which is ${(totalColumns * cellSpacing).toFixed(1)} mm — ` +
-                    `more than the ${circumference.toFixed(1)} mm circumference of a ${diameter} mm cylinder. ` +
-                    'Reduce the number of braille cells or increase the cylinder diameter.';
-                warningDiv.style.display = 'block';
-                return;
+            } else {
+                // A cell's dots span dot_spacing plus one dot diameter, and that
+                // footprint is what the seam gap has to clear. Demanding a full
+                // cell spacing instead would flag the recommended 13 text cells
+                // with indicator letters on (15 columns), which leaves 5.6 mm on
+                // the default cylinder and prints without the dots touching.
+                const dotSpacing = parseFloat(document.getElementById('dot_spacing')?.value) || 2.5;
+                const dotDiameter = Math.max(
+                    parseFloat(document.getElementById('rounded_dot_base_diameter')?.value) || 2.0,
+                    parseFloat(document.getElementById('emboss_dot_base_diameter')?.value) || 1.8
+                );
+                const required = dotSpacing + dotDiameter;
+                if (seamGap < required) {
+                    const reserved = getReservedMarkerColumns();
+                    warningMsg.textContent = `This layout needs ${totalColumns} columns (${getAvailableColumns()} text + ` +
+                        `${reserved} marker) at ${cellSpacing} mm spacing on a ${diameter} mm cylinder, which leaves ` +
+                        `${seamGap.toFixed(1)} mm across the seam — less than the ${required.toFixed(1)} mm a cell's dots ` +
+                        'occupy, so the last cell of a row would collide with the first. ' +
+                        'Reduce the number of braille cells or increase the cylinder diameter.';
+                    warningDiv.style.display = 'block';
+                    return;
+                }
             }
 
             warningDiv.style.display = 'none';
@@ -6121,7 +6138,7 @@
             '0.4': {
                 // Braille Spacing. grid_columns is intentionally absent: the text-cell
                 // dial is owned by updateGridColumnsForPlateType(), which reasserts the
-                // per-mode recommendation (12/13/13) after a preset is applied.
+                // per-mode recommendation (13 visual / 14 tactile) after a preset is applied.
                 grid_rows: 4,
                 cell_spacing: 6.5,
                 line_spacing: 10.0,

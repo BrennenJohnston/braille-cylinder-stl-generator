@@ -42,9 +42,11 @@ In `visual` mode only. Tactile mode has no marker columns at all, so the toggle 
 Reserved marker columns per row:
 | Mode / Toggle | Reserved columns | Text cells at defaults |
 |---------------|------------------|------------------------|
-| `visual`, toggle On (1) | 2 (letter + triangle) | 13 |
-| `visual`, toggle Off (0) | 1 (triangle only) | 14 |
-| `tactile` | 0 | 13 recommended (14 fits; 15 leaves too little seam gap) |
+| `visual`, toggle On (1) | 2 (letter + triangle) | 13 (15 total, 5.6 mm seam gap) |
+| `visual`, toggle Off (0) | 1 (triangle only) | 13 (14 total, 12.1 mm seam gap) |
+| `tactile` | 0 | 14 recommended (14 total, 12.1 mm seam gap; 15 leaves 5.6 mm, too little for the arrow) |
+
+Visual mode recommends 13 text cells whichever way the toggle is set, because that is what a phone number takes on one row: a period-formatted number translates to exactly 13 cells under UEB (`206.616.7678` → `⠼⠃⠚⠋⠲⠋⠁⠋⠲⠛⠋⠛⠓`, one number sign), and a hyphenated one comes to 13 once the repeated number signs are edited out in the Braille (Unicode) field (`⠼⠑⠁⠚⠤⠃⠃⠊⠤⠛⠊⠁⠓`).
 
 The single source for this arithmetic is `_reserved_marker_columns(settings, tactile_on)` in `app/geometry_spec.py`, mirrored by `getReservedMarkerColumns()` in `public/index.html` and the `reserved` calculation in `validate_line_lengths()`.
 
@@ -560,9 +562,9 @@ required    = tactile_indicator_width + TACTILE_MIN_GAP_MARGIN
 When `seam_gap_mm < required` the layout is **warned about, not rejected** — matching the OpenSCAD version, which renders a 3D "TACTILE GAP TOO SMALL" label:
 
 - **Backend:** the message is appended to `spec['warnings']` (a list, always present, empty in visual mode) and logged.
-- **Frontend:** `updateTactileGapWarning()` shows it live in `#tactile-gap-warning` (`role="status"`, `aria-live="polite"`), recomputed whenever the diameter, cell spacing, cell count, indicator width, or mode changes. Generation is not blocked.
+- **Frontend:** `checkPhysicalFit()` shows it live in `#tactile-gap-warning` (`role="status"`, `aria-live="polite"`), recomputed whenever the diameter, cell spacing, cell count, indicator width, or mode changes. Generation is not blocked.
 
-At defaults (30.8 mm diameter, 6.5 mm cell spacing, 4 mm indicator) the gap needs ≥ 9 mm: 13 cells leave 18.6 mm and 14 cells leave 12.1 mm, both passing; 15 cells leave 5.6 mm and warn. The UI recommends 13 because 14 proved too tight in practice, but 14 remains a valid layout the user can dial in.
+At defaults (30.75 mm diameter, 6.5 mm cell spacing, 4 mm indicator) the gap needs ≥ 9 mm: 13 cells leave 18.6 mm and 14 cells leave 12.1 mm, both passing; 15 cells leave 5.6 mm and warn. The UI recommends 14, the widest tactile layout that still clears the arrow.
 
 ### Column Layout
 
@@ -578,7 +580,7 @@ Available braille columns = N
 ### Coverage
 
 - `tests/test_smoke.py` — marker columns dropped on both plates, arrow raised on positive and recessed on negative with the correct band radii, θ = π on both plates at identical row heights, gap warning, visual mode unaffected, full-width row accepted in tactile but rejected in visual, unknown `indicator_mode` rejected, defaults matching OpenSCAD, schema/model default agreement.
-- `tests/e2e/tactileIndicator.spec.ts` — payload column arithmetic and tactile parameters, the 13-cell tactile recommendation, a hand-dialled 14-cell row accepted in tactile and blocked in visual, live gap warning, Expert Mode dimension visibility.
+- `tests/e2e/tactileIndicator.spec.ts` — payload column arithmetic and tactile parameters, the 14-cell tactile recommendation, neither recommended layout tripping the seam-gap warning, a 14-cell row accepted in tactile and blocked in visual, live gap warning, Expert Mode dimension visibility.
 
 ---
 
@@ -632,8 +634,8 @@ Column 0:           Character/Rectangle indicator (based on first char of row)
 Columns 1 to N-2:   Braille content (shifted by 1)
 Column N-1:         Triangle marker (at last cell)
 
-Where N = grid_columns (default 14: 12 text + 2 marker columns)
-Available braille columns = N - 2 = 12
+Where N = grid_columns (default 15: 13 text + 2 marker columns)
+Available braille columns = N - 2 = 13
 ```
 
 **Universal Counter Plate (Negative):**
@@ -642,7 +644,7 @@ Column 0:           Rectangle ONLY (never character)
 Columns 1 to N-2:   ALL 6 dot recesses per cell (shifted by 1)
 Column N-1:         Triangle marker (at last cell)
 
-Where N = grid_columns (default 14: 12 text + 2 marker columns)
+Where N = grid_columns (default 15: 13 text + 2 marker columns)
 ```
 
 ### Cylinders with Indicators Enabled
@@ -944,6 +946,7 @@ When implementing or modifying indicator code, verify:
 | 2024-12-06 | 2.1 | Changed character marker depth from 1.0mm to 0.5mm; Added Section 3.1 with detailed Manifold WASM character generation specifications including bitmap font format, pixel-to-box conversion algorithm, horizontal mirroring requirements, and coordinate system details |
 | 2026-07-29 | 3.0 | Added Section 4: Tactile Seam Indicator, ported from the OpenSCAD version. Documented `indicator_mode` (`visual` \| `tactile`), the five tactile parameters, the shell-band construction, the seam-gap warning, and tactile column layout and test cases |
 | 2026-07-30 | 3.1 | Tactile defaults changed to `tactile_indicator_length` 10.0 mm and `tactile_indicator_raise` 0.5 mm; all five dimensions added to both Card Thickness presets; the dials moved into their own Expert Mode submenu shown only in tactile mode |
+| 2026-07-31 | 3.2 | Per-row text capacity at defaults changed to 13 cells in visual mode (either toggle state, `grid_columns` default 15) and 14 in tactile mode, so a 13-cell UEB phone number fits one row |
 
 ---
 

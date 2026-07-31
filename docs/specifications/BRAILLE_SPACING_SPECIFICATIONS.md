@@ -192,8 +192,8 @@ Column 0:           Character/Rectangle indicator
 Columns 1 to N-2:   Braille content (N-2 characters maximum)
 Column N-1:         Triangle marker
 
-N = grid_columns (default 14: 12 text + 2 marker columns)
-Available braille columns = N - 2 = 12
+N = grid_columns (default 15: 13 text + 2 marker columns)
+Available braille columns = N - 2 = 13
 ```
 
 **Column Position Formula:**
@@ -644,6 +644,7 @@ Verification: When plates face each other:
 | 2024-12-06 | 1.0 | Initial specification based on working backend.py and csg-worker implementations |
 | 2024-12-06 | 1.1 | Added Manifold theta negation fix (Bug 6) to correct reverse cell order on cylinders |
 | 2024-12-06 | 1.2 | Added triangle rotate_180 inversion fix to correct swapped triangle orientations |
+| 2026-07-31 | 1.3 | Updated the documented `grid_columns` default to 15 (13 text + 2 marker columns) |
 
 ---
 

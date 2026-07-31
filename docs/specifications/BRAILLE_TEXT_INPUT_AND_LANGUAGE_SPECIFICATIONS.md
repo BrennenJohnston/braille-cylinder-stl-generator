@@ -1078,7 +1078,7 @@ per_line_language_tables = data.get('per_line_language_tables', None)
 | `placement_mode` | `string` | `"auto"` or `"manual"` | `"auto"` |
 | `plate_type` | `string` | `"positive"` or `"negative"` | `"positive"` |
 | `grade` | `string` | `"g1"` or `"g2"` (legacy, less used) | `"g2"` |
-| `settings` | `object` | All dimensional parameters | `{grid_columns: 14, ...}` |
+| `settings` | `object` | All dimensional parameters | `{grid_columns: 15, ...}` |
 | `shape_type` | `string` | `"card"` or `"cylinder"` | `"cylinder"` |
 | `cylinder_params` | `object` | Cylinder-specific parameters | `{diameter: 30.75, ...}` |
 | `per_line_language_tables` | `string[]` | Liblouis table used for each line | `["en-ueb-g1.ctb", ...]` |
@@ -1292,7 +1292,7 @@ A stale-run token discards results that were superseded by newer input.
 ```javascript
 function getAvailableColumns() {
     // The UI dial shows usable text cells; use it directly for wrapping
-    return parseInt(document.getElementById('grid_columns').value) || 12;
+    return parseInt(document.getElementById('grid_columns').value) || 13;
 }
 ```
 

@@ -171,10 +171,12 @@ class CardSettings:
             # Grid parameters
             # grid_columns counts TOTAL columns including reserved marker
             # columns. The UI dial shows text cells only and adds the markers
-            # on top before sending: default is 12 text + 2 markers = 14 total
-            # (visual mode with indicator letters), which fits the default
-            # 30.75 mm cylinder (14 x 6.5 mm = 91 mm <= pi x 30.75 = 96.6 mm).
-            'grid_columns': 14,
+            # on top before sending: default is 13 text + 2 markers = 15 total
+            # (visual mode with indicator letters). On the default 30.75 mm
+            # cylinder that leaves a 5.6 mm seam gap, which still clears the
+            # 4.5 mm footprint of a cell's dots. Tactile mode reserves no marker
+            # columns, so its default is 14 text = 14 total.
+            'grid_columns': 15,
             'grid_rows': 4,
             'cell_spacing': 6.5,  # Project brief default
             'line_spacing': 10.0,

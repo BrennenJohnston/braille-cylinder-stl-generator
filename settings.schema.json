@@ -34,7 +34,7 @@
       "description": "Braille spacing and layout parameters",
       "additionalProperties": false,
       "properties": {
-        "grid_columns": { "type": "integer", "minimum": 1, "default": 14, "description": "TOTAL grid columns per row, including reserved marker columns. The UI dial counts text cells only and adds the markers before sending: visual mode with indicator letters reserves 2 columns (default 12 text + 2 = 14), letters off reserves 1 (13 text + 1 = 14), tactile reserves 0 (13 text). The total must fit the surface: total x cell_spacing_mm + seam gap <= pi x cylinder_diameter_mm." },
+        "grid_columns": { "type": "integer", "minimum": 1, "default": 15, "description": "TOTAL grid columns per row, including reserved marker columns. The UI dial counts text cells only and adds the markers before sending: visual mode with indicator letters reserves 2 columns (default 13 text + 2 = 15), letters off reserves 1 (13 text + 1 = 14), tactile reserves 0 (default 14 text). The seam gap left over, pi x cylinder_diameter_mm - (total - 1) x cell_spacing_mm, must still clear one cell's dot footprint (dot_spacing + dot base diameter) in visual mode, or the tactile indicator plus its 5 mm clear zone in tactile mode." },
         "grid_rows": { "type": "integer", "minimum": 1, "default": 4, "description": "Number of braille rows on the plate" },
         "dot_spacing_mm": { "type": "number", "minimum": 0, "default": 2.5 },
         "cell_spacing_mm": { "type": "number", "minimum": 0, "default": 6.5 },
