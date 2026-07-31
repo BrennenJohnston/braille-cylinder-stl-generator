@@ -171,13 +171,13 @@ test.describe('Form column layout', () => {
     });
 
     const cells = page.locator('#grid_columns');
-    await expect(cells).toHaveValue('13');
+    await expect(cells).toHaveValue('12');
 
     await cells.fill('9');
-    // Switching plate type used to normalize the dial straight back to 13
+    // Switching plate type used to normalize the dial straight back to the recommendation
     await page.locator('input[name="plate_type"][value="negative"]').check();
     await expect(cells).toHaveValue('9');
     // ...but the recommendation is still surfaced in the note
-    await expect(page.locator('#grid_columns_note')).toContainText('Recommended value: 13');
+    await expect(page.locator('#grid_columns_note')).toContainText('Recommended value: 12');
   });
 });

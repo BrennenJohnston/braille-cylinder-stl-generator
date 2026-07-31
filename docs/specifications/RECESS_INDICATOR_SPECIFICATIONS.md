@@ -632,8 +632,8 @@ Column 0:           Character/Rectangle indicator (based on first char of row)
 Columns 1 to N-2:   Braille content (shifted by 1)
 Column N-1:         Triangle marker (at last cell)
 
-Where N = grid_columns (default 13)
-Available braille columns = N - 2 = 11
+Where N = grid_columns (default 14: 12 text + 2 marker columns)
+Available braille columns = N - 2 = 12
 ```
 
 **Universal Counter Plate (Negative):**
@@ -642,7 +642,7 @@ Column 0:           Rectangle ONLY (never character)
 Columns 1 to N-2:   ALL 6 dot recesses per cell (shifted by 1)
 Column N-1:         Triangle marker (at last cell)
 
-Where N = grid_columns (default 13)
+Where N = grid_columns (default 14: 12 text + 2 marker columns)
 ```
 
 ### Cylinders with Indicators Enabled

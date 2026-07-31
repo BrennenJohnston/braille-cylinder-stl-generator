@@ -386,15 +386,18 @@ def validate_line_lengths(
         ValidationError: If any line exceeds available columns
     """
     if shape_type == 'cylinder':
-        # Cylinders reserve marker columns:
+        # Cylinders reserve marker columns (mirrors _reserved_marker_columns()
+        # in app/geometry_spec.py and getReservedMarkerColumns() in the UI):
         # - tactile mode: 0 columns (the indicator lives in the seam gap)
         # - indicator letters ON: 2 columns (triangle at col 0, letter at col 1)
         # - indicator letters OFF: 1 column (the alignment triangle is always present)
         reserved = 0 if str(indicator_mode).lower() == 'tactile' else (2 if indicator_shapes else 1)
         available_columns = max(0, grid_columns - reserved)
     else:
-        # Cards: all grid_columns are available for braille
-        # (indicators are placed separately, not subtracted from text columns)
+        # Cards: all grid_columns are available for braille. Verified against
+        # extract_card_geometry_spec(), which places braille cells at columns
+        # 0..grid_columns-1 and draws the indicator/triangle markers at the
+        # first/last column positions without shifting the text columns.
         available_columns = grid_columns
 
     errors = []

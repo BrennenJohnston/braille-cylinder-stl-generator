@@ -67,7 +67,7 @@ test.describe('Row Indicator Style', () => {
     await openApp(page);
 
     await expect(page.locator('input[name="indicator_mode"][value="visual"]')).toBeChecked();
-    await expect(page.locator('#grid_columns')).toHaveValue('13');
+    await expect(page.locator('#grid_columns')).toHaveValue('12');
 
     const spec = await interceptGeometrySpec(page);
     await page.locator('#braille-unicode').fill('\u2801\u2803');
@@ -75,8 +75,9 @@ test.describe('Row Indicator Style', () => {
 
     const settings = spec.body?.settings as Record<string, unknown>;
     expect(settings.indicator_mode).toBe('visual');
-    // Dial shows 13 text cells; +2 marker columns for the letter and triangle
-    expect(settings.grid_columns).toBe('15');
+    // Dial shows 12 text cells; +2 marker columns for the letter and triangle.
+    // 14 total columns is the most that fits the default 30.75 mm cylinder.
+    expect(settings.grid_columns).toBe('14');
   });
 
   test('tactile mode frees the marker columns and sends the tactile parameters', async ({ page }) => {
@@ -108,10 +109,10 @@ test.describe('Row Indicator Style', () => {
 
     const fourteenCells = '\u2801'.repeat(14);
 
-    // Visual mode: 13 cells available, so 14 is blocked
+    // Visual mode: 12 text cells available, so 14 is blocked
     await page.locator('#braille-unicode').fill(fourteenCells);
     await page.locator('#action-btn').click();
-    await expect(page.locator('#error-text')).toContainText('the maximum is 13', { timeout: 15_000 });
+    await expect(page.locator('#error-text')).toContainText('the maximum is 12', { timeout: 15_000 });
 
     // Tactile mode recommends 13, but 14 still fits the seam-gap arithmetic, so
     // raising the dial by hand is allowed and every column is then text.

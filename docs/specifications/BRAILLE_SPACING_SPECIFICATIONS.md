@@ -192,8 +192,8 @@ Column 0:           Character/Rectangle indicator
 Columns 1 to N-2:   Braille content (N-2 characters maximum)
 Column N-1:         Triangle marker
 
-N = grid_columns (default 13)
-Available braille columns = N - 2 = 11
+N = grid_columns (default 14: 12 text + 2 marker columns)
+Available braille columns = N - 2 = 12
 ```
 
 **Column Position Formula:**

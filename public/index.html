@@ -2936,7 +2936,7 @@
                                         aria-describedby="braille-unicode-help">Translate to Braille ↓</button>
                             </div>
                             <div class="grade-note" style="margin-top: 0.6em; font-size: 0.85em;">
-                                Capitalization and number-sign options are available in Expert Mode.
+                                Capital letters are translated by default (each adds a capital-indicator cell). To save cells you can disable capitalization in Expert Mode, where number-sign options also live.
                             </div>
                             <!-- Editable Unicode braille field: the authoritative text when non-empty -->
                             <div class="braille-field" style="margin-top: 1em;">
@@ -3170,9 +3170,9 @@
                                     <label class="grade-label" style="font-size: 1.2em; font-weight: 700;">Braille Dimensions</label>
                                     <div>
                                         <label for="grid_columns" id="grid_columns_label">Number of Braille Cells (Characters):</label>
-                                        <input type="number" id="grid_columns" name="grid_columns" value="13" style="width: 110px;" autocomplete="off">
+                                        <input type="number" id="grid_columns" name="grid_columns" value="12" style="width: 110px;" autocomplete="off">
                                         <div id="grid_columns_note" class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
-                                            For embossing plates: 2 cells per row are reserved for the indicator letter and alignment triangle, leaving 13 cells available for text.
+                                            For embossing plates: 2 cells per row are reserved for the indicator letter and alignment triangle, so the recommended 12 text cells use 14 columns in total. Recommended value: 12.
                                         </div>
                                     </div>
                                     <div style="margin-top: 6px;">
@@ -3406,15 +3406,18 @@
                                 <div class="line-input-mode-toggle" style="display: flex; align-items: center; gap: 1em; flex-wrap: wrap;" role="radiogroup" aria-labelledby="caps-toggle-label">
                                     <span id="caps-toggle-label" class="line-label" style="margin: 0;">Capitalized Letters:</span>
                                     <label style="display: inline-flex; align-items: center; gap: 0.4em;">
-                                        <input type="radio" name="capitalize_letters" value="enabled" id="capitalize_enabled" aria-describedby="caps-enabled-desc">
-                                        Enabled
+                                        <input type="radio" name="capitalize_letters" value="enabled" id="capitalize_enabled" checked aria-describedby="caps-enabled-desc">
+                                        Enabled <span style="font-weight: normal; opacity: 0.85;">(default)</span>
                                     </label>
                                     <label style="display: inline-flex; align-items: center; gap: 0.4em;">
-                                        <input type="radio" name="capitalize_letters" value="disabled" id="capitalize_disabled" checked aria-describedby="caps-disabled-desc">
-                                        Disabled <span style="font-weight: normal; opacity: 0.85;">(recommended)</span>
+                                        <input type="radio" name="capitalize_letters" value="disabled" id="capitalize_disabled" aria-describedby="caps-disabled-desc">
+                                        Disabled
                                     </label>
-                                    <span id="caps-enabled-desc" class="sr-only">Preserve capital letters in braille translation, using indicator cells</span>
-                                    <span id="caps-disabled-desc" class="sr-only">Convert text to lowercase before translation to save space on braille cells. Recommended for names and business cards.</span>
+                                    <span id="caps-enabled-desc" class="sr-only">Preserve capital letters in braille translation, using capital indicator cells</span>
+                                    <span id="caps-disabled-desc" class="sr-only">Convert text to lowercase before translation to save space on braille cells: one cell per capital letter, two per fully capitalized word</span>
+                                    <div class="grade-note" style="margin: 0; font-size: 0.85em; flex-basis: 100%;">
+                                        Disabling capitalization saves one braille cell per capital letter (two per fully-capitalized word) — an option for power users short on space.
+                                    </div>
                                 </div>
                                 <!-- Capitalization warning (shown when caps disabled + uppercase detected) -->
                                 <div id="caps-warning" class="grade-note" role="status" aria-live="polite"
@@ -4587,25 +4590,27 @@
                 ? 'Number of Available Braille Cells:'
                 : 'Available Braille Cells for Text:';
 
+            // Capacity contract: the dial counts TEXT cells only; marker columns
+            // are added on top for the payload. The total (text + markers) must
+            // fit the cylinder circumference: at the 30.75 mm default that is
+            // floor(96.6 / 6.5) = 14 columns. Hence 12 text cells with letters
+            // on (12+2=14), 13 with letters off (13+1=14), and 13 in tactile
+            // mode (13+0; 14 also fits but proved too tight in practice).
             let explanation;
             let recommended;
             if (tactile) {
-                // Tactile mode has no marker cells: every column is text, and the
-                // freed space widens the seam gap the arrow sits in. 14 still fits
-                // the seam-gap arithmetic but proved too tight in practice, so 13
-                // is the recommendation; users who want 14 can still set it.
-                explanation = 'Tactile seam arrow: no cells are reserved for markers, so every cell in the row is available for text.';
+                explanation = 'Tactile seam arrow: no cells are reserved for markers, so every cell in the row is available for text — 13 usable text cells at the recommended value.';
                 recommended = '13';
             } else if (plateType === 'positive') {
                 explanation = indicatorOn
-                    ? 'For embossing plates: 2 cells per row are reserved for the indicator letter and alignment triangle.'
-                    : 'Indicator letters off: 1 cell per row is reserved for the alignment triangle; the freed cell is available for text.';
-                recommended = indicatorOn ? '13' : '14';
+                    ? 'For embossing plates: 2 cells per row are reserved for the indicator letter and alignment triangle, so the recommended 12 text cells use 14 columns in total.'
+                    : 'Indicator letters off: 1 cell per row is reserved for the alignment triangle, so the recommended 13 text cells use 14 columns in total.';
+                recommended = indicatorOn ? '12' : '13';
             } else {
                 explanation = indicatorOn
-                    ? 'For counter plates: 2 cells per row are reserved for the indicator square and alignment triangle.'
-                    : 'Indicator letters off: 1 cell per row is reserved for the alignment triangle.';
-                recommended = indicatorOn ? '13' : '14';
+                    ? 'For counter plates: 2 cells per row are reserved for the indicator square and alignment triangle, so the recommended 12 text cells use 14 columns in total.'
+                    : 'Indicator letters off: 1 cell per row is reserved for the alignment triangle, so the recommended 13 text cells use 14 columns in total.';
+                recommended = indicatorOn ? '12' : '13';
             }
 
             if (!preserveValue && !gridColumnsDirty) {
@@ -4625,6 +4630,7 @@
                     input.addEventListener('input', () => {
                         updateCapsWarning();
                         onSourceTextChangedForBrailleField();
+                        checkCylinderOverflow();
                     });
                 }
             }
@@ -4799,50 +4805,66 @@
             }
         }
 
-        // Function to check cylinder text overflow
+        // Live overflow warning for manual mode on cylinders. Translates each
+        // line with the same capitalization setting generation uses and compares
+        // the per-row braille length against the text-cell dial — the same
+        // contract the generate-time gate enforces. Auto mode is covered by
+        // computeAutoOverflow() (per-row wrap simulation in its own warning
+        // box); physical fit of columns against the circumference is
+        // checkPhysicalFit()'s job. Debounced: each check is async liblouis calls.
+        let cylinderOverflowTimer = null;
+        let cylinderOverflowRun = 0;
         function checkCylinderOverflow() {
-            const shapeTypeElement = document.querySelector('input[name="shape_type"]:checked');
-            if (!shapeTypeElement || shapeTypeElement.value !== 'cylinder') return;
-            const shapeType = shapeTypeElement.value;
+            if (cylinderOverflowTimer) clearTimeout(cylinderOverflowTimer);
+            cylinderOverflowTimer = setTimeout(() => {
+                cylinderOverflowTimer = null;
+                checkCylinderOverflowNow();
+            }, 250);
+        }
 
-            const diameter = parseFloat(document.getElementById('cylinder_diameter_mm').value) || 30.75;
-            const height = parseFloat(document.getElementById('cylinder_height_mm').value) || 52;
-            const cellSpacing = parseFloat(document.getElementById('cell_spacing').value) || 6.5;
-            const dotSpacing = parseFloat(document.getElementById('dot_spacing').value) || 2.5;
-            const lineSpacing = parseFloat(document.getElementById('line_spacing').value) || 10;
-
-            // Calculate how many cells fit around circumference
-            // cellSpacing is the center-to-center distance between cells
-            const circumference = Math.PI * diameter;
-            const cellsPerRow = Math.floor(circumference / cellSpacing);
-
-            // Calculate how many rows fit on cylinder
-            const rowsOnCylinder = Math.floor(height / lineSpacing);
-
-            // Get total cells needed from text
-            // NOTE: This uses raw text length as an approximation for preview.
-            // The actual braille length may differ (contractions can expand text).
-            // The authoritative check at generation time uses translated braille length
-            // and will block if the actual braille exceeds capacity (PR-7 safety gate).
-            const lines = getDynamicLineValues();
-            let totalCellsNeeded = 0;
-            lines.forEach(line => {
-                if (line.trim()) {
-                    totalCellsNeeded += line.trim().length;
-                }
-            });
-
-            const totalCellsAvailable = cellsPerRow * rowsOnCylinder;
-
+        function checkCylinderOverflowNow() {
             const warningDiv = document.getElementById('cylinder-overflow-warning');
             const warningMessage = document.getElementById('cylinder-overflow-message');
+            if (!warningDiv || !warningMessage) return;
 
-            if (totalCellsNeeded > totalCellsAvailable) {
-                warningMessage.textContent = `Text requires ${totalCellsNeeded} cells but cylinder can fit ${totalCellsAvailable} cells. Some text may be cut off.`;
-                warningDiv.style.display = 'block';
-            } else {
+            const shapeTypeElement = document.querySelector('input[name="shape_type"]:checked');
+            if (!shapeTypeElement || shapeTypeElement.value !== 'cylinder') {
                 warningDiv.style.display = 'none';
+                return;
             }
+
+            const placementMode = document.querySelector('input[name="placement_mode"]:checked')?.value || 'manual';
+            if (placementMode === 'auto') {
+                // Auto text is checked per-row by computeAutoOverflow() in its own warning box
+                warningDiv.style.display = 'none';
+                computeAutoOverflow();
+                return;
+            }
+
+            const runId = ++cylinderOverflowRun;
+            const cols = getAvailableColumns();
+            const lines = getDynamicLineValues();
+            const tableName = document.getElementById('language-table')?.value || 'en-ueb-g1.ctb';
+
+            (async () => {
+                const problems = [];
+                for (let i = 0; i < lines.length; i++) {
+                    const line = (lines[i] || '').trim();
+                    if (!line) continue;
+                    const perLineTable = document.getElementById(`line_lang_${i + 1}`)?.value || tableName;
+                    const braille = await translateWithLiblouis(applyCapitalizationSetting(line), 'g2', perLineTable);
+                    if (braille.length > cols) {
+                        problems.push(`Line ${i + 1} ("${line}") needs ${braille.length} cells but ${cols} are available.`);
+                    }
+                }
+                if (runId !== cylinderOverflowRun) return; // superseded by newer input
+                if (problems.length) {
+                    warningMessage.textContent = problems.join(' ') + ' Shorten the text or raise the number of braille cells in Expert Mode.';
+                    warningDiv.style.display = 'block';
+                } else {
+                    warningDiv.style.display = 'none';
+                }
+            })().catch(() => { /* translation not ready; skip the preview warning */ });
         }
 
         // Function to create dynamic line inputs based on grid_rows value
@@ -4902,45 +4924,6 @@
             }
             return lines;
         }
-
-        // When in auto mode, show overall overflow for cylinders too
-        const cylinderOverflowDiv = document.getElementById('cylinder-overflow-warning');
-        const cylinderOverflowMsg = document.getElementById('cylinder-overflow-message');
-        const originalCheckCylinderOverflow = checkCylinderOverflow;
-        checkCylinderOverflow = function() {
-            const placementMode = document.querySelector('input[name="placement_mode"]:checked')?.value || 'manual';
-            if (placementMode === 'manual') {
-                return originalCheckCylinderOverflow();
-            }
-            // Auto mode: compute based on auto text
-            const diameter = parseFloat(document.getElementById('cylinder_diameter_mm').value) || 30.75;
-            const height = parseFloat(document.getElementById('cylinder_height_mm').value) || 52;
-            const cellSpacing = parseFloat(document.getElementById('cell_spacing').value) || 6.5;
-            const lineSpacing = parseFloat(document.getElementById('line_spacing').value) || 10;
-            const circumference = Math.PI * diameter;
-            const cellsPerRow = Math.floor(circumference / cellSpacing);
-            const rowsOnCylinder = Math.floor(height / lineSpacing);
-            const totalCellsAvailable = cellsPerRow * rowsOnCylinder;
-            const src = (document.getElementById('auto-text')?.value || '').trim();
-            if (!src) {
-                cylinderOverflowDiv.style.display = 'none';
-                return;
-            }
-            // Translate then compare
-            translateWithLiblouis(src, 'g2', document.getElementById('language-table')?.value || 'en-ueb-g1.ctb')
-                .then(braille => {
-                    const totalCellsNeeded = braille.length;
-                    if (totalCellsNeeded > totalCellsAvailable) {
-                        cylinderOverflowMsg.textContent = `Text requires ${totalCellsNeeded} cells but cylinder can fit ${totalCellsAvailable} cells. Some text may be cut off.`;
-                        cylinderOverflowDiv.style.display = 'block';
-                    } else {
-                        cylinderOverflowDiv.style.display = 'none';
-                    }
-                })
-                .catch(() => {
-                    // Ignore
-                });
-        };
 
         // Function to add listener for grid_rows changes
         function addGridRowsListener() {
@@ -5308,7 +5291,7 @@
         }
 
         function getAvailableColumns() {
-            const gridColumnsValue = parseInt(document.getElementById('grid_columns').value) || 11;
+            const gridColumnsValue = parseInt(document.getElementById('grid_columns').value) || 12;
             // The UI dial shows usable text cells; use it directly for wrapping
             return gridColumnsValue;
         }
@@ -5324,20 +5307,26 @@
             const dimensions = document.getElementById('tactile-indicator-dimensions');
             if (dimensions) dimensions.style.display = tactile ? '' : 'none';
 
-            updateTactileGapWarning();
+            checkPhysicalFit();
         }
 
-        // The tactile arrow sits in the arc between the last and first cell of a row,
-        // measured the long way round through the seam. Warn when that gap can no
-        // longer hold the arrow plus a clear zone either side of it. Mirrors the
-        // OpenSCAD TACTILE_MIN_GAP_MARGIN check; generation is not blocked.
-        function updateTactileGapWarning() {
+        // Physical-fit check for the row layout, both indicator modes.
+        // The seam gap is the arc left between the last and first cell of a row,
+        // measured the long way round through the seam:
+        //   seamGap = π × diameter − (totalColumns − 1) × cellSpacing
+        // Tactile mode: the gap must hold the arrow plus a clear zone either side
+        // (mirrors the OpenSCAD TACTILE_MIN_GAP_MARGIN check).
+        // Visual mode: the gap must be at least one cell spacing, i.e.
+        // totalColumns × cellSpacing ≤ π × diameter, or the last cell of a row
+        // collides with the first across the seam.
+        // Warns only; generation is not blocked.
+        function checkPhysicalFit() {
             const warningDiv = document.getElementById('tactile-gap-warning');
             const warningMsg = document.getElementById('tactile-gap-message');
             if (!warningDiv || !warningMsg) return;
 
             const shapeType = document.querySelector('input[name="shape_type"]:checked')?.value || 'cylinder';
-            if (!isTactileIndicatorOn() || shapeType !== 'cylinder') {
+            if (shapeType !== 'cylinder') {
                 warningDiv.style.display = 'none';
                 return;
             }
@@ -5345,32 +5334,42 @@
             const diameter = parseFloat(document.getElementById('cylinder_diameter_mm')?.value) || 30.75;
             const cellSpacing = parseFloat(document.getElementById('cell_spacing')?.value) || 6.5;
             const totalColumns = getAvailableColumns() + getReservedMarkerColumns();
-            const indicatorWidth = parseFloat(document.getElementById('tactile_indicator_width')?.value) || 4.0;
-            const seamGap = Math.PI * diameter - (totalColumns - 1) * cellSpacing;
-            const required = indicatorWidth + TACTILE_MIN_GAP_MARGIN_MM;
+            const circumference = Math.PI * diameter;
+            const seamGap = circumference - (totalColumns - 1) * cellSpacing;
 
-            if (seamGap < required) {
-                warningMsg.textContent = `The tactile indicator needs a seam gap of at least ${required.toFixed(1)} mm, ` +
-                    `but this layout leaves ${seamGap.toFixed(1)} mm. Reduce the number of braille cells, ` +
-                    'increase the cylinder diameter, or narrow the indicator in Expert Mode.';
+            if (isTactileIndicatorOn()) {
+                const indicatorWidth = parseFloat(document.getElementById('tactile_indicator_width')?.value) || 4.0;
+                const required = indicatorWidth + TACTILE_MIN_GAP_MARGIN_MM;
+                if (seamGap < required) {
+                    warningMsg.textContent = `The tactile indicator needs a seam gap of at least ${required.toFixed(1)} mm, ` +
+                        `but this layout leaves ${seamGap.toFixed(1)} mm. Reduce the number of braille cells, ` +
+                        'increase the cylinder diameter, or narrow the indicator in Expert Mode.';
+                    warningDiv.style.display = 'block';
+                    return;
+                }
+            } else if (seamGap < cellSpacing) {
+                const reserved = getReservedMarkerColumns();
+                warningMsg.textContent = `This layout needs ${totalColumns} columns (${getAvailableColumns()} text + ` +
+                    `${reserved} marker) at ${cellSpacing} mm spacing, which is ${(totalColumns * cellSpacing).toFixed(1)} mm — ` +
+                    `more than the ${circumference.toFixed(1)} mm circumference of a ${diameter} mm cylinder. ` +
+                    'Reduce the number of braille cells or increase the cylinder diameter.';
                 warningDiv.style.display = 'block';
-            } else {
-                warningDiv.style.display = 'none';
+                return;
             }
-        }
 
-        function getTotalCellsAvailable() {
-            const rows = parseInt(document.getElementById('grid_rows').value) || 4;
-            const cols = getAvailableColumns();
-            return rows * cols;
+            warningDiv.style.display = 'none';
         }
 
         // BANA-compliant-ish auto wrapping for braille rows
         // Policy:
+        // - User newlines are hard row breaks: each input line starts on a new row
         // - Prefer not to divide words across lines
         // - Hyphenated words may break after a hyphen (hyphen remains at end of line)
         // - If a single non-hyphenated word exceeds the row width in braille cells,
         //   we attempt a simple syllable-like split; if none found, we warn and abort
+        // Returns { textLines, brailleLines, warnings, rowsNeeded, rowsNeededIsExact }
+        // (textLines/brailleLines are always exactly `rows` long) or
+        // { error: true, warnings } when a word cannot be divided per BANA.
         async function banaAutoWrap(src, cols, rows, tableName) {
             const warnings = [];
             const textLines = [];
@@ -5425,106 +5424,153 @@
                 return await translateWithLiblouis(applyCapitalizationSetting(text), 'g2', tableName);
             }
 
-            let remaining = normalizeSpaces(src);
-            if (!remaining) {
+            // User newlines are hard row breaks: each input line ("paragraph")
+            // starts on a new row and is word-wrapped independently. Trailing
+            // blank lines are dropped; blank lines in the middle keep their row.
+            const paragraphs = String(src ?? '').split(/\r?\n/).map(normalizeSpaces);
+            while (paragraphs.length && !paragraphs[paragraphs.length - 1]) paragraphs.pop();
+
+            if (!paragraphs.length) {
                 // Return empty lines matching requested rows
                 for (let r = 0; r < rows; r++) { textLines.push(''); brailleLines.push(''); }
-                return { textLines, brailleLines, warnings };
+                return { textLines, brailleLines, warnings, rowsNeeded: 0, rowsNeededIsExact: true };
             }
 
-            const words = remaining.split(' ');
-            let currentText = '';
-            let currentBraille = '';
+            // Wrap one paragraph into rows of at most `cols` braille cells.
+            // Returns { rows: [{text, braille}], truncated } or { error: true }
+            // after pushing a warning (word that cannot be divided per BANA).
+            // maxRows bounds the translation work for pathological inputs.
+            async function wrapParagraph(paragraph, maxRows) {
+                const out = [];
+                const words = paragraph.split(' ');
+                let currentText = '';
 
-            // Helper to finalize current line
-            async function pushCurrent() {
-                const text = currentText.trim();
-                const braille = text ? await translateText(text) : '';
-                textLines.push(text);
-                brailleLines.push(braille);
-                currentText = '';
-                currentBraille = '';
-            }
-
-            // Process each word greedily with lookahead via translation
-            let i = 0;
-            while (i < words.length && textLines.length < rows) {
-                let word = words[i];
-                if (!word) { i++; continue; }
-
-                // Try to append word to current line (with a space if needed)
-                const candidate = currentText ? `${currentText} ${word}` : word;
-                const candidateBrailleLen = await translateLen(candidate);
-                if (candidateBrailleLen <= cols) {
-                    currentText = candidate;
-                    currentBraille = null; // invalidate cache
-                    i++;
-                    continue;
+                // Helper to finalize the current row
+                async function pushCurrent() {
+                    const text = currentText.trim();
+                    out.push({ text, braille: text ? await translateText(text) : '' });
+                    currentText = '';
                 }
 
-                // Would overflow. If current line has content, finalize it and retry word on next line
-                if (currentText) {
-                    await pushCurrent();
-                    continue; // Retry same word on new line
-                }
+                // Process each word greedily with lookahead via translation
+                let i = 0;
+                while (i < words.length) {
+                    if (out.length >= maxRows) return { rows: out, truncated: true };
+                    let word = words[i];
+                    if (!word) { i++; continue; }
 
-                // Single word longer than a line. Try preferred break opportunities first.
-                const pref = findPreferredBreakPositions(word);
-                let didSplitPreferred = false;
-                for (let k = pref.length - 1; k >= 0; k--) {
-                    const pos = pref[k];
-                    const head = word.slice(0, pos + 1); // include break char at end of line
-                    const headLen = await translateLen(head);
-                    if (headLen <= cols) {
-                        currentText = head;
-                        await pushCurrent();
-                        // Remainder becomes current word for next iteration
-                        const tail = word.slice(pos + 1);
-                        words[i] = tail || '';
-                        if (!words[i]) { i++; }
-                        didSplitPreferred = true;
-                        break;
-                    }
-                }
-                if (didSplitPreferred) {
-                    continue; // continue outer while loop on possibly updated words[i]
-                }
-
-                // Try heuristic syllable-like breaks (do NOT insert a hyphen)
-                const syllableBreaks = findHeuristicSyllableBreaks(word);
-                if (syllableBreaks.length > 0) {
-                    // Choose the largest prefix that fits
-                    let chosen = -1;
-                    for (const b of syllableBreaks) {
-                        const head = word.slice(0, b);
-                        const headLen = await translateLen(head);
-                        if (headLen <= cols) chosen = b; else break;
-                    }
-                    if (chosen > 0) {
-                        const head = word.slice(0, chosen);
-                        currentText = head;
-                        await pushCurrent();
-                        const tail = word.slice(chosen);
-                        words[i] = tail || '';
-                        if (!words[i]) { i++; }
+                    // Try to append word to the current row (with a space if needed)
+                    const candidate = currentText ? `${currentText} ${word}` : word;
+                    const candidateBrailleLen = await translateLen(candidate);
+                    if (candidateBrailleLen <= cols) {
+                        currentText = candidate;
+                        i++;
                         continue;
                     }
+
+                    // Would overflow. If the row has content, finalize it and retry the word
+                    if (currentText) {
+                        await pushCurrent();
+                        continue; // Retry same word on new row
+                    }
+
+                    // Single word longer than a row. Try preferred break opportunities first.
+                    const pref = findPreferredBreakPositions(word);
+                    let didSplitPreferred = false;
+                    for (let k = pref.length - 1; k >= 0; k--) {
+                        const pos = pref[k];
+                        const head = word.slice(0, pos + 1); // include break char at end of row
+                        const headLen = await translateLen(head);
+                        if (headLen <= cols) {
+                            currentText = head;
+                            await pushCurrent();
+                            // Remainder becomes current word for next iteration
+                            const tail = word.slice(pos + 1);
+                            words[i] = tail || '';
+                            if (!words[i]) { i++; }
+                            didSplitPreferred = true;
+                            break;
+                        }
+                    }
+                    if (didSplitPreferred) {
+                        continue; // continue outer while loop on possibly updated words[i]
+                    }
+
+                    // Try heuristic syllable-like breaks (do NOT insert a hyphen)
+                    const syllableBreaks = findHeuristicSyllableBreaks(word);
+                    if (syllableBreaks.length > 0) {
+                        // Choose the largest prefix that fits
+                        let chosen = -1;
+                        for (const b of syllableBreaks) {
+                            const head = word.slice(0, b);
+                            const headLen = await translateLen(head);
+                            if (headLen <= cols) chosen = b; else break;
+                        }
+                        if (chosen > 0) {
+                            currentText = word.slice(0, chosen);
+                            await pushCurrent();
+                            words[i] = word.slice(chosen) || '';
+                            if (!words[i]) { i++; }
+                            continue;
+                        }
+                    }
+
+                    // Monosyllabic or no safe split found: cannot divide per BANA
+                    const wordBrailleLen = await translateLen(word);
+                    warnings.push(`Word "${word}" requires ${wordBrailleLen} cells but only ${cols} fit per row. It cannot be divided per BANA; increase columns/rows or use Manual Placement.`);
+                    return { error: true };
                 }
 
-                // Monosyllabic or no safe split found: cannot divide per BANA
-                const wordBrailleLen = await translateLen(word);
-                warnings.push(`Word "${word}" requires ${wordBrailleLen} cells but only ${cols} fit per row. It cannot be divided per BANA; increase columns/rows or use Manual Placement.`);
-                return { error: true, warnings };
+                if (currentText) await pushCurrent();
+                return { rows: out, truncated: false };
             }
 
-            // Push the last line if any and if we still have space for lines
-            if (currentText && textLines.length < rows) {
-                await pushCurrent();
+            // Simulate a few rows beyond the plate so overflow warnings can report
+            // an exact "needs N rows" figure without unbounded translation work.
+            const maxTrackedRows = rows + 8;
+            let rowsNeeded = 0;
+            let rowsNeededIsExact = true;
+            let overflowLine = null; // 1-based input line where content stops fitting
+
+            for (let p = 0; p < paragraphs.length; p++) {
+                if (rowsNeeded >= maxTrackedRows) {
+                    rowsNeededIsExact = false;
+                    if (overflowLine === null) overflowLine = p + 1;
+                    break;
+                }
+                const paragraph = paragraphs[p];
+                if (!paragraph) {
+                    // A blank input line keeps its (empty) row
+                    rowsNeeded++;
+                    if (rowsNeeded <= rows) { textLines.push(''); brailleLines.push(''); }
+                    else if (overflowLine === null) overflowLine = p + 1;
+                    continue;
+                }
+                const wrapped = await wrapParagraph(paragraph, maxTrackedRows - rowsNeeded);
+                if (wrapped.error) {
+                    return { error: true, warnings };
+                }
+                for (const row of wrapped.rows) {
+                    rowsNeeded++;
+                    if (rowsNeeded <= rows) { textLines.push(row.text); brailleLines.push(row.braille); }
+                    else if (overflowLine === null) overflowLine = p + 1;
+                }
+                if (wrapped.truncated) {
+                    rowsNeededIsExact = false;
+                    if (overflowLine === null) overflowLine = p + 1;
+                    break;
+                }
             }
 
-            // If content remains beyond rows, warn
-            if (i < words.length) {
-                warnings.push('Text exceeds available rows after word-aware wrapping; extra content was not placed.');
+            // If content remains beyond rows, warn and identify the input line.
+            // The phrase "extra content was not placed" is load-bearing: the
+            // generate handler blocks on it to prevent silent truncation (S0).
+            if (rowsNeeded > rows || !rowsNeededIsExact) {
+                const needs = rowsNeededIsExact ? `${rowsNeeded} rows` : `more than ${rowsNeeded} rows`;
+                const lineNote = (overflowLine !== null && paragraphs.length > 1)
+                    ? ` Overflow starts at line ${overflowLine} ("${paragraphs[overflowLine - 1]}") of your text.`
+                    : '';
+                warnings.push(`Your text needs ${needs} but only ${rows} are available; extra content was not placed.${lineNote} Reduce text, increase rows, or use Manual Placement.`);
             }
 
             // Ensure we return exactly "rows" lines for downstream consumers
@@ -5533,7 +5579,7 @@
                 textLines.length = rows; brailleLines.length = rows;
             }
 
-            return { textLines, brailleLines, warnings };
+            return { textLines, brailleLines, warnings, rowsNeeded, rowsNeededIsExact };
         }
 
         function updatePlacementUI() {
@@ -5561,7 +5607,7 @@
                 const el = document.getElementById(id);
                 if (el) {
                     el.addEventListener('input', () => {
-                        updateTactileGapWarning();
+                        checkPhysicalFit();
                         if (document.querySelector('input[name="placement_mode"]:checked')?.value === 'auto') {
                             computeAutoOverflow();
                         }
@@ -5592,21 +5638,62 @@
 
         updateIndicatorModeUI();
 
-        async function computeAutoOverflow() {
-            autoWarning.style.display = 'none';
-            autoWarningMsg.textContent = '';
+        // Live overflow warning for auto mode. Runs the exact same banaAutoWrap
+        // simulation generation uses (same capitalization and number-sign
+        // transforms), so what it predicts is what generation will do. Reports
+        // per-row results: which input lines cannot fit a single row, and the
+        // total rows needed versus available. Debounced because every check is
+        // a series of async liblouis calls.
+        let autoOverflowTimer = null;
+        let autoOverflowRun = 0;
+        function computeAutoOverflow() {
+            if (autoOverflowTimer) clearTimeout(autoOverflowTimer);
+            autoOverflowTimer = setTimeout(() => {
+                autoOverflowTimer = null;
+                computeAutoOverflowNow();
+            }, 250);
+        }
+
+        async function computeAutoOverflowNow() {
+            const runId = ++autoOverflowRun;
             const languageSelect = document.getElementById('language-table');
             const tableName = languageSelect?.value || 'en-ueb-g1.ctb';
             const src = (autoText?.value || '').trim();
-            if (!src) return;
+            if (!src) {
+                autoWarning.style.display = 'none';
+                autoWarningMsg.textContent = '';
+                return;
+            }
             try {
-                const braille = await translateWithLiblouis(applyCapitalizationSetting(src), 'g2', tableName);
-                const totalCellsNeeded = braille.length;
-                const totalCellsAvailable = getTotalCellsAvailable();
-                if (totalCellsNeeded > totalCellsAvailable) {
-                    const over = totalCellsNeeded - totalCellsAvailable;
-                    autoWarningMsg.textContent = `Your text exceeds the number of available braille cells by ${over} cells.`;
+                const cols = getAvailableColumns();
+                const rows = parseInt(document.getElementById('grid_rows').value) || 4;
+                const wrap = await banaAutoWrap(src, cols, rows, tableName);
+                if (runId !== autoOverflowRun) return; // superseded by newer input
+
+                const messages = [];
+                if (wrap.error) {
+                    messages.push(...(wrap.warnings || []));
+                } else if (wrap.rowsNeeded > rows || !wrap.rowsNeededIsExact) {
+                    // Name the specific input lines that cannot fit on one row
+                    const paragraphs = src.split(/\r?\n/).map(s => s.replace(/\s+/g, ' ').trim());
+                    for (let p = 0; p < paragraphs.length; p++) {
+                        if (!paragraphs[p]) continue;
+                        const braille = await translateWithLiblouis(applyCapitalizationSetting(paragraphs[p]), 'g2', tableName);
+                        if (braille.length > cols) {
+                            messages.push(`Line ${p + 1} ("${paragraphs[p]}") needs ${braille.length} cells but ${cols} are available.`);
+                        }
+                    }
+                    if (runId !== autoOverflowRun) return;
+                    const needs = wrap.rowsNeededIsExact ? `${wrap.rowsNeeded} rows` : `more than ${wrap.rowsNeeded} rows`;
+                    messages.push(`Your text needs ${needs} but the plate has ${rows}.`);
+                }
+
+                if (messages.length) {
+                    autoWarningMsg.textContent = messages.join(' ');
                     autoWarning.style.display = 'block';
+                } else {
+                    autoWarning.style.display = 'none';
+                    autoWarningMsg.textContent = '';
                 }
             } catch (e) {
                 // Ignore preview warning if translation not available
@@ -5649,7 +5736,8 @@
                 'braille_prefs_tactile_indicator_raise',
                 'braille_prefs_tactile_recess_clearance',
                 'braille_prefs_tactile_recess_extra_depth',
-                'braille_prefs_capitalize_letters',
+                'braille_prefs_capitalize_letters', // legacy (pre-Enabled-default); cleared so it can never resurrect
+                'braille_prefs_capitalize_letters_v2',
                 'braille_prefs_repeat_number_sign',
                 'braille_prefs_expert_visible',
                 'braille_prefs_grid_columns',
@@ -5711,8 +5799,12 @@
                 const radio = document.querySelector(`input[name="indicator_mode"][value="${savedIndicatorMode}"]`);
                 if (radio) radio.checked = true;
             }
-            // Capitalized Letters setting
-            const savedCaps = readPersisted('braille_prefs_capitalize_letters');
+            // Capitalized Letters setting. The key is versioned (_v2): the old
+            // key predates the Enabled default and mostly holds 'disabled' from
+            // the era when Disabled was the recommendation, so it is ignored —
+            // existing users start on the new Enabled default once, and only an
+            // explicit choice made since then is restored.
+            const savedCaps = readPersisted('braille_prefs_capitalize_letters_v2');
             if (savedCaps === 'enabled' || savedCaps === 'disabled') {
                 const radio = document.querySelector(`input[name="capitalize_letters"][value="${savedCaps}"]`);
                 if (radio) radio.checked = true;
@@ -5853,7 +5945,7 @@
             // Capitalized Letters toggle
             document.querySelectorAll('input[name="capitalize_letters"]').forEach(radio => {
                 radio.addEventListener('change', () => {
-                    persistValue('braille_prefs_capitalize_letters', document.querySelector('input[name="capitalize_letters"]:checked').value);
+                    persistValue('braille_prefs_capitalize_letters_v2', document.querySelector('input[name="capitalize_letters"]:checked').value);
                     resetToGenerateState();
                     updateCapsWarning();
                     // Recalculate overflow if in auto mode (caps affect cell count)
@@ -6027,8 +6119,9 @@
         // Note: Text inputs (line1, line2, etc.) are NOT affected by presets.
         const THICKNESS_PRESETS = {
             '0.4': {
-                // Braille Spacing (11 text cells + 2 indicator reserved = 13 total)
-                grid_columns: 11,
+                // Braille Spacing. grid_columns is intentionally absent: the text-cell
+                // dial is owned by updateGridColumnsForPlateType(), which reasserts the
+                // per-mode recommendation (12/13/13) after a preset is applied.
                 grid_rows: 4,
                 cell_spacing: 6.5,
                 line_spacing: 10.0,
@@ -6070,8 +6163,8 @@
                 tactile_recess_extra_depth: 0.2
             },
             '0.3': {
-                // Braille Spacing (11 text cells + 2 indicator reserved = 13 total for 90mm card)
-                grid_columns: 11,
+                // Braille Spacing. grid_columns is intentionally absent — see the
+                // 0.4 preset note above.
                 grid_rows: 4,
                 cell_spacing: 6.5,
                 line_spacing: 10.0,
@@ -7185,10 +7278,10 @@
             // SAFETY-CRITICAL: Apply column check to ALL modes (PR-9 defense-in-depth)
             // Previously, auto mode bypassed this check trusting banaAutoWrap().
             // Now we validate all modes to catch any wrapping bugs before backend.
-            const gridColumnsValue = parseInt(document.getElementById('grid_columns').value);
-            const indicatorsOn = document.querySelector('input[name="indicator_shapes"]:checked')?.value === '1';
+            // Every per-row capacity check derives from the same helper: the
+            // dial counts text cells, so translated rows compare against it 1:1.
+            const availableColumns = getAvailableColumns();
             if (plateType === 'positive') {
-                const availableColumns = gridColumnsValue;
                 // Check ALL modes for column overflow (defense-in-depth)
                 for (let i = 0; i < translatedLines.length; i++) {
                     const brailleLine = translatedLines[i];
@@ -7205,12 +7298,13 @@
                     }
                 }
             } else {
-                // For counter plates, all grid columns are available
+                // Counter plates carry no text of their own, but any lines that
+                // do arrive are held to the same per-row contract.
                 for (let i = 0; i < translatedLines.length; i++) {
                     const brailleLine = translatedLines[i];
-                    if (brailleLine && brailleLine.length > gridColumnsValue) {
-                        const over = brailleLine.length - gridColumnsValue;
-                        errorText.textContent = `Line ${i + 1} exceeds ${gridColumnsValue} braille cells by ${over} cells after translation. Please shorten your text.`;
+                    if (brailleLine && brailleLine.length > availableColumns) {
+                        const over = brailleLine.length - availableColumns;
+                        errorText.textContent = `Line ${i + 1} exceeds ${availableColumns} braille cells by ${over} cells after translation. Please shorten your text.`;
                         errorDiv.style.display = 'flex';
                         errorDiv.className = 'error-message';
                         return;
@@ -7256,33 +7350,12 @@
                     polygonal_cutout_sides: document.getElementById('cylinder_polygonal_cutout_sides')?.value || '12',
                     seam_offset_deg: document.getElementById('seam_offset_deg')?.value || '355'
                 };
-
-                // SAFETY-CRITICAL (PR-7): Block generation if cylinder text exceeds capacity
-                // This uses translated braille length, not raw text length like the preview warning
-                // Preview warning may under-warn when contractions expand text
-                if (plateType === 'positive') {
-                    const diameter = parseFloat(cylinderParams.diameter_mm);
-                    const height = parseFloat(cylinderParams.height_mm);
-                    const cellSpacing = parseFloat(settings.cell_spacing);
-                    const lineSpacing = parseFloat(settings.line_spacing);
-                    const circumference = Math.PI * diameter;
-                    const cellsPerRow = Math.floor(circumference / cellSpacing);
-                    const rowsOnCylinder = Math.floor(height / lineSpacing);
-                    const totalCellsAvailable = cellsPerRow * rowsOnCylinder;
-
-                    // Calculate total braille cells needed from translated lines
-                    const totalCellsNeeded = translatedLines.reduce((sum, line) => sum + (line ? line.length : 0), 0);
-
-                    if (totalCellsNeeded > totalCellsAvailable) {
-                        const overflow = totalCellsNeeded - totalCellsAvailable;
-                        errorText.textContent = `Cylinder overflow: text requires ${totalCellsNeeded} braille cells but cylinder can fit ${totalCellsAvailable} cells (overflow: ${overflow} cells). ` +
-                            'Generation blocked to prevent incorrect braille output. Please reduce text or increase cylinder dimensions.';
-                        errorDiv.style.display = 'flex';
-                        errorDiv.className = 'error-message';
-                        resetToGenerateState();
-                        return;
-                    }
-                }
+                // Text capacity was already enforced per-row against the
+                // text-cell dial above; whether the dialed columns physically
+                // fit the circumference is checkPhysicalFit()'s live warning.
+                // A circumference-based cell count here would disagree with the
+                // per-row contract (it counted newline separators and ignored
+                // row packing), so there is deliberately no second gate.
             }
 
             // Debug: Log the settings being sent

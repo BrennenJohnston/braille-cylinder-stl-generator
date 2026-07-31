@@ -134,6 +134,11 @@ See: `BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md`, `LIBLOUIS_TRANSLATION_
 See: `STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md`.
 
 ### 3.3 Spacing & Layout
+- spacing.grid_columns: integer (>= 1, default: 14) — TOTAL columns per row,
+  including reserved marker columns. The UI dial counts text cells only and
+  adds `getReservedMarkerColumns()` before sending (visual default: 12 text
+  + 2 markers = 14). See section 3.6 for the per-mode reserved counts.
+- spacing.grid_rows: integer (>= 1, default: 4)
 - spacing.dot_spacing_mm: number (>= 0)
 - spacing.cell_spacing_mm: number (>= 0)
 - spacing.line_spacing_mm: number (>= 0)
@@ -142,6 +147,8 @@ See: `STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md`.
 
 Notes:
 - Dot numbering and cell layout are fixed by standard; not user-configurable.
+- `grid_columns`/`grid_rows` appear flat in the runtime settings payload under
+  the same names, matching `CardSettings`.
 
 See: `BRAILLE_SPACING_SPECIFICATIONS.md`.
 
@@ -227,18 +234,28 @@ UI location: `indicator_mode` is a main-form control (**Row Indicator Style**, a
 Thickness). The five `tactile_*` dials live in the **Tactile Indicator Dimensions** submenu
 of Expert Mode, which is hidden entirely unless tactile mode is selected.
 
-Reserved marker columns per row:
-- indicator_mode = "tactile": 0 columns — the indicator sits in the seam gap — 13 text cells recommended at defaults (14 also fits; 15 leaves too little gap)
-- indicator_shapes = 1 (On): 2 marker columns reserved per row (letter + triangle) — 13 text cells at defaults
-- indicator_shapes = 0 (Off): 1 marker column reserved per row (triangle only) — 14 text cells at defaults
+Reserved marker columns per row. The UI dial counts TEXT cells only; the payload
+`grid_columns` adds the reserved columns on top. The total (text + markers) must fit
+the circumference: at the defaults (30.75 mm diameter, 6.5 mm cell spacing) that is
+`floor(96.6 / 6.5) = 14` total columns.
+- indicator_mode = "tactile": 0 columns — the indicator sits in the seam gap — 13 text cells recommended at defaults (14 also fits the seam-gap arithmetic but proved too tight in practice; 15 leaves too little gap)
+- indicator_shapes = 1 (On): 2 marker columns reserved per row (letter + triangle) — 12 text cells at defaults (12 + 2 = 14 total)
+- indicator_shapes = 0 (Off): 1 marker column reserved per row (triangle only) — 13 text cells at defaults (13 + 1 = 14 total)
 
 Cross-field notes:
 - `indicator_mode` is geometry-affecting and column-count-affecting: it changes
   `validate_line_lengths()` availability, the frontend `grid_columns` payload arithmetic,
   and BANA auto-wrap width.
+- Every per-row capacity check (auto-wrap width, auto/manual overflow warnings, the
+  Braille (Unicode) field validation, and the generate-time gate) derives from the same
+  text-cell dial (`getAvailableColumns()` in the UI); there are no independent capacity
+  formulas.
 - Tactile mode warns (does not reject) when
   `π × diameter − (grid_columns − 1) × cell_spacing < tactile_indicator_width + 5.0`.
   The warning is returned in the geometry spec's `warnings` array and shown live in the UI.
+- Visual mode warns (does not reject) when the total columns no longer physically fit:
+  `π × diameter − (grid_columns − 1) × cell_spacing < cell_spacing`, i.e.
+  `grid_columns × cell_spacing > π × diameter` (frontend `checkPhysicalFit()`).
 
 See: `RECESS_INDICATOR_SPECIFICATIONS.md`.
 

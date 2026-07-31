@@ -281,7 +281,7 @@ Converts Unicode braille characters to human-readable "computer shorthand" notat
 
 ### Function Definition
 
-**Source:** `templates/index.html` (lines 4044-4166)
+**Source:** `public/index.html` (lines 4044-4166)
 
 ```javascript
 function brailleToComputerShorthand(brailleStr) {
@@ -415,7 +415,7 @@ digit cell (⠁⠃⠉⠙⠑⠋⠛⠓⠊⠚), numeric mode continues; otherwise i
 
 ### Trigger Behavior
 
-**Source:** `templates/index.html` (lines 4168-4204)
+**Source:** `public/index.html` (lines 4168-4204)
 
 When the "Preview Braille Translation" button is clicked in Manual placement mode:
 
@@ -489,7 +489,7 @@ Line 3: [German G2     ▼] "Hallo"
 
 ### BANA Wrapping Algorithm
 
-**Source:** `templates/index.html` (lines 3391-3580)
+**Source:** `public/index.html` (lines 3391-3580)
 
 The BANA (Braille Authority of North America) auto-wrap algorithm distributes text across available rows while following braille formatting rules.
 
@@ -550,16 +550,15 @@ The system calculates available cells and warns when text exceeds capacity:
 
 ```javascript
 function getAvailableColumns() {
-    const gridColumnsValue = parseInt(document.getElementById('grid_columns').value) || 15;
+    const gridColumnsValue = parseInt(document.getElementById('grid_columns').value) || 12;
     return gridColumnsValue;  // UI dial shows usable text cells directly
 }
-
-function getTotalCellsAvailable() {
-    const rows = parseInt(document.getElementById('grid_rows').value) || 4;
-    const cols = getAvailableColumns();
-    return rows * cols;
-}
 ```
+
+Overflow is evaluated per row (never as a whole-string cell count): auto mode
+runs the `banaAutoWrap()` simulation, manual mode compares each translated
+line against `getAvailableColumns()`. See section 10 of
+`BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md`.
 
 ---
 
@@ -623,7 +622,7 @@ const defaultValues = new Set([
 
 ### Frontend Table Loading
 
-**Source:** `templates/index.html` (lines 2411-2500)
+**Source:** `public/index.html` (lines 2411-2500)
 
 ```javascript
 async function loadLanguageOptions() {
@@ -776,7 +775,7 @@ const hasBrailleChars = result.split('').some(function(char){
 
 ### Worker Initialization Failure
 
-**Source:** `templates/index.html` (lines 5052-5067)
+**Source:** `public/index.html` (lines 5052-5067)
 
 ```javascript
 } catch (error) {
@@ -799,7 +798,7 @@ const hasBrailleChars = result.split('').some(function(char){
 
 ### Translation Failure Handling
 
-**Source:** `templates/index.html` (lines 5078-5097)
+**Source:** `public/index.html` (lines 5078-5097)
 
 ```javascript
 async function translateWithLiblouis(text, grade, tableName = null) {
@@ -972,9 +971,9 @@ This section documents the cross-check verification performed against actual imp
 
 | Component | File | Status |
 |-----------|------|--------|
-| HTML Structure | `templates/index.html` | ✅ VERIFIED |
+| HTML Structure | `public/index.html` | ✅ VERIFIED |
 | HTML Structure | `public/index.html` | ✅ VERIFIED (identical structure) |
-| CSS Classes | `templates/index.html` | ✅ VERIFIED |
+| CSS Classes | `public/index.html` | ✅ VERIFIED |
 | Liblouis Worker | `static/liblouis-worker.js` | ✅ VERIFIED |
 | Backend Validation | `backend.py` | ✅ VERIFIED |
 | Backend Utils | `app/utils.py` | ✅ VERIFIED |

@@ -169,7 +169,12 @@ class CardSettings:
             'card_height': 52,
             'card_thickness': 2.0,
             # Grid parameters
-            'grid_columns': 13,  # 11 text cells + 2 reserved for indicators = 13 total (fits 90mm card)
+            # grid_columns counts TOTAL columns including reserved marker
+            # columns. The UI dial shows text cells only and adds the markers
+            # on top before sending: default is 12 text + 2 markers = 14 total
+            # (visual mode with indicator letters), which fits the default
+            # 30.75 mm cylinder (14 x 6.5 mm = 91 mm <= pi x 30.75 = 96.6 mm).
+            'grid_columns': 14,
             'grid_rows': 4,
             'cell_spacing': 6.5,  # Project brief default
             'line_spacing': 10.0,

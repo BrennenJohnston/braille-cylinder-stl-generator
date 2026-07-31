@@ -123,7 +123,7 @@ Options** submenu of Expert Mode; a short note in their old place points there.
 
 ### HTML Structure
 
-**Source:** `templates/index.html` (lines 2019-2030)
+**Source:** `public/index.html` (lines 2019-2030)
 
 ```html
 <!-- Placement mode toggle -->
@@ -154,7 +154,7 @@ Options** submenu of Expert Mode; a short note in their old place points there.
 
 ### Mode Switch Handler
 
-**Source:** `templates/index.html` (lines 3556-3572)
+**Source:** `public/index.html` (lines 3556-3572)
 
 ```javascript
 function updatePlacementUI() {
@@ -192,7 +192,7 @@ Auto Placement mode allows users to enter all text in a single textarea. The sys
 
 #### Auto Placement Textarea
 
-**Source:** `templates/index.html` (lines 2031-2038)
+**Source:** `public/index.html` (lines 2031-2038)
 
 ```html
 <!-- Auto placement textarea (hidden by default) -->
@@ -234,7 +234,7 @@ Auto Placement mode allows users to enter all text in a single textarea. The sys
 2. **On form submit**, the BANA auto-wrap algorithm is invoked:
 
 ```javascript
-// Source: templates/index.html (lines 4411-4447)
+// Source: public/index.html (generate handler, auto branch)
 if (placementMode !== 'manual') {
     const src = (document.getElementById('auto-text')?.value || '').trim();
     if (!src) {
@@ -264,10 +264,15 @@ if (placementMode !== 'manual') {
 {
     textLines: ['John Smith', '123 Main St', '', ''],     // Original text per row
     brailleLines: ['⠚⠕⠓⠝ ⠎⠍⠊⠞⠓', '⠼⠁⠃⠉ ⠍⠁⠊⠝ ⠌', '', ''],  // Translated braille per row
-    warnings: [],                                          // Any overflow/wrap warnings
-    error: false                                           // True if wrapping failed
+    warnings: [],                // Any overflow/wrap warnings
+    rowsNeeded: 2,               // Rows the full text needs (may exceed the plate)
+    rowsNeededIsExact: true      // False when the simulation stopped early (rows + 8 cap)
 }
+// or, when a word cannot be divided per BANA:
+{ error: true, warnings: ['Word "..." requires N cells but only M fit per row. ...'] }
 ```
+
+**Newlines are hard row breaks:** the source text is split on `\r?\n` first, and each input line starts on a new row and is word-wrapped independently. Blank lines in the middle keep their (empty) row; trailing blank lines are dropped. When the total rows needed exceed `grid_rows`, the warning identifies the input line where the overflow starts and includes the load-bearing phrase `extra content was not placed`, which the generate handler blocks on (S0 silent-truncation gate).
 
 ### Original Lines for Indicators
 
@@ -294,7 +299,7 @@ Manual Placement mode gives users explicit control over:
 
 #### Dynamic Line Inputs
 
-**Source:** `templates/index.html` (lines 3241-3268)
+**Source:** `public/index.html` (lines 3241-3268)
 
 ```javascript
 function createDynamicLineInputs(numLines) {
@@ -357,7 +362,7 @@ function createDynamicLineInputs(numLines) {
 The number of line inputs is dynamically controlled by the `grid_rows` setting:
 
 ```javascript
-// Source: templates/index.html (lines 3188-3196)
+// Source: public/index.html (lines 3188-3196)
 function addGridRowsListener() {
     const gridRowsInput = document.getElementById('grid_rows');
     if (gridRowsInput) {
@@ -372,7 +377,7 @@ function addGridRowsListener() {
 ### Manual Mode Translation Flow
 
 ```javascript
-// Source: templates/index.html (lines 4389-4410)
+// Source: public/index.html (lines 4389-4410)
 if (placementMode === 'manual') {
     // Per-line translation
     perLineLanguageTables = new Array(lines.length).fill(tableName);
@@ -409,7 +414,7 @@ The master language selection dropdown controls:
 
 ### HTML Structure
 
-**Source:** `templates/index.html` (lines 2045-2061)
+**Source:** `public/index.html` (lines 2045-2061)
 
 ```html
 <!-- Language Selection -->
@@ -448,7 +453,7 @@ The master language selection dropdown controls:
 
 The dropdown is populated dynamically from the backend's available tables:
 
-**Source:** `templates/index.html` (lines 2426-2624)
+**Source:** `public/index.html` (lines 2426-2624)
 
 ```javascript
 async function loadLanguageOptions() {
@@ -532,7 +537,7 @@ In Manual Placement mode, each line can use a different language/braille table, 
 
 ### Synchronization with Master Select
 
-**Source:** `templates/index.html` (lines 3270-3285)
+**Source:** `public/index.html` (lines 3270-3285)
 
 ```javascript
 // Populate all per-line language selects from the master language-table options
@@ -583,10 +588,10 @@ The **Capitalized Letters** toggle allows users to control whether capital lette
 
 ### Rationale
 
-In braille, capital letters require additional indicator cells (e.g., dot-6 prefix in UEB). For items like business cards where names are implicitly capitalized, this wastes valuable space. The toggle allows users to choose between:
+In braille, capital letters require additional indicator cells (e.g., dot-6 prefix in UEB). The toggle allows users to choose between:
 
-- **Disabled (default, recommended):** Convert text to lowercase before translation to save space by omitting capital indicators
-- **Enabled:** Preserve exact capitalization for cases where it matters
+- **Enabled (default):** Preserve exact capitalization — what the user typed is what gets translated
+- **Disabled:** Convert text to lowercase before translation, saving one braille cell per capital letter (two per fully-capitalized word) — an option for power users short on space
 
 **Important:** The user's input text remains unchanged in the UI. The lowercase conversion happens only at translation time when the setting is disabled.
 
@@ -600,25 +605,28 @@ The toggle lives in the **Translation Options** submenu of Expert Mode (`#expert
 
 ```html
 <!-- Capitalized Letters toggle -->
-<div class="line-input-mode-toggle" style="margin-top: 0.8em; display: flex; align-items: center; gap: 1em;" role="radiogroup" aria-labelledby="caps-toggle-label">
+<div class="line-input-mode-toggle" style="display: flex; align-items: center; gap: 1em; flex-wrap: wrap;" role="radiogroup" aria-labelledby="caps-toggle-label">
     <span id="caps-toggle-label" class="line-label" style="margin: 0;">Capitalized Letters:</span>
     <label style="display: inline-flex; align-items: center; gap: 0.4em;">
-        <input type="radio" name="capitalize_letters" value="enabled" id="capitalize_enabled" aria-describedby="caps-enabled-desc">
-        Enabled
+        <input type="radio" name="capitalize_letters" value="enabled" id="capitalize_enabled" checked aria-describedby="caps-enabled-desc">
+        Enabled <span style="font-weight: normal; opacity: 0.85;">(default)</span>
     </label>
     <label style="display: inline-flex; align-items: center; gap: 0.4em;">
-        <input type="radio" name="capitalize_letters" value="disabled" id="capitalize_disabled" checked aria-describedby="caps-disabled-desc">
-        Disabled <span style="font-weight: normal; opacity: 0.85;">(recommended)</span>
+        <input type="radio" name="capitalize_letters" value="disabled" id="capitalize_disabled" aria-describedby="caps-disabled-desc">
+        Disabled
     </label>
-    <span id="caps-enabled-desc" class="sr-only">Preserve capital letters in braille translation, using indicator cells</span>
-    <span id="caps-disabled-desc" class="sr-only">Convert text to lowercase before translation to save space on braille cells. Recommended for names and business cards.</span>
+    <span id="caps-enabled-desc" class="sr-only">Preserve capital letters in braille translation, using capital indicator cells</span>
+    <span id="caps-disabled-desc" class="sr-only">Convert text to lowercase before translation to save space on braille cells: one cell per capital letter, two per fully capitalized word</span>
+    <div class="grade-note" style="margin: 0; font-size: 0.85em; flex-basis: 100%;">
+        Disabling capitalization saves one braille cell per capital letter (two per fully-capitalized word) — an option for power users short on space.
+    </div>
 </div>
 ```
 
 ### Default State
 
-- **Default:** Disabled (recommended)
-- **Persistence:** Saved to `localStorage` key `braille_prefs_capitalize_letters`
+- **Default:** Enabled
+- **Persistence:** Saved to `localStorage` key `braille_prefs_capitalize_letters_v2`. The key is versioned: the pre-Enabled-default key `braille_prefs_capitalize_letters` mostly holds `'disabled'` from the era when Disabled was the recommendation, so it is ignored (never read) — existing users start on the Enabled default once, and only an explicit choice made since the change is restored. Both keys are removed by `clearAllPersistence()`.
 - **Values:** `'enabled'` or `'disabled'`
 
 ### Contextual Warning Message
@@ -693,7 +701,7 @@ The `applyCapitalizationSetting()` function is called at **5 translation points*
 ```javascript
 document.querySelectorAll('input[name="capitalize_letters"]').forEach(radio => {
     radio.addEventListener('change', () => {
-        persistValue('braille_prefs_capitalize_letters', document.querySelector('input[name="capitalize_letters"]:checked').value);
+        persistValue('braille_prefs_capitalize_letters_v2', document.querySelector('input[name="capitalize_letters"]:checked').value);
         resetToGenerateState();
         updateCapsWarning();
         // Recalculate overflow if in auto mode (caps affect cell count)
@@ -721,19 +729,19 @@ document.querySelectorAll('input[name="capitalize_letters"]').forEach(radio => {
 
 ### State Persistence
 
-**Persistence Key:** `braille_prefs_capitalize_letters`
+**Persistence Key:** `braille_prefs_capitalize_letters_v2` (see Default State above for why the key is versioned)
 
 **Restoration Logic** (`applyPersistedSettings()` function):
 
 ```javascript
-const savedCaps = readPersisted('braille_prefs_capitalize_letters');
+const savedCaps = readPersisted('braille_prefs_capitalize_letters_v2');
 if (savedCaps === 'enabled' || savedCaps === 'disabled') {
     const radio = document.querySelector(`input[name="capitalize_letters"][value="${savedCaps}"]`);
     if (radio) radio.checked = true;
 }
 ```
 
-**Clear Persistence:** The key is included in the `clearAllPersistence()` function's key list.
+**Clear Persistence:** Both the v2 key and the legacy `braille_prefs_capitalize_letters` key are included in the `clearAllPersistence()` function's key list.
 
 ### Example Translation Behavior
 
@@ -1070,7 +1078,7 @@ per_line_language_tables = data.get('per_line_language_tables', None)
 | `placement_mode` | `string` | `"auto"` or `"manual"` | `"auto"` |
 | `plate_type` | `string` | `"positive"` or `"negative"` | `"positive"` |
 | `grade` | `string` | `"g1"` or `"g2"` (legacy, less used) | `"g2"` |
-| `settings` | `object` | All dimensional parameters | `{grid_columns: 15, ...}` |
+| `settings` | `object` | All dimensional parameters | `{grid_columns: 14, ...}` |
 | `shape_type` | `string` | `"card"` or `"cylinder"` | `"cylinder"` |
 | `cylinder_params` | `object` | Cylinder-specific parameters | `{diameter: 30.75, ...}` |
 | `per_line_language_tables` | `string[]` | Liblouis table used for each line | `["en-ueb-g1.ctb", ...]` |
@@ -1144,14 +1152,15 @@ if original_lines and row_num < len(original_lines):
 
 The BANA (Braille Authority of North America) auto-wrap algorithm intelligently wraps text across available rows while following braille formatting guidelines.
 
-**Source:** `templates/index.html` (lines 3391-3554)
+**Source:** `public/index.html` (`banaAutoWrap()`)
 
 ### Algorithm Principles
 
-1. **Word Preservation** — Avoid dividing words across lines when possible
-2. **Greedy Fitting** — Fill each line with as many words as will fit
-3. **Smart Breaks** — When a word must be split, prefer natural break points
-4. **Translation-Aware** — Calculate lengths after braille translation (not source text)
+1. **Newlines Are Hard Row Breaks** — The source is split on `\r?\n` first; each input line starts on a new row and is wrapped independently
+2. **Word Preservation** — Avoid dividing words across lines when possible
+3. **Greedy Fitting** — Fill each line with as many words as will fit
+4. **Smart Breaks** — When a word must be split, prefer natural break points
+5. **Translation-Aware** — Calculate lengths after braille translation (not source text), with the capitalization setting applied
 
 ### Preferred Break Points (Priority Order)
 
@@ -1205,43 +1214,30 @@ async function banaAutoWrap(src, cols, rows, tableName) {
         return Array.from(new Set(breaks)).sort((a,b) => a-b);
     }
 
-    // Translation helpers
+    // Translation helpers (capitalization setting applied, same as generation)
     async function translateLen(text) {
-        const b = await translateWithLiblouis(text, 'g2', tableName);
+        const b = await translateWithLiblouis(applyCapitalizationSetting(text), 'g2', tableName);
         return b.length;
     }
 
-    // Main wrapping loop
-    let remaining = normalizeSpaces(src);
-    const words = remaining.split(' ');
-    let currentText = '';
+    // 1. Split on user newlines: each input line is an independent paragraph
+    const paragraphs = String(src ?? '').split(/\r?\n/).map(normalizeSpaces);
+    // (trailing blank paragraphs dropped; blank lines in the middle keep a row)
 
-    for (let i = 0; i < words.length && textLines.length < rows; ) {
-        const word = words[i];
+    // 2. Word-wrap each paragraph in order, starting it on a new row:
+    //    - append words greedily while the translated candidate fits `cols`
+    //    - finalize the row and retry the word when it would overflow
+    //    - split overlong words at preferred breaks / syllable heuristics,
+    //      or return { error: true } when no BANA-safe split exists
+    //    The simulation continues up to rows + 8 so overflow warnings can
+    //    report an exact "needs N rows" figure (rowsNeededIsExact = false
+    //    when even that cap was hit).
 
-        // Try to append word to current line
-        const candidate = currentText ? `${currentText} ${word}` : word;
-        const candidateBrailleLen = await translateLen(candidate);
+    // 3. Warn when rowsNeeded > rows, identifying the input line where the
+    //    overflow starts. The phrase "extra content was not placed" is
+    //    load-bearing: the generate handler blocks on it (S0 gate).
 
-        if (candidateBrailleLen <= cols) {
-            currentText = candidate;
-            i++;
-            continue;
-        }
-
-        // Would overflow - finalize current line if it has content
-        if (currentText) {
-            textLines.push(currentText.trim());
-            brailleLines.push(await translateText(currentText.trim()));
-            currentText = '';
-            continue;  // Retry same word on new line
-        }
-
-        // Single word longer than a line - try to split
-        // ... (preferred breaks, syllable breaks, or error)
-    }
-
-    return { textLines, brailleLines, warnings };
+    return { textLines, brailleLines, warnings, rowsNeeded, rowsNeededIsExact };
 }
 ```
 
@@ -1250,88 +1246,75 @@ async function banaAutoWrap(src, cols, rows, tableName) {
 If a word cannot fit on a single line and has no valid break points:
 
 ```javascript
-// Source: templates/index.html (lines 3531-3534)
+// Source: public/index.html (banaAutoWrap > wrapParagraph)
 warnings.push(`Word "${word}" requires ${wordBrailleLen} cells but only ${cols} fit per row. ` +
               `It cannot be divided per BANA; increase columns/rows or use Manual Placement.`);
-return { error: true, warnings };
+return { error: true };
 ```
 
 ---
 
 ## 10. Overflow Detection and Warnings
 
+All warnings derive from the same per-row contract: the text-cell dial
+(`getAvailableColumns()`) per row and `grid_rows` rows. There are no
+independent whole-string or circumference-based cell counts; whether the
+dialed columns physically fit the cylinder is a separate live warning
+(`checkPhysicalFit()`, see `RECESS_INDICATOR_SPECIFICATIONS.md` and section
+3.6 of `SETTINGS_SCHEMA_CORE_SPECIFICATIONS.md`).
+
 ### Auto Mode Overflow Warning
 
-Real-time overflow detection as user types:
+Real-time, wrap-based detection as the user types (debounced 250 ms because
+each check is a series of async liblouis calls):
 
-**Source:** `templates/index.html` (lines 3587-3606)
+**Source:** `public/index.html` (`computeAutoOverflow()` / `computeAutoOverflowNow()`)
 
-```javascript
-async function computeAutoOverflow() {
-    autoWarning.style.display = 'none';
-    autoWarningMsg.textContent = '';
+1. Run the same `banaAutoWrap()` simulation generation uses (same
+   capitalization and number-sign transforms).
+2. If the wrap reports an unsplittable word, show that warning.
+3. If `rowsNeeded > grid_rows`, name each input line whose translation
+   exceeds one row and report the total:
 
-    const languageSelect = document.getElementById('language-table');
-    const tableName = languageSelect?.value || 'en-ueb-g1.ctb';
-    const src = (autoText?.value || '').trim();
-
-    if (!src) return;
-
-    try {
-        const braille = await translateWithLiblouis(src, 'g2', tableName);
-        const totalCellsNeeded = braille.length;
-        const totalCellsAvailable = getTotalCellsAvailable();
-
-        if (totalCellsNeeded > totalCellsAvailable) {
-            const over = totalCellsNeeded - totalCellsAvailable;
-            autoWarningMsg.textContent = `Text requires ${totalCellsNeeded} cells but only ` +
-                                         `${totalCellsAvailable} fit. Consider adding rows or reducing text.`;
-            autoWarning.style.display = '';
-        }
-    } catch (e) {
-        // Silent fail for overflow check
-    }
-}
 ```
+Line 1 ("Joshua Miele") needs 14 cells but 13 are available.
+Line 2 ("CAOS Founder") needs 15 cells but 13 are available.
+Your text needs 6 rows but the plate has 4.
+```
+
+4. Otherwise hide the warning — text that wraps cleanly into the available
+   rows is not an overflow, even if a single input line spans two rows.
+
+A stale-run token discards results that were superseded by newer input.
 
 ### Available Cells Calculation
 
 ```javascript
 function getAvailableColumns() {
-    return parseInt(document.getElementById('grid_columns').value) || 15;
-}
-
-function getTotalCellsAvailable() {
-    const rows = parseInt(document.getElementById('grid_rows').value) || 4;
-    const cols = getAvailableColumns();
-    return rows * cols;
+    // The UI dial shows usable text cells; use it directly for wrapping
+    return parseInt(document.getElementById('grid_columns').value) || 12;
 }
 ```
 
-### Cylinder Overflow Check
+### Cylinder Overflow Check (Manual Mode)
 
-For cylinder shapes, overflow is calculated based on circumference:
+For manual placement on cylinders, each line is translated with the same
+capitalization setting generation uses and compared per row against
+`getAvailableColumns()` — raw character counts and circumference-based cell
+capacity are not used:
 
-**Source:** `templates/index.html` (lines 3200-3238)
+**Source:** `public/index.html` (`checkCylinderOverflow()` / `checkCylinderOverflowNow()`)
 
 ```javascript
-function checkCylinderOverflow() {
-    const diameter = parseFloat(document.getElementById('cylinder_diameter_mm').value) || 30.75;
-    const height = parseFloat(document.getElementById('cylinder_height_mm').value) || 52;
-    const cellSpacing = parseFloat(document.getElementById('cell_spacing').value) || 6.5;
-    const lineSpacing = parseFloat(document.getElementById('line_spacing').value) || 10;
-
-    // Cells per row = circumference / cell spacing
-    const circumference = Math.PI * diameter;
-    const cellsPerRow = Math.floor(circumference / cellSpacing);
-
-    // Rows = height / line spacing
-    const rowsOnCylinder = Math.floor(height / lineSpacing);
-
-    const totalCellsAvailable = cellsPerRow * rowsOnCylinder;
-    // ... compare with needed cells
+// per line i (debounced, per-line language table honoured):
+const braille = await translateWithLiblouis(applyCapitalizationSetting(line), 'g2', perLineTable);
+if (braille.length > getAvailableColumns()) {
+    problems.push(`Line ${i + 1} ("${line}") needs ${braille.length} cells but ${cols} are available.`);
 }
 ```
+
+In auto mode this check defers to `computeAutoOverflow()` (which owns the
+auto warning box) so the two warnings can never disagree.
 
 ---
 
@@ -1339,7 +1322,7 @@ function checkCylinderOverflow() {
 
 ### LocalStorage Keys
 
-**Source:** `templates/index.html` (lines 3628-3640)
+**Source:** `public/index.html` (lines 3628-3640)
 
 | Key | Purpose | Values |
 |-----|---------|--------|
@@ -1352,7 +1335,7 @@ function checkCylinderOverflow() {
 
 ### Persistence Listeners
 
-**Source:** `templates/index.html` (lines 3793-3797)
+**Source:** `public/index.html` (lines 3793-3797)
 
 ```javascript
 function wirePersistenceListeners() {
@@ -1372,7 +1355,7 @@ function wirePersistenceListeners() {
 
 ### Apply Persisted Settings on Load
 
-**Source:** `templates/index.html` (lines 3669-3676)
+**Source:** `public/index.html` (lines 3669-3676)
 
 ```javascript
 function applyPersistedSettings() {
@@ -1405,7 +1388,7 @@ function applyPersistedSettings() {
 
 ### Language Select Styling
 
-**Source:** `templates/index.html` (lines 1111-1173)
+**Source:** `public/index.html` (lines 1111-1173)
 
 ```css
 .language-select {
@@ -1477,8 +1460,8 @@ function applyPersistedSettings() {
 
 | Component | Location | How Mode is Read |
 |-----------|----------|------------------|
-| Frontend UI | `templates/index.html` | `document.querySelector('input[name="placement_mode"]:checked')?.value` |
-| Form Submit | `templates/index.html` | Same as above, passed to `banaAutoWrap()` or per-line translation |
+| Frontend UI | `public/index.html` | `document.querySelector('input[name="placement_mode"]:checked')?.value` |
+| Form Submit | `public/index.html` | Same as above, passed to `banaAutoWrap()` or per-line translation |
 | Backend | `backend.py` | `data.get('placement_mode', 'manual')` |
 | Cache Key | `backend.py` | Included in `cache_payload` for positive plates |
 
@@ -1654,12 +1637,12 @@ This section documents the cross-check verification performed against actual imp
 
 | Component | File | Location | Status |
 |-----------|------|----------|--------|
-| Placement Mode Toggle HTML | `templates/index.html` | Lines 2019-2030 | ✅ VERIFIED |
-| Auto Placement Container | `templates/index.html` | Lines 2031-2038 | ✅ VERIFIED |
-| Dynamic Line Inputs | `templates/index.html` | Lines 3241-3268 | ✅ VERIFIED |
-| Language Selection Dropdown | `templates/index.html` | Lines 2045-2061 | ✅ VERIFIED |
-| syncLineLanguageSelects() | `templates/index.html` | Lines 3271-3285 | ✅ VERIFIED |
-| BANA Auto-Wrap Algorithm | `templates/index.html` | Lines 3391-3554 | ✅ VERIFIED |
+| Placement Mode Toggle HTML | `public/index.html` | Lines 2019-2030 | ✅ VERIFIED |
+| Auto Placement Container | `public/index.html` | Lines 2031-2038 | ✅ VERIFIED |
+| Dynamic Line Inputs | `public/index.html` | Lines 3241-3268 | ✅ VERIFIED |
+| Language Selection Dropdown | `public/index.html` | Lines 2045-2061 | ✅ VERIFIED |
+| syncLineLanguageSelects() | `public/index.html` | Lines 3271-3285 | ✅ VERIFIED |
+| BANA Auto-Wrap Algorithm | `public/index.html` | Lines 3391-3554 | ✅ VERIFIED |
 | Backend Request Parsing | `backend.py` | Lines 2094-2102 | ✅ VERIFIED |
 | Braille Unicode Validation | `backend.py` | Lines 745-756 | ✅ VERIFIED |
 | Original Lines for Indicators | `backend.py` | Lines 698-708 | ✅ VERIFIED |
