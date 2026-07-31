@@ -152,8 +152,8 @@ The **Capitalized Letters** toggle controls how capitals are handled:
 | Setting | Typical Value | Notes |
 |---------|--------------|-------|
 | Placement Mode | Auto Placement | Handles wrapping automatically |
-| Capitalized Letters | Disabled | Saves space (default) |
-| Language | English (UEB) — uncontracted | Clearest for labels |
+| Capitalized Letters | Disabled | Saves one cell per capital; the app default is Enabled |
+| Language | English (UEB) — contracted (grade 2) | The app default, per BANA's *Guidelines for Brailling Business Cards* |
 | Indicator Letters | On | Adds the first letter of each row in the indicator area so readers can identify rows |
 
 ### Expert Mode Settings
@@ -239,7 +239,7 @@ amoxicillin
 | Placement Mode | Auto Placement |
 | Capitalized Letters | Disabled |
 
-**Result:** 2 rows. "amoxicillin" uses 11 braille cells, within the default row capacity (13–14 text cells); abbreviate to "amox" if you add more per-row content.
+**Result:** 2 rows. "amoxicillin" is at most 11 braille cells (fewer once contracted), within the default row capacity (13–14 text cells); abbreviate to "amox" if you add more per-row content.
 
 ---
 
@@ -270,8 +270,8 @@ j. smith
 
 ### Notes on These Examples
 
-- **Capitalized Letters disabled (default):** The app converts text to lowercase automatically.
-- **Grade 1 uncontracted:** These examples assume Grade 1 (uncontracted) braille, which is clearest for labels.
+- **Capitalized Letters:** These examples disable the toggle, so the app converts text to lowercase before translating. The app default is Enabled.
+- **Grade 2 contracted:** The app defaults to contracted UEB. The cell counts quoted above are the uncontracted worst case, so a contracted translation of the same text fits the same row or better.
 - **Measure first, then type:** Always measure your container and check the Text Capacity section above before entering text.
 
 ---

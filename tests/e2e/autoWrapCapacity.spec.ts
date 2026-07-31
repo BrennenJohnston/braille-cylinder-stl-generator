@@ -16,9 +16,13 @@
  * - Capitalization defaults to Enabled; disabling it in Expert Mode saves the
  *   capital-indicator cells, which is exactly what makes this sample fit.
  *
- * Sample text (default visual mode, 13 text cells, 4 rows):
+ * Sample text (uncontracted UEB, default visual mode, 13 text cells, 4 rows):
  * - caps disabled: rows need 12/12/13/13 cells - fits, no warning
  * - caps enabled (default): lines 1-2 exceed 13 cells, 6 rows needed - warn
+ *
+ * That arithmetic is grade-dependent, so the sample test selects the
+ * uncontracted table explicitly rather than riding on whatever the app
+ * defaults to. The default itself is pinned by its own test below.
  *
  * @see docs/specifications/BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md
  */
@@ -26,6 +30,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
 const SAMPLE_TEXT = 'Joshua Miele\nCAOS Founder\njam@caos.org\n510.229.7918';
+const UNCONTRACTED_UEB = 'en-ueb-g1.ctb';
 
 /** Load the app and wait for the inline init script to settle. */
 async function openApp(page: Page) {
@@ -103,12 +108,21 @@ test.describe('Auto-placement capacity and wrapping', () => {
     await expect(page.locator('#capitalize_disabled')).not.toBeChecked();
   });
 
+  // BANA's Guidelines for Brailling Business Cards (March 2024) transcribes every
+  // worked example in contracted UEB, so that is what a first-time user gets.
+  test('the language table defaults to contracted UEB', async ({ page }) => {
+    await openApp(page);
+    await expect(page.locator('#language-table')).toHaveValue('en-ueb-g2.ctb');
+  });
+
   test('business card sample: per-line warning with caps, fits without', async ({ page }) => {
     await openApp(page);
 
     // Visual markers (the default): the dial recommends 13 text cells per row
     await expect(page.locator('#grid_columns')).toHaveValue('13');
 
+    // The cell counts below are uncontracted; pin the table so the default cannot move them.
+    await page.locator('#language-table').selectOption(UNCONTRACTED_UEB);
     await page.locator('#auto-text').fill(SAMPLE_TEXT);
 
     // Caps enabled (the default): the capital indicators push lines 1-2 past
