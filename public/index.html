@@ -2865,8 +2865,8 @@
                             </div>
                         </div>
                         <div class="preview-control-group">
-                            <button type="button" id="edges-toggle" class="font-size-btn preview-toggle-btn"
-                                    aria-pressed="false" aria-controls="viewer"
+                            <button type="button" id="edges-toggle" class="font-size-btn preview-toggle-btn active"
+                                    aria-pressed="true" aria-controls="viewer"
                                     title="Outline the model edges for a higher-contrast view">
                                 Edges
                             </button>
@@ -3803,7 +3803,7 @@
         const STL_EDGE_THRESHOLD_ANGLE = 22;
 
         let edgesOverlay = null;
-        let edgesVisible = false;
+        let edgesVisible = true;
 
         function getStlMaterialSettings(theme) {
             return STL_MATERIAL_SETTINGS[theme] || STL_MATERIAL_SETTINGS.default;
@@ -4319,7 +4319,9 @@
         // full triangle wireframe is deliberately not offered: a braille plate runs to
         // tens of thousands of facets and reads as noise.
         //
-        // Off by default and not persisted, matching how the theme is handled.
+        // On by default, because the outlines are what make the dot and marker
+        // shapes legible without relying on the shading. Not persisted, matching
+        // how the theme is handled: every load starts from the default.
 
         function disposeEdgesOverlay() {
             if (!edgesOverlay) return;
@@ -4329,8 +4331,8 @@
             edgesOverlay = null;
         }
 
-        // Built lazily: EdgesGeometry walks every triangle, so it is only paid for
-        // once the user actually asks for outlines.
+        // EdgesGeometry walks every triangle, so this is skipped entirely while
+        // the overlay is switched off rather than built and hidden.
         function refreshEdgesOverlay() {
             disposeEdgesOverlay();
             if (!edgesVisible || !mesh || !mesh.geometry) return;

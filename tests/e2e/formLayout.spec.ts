@@ -144,17 +144,20 @@ test.describe('Form column layout', () => {
 
     // The overlay is the low-vision escape hatch from lighting-dependent shading
     // (WCAG G174), so its pressed state has to be readable by assistive tech.
+    // It starts on, and the static markup has to say so: the button is styled
+    // pressed before any script runs.
     const edges = page.locator('#edges-toggle');
     await expect(edges).toBeVisible();
-    await expect(edges).toHaveAttribute('aria-pressed', 'false');
-
-    await edges.click();
     await expect(edges).toHaveAttribute('aria-pressed', 'true');
     await expect(edges).toHaveClass(/active/);
 
     await edges.click();
     await expect(edges).toHaveAttribute('aria-pressed', 'false');
     await expect(edges).not.toHaveClass(/active/);
+
+    await edges.click();
+    await expect(edges).toHaveAttribute('aria-pressed', 'true');
+    await expect(edges).toHaveClass(/active/);
   });
 
   test('lets the user set their own braille cell count without it being overwritten', async ({ page }) => {

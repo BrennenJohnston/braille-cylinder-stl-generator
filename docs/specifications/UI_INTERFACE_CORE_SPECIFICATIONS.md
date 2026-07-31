@@ -1018,7 +1018,7 @@ User-adjustable brightness, contrast, and edge-outline controls allow customizat
 |---------|---------|-------|---------|---------------|
 | **Brightness** | Adjusts overall light intensity | 1-5 | 3 (Normal) | Non-cycling; +/- buttons disable at min/max |
 | **Contrast** | Adjusts ambient vs directional light ratio | 1-5 | 3 (Normal) | Non-cycling; +/- buttons disable at min/max |
-| **Edges** | Draws feature-edge outlines over the shaded surface | On/Off | Off | `aria-pressed` toggle button |
+| **Edges** | Draws feature-edge outlines over the shaded surface | On/Off | On | `aria-pressed` toggle button |
 
 #### Brightness Levels
 
@@ -1080,8 +1080,8 @@ Shininess offsets are added to the per-theme `STL_MATERIAL_SETTINGS.shininess` b
     </div>
 
     <div class="preview-control-group">
-        <button type="button" id="edges-toggle" class="font-size-btn preview-toggle-btn"
-                aria-pressed="false" aria-controls="viewer"
+        <button type="button" id="edges-toggle" class="font-size-btn preview-toggle-btn active"
+                aria-pressed="true" aria-controls="viewer"
                 title="Outline the model edges for a higher-contrast view">
             Edges
         </button>
@@ -1301,14 +1301,19 @@ braille plate runs to tens of thousands of facets and reads as noise.
 `THREE.EdgesGeometry` with a threshold angle of 22° keeps dot silhouettes and
 plate corners while dropping the tessellation seams of the curved surface.
 
+The overlay is **on by default**, because the outlines are what make the dot and
+marker shapes legible without relying on the shading. The static markup carries
+`aria-pressed="true"` and the `active` class so the button is styled pressed
+before any script runs.
+
 ```javascript
 const STL_EDGE_THRESHOLD_ANGLE = 22;
 
 let edgesOverlay = null;
-let edgesVisible = false;
+let edgesVisible = true;
 
-// Built lazily: EdgesGeometry walks every triangle, so it is only paid for
-// once the user actually asks for outlines.
+// EdgesGeometry walks every triangle, so this is skipped entirely while the
+// overlay is switched off rather than built and hidden.
 function refreshEdgesOverlay() {
     disposeEdgesOverlay();
     if (!edgesVisible || !mesh || !mesh.geometry) return;
@@ -1375,7 +1380,7 @@ if (typeof updatePreviewDisplaySettings === 'function') {
 #### Non-Persistence Policy
 
 Brightness, contrast, and edge-outline settings are **not persisted** across sessions. This is consistent with the theme and font size policies:
-- Settings reset to defaults (level 3) on page load
+- Settings reset to defaults on page load (brightness and contrast to level 3, edge outlines to on)
 - Provides consistent starting experience for all users
 - Users with specific needs can quickly adjust as needed
 
