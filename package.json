@@ -41,7 +41,7 @@
     "three-mesh-bvh": "^0.9.13"
   },
   "devDependencies": {
-    "@playwright/test": "^1.61.1",
+    "@playwright/test": "^1.62.0",
     "vitest": "^4.1.10"
   }
 }
