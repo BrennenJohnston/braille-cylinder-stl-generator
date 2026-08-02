@@ -19,8 +19,12 @@ prioritize. The core question, per the Braille Authority of North America
 (BANA): *"Can someone identify me and contact me with just this information?"*
 If yes, you have enough.
 
-- Each row holds **13 braille cells of text** by default, and the generator
-  offers **4 lines** (`Line_1`–`Line_4`).
+- Each row holds **13 braille cells of text** by default. The generator offers
+  **10 lines** (`Line_1`–`Line_8` in the main tab, `Line_9`–`Line_10` under
+  **More Braille Lines (Advanced)**), though only the first `grid_rows` of them
+  are rendered — `grid_rows` defaults to **4**, which is the usual business-card
+  layout below. Raise it if you fill more lines; the generator warns you with
+  `TOO MANY LINES` if you forget.
 - BANA's typical four-line business card layout: **name**, **organization**,
   **phone number**, **e-mail address**. Job titles, mailing addresses, fax
   numbers, and websites are usually the first things to cut.
@@ -97,7 +101,10 @@ end of the first line is preferred; omit it only as a last resort. Tip: omit
    **only** `Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`.
 2. In the parameter panel:
    - Paste your Unicode braille into `Line_1`, `Line_2`, `Line_3`, `Line_4`
-     (leave unused lines empty). Do **not** type plain English.
+     (leave unused lines empty). Do **not** type plain English. Lines 5–8 are in
+     the same tab and lines 9–10 under **More Braille Lines (Advanced)**; if you
+     use any line past the fourth, raise `grid_rows` to match or that text will
+     not be rendered.
    - `paper_thickness_preset`: keep `0.4mm` (default) for typical card stock,
      `0.3mm` for thinner paper, or `Custom` to use your own slider values.
      Presets control dot and spacing dimensions; they never change the

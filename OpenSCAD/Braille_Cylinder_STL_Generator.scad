@@ -57,10 +57,14 @@
 // =============================================================================
 //  1. Translate your text at https://www.branah.com/braille-translator
 //  2. Paste pre-translated braille into Line_1, Line_2, etc.
-//  3. Choose plate_type: Embossing Plate or Counter Plate
-//  4. Choose dot_shape: Rounded or Cone (affects both plates)
-//  5. Adjust dimensions in Expert Mode if needed
-//  6. Render (F6) → File → Export → STL
+//  3. Raise grid_rows to at least the number of lines you filled in — only the
+//     first grid_rows lines are rendered, and a "TOO MANY LINES" warning tells
+//     you when text is being left off. Lines 9 and 10 live under the
+//     [More Braille Lines (Advanced)] tab.
+//  4. Choose plate_type: Embossing Plate or Counter Plate
+//  5. Choose dot_shape: Rounded or Cone (affects both plates)
+//  6. Adjust dimensions in Expert Mode if needed
+//  7. Render (F6) → File → Export → STL
 //
 // =============================================================================
 // PARAMETER ORGANIZATION
@@ -68,7 +72,8 @@
 //  Parameters are organized to match the web-based generator:
 //
 //  MAIN CONTROLS (always visible):
-//  • Text Input - Pre-Translated Braille
+//  • Text Input - Pre-Translated Braille (Line_1 - Line_8)
+//  • More Braille Lines (Advanced) (Line_9 - Line_10, the grid_rows maximum)
 //  • Plate Selection
 //
 //  EXPERT MODE (expandable submenus matching web UI):
@@ -108,8 +113,21 @@ Line_1 = "⠓⠑⠇⠇⠕"; // First line of braille text
 Line_2 = "⠺⠕⠗⠇⠙"; // Second line of braille text
 Line_3 = ""; // Third line of braille text
 Line_4 = ""; // Fourth line of braille text
+Line_5 = ""; // Fifth line of braille text
+Line_6 = ""; // Sixth line of braille text
+Line_7 = ""; // Seventh line of braille text
+Line_8 = ""; // Eighth line of braille text
 // Show TEXT TOO LONG warning and clip rows to the cell capacity. Off = render every pasted character (rows may crowd the seam).
 text_limit_check = "On"; // [On, Off]
+
+/* [More Braille Lines (Advanced)] */
+// Lines 9 and 10 reach the grid_rows maximum of 10. The Customizer cannot add
+// fields on demand, so these live in their own tab rather than lengthening the
+// text input above. Raise grid_rows under [Expert Mode - Braille Spacing] to
+// match, and give the cylinder the height to hold them: 10 rows at the default
+// 10 mm line_spacing needs about 100 mm.
+Line_9 = ""; // Ninth line of braille text
+Line_10 = ""; // Tenth line of braille text
 
 /* [Plate Selection] */
 // Choose which plate to generate
@@ -482,27 +500,44 @@ if (tactile_gap_too_small)
              tactile_indicator_width + TACTILE_MIN_GAP_MARGIN, " mm; the current layout leaves ",
              seam_gap_mm, " mm. Lower grid_columns or raise cylinder_diameter_mm."));
 
+// The braille text, in row order. This list is the single source of truth for
+// the content: every capacity check, warning, and geometry loop reads it, never
+// a Line_N name. Adding a row means declaring Line_N in the text input section
+// above, appending it here, and raising the grid_rows slider max to match.
+_all_lines = [Line_1, Line_2, Line_3, Line_4, Line_5,
+              Line_6, Line_7, Line_8, Line_9, Line_10];
+
 // Text-capacity check. Text capacity is always active_grid_columns; in Visual mode
 // the grid is widened by 2 marker cells when Indicator Letters are On, or by 1 (the
 // alignment triangle) when Off, and Tactile mode adds none, so text capacity is
 // unchanged in every case. The check (and row clipping) can be bypassed with
 // text_limit_check = "Off", which renders every pasted cell — rows may then crowd
 // the seam.
-max_line_len = max([len(Line_1), len(Line_2), len(Line_3), len(Line_4)]);
+max_line_len = max([for (l = _all_lines) len(l)]);
 text_too_long = (text_limit_check == "On") && (max_line_len > active_grid_columns);
+
+// Row-capacity check. Only the first active_grid_rows rows are ever rendered, so
+// text pasted into a line past that limit vanishes with nothing to show for it.
+// rows_used is the index of the last non-empty line + 1, which preserves blank
+// rows deliberately left between filled ones. Unlike the cell-capacity check this
+// is not gated on text_limit_check: extra rows cannot be rendered anyway, there is
+// no "draw it regardless" option to opt into.
+_filled_row_idx = [for (i = [0 : len(_all_lines) - 1]) if (len(_all_lines[i]) > 0) i];
+rows_used = len(_filled_row_idx) == 0 ? 0 : _filled_row_idx[len(_filled_row_idx) - 1] + 1;
+too_many_rows = rows_used > active_grid_rows;
 
 // Console diagnostics for desktop users (the MakerWorld customizer preview
 // cannot show console output — it relies on the extruded 3D warning text).
 if (text_limit_check == "On") {
-    if (len(Line_1) > active_grid_columns)
-        echo(str("WARNING: Line_1 uses ", len(Line_1), " cells; capacity is ", active_grid_columns, ". Raise grid_columns, split across rows, or set text_limit_check = Off."));
-    if (len(Line_2) > active_grid_columns)
-        echo(str("WARNING: Line_2 uses ", len(Line_2), " cells; capacity is ", active_grid_columns, ". Raise grid_columns, split across rows, or set text_limit_check = Off."));
-    if (len(Line_3) > active_grid_columns)
-        echo(str("WARNING: Line_3 uses ", len(Line_3), " cells; capacity is ", active_grid_columns, ". Raise grid_columns, split across rows, or set text_limit_check = Off."));
-    if (len(Line_4) > active_grid_columns)
-        echo(str("WARNING: Line_4 uses ", len(Line_4), " cells; capacity is ", active_grid_columns, ". Raise grid_columns, split across rows, or set text_limit_check = Off."));
+    for (i = [0 : len(_all_lines) - 1])
+        if (len(_all_lines[i]) > active_grid_columns)
+            echo(str("WARNING: Line_", i + 1, " uses ", len(_all_lines[i]), " cells; capacity is ", active_grid_columns, ". Raise grid_columns, split across rows, or set text_limit_check = Off."));
 }
+if (too_many_rows)
+    echo(str("WARNING: text reaches Line_", rows_used, " but grid_rows is ", active_grid_rows,
+             ", so Line_", active_grid_rows + 1, " onward will not be rendered. Raise grid_rows to ",
+             rows_used, " (the cylinder needs roughly ", rows_used * active_line_spacing,
+             " mm of height to hold that many rows)."));
 grid_height = (active_grid_rows - 1) * active_line_spacing;
 top_margin = (active_cylinder_height_mm - grid_height) / 2;
 
@@ -629,7 +664,9 @@ CYLINDER_SHELL_FN = 64;
 INVALID_TEXT_Z_OFFSET   = 5;   // mm above the cylinder top
 INVALID_TEXT_SIZE       = 5;   // text() font size in mm
 INVALID_TEXT_DEPTH      = 2;   // linear_extrude height in mm
-INVALID_TEXT_STACK_GAP  = 8;   // mm gap above INVALID CHARACTERS to stack TEXT TOO LONG
+// Pitch of the warning stack above INVALID CHARACTERS, one step per warning:
+// TEXT TOO LONG, TACTILE GAP TOO SMALL, then TOO MANY LINES.
+INVALID_TEXT_STACK_GAP  = 8;   // mm
 
 module indicator_triangle_2d(rotate_180 = false) {
     // Isosceles triangle with vertical base on LEFT, apex RIGHT (default).
@@ -899,8 +936,7 @@ module cylinder_emboss_plate() {
                 cylinder_shell(cutout_rotate_deg = -active_seam_offset_degrees);
 
                 // Check for invalid characters
-                invalid_found = has_invalid_chars(Line_1) || has_invalid_chars(Line_2) ||
-                               has_invalid_chars(Line_3) || has_invalid_chars(Line_4);
+                invalid_found = len([for (l = _all_lines) if (has_invalid_chars(l)) 1]) > 0;
                 
                 if (invalid_found) {
                     translate([0, 0, active_cylinder_height_mm/2 + INVALID_TEXT_Z_OFFSET])
@@ -923,23 +959,33 @@ module cylinder_emboss_plate() {
                 // TACTILE GAP TOO SMALL warning (Tactile mode only; no-op otherwise).
                 tactile_gap_warning();
 
+                // TOO MANY LINES warning (see top-level rows_used /
+                // too_many_rows). The dot loop below stops at active_grid_rows,
+                // so without this the text on the extra lines would simply not
+                // appear, with nothing on screen to say why.
+                if (too_many_rows) {
+                    translate([0, 0, active_cylinder_height_mm/2 + INVALID_TEXT_Z_OFFSET + 3 * INVALID_TEXT_STACK_GAP])
+                    color("red")
+                    linear_extrude(height = INVALID_TEXT_DEPTH)
+                    text(str("TOO MANY LINES: ", rows_used, "/", active_grid_rows), size = INVALID_TEXT_SIZE, halign = "center", valign = "center");
+                }
+
                 // Tactile mode: raised alignment arrows in the seam gap, one per row.
                 if (tactile_on) {
                     tactile_rows_raised();
                 }
 
-                // Create braille dots on cylinder surface
-                lines = [Line_1, Line_2, Line_3, Line_4];
-                
-                for (row = [0 : min(active_grid_rows - 1, len(lines) - 1)]) {
-                    if (len(lines[row]) > 0) {
+                // Create braille dots on cylinder surface. Rows past
+                // active_grid_rows are dropped; too_many_rows above warns first.
+                for (row = [0 : min(active_grid_rows - 1, len(_all_lines) - 1)]) {
+                    if (len(_all_lines[row]) > 0) {
                         y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
                         
                         // Clip each row to the cell capacity unless the user
                         // bypassed the limit (then render every pasted cell).
                         row_last_col = (text_limit_check == "Off")
-                            ? len(lines[row]) - 1
-                            : min(active_grid_columns - 1, len(lines[row]) - 1);
+                            ? len(_all_lines[row]) - 1
+                            : min(active_grid_columns - 1, len(_all_lines[row]) - 1);
                         for (col = [0 : row_last_col]) {
                             // Visual mode: shift past the marker columns — triangle
                             // (always) at col 0, plus the indicator letter square at
@@ -948,7 +994,7 @@ module cylinder_emboss_plate() {
                                          indicator_on ? (col + 2) : (col + 1);
                             angle_rad = start_angle + (actual_col * cell_spacing_angle);
                             angle_deg = angle_rad * 180 / PI;
-                            dots = get_dot_pattern(lines[row][col]);
+                            dots = get_dot_pattern(_all_lines[row][col]);
                             
                             for (i = [0:5]) {
                                 if (dots[i] == 1) {
