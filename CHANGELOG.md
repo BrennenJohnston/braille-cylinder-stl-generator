@@ -19,6 +19,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `tests/e2e/brailleField.spec.ts` and `tests/e2e/tactileIndicator.spec.ts` — end-to-end coverage asserting on the payload actually sent to `/geometry_spec`, so the "used verbatim" and column-arithmetic contracts cannot regress silently.
 
 ### Changed
+- **Vendored OpenSCAD copy refreshed to upstream v2.5.0** (was v2.4.1). The offline
+  download in `OpenSCAD/` now carries `Line_5`–`Line_10`, closing a gap where the
+  Customizer's `grid_rows` slider allowed up to 10 rows but only four text fields
+  existed — the web app has grown its line list dynamically all along, so the offline
+  copy was the odd one out. `Line_9` and `Line_10` are in a separate
+  `[More Braille Lines (Advanced)]` tab because OpenSCAD cannot add fields on demand.
+  Upstream also added a `TOO MANY LINES: n/grid_rows` warning for braille typed past
+  the row limit, which previously disappeared from the exported STL with nothing to
+  say so; the web app blocks that case before generation instead. `VENDORED.json`,
+  the three changed files' hashes, and `OpenSCAD/README.md` are updated together, so
+  `tests/test_vendored_openscad.py` still pins the copy to a resolvable release.
 - **The default translation is now English (UEB) contracted, grade 2.** BANA's *Guidelines for Brailling Business Cards* (approved March 2024) tells transcribers to "Follow *The Rules of Unified English Braille*" and transcribes all nine of its worked examples in contracted UEB, so uncontracted was never the BANA-aligned choice — and contractions buy back cells on a 13-cell row, which is the constraint the whole guide is about. `en-ueb-g2.ctb` is now the selected option, the value every fallback in `public/index.html` resolves to (via a single `DEFAULT_LANGUAGE_TABLE` constant), the per-line default in manual mode, the Reset-to-defaults value, the liblouis worker's fallback when no table is named, and the documented `text.default_language` default in `settings.schema.json`. The help text, the Business Card Guide, the Cylinder Guide, the in-app help panels, and the language/translation specifications were all rewritten to match, including the "what to type" example hints that used to be labelled Grade 1.
 - **A saved language choice now survives a reload.** The page used to overwrite the restored `braille_prefs_language_table` value with the hard default on every load, so changing tables never stuck past a refresh. The default is now the first-run value only.
 - **The 3D preview is matte instead of glossy.** Shininess drops from 200 to 30 (standard themes) and from 300 with a white specular to 60 with `#333333` (high contrast), matching how PrusaSlicer, Cura, and MeshLab present an STL. The old values threw broad highlights across the plate that swallowed the dot geometry the preview exists to show; the three-point lighting carries the form instead, and the high-contrast cyan-on-black look is unchanged apart from losing the blown-out mirror. The Contrast stepper's shininess offsets were rescaled from `-40 … +220` to `-15 … +60` to suit the new base, and the `Math.max(50, …)` floor that would have defeated it is gone. Brightness levels are untouched. The material is now defined once in `STL_MATERIAL_SETTINGS` rather than duplicated across three call sites.

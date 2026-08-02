@@ -29,7 +29,29 @@ The OpenSCAD version has been updated to match the web-based generator's UI para
 | `Line_2` | Line 2 text input | Must be pre-translated Unicode braille |
 | `Line_3` | Line 3 text input | Must be pre-translated Unicode braille |
 | `Line_4` | Line 4 text input | Must be pre-translated Unicode braille |
+| `Line_5` | Line 5 text input | Must be pre-translated Unicode braille |
+| `Line_6` | Line 6 text input | Must be pre-translated Unicode braille |
+| `Line_7` | Line 7 text input | Must be pre-translated Unicode braille |
+| `Line_8` | Line 8 text input | Must be pre-translated Unicode braille |
 | `text_limit_check` | *(OpenSCAD-only)* | `"On"` (default) shows the `TEXT TOO LONG` warning and clips rows to the cell capacity; `"Off"` renders every pasted cell (rows may crowd the seam). The web app validates cell counts before generation instead. |
+
+### More Braille Lines (Advanced)
+
+`grid_rows` goes up to 10, but the Customizer cannot add input fields on demand
+the way the web app grows its line list. Showing all ten at once would push the
+other tabs off screen for the common case, so the last two live in their own
+collapsed tab. Parameter names are unchanged, so presets and `-D` overrides
+that set `Line_9` / `Line_10` keep working regardless of which tab they display in.
+
+| OpenSCAD Parameter | Web App Equivalent | Notes |
+|--------------------|-------------------|-------|
+| `Line_9` | Line 9 text input | Must be pre-translated Unicode braille; raise `grid_rows` to 9 or more to render it |
+| `Line_10` | Line 10 text input | Must be pre-translated Unicode braille; raise `grid_rows` to 10 to render it |
+
+Only the first `grid_rows` lines are rendered. Filling a line beyond that limit
+triggers a `TOO MANY LINES: n/grid_rows` warning — a console `echo()` plus red
+text above the cylinder for the MakerWorld preview, which has no console. The
+web app blocks the same case before generation instead of warning after.
 
 ### Plate Selection
 | OpenSCAD Parameter | Web App Equivalent | Values |
@@ -91,7 +113,7 @@ user switches preset.
 | OpenSCAD Parameter | Web App Equivalent | Default | Range |
 |--------------------|-------------------|---------|-------|
 | `grid_columns` | Number of Braille Cells | 13 | 1-20 |
-| `grid_rows` | Number of Braille Lines | 4 | 1-10 |
+| `grid_rows` | Number of Braille Lines | 4 | 1-10 (every row has a `Line_N` field; 9 and 10 are under the Advanced tab) |
 | `cell_spacing` | Braille Cell Spacing | 6.5 mm | 2-15 mm |
 | `line_spacing` | Braille Line Spacing | 10.0 mm | 5-25 mm |
 | `dot_spacing` | Braille Dot Spacing | 2.5 mm | 1-5 mm |
