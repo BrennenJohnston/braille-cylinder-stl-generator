@@ -236,6 +236,23 @@ class CardSettings:
             'tactile_indicator_raise': 0.5,
             'tactile_recess_clearance': 0.2,
             'tactile_recess_extra_depth': 0.2,
+            # Double-sided (interpoint) BETA. Flat runtime names for the
+            # settings.schema.json "double_sided" object; 0 = off, which leaves
+            # every single-sided code path exactly as it is today.
+            'double_sided_enabled': 0,
+            # Back grid shift: x around the cylinder, y along its axis.
+            # app/geometry/interpoint.py calls this same y number offset_z.
+            'interpoint_offset_x': 1.25,
+            'interpoint_offset_y': 1.25,
+            # Double-sided dots are smaller than single-sided ones because a dot
+            # and a neighbouring back-side recess share one surface: 1.2 dot in
+            # a 1.3 bowl leaves 0.518 mm of printable material between them.
+            'ds_dot_base_diameter': 1.2,
+            'ds_dot_base_height': 0.4,
+            'ds_dot_dome_diameter': 0.8,
+            'ds_dot_dome_height': 0.4,
+            'ds_bowl_base_diameter': 1.3,
+            'ds_bowl_depth': 0.5,
         }
 
         # Set attributes from kwargs or defaults, while being tolerant of "empty" inputs
@@ -262,6 +279,10 @@ class CardSettings:
         # Ensure attributes that represent counts are integers
         self.grid_columns = int(self.grid_columns)
         self.grid_rows = int(self.grid_rows)
+        # Double-sided beta toggle stored as 0/1 like the other toggles below.
+        # The loop above already floated it and raises on junk, so a bad value
+        # surfaces there rather than being quietly read as "off".
+        self.double_sided_enabled = int(self.double_sided_enabled)
         # Normalize boolean-like toggles stored as numbers
         try:
             self.use_rounded_dots = int(float(kwargs.get('use_rounded_dots', self.use_rounded_dots)))

@@ -22,6 +22,11 @@
           "type": "array",
           "items": { "type": "string", "pattern": "^[\\u2800-\\u28FF\\s]*$" }
         },
+        "back_lines": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[\\u2800-\\u28FF\\s]*$" },
+          "description": "BETA, double-sided mode only: the braille for the BACK face of the card. Same Unicode braille rule as 'lines'. Ignored unless double_sided.enabled is true."
+        },
         "languages": { "type": "array", "items": { "type": "string" } },
         "default_language": { "type": "string", "default": "en-ueb-g2.ctb" },
         "original_lines": { "type": "array", "items": { "type": "string" } },
@@ -164,6 +169,23 @@
         "use_client_side_csg": { "type": "boolean", "default": true },
         "use_manifold_repair": { "type": "boolean", "default": true },
         "file_name_prefix": { "type": "string" }
+      }
+    },
+
+    "double_sided": {
+      "type": "object",
+      "description": "BETA: double-sided (interpoint) cylinder pair. When enabled, Cylinder A (plate_type positive) carries the card FRONT's raised dots plus 1:1 recesses for the BACK's dots, and Cylinder B (plate_type negative) carries the BACK's raised dots plus 1:1 recesses for the FRONT's - no universal all-position counter grid. The back grid is shifted diagonally from the front grid so front and back paper domes never cancel. Cylinder only, and tactile row indicators only. See INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": false, "description": "BETA feature toggle, default false. false preserves today's single-sided behavior exactly: no geometry, warnings, or output files change. true generates the paired A/B cylinders described above and requires text.back_lines." },
+        "interpoint_offset_x_mm": { "type": "number", "minimum": 1.15, "maximum": 1.35, "default": 1.25, "description": "Back-grid shift measured around the cylinder (arc length, mm). Default 1.25 is the published interpoint offset (US Patent 5,527,117), which maximises the smallest front-to-back dot-centre distance (1.76777 mm) on the 2.5/6.5/10.0 grid. The 1.15-1.35 range keeps the same-surface dot-to-recess gap above the 0.34 mm printability floor - see INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md." },
+        "interpoint_offset_y_mm": { "type": "number", "minimum": 1.15, "maximum": 1.35, "default": 1.25, "description": "Back-grid shift measured along the cylinder axis (mm). Default 1.25 is the published interpoint offset (US Patent 5,527,117); the 1.15-1.35 range keeps the same-surface dot-to-recess gap above the 0.34 mm printability floor - see INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md. Naming bridge: app/geometry/interpoint.py calls this same number offset_z (INTERPOINT_OFFSET_Z_MM) because its card frame uses z for the axial axis." },
+        "ds_dot_base_diameter_mm": { "type": "number", "minimum": 0.5, "maximum": 3.0, "default": 1.2, "description": "Double-sided mode only: rounded emboss dot base diameter (mm). Smaller than the single-sided default because a dot and a neighbouring back-side recess share one surface; 1.2 with a 1.3 bowl leaves 0.518 mm of material between them. Single-sided mode is unaffected." },
+        "ds_dot_base_height_mm": { "type": "number", "minimum": 0.0, "maximum": 2.0, "default": 0.4, "description": "Double-sided mode only: height of the dot's rounded base below the dome (mm)." },
+        "ds_dot_dome_diameter_mm": { "type": "number", "minimum": 0.5, "maximum": 3.0, "default": 0.8, "description": "Double-sided mode only: diameter where the dome meets the base (mm)." },
+        "ds_dot_dome_height_mm": { "type": "number", "minimum": 0.1, "maximum": 2.0, "default": 0.4, "description": "Double-sided mode only: dome height above the base (mm). Total dot height is ds_dot_base_height_mm + ds_dot_dome_height_mm = 0.8 mm at the defaults." },
+        "ds_bowl_base_diameter_mm": { "type": "number", "minimum": 0.5, "maximum": 5.0, "default": 1.3, "description": "Double-sided mode only: diameter of the paired bowl recess that receives the opposing cylinder's dot (mm)." },
+        "ds_bowl_depth_mm": { "type": "number", "minimum": 0.0, "maximum": 5.0, "default": 0.5, "description": "Double-sided mode only: depth of the paired bowl recess (mm). The dot dips (dot height - surface gap) into it at the nip, so depths below the dip make the two cylinders intersect." }
       }
     }
   },
