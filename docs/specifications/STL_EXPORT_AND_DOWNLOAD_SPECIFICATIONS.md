@@ -716,19 +716,26 @@ if (isCylinder) {
 ### Naming Pattern
 
 ```
-Embossing_Cylinder_{preset}_{name}.stl
-Counter_Cylinder_{preset}_{name}.stl
+Embossing_Cylinder_{preset}_{name}.stl     (single-sided, plate_type positive)
+Counter_Cylinder_{preset}_{name}.stl       (single-sided, plate_type negative)
+Cylinder_A_{preset}_{name}.stl             (double-sided beta, plate_type positive)
+Cylinder_B_{preset}_{name}.stl             (double-sided beta, plate_type negative)
 ```
 
 Both plates of a pair therefore differ only in their first word, and both carry the print
 settings and the content in the name — so a folder of downloads stays sortable and a plate
 can be matched to the counter plate it was designed against without opening either file.
 
+When the Double-Sided Card beta is on (cylinder shape only), the pair is named with the
+beta's Cylinder A / Cylinder B vocabulary instead. The single-sided prefixes are frozen:
+public training videos reference them, so the A/B naming applies to the double-sided flow
+only.
+
 ### Components
 
 | Component | Source | Values |
 |-----------|--------|--------|
-| Prefix | `plate_type` | `Embossing_Cylinder` (positive) or `Counter_Cylinder` (negative) |
+| Prefix | `plate_type` + double-sided toggle | Single-sided: `Embossing_Cylinder` (positive) or `Counter_Cylinder` (negative). Double-sided beta: `Cylinder_A` (positive) or `Cylinder_B` (negative) |
 | `{preset}` | Selected Card Thickness preset | `0.4`, `0.3`, or `Custom` (the custom option has no single numeric value) |
 | `{name}` | First word of the source text, sanitized | `brennen`, `cinnamon`, … or `untitled` |
 
@@ -759,11 +766,17 @@ function sanitizeFilenameWord(word) {
         .replace(/^_+|_+$/g, '');      // Trim leading/trailing underscores
 }
 
-async function buildStlFilename(plateType) {
-    const prefix = plateType === 'positive' ? 'Embossing_Cylinder' : 'Counter_Cylinder';
+async function buildStlFilename(plateType, doubleSided = false) {
+    const prefix = doubleSided
+        ? (plateType === 'positive' ? 'Cylinder_A' : 'Cylinder_B')
+        : (plateType === 'positive' ? 'Embossing_Cylinder' : 'Counter_Cylinder');
     return `${prefix}_${getThicknessPresetSegment()}_${await deriveStlNameSegment()}.stl`;
 }
 ```
+
+`doubleSided` receives the generate handler's `doubleSidedOn` flag (toggle checked AND
+shape cylinder), so a card generated with the checkbox stuck on can never pick up an A/B
+name.
 
 ### Examples
 
@@ -775,6 +788,8 @@ async function buildStlFilename(plateType) {
 | Embossing | Custom | "amoxicillin" | `Embossing_Cylinder_Custom_amoxicillin.stl` |
 | Embossing | 0.4 | ⠓⠑⠇⠇⠕ pasted, no text | `Embossing_Cylinder_0.4_hello.stl` (back-translated) |
 | Counter | 0.4 | nothing entered | `Counter_Cylinder_0.4_untitled.stl` |
+| Cylinder A (double-sided) | 0.4 | front "abc", back "def" | `Cylinder_A_0.4_abc.stl` |
+| Cylinder B (double-sided) | 0.4 | front "abc", back "def" | `Cylinder_B_0.4_abc.stl` (named from the front text, keeping the pair together) |
 
 ---
 
@@ -1303,6 +1318,7 @@ async function test_geometry_consistency() {
 | 1.2 | 2024-12-08 | **BUG FIX:** Manifold worker integration. Cylinders now use `csg-worker-manifold.js` for guaranteed manifold output. Added dual-worker architecture with automatic shape-based routing. |
 | 1.3 | 2024-12-08 | **NO FALLBACK ENFORCEMENT:** Removed fallback from Manifold to standard worker for cylinders. Cylinder generation now requires Manifold worker; displays error if unavailable. Updated Sections 9 and 12. |
 | 1.4 | 2026-07-30 | **FILE NAMING:** Replaced `Embossing_Plate_{word}` / `Universal_Counter_Plate_{counter}` with `Embossing_Cylinder_{preset}_{name}` / `Counter_Cylinder_{preset}_{name}`. The session counter is gone; counter plates are named from the same text, and braille-only input is back-translated for the name. Rewrote Section 7. |
+| 1.5 | 2026-08-16 | **DOUBLE-SIDED NAMING (Phase 09):** When the Double-Sided Card beta is on, downloads are named `Cylinder_A_{preset}_{name}` (positive) / `Cylinder_B_{preset}_{name}` (negative); both take `{name}` from the front text. Single-sided names unchanged. Updated Section 7; covered by tests/e2e/doubleSided.spec.ts. |
 
 ---
 

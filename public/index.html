@@ -4575,6 +4575,9 @@
         // first word of the source text. Braille pasted straight into the
         // Braille (Unicode) field has no English source, so it is back-translated
         // for the name; `untitled` is the last resort.
+        // Double-sided beta pairs are named Cylinder_A_{preset}_{name}.stl
+        // (embossing) and Cylinder_B_{preset}_{name}.stl (counter) instead —
+        // the single-sided names stay untouched (training videos depend on them).
         function getThicknessPresetSegment() {
             const value = document.querySelector('input[name="card_thickness_preset"]:checked')?.value || '0.4';
             return value === 'custom' ? 'Custom' : value;
@@ -4623,8 +4626,10 @@
             return 'untitled';
         }
 
-        async function buildStlFilename(plateType) {
-            const prefix = plateType === 'positive' ? 'Embossing_Cylinder' : 'Counter_Cylinder';
+        async function buildStlFilename(plateType, doubleSided = false) {
+            const prefix = doubleSided
+                ? (plateType === 'positive' ? 'Cylinder_A' : 'Cylinder_B')
+                : (plateType === 'positive' ? 'Embossing_Cylinder' : 'Counter_Cylinder');
             return `${prefix}_${getThicknessPresetSegment()}_${await deriveStlNameSegment()}.stl`;
         }
 
@@ -7817,7 +7822,7 @@
                 if (lastSTLUrl) URL.revokeObjectURL(lastSTLUrl);
                 lastSTLUrl = URL.createObjectURL(blob);
 
-                const filename = await buildStlFilename(plateType);
+                const filename = await buildStlFilename(plateType, doubleSidedOn);
 
                 // Store the generated STL URL and filename for download
                 lastGeneratedSTLUrl = lastSTLUrl;
