@@ -1,14 +1,15 @@
 """
 Validation gates for the double-sided (interpoint) beta — Phase 06.
 
-app/validation.py now enforces three hard gates at request time (until this
+app/validation.py now enforces four hard gates at request time (until this
 phase, the double-sided ranges in settings.schema.json were documentation
 only): a double-sided request must use the tactile row indicator style, the
-interpoint offsets must stay inside [1.15, 1.35] mm, and the same-surface gap
-— the material between a raised dot and the nearest back-side recess sharing
-one cylinder surface — must clear the 0.34 mm slicer floor. The marginal band
-(0.34–0.50 mm) stays a soft path: validation logs it and geometry_spec returns
-the user-facing warning.
+interpoint offsets must stay inside [1.15, 1.35] mm, the six ds_* footprint
+values must stay inside their documented schema ranges, and the same-surface
+gap — the material between a raised dot and the nearest back-side recess
+sharing one cylinder surface — must clear the 0.34 mm slicer floor. The
+marginal band (0.34–0.50 mm) stays a soft path: validation logs it and
+geometry_spec returns the user-facing warning.
 
 Reference gap numbers (tolerance ±0.001 mm, 2026-08-16 research): Option B
 dot 1.2 + bowl 1.3 → 0.518 (clean pass); dot 1.2 + bowl 1.5 → 0.418 (warn);
@@ -108,7 +109,56 @@ def test_out_of_range_offset_is_rejected_with_the_range_quoted(key, value):
 
 
 # -----------------------------------------------------------------------------
-# Gate 3: same-surface gap
+# Gate 3: ds_* footprint schema ranges
+# -----------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ('key', 'bad_value'),
+    [
+        ('ds_dot_base_diameter', 0.4),
+        ('ds_dot_base_diameter', 3.1),
+        ('ds_dot_base_height', -0.1),
+        ('ds_dot_base_height', 2.1),
+        ('ds_dot_dome_diameter', 0.4),
+        ('ds_dot_dome_diameter', 3.1),
+        ('ds_dot_dome_height', 0.05),
+        ('ds_dot_dome_height', 2.1),
+        ('ds_bowl_base_diameter', 0.4),
+        ('ds_bowl_base_diameter', 5.1),
+        ('ds_bowl_depth', -0.1),
+        ('ds_bowl_depth', 5.1),
+    ],
+)
+def test_out_of_range_footprint_is_rejected_with_the_range_quoted(key, bad_value):
+    """The six ds_* schema ranges are enforced whenever the beta is on."""
+    with pytest.raises(ValidationError) as excinfo:
+        validate_settings(_ds_settings(**{key: bad_value}))
+    message = str(excinfo.value)
+    assert f'{key}_mm' in message  # canonical settings.schema.json spelling
+    assert 'between' in message
+    assert excinfo.value.details['key'] == key
+
+
+def test_footprint_boundaries_are_accepted():
+    """Schema min/max values that also clear the gap floor pass validation."""
+    assert (
+        validate_settings(
+            _ds_settings(
+                ds_dot_base_diameter=0.5,
+                ds_dot_base_height=2.0,
+                ds_dot_dome_diameter=3.0,
+                ds_dot_dome_height=0.1,
+                ds_bowl_base_diameter=0.5,
+                ds_bowl_depth=5.0,
+            )
+        )
+        is True
+    )
+
+
+# -----------------------------------------------------------------------------
+# Gate 4: same-surface gap
 # -----------------------------------------------------------------------------
 
 
@@ -138,13 +188,14 @@ def test_marginal_gap_warns_but_passes(caplog):
 
 @pytest.mark.parametrize('enabled', [0, '0', False, None, '', 'absent'])
 def test_disabled_flag_skips_every_double_sided_check(enabled):
-    """With the beta off, a config that would fail all three gates still passes."""
+    """With the beta off, a config that would fail all four gates still passes."""
     settings = {
         'indicator_mode': 'visual',
         'interpoint_offset_x': 9.0,
         'interpoint_offset_y': 0.1,
         'ds_dot_base_diameter': 1.5,
         'ds_bowl_base_diameter': 1.8,
+        'ds_bowl_depth': 9.9,
     }
     if enabled != 'absent':
         settings['double_sided_enabled'] = enabled

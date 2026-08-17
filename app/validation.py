@@ -263,17 +263,24 @@ def validate_double_sided_settings(settings_data: dict) -> bool:
     first RUNTIME enforcement of the double-sided ranges: the minimum/maximum
     values in settings.schema.json are documentation only.
 
-    Three gates:
+    Four gates:
     1. The row indicator style must be tactile (the beta has no marker columns
        to spare and no visual side to read them on).
     2. interpoint offsets must stay inside [INTERPOINT_OFFSET_MIN_MM,
        INTERPOINT_OFFSET_MAX_MM] (1.15-1.35 mm).
-    3. The same-surface gap - material between a raised dot and the nearest
+    3. The six ds_* footprint values must stay inside their documented
+       settings.schema.json ranges (the range literals below mirror the
+       schema, the same way the allowed_settings table above mirrors it -
+       change both in the same commit).
+    4. The same-surface gap - material between a raised dot and the nearest
        back-side recess sharing one cylinder surface - must clear
        SAME_SURFACE_GAP_FLOOR_MM (0.34 mm, what a 0.4 mm nozzle can lay down).
        The marginal band up to SAME_SURFACE_GAP_RELIABLE_MM (0.50 mm) is NOT
        rejected here: geometry_spec.py returns it as a soft warning in the
        spec's warnings array and the UI shows it live; this function only logs.
+
+    User-facing message wording signed off by Brennen (2026-08-16); reword
+    only with his sign-off.
 
     Args:
         settings_data: Settings dictionary from the request (flat CardSettings
@@ -300,7 +307,6 @@ def validate_double_sided_settings(settings_data: dict) -> bool:
 
     indicator_mode = str(settings_data.get('indicator_mode', 'visual')).strip().lower()
     if indicator_mode != 'tactile':
-        # REVIEW-BRENNEN: user-facing error wording (beta tactile lock).
         raise ValidationError(
             'Double-sided mode is a beta that requires the tactile row indicator style: '
             "set the Row Indicator Style to 'Tactile seam arrow' (indicator_mode 'tactile') "
@@ -315,7 +321,6 @@ def validate_double_sided_settings(settings_data: dict) -> bool:
     ):
         value = _double_sided_number(settings_data, flat_key, schema_name, default)
         if not (interpoint.INTERPOINT_OFFSET_MIN_MM <= value <= interpoint.INTERPOINT_OFFSET_MAX_MM):
-            # REVIEW-BRENNEN: user-facing error wording (interpoint offset range).
             raise ValidationError(
                 f"Setting '{schema_name}' must be between {interpoint.INTERPOINT_OFFSET_MIN_MM} and "
                 f'{interpoint.INTERPOINT_OFFSET_MAX_MM} mm; received {value}.',
@@ -328,18 +333,24 @@ def validate_double_sided_settings(settings_data: dict) -> bool:
             )
         offsets[flat_key] = value
 
-    dot_diameter = _double_sided_number(
-        settings_data,
-        'ds_dot_base_diameter',
-        'double_sided.ds_dot_base_diameter_mm',
-        interpoint.DS_DOT_BASE_DIAMETER_MM,
-    )
-    bowl_diameter = _double_sided_number(
-        settings_data,
-        'ds_bowl_base_diameter',
-        'double_sided.ds_bowl_base_diameter_mm',
-        interpoint.DS_BOWL_DIAMETER_MM,
-    )
+    footprints: dict[str, float] = {}
+    for flat_key, schema_name, default, min_val, max_val in (
+        ('ds_dot_base_diameter', 'double_sided.ds_dot_base_diameter_mm', interpoint.DS_DOT_BASE_DIAMETER_MM, 0.5, 3.0),
+        ('ds_dot_base_height', 'double_sided.ds_dot_base_height_mm', interpoint.DS_DOT_BASE_HEIGHT_MM, 0.0, 2.0),
+        ('ds_dot_dome_diameter', 'double_sided.ds_dot_dome_diameter_mm', interpoint.DS_DOT_DOME_DIAMETER_MM, 0.5, 3.0),
+        ('ds_dot_dome_height', 'double_sided.ds_dot_dome_height_mm', interpoint.DS_DOT_DOME_HEIGHT_MM, 0.1, 2.0),
+        ('ds_bowl_base_diameter', 'double_sided.ds_bowl_base_diameter_mm', interpoint.DS_BOWL_DIAMETER_MM, 0.5, 5.0),
+        ('ds_bowl_depth', 'double_sided.ds_bowl_depth_mm', interpoint.DS_BOWL_DEPTH_MM, 0.0, 5.0),
+    ):
+        value = _double_sided_number(settings_data, flat_key, schema_name, default)
+        if not (min_val <= value <= max_val):
+            raise ValidationError(
+                f"Setting '{schema_name}' must be between {min_val} and {max_val} mm; received {value}.",
+                {'key': flat_key, 'value': value, 'min': min_val, 'max': max_val},
+            )
+        footprints[flat_key] = value
+    dot_diameter = footprints['ds_dot_base_diameter']
+    bowl_diameter = footprints['ds_bowl_base_diameter']
     # Grid defaults mirror app/models.py CardSettings; spacing defaults are the
     # canonical 2.5 / 6.5 / 10.0 already mirrored in interpoint.py. The tactile
     # lock above guarantees zero reserved marker columns, so grid_columns is the
@@ -367,7 +378,6 @@ def validate_double_sided_settings(settings_data: dict) -> bool:
         line_spacing,
     )
     if same_surface_gap < interpoint.SAME_SURFACE_GAP_FLOOR_MM:
-        # REVIEW-BRENNEN: user-facing error wording (same-surface crowding reject).
         raise ValidationError(
             f'Double-sided crowding: a {dot_diameter:.2f} mm dot next to a {bowl_diameter:.2f} mm recess at the '
             f'{offsets["interpoint_offset_x"]:.2f} / {offsets["interpoint_offset_y"]:.2f} mm interpoint offset '

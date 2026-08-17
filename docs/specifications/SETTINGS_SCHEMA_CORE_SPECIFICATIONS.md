@@ -328,9 +328,13 @@ the `minimum`/`maximum` values in settings.schema.json are documentation only:
   public/index.html, status region `#ds-gap-warning`). Reference values at offsets
   1.25/1.25: Option B dot 1.2 + bowl 1.3 → 0.518 mm (clean); dot 1.2 + bowl 1.5 →
   0.418 mm (warn); single-sided dot 1.5 + bowl 1.8 → 0.118 mm (reject).
-- Not yet enforced at runtime: the individual `ds_*` footprint diameter/height and
-  `ds_bowl_depth_mm` schema ranges (only the offsets and the resulting gap are
-  gated).
+- The six `ds_*` footprint values must stay inside their schema ranges
+  (`ds_dot_base_diameter_mm` 0.5–3.0, `ds_dot_base_height_mm` 0.0–2.0,
+  `ds_dot_dome_diameter_mm` 0.5–3.0, `ds_dot_dome_height_mm` 0.1–2.0,
+  `ds_bowl_base_diameter_mm` 0.5–5.0, `ds_bowl_depth_mm` 0.0–5.0); out-of-range
+  values are rejected with the range quoted. Like the rest of these gates this
+  fires only when the beta is on; the range literals in `validate_double_sided_settings()`
+  mirror this schema and must change with it in the same commit.
 
 See feature specs for detailed constraints and formulas.
 
@@ -487,4 +491,4 @@ Before completing any task involving settings:
 - 2026-07-29 — Added `indicators.indicator_mode` and the five `indicators.tactile_*` dimensions for the tactile row indicator ported from the OpenSCAD version (Section 3.6), and noted the Braille (Unicode) field's effect on `text.lines` / `text.original_lines` (Section 3.1).
 - 2026-07-30 — Changed `indicators.tactile_indicator_length` to 10.0 and `indicators.tactile_indicator_raise` to 0.5; recorded that both Card Thickness presets now carry all five tactile dimensions, and documented where each indicator control lives in the UI (Section 3.6).
 - 2026-07-31 — Changed `spacing.grid_columns` default from 14 to 15 and the per-mode text-cell recommendations to 13 visual (either toggle state) and 14 tactile (Sections 3.3 and 3.6); replaced the visual-mode physical-fit warning rule with the dot-footprint threshold `dot_spacing + max(rounded_dot_base_diameter, emboss_dot_base_diameter)` (Section 3.6).
-- 2026-08-16 — Added the double-sided (interpoint) beta hard gates to Section 5: tactile indicator lock, interpoint offset range [1.15, 1.35] mm, and the 0.34 mm same-surface-gap floor, enforced by `validate_double_sided_settings()` in app/validation.py (the schema's own min/max remain documentation only); noted the 0.34–0.50 mm marginal band stays a soft warning (geometry_spec `warnings` + live UI region `#ds-gap-warning`).
+- 2026-08-16 — Added the double-sided (interpoint) beta hard gates to Section 5: tactile indicator lock, interpoint offset range [1.15, 1.35] mm, the six `ds_*` footprint schema ranges, and the 0.34 mm same-surface-gap floor, enforced by `validate_double_sided_settings()` in app/validation.py when the beta is on (the schema's own min/max otherwise remain documentation only); noted the 0.34–0.50 mm marginal band stays a soft warning (geometry_spec `warnings` + live UI region `#ds-gap-warning`). All user-facing message wording signed off by Brennen the same day.

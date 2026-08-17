@@ -447,12 +447,14 @@ def extract_cylinder_geometry_spec(
         if not tactile_on:
             # A double-sided pair has no marker columns to spare and no visual
             # side to read them on, so the row indicator style is locked to the
-            # tactile seam arrows. Phase 06 turns this into hard validation.
+            # tactile seam arrows. app/validation.py hard-rejects this case on
+            # the request route; this branch stays as defense-in-depth for
+            # direct callers.
             indicator_mode = str(getattr(settings, 'indicator_mode', 'visual')).lower()
-            # TODO-review-Brennen: user-facing warning wording.
+            # User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off.
             warning = (
-                f'Double-sided mode locks the row indicator style to tactile seam arrows; '
-                f"'{indicator_mode}' was requested and 'tactile' was used instead."
+                'Double-sided mode is a beta that locks the row indicator style to the tactile '
+                f"seam arrows; '{indicator_mode}' was requested and 'tactile' was used instead."
             )
             double_sided_warnings.append(warning)
             logger.warning(warning)
@@ -919,21 +921,21 @@ def _double_sided_crowding_warnings(settings: Any, tactile_on: bool) -> list[str
     if gap >= interpoint.SAME_SURFACE_GAP_RELIABLE_MM:
         return []
 
-    # TODO-review-Brennen: user-facing warning wording.
+    # User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off.
     if gap < interpoint.SAME_SURFACE_GAP_FLOOR_MM:
         severity = (
             f'less than the {interpoint.SAME_SURFACE_GAP_FLOOR_MM:.2f} mm a 0.4 mm nozzle can lay down, so the '
-            f'material between them will not print'
+            f'ridge between them would not print'
         )
     else:
         severity = (
             f'less than the {interpoint.SAME_SURFACE_GAP_RELIABLE_MM:.2f} mm needed to print reliably, so the '
-            f'material between them may come out thin or merged'
+            f'ridge between them may come out thin or merged'
         )
     warning = (
         f'Double-sided crowding: a {dot_diameter:.2f} mm dot next to a {bowl_diameter:.2f} mm recess at the '
-        f'{offset_x:.2f} / {offset_z:.2f} mm interpoint offset leaves {gap:.3f} mm between them — {severity}. '
-        f'Reduce the dot or recess diameter, or check the interpoint offset.'
+        f'{offset_x:.2f} / {offset_z:.2f} mm interpoint offset leaves {gap:.3f} mm of material between them — '
+        f'{severity}. Reduce the double-sided dot or recess diameter, or check the interpoint offsets.'
     )
     logger.warning(warning)
     return [warning]
