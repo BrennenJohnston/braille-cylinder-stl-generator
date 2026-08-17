@@ -16,6 +16,7 @@ mapbox_earcut==2.0.0
 scipy==1.18.0              # For mesh.fix_normals() (fallback: unify_normals)
 matplotlib==3.11.1         # For character markers (fallback: rectangles)
 manifold3d==3.5.2          # Boolean operations (not available on Vercel)
+rtree==1.4.1               # Spatial index for trimesh.contains() — the golden-fixture containment probes need it
 
 # Development tools
 pytest==9.1.1

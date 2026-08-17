@@ -10,8 +10,10 @@ Reference values come from the approved 2026-08-16 interpoint research
 
 The second half of the file tests app/geometry_spec.py rather than the math
 module: that the double-sided toggle builds the paired A/B cylinders, and — the
-hard constraint of the whole beta — that with the toggle off the spec is
-byte-identical to the one the code produced before double-sided mode existed.
+hard constraint of the whole beta — that with the toggle off the spec matches
+the one the code produced before double-sided mode existed, exactly apart from
+last-bit platform arithmetic (the snapshot holds Windows trig; Linux differs
+by one float64 bit).
 """
 
 import json
@@ -543,15 +545,45 @@ PRE_DOUBLE_SIDED_LINES = ['⠁⠃', '⠉', '', '']
 PRE_DOUBLE_SIDED_ORIGINAL_LINES = ['ab', 'c', '', '']
 
 
+def _assert_specs_match(actual, expected, path='spec'):
+    """
+    Deep equality with room for platform arithmetic, nothing else.
+
+    Structure, keys, list order, and every non-number must match exactly.
+    Numbers may differ by 1e-12 (relative or absolute) — about a thousand
+    float64 last-bits at these magnitudes, and ten orders of magnitude tighter
+    than the 0.01 mm nudges this comparison must keep catching. The snapshot
+    was captured on Windows; Linux libm rounds cos/sin one last bit apart
+    (seen on CI: -6.882917236212547 vs ...546), and that platform drift is the
+    only difference this tolerance admits.
+    """
+    if isinstance(expected, dict):
+        assert isinstance(actual, dict), f'{path}: expected a dict, got {type(actual).__name__}'
+        assert sorted(actual) == sorted(expected), f'{path}: keys {sorted(actual)} != {sorted(expected)}'
+        for key in expected:
+            _assert_specs_match(actual[key], expected[key], f'{path}.{key}')
+    elif isinstance(expected, list):
+        assert isinstance(actual, list), f'{path}: expected a list, got {type(actual).__name__}'
+        assert len(actual) == len(expected), f'{path}: {len(actual)} items != {len(expected)}'
+        for index, (item, expected_item) in enumerate(zip(actual, expected, strict=True)):
+            _assert_specs_match(item, expected_item, f'{path}[{index}]')
+    elif isinstance(expected, (int, float)) and not isinstance(expected, bool):
+        assert isinstance(actual, (int, float)) and not isinstance(actual, bool), f'{path}: {actual!r} is not a number'
+        assert math.isclose(actual, expected, rel_tol=1e-12, abs_tol=1e-12), f'{path}: {actual!r} != {expected!r}'
+    else:
+        assert actual == expected, f'{path}: {actual!r} != {expected!r}'
+
+
 @pytest.mark.parametrize('plate_type', ['positive', 'negative'])
 def test_single_sided_specs_are_unchanged_by_the_double_sided_code(plate_type):
     """
     With the toggle absent, the spec equals the one captured before this feature.
 
-    Deep equality, every dot, marker and polygon point. Public training videos
-    depend on the single-sided workflow, so double-sided mode is only allowed to
-    add branches that a missing toggle never enters. `back_lines` is passed here
-    on purpose: single-sided mode has to ignore it.
+    Deep equality, every dot, marker and polygon point (floats to 1e-12 — see
+    _assert_specs_match). Public training videos depend on the single-sided
+    workflow, so double-sided mode is only allowed to add branches that a
+    missing toggle never enters. `back_lines` is passed here on purpose:
+    single-sided mode has to ignore it.
     """
     spec = extract_cylinder_geometry_spec(
         PRE_DOUBLE_SIDED_LINES,
@@ -563,4 +595,4 @@ def test_single_sided_specs_are_unchanged_by_the_double_sided_code(plate_type):
         braille_to_dots_func=braille_to_dots,
         back_lines=DS_BACK_LINES,
     )
-    assert spec == PRE_DOUBLE_SIDED_SPECS[plate_type]
+    _assert_specs_match(spec, PRE_DOUBLE_SIDED_SPECS[plate_type])
