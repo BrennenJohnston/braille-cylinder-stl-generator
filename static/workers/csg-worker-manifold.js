@@ -1412,8 +1412,12 @@ function processGeometrySpec(spec) {
             console.log('Manifold CSG Worker: Created card plate');
         }
 
-        // Collect dot manifolds
-        const dotManifolds = [];
+        // Collect dot manifolds, partitioned per dot. An explicit is_recess on
+        // the dot spec decides union vs subtract (double-sided mode mixes raised
+        // dots and recesses on the same plate); a dot without the flag falls back
+        // to the legacy plate-wide rule: positive plate unions, negative subtracts.
+        const raisedDotManifolds = [];
+        const recessDotManifolds = [];
 
         if (dots && dots.length > 0) {
             console.log(`Manifold CSG Worker: Creating ${dots.length} dots`);
@@ -1448,7 +1452,15 @@ function processGeometrySpec(spec) {
                     }
 
                     if (dotManifold) {
-                        dotManifolds.push(dotManifold);
+                        let dotIsRecess;
+                        if (dotSpec.is_recess === true) {
+                            dotIsRecess = true;
+                        } else if (dotSpec.is_recess === false) {
+                            dotIsRecess = false;
+                        } else {
+                            dotIsRecess = isNegative;
+                        }
+                        (dotIsRecess ? recessDotManifolds : raisedDotManifolds).push(dotManifold);
                         successCount++;
                     }
                 } catch (err) {
@@ -1548,27 +1560,17 @@ function processGeometrySpec(spec) {
         // Perform CSG operations
         let result = base;
 
-        // Process dots
-        if (dotManifolds.length > 0) {
-            console.log(`Manifold CSG Worker: Processing ${dotManifolds.length} dots`);
-            const unionedDots = batchUnionManifold(dotManifolds);
+        // Process raised dots (union)
+        if (raisedDotManifolds.length > 0) {
+            console.log(`Manifold CSG Worker: Processing ${raisedDotManifolds.length} raised dots`);
+            const unionedDots = batchUnionManifold(raisedDotManifolds);
 
             if (unionedDots) {
-                if (isNegative) {
-                    // Counter plate: subtract dots
-                    const newResult = result.subtract(unionedDots);
-                    result.delete();
-                    unionedDots.delete();
-                    result = newResult;
-                    console.log('Manifold CSG Worker: Subtracted dots for counter plate');
-                } else {
-                    // Positive plate: add dots
-                    const newResult = result.add(unionedDots);
-                    result.delete();
-                    unionedDots.delete();
-                    result = newResult;
-                    console.log('Manifold CSG Worker: Added dots for embossing plate');
-                }
+                const newResult = result.add(unionedDots);
+                result.delete();
+                unionedDots.delete();
+                result = newResult;
+                console.log('Manifold CSG Worker: Added raised dots');
             }
         }
 
@@ -1584,6 +1586,21 @@ function processGeometrySpec(spec) {
                 unionedRaised.delete();
                 result = newResult;
                 console.log('Manifold CSG Worker: Added raised tactile indicators');
+            }
+        }
+
+        // Process recess dots (subtract) after every union above, so a recess
+        // can never be filled back in by a later raised dot or marker.
+        if (recessDotManifolds.length > 0) {
+            console.log(`Manifold CSG Worker: Processing ${recessDotManifolds.length} recess dots`);
+            const unionedRecessDots = batchUnionManifold(recessDotManifolds);
+
+            if (unionedRecessDots) {
+                const newResult = result.subtract(unionedRecessDots);
+                result.delete();
+                unionedRecessDots.delete();
+                result = newResult;
+                console.log('Manifold CSG Worker: Subtracted recess dots');
             }
         }
 
