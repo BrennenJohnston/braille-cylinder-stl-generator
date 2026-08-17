@@ -1801,6 +1801,31 @@ Accessibility requirements:
 - Each button disables itself and shows "Translating…" while the worker runs, then restores
   its label in a `finally` block so a worker failure can never leave it stuck.
 
+### 4.8 Double-Sided Card Beta: Disclosure Checkbox and Locked Radio Option
+
+The Double-Sided Card beta toggle (`#double_sided_enabled`) introduces two patterns:
+
+**Disclosure checkbox.** The toggle is a real `<input type="checkbox">` (not a button):
+checking it changes what generation produces, so its on/off state is the semantic, and it
+additionally discloses the Back of Card section. It carries `aria-expanded` (mirrored to
+the checkbox state by `updateDoubleSidedUI()`) and `aria-controls="double-sided-section"`;
+ARIA 1.2 permits `aria-expanded` on the checkbox role and the W3C Nu validator accepts it.
+The wrapping label uses `.ds-toggle-option` for an explicit 44 px minimum hit target. While
+on, the front entry legend `#front-entry-legend` is relabeled "Front of Card — …" and
+restored verbatim when off, so the toggle-off page is exactly today's page.
+
+**Locked radio option.** While the beta is on, the Row Indicator Style is forced to
+"Tactile seam arrow" (the backend hard-rejects double-sided requests with any other style).
+The "Visual markers" radio gets the native `disabled` attribute — announced by screen
+readers, skipped by arrow-key navigation, and exempt from contrast minimums (WCAG SC 1.4.3)
+— while staying visible, dimmed via `opacity` so every theme keeps its own token colors. A
+visible explanation (`#indicator-mode-lock-note`, `role="status"` `aria-live="polite"`) appears
+next to the group, and `updateDoubleSidedUI()` appends its id to the disabled radio's
+`aria-describedby` so the reason travels with the option; both are removed when the beta
+turns off. Native `disabled` was chosen over `aria-disabled` because the repository's
+existing convention for unavailable controls is the native attribute, and it needs no
+keyboard interception to keep the lock honest.
+
 ---
 
 ## 5. Scrollbar Customization
@@ -2429,6 +2454,7 @@ Low vision users benefit from enhanced depth perception:
 | 1.7 | 2026-01-05 | Added critical warning section about HTML file locations — must edit `public/index.html` (served by Flask), not `templates/index.html` (legacy/not served) |
 | 1.8 | 2026-01-05 | **Cross-Browser UI Hardening:** Added Section 3.9 (WebGL Context Recovery), Section 4.5 (Toggle Button ARIA Requirements), Section 4.6 (Reduced Motion Support), and Section 7.3 (iOS Safe Area Handling) to document new accessibility and cross-browser compatibility features |
 | 1.9 | 2026-07-30 | **Form column restructure:** Split `.form-section` into a non-scrolling panel plus `.form-scroll` and a pinned `.action-footer`, so `#action-btn` is always in view (Sections 5.1, 6.3, 7.1, 7.2). Documented the form-level event delegation that resets the button on any settings change (Section 6.2), the six Expert Mode submenus and their contrast-safe active colours (Section 4.5), and the two-way translation buttons (new Section 4.7) |
+| 1.10 | 2026-08-16 | **Double-Sided Card beta UI:** Added Section 4.8 documenting the disclosure-checkbox toggle (`#double_sided_enabled` with `aria-expanded`/`aria-controls`, 44 px hit target), the Back of Card section reveal with front-legend relabeling, and the locked "Visual markers" radio pattern (native `disabled` + live-region lock note wired into `aria-describedby`). Validated: W3C Nu 0 errors, Lighthouse accessibility 100/100 desktop and mobile |
 
 ---
 

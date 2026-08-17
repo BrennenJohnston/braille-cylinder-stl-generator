@@ -1403,6 +1403,31 @@
         .radio-text {
             cursor: pointer;
         }
+        /* Double-Sided Card beta toggle: a radio-row look with an explicit
+           44px touch target (WCAG 2.5.8; same convention as the toolbar). */
+        .ds-toggle-option {
+            min-height: 44px;
+        }
+        .ds-toggle-option input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            min-width: 20px;
+            min-height: 20px;
+            margin: 0;
+            cursor: pointer;
+        }
+        /* A locked radio option stays visible and announced as disabled; the
+           adjacent lock note carries the why. Dimming via opacity keeps every
+           theme's own token colors (disabled controls are exempt from WCAG
+           contrast minimums, SC 1.4.3). */
+        .radio-option:has(input:disabled) {
+            opacity: 0.6;
+        }
+        .radio-option:has(input:disabled),
+        .radio-option:has(input:disabled) input,
+        .radio-option:has(input:disabled) .radio-text {
+            cursor: not-allowed;
+        }
         form {
             display: flex;
             flex-direction: column;
@@ -2902,7 +2927,10 @@
                     <!-- Text Input Section moved into form (separate scrollable pane) -->
                     <div class="line-input-group">
                         <fieldset class="line-input-fieldset">
-                            <legend class="grade-label">Enter Text for Braille Translation</legend>
+                            <!-- The id is load-bearing: updateDoubleSidedUI() relabels this
+                                 legend "Front of Card — …" while the double-sided beta is on
+                                 and restores this exact text when it is off. -->
+                            <legend class="grade-label" id="front-entry-legend">Enter Text for Braille Translation</legend>
                             <div class="grade-note" style="margin-bottom: 0.8em; font-size: 0.85em;">
                                 <strong>Note:</strong> Contracted braille combines letters into single cells, so the character limit is only confirmed <em>after translation</em> — the program will warn you automatically if it's too long.
                             </div>
@@ -2958,6 +2986,54 @@
                             </div>
                         </fieldset>
                     </div>
+
+                    <!-- Double-Sided Card (interpoint) beta: toggle + Back of Card entry.
+                         The checkbox and textarea are the Phase 07 plumbing controls and
+                         their ids are load-bearing: the generate handler reads
+                         #double_sided_enabled.checked and #back-text.value (one row per
+                         newline), persistence stores braille_prefs_double_sided_enabled /
+                         braille_prefs_back_text, and checkDoubleSidedGap() finds the
+                         toggle and #ds-gap-warning by id. -->
+                    <div class="grade-selection" id="double-sided-selection">
+                        <fieldset>
+                            <!-- REVIEW-BRENNEN: draft wording, not yet signed off. -->
+                            <legend class="grade-label">Double-Sided Card (BETA — for testing)</legend>
+                            <label class="radio-option ds-toggle-option" for="double_sided_enabled">
+                                <input type="checkbox" id="double_sided_enabled"
+                                       aria-expanded="false" aria-controls="double-sided-section"
+                                       aria-describedby="double-sided-note">
+                                <!-- REVIEW-BRENNEN: draft wording, not yet signed off. -->
+                                <span class="radio-text">Emboss both sides of the card (interpoint)</span>
+                            </label>
+                            <!-- REVIEW-BRENNEN: draft wording, not yet signed off. -->
+                            <div id="double-sided-note" class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
+                                Embosses both sides of the card in one pass: <strong>Cylinder A</strong> (the embossing plate) carries the front's raised dots plus recesses for the back, and <strong>Cylinder B</strong> (the counter plate) carries the back's raised dots plus recesses for the front, offset diagonally by 1.25 mm so the two sides never collide. Turning this on shows the Back of Card section below and locks the Row Indicator Style to the tactile seam arrow. Generate each cylinder with the same settings. This is a beta for testing — proofread both sides and check every braille surface before use.
+                            </div>
+                        </fieldset>
+                        <div id="double-sided-section" style="display: none;">
+                            <div class="line-input-group" style="margin-top: 0.8em;">
+                                <fieldset class="line-input-fieldset">
+                                    <!-- REVIEW-BRENNEN: draft wording, not yet signed off. -->
+                                    <legend class="grade-label">Back of Card — Enter Text for Braille Translation</legend>
+                                    <!-- REVIEW-BRENNEN: label and placeholder are draft wording, not yet signed off. -->
+                                    <label for="back-text" class="line-label">Back of Card Text</label>
+                                    <textarea id="back-text" rows="4" placeholder="Type the text for the back of the card here. Each line becomes one braille row." style="width: 100%; resize: vertical;" autocomplete="off" aria-describedby="back-text-help"></textarea>
+                                    <!-- REVIEW-BRENNEN: draft wording, not yet signed off. -->
+                                    <div id="back-text-help" class="grade-note" style="margin-top: 0.6em; font-size: 0.85em;">
+                                        Each line becomes one braille row on the back of the card, translated with the language selected below — there is no automatic wrapping here yet, so press Enter where each row should end. The back has the same number of rows and cells per row as the front.
+                                    </div>
+                                </fieldset>
+                            </div>
+                            <!-- Live same-surface crowding warning (Phase 06 hook, moved here
+                                 from after the Row Indicator Style fieldset; the ids and ARIA
+                                 attributes are load-bearing for checkDoubleSidedGap()). -->
+                            <div id="ds-gap-warning" class="grade-note inline-warning" role="status" aria-live="polite"
+                                 style="margin-top: 0.6em; display: none;">
+                                <strong>Warning:</strong> <span id="ds-gap-message"></span>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Language Selection -->
                     <div class="grade-selection">
                         <fieldset>
@@ -2993,6 +3069,15 @@
                                 </label>
                                 <span id="indicator-mode-tactile-desc" class="sr-only">A raised arrow on the embossing plate and a matching recess on the counter plate, centred in the gap at the cylinder seam with the point toward the top. Uses no braille cells, so every cell in the row is available for text.</span>
                             </div>
+                            <!-- Shown while the double-sided beta is on; updateDoubleSidedUI()
+                                 also disables the visual radio and appends this note's id to
+                                 its aria-describedby, so the lock reason travels with the
+                                 disabled option. -->
+                            <!-- REVIEW-BRENNEN: draft wording, not yet signed off. -->
+                            <div id="indicator-mode-lock-note" class="grade-note" role="status" aria-live="polite"
+                                 style="margin-top: 6px; font-size: 0.85em; display: none;">
+                                <strong>Locked:</strong> Double-Sided Card is on, so the Row Indicator Style stays on the tactile seam arrow — both cylinders of a double-sided pair need it. Turn the beta off to choose visual markers.
+                            </div>
                             <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
                                 <strong>Tactile</strong> lets a blind user find the alignment point and tell which end is up by touch: the arrow is one continuous wedge, nothing like a braille dot, and raised-versus-recessed tells you which cylinder you are holding. It also frees the marker cells for text. Both plates of a pair must use the same style. Its dimensions live in the <strong>Tactile Indicator Dimensions</strong> submenu of Expert Mode.
                             </div>
@@ -3001,32 +3086,6 @@
                                 <strong>Warning:</strong> <span id="tactile-gap-message"></span>
                             </div>
                         </fieldset>
-                    </div>
-
-                    <!-- Double-sided (interpoint) beta: live same-surface crowding warning.
-                         Phase 06 warning hook only. Hidden until a #double_sided_enabled
-                         control exists and is checked (the beta toggle and its dials are
-                         later phases). Phase 08 may move this div into the double-sided
-                         section it builds; checkDoubleSidedGap() finds it by id. -->
-                    <div id="ds-gap-warning" class="grade-note inline-warning" role="status" aria-live="polite"
-                         style="margin-top: 0.6em; display: none;">
-                        <strong>Warning:</strong> <span id="ds-gap-message"></span>
-                    </div>
-
-                    <!-- Double-sided (interpoint) beta: hidden Phase 07 storage. The
-                         container is hidden, so nothing in it is visible, focusable, or
-                         exposed to assistive technology. Phase 08 builds the visible
-                         toggle and Back of Card entry UI around these two controls and
-                         must KEEP THE IDS: #double_sided_enabled is the toggle contract
-                         checkDoubleSidedGap() and the generate handler read (.checked);
-                         #back-text holds the back-of-card source text, one row per
-                         newline, translated like the front lines. Both persist to
-                         localStorage (braille_prefs_double_sided_enabled /
-                         braille_prefs_back_text) and can be driven from the console for
-                         beta testing while the visible UI does not exist yet. -->
-                    <div id="double-sided-storage" hidden>
-                        <input type="checkbox" id="double_sided_enabled">
-                        <textarea id="back-text"></textarea>
                     </div>
 
                     <!-- Card Thickness Preset Selection -->
@@ -5485,12 +5544,12 @@
         }
 
         // Live same-surface crowding warning for the double-sided beta,
-        // recomputed with the seam-gap warning on every form change. Until the
-        // beta toggle exists there is no #double_sided_enabled control, so this
-        // hides the region and computes nothing. The dial ids read here are the
-        // flat CardSettings names, the same convention as every other dial on
-        // the page; absent dials fall back to the signed-off Option B defaults
-        // (dot base ⌀1.2 mm, bowl ⌀1.3 mm, offsets 1.25/1.25 mm).
+        // recomputed with the seam-gap warning on every form change. Hidden
+        // whenever the #double_sided_enabled toggle is off. The dial ids read
+        // here are the flat CardSettings names, the same convention as every
+        // other dial on the page; absent dials fall back to the signed-off
+        // Option B defaults (dot base ⌀1.2 mm, bowl ⌀1.3 mm, offsets
+        // 1.25/1.25 mm).
         function checkDoubleSidedGap() {
             const warningDiv = document.getElementById('ds-gap-warning');
             const warningMsg = document.getElementById('ds-gap-message');
@@ -5794,6 +5853,51 @@
         });
 
         updateIndicatorModeUI();
+
+        // Double-Sided Card beta: the toggle reveals the Back of Card section,
+        // relabels the front entry while on, and locks the Row Indicator Style
+        // to the tactile seam arrow — the backend hard-rejects double-sided
+        // requests with any other style, so this lock is what keeps that error
+        // unreachable from the UI.
+        function updateDoubleSidedUI() {
+            const toggle = document.getElementById('double_sided_enabled');
+            if (!toggle) return;
+            const on = !!toggle.checked;
+
+            const section = document.getElementById('double-sided-section');
+            if (section) section.style.display = on ? '' : 'none';
+            toggle.setAttribute('aria-expanded', String(on));
+
+            const frontLegend = document.getElementById('front-entry-legend');
+            if (frontLegend) {
+                /* REVIEW-BRENNEN: the on-state relabel is draft wording, not yet signed off. */
+                frontLegend.textContent = on
+                    ? 'Front of Card — Enter Text for Braille Translation'
+                    : 'Enter Text for Braille Translation';
+            }
+
+            const visualRadio = document.querySelector('input[name="indicator_mode"][value="visual"]');
+            const tactileRadio = document.querySelector('input[name="indicator_mode"][value="tactile"]');
+            if (on && visualRadio?.checked && tactileRadio) {
+                tactileRadio.checked = true;
+                // A real change event, so persistence, the column dial, and the
+                // tactile submenu react exactly as they do to a user click.
+                tactileRadio.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            if (visualRadio) {
+                visualRadio.disabled = on;
+                visualRadio.setAttribute('aria-describedby', on
+                    ? 'indicator-mode-visual-desc indicator-mode-lock-note'
+                    : 'indicator-mode-visual-desc');
+            }
+            const lockNote = document.getElementById('indicator-mode-lock-note');
+            if (lockNote) lockNote.style.display = on ? 'block' : 'none';
+        }
+
+        document.getElementById('double_sided_enabled')?.addEventListener('change', () => {
+            updateDoubleSidedUI();
+            resetToGenerateState();
+        });
 
         // Live overflow warning for auto mode. Runs the exact same banaAutoWrap
         // simulation generation uses (same capitalization and number-sign
@@ -6237,6 +6341,9 @@
         try { wirePersistenceListeners(); } catch (e) {}
         // After restoring persisted settings, update placement UI to reflect restored mode
         try { updatePlacementUI(); } catch (e) {}
+        // Restored double-sided state fires no events either: reveal the Back of
+        // Card section and apply the tactile lock by hand when it came back on.
+        try { updateDoubleSidedUI(); } catch (e) {}
         // Restored settings are written straight to the DOM and fire no events, so
         // the warnings are seeded by hand against whatever came back from storage.
         try { refreshLiveWarnings(); } catch (e) {}
@@ -6282,6 +6389,14 @@
                 expertToggleText.textContent = 'Show Expert Mode';
                 expertToggleIcon.textContent = '▼';
                 expertToggleBtn.classList.remove('active');
+                // Double-Sided Card beta back to its default: off, empty back text
+                // (checkboxes are not radio groups, so the defaultChecked sweep
+                // above does not cover the toggle).
+                const dsToggleReset = document.getElementById('double_sided_enabled');
+                if (dsToggleReset) dsToggleReset.checked = false;
+                const backTextReset = document.getElementById('back-text');
+                if (backTextReset) backTextReset.value = '';
+                try { updateDoubleSidedUI(); } catch (e) {}
                 updateShapeSettings();
                 clearGridColumnsDirty();
                 updateGridColumnsForPlateType();
@@ -7188,12 +7303,11 @@
             const languageSelect = document.getElementById('language-table');
             const tableName = languageSelect?.value || DEFAULT_LANGUAGE_TABLE;
 
-            // Double-sided (interpoint) beta — cylinder-only. Until Phase 08 builds
-            // the visible toggle, the hidden #double_sided_enabled checkbox is the
-            // single source of truth (console/localStorage can force it on for
-            // testing). When ON, BOTH plates carry text: Cylinder A (positive)
-            // needs the front lines for its raised dots and Cylinder B (negative)
-            // needs the same front lines to place its 1:1 paired recesses.
+            // Double-sided (interpoint) beta — cylinder-only. The Double-Sided
+            // Card checkbox is the single source of truth. When ON, BOTH plates
+            // carry text: Cylinder A (positive) needs the front lines for its
+            // raised dots and Cylinder B (negative) needs the same front lines
+            // to place its 1:1 paired recesses.
             const doubleSidedOn = !!document.getElementById('double_sided_enabled')?.checked
                 && (document.querySelector('input[name="shape_type"]:checked')?.value || 'cylinder') === 'cylinder';
 
@@ -7399,7 +7513,7 @@
             // Double-sided beta: translate the Back of Card text through the same
             // liblouis pipeline as the front lines — same table, same capitalization
             // setting, same contracted-grade default — one row per newline in the
-            // hidden #back-text storage (Phase 08 builds the visible entry UI).
+            // #back-text field of the Back of Card section.
             // Every failure blocks generation: wrong braille must never emboss.
             let backBrailleLines = null;
             if (doubleSidedOn) {
