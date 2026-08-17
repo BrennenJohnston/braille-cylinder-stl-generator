@@ -7409,7 +7409,7 @@
                     .split(/\r?\n/).map(s => s.trim());
                 while (backParagraphs.length && !backParagraphs[backParagraphs.length - 1]) backParagraphs.pop();
                 if (backParagraphs.length > backRows) {
-                    /* REVIEW-BRENNEN: draft wording, not yet signed off. */
+                    /* User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. */
                     errorText.textContent = `Back text uses ${backParagraphs.length} lines but only ${backRows} rows are available. Please shorten the back text or increase Rows.`;
                     errorDiv.style.display = 'flex';
                     errorDiv.className = 'error-message';
@@ -7425,7 +7425,7 @@
                         backBraille = await translateWithLiblouis(applyCapitalizationSetting(backLine), 'g2', tableName);
                     } catch (error) {
                         log.error(`Failed to translate back text line ${r + 1}:`, error);
-                        /* REVIEW-BRENNEN: draft wording, not yet signed off. */
+                        /* User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. */
                         errorText.textContent = `Back text line ${r + 1} could not be translated to braille. Please check the text and try again. The STL file was not generated to prevent producing incorrect braille.`;
                         errorDiv.style.display = 'flex';
                         errorDiv.className = 'error-message';
@@ -7434,7 +7434,7 @@
                     }
                     if (backBraille.length > backAvailableColumns) {
                         const over = backBraille.length - backAvailableColumns;
-                        /* REVIEW-BRENNEN: draft wording, not yet signed off. */
+                        /* User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. */
                         errorText.textContent = `Back text line ${r + 1} exceeds ${backAvailableColumns} available braille cells by ${over} cells after translation. Please shorten the back text.`;
                         errorDiv.style.display = 'flex';
                         errorDiv.className = 'error-message';
