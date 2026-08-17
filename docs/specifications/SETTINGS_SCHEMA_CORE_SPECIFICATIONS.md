@@ -305,6 +305,33 @@ High-level checks (non-exhaustive):
 - All mm values must be non-negative; heights/diameters > 0 where noted
 - Geometry safety checks: margins, grid centering, cylinder wrap
 
+Double-sided (interpoint) beta — hard gates (`validate_double_sided_settings()` in
+`app/validation.py`, called from `validate_settings()` on every request). All three
+are skipped when `double_sided.enabled` is off, so single-sided requests validate
+exactly as before the beta. This is the first runtime enforcement of these ranges —
+the `minimum`/`maximum` values in settings.schema.json are documentation only:
+- `double_sided.enabled` = true requires `indicator_mode` = "tactile"; any other
+  value (including the absent-key default "visual") is rejected with HTTP 400.
+  The soft warn-and-force branch in `geometry_spec.py` remains as defense-in-depth
+  for direct callers of `extract_cylinder_geometry_spec()`.
+- `double_sided.interpoint_offset_x_mm` and `_y_mm` must stay within
+  [1.15, 1.35] mm (`interpoint.INTERPOINT_OFFSET_MIN_MM` / `_MAX_MM`); out-of-range
+  values are rejected with the range quoted.
+- The same-surface gap — material between a raised dot (`ds_dot_base_diameter_mm`)
+  and the nearest back-side recess (`ds_bowl_base_diameter_mm`) sharing one cylinder
+  surface, computed by `interpoint.same_surface_min_gap()` with the active offsets
+  and grid — must clear 0.34 mm (`SAME_SURFACE_GAP_FLOOR_MM`, what a 0.4 mm nozzle
+  can lay down); below that the request is rejected with the gap quoted to three
+  decimals. The marginal band 0.34–0.50 mm (`SAME_SURFACE_GAP_RELIABLE_MM`) is NOT
+  rejected: geometry_spec returns it as a soft warning in the spec's `warnings`
+  array, and the UI recomputes the same gap live (`checkDoubleSidedGap()` in
+  public/index.html, status region `#ds-gap-warning`). Reference values at offsets
+  1.25/1.25: Option B dot 1.2 + bowl 1.3 → 0.518 mm (clean); dot 1.2 + bowl 1.5 →
+  0.418 mm (warn); single-sided dot 1.5 + bowl 1.8 → 0.118 mm (reject).
+- Not yet enforced at runtime: the individual `ds_*` footprint diameter/height and
+  `ds_bowl_depth_mm` schema ranges (only the offsets and the resulting gap are
+  gated).
+
 See feature specs for detailed constraints and formulas.
 
 ---
@@ -460,3 +487,4 @@ Before completing any task involving settings:
 - 2026-07-29 — Added `indicators.indicator_mode` and the five `indicators.tactile_*` dimensions for the tactile row indicator ported from the OpenSCAD version (Section 3.6), and noted the Braille (Unicode) field's effect on `text.lines` / `text.original_lines` (Section 3.1).
 - 2026-07-30 — Changed `indicators.tactile_indicator_length` to 10.0 and `indicators.tactile_indicator_raise` to 0.5; recorded that both Card Thickness presets now carry all five tactile dimensions, and documented where each indicator control lives in the UI (Section 3.6).
 - 2026-07-31 — Changed `spacing.grid_columns` default from 14 to 15 and the per-mode text-cell recommendations to 13 visual (either toggle state) and 14 tactile (Sections 3.3 and 3.6); replaced the visual-mode physical-fit warning rule with the dot-footprint threshold `dot_spacing + max(rounded_dot_base_diameter, emboss_dot_base_diameter)` (Section 3.6).
+- 2026-08-16 — Added the double-sided (interpoint) beta hard gates to Section 5: tactile indicator lock, interpoint offset range [1.15, 1.35] mm, and the 0.34 mm same-surface-gap floor, enforced by `validate_double_sided_settings()` in app/validation.py (the schema's own min/max remain documentation only); noted the 0.34–0.50 mm marginal band stays a soft warning (geometry_spec `warnings` + live UI region `#ds-gap-warning`).

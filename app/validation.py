@@ -7,6 +7,7 @@ ensuring security, correctness, and helpful error messages.
 
 from typing import Any
 
+from app.geometry import interpoint
 from app.utils import get_logger
 
 # Configure logging
@@ -228,6 +229,163 @@ def validate_settings(settings_data: Any) -> bool:
                 f"Setting '{key}' must be between {min_val} and {max_val}",
                 {'key': key, 'value': value, 'min': min_val, 'max': max_val},
             )
+
+    validate_double_sided_settings(settings_data)
+
+    return True
+
+
+def _double_sided_number(settings_data: dict, flat_key: str, schema_name: str, default: float) -> float:
+    """
+    Read one numeric setting the way CardSettings will: absent, None, or ''
+    fall back to the default. `schema_name` is the canonical grouped
+    settings.schema.json spelling, quoted in error messages; `flat_key` is the
+    flat CardSettings spelling the request actually carries.
+    """
+    value = settings_data.get(flat_key, default)
+    if value is None or value == '':
+        return default
+    try:
+        return float(value)
+    except (TypeError, ValueError) as e:
+        raise ValidationError(
+            f"Setting '{schema_name}' must be a number",
+            {'key': flat_key, 'value': value, 'expected_type': 'number'},
+        ) from e
+
+
+def validate_double_sided_settings(settings_data: dict) -> bool:
+    """
+    Hard gates for the double-sided (interpoint) beta.
+
+    Every check is skipped when double_sided.enabled is off, so single-sided
+    requests are validated exactly as before the beta existed. This is the
+    first RUNTIME enforcement of the double-sided ranges: the minimum/maximum
+    values in settings.schema.json are documentation only.
+
+    Three gates:
+    1. The row indicator style must be tactile (the beta has no marker columns
+       to spare and no visual side to read them on).
+    2. interpoint offsets must stay inside [INTERPOINT_OFFSET_MIN_MM,
+       INTERPOINT_OFFSET_MAX_MM] (1.15-1.35 mm).
+    3. The same-surface gap - material between a raised dot and the nearest
+       back-side recess sharing one cylinder surface - must clear
+       SAME_SURFACE_GAP_FLOOR_MM (0.34 mm, what a 0.4 mm nozzle can lay down).
+       The marginal band up to SAME_SURFACE_GAP_RELIABLE_MM (0.50 mm) is NOT
+       rejected here: geometry_spec.py returns it as a soft warning in the
+       spec's warnings array and the UI shows it live; this function only logs.
+
+    Args:
+        settings_data: Settings dictionary from the request (flat CardSettings
+            key spelling).
+
+    Returns:
+        True if valid (or the beta is off)
+
+    Raises:
+        ValidationError: If a double-sided request fails a hard gate
+    """
+    enabled_raw = settings_data.get('double_sided_enabled', 0)
+    if enabled_raw is None or enabled_raw == '':
+        return True
+    try:
+        enabled = int(float(enabled_raw))
+    except (TypeError, ValueError) as e:
+        raise ValidationError(
+            "Setting 'double_sided.enabled' must be 0 or 1",
+            {'key': 'double_sided_enabled', 'value': enabled_raw},
+        ) from e
+    if enabled != 1:
+        return True
+
+    indicator_mode = str(settings_data.get('indicator_mode', 'visual')).strip().lower()
+    if indicator_mode != 'tactile':
+        # REVIEW-BRENNEN: user-facing error wording (beta tactile lock).
+        raise ValidationError(
+            'Double-sided mode is a beta that requires the tactile row indicator style: '
+            "set the Row Indicator Style to 'Tactile seam arrow' (indicator_mode 'tactile') "
+            f"or turn double-sided mode off. Received indicator_mode '{indicator_mode}'.",
+            {'key': 'indicator_mode', 'value': indicator_mode, 'required': 'tactile'},
+        )
+
+    offsets: dict[str, float] = {}
+    for flat_key, schema_name, default in (
+        ('interpoint_offset_x', 'double_sided.interpoint_offset_x_mm', interpoint.INTERPOINT_OFFSET_X_MM),
+        ('interpoint_offset_y', 'double_sided.interpoint_offset_y_mm', interpoint.INTERPOINT_OFFSET_Z_MM),
+    ):
+        value = _double_sided_number(settings_data, flat_key, schema_name, default)
+        if not (interpoint.INTERPOINT_OFFSET_MIN_MM <= value <= interpoint.INTERPOINT_OFFSET_MAX_MM):
+            # REVIEW-BRENNEN: user-facing error wording (interpoint offset range).
+            raise ValidationError(
+                f"Setting '{schema_name}' must be between {interpoint.INTERPOINT_OFFSET_MIN_MM} and "
+                f'{interpoint.INTERPOINT_OFFSET_MAX_MM} mm; received {value}.',
+                {
+                    'key': flat_key,
+                    'value': value,
+                    'min': interpoint.INTERPOINT_OFFSET_MIN_MM,
+                    'max': interpoint.INTERPOINT_OFFSET_MAX_MM,
+                },
+            )
+        offsets[flat_key] = value
+
+    dot_diameter = _double_sided_number(
+        settings_data,
+        'ds_dot_base_diameter',
+        'double_sided.ds_dot_base_diameter_mm',
+        interpoint.DS_DOT_BASE_DIAMETER_MM,
+    )
+    bowl_diameter = _double_sided_number(
+        settings_data,
+        'ds_bowl_base_diameter',
+        'double_sided.ds_bowl_base_diameter_mm',
+        interpoint.DS_BOWL_DIAMETER_MM,
+    )
+    # Grid defaults mirror app/models.py CardSettings; spacing defaults are the
+    # canonical 2.5 / 6.5 / 10.0 already mirrored in interpoint.py. The tactile
+    # lock above guarantees zero reserved marker columns, so grid_columns is the
+    # dot-lattice width as-is (matches _double_sided_crowding_warnings in
+    # app/geometry_spec.py, which computes the same gap for its soft warning).
+    grid_columns = int(_double_sided_number(settings_data, 'grid_columns', 'grid_columns', 15))
+    grid_rows = int(_double_sided_number(settings_data, 'grid_rows', 'grid_rows', 4))
+    dot_spacing = _double_sided_number(settings_data, 'dot_spacing', 'spacing.dot_spacing_mm', interpoint.DOT_PITCH_MM)
+    cell_spacing = _double_sided_number(
+        settings_data, 'cell_spacing', 'spacing.cell_spacing_mm', interpoint.CELL_PITCH_MM
+    )
+    line_spacing = _double_sided_number(
+        settings_data, 'line_spacing', 'spacing.line_spacing_mm', interpoint.LINE_PITCH_MM
+    )
+
+    same_surface_gap = interpoint.same_surface_min_gap(
+        dot_diameter,
+        bowl_diameter,
+        offsets['interpoint_offset_x'],
+        offsets['interpoint_offset_y'],
+        grid_columns,
+        grid_rows,
+        dot_spacing,
+        cell_spacing,
+        line_spacing,
+    )
+    if same_surface_gap < interpoint.SAME_SURFACE_GAP_FLOOR_MM:
+        # REVIEW-BRENNEN: user-facing error wording (same-surface crowding reject).
+        raise ValidationError(
+            f'Double-sided crowding: a {dot_diameter:.2f} mm dot next to a {bowl_diameter:.2f} mm recess at the '
+            f'{offsets["interpoint_offset_x"]:.2f} / {offsets["interpoint_offset_y"]:.2f} mm interpoint offset '
+            f'leaves {same_surface_gap:.3f} mm of material between them — less than the '
+            f'{interpoint.SAME_SURFACE_GAP_FLOOR_MM:.2f} mm a 0.4 mm nozzle can lay down, so the ridge between '
+            'them would not print. Reduce the double-sided dot or recess diameter, or check the interpoint offsets.',
+            {
+                'gap_mm': round(same_surface_gap, 3),
+                'floor_mm': interpoint.SAME_SURFACE_GAP_FLOOR_MM,
+                'dot_diameter_mm': dot_diameter,
+                'bowl_diameter_mm': bowl_diameter,
+            },
+        )
+    if same_surface_gap < interpoint.SAME_SURFACE_GAP_RELIABLE_MM:
+        logger.warning(
+            f'Double-sided same-surface gap {same_surface_gap:.3f} mm is below the reliable '
+            f'{interpoint.SAME_SURFACE_GAP_RELIABLE_MM:.2f} mm; accepting — geometry_spec returns the soft warning.'
+        )
 
     return True
 

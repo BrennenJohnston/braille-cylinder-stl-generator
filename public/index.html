@@ -3003,6 +3003,16 @@
                         </fieldset>
                     </div>
 
+                    <!-- Double-sided (interpoint) beta: live same-surface crowding warning.
+                         Phase 06 warning hook only. Hidden until a #double_sided_enabled
+                         control exists and is checked (the beta toggle and its dials are
+                         later phases). Phase 08 may move this div into the double-sided
+                         section it builds; checkDoubleSidedGap() finds it by id. -->
+                    <div id="ds-gap-warning" class="grade-note inline-warning" role="status" aria-live="polite"
+                         style="margin-top: 0.6em; display: none;">
+                        <strong>Warning:</strong> <span id="ds-gap-message"></span>
+                    </div>
+
                     <!-- Card Thickness Preset Selection -->
                     <div class="grade-selection">
                         <fieldset>
@@ -5418,6 +5428,99 @@
             warningDiv.style.display = 'none';
         }
 
+        // Double-sided (interpoint) beta: printability thresholds for the ridge
+        // of material between a raised dot and the nearest back-side recess on
+        // the SAME cylinder surface. Mirrors app/geometry/interpoint.py
+        // (SAME_SURFACE_GAP_RELIABLE_MM / SAME_SURFACE_GAP_FLOOR_MM): below
+        // 0.50 mm the ridge prints unreliably; below 0.34 mm a 0.4 mm nozzle
+        // cannot lay it down at all and the backend rejects the request.
+        const DS_SAME_SURFACE_GAP_RELIABLE_MM = 0.50;
+        const DS_SAME_SURFACE_GAP_FLOOR_MM = 0.34;
+
+        // Smallest centre-to-centre distance between a front-grid dot position
+        // and a back-grid one. Mirrors interpoint.lattice_min_center_distance():
+        // every dot position of a fully-populated grid (all 6 dots of every
+        // cell — the worst case, since recesses may fill every position),
+        // against the same lattice translated by the interpoint offset.
+        // 1.76777 mm at the default 1.25/1.25 offsets and 2.5/6.5/10.0 spacing.
+        function dsLatticeMinCenterDistance(offsetX, offsetZ, cols, rows, dotPitch, cellPitch, linePitch) {
+            const points = [];
+            for (let col = 0; col < cols; col++) {
+                for (const colOff of [-dotPitch / 2, dotPitch / 2]) {
+                    for (let row = 0; row < rows; row++) {
+                        for (const rowOff of [dotPitch, 0, -dotPitch]) {
+                            points.push([col * cellPitch + colOff, -row * linePitch + rowOff]);
+                        }
+                    }
+                }
+            }
+            let bestSq = Infinity;
+            for (const [backX, backZ] of points) {
+                const shiftedX = backX + offsetX;
+                const shiftedZ = backZ + offsetZ;
+                for (const [frontX, frontZ] of points) {
+                    const dx = frontX - shiftedX;
+                    const dz = frontZ - shiftedZ;
+                    const dSq = dx * dx + dz * dz;
+                    if (dSq < bestSq) bestSq = dSq;
+                }
+            }
+            return Math.sqrt(bestSq);
+        }
+
+        // Live same-surface crowding warning for the double-sided beta,
+        // recomputed with the seam-gap warning on every form change. Until the
+        // beta toggle exists there is no #double_sided_enabled control, so this
+        // hides the region and computes nothing. The dial ids read here are the
+        // flat CardSettings names, the same convention as every other dial on
+        // the page; absent dials fall back to the signed-off Option B defaults
+        // (dot base ⌀1.2 mm, bowl ⌀1.3 mm, offsets 1.25/1.25 mm).
+        function checkDoubleSidedGap() {
+            const warningDiv = document.getElementById('ds-gap-warning');
+            const warningMsg = document.getElementById('ds-gap-message');
+            if (!warningDiv || !warningMsg) return;
+
+            const toggle = document.getElementById('double_sided_enabled');
+            if (!toggle || !toggle.checked) {
+                warningDiv.style.display = 'none';
+                return;
+            }
+
+            const offsetX = parseFloat(document.getElementById('interpoint_offset_x')?.value) || 1.25;
+            const offsetY = parseFloat(document.getElementById('interpoint_offset_y')?.value) || 1.25;
+            const dotDiameter = parseFloat(document.getElementById('ds_dot_base_diameter')?.value) || 1.2;
+            const bowlDiameter = parseFloat(document.getElementById('ds_bowl_base_diameter')?.value) || 1.3;
+            const totalColumns = getAvailableColumns() + getReservedMarkerColumns();
+            const rows = parseInt(document.getElementById('grid_rows')?.value) || 4;
+            const dotSpacing = parseFloat(document.getElementById('dot_spacing')?.value) || 2.5;
+            const cellSpacing = parseFloat(document.getElementById('cell_spacing')?.value) || 6.5;
+            const lineSpacing = parseFloat(document.getElementById('line_spacing')?.value) || 10.0;
+
+            const centerDistance = dsLatticeMinCenterDistance(
+                offsetX, offsetY, totalColumns, rows, dotSpacing, cellSpacing, lineSpacing);
+            const gap = centerDistance - (dotDiameter + bowlDiameter) / 2;
+
+            if (gap >= DS_SAME_SURFACE_GAP_RELIABLE_MM) {
+                warningDiv.style.display = 'none';
+                return;
+            }
+
+            /* REVIEW-BRENNEN: user-facing warning wording, both variants below. */
+            const shared = `A ${dotDiameter.toFixed(2)} mm dot next to a ${bowlDiameter.toFixed(2)} mm recess at the ` +
+                `${offsetX.toFixed(2)} / ${offsetY.toFixed(2)} mm interpoint offset leaves ${gap.toFixed(3)} mm of ` +
+                'material between them';
+            if (gap < DS_SAME_SURFACE_GAP_FLOOR_MM) {
+                warningMsg.textContent = `${shared} — less than the ${DS_SAME_SURFACE_GAP_FLOOR_MM.toFixed(2)} mm a ` +
+                    '0.4 mm nozzle can print, so generation will be blocked. Reduce the double-sided dot or recess ' +
+                    'diameter, or check the interpoint offsets.';
+            } else {
+                warningMsg.textContent = `${shared} — less than the ${DS_SAME_SURFACE_GAP_RELIABLE_MM.toFixed(2)} mm ` +
+                    'needed to print reliably, so the ridge between them may come out thin or merged. Reduce the ' +
+                    'double-sided dot or recess diameter, or check the interpoint offsets.';
+            }
+            warningDiv.style.display = 'block';
+        }
+
         // BANA-compliant-ish auto wrapping for braille rows
         // Policy:
         // - User newlines are hard row breaks: each input line starts on a new row
@@ -5747,6 +5850,7 @@
         // the one for the active placement mode may be on screen.
         function refreshLiveWarnings() {
             checkPhysicalFit();
+            checkDoubleSidedGap();
             updateCapsWarning();
             updateBrailleFieldStatus();
 
