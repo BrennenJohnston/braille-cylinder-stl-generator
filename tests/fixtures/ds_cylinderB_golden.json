@@ -1,0 +1,60 @@
+{
+  "description": "Double-sided (interpoint) beta golden: Cylinder B (negative) of the paired set",
+  "fixture_name": "ds_cylinderB_golden",
+  "plate_type": "negative",
+  "generation": {
+    "note": "Rendered by tests/test_golden.py generate_ds_golden_fixtures() from extract_cylinder_geometry_spec called directly with back_lines= (no request route yet). Z-up, theta as emitted; browser workers negate theta for Three.js.",
+    "front_lines": [
+      "\u2801\u2803\u2809",
+      "",
+      "",
+      ""
+    ],
+    "back_lines": [
+      "\u2819\u2811\u280b",
+      "",
+      "",
+      ""
+    ],
+    "settings": {
+      "grid_columns": 14,
+      "grid_rows": 4,
+      "indicator_mode": "tactile",
+      "double_sided_enabled": 1,
+      "interpoint_offset_x": 1.25,
+      "interpoint_offset_y": 1.25,
+      "ds_dot_base_diameter": 1.2,
+      "ds_dot_base_height": 0.4,
+      "ds_dot_dome_diameter": 0.8,
+      "ds_dot_dome_height": 0.4,
+      "ds_bowl_base_diameter": 1.3,
+      "ds_bowl_depth": 0.5
+    },
+    "cylinder_params": {
+      "diameter": 30.75,
+      "height": 52.0,
+      "wall_thickness": 2.0,
+      "seam_offset_deg": 355.0
+    },
+    "generated": "2026-08-16",
+    "trimesh_version": "4.10.1",
+    "manifold3d_version": "3.3.2"
+  },
+  "expected_properties": {
+    "face_count": 14056,
+    "vertex_count": 7030,
+    "is_watertight": true,
+    "bbox_min": [
+      -15.754814147949219,
+      -15.375,
+      0.0
+    ],
+    "bbox_max": [
+      15.375,
+      15.375,
+      52.0
+    ],
+    "volume": 38487.365972596155,
+    "surface_area": 6589.134345266813
+  }
+}
