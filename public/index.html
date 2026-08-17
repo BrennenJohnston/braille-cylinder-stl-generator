@@ -2996,16 +2996,16 @@
                          toggle and #ds-gap-warning by id. -->
                     <div class="grade-selection" id="double-sided-selection">
                         <fieldset>
-                            <!-- REVIEW-BRENNEN: draft wording, not yet signed off. -->
+                            <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
                             <legend class="grade-label">Double-Sided Card (BETA — for testing)</legend>
                             <label class="radio-option ds-toggle-option" for="double_sided_enabled">
                                 <input type="checkbox" id="double_sided_enabled"
                                        aria-expanded="false" aria-controls="double-sided-section"
                                        aria-describedby="double-sided-note">
-                                <!-- REVIEW-BRENNEN: draft wording, not yet signed off. -->
+                                <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
                                 <span class="radio-text">Emboss both sides of the card (interpoint)</span>
                             </label>
-                            <!-- REVIEW-BRENNEN: draft wording, not yet signed off. -->
+                            <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
                             <div id="double-sided-note" class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
                                 Embosses both sides of the card in one pass: <strong>Cylinder A</strong> (the embossing plate) carries the front's raised dots plus recesses for the back, and <strong>Cylinder B</strong> (the counter plate) carries the back's raised dots plus recesses for the front, offset diagonally by 1.25 mm so the two sides never collide. Turning this on shows the Back of Card section below and locks the Row Indicator Style to the tactile seam arrow. Generate each cylinder with the same settings. This is a beta for testing — proofread both sides and check every braille surface before use.
                             </div>
@@ -3013,12 +3013,12 @@
                         <div id="double-sided-section" style="display: none;">
                             <div class="line-input-group" style="margin-top: 0.8em;">
                                 <fieldset class="line-input-fieldset">
-                                    <!-- REVIEW-BRENNEN: draft wording, not yet signed off. -->
+                                    <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
                                     <legend class="grade-label">Back of Card — Enter Text for Braille Translation</legend>
-                                    <!-- REVIEW-BRENNEN: label and placeholder are draft wording, not yet signed off. -->
+                                    <!-- Label and placeholder wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
                                     <label for="back-text" class="line-label">Back of Card Text</label>
                                     <textarea id="back-text" rows="4" placeholder="Type the text for the back of the card here. Each line becomes one braille row." style="width: 100%; resize: vertical;" autocomplete="off" aria-describedby="back-text-help"></textarea>
-                                    <!-- REVIEW-BRENNEN: draft wording, not yet signed off. -->
+                                    <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
                                     <div id="back-text-help" class="grade-note" style="margin-top: 0.6em; font-size: 0.85em;">
                                         Each line becomes one braille row on the back of the card, translated with the language selected below — there is no automatic wrapping here yet, so press Enter where each row should end. The back has the same number of rows and cells per row as the front.
                                     </div>
@@ -3073,7 +3073,7 @@
                                  also disables the visual radio and appends this note's id to
                                  its aria-describedby, so the lock reason travels with the
                                  disabled option. -->
-                            <!-- REVIEW-BRENNEN: draft wording, not yet signed off. -->
+                            <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
                             <div id="indicator-mode-lock-note" class="grade-note" role="status" aria-live="polite"
                                  style="margin-top: 6px; font-size: 0.85em; display: none;">
                                 <strong>Locked:</strong> Double-Sided Card is on, so the Row Indicator Style stays on the tactile seam arrow — both cylinders of a double-sided pair need it. Turn the beta off to choose visual markers.
@@ -5870,7 +5870,7 @@
 
             const frontLegend = document.getElementById('front-entry-legend');
             if (frontLegend) {
-                /* REVIEW-BRENNEN: the on-state relabel is draft wording, not yet signed off. */
+                /* On-state relabel wording signed off by Brennen (2026-08-16); reword only with his sign-off. */
                 frontLegend.textContent = on
                     ? 'Front of Card — Enter Text for Braille Translation'
                     : 'Enter Text for Braille Translation';
