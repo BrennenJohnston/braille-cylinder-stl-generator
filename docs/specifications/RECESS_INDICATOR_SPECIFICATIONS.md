@@ -947,6 +947,7 @@ When implementing or modifying indicator code, verify:
 | 2026-07-29 | 3.0 | Added Section 4: Tactile Seam Indicator, ported from the OpenSCAD version. Documented `indicator_mode` (`visual` \| `tactile`), the five tactile parameters, the shell-band construction, the seam-gap warning, and tactile column layout and test cases |
 | 2026-07-30 | 3.1 | Tactile defaults changed to `tactile_indicator_length` 10.0 mm and `tactile_indicator_raise` 0.5 mm; all five dimensions added to both Card Thickness presets; the dials moved into their own Expert Mode submenu shown only in tactile mode |
 | 2026-07-31 | 3.2 | Per-row text capacity at defaults changed to 13 cells in visual mode (either toggle state, `grid_columns` default 15) and 14 in tactile mode, so a 13-cell UEB phone number fits one row |
+| 2026-08-16 | 3.3 | Double-sided (interpoint) beta: `indicator_mode` is LOCKED to `tactile` whenever `double_sided_enabled` is on — the UI disables the visual radio and `validate_double_sided_settings()` rejects non-tactile double-sided requests with HTTP 400. Cylinder A keeps the raised arrows, Cylinder B the recesses, and the arrow's 180° position is the fixed point of the A/B pairing mirror. See INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md |
 
 ---
 

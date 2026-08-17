@@ -6,8 +6,8 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 
 > **v2.0.0 Architecture (2026-01-05):** This project uses a **100% client-side STL generation** architecture. Server-side STL generation was removed. The caching system (Redis + Vercel Blob) was also removed. See [CODEBASE_AUDIT_AND_RENOVATION_PLAN.md](../development/CODEBASE_AUDIT_AND_RENOVATION_PLAN.md) for migration details.
 
-**Last Updated:** 2026-02-02
-**Total Specification Documents:** 13
+**Last Updated:** 2026-08-16
+**Total Specification Documents:** 14
 
 ---
 
@@ -197,6 +197,23 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 - Column layout with indicators enabled, and with tactile mode (0 marker columns)
 - Tactile shell-band construction and the seam-gap warning
 
+#### [INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md](./INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md)
+**Status:** ✅ Complete (Created 2026-08-16)
+**Covers:**
+- Double-Sided Card (BETA): the paired Cylinder A / Cylinder B set that embosses both card faces in one pass
+- The interpoint offset standard (1.25, 1.25 mm diagonal; US Patent 5,527,117; NLS Spec 800)
+- The pairing mirror (theta → −theta, seam arrow at 180° as the fixed point) and the back-grid transform
+- Schema vs runtime parameter naming (`double_sided.*_mm` → flat `ds_*` / `interpoint_offset_*`), the three spellings of `back_lines`
+- The four validation hard gates and the 0.34 / 0.50 mm same-surface-gap thresholds
+- Wire shape, worker `is_recess` dot partition, fixed Option B footprints, all signed-off UI strings
+- Regression anchors: the ds golden fixture pair and `tests/e2e/doubleSided.spec.ts`
+
+**Key Components:**
+- `app/geometry/interpoint.py` constants and clearance functions
+- `validate_double_sided_settings()` in `app/validation.py`
+- 1:1 paired recesses replacing the universal counter grid
+- `#double_sided_enabled` disclosure toggle and the tactile lock
+
 ---
 
 ### 4. Generation & Export
@@ -317,6 +334,7 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 | **Dimensions** | SURFACE_DIMENSIONS_SPECIFICATIONS | — |
 | **Dot Geometry** | BRAILLE_DOT_ADJUSTMENTS_SPECIFICATIONS, BRAILLE_DOT_SHAPE_SPECIFICATIONS | BRAILLE_SPACING_SPECIFICATIONS |
 | **Indicators** | RECESS_INDICATOR_SPECIFICATIONS | — |
+| **Double-sided beta** | INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS | BRAILLE_TEXT_INPUT (§8), UI_INTERFACE (§4.8), STL_EXPORT (§7) |
 | **Generation** | STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS | CLIENT_SIDE_CSG_DOCUMENTATION |
 | **Caching (archived)** | CACHING_SYSTEM_CORE_SPECIFICATIONS | — |
 | **Settings Schema** | SETTINGS_SCHEMA_CORE_SPECIFICATIONS | — |
@@ -640,6 +658,7 @@ Section Reference: SURFACE_DIMENSIONS_SPECIFICATIONS.md (Section 2.1)
 **STL preview label?** → UI_INTERFACE_CORE_SPECIFICATIONS (Section 3.7)
 
 **Request schema?** → SETTINGS_SCHEMA_CORE_SPECIFICATIONS
+**Double-sided beta, interpoint offset, paired recesses?** → INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS
 
 ---
 
@@ -678,6 +697,7 @@ Section Reference: SURFACE_DIMENSIONS_SPECIFICATIONS.md (Section 2.1)
 | 2025-12-08 | Updated UI_INTERFACE_CORE_SPECIFICATIONS.md v1.3: Added STL Preview Label (Section 3.7) and Preview Display Settings with brightness/contrast controls (Section 3.8) |
 | 2025-12-08 | **BUG FIX:** Manifold worker integration completed. Frontend now uses dual-worker architecture: csg-worker.js for cards, csg-worker-manifold.js for cylinders (guarantees manifold output). Updated Web Worker Coverage section. |
 | 2026-07-29 | Added the editable Unicode braille field (BRAILLE_TEXT_INPUT §6.3) and converted the Repeat Number Sign checkbox to a Number Signs radio group (§6.2). Ported the OpenSCAD tactile row indicator into the app: RECESS_INDICATOR_SPECIFICATIONS v3.0 §4, plus `indicators.indicator_mode` and five `indicators.tactile_*` fields in SETTINGS_SCHEMA §3.6. |
+| 2026-08-16 | Added INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md documenting the Double-Sided Card (BETA): paired Cylinder A/B generation with 1:1 recesses, the interpoint offset, validation gates, worker dot partition, and UI. Incremented total spec count to 14; related updates already in BRAILLE_TEXT_INPUT v1.3, UI_INTERFACE v1.10, STL_EXPORT v1.5, SETTINGS_SCHEMA §5, and BRAILLE_SPACING v1.4. |
 
 ---
 

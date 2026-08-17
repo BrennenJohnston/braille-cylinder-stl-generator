@@ -25,6 +25,21 @@ translation, Three.js preview. Working branch: develop — never commit to main.
    - spacing: dot 2.5 / cell 6.5 / line 10.0 mm
    - emboss dot: cone base ⌀1.8, height 1.0, flat hat ⌀0.4 mm
    - recess (bowl): ⌀1.8 × 0.8 mm deep
+6b. Double-sided (interpoint) BETA — cylinders only, toggle default OFF, and
+   toggle-off behavior must stay byte-identical to single-sided:
+   - interpoint offset default (1.25, 1.25) mm diagonal, range 1.15–1.35 each
+     (settings double_sided.interpoint_offset_x_mm/_y_mm → flat runtime
+     interpoint_offset_x/_y; interpoint.py calls the y number offset_z).
+   - Double-sided = 1:1 paired recesses on BOTH cylinders (no universal
+     counter grid) + Row Indicator Style locked to tactile. Footprints ship
+     FIXED at Option B: dot ⌀1.2 (0.4 base + 0.4 dome, dome ⌀0.8) + bowl
+     ⌀1.3 × 0.5 mm — no UI dials, by decision (2026-08-16).
+   - csg-worker-manifold.js partitions dots per dot on is_recess (true →
+     subtract, false → union, absent → legacy plate-wide rule); CSG order:
+     shell → union raised → subtract recesses. Never reorder.
+   - Naming in the double-sided flow ONLY: "Cylinder A" = positive plate,
+     "Cylinder B" = negative plate, downloads Cylinder_A_/Cylinder_B_*.stl.
+     Never rename single-sided labels/filenames (training videos use them).
 
 ## Settings changes — order of operations
 7. settings.schema.json is the single source of truth. When adding or changing
@@ -43,7 +58,10 @@ translation, Three.js preview. Working branch: develop — never commit to main.
    HIGH: app/geometry/{dot_shapes,plates,booleans}.py, app/validation.py,
    backend.py (security headers!), public/index.html.
 10. NEVER modify tests/fixtures/*_golden.stl unless intentionally changing
-    geometry output — and say why in the commit message.
+    geometry output — and say why in the commit message. That glob literally
+    names ds_cylinderA_golden.stl / ds_cylinderB_golden.stl (the double-sided
+    pair; regenerate only via `python -m tests.test_golden`); the pre-beta
+    fixtures are *_small.stl.
 
 ## Named checks
 11. python -m ruff check .  and  python -m pytest tests/ -v
@@ -72,6 +90,7 @@ Specs live in docs/specifications/.
 | Dot shapes: dome/cone/bowl formulas, recess geometry | BRAILLE_DOT_SHAPE_SPECIFICATIONS.md |
 | Dot-dimension UI controls, defaults, validation | BRAILLE_DOT_ADJUSTMENTS_SPECIFICATIONS.md |
 | Row markers, seam arrow, indicator_mode | RECESS_INDICATOR_SPECIFICATIONS.md |
+| Double-sided beta, interpoint offset, paired recesses | INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md |
 | Settings JSON schema, field validation | SETTINGS_SCHEMA_CORE_SPECIFICATIONS.md |
 | STL generation pipeline, workers, download button | STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md |
 | Text input, placement modes, BANA wrap, languages | BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md |
