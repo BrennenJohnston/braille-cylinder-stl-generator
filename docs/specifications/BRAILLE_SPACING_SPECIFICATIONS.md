@@ -248,9 +248,21 @@ dot_col_angle_offsets = [-dot_spacing_angle / 2, dot_spacing_angle / 2]
 
 ### Summary Table
 
+> **Exception — double-sided (interpoint) BETA.** Everything in this section
+> describes single-sided mode, which is the default and is unchanged. When
+> `double_sided.enabled` is on (runtime name `double_sided_enabled`, a 0/1 int),
+> the counter plate does **not** generate the universal grid: each cylinder
+> carries raised dots for one face of the card plus one recess per actual dot of
+> the other face, 1:1. The spacing, dot map and angular direction rules below
+> still apply as written — the back-face grid is the front grid mirrored and
+> then stepped diagonally by the interpoint offset (default 1.25 mm around the
+> cylinder, 1.25 mm along it), which moves the grid, never re-spaces it. See
+> `app/geometry/interpoint.py` for that math and
+> `extract_cylinder_geometry_spec` for where it is applied.
+
 | Aspect | Embossing Plate (Positive) | Universal Counter Plate (Negative) |
 |--------|---------------------------|-----------------------------------|
-| **Dot Generation** | Only active dots (from braille text) | ALL 6 dots for ALL cells |
+| **Dot Generation** | Only active dots (from braille text) | ALL 6 dots for ALL cells (single-sided mode only — see the exception above) |
 | **Dot Operation** | ADD (protrusions) | SUBTRACT (recesses) |
 | **Angular Direction** | `apply_seam(angle)` = `-angle` | `apply_seam_mirrored(angle)` = `+angle` |
 | **Content Flow** | Counter-clockwise (viewed from above) | Clockwise (viewed from above) |
@@ -645,6 +657,7 @@ Verification: When plates face each other:
 | 2024-12-06 | 1.1 | Added Manifold theta negation fix (Bug 6) to correct reverse cell order on cylinders |
 | 2024-12-06 | 1.2 | Added triangle rotate_180 inversion fix to correct swapped triangle orientations |
 | 2026-07-31 | 1.3 | Updated the documented `grid_columns` default to 15 (13 text + 2 marker columns) |
+| 2026-08-16 | 1.4 | Noted the double-sided (interpoint) beta exception in Section 6: with the toggle on, the counter plate carries 1:1 paired recesses instead of the universal all-position grid. Spacing values unchanged. |
 
 ---
 
