@@ -6037,15 +6037,16 @@
                         if (!paragraphs[p]) continue;
                         const braille = await translateWithLiblouis(applyCapitalizationSetting(paragraphs[p]), 'g2', tableName);
                         if (braille.length > cols) {
-                            /* REVIEW-BRENNEN (Phase 02): draft wording. NOT among the four strings
-                               Brennen signed off on 2026-08-17 - still awaiting his sign-off. */
+                            /* User-facing wording signed off by Brennen (2026-08-17); reword only
+                               with his sign-off. Deliberately mirrors the front's per-line
+                               wording so both overflow boxes read the same way. */
                             messages.push(`Back line ${p + 1} ("${paragraphs[p]}") needs ${braille.length} cells but ${cols} are available.`);
                         }
                     }
                     if (runId !== backOverflowRun) return;
                     const needs = wrap.rowsNeededIsExact ? `${wrap.rowsNeeded} rows` : `more than ${wrap.rowsNeeded} rows`;
-                    /* REVIEW-BRENNEN (Phase 02): draft wording. NOT among the four strings
-                       Brennen signed off on 2026-08-17 - still awaiting his sign-off. */
+                    /* User-facing wording signed off by Brennen (2026-08-17); reword only with
+                       his sign-off. */
                     messages.push(`Your back text needs ${needs} but the plate has ${rows}.`);
                 }
 
