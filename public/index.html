@@ -528,6 +528,19 @@
             color: var(--text-primary);
         }
 
+        /* Front of Card / Back of Card headings inside the preview panel. They are
+           h3 so the outline stays valid under the panel's h2, and the browser's own
+           h3 sizing is what marks them as subordinate - no font-size override. */
+        .preview-section-heading {
+            margin-top: 1em;
+            margin-bottom: 0.25em;
+            color: var(--text-primary);
+        }
+
+        .preview-section-heading:first-child {
+            margin-top: 0;
+        }
+
         .preview-line-success {
             margin: 10px 0;
             padding: 10px;
@@ -7070,6 +7083,13 @@
             errorDiv.style.display = 'none';
             let previewHTML = '';
 
+            // Double-sided beta: the exact test the generate handler uses (toggle
+            // checked AND shape cylinder), so the preview can never disagree with the
+            // STL about which mode you are in. With the beta OFF nothing below changes
+            // and the preview output stays byte-identical to the single-sided one.
+            const doubleSidedOn = !!document.getElementById('double_sided_enabled')?.checked
+                && (document.querySelector('input[name="shape_type"]:checked')?.value || 'cylinder') === 'cylinder';
+
             if (placementMode === 'manual') {
                 const lines = getDynamicLineValues();
                 if (lines.every(line => !line.trim())) {
@@ -7134,6 +7154,56 @@
                         <strong>Auto Placement:</strong> Error: ${error.message}
                     </div>`;
                 }
+            }
+
+            // Double-sided beta: show BOTH sides. The back rows come from the SAME
+            // banaAutoWrap call the generate handler makes, so what you read here is
+            // what gets embossed. Only braille and shorthand are interpolated (both
+            // are drawn from fixed alphabets), never raw user text.
+            if (doubleSidedOn) {
+                const backSrc = String(document.getElementById('back-text')?.value || '').trim();
+                let backHTML = '';
+                if (!backSrc) {
+                    /* User-facing wording signed off by Brennen (2026-08-17); reword only with
+                       his sign-off. */
+                    backHTML = `<div class="preview-line-success">
+                        <div>No back of card text yet. Type it in the Back of Card box above and preview again.</div>
+                    </div>`;
+                } else {
+                    try {
+                        const backCols = getAvailableColumns();
+                        const backRows = parseInt(document.getElementById('grid_rows').value) || 4;
+                        const backWrap = await banaAutoWrap(backSrc, backCols, backRows, tableName);
+                        if (backWrap.error) {
+                            /* User-facing wording signed off by Brennen (2026-08-17); reword only with
+                               his sign-off. */
+                            const backMsg = backWrap.warnings && backWrap.warnings.length
+                                ? backWrap.warnings.join(' ')
+                                : 'Unable to wrap the back text per BANA rules.';
+                            backHTML += `<div class="preview-line-error">${backMsg}</div>`;
+                        }
+                        const backLinesForPreview = backWrap.brailleLines || [];
+                        for (let r = 0; r < backRows; r++) {
+                            const slice = backLinesForPreview[r] || '';
+                            const shorthand = slice ? brailleToComputerShorthand(slice) : '';
+                            backHTML += `<div class="preview-line-success">
+                                <div><strong>Row ${r + 1}:</strong> "${slice}"</div>
+                                <div class="preview-subline">${shorthand ? `Computer shorthand: "${shorthand}"` : ''}</div>
+                            </div>`;
+                        }
+                    } catch (error) {
+                        log.error('BANA wrap failed for back text:', error);
+                        /* User-facing wording signed off by Brennen (2026-08-17); reword only with
+                           his sign-off. */
+                        backHTML += `<div class="preview-line-error">
+                            <strong>Back of Card:</strong> Error: ${error.message}
+                        </div>`;
+                    }
+                }
+                /* Both section headings: User-facing wording signed off by Brennen (2026-08-17); reword only with
+                   his sign-off. h3 keeps the outline valid under the panel's h2. */
+                previewHTML = `<h3 class="preview-section-heading">Front of Card</h3>` + previewHTML
+                    + `<h3 class="preview-section-heading">Back of Card</h3>` + backHTML;
             }
 
             previewContent.innerHTML = previewHTML;

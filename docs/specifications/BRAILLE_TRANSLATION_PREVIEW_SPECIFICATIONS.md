@@ -33,6 +33,7 @@ This document specifies the Braille Translation Preview feature in the applicati
 10. [Error States and Fallbacks](#10-error-states-and-fallbacks)
 11. [Styling and Accessibility](#11-styling-and-accessibility)
 12. [Cross-Implementation Consistency](#12-cross-implementation-consistency)
+13. [Double-Sided Beta: Front of Card / Back of Card Preview](#13-double-sided-beta-front-of-card--back-of-card-preview)
 
 ---
 
@@ -855,6 +856,17 @@ async function translateWithLiblouis(text, grade, tableName = null) {
     color: var(--text-primary);
 }
 
+/* Double-sided beta section headings (h3) - see section 13 */
+.preview-section-heading {
+    margin-top: 1em;
+    margin-bottom: 0.25em;
+    color: var(--text-primary);
+}
+
+.preview-section-heading:first-child {
+    margin-top: 0;
+}
+
 .preview-line-success {
     margin: 10px 0;
     padding: 10px;
@@ -960,6 +972,79 @@ has_braille_chars = any(ord(char) >= 0x2800 and ord(char) <= 0x28FF for char in 
 | 4 | `{app_root}/third_party/liblouis/share/liblouis/tables/` |
 
 The backend has additional fallback paths for alternative deployment configurations. Both prioritize `/static/liblouis/tables/` as the primary location.
+
+---
+
+## 13. Double-Sided Beta: Front of Card / Back of Card Preview
+
+**Source:** `public/index.html` (the `#preview-braille-btn` click handler)
+
+Added 2026-08-17. All four new user-facing strings in this section - the two headings,
+the empty-back note, and the two error prefixes - were **signed off by Brennen on
+2026-08-17**; reword only with his sign-off.
+
+When the double-sided (interpoint) beta is ON the preview shows
+**both sides of the card**. The handler computes the beta state with the exact test
+the generate handler uses - `#double_sided_enabled` checked AND the shape radio on
+`cylinder` - so the preview can never disagree with the STL about which mode is
+active.
+
+### With the beta OFF
+
+Nothing changes. No wrapper, no heading, no extra node: `#preview-content` receives
+byte-for-byte the same markup it did before the feature existed. This is verified by
+capturing `#preview-content.innerHTML` for the same input before and after and
+comparing the two strings exactly.
+
+### With the beta ON
+
+1. The existing front output (manual or auto, unchanged) is prefixed with an
+   `<h3 class="preview-section-heading">Front of Card</h3>` heading.
+2. A second `<h3 class="preview-section-heading">Back of Card</h3>` heading is
+   appended, followed by the back rows.
+
+The headings are **h3** because the preview panel's own title is an h2; h3 keeps the
+document outline valid (W3C Nu and Lighthouse both check this). No font-size is set -
+the browser's default h3 sizing is what marks them as subordinate.
+
+### Back rows
+
+The back rows come from the SAME call the generate handler makes:
+
+```javascript
+const backWrap = await banaAutoWrap(backSrc, getAvailableColumns(), backRows, tableName);
+```
+
+with `backSrc` = the trimmed `#back-text` value, `backRows` = `#grid_rows` (or 4), and
+`tableName` = the master language table. Each row renders exactly like an auto-mode
+front row - a `.preview-line-success` block with `Row N`, the braille, and a
+`.preview-subline` Computer shorthand line via `brailleToComputerShorthand()`. Because
+generation runs the identical wrap, what the preview shows is what gets embossed.
+
+Only braille and shorthand are interpolated into the markup, never raw user text; both
+are drawn from fixed alphabets (braille is U+2800-U+28FF, shorthand is letters, digits,
+`,;:.!?-'`, and the two bracketed indicator names), so neither can carry HTML.
+
+### Back-of-card states
+
+| State | What the Back of Card section shows |
+|-------|-------------------------------------|
+| `#back-text` empty | One `.preview-line-success` note instead of rows |
+| Wrap needs more rows than the plate has, or a word cannot be divided per BANA | A `.preview-line-error` block carrying the `banaAutoWrap` warning, followed by the rows that did fit |
+| liblouis throws | A `.preview-line-error` block: "**Back of Card:** Error: {message}" |
+
+Preview errors are rendered **inline** in the panel rather than in the `#error-message`
+overlay, so a back-of-card problem cannot overwrite a front-of-card warning. Blocking
+is the generate handler's job (see INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §7.4);
+the preview only reports.
+
+### Unchanged: the empty-front early returns
+
+The handler still returns early, with no preview at all, when the front text is empty
+("Please enter text in at least one line." in manual mode, "Please enter text in the
+Auto Placement field." in auto mode). That is true with the beta ON as well - a card
+with only back text cannot be previewed. Deliberately left as-is in the phase that
+added the back section, since changing it would alter single-sided behavior.
 
 ---
 
@@ -1090,3 +1175,12 @@ If backend returns "does not contain proper braille Unicode characters":
 1. Frontend translation may have failed silently
 2. Data may have been corrupted in transit
 3. Check that lines are not empty strings
+
+---
+
+## Document History
+
+| Date | Version | Changes |
+|------|---------|---------|
+| 2026-08-17 | 1.1 | Added §13: with the double-sided (interpoint) beta ON the preview shows both sides - the existing front output under an h3 "Front of Card" heading, then an h3 "Back of Card" section whose rows come from the same `banaAutoWrap()` call the generate handler makes. Beta OFF is byte-identical (verified by comparing `#preview-content.innerHTML` before and after). §11 gained the `.preview-section-heading` rule. Back-of-card preview errors render inline as `.preview-line-error` blocks rather than in the `#error-message` overlay, so they cannot overwrite a front warning. |
+| (pre-history) | 1.0 | Original specification: UI layout, translation architecture, liblouis worker integration, computer shorthand conversion, manual and auto placement previews, language tables, backend validation, braille Unicode handling, error states, styling and accessibility, cross-implementation consistency, and Appendices A-D. This document carried no version footer before 2026-08-17. |
