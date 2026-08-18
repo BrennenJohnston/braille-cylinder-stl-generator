@@ -3122,9 +3122,13 @@
                                 <fieldset class="line-input-fieldset">
                                     <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
                                     <legend class="grade-label">Back of Card — Enter Text for Braille Translation</legend>
-                                    <!-- Label and placeholder wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
+                                    <!-- Label wording signed off by Brennen (2026-08-16). Placeholder
+                                         replaced with his sign-off (2026-08-17): BANA auto-wrap made
+                                         "each line becomes one braille row" untrue, since one typed
+                                         line can now become several rows. Reword either only with his
+                                         sign-off. -->
                                     <label for="back-text" class="line-label">Back of Card Text</label>
-                                    <textarea id="back-text" rows="4" placeholder="Type the text for the back of the card here. Each line becomes one braille row." style="width: 100%; resize: vertical;" autocomplete="off" aria-describedby="back-text-help"></textarea>
+                                    <textarea id="back-text" rows="4" placeholder="Type the text for the back of the card here. It wraps across the rows automatically." style="width: 100%; resize: vertical;" autocomplete="off" aria-describedby="back-text-help"></textarea>
                                     <!-- User-facing wording signed off by Brennen (2026-08-17); reword only
                                          with his sign-off. Replaces the 2026-08-16 note, which said "there is
                                          no automatic wrapping here yet, so press Enter where each row should
@@ -6604,7 +6608,11 @@
         try { updatePlacementUI(); } catch (e) {}
         // Restored double-sided state fires no events either: reveal the Back of
         // Card section and apply the tactile lock by hand when it came back on.
-        try { updateDoubleSidedUI(); } catch (e) {}
+        // The try stays so a throw here cannot stop page startup; the catch says
+        // so out loud, because swallowing it leaves the entire beta UI dead -
+        // no Back of Card section, no tactile lock, no A/B labels - with nothing
+        // anywhere to say why.
+        try { updateDoubleSidedUI(); } catch (e) { log.error('Double-sided UI failed to initialise:', e); }
         // Restored settings are written straight to the DOM and fire no events, so
         // the warnings are seeded by hand against whatever came back from storage.
         try { refreshLiveWarnings(); } catch (e) {}
@@ -6657,7 +6665,7 @@
                 if (dsToggleReset) dsToggleReset.checked = false;
                 const backTextReset = document.getElementById('back-text');
                 if (backTextReset) backTextReset.value = '';
-                try { updateDoubleSidedUI(); } catch (e) {}
+                try { updateDoubleSidedUI(); } catch (e) { log.error('Double-sided UI failed to refresh after reset to defaults:', e); }
                 updateShapeSettings();
                 clearGridColumnsDirty();
                 updateGridColumnsForPlateType();

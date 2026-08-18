@@ -386,9 +386,11 @@ A `.grade-selection` block directly after the front entry fieldset:
 Toggling ON reveals `#double-sided-section` containing the **Back of Card** fieldset:
 
 - Legend: **"Back of Card — Enter Text for Braille Translation"**
-- Label: **"Back of Card Text"** for the `#back-text` textarea (one braille row per
-  newline), placeholder: **"Type the text for the back of the card here. Each line
-  becomes one braille row."**
+- Label: **"Back of Card Text"** for the `#back-text` textarea, placeholder **signed off by
+  Brennen 2026-08-17**: **"Type the text for the back of the card here. It wraps across the
+  rows automatically."** This replaces the 2026-08-16 placeholder ("Each line becomes one
+  braille row"), which BANA auto-wrap made untrue — one typed line can now produce several
+  braille rows. A newline is still a forced row break, which is what the help note says.
 - Help note (`#back-text-help`), **signed off by Brennen 2026-08-17**: "Your text is
   translated with the language selected below and wrapped across the braille rows for you,
   keeping whole words together. Press Enter only where you want to force the start of a new
@@ -591,6 +593,7 @@ The embossing test the beta was waiting on has been run and **passed**.
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-08-17 | 1.3 | **Placeholder corrected** (web repo Phase 04 closeout): `#back-text`'s placeholder said "Each line becomes one braille row", which stopped being true when v1.2 added BANA auto-wrap. Replaced with "Type the text for the back of the card here. It wraps across the rows automatically.", **signed off by Brennen on 2026-08-17**; §7.1 updated. This closes the last carried-over wording item from Phase 02. No code behaviour, wire shape, or geometry changed. |
 | 2026-08-17 | 1.2 | **Back of Card text reached parity with the front** (web repo Phase 02): the generate handler now runs the shared `banaAutoWrap()` over `#back-text` instead of translating one row per newline, and a live `#ds-back-overflow-warning` status region warns while the user types. §7.4 rewritten (wrapping rule, live-warning wording, three fail-closed blocking paths); the 2026-08-16 per-line "exceeds C available braille cells" error retired; the Back of Card help note replaced. All six new user-facing strings — the help note, the three blocking errors, and the two live-warning sentences — were **signed off by Brennen on 2026-08-17**. Wire shape, persistence keys, the toggle-off payload, and all geometry are unchanged. |
 | 2026-08-17 | 1.1 | Recorded the **physical validation** (new §10): two Bambu Lab X1C (0.4 mm nozzle) print rounds of Cylinder A/B pairs embossed real card stock legibly on both faces with the Option B footprints. Consequences written through the document — Option B is permanent (Option A is history, not a fallback switch); `BACK_GRID_DIRECTION = +1` is confirmed by physical handling and the "unverifiable sign" caveat in §2.3/§9 is closed (flip procedure retained as history); the status line in the Overview now says the BETA label waits on broader user testing, not on the embossing test. No code, geometry, or golden fixture changed. |
 | 2026-08-16 | 1.0 | Initial specification, written at Phase 10 of the interpoint initiative after the implementation (Phases 01–09) was complete and verified. Documents the as-built feature: schema/runtime naming, the four validation gates, the wire shape, the worker partition, the fixed Option B footprints, all signed-off user-facing strings verbatim, and the regression anchors. Citations: US Patent 5,527,117 (Roy, Impact Devices, 1996); NLS Specification 800, October 2014, §3.1/§3.2.4; Duxbury Systems, "Louis Braille and the Braille System"; Bambu Lab Wiki, "Introduction to wall generator". |
