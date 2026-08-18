@@ -102,6 +102,8 @@ def index_explicit():
    - 4.5 [Toggle Button ARIA Requirements](#45-toggle-button-aria-requirements)
    - 4.6 [Reduced Motion Support](#46-reduced-motion-support)
    - 4.7 [Two-Way Translation Controls](#47-two-way-translation-controls)
+   - 4.8 [Double-Sided Card Beta: Disclosure Checkbox and Locked Radio Option](#48-double-sided-card-beta-disclosure-checkbox-and-locked-radio-option)
+   - 4.9 [Button Contrast Tokens and the 44 px Action Button](#49-button-contrast-tokens-and-the-44-px-action-button)
 5. [Scrollbar Customization](#5-scrollbar-customization)
    - 5.1 [Form Scroll Area Scrollbar](#51-form-scroll-area-scrollbar)
    - 5.2 [Global Page Scrollbar](#52-global-page-scrollbar)
@@ -174,11 +176,17 @@ All theme-dependent colors are defined using CSS custom properties (variables) o
     --border-secondary: #cbd5e1;
     --border-focus: #3182ce;
 
-    /* Button colors */
-    --btn-primary-bg: linear-gradient(90deg, #3182ce 60%, #63b3ed 100%);
-    --btn-primary-hover-bg: linear-gradient(90deg, #2563eb 60%, #4299e1 100%);
-    --btn-success-bg: #10b981;
-    --btn-success-hover-bg: #059669;
+    /* Button colors — every gradient stop clears 4.5:1 against the #fff label
+       on its own; border tokens equal the fill here because the fill already
+       clears 3:1 against the surface behind it (see Section 4.9) */
+    --btn-primary-bg: linear-gradient(90deg, #245d94 60%, #2c6ca8 100%);
+    --btn-primary-hover-bg: linear-gradient(90deg, #1d4e7c 60%, #245d94 100%);
+    --btn-success-bg: #0f7a5a;
+    --btn-success-hover-bg: #0c6349;
+    --btn-primary-border: #245d94;
+    --btn-primary-border-hover: #1d4e7c;
+    --btn-success-border: #0f7a5a;
+    --btn-success-border-hover: #0c6349;
     --btn-secondary-bg: #9ca3af;
     --btn-tertiary-bg: #6b7280;
 
@@ -232,11 +240,17 @@ All theme-dependent colors are defined using CSS custom properties (variables) o
     --border-secondary: #718096;
     --border-focus: #63b3ed;
 
-    /* Button colors */
-    --btn-primary-bg: linear-gradient(90deg, #4299e1 60%, #63b3ed 100%);
-    --btn-primary-hover-bg: linear-gradient(90deg, #3182ce 60%, #4299e1 100%);
-    --btn-success-bg: #059669;
-    --btn-success-hover-bg: #047857;
+    /* Button colors — solid, not gradient: a fill dark enough for a #fff label
+       drops under 3:1 against the #374151 surface, so the border carries the
+       component boundary instead (see Section 4.9) */
+    --btn-primary-bg: #2c6ca8;
+    --btn-primary-hover-bg: #245d94;
+    --btn-success-bg: #0c6b4f;
+    --btn-success-hover-bg: #0a5940;
+    --btn-primary-border: #90cdf4;
+    --btn-primary-border-hover: #bee3f8;
+    --btn-success-border: #6ee7b7;
+    --btn-success-border-hover: #a7f3d0;
     --btn-secondary-bg: #718096;
     --btn-tertiary-bg: #4a5568;
 
@@ -297,6 +311,12 @@ All theme-dependent colors are defined using CSS custom properties (variables) o
     --btn-primary-hover-bg: #02fe05;
     --btn-success-bg: #02fe05;
     --btn-success-hover-bg: #02fe05;
+    /* Declared for completeness; every high-contrast button rule below sets its
+       own border with !important, so these tokens never paint */
+    --btn-primary-border: #000000;
+    --btn-primary-border-hover: #ffff00;
+    --btn-success-border: #000000;
+    --btn-success-border-hover: #ffff00;
     --btn-secondary-bg: #ff6600;    /* Orange */
     --btn-tertiary-bg: #ff6600;
 
@@ -1826,6 +1846,59 @@ turns off. Native `disabled` was chosen over `aria-disabled` because the reposit
 existing convention for unavailable controls is the native attribute, and it needs no
 keyboard interception to keep the lock honest.
 
+### 4.9 Button Contrast Tokens and the 44 px Action Button
+
+The full [ADA Accessibility Validation SOP](../development/ADA_ACCESSIBILITY_VALIDATION_SOP.md)
+was executed against the double-sided beta flow on 2026-08-17. Two failures were
+found, both pre-existing and both app-wide rather than beta-specific.
+
+**Why the tooling did not catch the contrast failure.** Lighthouse scored 100/100
+and axe-core passed the primary buttons, because `--btn-primary-bg` was a gradient
+and a `background-image` defeats both tools' colour sampling — they skip the element
+instead of failing it. Measured directly, white text on the old tokens ran 4.03:1 at
+the gradient's dark stop down to **2.28:1** at its light stop, and 2.54:1 on
+`--btn-success-bg`. **Any future button token must be measured directly, at every
+gradient stop, not trusted to an automated score.**
+
+**Why the dark theme needs a border.** The two rules pull in opposite directions
+there. A fill dark enough to carry a white label at 4.5:1 (WCAG 1.4.3) falls under
+3:1 against the `#374151` surface behind it (WCAG 1.4.11), so the button block stops
+being identifiable as a control. The dark theme therefore uses a solid dark fill for
+the label ratio and a light border for the boundary ratio. The light theme needs no
+such split — its fill clears both — so its border tokens simply equal its fill and
+never paint. The high contrast theme was already compliant and is untouched; its
+per-button `!important` border rules override the tokens entirely.
+
+Measured after the change, all three themes:
+
+| Control | Theme | Label vs fill (need 4.5:1) | Boundary vs surface (need 3:1) |
+|---|---|---|---|
+| `#action-btn`, `#generate-both-btn` | light | 5.50:1 | 6.54:1 (fill) |
+| `.pair-downloads button` | light | 5.31:1 | 5.08:1 (fill) |
+| `#action-btn`, `#generate-both-btn` | dark | 5.50:1 | 6.00:1 (border) |
+| `.pair-downloads button` | dark | 6.50:1 | 6.76:1 (border) |
+| `#action-btn`, `#generate-both-btn` | high contrast | 7.94:1 | 16.04:1 (border) |
+| `.pair-downloads button` | high contrast | 15.18:1 | 12.58:1 (fill) |
+
+Because `box-sizing: border-box` is global, the added 2 px border does not grow any
+button; it was verified not to clip any label (`scrollWidth`/`scrollHeight` equal
+`clientWidth`/`clientHeight` on every button in every theme).
+
+**Touch target.** `#action-btn` rendered 34 px tall at desktop widths against the
+44 × 44 px floor — the `max-width: 768px` block already forced 48 px, so only desktop
+was short. It now carries an explicit `min-height: 44px`. Nothing shrank.
+
+**Known remaining gaps** (measured 2026-08-17, deliberately not fixed — they are
+pre-existing, outside the beta flow, and app-wide):
+
+- At a 320 CSS px viewport **combined with** the app's own font control at 200%, the
+  page scrolls horizontally by 127 px. `.font-size-controls` (357 px) and
+  `.theme-toggle-section` (575 px) are locked by `flex-shrink: 0` and the label's
+  `white-space: nowrap`. At 100% font, 320 px reflows cleanly, and at 1280 px the
+  200% and 75% font sizes both reflow cleanly — only the combination fails.
+- The header's own font-size buttons render 36 × 31 px and 34 × 30 px, and radio
+  label rows render 28 px tall, both under the 44 × 44 px floor.
+
 ---
 
 ## 5. Scrollbar Customization
@@ -2455,6 +2528,7 @@ Low vision users benefit from enhanced depth perception:
 | 1.8 | 2026-01-05 | **Cross-Browser UI Hardening:** Added Section 3.9 (WebGL Context Recovery), Section 4.5 (Toggle Button ARIA Requirements), Section 4.6 (Reduced Motion Support), and Section 7.3 (iOS Safe Area Handling) to document new accessibility and cross-browser compatibility features |
 | 1.9 | 2026-07-30 | **Form column restructure:** Split `.form-section` into a non-scrolling panel plus `.form-scroll` and a pinned `.action-footer`, so `#action-btn` is always in view (Sections 5.1, 6.3, 7.1, 7.2). Documented the form-level event delegation that resets the button on any settings change (Section 6.2), the six Expert Mode submenus and their contrast-safe active colours (Section 4.5), and the two-way translation buttons (new Section 4.7) |
 | 1.10 | 2026-08-16 | **Double-Sided Card beta UI:** Added Section 4.8 documenting the disclosure-checkbox toggle (`#double_sided_enabled` with `aria-expanded`/`aria-controls`, 44 px hit target), the Back of Card section reveal with front-legend relabeling, and the locked "Visual markers" radio pattern (native `disabled` + live-region lock note wired into `aria-describedby`). Validated: W3C Nu 0 errors, Lighthouse accessibility 100/100 desktop and mobile |
+| 1.11 | 2026-08-17 | **Full ADA SOP executed against the beta flow.** Added Section 4.9 (button contrast tokens, the dark-theme fill-versus-boundary tension, the 44 px `#action-btn`, and the known remaining gaps). Rewrote the `--btn-primary-*` and `--btn-success-*` values in all three theme blocks of Section 1.2 and added four border tokens per theme: white labels were 2.28:1 on the old primary gradient and 2.54:1 on the old success fill, and neither Lighthouse nor axe-core could see it because a `background-image` defeats their sampling. `#action-btn` gained `min-height: 44px` (was 34 px on desktop). Validated after the change: W3C Nu 0 errors 0 warnings on the rendered beta-state DOM, Lighthouse accessibility 100/100 desktop and mobile, 48 of 48 contrast measurements passing across light/dark/high-contrast, keyboard walkthrough clean beta-on and beta-off, reflow clean at 320 px and at 75%/200% app font size on desktop |
 
 ---
 

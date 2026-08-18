@@ -74,10 +74,20 @@
             --border-primary: #e2e8f0;
             --border-secondary: #cbd5e1;
             --border-focus: #3182ce;
-            --btn-primary-bg: linear-gradient(90deg, #3182ce 60%, #63b3ed 100%);
-            --btn-primary-hover-bg: linear-gradient(90deg, #2563eb 60%, #4299e1 100%);
-            --btn-success-bg: #10b981;
-            --btn-success-hover-bg: #059669;
+            /* Button fills carry white text, so every gradient stop has to clear
+               4.5:1 against #fff on its own - the old #3182ce -> #63b3ed ran from
+               4.03:1 down to 2.28:1 at the light end. Border tokens match the fill
+               here because the fill already clears 3:1 against the surface behind
+               it; the dark theme uses them for real. Chosen by Brennen 2026-08-17
+               (option A of three measured sets). */
+            --btn-primary-bg: linear-gradient(90deg, #245d94 60%, #2c6ca8 100%);
+            --btn-primary-hover-bg: linear-gradient(90deg, #1d4e7c 60%, #245d94 100%);
+            --btn-success-bg: #0f7a5a;
+            --btn-success-hover-bg: #0c6349;
+            --btn-primary-border: #245d94;
+            --btn-primary-border-hover: #1d4e7c;
+            --btn-success-border: #0f7a5a;
+            --btn-success-border-hover: #0c6349;
             --btn-secondary-bg: #9ca3af;
             --btn-tertiary-bg: #6b7280;
             --error-bg: #fee2e2;
@@ -118,10 +128,19 @@
             --border-primary: #4a5568;
             --border-secondary: #718096;
             --border-focus: #63b3ed;
-            --btn-primary-bg: linear-gradient(90deg, #4299e1 60%, #63b3ed 100%);
-            --btn-primary-hover-bg: linear-gradient(90deg, #3182ce 60%, #4299e1 100%);
-            --btn-success-bg: #059669;
-            --btn-success-hover-bg: #047857;
+            /* The dark theme cannot solve this with fill alone: a fill dark enough
+               for white text (4.5:1) drops under 3:1 against the #374151 surface
+               behind it, so the button block stops being identifiable. Solid fill
+               for the text ratio, light border for the boundary ratio. Chosen by
+               Brennen 2026-08-17 (option A of three measured sets). */
+            --btn-primary-bg: #2c6ca8;
+            --btn-primary-hover-bg: #245d94;
+            --btn-success-bg: #0c6b4f;
+            --btn-success-hover-bg: #0a5940;
+            --btn-primary-border: #90cdf4;
+            --btn-primary-border-hover: #bee3f8;
+            --btn-success-border: #6ee7b7;
+            --btn-success-border-hover: #a7f3d0;
             --btn-secondary-bg: #718096;
             --btn-tertiary-bg: #4a5568;
             --error-bg: #742a2a;
@@ -160,6 +179,12 @@
             --btn-primary-hover-bg: #02fe05; /* Green */
             --btn-success-bg: #02fe05; /* Green */
             --btn-success-hover-bg: #02fe05; /* Green */
+            /* Declared for completeness only: every high-contrast button below
+               sets its own border with !important, so these never paint. */
+            --btn-primary-border: #000000;
+            --btn-primary-border-hover: #ffff00;
+            --btn-success-border: #000000;
+            --btn-success-border-hover: #ffff00;
             --btn-secondary-bg: #ff6600;
             --btn-tertiary-bg: #ff6600;
             /* Error text is green on black (15.2:1) with a red border carrying the
@@ -1687,10 +1712,12 @@
         button[type="submit"] {
             background: var(--btn-primary-bg);
             color: #fff;
+            border: 2px solid var(--btn-primary-border);
             box-shadow: 0 2px 8px var(--shadow-light);
         }
         button[type="submit"]:hover {
             background: var(--btn-primary-hover-bg);
+            border-color: var(--btn-primary-border-hover);
             transform: translateY(-2px) scale(1.03);
         }
 
@@ -1703,6 +1730,10 @@
         #action-btn {
             transition: background 0.3s ease, box-shadow 0.3s ease;
             min-width: 140px;
+            /* The shared button padding lands this at 34px at the desktop font
+               size, under the 44x44 floor; the max-width:768px block already
+               forces 48px, so only desktop was short. Nothing shrinks. */
+            min-height: 44px;
             text-align: center;
             font-size: 0.95em;
         }
@@ -1710,22 +1741,26 @@
         #action-btn.generate-state {
             background: var(--btn-primary-bg);
             color: #fff;
+            border: 2px solid var(--btn-primary-border);
             box-shadow: 0 2px 8px var(--shadow-light);
         }
 
         #action-btn.generate-state:hover {
             background: var(--btn-primary-hover-bg);
+            border-color: var(--btn-primary-border-hover);
             box-shadow: 0 4px 12px var(--shadow-medium);
         }
 
         #action-btn.download-state {
             background: var(--btn-success-bg);
             color: #fff;
+            border: 2px solid var(--btn-success-border);
             box-shadow: 0 2px 8px var(--shadow-light);
         }
 
         #action-btn.download-state:hover {
             background: var(--btn-success-hover-bg);
+            border-color: var(--btn-success-border-hover);
             box-shadow: 0 4px 12px var(--shadow-medium);
         }
 
@@ -1760,11 +1795,13 @@
             max-width: 24em;
             background: var(--btn-primary-bg);
             color: #fff;
+            border: 2px solid var(--btn-primary-border);
             box-shadow: 0 2px 8px var(--shadow-light);
         }
 
         #generate-both-btn:hover:not(:disabled) {
             background: var(--btn-primary-hover-bg);
+            border-color: var(--btn-primary-border-hover);
             box-shadow: 0 4px 12px var(--shadow-medium);
         }
 
@@ -1786,11 +1823,13 @@
             flex: 1 1 11em;
             background: var(--btn-success-bg);
             color: #fff;
+            border: 2px solid var(--btn-success-border);
             box-shadow: 0 2px 8px var(--shadow-light);
         }
 
         .pair-downloads button:hover {
             background: var(--btn-success-hover-bg);
+            border-color: var(--btn-success-border-hover);
             box-shadow: 0 4px 12px var(--shadow-medium);
         }
 
