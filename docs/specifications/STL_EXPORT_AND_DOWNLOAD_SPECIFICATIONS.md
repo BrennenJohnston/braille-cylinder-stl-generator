@@ -39,6 +39,7 @@ This document specifies the STL export and download system in the Braille Card a
 12. [Error Handling](#12-error-handling)
 13. [Performance Characteristics](#13-performance-characteristics)
 14. [Cross-Implementation Consistency](#14-cross-implementation-consistency)
+15. [Paired Generation — Generate Both Cylinders (Double-Sided Beta)](#15-paired-generation--generate-both-cylinders-double-sided-beta)
 
 ---
 
@@ -1264,6 +1265,121 @@ async function test_geometry_consistency() {
 
 ---
 
+## 15. Paired Generation — Generate Both Cylinders (Double-Sided Beta)
+
+Added 2026-08-17. Applies **only** while the Double-Sided Card beta is on (checkbox
+checked AND shape `cylinder`). With the beta off, nothing in this section exists on the
+page and the single-plate flow of Sections 7 and 8 is unchanged.
+
+### Why it exists
+
+A double-sided pair only works if both cylinders come from **one** set of settings. In the
+two-step flow the user generates Cylinder A, switches the plate radio, and generates
+Cylinder B — and anything they touch in between produces a pair that cannot emboss the
+same card. Generate Both removes that window: one press runs the whole pipeline twice with
+nothing editable between the runs.
+
+### The control
+
+| Element | Id | Shown | Notes |
+|---|---|---|---|
+| Generate Both Cylinders (A and B) | `#generate-both-btn` | Beta on only | `<button type="button">` in the pinned `.action-footer`, min 44 × 44 px, named by its visible text |
+| Pair status line | `#pair-status` | While a run is in flight and after it ends | `role="status" aria-live="polite"`, visible text — sighted and screen-reader users get the same progress |
+| Download Cylinder A / B | `#download-cylinder-a-btn`, `#download-cylinder-b-btn` | After both cylinders are built | Inside `#pair-downloads`; each saves its own file on click |
+
+While the beta is on, the plate radios are relabelled **Cylinder A — Embossing Plate** and
+**Cylinder B — Universal Counter Plate**. The radio `value`s (`positive` / `negative`) and
+the `aria-describedby` descriptions are untouched, and the off-state label text is captured
+from the markup at load, so turning the beta off restores the single-sided labels character
+for character.
+
+### Run sequence
+
+1. Remember the user's plate selection and the Number of Available Braille Cells value.
+2. Select the **positive** radio with a real `change` event, so persistence, the cell dial,
+   and the shape settings react exactly as they do to a click. A radio that is already
+   checked fires nothing, matching a real click on an already-selected option.
+3. Restore the cell dial (see *Identical settings* below), lock both generate controls,
+   announce `Generating Cylinder A (1 of 2)...`.
+4. Run `runGenerateForCurrentPlate()` to completion and keep the resulting blob.
+5. Repeat steps 2–4 for **negative** with `Generating Cylinder B (2 of 2)...`.
+6. Reveal both download controls, start both downloads, announce
+   `Both cylinders are ready. If your browser blocked a download, use the buttons below.`
+7. In a `finally` block: restore the user's plate selection and cell dial, unlock the
+   controls, reset the action button, and return focus to Generate Both if the run was
+   started from the keyboard.
+
+`runGenerateForCurrentPlate()` is the former `form.onsubmit` body, extracted unchanged so
+the single-plate path and the paired path are the same code in the same order. It returns
+`true` only when an STL was built; **every** early exit returns `false`.
+
+### Identical settings — the safety contract
+
+Both runs read the same DOM, so all settings match by construction, with one exception
+that had to be handled explicitly:
+
+> Changing the plate type re-fills `#grid_columns` with the recommended value unless the
+> user has typed in that field this session (`updateGridColumnsForPlateType`). Left alone,
+> a mid-run plate switch could hand Cylinder B a different column count from Cylinder A.
+> The pair runner captures the dial before the run and restores it after every switch,
+> including the final restore.
+
+Verified in Chromium and Firefox: the two `/geometry_spec` request bodies of a pair run
+differ in **exactly one key**, `plate_type` (`positive` vs `negative`). `settings`,
+`lines`, `back_lines`, `cylinder_params`, `original_lines`, `per_line_language_tables`,
+`placement_mode`, `grade`, and `shape_type` are byte-identical. Both bodies carry the front
+braille in `lines` and the back braille in `back_lines`, as Section 3 requires.
+
+### Failure behaviour
+
+A failure on Cylinder A aborts the run and downloads nothing — a Cylinder B with no
+matching A embosses the two sides of a card out of register, which is worse than no file.
+The status line reads `Cylinder A could not be generated, so nothing was downloaded. Fix
+the problem shown in the error message, then press Generate Both Cylinders again.` (same
+sentence with `Cylinder B` for a second-plate failure), and the underlying reason is in the
+existing `#error-message` overlay, unchanged.
+
+### Downloads
+
+Both files start downloading automatically **and** both remain behind their own buttons.
+Measured 2026-08-17 in Playwright Chromium, Playwright Firefox, and the installed Google
+Chrome running headed: all three took the second automatic download without a prompt, three
+runs each. A browser is still permitted to refuse it, and a user who silently receives one
+cylinder of a pair has no way to tell, so the buttons are always present as the reliable
+path. Names follow Section 7 exactly: `Cylinder_A_{preset}_{name}.stl` and
+`Cylinder_B_{preset}_{name}.stl`.
+
+Any edit to the form clears the pair download controls, for the same reason the action
+button reverts to Generate: the cylinders behind those buttons were built to settings that
+are no longer on screen.
+
+### Interaction with the button state machine (Section 8)
+
+The pair run drives the shipped state machine rather than replacing it. Each plate switch
+and each finished plate re-enables `#action-btn` on the way past, so the runner re-asserts
+the lock (disabled, "Generating...") immediately afterwards — with no `await` between, so
+no click can land in the gap. `resetToGenerateState()` is called at the end **before** the
+button is re-enabled, because it skips its work entirely when the button already looks
+idle. After a pair run the action button always reads "Generate STL".
+
+### Accessibility notes
+
+- Keyboard: Tab reaches Generate Both from the action button; both Enter and Space run it;
+  focus is returned to the button after the run instead of being dropped to `<body>` by the
+  disable.
+- `#pair-status` is the only progress channel that persists across both runs; the
+  `#error-message` overlay continues to carry the per-plate progress and errors.
+- The new controls reuse `--btn-primary-bg` and `--btn-success-bg`, the tokens the shipped
+  action button already uses. **Known pre-existing issue, not introduced here:** white text
+  on `--btn-success-bg` measures 3.76:1 (dark) / 2.54:1 (light) and white on the
+  `--btn-primary-bg` gradient measures 4.06:1 falling to 2.28:1 across the gradient — both
+  under the 4.5:1 text threshold. axe-core flags the shipped "Download STL" button with the
+  same 3.76:1 finding, and misses the gradient buttons entirely because a `background-image`
+  defeats its sampling (which is why Lighthouse still reports 100). Fixing it means changing
+  shared design tokens app-wide; that decision belongs to the accessibility phase, not here.
+
+---
+
 ## Appendix A: Worker File Locations
 
 | File | Path | Purpose |
@@ -1318,6 +1434,7 @@ async function test_geometry_consistency() {
 | 1.2 | 2024-12-08 | **BUG FIX:** Manifold worker integration. Cylinders now use `csg-worker-manifold.js` for guaranteed manifold output. Added dual-worker architecture with automatic shape-based routing. |
 | 1.3 | 2024-12-08 | **NO FALLBACK ENFORCEMENT:** Removed fallback from Manifold to standard worker for cylinders. Cylinder generation now requires Manifold worker; displays error if unavailable. Updated Sections 9 and 12. |
 | 1.4 | 2026-07-30 | **FILE NAMING:** Replaced `Embossing_Plate_{word}` / `Universal_Counter_Plate_{counter}` with `Embossing_Cylinder_{preset}_{name}` / `Counter_Cylinder_{preset}_{name}`. The session counter is gone; counter plates are named from the same text, and braille-only input is back-translated for the name. Rewrote Section 7. |
+| 1.6 | 2026-08-17 | **PAIRED GENERATION (Phase 04):** Added Section 15 — the Generate Both Cylinders control, the two-run sequence, the identical-settings contract (including the `#grid_columns` re-fill that had to be restored around each plate switch), the abort-on-first-failure rule, the dual automatic/manual download design and the browsers it was measured in, and how the pair run drives the Section 8 state machine. The former `form.onsubmit` body is now `runGenerateForCurrentPlate()`, shared by both paths. |
 | 1.5 | 2026-08-16 | **DOUBLE-SIDED NAMING (Phase 09):** When the Double-Sided Card beta is on, downloads are named `Cylinder_A_{preset}_{name}` (positive) / `Cylinder_B_{preset}_{name}` (negative); both take `{name}` from the front text. Single-sided names unchanged. Updated Section 7; covered by tests/e2e/doubleSided.spec.ts. |
 
 ---

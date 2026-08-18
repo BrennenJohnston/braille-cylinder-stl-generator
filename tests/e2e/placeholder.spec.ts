@@ -21,8 +21,10 @@ test.describe('E2E Infrastructure', () => {
   test('should have accessible elements', async ({ page }) => {
     await page.goto('/');
     
-    // Verify key UI elements are present
-    const generateButton = page.locator('button:has-text("Generate")');
+    // Verify key UI elements are present. Addressed by id, not by text: the
+    // double-sided beta adds a second button whose label also starts with
+    // "Generate", and this test is about the primary action button.
+    const generateButton = page.locator('#action-btn');
     await expect(generateButton).toBeVisible();
   });
 });

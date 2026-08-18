@@ -829,6 +829,7 @@
         .action-footer {
             flex: 0 0 auto;
             display: flex;
+            flex-wrap: wrap;
             justify-content: center;
             gap: 0.6em;
             padding-top: 0.6em;
@@ -1736,6 +1737,99 @@
             background: var(--btn-tertiary-bg);
             opacity: 0.9;
             transform: translateY(-2px) scale(1.03);
+        }
+
+        /* Double-sided beta pair controls. Same visual language as #action-btn
+           - blue for the action, green for a file that is ready - under their
+           own selectors, so the single-plate button's rules stay untouched.
+           Nothing moves on hover: these share the pinned footer, where a button
+           that shifts under the pointer costs WebKit the click (see the
+           #action-btn note above). The 44px floor is spelled out because the
+           shared button padding lands just under it at the desktop font size. */
+        #generate-both-btn,
+        .pair-downloads button {
+            min-height: 44px;
+            min-width: 44px;
+            font-size: 0.95em;
+            text-align: center;
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        #generate-both-btn {
+            width: 100%;
+            max-width: 24em;
+            background: var(--btn-primary-bg);
+            color: #fff;
+            box-shadow: 0 2px 8px var(--shadow-light);
+        }
+
+        #generate-both-btn:hover:not(:disabled) {
+            background: var(--btn-primary-hover-bg);
+            box-shadow: 0 4px 12px var(--shadow-medium);
+        }
+
+        #generate-both-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .pair-downloads {
+            width: 100%;
+            max-width: 24em;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.6em;
+        }
+
+        .pair-downloads button {
+            flex: 1 1 11em;
+            background: var(--btn-success-bg);
+            color: #fff;
+            box-shadow: 0 2px 8px var(--shadow-light);
+        }
+
+        .pair-downloads button:hover {
+            background: var(--btn-success-hover-bg);
+            box-shadow: 0 4px 12px var(--shadow-medium);
+        }
+
+        .pair-status {
+            width: 100%;
+            text-align: center;
+            font-size: 0.9em;
+            color: var(--text-primary);
+        }
+
+        [data-theme="high-contrast"] #generate-both-btn {
+            background: #0201fe !important; /* Blue background for generate */
+            color: #fdfe00 !important; /* Yellow text */
+            border: 2px solid #fdfe00 !important; /* Yellow border */
+        }
+
+        [data-theme="high-contrast"] #generate-both-btn:hover:not(:disabled) {
+            background: #0201fe !important;
+            color: #fdfe00 !important;
+            border: 2px solid #02fe05 !important; /* Green border on hover */
+        }
+
+        [data-theme="high-contrast"] #generate-both-btn:disabled {
+            background: #666666 !important;
+            color: #cccccc !important;
+            border: 2px solid #999999 !important;
+            cursor: not-allowed !important;
+        }
+
+        [data-theme="high-contrast"] .pair-downloads button {
+            background: #02fe05 !important; /* Green background for download */
+            color: #000000 !important; /* Black text */
+            border: 2px solid #000000 !important; /* Black border */
+        }
+
+        [data-theme="high-contrast"] .pair-downloads button:hover {
+            background: #02fe05 !important;
+            color: #000000 !important;
+            border: 2px solid #ffff00 !important; /* Yellow border on hover */
         }
         #error-message {
             color: var(--error-text);
@@ -3561,6 +3655,18 @@
                    reachable without scrolling, no matter how long the form gets. -->
               <div class="action-footer">
                   <button type="button" id="action-btn" class="generate-state" aria-label="Generate STL file from entered text" data-state="generate">Generate STL</button>
+                  <!-- Double-sided beta only: updateDoubleSidedUI() reveals these
+                       three and hides them again the moment the beta is off. The
+                       visible text is each button's accessible name, so no
+                       aria-label competes with it. -->
+                  <!-- User-facing wording signed off by Brennen (2026-08-17); reword only with his sign-off. -->
+                  <button type="button" id="generate-both-btn" style="display: none;">Generate Both Cylinders (A and B)</button>
+                  <div id="pair-status" class="pair-status" role="status" aria-live="polite" style="display: none;"></div>
+                  <div id="pair-downloads" class="pair-downloads" style="display: none;">
+                      <!-- User-facing wording signed off by Brennen (2026-08-17); reword only with his sign-off. -->
+                      <button type="button" id="download-cylinder-a-btn">Download Cylinder A</button>
+                      <button type="button" id="download-cylinder-b-btn">Download Cylinder B</button>
+                  </div>
               </div>
             </div>
         </div>
@@ -4532,6 +4638,19 @@
         const actionBtn = document.getElementById('action-btn');
         let lastGeneratedSTLUrl = null;
         let lastGeneratedFilename = null;
+        // The blob itself, not just its URL: the next generation revokes the
+        // previous URL, so a Generate Both run would lose Cylinder A the moment
+        // Cylinder B started. Holding the blob lets the pair outlive both runs.
+        let lastGeneratedBlob = null;
+
+        // Double-sided beta pair controls. Declared here, before
+        // updateDoubleSidedUI() is defined and long before it first runs, so
+        // that function can show and hide them without a lookup.
+        const generateBothBtn = document.getElementById('generate-both-btn');
+        const pairStatus = document.getElementById('pair-status');
+        const pairDownloads = document.getElementById('pair-downloads');
+        let pairRunInFlight = false;
+        const pairFiles = { positive: null, negative: null };
 
         const previewBrailleBtn = document.getElementById('preview-braille-btn');
         const errorDiv = document.getElementById('error-message');
@@ -4710,6 +4829,10 @@
                 resetToGenerateState();
                 dismissStaleValidationMessage();
                 refreshLiveWarnings();
+                // A finished A/B pair is invalidated by an edit for the same
+                // reason the STL is. Skipped while a pair run is in flight,
+                // because that run changes the plate radio itself.
+                if (!pairRunInFlight) clearPairResults();
             });
         });
 
@@ -5887,6 +6010,19 @@
         // to the tactile seam arrow — the backend hard-rejects double-sided
         // requests with any other style, so this lock is what keeps that error
         // unreachable from the UI.
+        // The A/B names belong to the double-sided flow only, so the off-state
+        // text is captured from the markup rather than retyped here - turning
+        // the beta off puts back exactly what shipped, character for character.
+        /* On-state relabel wording signed off by Brennen (2026-08-17); reword only with his sign-off. */
+        const plateRadioLabels = [
+            { value: 'positive', onText: 'Cylinder A — Embossing Plate' },
+            { value: 'negative', onText: 'Cylinder B — Universal Counter Plate' },
+        ].map(entry => {
+            const el = document.querySelector(`input[name="plate_type"][value="${entry.value}"]`)
+                ?.closest('label')?.querySelector('.radio-text') || null;
+            return { ...entry, el, original: el ? el.textContent : '' };
+        }).filter(entry => entry.el);
+
         function updateDoubleSidedUI() {
             const toggle = document.getElementById('double_sided_enabled');
             if (!toggle) return;
@@ -5895,6 +6031,12 @@
             const section = document.getElementById('double-sided-section');
             if (section) section.style.display = on ? '' : 'none';
             toggle.setAttribute('aria-expanded', String(on));
+
+            plateRadioLabels.forEach(entry => {
+                entry.el.textContent = on ? entry.onText : entry.original;
+            });
+            if (generateBothBtn) generateBothBtn.style.display = on ? '' : 'none';
+            if (!on) clearPairResults();
 
             const frontLegend = document.getElementById('front-entry-legend');
             if (frontLegend) {
@@ -7451,8 +7593,12 @@
             renderer.render(scene, camera);
         }
 
-        form.onsubmit = async (e) => {
-            e.preventDefault();
+        // One plate, start to finish: validate, translate, wrap the back text,
+        // fetch the geometry spec, run the CSG worker, and leave the button in
+        // its download state. Awaitable, and true ONLY when an STL was built -
+        // every early exit returns false - so Generate Both can chain Cylinder A
+        // into Cylinder B and stop the moment either one fails.
+        async function runGenerateForCurrentPlate() {
             errorDiv.style.display = 'none';
             errorText.textContent = '';
             const errorSubtext = document.getElementById('error-subtext');
@@ -7504,7 +7650,7 @@
                     errorDiv.style.display = 'flex';
                     errorDiv.className = 'error-message';
                     resetToGenerateState();
-                    return;
+                    return false;
                 }
                 translatedLines = brailleLines;
                 perLineLanguageTables = new Array(brailleLines.length).fill(tableName);
@@ -7561,7 +7707,7 @@
                                 errorDiv.className = 'error-message';
                                 // Stop submission
                                 resetToGenerateState();
-                                return;
+                                return false;
                             }
                             translatedLines = wrap.brailleLines;
                             // Provide per-line language tables (single table for all lines in auto mode)
@@ -7584,7 +7730,7 @@
                                     errorDiv.style.display = 'flex';
                                     errorDiv.className = 'error-message';
                                     resetToGenerateState();
-                                    return;
+                                    return false;
                                 }
 
                                 // Non-truncation warnings (e.g., grade notes) - display but don't block
@@ -7678,7 +7824,7 @@
 
                     // Re-enable button and reset to generate state
                     resetToGenerateState();
-                    return;
+                    return false;
                 }
             } else {
                 // Counter plates don't need text - just pass empty lines
@@ -7710,7 +7856,7 @@
                         errorDiv.style.display = 'flex';
                         errorDiv.className = 'error-message';
                         resetToGenerateState();
-                        return;
+                        return false;
                     }
                     if (backWrap.error) {
                         /* User-facing wording signed off by Brennen (2026-08-17); reword only with
@@ -7724,7 +7870,7 @@
                         errorDiv.style.display = 'flex';
                         errorDiv.className = 'error-message';
                         resetToGenerateState();
-                        return;
+                        return false;
                     }
                     if (backWrap.rowsNeeded > backRows || !backWrap.rowsNeededIsExact) {
                         const needs = backWrap.rowsNeededIsExact
@@ -7737,7 +7883,7 @@
                         errorDiv.style.display = 'flex';
                         errorDiv.className = 'error-message';
                         resetToGenerateState();
-                        return;
+                        return false;
                     }
                     // banaAutoWrap always returns exactly `rows` lines, so the wire shape
                     // (back_lines padded to grid_rows) is unchanged.
@@ -7843,7 +7989,7 @@
             if (plateType === 'positive' && !useBrailleField && !hasContent) {
                 errorText.textContent = 'Please enter text in at least one line, or paste braille into the Braille (Unicode) field.';
                 errorDiv.style.display = 'flex';
-                return;
+                return false;
             }
 
             // Validate braille character limits AFTER translation
@@ -7866,7 +8012,7 @@
                         errorDiv.style.display = 'flex';
                         errorDiv.className = 'error-message';
                         resetToGenerateState();
-                        return;
+                        return false;
                     }
                 }
             } else {
@@ -7879,7 +8025,7 @@
                         errorText.textContent = `Line ${i + 1} exceeds ${availableColumns} braille cells by ${over} cells after translation. Please shorten your text.`;
                         errorDiv.style.display = 'flex';
                         errorDiv.className = 'error-message';
-                        return;
+                        return false;
                     }
                 }
             }
@@ -8008,6 +8154,7 @@
                 // Store the generated STL URL and filename for download
                 lastGeneratedSTLUrl = lastSTLUrl;
                 lastGeneratedFilename = filename;
+                lastGeneratedBlob = blob;
                 loadSTL(lastSTLUrl);
 
                 // Change button to download state after successful generation
@@ -8015,6 +8162,7 @@
                 setToDownloadState();
 
                 log.debug('Client-side CSG generation complete:', filename);
+                return true;
 
             } catch (csgError) {
                 log.error('Client-side CSG generation failed:', csgError);
@@ -8033,9 +8181,165 @@
 
                 // Re-enable button and reset to generate state
                 resetToGenerateState();
+                return false;
             }
+        }
+
+        form.onsubmit = (e) => {
+            e.preventDefault();
+            runGenerateForCurrentPlate();
         };
 
+
+        // ---------------------------------------------------------------------
+        // Generate Both Cylinders (double-sided beta only)
+        // ---------------------------------------------------------------------
+        // A double-sided pair is only usable if both cylinders come out of ONE
+        // set of settings, so this runs the ordinary single-plate pipeline twice
+        // with nothing editable in between: Cylinder A (positive), then Cylinder
+        // B (negative), then the user's own plate selection is put back. A
+        // failure on A stops the run and downloads nothing - a Cylinder B with
+        // no matching A embosses the two sides of the card out of register.
+
+        function setPairStatus(message) {
+            if (!pairStatus) return;
+            pairStatus.textContent = message;
+            pairStatus.style.display = message ? '' : 'none';
+        }
+
+        // Any edit to the form invalidates the pair exactly as it invalidates
+        // the single-plate STL, so the download controls go away with it -
+        // otherwise the buttons would still hand out cylinders built to
+        // settings that are no longer on screen.
+        function clearPairResults() {
+            pairFiles.positive = null;
+            pairFiles.negative = null;
+            if (pairDownloads) pairDownloads.style.display = 'none';
+            setPairStatus('');
+        }
+
+        function downloadPairFile(file) {
+            if (!file) return;
+            const url = URL.createObjectURL(file.blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = file.filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            // The browser needs the URL alive until it has taken the bytes;
+            // pairFiles still holds the blob, so only this handle is released.
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+        }
+
+        // Clicking a plate radio is what the two-step flow does by hand, so
+        // doing it in code has to fire the same change event or persistence,
+        // the cell dial, and the shape settings never hear about it. A radio
+        // that is already checked fires nothing, exactly like a real click on
+        // an already-selected option.
+        function selectPlateType(value) {
+            const radio = document.querySelector(`input[name="plate_type"][value="${value}"]`);
+            if (!radio || radio.checked) return;
+            radio.checked = true;
+            radio.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        // Re-asserted after every step of a pair run. Each plate switch and each
+        // finished plate re-enables the action button on its way past, and
+        // nothing may start a second generation while a pair is half built.
+        function lockGenerateControls() {
+            actionBtn.disabled = true;
+            actionBtn.textContent = 'Generating...';
+            actionBtn.style.opacity = '0.7';
+            if (generateBothBtn) generateBothBtn.disabled = true;
+        }
+
+        async function runGenerateBothCylinders() {
+            if (pairRunInFlight) return;
+            const doubleSidedOn = !!document.getElementById('double_sided_enabled')?.checked
+                && (document.querySelector('input[name="shape_type"]:checked')?.value || 'cylinder') === 'cylinder';
+            if (!doubleSidedOn) return;
+
+            pairRunInFlight = true;
+            clearPairResults();
+            // Disabling a focused button drops focus to the page body, which
+            // strands a keyboard user at the top of the document; focus goes
+            // back where they left it when the run ends.
+            const startedFromKeyboard = document.activeElement === generateBothBtn;
+            const userPlate = document.querySelector('input[name="plate_type"]:checked')?.value || 'positive';
+            // The cell dial refills itself with the recommended value on every
+            // plate change unless the user has typed in it this session, so an
+            // automated switch could hand Cylinder B a different column count
+            // from Cylinder A - two cylinders that cannot emboss the same card.
+            // The dial is put back after every switch, including the last one.
+            const columnsField = document.getElementById('grid_columns');
+            const userColumns = columnsField ? columnsField.value : null;
+            const restoreColumns = () => {
+                if (columnsField && userColumns !== null && columnsField.value !== userColumns) {
+                    columnsField.value = userColumns;
+                }
+            };
+
+            /* The four pair messages (two progress, one done, one failure) were
+               signed off by Brennen (2026-08-17); reword only with his sign-off. */
+            const steps = [
+                { plate: 'positive', label: 'A', status: 'Generating Cylinder A (1 of 2)...' },
+                { plate: 'negative', label: 'B', status: 'Generating Cylinder B (2 of 2)...' },
+            ];
+
+            try {
+                for (const step of steps) {
+                    selectPlateType(step.plate);
+                    restoreColumns();
+                    lockGenerateControls();
+                    setPairStatus(step.status);
+
+                    let generated = false;
+                    try {
+                        generated = await runGenerateForCurrentPlate();
+                    } catch (error) {
+                        log.error(`Generate Both failed on Cylinder ${step.label}:`, error);
+                    }
+                    // The finished plate left the button enabled and offering a
+                    // download; the pair is not done, so take it back. No await
+                    // separates these two lines, so no click can land between.
+                    lockGenerateControls();
+
+                    if (!generated || !lastGeneratedBlob) {
+                        setPairStatus(`Cylinder ${step.label} could not be generated, so nothing was downloaded. Fix the problem shown in the error message, then press Generate Both Cylinders again.`);
+                        return;
+                    }
+                    pairFiles[step.plate] = { blob: lastGeneratedBlob, filename: lastGeneratedFilename };
+                }
+
+                // Both files start downloading on their own, and both stay
+                // available behind their own buttons. Chrome and Firefox were
+                // measured taking the second automatic download without a
+                // prompt, but a browser is allowed to refuse it, and a user who
+                // silently receives one cylinder of a pair has no way to tell -
+                // so the buttons are always there to ask again.
+                if (pairDownloads) pairDownloads.style.display = 'flex';
+                downloadPairFile(pairFiles.positive);
+                downloadPairFile(pairFiles.negative);
+                setPairStatus('Both cylinders are ready. If your browser blocked a download, use the buttons below.');
+            } finally {
+                selectPlateType(userPlate);
+                restoreColumns();
+                pairRunInFlight = false;
+                // Before the button is re-enabled: resetToGenerateState() skips
+                // its work entirely when the button already looks idle, and the
+                // lock left it reading "Generating..." in the generate state.
+                resetToGenerateState();
+                if (generateBothBtn) {
+                    generateBothBtn.disabled = false;
+                    if (startedFromKeyboard) generateBothBtn.focus();
+                }
+            }
+        }
+
+        generateBothBtn?.addEventListener('click', runGenerateBothCylinders);
+        document.getElementById('download-cylinder-a-btn')?.addEventListener('click', () => downloadPairFile(pairFiles.positive));
+        document.getElementById('download-cylinder-b-btn')?.addEventListener('click', () => downloadPairFile(pairFiles.negative));
 
 
         function loadSTL(url) {
