@@ -1888,16 +1888,39 @@ button; it was verified not to clip any label (`scrollWidth`/`scrollHeight` equa
 44 × 44 px floor — the `max-width: 768px` block already forced 48 px, so only desktop
 was short. It now carries an explicit `min-height: 44px`. Nothing shrank.
 
-**Known remaining gaps** (measured 2026-08-17, deliberately not fixed — they are
-pre-existing, outside the beta flow, and app-wide):
+**Reflow and the remaining small targets (fixed 2026-08-18).** Three further
+failures were found on 2026-08-17 and fixed the next day:
 
-- At a 320 CSS px viewport **combined with** the app's own font control at 200%, the
-  page scrolls horizontally by 127 px. `.font-size-controls` (357 px) and
-  `.theme-toggle-section` (575 px) are locked by `flex-shrink: 0` and the label's
-  `white-space: nowrap`. At 100% font, 320 px reflows cleanly, and at 1280 px the
-  200% and 75% font sizes both reflow cleanly — only the combination fails.
-- The header's own font-size buttons render 36 × 31 px and 34 × 30 px, and radio
-  label rows render 28 px tall, both under the 44 × 44 px floor.
+- **Reflow (WCAG 1.4.10).** At a 320 CSS px viewport **combined with** the app's own
+  font control at 200%, the page scrolled horizontally by 127 px. The desktop rules
+  pin both header toolbar groups with `flex-shrink: 0`, which stops their children
+  ever needing to wrap, so `.font-size-controls` measured 357 px and
+  `.theme-toggle-section` 575 px against a 320 px viewport. Each condition passed
+  alone; only the combination failed. The `max-width: 768px` block now releases the
+  pin (`flex-shrink: 1; min-width: 0; max-width: 100%`), lets `.font-size-controls`
+  wrap, and drops `white-space: nowrap` from `.theme-label-box` and
+  `.theme-toggle-btn`. All six viewport × font-size combinations now report zero
+  horizontal overflow.
+- **Header font-size buttons.** Were 36 × 31 px and 34 × 30 px; now carry
+  `min-width: 44px; min-height: 44px` under `.font-size-controls .font-size-btn`.
+  The selector is scoped on purpose — see the gap below.
+- **Radio label rows.** `.radio-option` was 28 px tall and is the hit target for its
+  radio; it now carries `min-height: 44px`, the same fix and the same value as
+  `.ds-toggle-option`. Nothing shrank.
+
+**Known remaining gaps** (measured 2026-08-18, reported and deliberately not fixed):
+
+- The preview panel's stepper and toggle buttons render **20 × 22 px**
+  (`#brightness-decrease`, `#brightness-increase`, `#contrast-decrease`,
+  `#contrast-increase`) and **49 × 20 px** (`#edges-toggle`) — worse than the header
+  buttons that were fixed. They reuse the `.font-size-btn` class, which is why the
+  header fix is scoped to `.font-size-controls .font-size-btn` rather than applied to
+  the bare class: the preview panel is laid out tightly and more than doubling these
+  buttons is a layout change needing its own review.
+- The skip link is hidden with a hardcoded `top: -40px`, but at 200% app font size it
+  grows to 102 px tall, so roughly 62 px of it stays on screen over the page header.
+  Pre-existing and verified against the previous commit — it is a fixed pixel offset
+  hiding an element whose height scales with the font.
 
 ---
 
@@ -2528,6 +2551,7 @@ Low vision users benefit from enhanced depth perception:
 | 1.8 | 2026-01-05 | **Cross-Browser UI Hardening:** Added Section 3.9 (WebGL Context Recovery), Section 4.5 (Toggle Button ARIA Requirements), Section 4.6 (Reduced Motion Support), and Section 7.3 (iOS Safe Area Handling) to document new accessibility and cross-browser compatibility features |
 | 1.9 | 2026-07-30 | **Form column restructure:** Split `.form-section` into a non-scrolling panel plus `.form-scroll` and a pinned `.action-footer`, so `#action-btn` is always in view (Sections 5.1, 6.3, 7.1, 7.2). Documented the form-level event delegation that resets the button on any settings change (Section 6.2), the six Expert Mode submenus and their contrast-safe active colours (Section 4.5), and the two-way translation buttons (new Section 4.7) |
 | 1.10 | 2026-08-16 | **Double-Sided Card beta UI:** Added Section 4.8 documenting the disclosure-checkbox toggle (`#double_sided_enabled` with `aria-expanded`/`aria-controls`, 44 px hit target), the Back of Card section reveal with front-legend relabeling, and the locked "Visual markers" radio pattern (native `disabled` + live-region lock note wired into `aria-describedby`). Validated: W3C Nu 0 errors, Lighthouse accessibility 100/100 desktop and mobile |
+| 1.12 | 2026-08-18 | **Reflow and touch-target follow-up to the v1.11 audit, plus a user-facing rename.** Section 4.9 extended: the 320 px + 200% horizontal-scroll failure is fixed by releasing `flex-shrink: 0` on the two header toolbar groups and dropping `white-space: nowrap` from the theme label and button in the `max-width: 768px` block; `.font-size-controls .font-size-btn` gained a 44 × 44 px floor (scoped, not on the bare class); `.radio-option` gained `min-height: 44px`. Two newly found gaps recorded instead of fixed: the preview stepper buttons at 20 × 22 px, and the skip link's hardcoded `top: -40px` failing to hide a 102 px-tall link at 200% font. Separately, the Card Thickness control was renamed to **Print Layer Height** in user-facing text only — see CARD_THICKNESS_PRESET_SPECIFICATIONS.md v1.5. Validated after the change: W3C Nu 0 errors / 0 warnings, Lighthouse 100/100 desktop and mobile, 48 of 48 contrast measurements passing, keyboard walkthrough clean, all six viewport × font-size reflow combinations clean, ruff clean, 30 smoke passed, 90 e2e passed |
 | 1.11 | 2026-08-17 | **Full ADA SOP executed against the beta flow.** Added Section 4.9 (button contrast tokens, the dark-theme fill-versus-boundary tension, the 44 px `#action-btn`, and the known remaining gaps). Rewrote the `--btn-primary-*` and `--btn-success-*` values in all three theme blocks of Section 1.2 and added four border tokens per theme: white labels were 2.28:1 on the old primary gradient and 2.54:1 on the old success fill, and neither Lighthouse nor axe-core could see it because a `background-image` defeats their sampling. `#action-btn` gained `min-height: 44px` (was 34 px on desktop). Validated after the change: W3C Nu 0 errors 0 warnings on the rendered beta-state DOM, Lighthouse accessibility 100/100 desktop and mobile, 48 of 48 contrast measurements passing across light/dark/high-contrast, keyboard walkthrough clean beta-on and beta-off, reflow clean at 320 px and at 75%/200% app font size on desktop |
 
 ---

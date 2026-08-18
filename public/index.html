@@ -466,6 +466,16 @@
             justify-content: center;
         }
 
+        /* The three header controls only: they rendered 36x31 and 34x30, under
+           the 44x44 floor. Scoped to .font-size-controls on purpose - the same
+           .font-size-btn class is reused by the preview stepper and toggle
+           buttons, which are smaller again and whose panel is laid out tightly;
+           those are reported, not changed here. */
+        .font-size-controls .font-size-btn {
+            min-width: 44px;
+            min-height: 44px;
+        }
+
         .font-size-btn:hover {
             background: var(--bg-tertiary);
             transform: translateY(-1px);
@@ -1418,6 +1428,10 @@
             color: var(--text-secondary);
             padding: 0.5em 0;
             margin: -0.5em 0;
+            /* The label is the hit target for its radio, and the padding above
+               left it 28px tall - under the 44x44 floor. Same fix, same value,
+               as .ds-toggle-option below. Nothing shrinks. */
+            min-height: 44px;
         }
 
         /* Mobile radio option optimization */
@@ -2280,6 +2294,24 @@
                 width: 100%; /* Full width on mobile */
             }
 
+            /* WCAG 1.4.10 reflow. The desktop rules pin both toolbar groups with
+               flex-shrink: 0, which stops their children ever needing to wrap -
+               so at a 320px viewport with the app's own font control at 200% the
+               groups measured 357px and 575px and scrolled the whole page
+               sideways by 127px. Releasing the pin here lets them wrap instead.
+               Each condition passed alone; only the combination failed. */
+            .accessibility-controls-top .theme-toggle-section,
+            .accessibility-controls-top .font-size-controls {
+                flex-shrink: 1;
+                min-width: 0;
+                max-width: 100%;
+            }
+
+            .font-size-controls {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
             .theme-toggle-section {
                 flex-direction: row; /* Keep horizontal on mobile */
                 align-items: stretch; /* Children match parent height */
@@ -2291,6 +2323,14 @@
 
             .theme-label-box {
                 font-size: 0.85em;
+                /* nowrap on the desktop rule makes this box unshrinkable, which
+                   is what kept its group wider than the viewport */
+                white-space: normal;
+            }
+
+            .theme-toggle-btn {
+                white-space: normal;
+                max-width: 100%;
             }
 
             /* Ensure buttons don't overflow on mobile */
@@ -3251,8 +3291,14 @@
                     <!-- Card Thickness Preset Selection -->
                     <div class="grade-selection">
                         <fieldset>
-                            <legend class="grade-label">Card Thickness</legend>
-                            <div class="radio-group thickness-toggle" role="radiogroup" aria-required="true" aria-label="Select card thickness preset">
+                            <!-- Renamed 2026-08-18 with Brennen's sign-off. The old name was
+                                 "Card Thickness", which nothing here changes: BOTH presets set
+                                 card_thickness: 2.0. The 0.4/0.3 numbers are the printer's layer
+                                 height, which is what the sr-only text and the spec always said.
+                                 The field name, the localStorage key and the spec filename keep
+                                 the old wording on purpose - this was a text-only rename. -->
+                            <legend class="grade-label">Print Layer Height</legend>
+                            <div class="radio-group thickness-toggle" role="radiogroup" aria-required="true" aria-label="Select print layer height preset">
                                 <label class="radio-option">
                                     <input type="radio" name="card_thickness_preset" value="0.4" checked aria-describedby="thickness-04-desc">
                                     <span class="radio-text">0.4mm</span>
@@ -3270,7 +3316,7 @@
                                 <span id="thickness-custom-desc" class="sr-only">Custom settings - automatically selected when any parameter is modified from preset values</span>
                             </div>
                             <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
-                                Selecting a thickness preset will automatically adjust all braille dot and surface parameters to optimal values for that layer height. "Custom" is automatically selected when you modify any parameter.
+                                Selecting a layer height preset will automatically adjust all braille dot and surface parameters to values tuned for printing at that layer height. The card itself stays 2 mm thick either way. "Custom" is automatically selected when you modify any parameter.
                             </div>
                         </fieldset>
                     </div>
@@ -3370,7 +3416,7 @@
                                             <span id="cone-combined-desc" class="sr-only">Creates cone frustum dots for emboss plate and conical frustum recess for counter plate</span>
                                         </div>
                                         <div class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
-                                            Rounded is the default for the 0.4mm and 0.3mm Card Thickness presets.
+                                            Rounded is the default for the 0.4mm and 0.3mm layer height presets.
                                         </div>
                                     </fieldset>
                                 </div>
@@ -3610,7 +3656,7 @@
                             <div id="expert-panel-tactile" class="expert-submenu-content" style="display: none;">
                                 <div class="grade-selection" id="tactile-indicator-dimensions">
                                     <div class="grade-note" style="margin-bottom: 6px; font-size: 0.85em;">
-                                        Used only when Row Indicator Style is <strong>Tactile seam arrow</strong>. Both Card Thickness presets apply these values.
+                                        Used only when Row Indicator Style is <strong>Tactile seam arrow</strong>. Both layer height presets apply these values.
                                     </div>
                                     <div>
                                         <label for="tactile_indicator_width">Indicator width around the cylinder (mm):</label>
@@ -6924,7 +6970,7 @@
 
             // Show confirmation message
             try {
-                errorText.textContent = `Card Thickness preset "${presetKey}mm" applied. All parameters updated.`;
+                errorText.textContent = `Layer height preset "${presetKey}mm" applied. All parameters updated.`;
                 errorDiv.style.display = 'flex';
                 errorDiv.className = 'error-message info';
                 setTimeout(() => {
@@ -9450,7 +9496,7 @@
                         <p>Whenever the braille box has content, <strong>those exact cells are what get embossed</strong> — clear it to go back to translating the text above.</p>
 
                         <h4>File Names</h4>
-                        <p>Downloads are named <code>Embossing_Cylinder_{preset}_{name}.stl</code> and <code>Counter_Cylinder_{preset}_{name}.stl</code>, where <code>{preset}</code> is the selected Card Thickness and <code>{name}</code> is the first word of your text. Paste braille with no text and the name is back-translated from the braille for you.</p>
+                        <p>Downloads are named <code>Embossing_Cylinder_{preset}_{name}.stl</code> and <code>Counter_Cylinder_{preset}_{name}.stl</code>, where <code>{preset}</code> is the selected print layer height and <code>{name}</code> is the first word of your text. Paste braille with no text and the name is back-translated from the braille for you.</p>
 
                         <h4>Current Availability</h4>
                         <p><strong>Cylinder shapes</strong> are available for labeling bottles, jars, and containers.</p>

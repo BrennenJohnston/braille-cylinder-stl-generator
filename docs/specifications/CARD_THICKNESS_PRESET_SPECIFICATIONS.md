@@ -4,6 +4,8 @@
 
 This document defines the Card Thickness Preset System, a frontend convenience feature that automatically adjusts all braille geometry parameters to optimal values for specific 3D printer layer heights (0.3mm and 0.4mm). This system ensures users can quickly configure appropriate settings for their printing capabilities without manually adjusting dozens of individual parameters.
 
+> **Naming note (2026-08-18).** The control is labelled **Print Layer Height** in the UI. It was labelled "Card Thickness" until 2026-08-18, which was misleading: **both presets set `card_thickness: 2.0`**, so nothing about the card's thickness varies between them — the 0.3 / 0.4 numbers are the printer's layer height, which is what this document and the sr-only descriptions always said. The rename was **user-facing text only**, approved by Brennen. The field name `card_thickness_preset`, the `braille_prefs_*` localStorage key, and this document's filename all keep the old wording, so nothing in the API or in stored user settings changed.
+
 ## Scope
 
 - Frontend preset system architecture
@@ -223,7 +225,7 @@ flips the selector to Custom like every other preset-controlled dial.
 
 ### UI Location
 
-Card Thickness preset selector appears **above** the Expert Mode toggle:
+The Print Layer Height preset selector (internally still `card_thickness_preset`) appears **above** the Expert Mode toggle:
 - After the Braille Grade selection
 - Before the "Show Expert Mode" button
 
@@ -232,8 +234,8 @@ Card Thickness preset selector appears **above** the Expert Mode toggle:
 ```html
 <div class="grade-selection">
     <fieldset>
-        <legend class="grade-label">Card Thickness</legend>
-        <div class="radio-group thickness-toggle" role="radiogroup" aria-required="true" aria-label="Select card thickness preset">
+        <legend class="grade-label">Print Layer Height</legend>
+        <div class="radio-group thickness-toggle" role="radiogroup" aria-required="true" aria-label="Select print layer height preset">
             <label class="radio-option">
                 <input type="radio" name="card_thickness_preset" value="0.4" checked aria-describedby="thickness-04-desc">
                 <span class="radio-text">0.4mm</span>
@@ -251,7 +253,7 @@ Card Thickness preset selector appears **above** the Expert Mode toggle:
             <span id="thickness-custom-desc" class="sr-only">Custom settings - automatically selected when any parameter is modified from preset values</span>
         </div>
         <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
-            Selecting a thickness preset will automatically adjust all braille dot and surface parameters to optimal values for that layer height. "Custom" is automatically selected when you modify any parameter.
+            Selecting a layer height preset will automatically adjust all braille dot and surface parameters to values tuned for printing at that layer height. The card itself stays 2 mm thick either way. "Custom" is automatically selected when you modify any parameter.
         </div>
     </fieldset>
 </div>
@@ -269,7 +271,7 @@ Card Thickness preset selector appears **above** the Expert Mode toggle:
 
 ### Confirmation Message
 
-Format: `Card Thickness preset "X.Xmm" applied. All parameters updated.`
+Format: `Layer height preset "X.Xmm" applied. All parameters updated.`
 
 Styling:
 - Appears in the existing error/info banner area
@@ -321,7 +323,7 @@ function applyThicknessPreset(presetKey) {
 
     // Show confirmation message
     try {
-        errorText.textContent = `Card Thickness preset "${presetKey}mm" applied. All parameters updated.`;
+        errorText.textContent = `Layer height preset "${presetKey}mm" applied. All parameters updated.`;
         errorDiv.style.display = 'flex';
         errorDiv.className = 'error-message info';
         setTimeout(() => {
@@ -771,6 +773,7 @@ The preset system is designed to **never fail visibly**:
 | 2025-12-07 | 1.2 | Updated 0.3mm preset values: All dot dimensions reduced for finer detail (rounded base: 1.5→1.2, heights reduced, emboss cone: 1.5→1.2, counter depths reduced). |
 | 2025-12-07 | 1.3 | Added "Custom" radio button feature. Automatically detects when parameter values deviate from presets and switches to "Custom". Added `checkPresetMatch()`, `detectCurrentPreset()`, and `updatePresetSelection()` functions. Updated HTML structure and event listener documentation. |
 | 2026-07-30 | 1.4 | Added the five tactile indicator dimensions to both presets (32 parameters total). Corrected the documented `grid_columns` values to the 11 actually shipped, dropped the stale line-number and `templates/index.html` references, and updated the Expert Mode submenu map for the Tactile Indicator Dimensions and Translation Options submenus. Presets also now feed the `{preset}` segment of STL file names. |
+| 2026-08-18 | 1.5 | **User-facing rename, no API change.** The visible legend became "Print Layer Height" (was "Card Thickness") and the radiogroup `aria-label` became "Select print layer height preset", because both presets set `card_thickness: 2.0` and nothing about card thickness varies between them. Seven strings changed in `public/index.html`; the confirmation message is now `Layer height preset "X.Xmm" applied. All parameters updated.` and the explanatory note gained "The card itself stays 2 mm thick either way." The three sr-only descriptions were already correct and are unchanged, as are `card_thickness_preset`, the localStorage key, and this filename. Approved by Brennen 2026-08-18. |
 
 ---
 
