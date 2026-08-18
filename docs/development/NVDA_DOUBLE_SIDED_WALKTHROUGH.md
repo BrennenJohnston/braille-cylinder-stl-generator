@@ -166,7 +166,7 @@ controls (many do not — that is correct behaviour and not a fail).
 
 ## Part 5 — Cylinder A and Cylinder B
 
-**Step 13.** `Tab` forward to the Card Thickness radio group, then on to the
+**Step 13.** `Tab` forward to the Print Layer Height radio group, then on to the
 "Select Plate to Generate" radio group.
 
 > **Expect:** "Cylinder A — Embossing Plate, radio button, checked, 1 of 2",
@@ -338,3 +338,4 @@ Anything NVDA said that I did not expect at all:
 | Version | Date | Changes |
 |---|---|---|
 | 1.0 | 2026-08-17 | Created in Phase 05. Expected announcements taken from the live accessibility tree, not from the markup. |
+| 1.1 | 2026-08-18 | Step 13 renamed "Card Thickness" to "Print Layer Height" to match the control's new label. No expected announcement changed — the group's sr-only descriptions were already correct and were not touched by that rename. |
