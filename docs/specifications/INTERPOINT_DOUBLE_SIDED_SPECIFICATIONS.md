@@ -16,10 +16,13 @@ paired 1:1 with a real dot on the other cylinder. When the toggle is OFF the app
 exactly as before the feature existed; this is proven, not assumed (see
 [Section 8, Regression anchors](#8-regression-anchors)).
 
-**Status: BETA.** The geometry is complete and tested in software; the open question is
-physical — whether the smaller double-sided dies raise a readable dome on real card stock.
-Until that embossing test passes, the feature carries "(BETA — for testing)" in its UI label
-and ships with fixed footprints (no tuning dials).
+**Status: BETA — physically validated 2026-08.** The geometry is complete and tested in
+software, and the open physical question is now answered: two printed rounds of Cylinder
+A/B pairs embossed real card stock with braille legible on BOTH faces (see
+[Section 10, Physical validation](#10-physical-validation-2026-08)). The Option B
+footprints are therefore **permanent**. The feature still ships with fixed footprints (no
+tuning dials) and still carries "(BETA — for testing)" in its UI label — that label now
+waits on broader user testing, not on the embossing test.
 
 **Code is authoritative.** Where this document and the code disagree, the code wins — flag
 the mismatch, do not silently edit either side. Authoritative sources in order:
@@ -99,9 +102,14 @@ stays on the start-of-line side, where a finger arrives when locating a row.
 The axial step is **coupled to the same sign** — one diagonal step, back rows sitting
 1.25 mm higher than front rows.
 
-**Troubleshooting first stop:** no software test or measurement can catch a wrong sign,
-because both signs measure the same. If a printed pair ever comes out crowded on the
-unexpected side of the arrow, or a double-sided pair will not register, flip
+**The sign is now physically confirmed (2026-08).** No software test or measurement can
+catch a wrong sign, because both signs measure the same — so this was the one choice the
+suite could not check. Handling the printed Cylinder A/B pairs settled it: the back
+features land on the expected side, and the pair registers. `BACK_GRID_DIRECTION = +1`
+is confirmed as built; §10 records the test.
+
+**Troubleshooting first stop (retained as history).** If a future printed pair ever comes
+out crowded on the unexpected side of the arrow, or will not register, flip
 `BACK_GRID_DIRECTION` in `app/geometry/interpoint.py` first (one character), then re-run
 the suite — `test_default_direction_crowds_the_left_of_cylinder_a_s_arrow` pins the
 constant to its physical meaning and will fail until its expectation is updated to match.
@@ -496,11 +504,12 @@ pre-beta output — product behavior, not a regression. B plates (recess outline
 
 ## 9. Known Gaps and Risks
 
-- **The D3 sign is the one unverifiable choice** (§2.3). Risk if wrong: the pair still
-  meshes and prints — crowding lands on the other side of the arrow. Cheap to reverse.
-- **Physical dome conformance is unproven** — will a Ø1.2 mm die on ~0.4 mm card stock
-  raise a readable dome (Spec 800 paper targets: base Ø1.448, height 0.483)? This is why
-  the feature is a beta. Fallback = Option A footprints (§3).
+- ~~**The D3 sign is the one unverifiable choice** (§2.3)~~ — **CLOSED 2026-08.**
+  Confirmed by handling the printed pair (§10). Still cheap to reverse if a future build
+  ever disagrees.
+- ~~**Physical dome conformance is unproven**~~ — **CLOSED 2026-08.** The Ø1.2 mm Option B
+  die raises a legible dome on real card stock over two print rounds (§10). Option B is
+  permanent; the Option A fallback (§3) stays documented as history only.
 - **Front lines on a double-sided Cylinder B request bypass the braille-charset check**
   (pre-existing `validate_braille_lines(lines, plate_type)` signature; report-only). They
   only become recesses there, and the paired Cylinder A request does validate them.
@@ -514,10 +523,46 @@ pre-beta output — product behavior, not a regression. B plates (recess outline
 
 ---
 
+## 10. Physical Validation (2026-08)
+
+The embossing test the beta was waiting on has been run and **passed**.
+
+| Item | Result |
+|---|---|
+| Test date | 2026-08 (recorded 2026-08-17) |
+| Printer / nozzle | Bambu Lab X1C, 0.4 mm nozzle |
+| Rounds | Two, each a full Cylinder A + Cylinder B pair |
+| Footprints under test | Option B — dot Ø1.2 mm (0.4 mm rounded base + 0.4 mm dome, dome Ø0.8 mm); paired bowl Ø1.3 × 0.5 mm deep |
+| Medium | Real card stock, embossed through the paired cylinders |
+| Outcome | Braille legible on **both** faces of the card |
+
+**What this closes**
+
+1. **Option B is permanent.** The smaller double-sided die raises a readable dome, so the
+   shipped footprints stay fixed with no tuning dials. **Option A (dot Ø1.5 + bowl Ø1.3)
+   is documented history only** — there is no fallback switch to it, in the UI or in the
+   settings.
+2. **`BACK_GRID_DIRECTION = +1` is confirmed** (§2.3). Handling the printed pair showed
+   the back features landing where the spec says they should — left of Cylinder A's raised
+   arrows, viewed from outside the cylinder with the top upward. The "unverifiable sign"
+   caveat is closed; the flip procedure in §2.3 is retained as troubleshooting history.
+3. **The §9 physical-conformance risk is closed** for the printed pair as specified.
+
+**What this does NOT close**
+
+- The feature keeps its **BETA** label. The remaining gap is breadth — one builder, one
+  printer, one paper stock — not whether the geometry works.
+- **Rotational sync** between the two cylinders must still stay within about ±1.0° (§6.5).
+  That is a requirement on whoever assembles the machine, not something this codebase can
+  enforce.
+
+---
+
 ## Document History
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-08-17 | 1.1 | Recorded the **physical validation** (new §10): two Bambu Lab X1C (0.4 mm nozzle) print rounds of Cylinder A/B pairs embossed real card stock legibly on both faces with the Option B footprints. Consequences written through the document — Option B is permanent (Option A is history, not a fallback switch); `BACK_GRID_DIRECTION = +1` is confirmed by physical handling and the "unverifiable sign" caveat in §2.3/§9 is closed (flip procedure retained as history); the status line in the Overview now says the BETA label waits on broader user testing, not on the embossing test. No code, geometry, or golden fixture changed. |
 | 2026-08-16 | 1.0 | Initial specification, written at Phase 10 of the interpoint initiative after the implementation (Phases 01–09) was complete and verified. Documents the as-built feature: schema/runtime naming, the four validation gates, the wire shape, the worker partition, the fixed Option B footprints, all signed-off user-facing strings verbatim, and the regression anchors. Citations: US Patent 5,527,117 (Roy, Impact Devices, 1996); NLS Specification 800, October 2014, §3.1/§3.2.4; Duxbury Systems, "Louis Braille and the Braille System"; Bambu Lab Wiki, "Introduction to wall generator". |
 
 ---

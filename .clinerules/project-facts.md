@@ -15,16 +15,40 @@ translation, Three.js preview. Working branch: develop — never commit to main.
 5. Dot position map is fixed: [[0,0],[1,0],[2,0],[0,1],[1,1],[2,1]] = dots 1–6
    as [row, col]. Never reorder it. Shape types: card|cylinder. Plate types:
    positive|negative. Placement modes: auto|manual.
-6. Canonical defaults — must stay identical in public/index.html (UI),
-   app/models.py, app/geometry_spec.py, and csg-worker.js
-   (csg-worker-manifold.js takes radius from the incoming spec rather than
-   storing its own default; the drift risk is in the other four files):
+6. Canonical defaults — TWO layers, both true, and they differ. Verified
+   2026-08-17. Each layer must stay internally consistent across
+   public/index.html (UI), app/models.py, app/geometry_spec.py, and
+   csg-worker.js (csg-worker-manifold.js takes radius from the incoming spec
+   rather than storing its own default; the drift risk is in the other four
+   files). Always say WHICH layer you mean when you quote one of these.
+
+   Layer 1 — SCHEMA/BACKEND defaults. settings.schema.json and app/models.py
+   agree, and these are also the raw value= attributes in public/index.html:
    - cylinder: ⌀30.75 mm × height 52 mm, seam offset 355° (radius 15.375 in
      workers — watch diameter-vs-radius conversions)
    - plate/card: 90 × 52 × 2.0 mm
    - spacing: dot 2.5 / cell 6.5 / line 10.0 mm
-   - emboss dot: cone base ⌀1.8, height 1.0, flat hat ⌀0.4 mm
-   - recess (bowl): ⌀1.8 × 0.8 mm deep
+   - emboss dot family is ROUNDED, not cone (schema dots.combined_shape
+     "rounded"; models.py use_rounded_dots 1; both index.html radios checked
+     on rounded): base ⌀2.0 × 0.2 high + dome ⌀1.5 × 0.6 high. The cone
+     family exists beside it at base ⌀1.8, height 1.0, flat hat ⌀0.4 mm —
+     selectable, never the default.
+   - recess (bowl): ⌀1.8 × 0.8 mm deep (recess_shape 1)
+
+   Layer 2 — LIVE UI on the wire. restoreThicknessPreset() in
+   public/index.html runs on every page load and applies the 0.4 mm Card
+   Thickness preset whenever nothing is saved, overwriting Layer 1 before the
+   user touches anything. What the dials and the request body actually carry:
+   - cylinder: ⌀30.8 mm (radius 15.4 in workers), seam offset 0°
+   - rounded emboss dot: base ⌀1.5 × 0.5 high + dome ⌀1.0 × 0.5 high
+     (cone family if selected: base ⌀1.5, height 0.8, flat hat ⌀0.4 mm)
+   - recess (bowl): ⌀1.8 × 0.8 mm deep — the preset sets the same numbers
+   - card, spacing, and tactile-arrow values: unchanged from Layer 1
+   The 0.3 mm preset is a third set again (see
+   docs/specifications/BRAILLE_DOT_SHAPE_SPECIFICATIONS.md §9).
+
+   Never "fix" one layer to match the other on your own — the preset numbers
+   are print-tuned and the schema numbers are the absent-field fallback.
 6b. Double-sided (interpoint) BETA — cylinders only, toggle default OFF, and
    toggle-off behavior must stay byte-identical to single-sided:
    - interpoint offset default (1.25, 1.25) mm diagonal, range 1.15–1.35 each

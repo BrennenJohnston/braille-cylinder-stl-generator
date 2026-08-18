@@ -1,5 +1,30 @@
 # Known Issues
 
+## Double-sided (interpoint) beta — status
+
+The Double-Sided Card (BETA) toggle is **physically validated**. In August 2026 two
+rounds of Cylinder A / Cylinder B pairs were printed on a Bambu Lab X1C with a 0.4 mm
+nozzle and used to emboss real card stock; the braille came out legible on **both** faces.
+The dot and bowl sizes it ships with (dot 1.2 mm across, bowl 1.3 mm across × 0.5 mm deep)
+are therefore final — there are no size dials to tune.
+
+It keeps the BETA label because it has been proven by one builder on one printer with one
+paper stock, not because anything is known to be wrong with it.
+
+Two caveats remain:
+
+- **Rotational sync is a mechanical requirement, not a software one.** The two cylinders
+  have to stay within about **1.0 degree** of each other as they turn. Further out of
+  phase than that and a front dot can meet the back of the card where its paired bowl is
+  not, so the emboss degrades. Nothing in this app can enforce that — it belongs to
+  whoever builds and aligns the machine.
+- **Local WebKit end-to-end tests fail on Windows.** Running the Playwright suite locally
+  against WebKit on Windows produces 26 failures that are environmental (the Windows
+  WebKit build), not defects in the app. The local pass bar is Chromium + Firefox; CI runs
+  WebKit on Linux, where it passes.
+
+Full technical detail: `docs/specifications/INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md`.
+
 ## Flat business card plates are parked
 
 Flat card generation is disabled in the UI (since December 2025) and will not be

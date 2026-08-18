@@ -10,6 +10,26 @@ The authoritative implementations (in order of correctness) are:
 3. **Standard CSG Worker** (`static/workers/csg-worker.js` using three-bvh-csg)
 4. **Manifold WASM Worker** (`static/workers/csg-worker-manifold.js`)
 
+### Reading the default tables: there are TWO layers of defaults
+
+Every "Default Parameter Values" table below lists **two** numbers, and they are often
+different. Both are correct - they describe different moments.
+
+| Layer | What it is | Where it lives |
+|---|---|---|
+| **Schema / backend default** | The value a request falls back to when the field is absent | `settings.schema.json` and `app/models.py` (they agree); the same numbers are the raw `value=` attributes in `public/index.html` |
+| **Live UI on load** | What the dials actually read after the page finishes loading, and therefore what the browser puts on the wire | `public/index.html`, the `0.4` entry of `THICKNESS_PRESETS` |
+
+The gap exists because `restoreThicknessPreset()` in `public/index.html` runs
+unconditionally on page load and, when the visitor has no saved preset, applies the
+**0.4 mm Card Thickness preset**. That preset overwrites most dot dials (and the cylinder
+diameter and seam offset) before the user touches anything. A visitor who picks the
+0.3 mm preset gets a third set of numbers; Section 9 lists all three side by side.
+
+**Consequence for debugging:** a value quoted from `app/models.py` will frequently not
+match what you see in the browser or in a captured request body. That is expected, not a
+bug. See `CARD_THICKNESS_PRESET_SPECIFICATIONS.md` for the preset system itself.
+
 ---
 
 ## 1. Shape Selection Overview
@@ -20,8 +40,16 @@ The embossing plate supports **two dot shape options** for raised braille dots:
 
 | Shape Option | UI Value | Internal Flag | Description |
 |--------------|----------|---------------|-------------|
-| **Cone (Standard)** | `'cone'` | `use_rounded_dots = 0` | Truncated cone frustum (default) |
-| **Rounded (Dome)** | `'rounded'` | `use_rounded_dots = 1` | Cone frustum base + spherical cap dome |
+| **Cone (Standard)** | `'cone'` | `use_rounded_dots = 0` | Truncated cone frustum |
+| **Rounded (Dome)** | `'rounded'` | `use_rounded_dots = 1` | Cone frustum base + spherical cap dome (**default**) |
+
+**Rounded is the default at every layer**, and was already so before this document was
+last revised: `settings.schema.json` sets `dots.combined_shape` to `"rounded"`;
+`app/models.py` sets `use_rounded_dots` to `1`; `public/index.html` marks both the visible
+`combined_shape` radio and the hidden `dot_shape` radio `checked` on `rounded`; and both
+Card Thickness presets re-select Rounded when applied. Earlier revisions of this document
+called Cone the default - that was wrong. The heading "Cone (Standard)" in Section 2 is
+kept only so existing links and anchors keep working.
 
 ### Counter Plate (Negative/Universal) Recess Shapes
 
@@ -112,11 +140,15 @@ dot = createManifoldFrustum(baseRadius, topRadius, height, 24);
 
 ### Default Parameter Values
 
-| Parameter | Default Value | Source |
+| Parameter | Schema / `app/models.py` | Live UI on load (0.4 mm preset) |
 |-----------|--------------|--------|
-| `emboss_dot_base_diameter` | 1.8mm | `app/models.py` |
-| `emboss_dot_flat_hat` | 0.4mm | `app/models.py` |
-| `emboss_dot_height` | 1.0mm | `app/models.py` |
+| `emboss_dot_base_diameter` | 1.8 mm | **1.5 mm** |
+| `emboss_dot_flat_hat` | 0.4 mm | 0.4 mm |
+| `emboss_dot_height` | 1.0 mm | **0.8 mm** |
+
+Verified 2026-08-17 against `settings.schema.json` (`dots.cone.*`), `app/models.py`, and
+`public/index.html`. See "Reading the default tables" in the Overview for why the two
+columns differ.
 
 ### Geometry Specification Format (`geometry_spec.py`)
 
@@ -279,12 +311,17 @@ if (shape === 'rounded') {
 
 ### Default Parameter Values
 
-| Parameter | Default Value | Source |
+| Parameter | Schema / `app/models.py` | Live UI on load (0.4 mm preset) |
 |-----------|--------------|--------|
-| `rounded_dot_base_diameter` | 2.0mm | `app/models.py` |
-| `rounded_dot_dome_diameter` | 1.5mm | `app/models.py` |
-| `rounded_dot_base_height` | 0.2mm | `app/models.py` |
-| `rounded_dot_dome_height` | 0.6mm | `app/models.py` |
+| `rounded_dot_base_diameter` | 2.0 mm | **1.5 mm** |
+| `rounded_dot_dome_diameter` | 1.5 mm | **1.0 mm** |
+| `rounded_dot_base_height` | 0.2 mm | **0.5 mm** |
+| `rounded_dot_dome_height` | 0.6 mm | **0.5 mm** |
+
+Verified 2026-08-17 against `settings.schema.json` (`dots.rounded.*`), `app/models.py`,
+and `public/index.html`. This is the **default emboss family** (Section 1), so these are
+the numbers an ordinary generate run actually uses. Total dot height on load = base
+0.5 mm + dome 0.5 mm = **1.0 mm**.
 
 ### Geometry Specification Format (`geometry_spec.py`)
 
@@ -400,10 +437,10 @@ if (shape === 'hemisphere') {
 
 ### Default Parameter Values
 
-| Parameter | Default Value | Source |
+| Parameter | Schema / `app/models.py` | Live UI on load (0.4 mm preset) |
 |-----------|--------------|--------|
-| `hemi_counter_dot_base_diameter` | 1.6mm | `app/models.py` |
-| `recess_shape` | 0 | When hemisphere selected |
+| `hemi_counter_dot_base_diameter` | 1.6 mm | 1.6 mm - no preset key, and the dial is hidden in the UI |
+| `recess_shape` | 0 | Set only when hemisphere is selected; the shipped default is 1 (bowl) |
 
 ### Geometry Specification Format (`geometry_spec.py`)
 
@@ -529,11 +566,16 @@ if (shape === 'bowl') {
 
 ### Default Parameter Values
 
-| Parameter | Default Value | Source |
+| Parameter | Schema / `app/models.py` | Live UI on load (0.4 mm preset) |
 |-----------|--------------|--------|
-| `bowl_counter_dot_base_diameter` | 1.8mm | `app/models.py` |
-| `counter_dot_depth` | 0.8mm | `app/models.py` |
-| `recess_shape` | 1 | Default counter plate shape |
+| `bowl_counter_dot_base_diameter` | 1.8 mm | 1.8 mm (preset sets the same value) |
+| `counter_dot_depth` | 0.8 mm | 0.8 mm (preset sets the same value) |
+| `recess_shape` | 1 | 1 - the shipped default counter-plate shape |
+
+Verified 2026-08-17 against `settings.schema.json` (`dots.bowl.*`), `app/models.py`, and
+`public/index.html`. The bowl is the one dot family whose numbers are identical in both
+layers. Note that these are the **nominal** numbers; what the Manifold worker actually
+cuts is deeper, deliberately - see "Cut Depth Convention" below.
 
 ### Geometry Specification Format (`geometry_spec.py`)
 
@@ -562,6 +604,47 @@ For bowl recesses on cylinders, the sphere is centered at the cylinder surface (
 // Bowl radial offset
 radialOffset = cylRadius;  // Center at surface
 ```
+
+### Cut Depth Convention: the worker cuts DEEPER than nominal, on purpose
+
+The two renderers place the bowl sphere differently, so a bowl declared
+`bowl_depth = h` does **not** come out `h` deep in the browser. This is known,
+deliberate, and left as-is.
+
+| Renderer | Where the sphere centre goes | Resulting cut depth |
+|---|---|---|
+| **Python** (`app/geometry/cylinder.py`) | `center_radius = outer_radius + (sphere_radius - h)` - pushed out so the sphere's innermost point lands exactly `h` below the surface | **exactly `h`**, the nominal depth |
+| **Manifold worker** (`static/workers/csg-worker-manifold.js`) | `radialOffset = cylRadius` - the sphere centre sits **on** the surface | **`R`**, the whole sphere radius |
+
+Because `R = (a^2 + h^2) / 2h` is always larger than `h` for a spherical cap, the worker
+always cuts deeper. With the two footprints the app actually ships:
+
+| Bowl | Mouth radius `a` | Nominal depth `h` | Sphere radius `R` | Python cuts | Worker cuts |
+|---|---|---|---|---|---|
+| Single-sided default, 1.8 x 0.8 mm | 0.9 mm | 0.8 mm | 0.90625 mm | 0.800 mm | about **0.906 mm** (+0.106) |
+| Double-sided BETA, 1.3 x 0.5 mm | 0.65 mm | 0.5 mm | 0.6725 mm | 0.500 mm | **0.667-0.672 mm** measured (+0.17) |
+
+The double-sided figure is a measured range rather than a single number because the worker
+subtracts a 24-segment faceted sphere (`createManifoldSphere(sphereR, 24)`), whose flat
+facets sit a little inside the true sphere; 0.6725 mm is the analytic ceiling and
+0.667 mm the measured floor.
+
+**Why this is left alone.** A deeper bowl is the *safe* direction: the recess is the void
+the opposing raised dot rolls into, so extra depth adds nip clearance and can never cause
+a collision. Narrowing it would. Three consequences follow, and all three are intentional:
+
+1. **Golden fixtures use the Python convention.** `tests/fixtures/*_golden.stl` are
+   rendered by the Python path, so they record the exact nominal depth. A browser download
+   compared against a golden fixture will differ in bowl depth by design.
+2. **The nip-clearance model follows the worker, not Python.**
+   `paired_nip_clearance()` in `app/geometry/interpoint.py` deliberately models the bowl
+   as "a sphere of radius (a^2 + h^2) / 2h centred ON B's surface", so the published
+   double-sided clearance numbers describe the geometry users actually print.
+3. **Quote the renderer when you quote a depth.** "0.5 mm bowl" is the parameter;
+   "about 0.67 mm" is the cut. Both are correct about different things.
+
+Do not "fix" this without a decision to change printed geometry - it would move a tactile
+dimension and invalidate the double-sided clearance analysis.
 
 ### Bowl Sphere Radius Verification
 
@@ -669,12 +752,16 @@ if (shape === 'cone') {
 
 ### Default Parameter Values
 
-| Parameter | Default Value | Source |
+| Parameter | Schema / `app/models.py` | Live UI on load (0.4 mm preset) |
 |-----------|--------------|--------|
-| `cone_counter_dot_base_diameter` | 1.6mm | `app/models.py` |
-| `cone_counter_dot_flat_hat` | 0.4mm | `app/models.py` |
-| `cone_counter_dot_height` | 0.8mm | `app/models.py` |
-| `recess_shape` | 2 | When cone selected |
+| `cone_counter_dot_base_diameter` | 1.6 mm | **1.9 mm** |
+| `cone_counter_dot_flat_hat` | 0.4 mm | **1.0 mm** |
+| `cone_counter_dot_height` | 0.8 mm | **0.7 mm** |
+| `recess_shape` | 2 | Set only when cone is selected; the shipped default is 1 (bowl) |
+
+Verified 2026-08-17 against `settings.schema.json` (`dots.recess_cone.*`),
+`app/models.py`, and `public/index.html`. This family has the widest schema-to-UI spread
+in this document - quote the column that matches the situation you are debugging.
 
 ### Geometry Specification Format (`geometry_spec.py`)
 
@@ -802,30 +889,52 @@ except Exception:
 
 ## 9. Parameter Default Summary Table
 
+All three columns verified 2026-08-17 by reading `settings.schema.json`,
+`app/models.py`, and `public/index.html` first-hand. Bold marks a value where the live UI
+differs from the schema. See "Reading the default tables" in the Overview for why.
+
 ### Embossing Plate Parameters
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `use_rounded_dots` | 0 | Shape selector (0=cone, 1=rounded) |
-| `emboss_dot_base_diameter` | 1.8mm | Cone base diameter |
-| `emboss_dot_flat_hat` | 0.4mm | Cone top diameter |
-| `emboss_dot_height` | 1.0mm | Cone height |
-| `rounded_dot_base_diameter` | 2.0mm | Rounded base diameter |
-| `rounded_dot_dome_diameter` | 1.5mm | Dome base diameter |
-| `rounded_dot_base_height` | 0.2mm | Frustum base height |
-| `rounded_dot_dome_height` | 0.6mm | Dome height |
+| Parameter | Schema / `app/models.py` | 0.4 mm preset (UI on load) | 0.3 mm preset | Description |
+|-----------|---------|---------|---------|-------------|
+| `use_rounded_dots` | **1** | 1 | 1 | Shape selector (0=cone, 1=rounded). **Rounded is the default** |
+| `emboss_dot_base_diameter` | 1.8 mm | **1.5 mm** | **1.2 mm** | Cone base diameter |
+| `emboss_dot_flat_hat` | 0.4 mm | 0.4 mm | **0.2 mm** | Cone top diameter |
+| `emboss_dot_height` | 1.0 mm | **0.8 mm** | **0.6 mm** | Cone height |
+| `rounded_dot_base_diameter` | 2.0 mm | **1.5 mm** | **1.2 mm** | Rounded base diameter |
+| `rounded_dot_dome_diameter` | 1.5 mm | **1.0 mm** | **0.8 mm** | Dome base diameter |
+| `rounded_dot_base_height` | 0.2 mm | **0.5 mm** | **0.4 mm** | Frustum base height |
+| `rounded_dot_dome_height` | 0.6 mm | **0.5 mm** | **0.4 mm** | Dome height |
 
 ### Counter Plate Parameters
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `recess_shape` | 1 | Shape selector (0=hemi, 1=bowl, 2=cone) |
-| `hemi_counter_dot_base_diameter` | 1.6mm | Hemisphere diameter |
-| `bowl_counter_dot_base_diameter` | 1.8mm | Bowl opening diameter |
-| `counter_dot_depth` | 0.8mm | Bowl/general depth |
-| `cone_counter_dot_base_diameter` | 1.6mm | Cone opening diameter |
-| `cone_counter_dot_flat_hat` | 0.4mm | Cone tip diameter |
-| `cone_counter_dot_height` | 0.8mm | Cone depth |
+| Parameter | Schema / `app/models.py` | 0.4 mm preset (UI on load) | 0.3 mm preset | Description |
+|-----------|---------|---------|---------|-------------|
+| `recess_shape` | 1 | 1 | 1 | Shape selector (0=hemi, 1=bowl, 2=cone) |
+| `hemi_counter_dot_base_diameter` | 1.6 mm | 1.6 mm | 1.6 mm | Hemisphere diameter (no preset key; dial hidden) |
+| `bowl_counter_dot_base_diameter` | 1.8 mm | 1.8 mm | **1.5 mm** | Bowl opening diameter |
+| `counter_dot_depth` | 0.8 mm | 0.8 mm | **0.5 mm** | Bowl/general depth (nominal - the worker cuts deeper, Section 5) |
+| `cone_counter_dot_base_diameter` | 1.6 mm | **1.9 mm** | **1.5 mm** | Cone opening diameter |
+| `cone_counter_dot_flat_hat` | 0.4 mm | **1.0 mm** | **0.8 mm** | Cone tip diameter |
+| `cone_counter_dot_height` | 0.8 mm | **0.7 mm** | **0.5 mm** | Cone depth |
+
+### Double-Sided (BETA) Footprints
+
+The double-sided beta does not use the dials above. Its dot and bowl sizes are **fixed
+constants** with no UI controls, and they are permanent following the 2026-08 physical
+embossing test:
+
+| Parameter | Value | Description |
+|-----------|-------|-------------|
+| `ds_dot_base_diameter` | 1.2 mm | Raised dot base diameter |
+| `ds_dot_base_height` | 0.4 mm | Rounded base height below the dome |
+| `ds_dot_dome_diameter` | 0.8 mm | Diameter where the dome meets the base |
+| `ds_dot_dome_height` | 0.4 mm | Dome height (total dot height 0.8 mm) |
+| `ds_bowl_base_diameter` | 1.3 mm | Paired bowl recess opening |
+| `ds_bowl_depth` | 0.5 mm | Paired bowl recess depth (nominal; see Section 5) |
+
+Full rationale, ranges, and the physical validation record:
+`INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md`.
 
 ---
 
@@ -1046,6 +1155,7 @@ Use these logs to verify that:
 | 2024-12-07 | 1.2 | Extended Bug 7 documentation with detailed centering logic and debug logging information |
 | 2024-12-07 | 1.3 | Fixed Bug 7 in csg-worker-manifold.js (Manifold CSG worker for cylinders) - added centering translation |
 | 2024-12-07 | 1.4 | Bug 7 fix VERIFIED by user testing - rounded dots now correctly positioned flush with cylinder surface |
+| 2026-08-17 | 1.5 | **Defaults refreshed against the code** (docs only, no code or fixture changed). Corrected `use_rounded_dots` default from 0 to **1** - Rounded, not Cone, is the default emboss family at every layer (Sections 1 and 9). Every "Default Parameter Values" table now carries both the schema/`app/models.py` default and the live-UI value, because `restoreThicknessPreset()` applies the 0.4 mm preset on page load and overwrites most dot dials; Section 9 adds the 0.3 mm preset column and the fixed double-sided BETA footprints. Added Section 5 "Cut Depth Convention", documenting as **intentional** the Manifold worker cutting bowls from a sphere centred on the surface: nominal 1.8 x 0.8 cuts about 0.906 mm and nominal 1.3 x 0.5 cuts 0.667-0.672 mm, versus the Python renderer's exact nominal depth used by the golden fixtures. Deeper is the safe direction for nip clearance. |
 
 ---
 
