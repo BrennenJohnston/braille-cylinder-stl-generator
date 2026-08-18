@@ -3018,9 +3018,19 @@
                                     <!-- Label and placeholder wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
                                     <label for="back-text" class="line-label">Back of Card Text</label>
                                     <textarea id="back-text" rows="4" placeholder="Type the text for the back of the card here. Each line becomes one braille row." style="width: 100%; resize: vertical;" autocomplete="off" aria-describedby="back-text-help"></textarea>
-                                    <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
+                                    <!-- User-facing wording signed off by Brennen (2026-08-17); reword only
+                                         with his sign-off. Replaces the 2026-08-16 note, which said "there is
+                                         no automatic wrapping here yet, so press Enter where each row should
+                                         end" - false since the back text gained BANA auto-wrap. -->
                                     <div id="back-text-help" class="grade-note" style="margin-top: 0.6em; font-size: 0.85em;">
-                                        Each line becomes one braille row on the back of the card, translated with the language selected below — there is no automatic wrapping here yet, so press Enter where each row should end. The back has the same number of rows and cells per row as the front.
+                                        Your text is translated with the language selected below and wrapped across the braille rows for you, keeping whole words together. Press Enter only where you want to force the start of a new row. The back has the same number of rows and cells per row as the front.
+                                    </div>
+                                    <!-- Live back-text overflow warning. Same job, same shape, and the same
+                                         run-id guard as the front's #auto-overflow-warning; both ids are
+                                         load-bearing for computeBackOverflow(). -->
+                                    <div id="ds-back-overflow-warning" class="grade-note inline-warning" role="status" aria-live="polite"
+                                         style="margin-top: 0.6em;" hidden>
+                                        <strong>Warning:</strong> <span id="ds-back-overflow-message"></span>
                                     </div>
                                 </fieldset>
                             </div>
@@ -5966,18 +5976,108 @@
             }
         }
 
+        // Live overflow warning for the double-sided beta's Back of Card text.
+        // Same job as computeAutoOverflow above, same machinery: the shared
+        // banaAutoWrap simulation, a 250 ms debounce, and its OWN run-id counter
+        // so a slow liblouis round-trip cannot repaint the box after a newer
+        // keystroke has already answered it. Gated on the beta toggle — with the
+        // beta off this costs nothing and the region is hidden immediately
+        // rather than 250 ms later.
+        let backOverflowTimer = null;
+        let backOverflowRun = 0;
+
+        function hideBackOverflow() {
+            const warningDiv = document.getElementById('ds-back-overflow-warning');
+            const warningMsg = document.getElementById('ds-back-overflow-message');
+            if (!warningDiv || !warningMsg) return;
+            warningDiv.hidden = true;
+            warningMsg.textContent = '';
+        }
+
+        function computeBackOverflow() {
+            const toggle = document.getElementById('double_sided_enabled');
+            if (!toggle || !toggle.checked) {
+                if (backOverflowTimer) { clearTimeout(backOverflowTimer); backOverflowTimer = null; }
+                backOverflowRun++; // discard any translation still in flight
+                hideBackOverflow();
+                return;
+            }
+            if (backOverflowTimer) clearTimeout(backOverflowTimer);
+            backOverflowTimer = setTimeout(() => {
+                backOverflowTimer = null;
+                computeBackOverflowNow();
+            }, 250);
+        }
+
+        async function computeBackOverflowNow() {
+            const runId = ++backOverflowRun;
+            const warningDiv = document.getElementById('ds-back-overflow-warning');
+            const warningMsg = document.getElementById('ds-back-overflow-message');
+            if (!warningDiv || !warningMsg) return;
+            const src = (document.getElementById('back-text')?.value || '').trim();
+            if (!src) {
+                hideBackOverflow();
+                return;
+            }
+            try {
+                const languageSelect = document.getElementById('language-table');
+                const tableName = languageSelect?.value || DEFAULT_LANGUAGE_TABLE;
+                const cols = getAvailableColumns();
+                const rows = parseInt(document.getElementById('grid_rows').value) || 4;
+                const wrap = await banaAutoWrap(src, cols, rows, tableName);
+                if (runId !== backOverflowRun) return; // superseded by newer input
+
+                const messages = [];
+                if (wrap.error) {
+                    messages.push(...(wrap.warnings || []));
+                } else if (wrap.rowsNeeded > rows || !wrap.rowsNeededIsExact) {
+                    // Name the back-of-card paragraphs that cannot fit a single row
+                    const paragraphs = src.split(/\r?\n/).map(s => s.replace(/\s+/g, ' ').trim());
+                    for (let p = 0; p < paragraphs.length; p++) {
+                        if (!paragraphs[p]) continue;
+                        const braille = await translateWithLiblouis(applyCapitalizationSetting(paragraphs[p]), 'g2', tableName);
+                        if (braille.length > cols) {
+                            /* REVIEW-BRENNEN (Phase 02): draft wording. NOT among the four strings
+                               Brennen signed off on 2026-08-17 - still awaiting his sign-off. */
+                            messages.push(`Back line ${p + 1} ("${paragraphs[p]}") needs ${braille.length} cells but ${cols} are available.`);
+                        }
+                    }
+                    if (runId !== backOverflowRun) return;
+                    const needs = wrap.rowsNeededIsExact ? `${wrap.rowsNeeded} rows` : `more than ${wrap.rowsNeeded} rows`;
+                    /* REVIEW-BRENNEN (Phase 02): draft wording. NOT among the four strings
+                       Brennen signed off on 2026-08-17 - still awaiting his sign-off. */
+                    messages.push(`Your back text needs ${needs} but the plate has ${rows}.`);
+                }
+
+                if (messages.length) {
+                    warningMsg.textContent = messages.join(' ');
+                    warningDiv.hidden = false;
+                } else {
+                    hideBackOverflow();
+                }
+            } catch (e) {
+                // liblouis unavailable or still starting: leave the box as it is
+                // rather than guess. Generation runs the same wrap itself and
+                // fails closed, so a missed live warning cannot emboss bad braille.
+                log.debug('Back-of-card overflow check skipped:', e);
+            }
+        }
+
         // Re-runs every live warning against the settings as they stand right now.
         // They are evaluated together because they share inputs: the cell dial
         // feeds the overflow warnings and the seam-gap warning, the language table
         // changes how many cells a line takes, the row count bounds the braille
         // field. Evaluating one at a time is what let a warning survive the edit
-        // that fixed it. The two overflow boxes describe different inputs, so only
-        // the one for the active placement mode may be on screen.
+        // that fixed it. The two FRONT overflow boxes describe different inputs, so
+        // only the one for the active placement mode may be on screen. The back-of-
+        // card box is a third, independent one: it describes the beta's own text and
+        // can be up beside a front warning, so it is not part of that either/or.
         function refreshLiveWarnings() {
             checkPhysicalFit();
             checkDoubleSidedGap();
             updateCapsWarning();
             updateBrailleFieldStatus();
+            computeBackOverflow();
 
             const placementMode = document.querySelector('input[name="placement_mode"]:checked')?.value || 'manual';
             if (placementMode === 'auto') {
@@ -7515,52 +7615,62 @@
                 log.debug('Counter plate selected - no text translation needed');
             }
 
-            // Double-sided beta: translate the Back of Card text through the same
-            // liblouis pipeline as the front lines — same table, same capitalization
-            // setting, same contracted-grade default — one row per newline in the
-            // #back-text field of the Back of Card section.
-            // Every failure blocks generation: wrong braille must never emboss.
+            // Double-sided beta: the Back of Card text runs through the SAME
+            // banaAutoWrap pass the front's auto placement uses - same language table,
+            // same capitalization setting, same contracted-grade default, newlines
+            // still hard row breaks - so both sides of the card wrap by one set of
+            // rules. Every failure blocks generation: wrong braille must never emboss.
             let backBrailleLines = null;
             if (doubleSidedOn) {
                 const backRows = parseInt(document.getElementById('grid_rows').value) || 4;
-                const backAvailableColumns = getAvailableColumns();
-                const backParagraphs = String(document.getElementById('back-text')?.value || '')
-                    .split(/\r?\n/).map(s => s.trim());
-                while (backParagraphs.length && !backParagraphs[backParagraphs.length - 1]) backParagraphs.pop();
-                if (backParagraphs.length > backRows) {
-                    /* User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. */
-                    errorText.textContent = `Back text uses ${backParagraphs.length} lines but only ${backRows} rows are available. Please shorten the back text or increase Rows.`;
-                    errorDiv.style.display = 'flex';
-                    errorDiv.className = 'error-message';
-                    resetToGenerateState();
-                    return;
-                }
-                backBrailleLines = [];
-                for (let r = 0; r < backRows; r++) {
-                    const backLine = backParagraphs[r] || '';
-                    if (!backLine) { backBrailleLines.push(''); continue; }
-                    let backBraille;
+                const backSrc = String(document.getElementById('back-text')?.value || '').trim();
+                if (!backSrc) {
+                    backBrailleLines = Array(backRows).fill('');
+                } else {
+                    let backWrap;
                     try {
-                        backBraille = await translateWithLiblouis(applyCapitalizationSetting(backLine), 'g2', tableName);
+                        backWrap = await banaAutoWrap(backSrc, getAvailableColumns(), backRows, tableName);
                     } catch (error) {
-                        log.error(`Failed to translate back text line ${r + 1}:`, error);
-                        /* User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. */
-                        errorText.textContent = `Back text line ${r + 1} could not be translated to braille. Please check the text and try again. The STL file was not generated to prevent producing incorrect braille.`;
+                        log.error('Failed to wrap back text (BANA):', error);
+                        /* User-facing wording signed off by Brennen (2026-08-17); reword only with
+                           his sign-off. Replaces the 2026-08-16 per-line string: banaAutoWrap
+                           translates the whole field, so no single line number is left to name. */
+                        errorText.textContent = 'Back text could not be translated to braille. Please check the text and try again. The STL file was not generated to prevent producing incorrect braille.';
                         errorDiv.style.display = 'flex';
                         errorDiv.className = 'error-message';
                         resetToGenerateState();
                         return;
                     }
-                    if (backBraille.length > backAvailableColumns) {
-                        const over = backBraille.length - backAvailableColumns;
-                        /* User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. */
-                        errorText.textContent = `Back text line ${r + 1} exceeds ${backAvailableColumns} available braille cells by ${over} cells after translation. Please shorten the back text.`;
+                    if (backWrap.error) {
+                        /* User-facing wording signed off by Brennen (2026-08-17); reword only with
+                           his sign-off. The embedded banaAutoWrap warning names the word that cannot
+                           be divided; its tail says "or use Manual Placement", which the back of the
+                           card has no equivalent for - signed off knowingly. */
+                        const wrapMsg = (backWrap.warnings && backWrap.warnings.length)
+                            ? backWrap.warnings.join(' ')
+                            : 'The back text could not be wrapped per BANA rules.';
+                        errorText.textContent = `Back of card: ${wrapMsg} The STL file was not generated to prevent producing incorrect braille.`;
                         errorDiv.style.display = 'flex';
                         errorDiv.className = 'error-message';
                         resetToGenerateState();
                         return;
                     }
-                    backBrailleLines.push(backBraille);
+                    if (backWrap.rowsNeeded > backRows || !backWrap.rowsNeededIsExact) {
+                        const needs = backWrap.rowsNeededIsExact
+                            ? `${backWrap.rowsNeeded} rows`
+                            : `more than ${backWrap.rowsNeeded} rows`;
+                        /* User-facing wording signed off by Brennen (2026-08-17); reword only with
+                           his sign-off. Replaces the 2026-08-16 "Back text uses N lines" string -
+                           wrapping counts rows, not input lines. */
+                        errorText.textContent = `Back text needs ${needs} but only ${backRows} rows are available. Please shorten the back text or increase Rows.`;
+                        errorDiv.style.display = 'flex';
+                        errorDiv.className = 'error-message';
+                        resetToGenerateState();
+                        return;
+                    }
+                    // banaAutoWrap always returns exactly `rows` lines, so the wire shape
+                    // (back_lines padded to grid_rows) is unchanged.
+                    backBrailleLines = backWrap.brailleLines;
                 }
                 log.debug('Back lines translated:', backBrailleLines);
             }

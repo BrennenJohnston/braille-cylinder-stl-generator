@@ -1162,13 +1162,15 @@ if original_lines and row_num < len(original_lines):
 
 When the double-sided (interpoint) beta toggle is ON, the `/geometry_spec` request additionally carries:
 
-- A **top-level** `back_lines` key beside `lines` — an array of braille Unicode strings padded to `grid_rows`, produced by a second liblouis pass over the Back of Card text (same language table, same capitalization setting, same contracted-grade default as the front lines). There is no `text` object on the wire; `text.back_lines` is only the saved-settings spelling in `settings.schema.json`.
+- A **top-level** `back_lines` key beside `lines` — an array of braille Unicode strings padded to `grid_rows`, produced by running the Back of Card text through the **same `banaAutoWrap()` pass the front's Auto Placement uses** (same language table, same capitalization setting, same contracted-grade default as the front lines; newlines are hard row breaks). There is no `text` object on the wire; `text.back_lines` is only the saved-settings spelling in `settings.schema.json`.
 - The flat double-sided fields inside `settings`: `double_sided_enabled` (int 1), `interpoint_offset_x`, `interpoint_offset_y`, `ds_dot_base_diameter`, `ds_dot_base_height`, `ds_dot_dome_diameter`, `ds_dot_dome_height`, `ds_bowl_base_diameter`, `ds_bowl_depth` (dial strings; absent dials fall back to the signed-off Option B defaults).
 - **Both plates carry the front braille.** Cylinder B (plate_type `negative`) requests send the translated front lines too — in single-sided mode counter-plate requests send empty lines — because Cylinder B needs them to place its 1:1 paired recesses.
 
 The backend validates `back_lines` with the same gates as the front lines (`validate_lines`, `validate_braille_lines`, `validate_line_lengths`); the braille-charset check always runs for `back_lines` (back braille is real geometry on both plates, so there is no counter-plate skip). With the toggle OFF the request is byte-identical to the single-sided one.
 
-The Back of Card source text lives in the hidden `#back-text` storage textarea (one row per newline) until the Phase 08 UI exists; the beta toggle is the `#double_sided_enabled` checkbox. Full geometry semantics belong to the feature's own specification document (Phase 10).
+The Back of Card source text lives in the `#back-text` textarea inside the Back of Card fieldset, revealed by the `#double_sided_enabled` toggle. Since 2026-08-17 it is **BANA auto-wrapped, not one row per newline**: `banaAutoWrap(backSrc, getAvailableColumns(), grid_rows, tableName)` wraps whole words across the available rows and treats each newline as a forced row break, exactly as the front does in Auto Placement. Because `banaAutoWrap()` always returns exactly `rows` lines, the padded-to-`grid_rows` wire shape is unchanged.
+
+Back text fails **closed** — the generate handler blocks with an error and sends no request — when the wrap needs more rows than the plate has, when a word cannot be divided per BANA, or when liblouis is unavailable. A live `role="status"` region (`#ds-back-overflow-warning`) runs the same wrap on a 250 ms debounce while the user types, gated on the toggle being on. The exact strings (signed off by Brennen 2026-08-17) and the live-warning wording live in INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §7.4; full geometry semantics belong to that document too.
 
 ---
 
@@ -1890,8 +1892,9 @@ None required. All implementations match the specification exactly.
 
 ---
 
-*Document Version: 1.3*
-*Last Updated: 2026-08-16 — Double-sided (interpoint) beta: Section 8 documents the toggle-gated `back_lines` wire field, the flat `settings` fields, and the both-plates-carry-front-lines rule; Section 11 adds the two new `braille_prefs_*` keys*
+*Document Version: 1.4*
+*Last Updated: 2026-08-17 — Back of Card text reaches parity with the front: Section 8 now records BANA auto-wrap via the shared `banaAutoWrap()` (newlines = forced row breaks, wire shape unchanged), the three fail-closed blocking paths, and the live `#ds-back-overflow-warning` status region*
+*Previous: 1.3, 2026-08-16 — Double-sided (interpoint) beta: Section 8 documents the toggle-gated `back_lines` wire field, the flat `settings` fields, and the both-plates-carry-front-lines rule; Section 11 adds the two new `braille_prefs_*` keys*
 *Previous: 1.2, 2026-07-30 — Capitalized Letters and Number Signs moved to the Expert Mode Translation Options submenu; the Braille (Unicode) field gained a Translate to Text button and now sits directly under the matching text box*
 *Verification Completed: 2024-12-06*
 *Source Priority: backend.py > wsgi.py > csg-worker.js > Manifold WASM*

@@ -389,10 +389,15 @@ Toggling ON reveals `#double-sided-section` containing the **Back of Card** fiel
 - Label: **"Back of Card Text"** for the `#back-text` textarea (one braille row per
   newline), placeholder: **"Type the text for the back of the card here. Each line
   becomes one braille row."**
-- Help note: "Each line becomes one braille row on the back of the card, translated with
-  the language selected below — there is no automatic wrapping here yet, so press Enter
-  where each row should end. The back has the same number of rows and cells per row as
-  the front."
+- Help note (`#back-text-help`), **signed off by Brennen 2026-08-17**: "Your text is
+  translated with the language selected below and wrapped across the braille rows for you,
+  keeping whole words together. Press Enter only where you want to force the start of a new
+  row. The back has the same number of rows and cells per row as the front." This replaces
+  the 2026-08-16 signed-off note, which said "there is no automatic wrapping here yet" —
+  false since the back text gained BANA auto-wrap (§7.4).
+- Live overflow warning (`#ds-back-overflow-warning` / `#ds-back-overflow-message`,
+  `role="status"`, `aria-live="polite"`, `hidden` when clear) directly after the help note.
+  See §7.4.
 
 While ON, the front legend `#front-entry-legend` reads **"Front of Card — Enter Text for
 Braille Translation"** and restores its exact original text ("Enter Text for Braille
@@ -436,25 +441,49 @@ Reference numbers (asserted by the e2e suite): offsets 1.25/1.25 → hidden (gap
 offset x 1.15 → "0.449 mm" marginal; both 1.15 → "0.376 mm"; footprints 1.5/1.8 →
 "0.118 mm" blocked.
 
-### 7.4 Back-text error messages (fail closed)
+### 7.4 Back-text wrapping, live warning, and error messages (fail closed)
 
-The generate handler stops — no STL — with one of (N/R/C/X are the computed numbers):
+Since 2026-08-17 the Back of Card text has the same treatment as the front's Auto
+Placement: the generate handler runs the **shared `banaAutoWrap(src, cols, rows,
+tableName)`** over `#back-text` — same language table, same capitalization setting, same
+contracted-grade default, newlines still hard row breaks — instead of translating one row
+per newline. `banaAutoWrap` always returns exactly `rows` lines, so the wire shape
+(`back_lines` padded to `grid_rows`) is unchanged.
 
-> "Back text uses N lines but only R rows are available. Please shorten the back text or
+**Live warning while typing.** `computeBackOverflow()` runs the same simulation on a 250 ms
+debounce behind its own run-id counter (stale async results are dropped), driven by the
+form's `input`/`change` delegation through `refreshLiveWarnings()`. It runs only while the
+beta toggle is ON and hides `#ds-back-overflow-warning` the moment the toggle goes off or
+the text fits. These two sentences are **still drafts awaiting sign-off** — they were not
+among the four strings Brennen signed off on 2026-08-17:
+
+> "Back line N (\"...\") needs C cells but A are available." (one per overflowing paragraph)
+>
+> "Your back text needs N rows but the plate has R."
+
+**Blocking errors.** The generate handler stops — no STL, no `/geometry_spec` request — on
+any of three paths. All three were **signed off by Brennen on 2026-08-17**; they replace the
+2026-08-16 signed-off strings, which counted input lines rather than wrapped rows:
+
+> "Back text needs N rows but only R rows are available. Please shorten the back text or
 > increase Rows."
 >
-> "Back text line N could not be translated to braille. Please check the text and try
-> again. The STL file was not generated to prevent producing incorrect braille."
+> "Back of card: <banaAutoWrap warning> The STL file was not generated to prevent producing
+> incorrect braille." (a word too long to divide per BANA)
 >
-> "Back text line N exceeds C available braille cells by X cells after translation.
-> Please shorten the back text."
+> "Back text could not be translated to braille. Please check the text and try again. The
+> STL file was not generated to prevent producing incorrect braille." (liblouis unavailable)
+
+The 2026-08-16 per-line "exceeds C available braille cells by X cells" error is **retired**:
+wrapping guarantees every emitted row fits, and a token that cannot fit at all now takes the
+BANA-undividable path above.
 
 ### 7.5 Persistence, reset, and no dials
 
 - Persisted as `braille_prefs_double_sided_enabled` (`'1'`/`'0'`) and
   `braille_prefs_back_text`; restored on load (a restored ON state re-reveals the section
   and re-applies the lock), cleared by Reset and by Clear-all. Also documented in
-  BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md v1.3 (Section 8 and the Section 11
+  BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md v1.4 (Section 8 and the Section 11
   localStorage table).
 - **There are no offset or footprint dials, by decision** (Brennen, 2026-08-16): the beta
   ships FIXED at Option B. The `ds_*` values and offsets are overridable only via a
@@ -562,6 +591,7 @@ The embossing test the beta was waiting on has been run and **passed**.
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-08-17 | 1.2 | **Back of Card text reached parity with the front** (web repo Phase 02): the generate handler now runs the shared `banaAutoWrap()` over `#back-text` instead of translating one row per newline, and a live `#ds-back-overflow-warning` status region warns while the user types. §7.4 rewritten (wrapping rule, live-warning wording, three fail-closed blocking paths); the 2026-08-16 per-line "exceeds C available braille cells" error retired; the Back of Card help note replaced. The four replacement strings (help note plus the three blocking errors) were **signed off by Brennen on 2026-08-17**; the two live-warning sentences remain drafts awaiting sign-off. Wire shape, persistence keys, the toggle-off payload, and all geometry are unchanged. |
 | 2026-08-17 | 1.1 | Recorded the **physical validation** (new §10): two Bambu Lab X1C (0.4 mm nozzle) print rounds of Cylinder A/B pairs embossed real card stock legibly on both faces with the Option B footprints. Consequences written through the document — Option B is permanent (Option A is history, not a fallback switch); `BACK_GRID_DIRECTION = +1` is confirmed by physical handling and the "unverifiable sign" caveat in §2.3/§9 is closed (flip procedure retained as history); the status line in the Overview now says the BETA label waits on broader user testing, not on the embossing test. No code, geometry, or golden fixture changed. |
 | 2026-08-16 | 1.0 | Initial specification, written at Phase 10 of the interpoint initiative after the implementation (Phases 01–09) was complete and verified. Documents the as-built feature: schema/runtime naming, the four validation gates, the wire shape, the worker partition, the fixed Option B footprints, all signed-off user-facing strings verbatim, and the regression anchors. Citations: US Patent 5,527,117 (Roy, Impact Devices, 1996); NLS Specification 800, October 2014, §3.1/§3.2.4; Duxbury Systems, "Louis Braille and the Braille System"; Bambu Lab Wiki, "Introduction to wall generator". |
 
@@ -569,7 +599,7 @@ The embossing test the beta was waiting on has been run and **passed**.
 
 ## Related Documentation
 
-- `BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md` v1.3 §8 — the `back_lines` wire
+- `BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md` v1.4 §8 — the `back_lines` wire
   field, back translation, persistence keys
 - `UI_INTERFACE_CORE_SPECIFICATIONS.md` v1.10 §4.8 — the disclosure toggle pattern,
   accessibility validation results
