@@ -104,6 +104,7 @@ def index_explicit():
    - 4.7 [Two-Way Translation Controls](#47-two-way-translation-controls)
    - 4.8 [Double-Sided Card Beta: Disclosure Checkbox and Locked Radio Option](#48-double-sided-card-beta-disclosure-checkbox-and-locked-radio-option)
    - 4.9 [Button Contrast Tokens and the 44 px Action Button](#49-button-contrast-tokens-and-the-44-px-action-button)
+   - 4.10 [Live Regions Must Already Be in the Accessibility Tree](#410-live-regions-must-already-be-in-the-accessibility-tree)
 5. [Scrollbar Customization](#5-scrollbar-customization)
    - 5.1 [Form Scroll Area Scrollbar](#51-form-scroll-area-scrollbar)
    - 5.2 [Global Page Scrollbar](#52-global-page-scrollbar)
@@ -1924,6 +1925,64 @@ failures were found on 2026-08-17 and fixed the next day:
 
 ---
 
+### 4.10 Live Regions Must Already Be in the Accessibility Tree
+
+Found by the NVDA walkthrough on 2026-08-18, not by any automated tool.
+
+**The rule.** A live region announces a **change** to a node the assistive
+technology is already tracking. A region that is `display: none` is not in the
+accessibility tree at all, so writing its text while it is hidden and revealing it
+afterwards produces an **insertion** — a new node that arrives with its text
+already inside. Insertions are not changes, and nothing is announced.
+
+Both live regions in the generate flow were written in exactly that order:
+
+```js
+el.textContent = message;          // written while the node is off-tree
+el.style.display = 'flex';         // revealed only afterwards -> silent
+```
+
+**Measured, via the Chrome accessibility tree (CDP `Accessibility.getFullAXTree`):**
+
+| Point in the sequence | `role=status` nodes | Verdict |
+|---|---|---|
+| Page load (region `display:none`) | 4 | region absent from the tree |
+| After 1st message | 5 | node **inserted** with its text — silent |
+| After 2nd message | 5 | in-place change — announced |
+| After 3rd message | 5 | in-place change — announced |
+
+**Why the tooling passed it.** The markup is textbook-correct — correct `role`,
+correct `aria-live`, correct `aria-atomic`. Only the *ordering* is wrong, and
+neither Lighthouse nor axe-core evaluates the runtime sequence. Both scored 100/100
+with this defect live. **A live region is only proven by hearing it, or by
+observing the accessibility tree across the write.**
+
+**Fixed here — `#pair-status` (double-sided pair progress).** The node now stays in
+the tree permanently and `setPairStatus()` writes text only. Hiding is done with
+`#pair-status:empty`, which clips the region and takes it out of flow while it has
+nothing to say, so `.action-footer`'s flex `gap` never sees it. Verified: the
+`role=status` node count is **5 at load and 5 after every write**, and
+`.action-footer` measures **53.16 px both with the empty region present and with the
+element deleted outright** — layout with the beta off is unchanged, as required by
+the byte-identical rule in `.clinerules/project-facts.md` §6b. No message wording
+changed; this is a timing fix only.
+
+**Outstanding, scheduled separately — `#error-message`.** The same defect affects
+the single-sided flow, where `#error-message` carries *every* progress notice,
+validation error and failure message. A blind user who overruns a line is shown
+"Line 1 exceeds 13 cells…" on screen and hears **nothing**, so they cannot discover
+why generation refused. This is a **WCAG 2.1 SC 4.1.3 Status Messages (AA)**
+failure and it is app-wide, not beta-specific. The agreed fix is a separate,
+always-present `sr-only` mirror region that the code writes to alongside the visual
+box, leaving that box's styling and timing untouched — `#error-message` is
+`position: absolute` with its own background, border and shadow, so keeping it
+permanently in flow is not viable. Also outstanding: `#action-btn` changes its
+accessible name from "Generate STL file from entered text" to "Download generated
+STL file" with no announcement, so the control under the user's focus silently
+becomes a different control.
+
+---
+
 ## 5. Scrollbar Customization
 
 ### 5.1 Form Scroll Area Scrollbar
@@ -2551,8 +2610,9 @@ Low vision users benefit from enhanced depth perception:
 | 1.8 | 2026-01-05 | **Cross-Browser UI Hardening:** Added Section 3.9 (WebGL Context Recovery), Section 4.5 (Toggle Button ARIA Requirements), Section 4.6 (Reduced Motion Support), and Section 7.3 (iOS Safe Area Handling) to document new accessibility and cross-browser compatibility features |
 | 1.9 | 2026-07-30 | **Form column restructure:** Split `.form-section` into a non-scrolling panel plus `.form-scroll` and a pinned `.action-footer`, so `#action-btn` is always in view (Sections 5.1, 6.3, 7.1, 7.2). Documented the form-level event delegation that resets the button on any settings change (Section 6.2), the six Expert Mode submenus and their contrast-safe active colours (Section 4.5), and the two-way translation buttons (new Section 4.7) |
 | 1.10 | 2026-08-16 | **Double-Sided Card beta UI:** Added Section 4.8 documenting the disclosure-checkbox toggle (`#double_sided_enabled` with `aria-expanded`/`aria-controls`, 44 px hit target), the Back of Card section reveal with front-legend relabeling, and the locked "Visual markers" radio pattern (native `disabled` + live-region lock note wired into `aria-describedby`). Validated: W3C Nu 0 errors, Lighthouse accessibility 100/100 desktop and mobile |
-| 1.12 | 2026-08-18 | **Reflow and touch-target follow-up to the v1.11 audit, plus a user-facing rename.** Section 4.9 extended: the 320 px + 200% horizontal-scroll failure is fixed by releasing `flex-shrink: 0` on the two header toolbar groups and dropping `white-space: nowrap` from the theme label and button in the `max-width: 768px` block; `.font-size-controls .font-size-btn` gained a 44 × 44 px floor (scoped, not on the bare class); `.radio-option` gained `min-height: 44px`. Two newly found gaps recorded instead of fixed: the preview stepper buttons at 20 × 22 px, and the skip link's hardcoded `top: -40px` failing to hide a 102 px-tall link at 200% font. Separately, the Card Thickness control was renamed to **Print Layer Height** in user-facing text only — see CARD_THICKNESS_PRESET_SPECIFICATIONS.md v1.5. Validated after the change: W3C Nu 0 errors / 0 warnings, Lighthouse 100/100 desktop and mobile, 48 of 48 contrast measurements passing, keyboard walkthrough clean, all six viewport × font-size reflow combinations clean, ruff clean, 30 smoke passed, 90 e2e passed |
 | 1.11 | 2026-08-17 | **Full ADA SOP executed against the beta flow.** Added Section 4.9 (button contrast tokens, the dark-theme fill-versus-boundary tension, the 44 px `#action-btn`, and the known remaining gaps). Rewrote the `--btn-primary-*` and `--btn-success-*` values in all three theme blocks of Section 1.2 and added four border tokens per theme: white labels were 2.28:1 on the old primary gradient and 2.54:1 on the old success fill, and neither Lighthouse nor axe-core could see it because a `background-image` defeats their sampling. `#action-btn` gained `min-height: 44px` (was 34 px on desktop). Validated after the change: W3C Nu 0 errors 0 warnings on the rendered beta-state DOM, Lighthouse accessibility 100/100 desktop and mobile, 48 of 48 contrast measurements passing across light/dark/high-contrast, keyboard walkthrough clean beta-on and beta-off, reflow clean at 320 px and at 75%/200% app font size on desktop |
+| 1.12 | 2026-08-18 | **Reflow and touch-target follow-up to the v1.11 audit, plus a user-facing rename.** Section 4.9 extended: the 320 px + 200% horizontal-scroll failure is fixed by releasing `flex-shrink: 0` on the two header toolbar groups and dropping `white-space: nowrap` from the theme label and button in the `max-width: 768px` block; `.font-size-controls .font-size-btn` gained a 44 × 44 px floor (scoped, not on the bare class); `.radio-option` gained `min-height: 44px`. Two newly found gaps recorded instead of fixed: the preview stepper buttons at 20 × 22 px, and the skip link's hardcoded `top: -40px` failing to hide a 102 px-tall link at 200% font. Separately, the Card Thickness control was renamed to **Print Layer Height** in user-facing text only — see CARD_THICKNESS_PRESET_SPECIFICATIONS.md v1.5. Validated after the change: W3C Nu 0 errors / 0 warnings, Lighthouse 100/100 desktop and mobile, 48 of 48 contrast measurements passing, keyboard walkthrough clean, all six viewport × font-size reflow combinations clean, ruff clean, 30 smoke passed, 90 e2e passed |
+| 1.13 | 2026-08-18 | **Live-region defect found by the NVDA walkthrough.** Added Section 4.10: a live region that is `display:none` when its text is written is inserted into the accessibility tree already holding that text, and an insertion is not a change, so nothing is announced. Measured with CDP `Accessibility.getFullAXTree` (`role=status` node count 4 at load, 5 after the first message). Fixed `#pair-status`, which silently swallowed the first of the three double-sided pair messages: the node now stays in the tree and `#pair-status:empty` clips it out of flow instead, with `.action-footer` measured identical (53.16 px) either way. Recorded `#error-message` (all single-sided progress, validation and failure messages, WCAG 4.1.3) and the unannounced `#action-btn` name change as outstanding, scheduled separately. Validated: W3C Nu 0 errors/0 warnings, Lighthouse accessibility 100/100 desktop and mobile |
 
 ---
 

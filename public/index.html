@@ -1854,6 +1854,25 @@
             color: var(--text-primary);
         }
 
+        /* The live region has to stay in the accessibility tree even while it
+           has nothing to say. A region that is display:none when its text is
+           written gets inserted into the tree already holding that text, and an
+           insertion is not a change, so screen readers announce nothing - that
+           silently swallowed the first of the three pair messages. Clipped and
+           out of flow while empty, so .action-footer's flex gap sees nothing
+           and the footer lays out exactly as it did before. */
+        #pair-status:empty {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
         [data-theme="high-contrast"] #generate-both-btn {
             background: #0201fe !important; /* Blue background for generate */
             color: #fdfe00 !important; /* Yellow text */
@@ -3750,7 +3769,10 @@
                        aria-label competes with it. -->
                   <!-- User-facing wording signed off by Brennen (2026-08-17); reword only with his sign-off. -->
                   <button type="button" id="generate-both-btn" style="display: none;">Generate Both Cylinders (A and B)</button>
-                  <div id="pair-status" class="pair-status" role="status" aria-live="polite" style="display: none;"></div>
+                  <!-- No display:none here on purpose: the region must already be
+                       in the accessibility tree when its text changes, or the
+                       change is not announced. #pair-status:empty hides it. -->
+                  <div id="pair-status" class="pair-status" role="status" aria-live="polite"></div>
                   <div id="pair-downloads" class="pair-downloads" style="display: none;">
                       <!-- User-facing wording signed off by Brennen (2026-08-17); reword only with his sign-off. -->
                       <button type="button" id="download-cylinder-a-btn">Download Cylinder A</button>
@@ -8296,8 +8318,12 @@
 
         function setPairStatus(message) {
             if (!pairStatus) return;
+            // Text only - never toggle display here. Hiding the region between
+            // messages takes it out of the accessibility tree, and the next
+            // message then arrives as a tree insertion rather than a change,
+            // which screen readers do not announce. #pair-status:empty does the
+            // hiding instead, without ever removing the node.
             pairStatus.textContent = message;
-            pairStatus.style.display = message ? '' : 'none';
         }
 
         // Any edit to the form invalidates the pair exactly as it invalidates

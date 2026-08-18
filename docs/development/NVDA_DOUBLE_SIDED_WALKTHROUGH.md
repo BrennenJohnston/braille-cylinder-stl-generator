@@ -46,13 +46,27 @@ small words depending on your verbosity setting and browser — **that is fine**
 What matters is that the name, the role, and the state are all there. If any one
 of the three is missing or wrong, that is a fail worth writing down.
 
+**Order varies, and that is not a fail.** NVDA often says the role *before* the
+name — "same page link, Skip to main content" rather than "Skip to main content,
+link" — and which order you get depends on the control and on your verbosity
+setting. Judge each step on whether all three parts are present, never on the
+order they arrive in.
+
 ---
 
 ## Part 1 — Finding the beta with the toggle off
 
-**Step 1.** Load the page fresh. Press `Tab` once.
+**Step 1.** Load the page fresh, click once on an empty part of the page so focus
+is inside it, then press `Tab` once.
 
-> **Expect:** "Skip to main content, link"
+> **Expect:** the skip link, which NVDA announces role-first:
+> "same page link, Skip to main content"
+>
+> This one is easy to miss on a first run. The link is invisible until it takes
+> focus and then slides into the **top-left corner** over 0.3 s, so watch that
+> corner rather than the middle of the page. If you hear "Decrease font size"
+> instead, you have gone one control too far — `Shift+Tab` back one and listen
+> again.
 
 **Step 2.** Keep pressing `Tab` until you reach the Double-Sided Card checkbox
 (about 27 presses from the top of the page; it comes after the Row Indicator
@@ -201,6 +215,12 @@ controls (many do not — that is correct behaviour and not a fail).
 > already saying. The run takes a while — wait for the third message. **Write
 > down whether you heard all three**, and whether the browser's own download
 > notifications talked over them.
+>
+> **Listen hardest for the first one.** Until 2026-08-18 the region was hidden
+> between messages, so message 1 arrived as a brand-new element rather than a
+> change and was never spoken — messages 2 and 3 worked, which is exactly what
+> makes this kind of bug easy to miss. If "Generating Cylinder A (1 of 2)..." is
+> silent again, that fix has regressed.
 
 **Step 17.** After the run finishes, check where your focus is.
 
@@ -339,3 +359,4 @@ Anything NVDA said that I did not expect at all:
 |---|---|---|
 | 1.0 | 2026-08-17 | Created in Phase 05. Expected announcements taken from the live accessibility tree, not from the markup. |
 | 1.1 | 2026-08-18 | Step 13 renamed "Card Thickness" to "Print Layer Height" to match the control's new label. No expected announcement changed — the group's sr-only descriptions were already correct and were not touched by that rename. |
+| 1.2 | 2026-08-18 | Corrected step 1 after the first real run: NVDA announces the skip link role-first ("same page link, Skip to main content"), not "Skip to main content, link" as v1.0 predicted, and the link is invisible until focused. Added a general note that role/name order varies and is not a fail. Step 16 now calls out message 1 as the regression-sensitive one, after the live-region defect it exposed was fixed (see UI Interface Core Specifications §4.10). |
