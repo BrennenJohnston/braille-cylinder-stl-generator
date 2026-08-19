@@ -120,6 +120,31 @@ test.describe('Row Indicator Style', () => {
     expect(Number(settings.tactile_recess_extra_depth)).toBe(0.2);
   });
 
+  test('an emptied tactile dial falls back to the current default, not a stale one', async ({ page }) => {
+    // The payload builder reads each dial as `input?.value || 'literal'`, and an
+    // empty input is the empty string, which is falsy - so clearing a box hands
+    // the literal to the geometry. Those two literals were left at the OpenSCAD
+    // generator's old numbers (5.0 mm and 0.8 mm) when the defaults moved to
+    // 10.0 / 0.5, which meant clearing a box silently shrank the arrow. Nothing
+    // pinned them, so nothing caught it; this is that pin.
+    await openApp(page);
+    await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+
+    // The five dials live in a submenu of Expert Mode, both collapsed by default.
+    await page.locator('#expert-toggle').click();
+    await page.locator('button[aria-controls="expert-panel-tactile"]').click();
+    await page.locator('#tactile_indicator_length').fill('');
+    await page.locator('#tactile_indicator_raise').fill('');
+
+    const spec = await interceptGeometrySpec(page);
+    await page.locator('#braille-unicode').fill('\u2801'.repeat(14));
+    await generate(page, spec);
+
+    const settings = spec.body?.settings as Record<string, unknown>;
+    expect(Number(settings.tactile_indicator_length)).toBe(10.0);
+    expect(Number(settings.tactile_indicator_raise)).toBe(0.5);
+  });
+
   test('tactile mode accepts a 14-cell row that visual mode rejects', async ({ page }) => {
     await openApp(page);
 
