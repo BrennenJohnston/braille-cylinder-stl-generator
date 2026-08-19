@@ -2030,7 +2030,16 @@ the same typed sentence.
 The general rule both point at: the accessibility tree proves a region *can* announce.
 Only listening proves it announces *usefully*.
 
-**Outstanding, scheduled separately — `#error-message`.** The same defect affects
+**Fixed 2026-08-18 — `#error-message`.** Mirrored to `#a11y-status` by a single
+MutationObserver rather than an announce call threaded through each of its ~20
+writers, so it cannot drift out of step with the visible box and picks up any
+message added later. Its `role="alert"`/`aria-live` were removed, for the same
+double-speak reason as the four boxes above. The observer reads
+`#error-text-container`, which excludes the decorative warning glyph and the
+permanent browser-capability notice. Details and the two further defects this
+uncovered are in STL Export and Download Specifications §8.
+
+**Was, before that fix:** The same defect affects
 the single-sided flow, where `#error-message` carries *every* progress notice,
 validation error and failure message. A blind user who overruns a line is shown
 "Line 1 exceeds 13 cells…" on screen and hears **nothing**, so they cannot discover
@@ -2683,6 +2692,7 @@ Low vision users benefit from enhanced depth perception:
 | 1.13 | 2026-08-18 | **Live-region defect found by the NVDA walkthrough.** Added Section 4.10: a live region that is `display:none` when its text is written is inserted into the accessibility tree already holding that text, and an insertion is not a change, so nothing is announced. Measured with CDP `Accessibility.getFullAXTree` (`role=status` node count 4 at load, 5 after the first message). Fixed `#pair-status`, which silently swallowed the first of the three double-sided pair messages: the node now stays in the tree and `#pair-status:empty` clips it out of flow instead, with `.action-footer` measured identical (53.16 px) either way. Recorded `#error-message` (all single-sided progress, validation and failure messages, WCAG 4.1.3) and the unannounced `#action-btn` name change as outstanding, scheduled separately. Validated: W3C Nu 0 errors/0 warnings, Lighthouse accessibility 100/100 desktop and mobile |
 | 1.14 | 2026-08-18 | **Live-region fix extended to the whole double-sided beta flow.** Section 4.10 extended. An audit of every live region found 8 of 10 absent from the accessibility tree at page load. `#pair-status` took the `:empty` fix; the other four beta boxes (`ds-back-overflow-warning`, `ds-gap-warning`, `indicator-mode-lock-note`, `tactile-gap-warning`) are never empty - each wraps a `<strong>Warning:</strong>` or static text - so they are announced through a new shared always-present `sr-only` region `#a11y-status` via `announceStatus(source, message)`, which is source-scoped so one box clearing cannot wipe another's message. `role="status"`/`aria-live` removed from those four boxes to prevent double-speak; `aria-describedby` wiring on the lock note unaffected. Each announcement repeats the box's own textContent, so no new user-facing wording was authored. `#indicator-mode-lock-note` was silent every time, not just on first appearance. Verified by driving the real UI (role=status node count constant at 6). Remaining: `#error-message`, `auto-overflow-warning`, `cylinder-overflow-warning`, `caps-warning` and the `#action-btn` name change. Validated: W3C Nu 0 errors/0 warnings, Lighthouse accessibility 100/100 desktop and mobile, ruff clean, 119 tests passed |
 | 1.15 | 2026-08-18 | **Refinements from hearing the fix run under NVDA.** Section 4.10 extended. The lock note was being queued ahead of the checkbox's own "checked, expanded" because it was written synchronously in the change handler, so the user waited out a 30-word sentence to learn the box was ticked - now deferred one task so the control's state is spoken first. `ds-back-overflow-warning` announced on every keystroke (its text carries a live cell count, so each character is a real change): now announces only on the hidden-to-shown transition, measured 3 announcements before and 1 after over the same typed sentence. Neither was visible in the accessibility tree - the tree proves a region CAN announce, only listening proves it announces usefully |
+| 1.16 | 2026-08-18 | **Single-plate flow made audible; Generate/Download split.** Section 4.10: `#error-message` is now mirrored to `#a11y-status` by one MutationObserver, closing the WCAG 4.1.3 failure that left every validation error, progress notice and failure message silent. Its `role="alert"`/`aria-live` removed to prevent double-speak. `#action-btn` no longer renames itself into a download control under the user's focus - a separate `#download-stl-btn` appears instead (styled under its own selectors, 310x44px, contrast 7.25/8.35/15.18:1 across the three themes). Full rationale in STL Export and Download Specifications §8 |
 
 ---
 

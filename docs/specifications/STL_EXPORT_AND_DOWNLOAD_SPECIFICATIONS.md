@@ -798,14 +798,29 @@ name.
 
 ### States
 
-| State | Button Text | CSS Class | Enabled | Action |
-|-------|-------------|-----------|---------|--------|
-| **Generate** | "Generate STL" | `generate-state` | Yes | Start generation |
-| **Generating** | "Generating..." | `generating-state` | No | — |
-| **Download** | "Download STL" | `download-state` | Yes | Download file |
-| **Error** | "Generate STL" | `generate-state` | Yes | Retry |
+> **Changed 2026-08-18 — the button no longer becomes the download control.**
+> `#action-btn` now keeps its name and role for its whole life, and the file is
+> offered by a **separate `#download-stl-btn`** that appears beside it. See
+> *Why the state machine was split* below.
+
+| Control | State | Text | CSS Class | Enabled | Action |
+|---|---|---|---|---|---|
+| `#action-btn` | **Generate** | "Generate STL" | `generate-state` | Yes | Start generation |
+| `#action-btn` | **Generating** | "Generating..." | `generate-state`, opacity 0.7 | No | — |
+| `#action-btn` | **Error** | "Generate STL" | `generate-state` | Yes | Retry |
+| `#download-stl-btn` | **Hidden** | — | — | — | Not in the tab order |
+| `#download-stl-btn` | **Offered** | "Download STL" | — | Yes | Download the built file |
+
+`#action-btn` never carries `data-state="download"` any more. The `download-state`
+class survives only on the historical `#action-btn.download-state` rules; the new
+button styles itself under its own id.
 
 ### State Transitions
+
+> In the diagram below, **DOWNLOAD is a separate control** (`#download-stl-btn`)
+> as of 2026-08-18, not a state `#action-btn` enters. `#action-btn` returns to
+> GENERATE on success and the download button appears alongside it; "any input
+> changes" hides that button again.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
@@ -870,14 +885,26 @@ function setToGeneratingState() {
     actionBtn.style.opacity = '0.6';
 }
 
+// Reveals the separate button; #action-btn goes back to being idle and keeps
+// its own name. Returns early during a pair run, which reports its own progress
+// through #pair-status and must not offer a single-plate download.
 function setToDownloadState() {
-    actionBtn.textContent = 'Download STL';
-    actionBtn.className = 'download-state';
-    actionBtn.setAttribute('data-state', 'download');
-    actionBtn.setAttribute('aria-label', 'Download generated STL file');
+    actionBtn.textContent = 'Generate STL';
+    actionBtn.className = 'generate-state';
+    actionBtn.setAttribute('data-state', 'generate');
+    actionBtn.setAttribute('aria-label', 'Generate STL file from entered text');
     actionBtn.disabled = false;
     actionBtn.style.opacity = '1';
+    if (pairRunInFlight) return;
+    downloadStlBtn.style.display = '';
+    announceStatus('stl-ready',
+        'Your STL file is ready. Use the Download STL button to save it.');
 }
+
+// hideDownloadButton() runs at the TOP of resetToGenerateState(), before its
+// idempotence guard: a successful run now leaves #action-btn idle, so the guard
+// can return early where it never used to, and the download button would
+// survive - still offering a file built from settings the user has changed.
 
 // Any input change resets to Generate state
 document.querySelectorAll('input, select, textarea').forEach(el => {
@@ -885,13 +912,65 @@ document.querySelectorAll('input, select, textarea').forEach(el => {
 });
 ```
 
+### Why the state machine was split (2026-08-18)
+
+A single control that renames itself is invisible as a defect on screen and
+disqualifying with a screen reader. An NVDA run found the failure in one press:
+
+- Nothing announced that generation had started, finished, or failed.
+- The button's accessible name changed from "Generate STL file from entered text"
+  to "Download generated STL file" **while the user's focus was on it**, with no
+  announcement. The control under their finger silently became a different
+  control.
+
+Both are now fixed, and the second is fixed structurally rather than by
+announcing the mutation: nothing renames itself, so there is nothing to announce.
+The pattern copies the double-sided pair buttons, which the same NVDA run showed
+working well.
+
+Two further defects were found and fixed in the same pass:
+
+**Progress messages had never been shown to anyone.** The `#error-message` box is
+emptied at the start of each run but was never *declassed*, so a stale
+`error-message` class outlived its message. The progress notice is guarded by "is
+a blocking error already showing?", read from that class — and
+`restoreThicknessPreset()` leaves exactly that state on every page load
+("Layer height preset applied", classed `error-message` with no `info`). The
+guard therefore suppressed `Translating text to braille...` and
+`Generating 3D model (client-side CSG)...` permanently, for sighted users too.
+`runGenerateForCurrentPlate()` now clears the class along with the text. A
+blocking error raised by the current run is set further down and still guards
+correctly.
+
+**Nothing in the single-plate flow could announce at all.** `#error-message` is
+`display:none` between messages, so it is outside the accessibility tree at the
+moment its text is written and can never fire (see UI Interface Core
+Specifications §4.10). A blind user who overran a line was shown
+"Line 1 exceeds 13 cells" and heard **silence**, with no way to discover why
+generation refused — **WCAG 2.1 SC 4.1.3 Status Messages, Level AA**. Its
+`role="alert"`/`aria-live` are removed and the box is mirrored to the shared
+`#a11y-status` region by one MutationObserver, which covers all ~20 call sites at
+once and cannot drift out of step with what is on screen.
+
+**Label in Name.** The old pairing — visible "Download STL", accessible name
+"Download generated STL file" — failed **SC 2.5.3 (Level A)**, because the
+visible label was not contained in the accessible name, so speech-input users
+could not activate it by reading it aloud. The new button takes its visible text
+as its accessible name.
+
+Verified 2026-08-18: `#action-btn` never leaves `data-state="generate"`; the
+validation error, the progress notice and the completion message are all spoken;
+one file per press; editing the form retracts the download; and the button
+measures 310 × 44 px with text contrast 7.25:1 light, 8.35:1 dark, 15.18:1 high
+contrast.
+
 ### High Contrast Button Colors
 
 | State | Background | Text | Border |
 |-------|------------|------|--------|
 | Generate | `#0201fe` (Blue) | `#fdfe00` (Yellow) | `2px solid #fdfe00` |
 | Generating | `#666666` (Gray) | `#cccccc` (Light Gray) | `2px solid #999999` |
-| Download | `#02fe05` (Green) | `#000000` (Black) | `2px solid #000000` |
+| Download (`#download-stl-btn`) | `#02fe05` (Green) | `#000000` (Black) | `2px solid #000000` |
 
 ---
 
@@ -1455,6 +1534,7 @@ idle. After a pair run the action button always reads "Generate STL".
 | 1.4 | 2026-07-30 | **FILE NAMING:** Replaced `Embossing_Plate_{word}` / `Universal_Counter_Plate_{counter}` with `Embossing_Cylinder_{preset}_{name}` / `Counter_Cylinder_{preset}_{name}`. The session counter is gone; counter plates are named from the same text, and braille-only input is back-translated for the name. Rewrote Section 7. |
 | 1.6 | 2026-08-17 | **PAIRED GENERATION (Phase 04):** Added Section 15 — the Generate Both Cylinders control, the two-run sequence, the identical-settings contract (including the `#grid_columns` re-fill that had to be restored around each plate switch), the abort-on-first-failure rule, the dual automatic/manual download design and the browsers it was measured in, and how the pair run drives the Section 8 state machine. The former `form.onsubmit` body is now `runGenerateForCurrentPlate()`, shared by both paths. |
 | 1.7 | 2026-08-18 | **Paired download is no longer automatic (accessibility).** An NVDA run hit Chrome's "wants to: Download multiple files" prompt, which the page cannot relabel - it names no file, gives no reason, and Tab cycles Close/Allow/Block indefinitely - and the run ended in "Download blocked" with neither cylinder saved. The status line meant to rescue that case was never announced either, because the Save As dialog from the first automatic download had already taken focus off the page. Both automatic `downloadPairFile()` calls removed; each cylinder is now saved by pressing its own button, so one gesture never produces more than one download. The 2026-08-17 measurement that found this safe was taken without a screen reader running. Section 15 step 6 and the Downloads subsection rewritten; completion wording replaced (flagged REVIEW-BRENNEN in code). Verified: 0 automatic downloads, both buttons shown, focus retained on Generate Both, one file per button press |
+| 1.8 | 2026-08-18 | **Generate and Download split into two controls (accessibility).** Section 8 rewritten. `#action-btn` no longer renames itself into a download control while the user's focus sits on it; a separate `#download-stl-btn` appears beside it, matching the pair buttons. Also fixed in the same pass: (a) progress messages had never displayed for ANYONE - the `#error-message` box was emptied between runs but never declassed, and `restoreThicknessPreset()` leaves an `error-message` class on every page load, which the "is a blocking error showing?" guard read as real, so `runGenerateForCurrentPlate()` now clears the class too; (b) nothing in the single-plate flow could announce at all (WCAG 4.1.3) - the box is now mirrored to `#a11y-status` by one MutationObserver covering all ~20 call sites, and its `role="alert"`/`aria-live` removed to prevent double-speak; (c) the old visible "Download STL" vs spoken "Download generated STL file" failed WCAG 2.5.3 Label in Name. New completion announcement flagged REVIEW-BRENNEN. Verified: action button never leaves data-state=generate, validation/progress/completion all spoken, one file per press, form edits retract the download, 310x44px, contrast 7.25/8.35/15.18:1 |
 | 1.5 | 2026-08-16 | **DOUBLE-SIDED NAMING (Phase 09):** When the Double-Sided Card beta is on, downloads are named `Cylinder_A_{preset}_{name}` (positive) / `Cylinder_B_{preset}_{name}` (negative); both take `{name}` from the front text. Single-sided names unchanged. Updated Section 7; covered by tests/e2e/doubleSided.spec.ts. |
 
 ---

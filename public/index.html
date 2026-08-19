@@ -247,6 +247,19 @@
             border: 2px solid #ffff00 !important; /* Yellow border on hover */
         }
 
+        /* Split-out download button, same high-contrast treatment. */
+        [data-theme="high-contrast"] #download-stl-btn {
+            background: #02fe05 !important; /* Green background for download */
+            color: #000000 !important; /* Black text */
+            border: 2px solid #000000 !important; /* Black border */
+        }
+
+        [data-theme="high-contrast"] #download-stl-btn:hover {
+            background: #02fe05 !important; /* Green background */
+            color: #000000 !important; /* Black text */
+            border: 2px solid #ffff00 !important; /* Yellow border on hover */
+        }
+
         /* High contrast mode - Disabled/Loading state */
         [data-theme="high-contrast"] #action-btn:disabled {
             background: #666666 !important; /* Gray background for disabled */
@@ -873,7 +886,8 @@
             background: var(--bg-secondary);
         }
 
-        .action-footer #action-btn {
+        .action-footer #action-btn,
+        .action-footer #download-stl-btn {
             width: 100%;
             max-width: 24em;
         }
@@ -1773,6 +1787,27 @@
         }
 
         #action-btn.download-state:hover {
+            background: var(--btn-success-hover-bg);
+            border-color: var(--btn-success-border-hover);
+            box-shadow: 0 4px 12px var(--shadow-medium);
+        }
+
+        /* The split-out download button, green like the state it replaced. Under
+           its own selectors rather than added to the rules above, the same way
+           the pair buttons are done, so #action-btn's rules stay untouched. */
+        #download-stl-btn {
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+            min-width: 140px;
+            min-height: 44px;
+            text-align: center;
+            font-size: 0.95em;
+            background: var(--btn-success-bg);
+            color: #fff;
+            border: 2px solid var(--btn-success-border);
+            box-shadow: 0 2px 8px var(--shadow-light);
+        }
+
+        #download-stl-btn:hover {
             background: var(--btn-success-hover-bg);
             border-color: var(--btn-success-border-hover);
             box-shadow: 0 4px 12px var(--shadow-medium);
@@ -3065,7 +3100,11 @@
                         <strong>3D STL Preview</strong> — Interactive preview only (drag to rotate, scroll to zoom)
                     </div>
                     <div id="viewer" role="img" aria-label="3D preview of braille embossing plate. Interactive 3D model requires mouse or touch to rotate and zoom. Shows raised braille dots on plate surface." aria-describedby="viewer-instructions" tabindex="0">
-                        <div id="error-message" role="alert" aria-live="assertive" aria-atomic="true">
+                        <!-- Announced through #a11y-status, not from here. This box is
+                             display:none between messages, so a live region on it can
+                             never fire on first appearance; leaving one would also let
+                             some screen readers speak later updates twice. -->
+                        <div id="error-message">
                             <span style="font-weight:bold;" aria-hidden="true">⚠</span>
                             <span id="error-text-container" style="display: flex; flex-direction: column; align-items: center;">
                                 <span id="error-text"></span>
@@ -3781,6 +3820,20 @@
                    reachable without scrolling, no matter how long the form gets. -->
               <div class="action-footer">
                   <button type="button" id="action-btn" class="generate-state" aria-label="Generate STL file from entered text" data-state="generate">Generate STL</button>
+                  <!-- Separate button on purpose. Until 2026-08-18 #action-btn
+                       flipped itself into a download control, changing its own
+                       accessible name while the user's focus sat on it, and
+                       announcing nothing - a blind user pressed Generate, heard
+                       silence, and the control under their finger had quietly
+                       become a different one. This mirrors the pair buttons,
+                       which an NVDA run showed working well.
+                       REVIEW-BRENNEN: the visible text is now the accessible
+                       name, so this announces as "Download STL, button" rather
+                       than the old "Download generated STL file, button". The
+                       old pairing also failed WCAG 2.5.3 Label in Name - the
+                       visible "Download STL" was not contained in the spoken
+                       name. -->
+                  <button type="button" id="download-stl-btn" style="display: none;">Download STL</button>
                   <!-- Double-sided beta only: updateDoubleSidedUI() reveals these
                        three and hides them again the moment the beta is off. The
                        visible text is each button's accessible name, so no
@@ -4765,6 +4818,7 @@
         const form = document.getElementById('braille-form');
         const viewer = document.getElementById('viewer');
         const actionBtn = document.getElementById('action-btn');
+        const downloadStlBtn = document.getElementById('download-stl-btn');
         let lastGeneratedSTLUrl = null;
         let lastGeneratedFilename = null;
         // The blob itself, not just its URL: the next generation revokes the
@@ -4793,6 +4847,13 @@
         // moment mutates the element between mousedown and mouseup. WebKit then
         // dispatches no click at all and the primary action silently does nothing.
         function resetToGenerateState() {
+            // Before the guard below, always. A successful run now leaves this
+            // button idle in the generate state, so the guard can return early
+            // where it never used to - and the separate download button would
+            // survive, still offering a file built from settings the user has
+            // since changed. Invalidating the STL has to take its download with
+            // it.
+            hideDownloadButton();
             if (actionBtn.getAttribute('data-state') === 'generate' &&
                 !actionBtn.disabled &&
                 actionBtn.style.opacity === '1') {
@@ -4828,14 +4889,33 @@
             }
         }
 
-        // Function to set button to download state
+        // Reveal the download button. #action-btn no longer turns into it: it
+        // keeps its name and goes back to being idle, and the file is offered by
+        // a control of its own. The old behaviour changed this button's
+        // accessible name underneath a user whose focus was on it, announced
+        // nothing, and left them pressing what they thought was Generate.
         function setToDownloadState() {
-            actionBtn.textContent = 'Download STL';
-            actionBtn.className = 'download-state';
-            actionBtn.setAttribute('data-state', 'download');
-            actionBtn.setAttribute('aria-label', 'Download generated STL file');
+            actionBtn.textContent = 'Generate STL';
+            actionBtn.className = 'generate-state';
+            actionBtn.setAttribute('data-state', 'generate');
+            actionBtn.setAttribute('aria-label', 'Generate STL file from entered text');
             actionBtn.style.opacity = '1';
             actionBtn.disabled = false;
+            // A pair run builds each cylinder through this same path, so without
+            // this it would offer a single-plate download and announce "your STL
+            // is ready" twice mid-run - for a file that is not what was asked
+            // for, behind a button lockGenerateControls() hides again a moment
+            // later. The pair run reports its own progress through #pair-status.
+            if (pairRunInFlight) return;
+            if (downloadStlBtn) downloadStlBtn.style.display = '';
+            /* REVIEW-BRENNEN: new announcement, needs your sign-off. */
+            announceStatus('stl-ready',
+                'Your STL file is ready. Use the Download STL button to save it.');
+        }
+
+        function hideDownloadButton() {
+            if (downloadStlBtn) downloadStlBtn.style.display = 'none';
+            announceStatus('stl-ready', '');
         }
 
         // ---------------------------------------------------------------------
@@ -4921,20 +5001,22 @@
                 } else {
                     form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
                 }
-            } else if (actionBtn.getAttribute('data-state') === 'download') {
-                // Download the generated STL
-                if (lastGeneratedSTLUrl) {
-                    const a = document.createElement('a');
-                    a.href = lastGeneratedSTLUrl;
-                    // Use the filename generated on the frontend
-                    if (lastGeneratedFilename) {
-                        a.download = lastGeneratedFilename;
-                    }
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                }
             }
+        });
+
+        // The download is its own control now, so this is the only place that
+        // hands the file over. One file, one deliberate press - it can never
+        // trip the browser's multiple-download prompt.
+        downloadStlBtn?.addEventListener('click', () => {
+            if (!lastGeneratedSTLUrl) return;
+            const a = document.createElement('a');
+            a.href = lastGeneratedSTLUrl;
+            if (lastGeneratedFilename) {
+                a.download = lastGeneratedFilename;
+            }
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         });
         const expertToggleBtn = document.getElementById('expert-toggle');
         const expertSettings = document.getElementById('expert-settings');
@@ -5747,6 +5829,36 @@
                 region.textContent = '';
             }
         }
+
+        // #error-message carries every progress notice, validation error and
+        // failure in the single-plate flow, and it is display:none between
+        // messages - so it is out of the accessibility tree at exactly the
+        // moment its text is written, and can never announce on its own. A
+        // blind user who overran a line was shown "Line 1 exceeds 13 cells" and
+        // heard silence, with no way to find out why generation refused.
+        //
+        // Mirrored here rather than by adding an announce call to each of the
+        // ~20 places that write to it: one observer catches them all, including
+        // any added later, and cannot drift out of step with the visible box.
+        // Reads #error-text-container, which excludes the decorative warning
+        // glyph and the permanent browser-capability notice.
+        (function mirrorErrorMessage() {
+            const box = document.getElementById('error-message');
+            const body = document.getElementById('error-text-container');
+            if (!box || !body) return;
+            const relay = () => {
+                const visible = getComputedStyle(box).display !== 'none';
+                const text = body.textContent.replace(/\s+/g, ' ').trim();
+                announceStatus('error-message', visible ? text : '');
+            };
+            new MutationObserver(relay).observe(box, {
+                childList: true,
+                characterData: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['style', 'class'],
+            });
+        })();
 
         function checkPhysicalFit() {
             const warningDiv = document.getElementById('tactile-gap-warning');
@@ -7792,6 +7904,17 @@
         async function runGenerateForCurrentPlate() {
             errorDiv.style.display = 'none';
             errorText.textContent = '';
+            // Clear the class too, not just the text. The progress notice below
+            // is guarded by "is a blocking error already showing?", read from
+            // this class - and the box was only ever emptied, never declassed,
+            // so a stale class outlived its message and suppressed the notice
+            // for the rest of the session. restoreThicknessPreset() leaves
+            // exactly that on every page load ("Layer height preset applied",
+            // classed error-message with no info), which is why "Translating
+            // text to braille..." never appeared for anyone, sighted or not.
+            // Any blocking error raised by THIS run is set further down and
+            // still guards correctly.
+            errorDiv.className = '';
             const errorSubtext = document.getElementById('error-subtext');
             if (errorSubtext) {
                 errorSubtext.textContent = '';
@@ -8446,6 +8569,10 @@
             actionBtn.disabled = true;
             actionBtn.textContent = 'Generating...';
             actionBtn.style.opacity = '0.7';
+            // A pair run generates each plate through the single-plate path, so
+            // the finished first plate reveals this button. The pair is not done
+            // and that single file is not what was asked for, so take it back.
+            hideDownloadButton();
             if (generateBothBtn) generateBothBtn.disabled = true;
         }
 

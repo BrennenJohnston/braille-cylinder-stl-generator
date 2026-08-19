@@ -202,6 +202,11 @@ controls (many do not — that is correct behaviour and not a fail).
 > **Expect, in this order:**
 > 1. "Generate STL file from entered text, button"
 > 2. "Generate Both Cylinders (A and B), button"
+>
+> There is also a **"Download STL"** button since 2026-08-18, but it belongs to
+> the single-plate flow and only exists after you have pressed Generate STL. If
+> you have not, it must not be in the tab order at all. It is not part of the
+> pair flow — the pair has its own Download Cylinder A and B buttons.
 
 **Step 16.** With focus on "Generate Both Cylinders (A and B)", press `Space`.
 
@@ -306,6 +311,10 @@ Cylinder B" and press `Enter` there too.
 > **Expect:** only "Generate STL file from entered text, button". The
 > "Generate Both Cylinders" and both "Download Cylinder" buttons must have
 > disappeared from the tab order completely.
+>
+> A "Download STL" button here is **not** a failure if you pressed Generate STL
+> earlier in this session — that one belongs to the single-plate flow. It should
+> disappear as soon as you change any setting.
 
 ---
 
@@ -373,3 +382,4 @@ Anything NVDA said that I did not expect at all:
 | 1.1 | 2026-08-18 | Step 13 renamed "Card Thickness" to "Print Layer Height" to match the control's new label. No expected announcement changed — the group's sr-only descriptions were already correct and were not touched by that rename. |
 | 1.2 | 2026-08-18 | Corrected step 1 after the first real run: NVDA announces the skip link role-first ("same page link, Skip to main content"), not "Skip to main content, link" as v1.0 predicted, and the link is invisible until focused. Added a general note that role/name order varies and is not a fail. Step 16 now calls out message 1 as the regression-sensitive one, after the live-region defect it exposed was fixed (see UI Interface Core Specifications §4.10). |
 | 1.3 | 2026-08-18 | Updated after the first run of Parts 2-3. Step 16's third message reworded and a check added that **nothing downloads by itself**: the old automatic pair download made Chrome ask "wants to: Download multiple files", a prompt that names no file and cycles Close/Allow/Block on every Tab, and the run ended in "Download blocked" with neither cylinder saved. Step 19 now presses both download buttons, since that is the only way files are saved. Steps 4 and 8 confirmed passing - the lock note and the back-of-card warning both spoke for the first time. |
+| 1.4 | 2026-08-18 | Steps 15 and 27 note the new single-plate "Download STL" button, which is separate from the pair's Download Cylinder A/B and only exists after a single-plate generation. `#action-btn` no longer renames itself into a download control mid-focus. |
