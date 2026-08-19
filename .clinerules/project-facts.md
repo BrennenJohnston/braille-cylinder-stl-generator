@@ -11,7 +11,15 @@ translation, Three.js preview. Working branch: develop — never commit to main.
 3. Coordinates: Python/trimesh, Manifold, and STL are Z-up; Three.js inside
    csg-worker.js is Y-up — cylinder geometry there needs rotateX(PI/2) before
    STL export. Coordinate mixups are the #1 cause of orientation bugs.
-4. All braille text is Unicode U+2800–U+28FF, everywhere in the pipeline.
+4. All braille text is Unicode U+2800–U+28FF, everywhere in the pipeline —
+   with ONE exception: the word separator on the wire is the ASCII space
+   U+0020, not the braille blank U+2800. `braille_to_dots()` in app/utils.py
+   handles `' '` explicitly as an empty cell, so a space occupies exactly one
+   cell just as U+2800 would, and every OTHER non-braille character raises
+   ValueError (fail closed). This is deliberate and physically validated —
+   never "fix" a space to U+2800, and never widen the exception to any other
+   character. Measured on both `lines` and `back_lines` and confirmed by
+   Brennen 2026-08-18.
 5. Dot position map is fixed: [[0,0],[1,0],[2,0],[0,1],[1,1],[2,1]] = dots 1–6
    as [row, col]. Never reorder it. Shape types: card|cylinder. Plate types:
    positive|negative. Placement modes: auto|manual.

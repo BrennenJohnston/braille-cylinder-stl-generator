@@ -592,13 +592,13 @@ test.describe('Double-Sided Card beta', () => {
       expect(line.length).toBeLessThanOrEqual(columns);
       // Runs of braille cells separated by single ASCII spaces. The word
       // separator really is U+0020, not the braille blank U+2800 — measured on
-      // the wire 2026-08-18, and the FRONT lines do exactly the same, so this
-      // is long-standing shipped behaviour rather than anything the back-text
-      // wrap introduced. It does not match invariant 4 in
-      // .clinerules/project-facts.md ("U+2800-U+28FF everywhere in the
-      // pipeline"); reported to Brennen, deliberately not changed here. This
-      // asserts the space is the ONLY non-braille character, so a different
-      // stray character would still fail.
+      // the wire 2026-08-18, on the FRONT lines too. That is deliberate:
+      // braille_to_dots() in app/utils.py handles ' ' as an empty cell, so it
+      // occupies one cell exactly as U+2800 would, and every other non-braille
+      // character raises ValueError. Invariant 4 in
+      // .clinerules/project-facts.md carries this as its one documented
+      // exception (confirmed by Brennen 2026-08-18). Asserting the space is the
+      // ONLY non-braille character keeps that exception from widening.
       expect(line).toMatch(/^(?:[⠀-⣿]+(?: [⠀-⣿]+)*)?$/);
     }
     // More than one row carries text, which is the wrap actually happening
