@@ -2,11 +2,24 @@
 
 ## Double-sided (interpoint) beta — status
 
-The Double-Sided Card (BETA) toggle is **physically validated**. In August 2026 two
-rounds of Cylinder A / Cylinder B pairs were printed on a Bambu Lab X1C with a 0.4 mm
-nozzle and used to emboss real card stock; the braille came out legible on **both** faces.
-The dot and bowl sizes it ships with (dot 1.2 mm across, bowl 1.3 mm across × 0.5 mm deep)
-are therefore final — there are no size dials to tune.
+The Double-Sided Card (BETA) toggle is **feature-complete and physically validated**. In
+August 2026 two rounds of Cylinder A / Cylinder B pairs were printed on a Bambu Lab X1C with
+a 0.4 mm nozzle and used to emboss real card stock; the braille came out legible on **both**
+faces. The dot and bowl sizes it ships with (dot 1.2 mm across, bowl 1.3 mm across × 0.5 mm
+deep, back grid offset 1.25 mm diagonally) are therefore final — there are no size dials to
+tune.
+
+What the finished beta does:
+
+- Turning the toggle on reveals a **Back of Card** section and locks the Row Indicator Style
+  to the tactile seam arrow, which both cylinders of a pair need.
+- Back text has the same handling as front text: translated with the same language and
+  grade, wrapped across the rows for you with whole words kept together, and warned about
+  live while you type if it overruns.
+- The braille preview shows **both sides**, under Front of Card and Back of Card headings.
+- **Generate Both Cylinders (A and B)** builds the whole pair from one press.
+- Each file is then saved by pressing its own button — **Download Cylinder A** and
+  **Download Cylinder B**. Nothing downloads by itself.
 
 It keeps the BETA label because it has been proven by one builder on one printer with one
 paper stock, not because anything is known to be wrong with it.
@@ -19,11 +32,20 @@ Two caveats remain:
   not, so the emboss degrades. Nothing in this app can enforce that — it belongs to
   whoever builds and aligns the machine.
 - **Local WebKit end-to-end tests fail on Windows.** Running the Playwright suite locally
-  against WebKit on Windows produces 26 failures that are environmental (the Windows
-  WebKit build), not defects in the app. The local pass bar is Chromium + Firefox; CI runs
+  against WebKit on Windows fails almost everything — measured 2026-08-18: of 52 tests, 41
+  failed, 6 passed, 5 skipped. Those failures are environmental (the Windows WebKit build),
+  not defects in the app. The local pass bar is Chromium + Firefox; CI runs
   WebKit on Linux, where it passes.
 
+One more thing worth knowing when running the local suite: under ten parallel workers,
+Firefox is sometimes still starting liblouis and Manifold when a test needs them, and that
+test fails with `Liblouis worker not initialized`. Re-running it on its own confirms it —
+it passes in a few seconds. A real defect fails alone too.
+
+The OpenSCAD version does not have this feature yet. Porting it is in progress.
+
 Full technical detail: `docs/specifications/INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md`.
+Step-by-step instructions: `docs/guides/CYLINDER_GUIDE.md`.
 
 ## Flat business card plates are parked
 

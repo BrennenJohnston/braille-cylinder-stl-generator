@@ -2,8 +2,9 @@
 
 ## Standard Operating Procedure for Maintaining WCAG 2.1 Level AA Compliance
 
-**Document Version:** 1.0
+**Document Version:** 1.1
 **Created:** December 8, 2025
+**Last Updated:** August 18, 2026
 **Standard:** WCAG 2.1 Level AA
 **Compliance Deadline:** April 24, 2026 / April 26, 2027
 
@@ -34,7 +35,7 @@ This SOP ensures that the Braille Card and Cylinder STL Generator maintains WCAG
 ## 2. Scope
 
 This procedure applies to:
-- All changes to `templates/index.html` and `public/index.html`
+- All changes to `public/index.html` (the only page — the `templates/` folder is deprecated and empty)
 - Any UI/UX modifications
 - New feature implementations
 - CSS styling changes
@@ -182,10 +183,10 @@ panelToggle.addEventListener('click', () => {
 
 ### 6.1 W3C HTML Validation (Required)
 
-1. Start local server: `$env:FLASK_ENV="development"; python wsgi.py`
+1. Start local server: `$env:FLASK_ENV="development"; python backend.py`
 2. Open https://validator.w3.org/
 3. Select "Validate by URI" or "Validate by Direct Input"
-4. Enter `http://127.0.0.1:5000` or paste HTML content
+4. Enter `http://127.0.0.1:5001` or paste HTML content
 5. Click "Check"
 6. **Target**: 0 errors, 0 warnings
 
@@ -484,6 +485,7 @@ button.setAttribute('aria-expanded', String(!isCollapsed));
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | 2025-12-08 | Initial SOP created after re-audit session |
+| 1.1 | 2026-08-18 | Section 2 scope now names `public/index.html` only (`templates/` is deprecated and empty). Section 6.1 corrected to `python backend.py` on port 5001 — `backend.py` defaults to 5001 and its CORS allowlist accepts only 5001, so the old `wsgi.py` / port 5000 instructions started a server the app could not talk to |
 
 ---
 

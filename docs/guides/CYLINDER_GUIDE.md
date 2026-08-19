@@ -166,6 +166,111 @@ Access these by clicking **Show Expert Mode**:
 | Braille Spacing | Cells per row, number of rows, spacing |
 | Surface Dimensions | Diameter, height, wall thickness, polygon sides |
 
+## Double-Sided Cards (BETA)
+
+Normally the app makes one cylinder that embosses braille on one face of a card. With the
+**Double-Sided Card** beta turned on it makes a matched **pair** of cylinders instead, and a
+card run between them comes out with braille on **both** faces in a single pass.
+
+This is a beta. It has been printed and used — see [Is it ready to
+use?](#is-it-ready-to-use) below — but proofread both sides and feel every braille surface
+before you give a card to anyone.
+
+Double-sided works for cylinders only. It is not available for flat cards.
+
+### Steps
+
+1. **Turn on the toggle.** Under the text box, tick **Double-Sided Card (BETA — for
+   testing)**. Two things happen straight away: a **Back of Card** section appears below,
+   and the **Row Indicator Style** locks to the tactile seam arrow.
+
+   The lock is deliberate. Visual row markers spend a braille cell per row on a printed
+   letter, and on a pair each cylinder would need its own markers on a surface the other
+   cylinder is pressing against. The tactile seam arrow sits in the seam gap instead, where
+   both cylinders of a pair can carry it. To choose visual markers again, turn the beta off.
+
+2. **Type the front text** as you normally would, in the main text box.
+
+3. **Type the back text** into the **Back of Card Text** box. It is translated with the same
+   language and grade as the front, and it wraps across the rows for you, keeping whole
+   words together. Press Enter only where you want to force the start of a new row.
+
+   The back holds exactly as much as the front: 14 cells per row and 4 rows in tactile mode,
+   so 56 cells a side and 112 for the card. Turning the beta on does not shrink either side.
+   If the back text runs past that, a warning appears under the box while you type and tells
+   you how much is over.
+
+4. **Preview both sides.** Press **Preview Braille Translation** and the panel shows two
+   headings, **Front of Card** and **Back of Card**, with the braille for each. Read both
+   before you generate anything.
+
+5. **Press Generate Both Cylinders (A and B).** One press builds the whole pair from the
+   settings you have dialled in — you do not switch plates and generate twice. A status line
+   reports progress as each cylinder is built.
+
+6. **Save each file with its own button.** When the pair is ready, two buttons appear:
+   **Download Cylinder A** and **Download Cylinder B**. Press each one in turn.
+
+   **Nothing downloads on its own.** Two automatic downloads from one press made Chrome
+   raise a "wants to download multiple files" prompt that names no file and is very hard to
+   get out of with a screen reader — so each cylinder now waits for you to ask for it.
+
+7. **Print both cylinders**, the same way you would print a single one: standing upright,
+   in the same material.
+
+8. **Emboss in one pass.** Mount the pair in the machine so they counter-rotate against each
+   other, and feed the card through once. Front dots and back dots are pressed at the same
+   time.
+
+### Which file is which
+
+Both files are named from your **front** text.
+
+| File | What it is | What it carries |
+|------|-----------|-----------------|
+| `Cylinder_A_*.stl` | The embossing plate | The **front's** raised dots, plus one recess for every dot on the back, plus raised seam arrows |
+| `Cylinder_B_*.stl` | The counter plate | The **back's** raised dots, plus one recess for every dot on the front, plus recessed seam arrows |
+
+Every recess on one cylinder is paired one-to-one with a real dot on the other. Single-sided
+counter plates carry a recess at every possible dot position; a double-sided counter plate
+does not, because those positions are needed for the back's own dots.
+
+### The fixed sizes
+
+Double-sided cards ship with these dimensions set, and there are no dials for them. They
+were chosen and then confirmed by embossing real card stock, so treat them as final.
+
+| What | Value |
+|------|-------|
+| Back grid offset from the front grid | 1.25 mm across **and** 1.25 mm down (a diagonal shift) |
+| Dot across the base | 1.2 mm |
+| Recess (bowl) across, and deep | 1.3 mm across, 0.5 mm deep |
+
+The diagonal offset is the whole trick. If both sides used the same grid, a raised dot on
+the front would sit exactly where a raised dot on the back needs to be, and the two would
+flatten each other. Shifting the back grid diagonally means every dot on one face lands
+opposite a recess on the other, with room to be pressed into.
+
+The dots are a little smaller than the single-sided ones. That is what lets both faces be
+embossed into one thickness of card without the two sides interfering.
+
+### Is it ready to use?
+
+It is **physically validated**: in August 2026 two rounds of Cylinder A / Cylinder B pairs
+were printed on a Bambu Lab X1C with a 0.4 mm nozzle and used to emboss real card stock. The
+braille came out legible on both faces. That is why the sizes above are final and have no
+tuning dials.
+
+It keeps the BETA label because it has been proven by one builder, on one printer, with one
+paper stock — not because anything is known to be wrong with it.
+
+One thing the app cannot do for you: **the two cylinders must stay within about 1.0 degree
+of each other as they turn.** Further out of phase than that and a front dot can meet the
+back of the card where its paired recess is not, and the emboss degrades. That is a job for
+whoever builds and aligns the machine, not for the STL files.
+
+---
+
 ## Troubleshooting
 
 ### Cylinder Doesn't Fit Container
@@ -297,5 +402,5 @@ Braille translation powered by [liblouis](https://liblouis.io/).
 
 ---
 
-*Document Version: 1.1*
-*Last Updated: February 2026*
+*Document Version: 1.2*
+*Last Updated: August 2026*
