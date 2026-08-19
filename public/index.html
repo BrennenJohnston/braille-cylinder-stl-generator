@@ -3827,12 +3827,12 @@
                        silence, and the control under their finger had quietly
                        become a different one. This mirrors the pair buttons,
                        which an NVDA run showed working well.
-                       REVIEW-BRENNEN: the visible text is now the accessible
-                       name, so this announces as "Download STL, button" rather
-                       than the old "Download generated STL file, button". The
-                       old pairing also failed WCAG 2.5.3 Label in Name - the
-                       visible "Download STL" was not contained in the spoken
-                       name. -->
+                       The visible text is the accessible name, signed off by
+                       Brennen 2026-08-18; reword only with his sign-off. So this
+                       announces as "Download STL, button" rather than the old
+                       "Download generated STL file, button" - which also failed
+                       WCAG 2.5.3 Label in Name, the visible "Download STL" not
+                       being contained in the spoken name. -->
                   <button type="button" id="download-stl-btn" style="display: none;">Download STL</button>
                   <!-- Double-sided beta only: updateDoubleSidedUI() reveals these
                        three and hides them again the moment the beta is off. The
@@ -4908,7 +4908,8 @@
             // later. The pair run reports its own progress through #pair-status.
             if (pairRunInFlight) return;
             if (downloadStlBtn) downloadStlBtn.style.display = '';
-            /* REVIEW-BRENNEN: new announcement, needs your sign-off. */
+            /* User-facing wording signed off by Brennen (2026-08-18); reword
+               only with his sign-off. */
             announceStatus('stl-ready',
                 'Your STL file is ready. Use the Download STL button to save it.');
         }
@@ -8645,10 +8646,10 @@
                 // automatic download opened had taken focus away from the page.
                 // One button press per file never trips any of that.
                 if (pairDownloads) pairDownloads.style.display = 'flex';
-                /* REVIEW-BRENNEN: replacement wording, needs your sign-off. The
-                   approved 2026-08-17 line said "If your browser blocked a
-                   download, use the buttons below", which described the old
-                   automatic download and is no longer true. */
+                /* User-facing wording signed off by Brennen (2026-08-18); reword
+                   only with his sign-off. It replaces the 2026-08-17 line "If your
+                   browser blocked a download, use the buttons below", which
+                   described the old automatic download and stopped being true. */
                 setPairStatus('Both cylinders are ready. Use the Download Cylinder A and Download Cylinder B buttons below to save them.');
             } finally {
                 selectPlateType(userPlate);
