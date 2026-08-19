@@ -173,6 +173,37 @@ function watchGeometrySpec(page: Page) {
 }
 
 /**
+ * Record every /geometry_spec REQUEST body without interfering with the run.
+ * interceptGeometrySpec() aborts the request, which is right for payload-shape
+ * assertions but stops the pair run dead; this watches a real run instead.
+ */
+function watchGeometrySpecRequests(page: Page) {
+  const state: { bodies: Array<Record<string, unknown> | null> } = { bodies: [] };
+  page.on('request', (request) => {
+    if (!request.url().includes('/geometry_spec')) return;
+    try {
+      state.bodies.push(request.postDataJSON());
+    } catch {
+      state.bodies.push(null);
+    }
+  });
+  return state;
+}
+
+/** The plate radios' visible label text, in [positive, negative] order. */
+function plateLabels(page: Page) {
+  return page.evaluate(() =>
+    ['positive', 'negative'].map(
+      (value) =>
+        document
+          .querySelector(`input[name="plate_type"][value="${value}"]`)
+          ?.closest('label')
+          ?.querySelector('.radio-text')?.textContent ?? '',
+    ),
+  );
+}
+
+/**
  * Run a full generation (request + client-side CSG) and wait for the button
  * to reach its download state, returning the n-th /geometry_spec response.
  */
@@ -188,7 +219,13 @@ async function generateFully(
       await page.waitForTimeout(200);
     }
     if (state.responses.length >= n) {
-      await expect(page.locator('#action-btn')).toHaveAttribute('data-state', 'download', { timeout: 90_000 });
+      // Since 2026-08-18 #action-btn never becomes the download control — a
+      // separate #download-stl-btn appears instead, so a control never changes
+      // identity under a screen-reader user's focus. Waiting on that button is
+      // the same signal the old data-state="download" wait gave, and the
+      // generate button is additionally pinned to staying itself.
+      await expect(page.locator('#download-stl-btn')).toBeVisible({ timeout: 90_000 });
+      await expect(page.locator('#action-btn')).toHaveAttribute('data-state', 'generate');
       return state.responses[n - 1];
     }
     const error = await page.locator('#error-text').textContent();
@@ -204,9 +241,64 @@ async function generateFully(
 /** Click the Download STL button and return the filename the browser was offered. */
 async function downloadName(page: Page): Promise<string> {
   const downloadPromise = page.waitForEvent('download');
-  await page.locator('#action-btn').click();
+  await page.locator('#download-stl-btn').click();
   const download = await downloadPromise;
   return download.suggestedFilename();
+}
+
+/** Click one of the double-sided pair buttons and return the offered filename. */
+async function pairDownloadName(page: Page, which: 'a' | 'b'): Promise<string> {
+  const downloadPromise = page.waitForEvent('download');
+  await page.locator(`#download-cylinder-${which}-btn`).click();
+  const download = await downloadPromise;
+  return download.suggestedFilename();
+}
+
+/**
+ * Fill the back text and wait for the overflow warning to appear. Under
+ * parallel load Firefox can still be starting liblouis, and
+ * computeBackOverflow() deliberately bails out rather than guess when the
+ * translation is unavailable — so the warning simply never arrives from that
+ * first fill. Re-filling dispatches a fresh input event and re-runs the
+ * debounced check once the worker is up.
+ */
+async function fillBackUntilOverflow(page: Page, text: string) {
+  const warning = page.locator('#ds-back-overflow-warning');
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < 12; attempt++) {
+    await page.locator('#back-text').fill('');
+    await page.locator('#back-text').fill(text);
+    try {
+      await expect(warning).toBeVisible({ timeout: 3000 });
+      return;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw new Error(`#ds-back-overflow-warning never appeared: ${lastError}`);
+}
+
+/**
+ * Press Generate Both and wait for the pair to finish. The first press can land
+ * before liblouis or the Manifold worker is ready, which aborts the run and
+ * says so in #pair-status — pressing again once they are up is exactly what
+ * that message tells the user to do. Anything that is NOT that transient
+ * failure is rethrown rather than retried.
+ */
+async function generateBoth(page: Page) {
+  const status = page.locator('#pair-status');
+  for (let attempt = 0; attempt < 8; attempt++) {
+    await page.locator('#generate-both-btn').click();
+    try {
+      await expect(status).toContainText('Both cylinders are ready', { timeout: 120_000 });
+      return;
+    } catch (error) {
+      const text = (await status.textContent()) ?? '';
+      if (!/could not be generated/.test(text)) throw error;
+    }
+    await page.waitForTimeout(1500);
+  }
+  throw new Error('Generate Both never reported a finished pair');
 }
 
 /** Turn the beta on through the real UI and fill both sides of the card. */
@@ -473,5 +565,207 @@ test.describe('Double-Sided Card beta', () => {
     await page.keyboard.press('Space');
     await expect(page.locator('#double_sided_enabled')).not.toBeChecked();
     await expect(page.locator('#double-sided-section')).toBeHidden();
+  });
+
+  // -------------------------------------------------------------------------
+  // Phase 06: coverage of everything Phases 02-04 added
+  // -------------------------------------------------------------------------
+
+  test('back text is BANA-wrapped across the rows on the wire', async ({ page }) => {
+    await openApp(page);
+    // Three rows of at most 11 cells at the default 14-column dial, so this
+    // exercises wrapping without tripping the overflow warning.
+    await enableBeta(page, 'abc', 'alpha bravo charlie delta echo');
+    await expect(page.locator('#ds-back-overflow-warning')).toBeHidden();
+
+    const spec = await interceptGeometrySpec(page);
+    await generate(page, spec, 1);
+    const body = spec.bodies[0] as Record<string, unknown>;
+    const settings = body.settings as Record<string, unknown>;
+    const back = body.back_lines as string[];
+    const rows = Number(settings.grid_rows);
+    const columns = Number(settings.grid_columns);
+
+    // back_lines is padded to exactly grid_rows, and nothing overruns the row.
+    expect(back.length).toBe(rows);
+    for (const line of back) {
+      expect(line.length).toBeLessThanOrEqual(columns);
+      // Runs of braille cells separated by single ASCII spaces. The word
+      // separator really is U+0020, not the braille blank U+2800 — measured on
+      // the wire 2026-08-18, and the FRONT lines do exactly the same, so this
+      // is long-standing shipped behaviour rather than anything the back-text
+      // wrap introduced. It does not match invariant 4 in
+      // .clinerules/project-facts.md ("U+2800-U+28FF everywhere in the
+      // pipeline"); reported to Brennen, deliberately not changed here. This
+      // asserts the space is the ONLY non-braille character, so a different
+      // stray character would still fail.
+      expect(line).toMatch(/^(?:[⠀-⣿]+(?: [⠀-⣿]+)*)?$/);
+    }
+    // More than one row carries text, which is the wrap actually happening
+    // rather than the whole string being dropped onto row 1.
+    expect(back.filter((line) => line !== '').length).toBeGreaterThan(1);
+    // Words are kept whole: no row ends mid-word by starting with a space.
+    for (const line of back.filter((l) => l !== '')) {
+      expect(line.startsWith(' ')).toBe(false);
+    }
+  });
+
+  test('the back-of-card overflow warning appears, clears, and goes with the toggle', async ({ page }) => {
+    await openApp(page);
+    await enableBeta(page, 'abc', 'def');
+    const warning = page.locator('#ds-back-overflow-warning');
+    const message = page.locator('#ds-back-overflow-message');
+    const tooLong =
+      'This back of card text is far too long to fit on the rows that are available on a business card';
+
+    await expect(warning).toBeHidden();
+
+    await fillBackUntilOverflow(page, tooLong);
+    await expect(message).toContainText('Back line 1');
+    await expect(message).toContainText('are available');
+
+    // The warning must also reach a screen reader. It is announced through the
+    // shared #a11y-status region, never from the warning box itself: that box
+    // is hidden between messages, so a live region on it is inserted into the
+    // accessibility tree already holding its text, and an insertion is not a
+    // change. See UI Interface Core Specifications section 4.10.
+    await expect(page.locator('#a11y-status')).toContainText('Back line 1');
+
+    // Fixing the text clears it.
+    await page.locator('#back-text').fill('def');
+    await expect(warning).toBeHidden();
+
+    // And turning the beta off takes it away even while it is showing.
+    await fillBackUntilOverflow(page, tooLong);
+    await page.locator('#double_sided_enabled').uncheck();
+    await expect(warning).toBeHidden();
+  });
+
+  test('the preview shows both sides with the beta on and neither heading with it off', async ({ page }) => {
+    await openApp(page);
+    await enableBeta(page, 'abc', 'def');
+    await page.locator('#expert-toggle').click();
+
+    const preview = page.locator('#preview-content');
+    const headings = preview.locator('h3.preview-section-heading');
+
+    await page.locator('#preview-braille-btn').click();
+    await expect(preview).toContainText(FRONT_BRAILLE);
+    await expect(preview).toContainText(BACK_BRAILLE);
+    // h3 under the panel's h2 keeps the outline valid, and heading semantics
+    // are what let a screen-reader user jump between the sides with the H key.
+    await expect(headings).toHaveText(['Front of Card', 'Back of Card']);
+
+    await page.locator('#double_sided_enabled').uncheck();
+    await page.locator('#preview-braille-btn').click();
+    await expect(preview).toContainText(FRONT_BRAILLE);
+    await expect(preview).not.toContainText(BACK_BRAILLE);
+    await expect(headings).toHaveCount(0);
+  });
+
+  test('the plate radios take the Cylinder A/B names only while the beta is on', async ({ page }) => {
+    await openApp(page);
+
+    const original = await plateLabels(page);
+    expect(original).toEqual(['Embossing Plate', 'Universal Counter Plate']);
+
+    await page.locator('#double_sided_enabled').check();
+    expect(await plateLabels(page)).toEqual([
+      'Cylinder A — Embossing Plate',
+      'Cylinder B — Universal Counter Plate',
+    ]);
+
+    // Byte-identical on the way back: the training videos show these names.
+    await page.locator('#double_sided_enabled').uncheck();
+    expect(await plateLabels(page)).toEqual(original);
+  });
+
+  test('Generate Both builds the pair, downloads nothing on its own, and restores the plate', async ({ page }) => {
+    test.setTimeout(300_000);
+    await openApp(page);
+    const requests = watchGeometrySpecRequests(page);
+    const unattendedDownloads: string[] = [];
+    page.on('download', (download) => unattendedDownloads.push(download.suggestedFilename()));
+
+    await enableBeta(page, 'abc', 'def');
+    // A deliberate non-default choice, to prove the run puts it back.
+    await page.locator('input[name="plate_type"][value="negative"]').check();
+
+    await generateBoth(page);
+
+    // NOTHING may download by itself. Two programmatic downloads from a single
+    // gesture is exactly what makes Chrome ask "wants to: Download multiple
+    // files" — a prompt the page cannot relabel, which names no file and cycles
+    // Close/Allow/Block on every Tab. An NVDA run on 2026-08-18 hit it and
+    // ended in "Download blocked" with neither cylinder saved.
+    expect(unattendedDownloads).toEqual([]);
+
+    // Each file comes from its own deliberate press.
+    await expect(page.locator('#pair-downloads')).toBeVisible();
+    expect(await pairDownloadName(page, 'a')).toBe('Cylinder_A_0.4_abc.stl');
+    expect(await pairDownloadName(page, 'b')).toBe('Cylinder_B_0.4_abc.stl');
+
+    // Identical settings contract: the two bodies differ ONLY in plate_type.
+    // Both carry the same lines and back_lines, because Cylinder B needs the
+    // front braille to place its 1:1 paired recesses.
+    const [aBody, bBody] = requests.bodies.slice(-2) as Array<Record<string, unknown>>;
+    expect(aBody.plate_type).toBe('positive');
+    expect(bBody.plate_type).toBe('negative');
+    const withoutPlate = (body: Record<string, unknown>) => {
+      const copy = { ...body };
+      delete copy.plate_type;
+      return copy;
+    };
+    expect(withoutPlate(aBody)).toEqual(withoutPlate(bBody));
+
+    // The user's own plate selection survives the run.
+    await expect(page.locator('input[name="plate_type"][value="negative"]')).toBeChecked();
+  });
+
+  test('the generate button keeps its identity and the download is a separate control', async ({ page }) => {
+    await openApp(page);
+    const responses = watchGeometrySpec(page);
+    await page.locator('#auto-text').fill('abc');
+
+    const action = page.locator('#action-btn');
+    const download = page.locator('#download-stl-btn');
+    await expect(download).toBeHidden();
+
+    await generateFully(page, responses, 1);
+
+    // Before 2026-08-18 #action-btn renamed itself into the download control
+    // while a screen-reader user's focus sat on it, announcing nothing. It must
+    // now stay itself, and the file must be offered by its own button.
+    await expect(download).toBeVisible();
+    await expect(action).toHaveAttribute('data-state', 'generate');
+    await expect(action).toHaveAttribute('aria-label', 'Generate STL file from entered text');
+    await expect(page.locator('#a11y-status')).toContainText('Your STL file is ready');
+
+    // Any settings change invalidates the built STL, so its download has to go
+    // with it — otherwise the button hands out a file built to settings that
+    // are no longer on screen.
+    await page.locator('#auto-text').fill('abcd');
+    await expect(download).toBeHidden();
+  });
+
+  test('the shared announcement region is always present and never hidden', async ({ page }) => {
+    await openApp(page);
+    const live = page.locator('#a11y-status');
+
+    // It must never be display:none. A region that is hidden when its text is
+    // written is inserted into the accessibility tree already holding that
+    // text, and an insertion is not a change, so nothing is announced — the
+    // defect that made the first pair message, the lock note and every
+    // single-plate validation error silent.
+    await expect(live).toHaveCount(1);
+    await expect(live).toHaveAttribute('role', 'status');
+    await expect(live).toHaveAttribute('aria-live', 'polite');
+    expect(
+      await live.evaluate((el) => getComputedStyle(el).display),
+      '#a11y-status must never be display:none',
+    ).not.toBe('none');
+
+    await page.locator('#double_sided_enabled').check();
+    await expect(live).toContainText('Locked: Double-Sided Card is on');
   });
 });
