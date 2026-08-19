@@ -935,7 +935,7 @@ emptied at the start of each run but was never *declassed*, so a stale
 `error-message` class outlived its message. The progress notice is guarded by "is
 a blocking error already showing?", read from that class — and
 `restoreThicknessPreset()` leaves exactly that state on every page load
-("Layer height preset applied", classed `error-message` with no `info`). The
+("Card thickness preset applied", classed `error-message` with no `info`). The
 guard therefore suppressed `Translating text to braille...` and
 `Generating 3D model (client-side CSG)...` permanently, for sighted users too.
 `runGenerateForCurrentPlate()` now clears the class along with the text. A

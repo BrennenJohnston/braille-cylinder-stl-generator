@@ -219,7 +219,7 @@ See: `BRAILLE_DOT_ADJUSTMENTS_SPECIFICATIONS.md`, `BRAILLE_DOT_SHAPE_SPECIFICATI
 - indicators.rotate_180: boolean (applies for counter plate on cylinder)
 
 Tactile mode dimensions (mm). Both Card Thickness presets apply the same five values —
-the arrow is sized by the finger that reads it, not by the print layer height — so a change
+the arrow is sized by the finger that reads it, not by the card stock thickness — so a change
 here must land in `settings.schema.json`, `app/models.py`, the HTML input defaults, and
 **both** `THICKNESS_PRESETS` entries:
 - indicators.tactile_indicator_width: number, 2–10 (default: 4.0) — width around the cylinder

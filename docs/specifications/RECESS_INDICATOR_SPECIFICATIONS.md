@@ -496,7 +496,7 @@ Runtime fields, flat in the settings payload; schema home is `indicators.*` in `
 | `tactile_recess_clearance` | 0.2 mm | 0–1 | Outline margin added around the counter recess |
 | `tactile_recess_extra_depth` | 0.2 mm | 0–1 | Counter recess depth added on top of the raise (0 = exact same-depth nesting) |
 
-These five values are also written into **both** Card Thickness presets (`THICKNESS_PRESETS` in `public/index.html`), identically: the arrow is sized by the finger that reads it, not by the print layer height. Changing a default therefore means changing four places — `settings.schema.json`, `app/models.py`, the HTML input defaults, and both preset entries.
+These five values are also written into **both** Card Thickness presets (`THICKNESS_PRESETS` in `public/index.html`), identically: the arrow is sized by the finger that reads it, not by the card stock thickness. Changing a default therefore means changing four places — `settings.schema.json`, `app/models.py`, the HTML input defaults, and both preset entries.
 
 ### UI Location
 

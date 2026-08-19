@@ -3367,24 +3367,32 @@
                     <!-- Card Thickness Preset Selection -->
                     <div class="grade-selection">
                         <fieldset>
-                            <!-- Renamed 2026-08-18 with Brennen's sign-off. The old name was
-                                 "Card Thickness", which nothing here changes: BOTH presets set
-                                 card_thickness: 2.0. The 0.4/0.3 numbers are the printer's layer
-                                 height, which is what the sr-only text and the spec always said.
-                                 The field name, the localStorage key and the spec filename keep
-                                 the old wording on purpose - this was a text-only rename. -->
-                            <legend class="grade-label">Print Layer Height</legend>
-                            <div class="radio-group thickness-toggle" role="radiogroup" aria-required="true" aria-label="Select print layer height preset">
+                            <!-- The 0.3 / 0.4 numbers are the thickness of the PAPER CARD STOCK
+                                 the cylinders emboss - the stock standard paper business cards
+                                 come in. They are NOT the printer's layer height.
+                                 Corrected 2026-08-19 with Brennen's sign-off, undoing the
+                                 2026-08-18 "Print Layer Height" rename. That rename reasoned
+                                 that "both presets set card_thickness: 2.0, so nothing about the
+                                 card's thickness varies" - but card_thickness is the printed
+                                 PLASTIC PLATE's thickness, not the paper. What the presets
+                                 actually change is bowl DEPTH (0.5 -> 0.8 mm) and dot HEIGHT
+                                 (0.8 -> 1.0 mm); cylinders print standing upright, so both are
+                                 radial dimensions a layer-height setting cannot motivate and
+                                 thicker stock motivates directly. The sr-only descriptions had
+                                 said "layer height" since the feature first shipped, which is
+                                 what made the visible label look like the wrong one. -->
+                            <legend class="grade-label">Card Thickness</legend>
+                            <div class="radio-group thickness-toggle" role="radiogroup" aria-required="true" aria-label="Select card thickness preset">
                                 <label class="radio-option">
                                     <input type="radio" name="card_thickness_preset" value="0.4" checked aria-describedby="thickness-04-desc">
                                     <span class="radio-text">0.4mm</span>
                                 </label>
-                                <span id="thickness-04-desc" class="sr-only">Preset settings optimized for 0.4mm layer height printing</span>
+                                <span id="thickness-04-desc" class="sr-only">Preset settings optimized for embossing 0.4mm card stock</span>
                                 <label class="radio-option">
                                     <input type="radio" name="card_thickness_preset" value="0.3" aria-describedby="thickness-03-desc">
                                     <span class="radio-text">0.3mm</span>
                                 </label>
-                                <span id="thickness-03-desc" class="sr-only">Preset settings optimized for 0.3mm layer height printing</span>
+                                <span id="thickness-03-desc" class="sr-only">Preset settings optimized for embossing 0.3mm card stock</span>
                                 <label class="radio-option">
                                     <input type="radio" name="card_thickness_preset" value="custom" aria-describedby="thickness-custom-desc">
                                     <span class="radio-text">Custom</span>
@@ -3392,7 +3400,7 @@
                                 <span id="thickness-custom-desc" class="sr-only">Custom settings - automatically selected when any parameter is modified from preset values</span>
                             </div>
                             <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
-                                Selecting a layer height preset will automatically adjust all braille dot and surface parameters to values tuned for printing at that layer height. The card itself stays 2 mm thick either way. "Custom" is automatically selected when you modify any parameter.
+                                Selecting a card thickness preset will automatically adjust all braille dot and surface parameters to values tuned for embossing that card stock. This is the thickness of the paper business cards you feed through the cylinders — the printed plate itself is always 2 mm thick either way. "Custom" is automatically selected when you modify any parameter.
                             </div>
                         </fieldset>
                     </div>
@@ -3492,7 +3500,7 @@
                                             <span id="cone-combined-desc" class="sr-only">Creates cone frustum dots for emboss plate and conical frustum recess for counter plate</span>
                                         </div>
                                         <div class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
-                                            Rounded is the default for the 0.4mm and 0.3mm layer height presets.
+                                            Rounded is the default for the 0.4mm and 0.3mm Card Thickness presets.
                                         </div>
                                     </fieldset>
                                 </div>
@@ -3732,7 +3740,7 @@
                             <div id="expert-panel-tactile" class="expert-submenu-content" style="display: none;">
                                 <div class="grade-selection" id="tactile-indicator-dimensions">
                                     <div class="grade-note" style="margin-bottom: 6px; font-size: 0.85em;">
-                                        Used only when Row Indicator Style is <strong>Tactile seam arrow</strong>. Both layer height presets apply these values.
+                                        Used only when Row Indicator Style is <strong>Tactile seam arrow</strong>. Both Card Thickness presets apply these values.
                                     </div>
                                     <div>
                                         <label for="tactile_indicator_width">Indicator width around the cylinder (mm):</label>
@@ -6985,7 +6993,7 @@
         // ======================================================================
         // Card Thickness Preset System
         // ======================================================================
-        // Define presets for each thickness option (0.4mm and 0.3mm layer heights)
+        // Define presets for each thickness option (0.4mm and 0.3mm paper card stock)
         // These presets set all numeric inputs to optimized values for each thickness.
         // Both presets also default the Braille Dot Shape to "Rounded" (applied when the
         // user selects a preset; see applyThicknessPreset with applyShape=true).
@@ -7028,7 +7036,7 @@
                 card_height: 52,
                 card_thickness: 2.0,
                 // Tactile Indicator Dimensions (identical in both presets: the arrow
-                // is sized by the finger that reads it, not by the layer height)
+                // is sized by the finger that reads it, not by the card stock)
                 tactile_indicator_width: 4.0,
                 tactile_indicator_length: 10.0,
                 tactile_indicator_raise: 0.5,
@@ -7071,7 +7079,7 @@
                 card_height: 52,
                 card_thickness: 2.0,
                 // Tactile Indicator Dimensions (identical in both presets: the arrow
-                // is sized by the finger that reads it, not by the layer height)
+                // is sized by the finger that reads it, not by the card stock)
                 tactile_indicator_width: 4.0,
                 tactile_indicator_length: 10.0,
                 tactile_indicator_raise: 0.5,
@@ -7181,7 +7189,7 @@
 
             // Show confirmation message
             try {
-                errorText.textContent = `Layer height preset "${presetKey}mm" applied. All parameters updated.`;
+                errorText.textContent = `Card thickness preset "${presetKey}mm" applied. All parameters updated.`;
                 errorDiv.style.display = 'flex';
                 errorDiv.className = 'error-message info';
                 setTimeout(() => {
@@ -7910,7 +7918,7 @@
             // this class - and the box was only ever emptied, never declassed,
             // so a stale class outlived its message and suppressed the notice
             // for the rest of the session. restoreThicknessPreset() leaves
-            // exactly that on every page load ("Layer height preset applied",
+            // exactly that on every page load ("Card thickness preset applied",
             // classed error-message with no info), which is why "Translating
             // text to braille..." never appeared for anyone, sighted or not.
             // Any blocking error raised by THIS run is set further down and
@@ -9732,7 +9740,7 @@
                         <p>Whenever the braille box has content, <strong>those exact cells are what get embossed</strong> — clear it to go back to translating the text above.</p>
 
                         <h4>File Names</h4>
-                        <p>Downloads are named <code>Embossing_Cylinder_{preset}_{name}.stl</code> and <code>Counter_Cylinder_{preset}_{name}.stl</code>, where <code>{preset}</code> is the selected print layer height and <code>{name}</code> is the first word of your text. Paste braille with no text and the name is back-translated from the braille for you.</p>
+                        <p>Downloads are named <code>Embossing_Cylinder_{preset}_{name}.stl</code> and <code>Counter_Cylinder_{preset}_{name}.stl</code>, where <code>{preset}</code> is the selected card thickness and <code>{name}</code> is the first word of your text. Paste braille with no text and the name is back-translated from the braille for you.</p>
 
                         <h4>Current Availability</h4>
                         <p><strong>Cylinder shapes</strong> are available for labeling bottles, jars, and containers.</p>

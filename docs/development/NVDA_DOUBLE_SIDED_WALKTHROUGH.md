@@ -180,7 +180,7 @@ controls (many do not — that is correct behaviour and not a fail).
 
 ## Part 5 — Cylinder A and Cylinder B
 
-**Step 13.** `Tab` forward to the Print Layer Height radio group, then on to the
+**Step 13.** `Tab` forward to the Card Thickness radio group, then on to the
 "Select Plate to Generate" radio group.
 
 > **Expect:** "Cylinder A — Embossing Plate, radio button, checked, 1 of 2",
@@ -380,6 +380,7 @@ Anything NVDA said that I did not expect at all:
 |---|---|---|
 | 1.0 | 2026-08-17 | Created in Phase 05. Expected announcements taken from the live accessibility tree, not from the markup. |
 | 1.1 | 2026-08-18 | Step 13 renamed "Card Thickness" to "Print Layer Height" to match the control's new label. No expected announcement changed — the group's sr-only descriptions were already correct and were not touched by that rename. |
+| 1.2 | 2026-08-19 | Step 13 back to "Card Thickness": the 2026-08-18 rename was itself the error, and the sr-only descriptions v1.1 called "already correct" were the original source of it. **The expected announcements DO change this time** — the group is announced as "Card thickness preset" and each option as "Preset settings optimized for embossing 0.Xmm card stock". Re-run step 13 against the new text. |
 | 1.2 | 2026-08-18 | Corrected step 1 after the first real run: NVDA announces the skip link role-first ("same page link, Skip to main content"), not "Skip to main content, link" as v1.0 predicted, and the link is invisible until focused. Added a general note that role/name order varies and is not a fail. Step 16 now calls out message 1 as the regression-sensitive one, after the live-region defect it exposed was fixed (see UI Interface Core Specifications §4.10). |
 | 1.3 | 2026-08-18 | Updated after the first run of Parts 2-3. Step 16's third message reworded and a check added that **nothing downloads by itself**: the old automatic pair download made Chrome ask "wants to: Download multiple files", a prompt that names no file and cycles Close/Allow/Block on every Tab, and the run ended in "Download blocked" with neither cylinder saved. Step 19 now presses both download buttons, since that is the only way files are saved. Steps 4 and 8 confirmed passing - the lock note and the back-of-card warning both spoke for the first time. |
 | 1.4 | 2026-08-18 | Steps 15 and 27 note the new single-plate "Download STL" button, which is separate from the pair's Download Cylinder A/B and only exists after a single-plate generation. `#action-btn` no longer renames itself into a download control mid-focus. |
