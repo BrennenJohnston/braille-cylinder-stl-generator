@@ -208,8 +208,15 @@ controls (many do not — that is correct behaviour and not a fail).
 > **Expect,** as the run proceeds, each announced on its own without you moving:
 > - "Generating Cylinder A (1 of 2)..."
 > - "Generating Cylinder B (2 of 2)..."
-> - "Both cylinders are ready. If your browser blocked a download, use the
->   buttons below."
+> - "Both cylinders are ready. Use the Download Cylinder A and Download Cylinder
+>   B buttons below to save them."
+>
+> **Nothing downloads by itself, and no Save As dialog should appear yet.** Until
+> 2026-08-18 the run started both downloads on its own, which made Chrome ask
+> "wants to: Download multiple files" — a prompt that names no file, gives no
+> reason, and cycles Close/Allow/Block on every `Tab`. A real run ended in
+> "Download blocked" with neither cylinder saved. If any Save As dialog or
+> download prompt appears during this step, that regression is back.
 >
 > These come from a polite live region, so they queue up behind anything NVDA is
 > already saying. The run takes a while — wait for the third message. **Write
@@ -234,10 +241,15 @@ controls (many do not — that is correct behaviour and not a fail).
 > - "Download Cylinder A, button"
 > - "Download Cylinder B, button"
 
-**Step 19.** Press `Enter` on "Download Cylinder A".
+**Step 19.** Press `Enter` on "Download Cylinder A", then `Tab` to "Download
+Cylinder B" and press `Enter` there too.
 
-> **Expect:** your browser's normal download announcement. The button stays
-> where it is and keeps its name.
+> **Expect:** your browser's normal download announcement each time — **one file
+> per press**, and no "Download multiple files" prompt at any point. Each button
+> stays where it is and keeps its name.
+>
+> Both presses are needed: since 2026-08-18 this is the only way the files are
+> saved, and a Cylinder A without its matching B cannot emboss a card.
 
 ---
 
@@ -360,3 +372,4 @@ Anything NVDA said that I did not expect at all:
 | 1.0 | 2026-08-17 | Created in Phase 05. Expected announcements taken from the live accessibility tree, not from the markup. |
 | 1.1 | 2026-08-18 | Step 13 renamed "Card Thickness" to "Print Layer Height" to match the control's new label. No expected announcement changed — the group's sr-only descriptions were already correct and were not touched by that rename. |
 | 1.2 | 2026-08-18 | Corrected step 1 after the first real run: NVDA announces the skip link role-first ("same page link, Skip to main content"), not "Skip to main content, link" as v1.0 predicted, and the link is invisible until focused. Added a general note that role/name order varies and is not a fail. Step 16 now calls out message 1 as the regression-sensitive one, after the live-region defect it exposed was fixed (see UI Interface Core Specifications §4.10). |
+| 1.3 | 2026-08-18 | Updated after the first run of Parts 2-3. Step 16's third message reworded and a check added that **nothing downloads by itself**: the old automatic pair download made Chrome ask "wants to: Download multiple files", a prompt that names no file and cycles Close/Allow/Block on every Tab, and the run ended in "Download blocked" with neither cylinder saved. Step 19 now presses both download buttons, since that is the only way files are saved. Steps 4 and 8 confirmed passing - the lock note and the back-of-card warning both spoke for the first time. |

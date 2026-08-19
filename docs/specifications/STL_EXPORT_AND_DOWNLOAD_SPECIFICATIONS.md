@@ -1303,8 +1303,9 @@ for character.
    announce `Generating Cylinder A (1 of 2)...`.
 4. Run `runGenerateForCurrentPlate()` to completion and keep the resulting blob.
 5. Repeat steps 2–4 for **negative** with `Generating Cylinder B (2 of 2)...`.
-6. Reveal both download controls, start both downloads, announce
-   `Both cylinders are ready. If your browser blocked a download, use the buttons below.`
+6. Reveal both download controls and announce
+   `Both cylinders are ready. Use the Download Cylinder A and Download Cylinder B buttons below to save them.`
+   **Nothing downloads on its own** — see *Downloads* below.
 7. In a `finally` block: restore the user's plate selection and cell dial, unlock the
    controls, reset the action button, and return focus to Generate Both if the run was
    started from the keyboard.
@@ -1341,13 +1342,31 @@ existing `#error-message` overlay, unchanged.
 
 ### Downloads
 
-Both files start downloading automatically **and** both remain behind their own buttons.
-Measured 2026-08-17 in Playwright Chromium, Playwright Firefox, and the installed Google
-Chrome running headed: all three took the second automatic download without a prompt, three
-runs each. A browser is still permitted to refuse it, and a user who silently receives one
-cylinder of a pair has no way to tell, so the buttons are always present as the reliable
-path. Names follow Section 7 exactly: `Cylinder_A_{preset}_{name}.stl` and
+**Nothing downloads automatically. Each file is saved by pressing its own button** —
+`Download Cylinder A` and `Download Cylinder B` — which appear when the run finishes.
+Names follow Section 7 exactly: `Cylinder_A_{preset}_{name}.stl` and
 `Cylinder_B_{preset}_{name}.stl`.
+
+**Why, changed 2026-08-18.** The original design started both downloads itself and kept
+the buttons as a fallback. Two programmatic downloads from a single user gesture is
+precisely what Chrome treats as *"wants to: Download multiple files"*, and the 2026-08-17
+measurement that found Chromium, Firefox and headed Chrome all accepting the second
+download silently was taken **without a screen reader running**, which is what made this
+look safe.
+
+An NVDA run on 2026-08-18 hit the prompt and could not get past it. The bubble is Chrome's
+own UI and cannot be relabelled by the page: it names no file, gives no reason, and `Tab`
+cycles Close → Allow → Block indefinitely with no statement of what is being decided. That
+run ended in **"Download blocked"** with neither cylinder saved. Worse, the status line
+that existed to rescue exactly this situation — *"If your browser blocked a download, use
+the buttons below"* — was itself never announced, because the Save As dialog opened by the
+first automatic download had taken focus off the page before the message was written.
+
+One download per user gesture never triggers the prompt, so the failure mode is removed
+rather than mitigated. This costs one extra keypress and is the only path that works
+unaided for a blind user. Verified 2026-08-18: a full `Generate Both` run fires **0**
+automatic downloads, both buttons appear, focus stays on `Generate Both Cylinders`, and
+pressing `Download Cylinder A` yields exactly one file.
 
 Any edit to the form clears the pair download controls, for the same reason the action
 button reverts to Generate: the cylinders behind those buttons were built to settings that
@@ -1435,6 +1454,7 @@ idle. After a pair run the action button always reads "Generate STL".
 | 1.3 | 2024-12-08 | **NO FALLBACK ENFORCEMENT:** Removed fallback from Manifold to standard worker for cylinders. Cylinder generation now requires Manifold worker; displays error if unavailable. Updated Sections 9 and 12. |
 | 1.4 | 2026-07-30 | **FILE NAMING:** Replaced `Embossing_Plate_{word}` / `Universal_Counter_Plate_{counter}` with `Embossing_Cylinder_{preset}_{name}` / `Counter_Cylinder_{preset}_{name}`. The session counter is gone; counter plates are named from the same text, and braille-only input is back-translated for the name. Rewrote Section 7. |
 | 1.6 | 2026-08-17 | **PAIRED GENERATION (Phase 04):** Added Section 15 — the Generate Both Cylinders control, the two-run sequence, the identical-settings contract (including the `#grid_columns` re-fill that had to be restored around each plate switch), the abort-on-first-failure rule, the dual automatic/manual download design and the browsers it was measured in, and how the pair run drives the Section 8 state machine. The former `form.onsubmit` body is now `runGenerateForCurrentPlate()`, shared by both paths. |
+| 1.7 | 2026-08-18 | **Paired download is no longer automatic (accessibility).** An NVDA run hit Chrome's "wants to: Download multiple files" prompt, which the page cannot relabel - it names no file, gives no reason, and Tab cycles Close/Allow/Block indefinitely - and the run ended in "Download blocked" with neither cylinder saved. The status line meant to rescue that case was never announced either, because the Save As dialog from the first automatic download had already taken focus off the page. Both automatic `downloadPairFile()` calls removed; each cylinder is now saved by pressing its own button, so one gesture never produces more than one download. The 2026-08-17 measurement that found this safe was taken without a screen reader running. Section 15 step 6 and the Downloads subsection rewritten; completion wording replaced (flagged REVIEW-BRENNEN in code). Verified: 0 automatic downloads, both buttons shown, focus retained on Generate Both, one file per button press |
 | 1.5 | 2026-08-16 | **DOUBLE-SIDED NAMING (Phase 09):** When the Double-Sided Card beta is on, downloads are named `Cylinder_A_{preset}_{name}` (positive) / `Cylinder_B_{preset}_{name}` (negative); both take `{name}` from the front text. Single-sided names unchanged. Updated Section 7; covered by tests/e2e/doubleSided.spec.ts. |
 
 ---
