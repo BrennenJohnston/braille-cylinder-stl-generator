@@ -301,6 +301,32 @@ async function generateBoth(page: Page) {
   throw new Error('Generate Both never reported a finished pair');
 }
 
+/**
+ * Press Preview Braille Translation and wait for the expected braille to show.
+ *
+ * The preview calls liblouis directly, so a press landing before the worker is
+ * up renders "Liblouis worker not initialized" into #preview-content instead of
+ * braille. Every other worker-dependent press in this suite already guards for
+ * that; this one did not, and lost the race on Firefox under parallel load.
+ * Only that documented not-ready text is retried — anything else is a real
+ * failure and is rethrown.
+ */
+async function previewBraille(page: Page, settled: () => Promise<void>) {
+  const preview = page.locator('#preview-content');
+  for (let attempt = 0; attempt < 15; attempt++) {
+    await page.locator('#preview-braille-btn').click();
+    try {
+      await settled();
+      return;
+    } catch (error) {
+      const text = (await preview.textContent()) ?? '';
+      if (!/not initialized|unavailable on this deployment/.test(text)) throw error;
+    }
+    await page.waitForTimeout(1000);
+  }
+  throw new Error('The liblouis worker never became ready for the braille preview');
+}
+
 /** Turn the beta on through the real UI and fill both sides of the card. */
 async function enableBeta(page: Page, frontText: string, backText: string) {
   await page.locator('#auto-text').fill(frontText);
@@ -649,15 +675,21 @@ test.describe('Double-Sided Card beta', () => {
     const preview = page.locator('#preview-content');
     const headings = preview.locator('h3.preview-section-heading');
 
-    await page.locator('#preview-braille-btn').click();
-    await expect(preview).toContainText(FRONT_BRAILLE);
+    await previewBraille(page, async () => {
+      await expect(preview).toContainText(FRONT_BRAILLE, { timeout: 4000 });
+    });
     await expect(preview).toContainText(BACK_BRAILLE);
     // h3 under the panel's h2 keeps the outline valid, and heading semantics
     // are what let a screen-reader user jump between the sides with the H key.
     await expect(headings).toHaveText(['Front of Card', 'Back of Card']);
 
     await page.locator('#double_sided_enabled').uncheck();
-    await page.locator('#preview-braille-btn').click();
+    // The panel still holds the two-sided render, so "contains the front
+    // braille" would pass on stale content. The headings vanishing is what
+    // proves this press re-rendered with the beta off.
+    await previewBraille(page, async () => {
+      await expect(headings).toHaveCount(0, { timeout: 4000 });
+    });
     await expect(preview).toContainText(FRONT_BRAILLE);
     await expect(preview).not.toContainText(BACK_BRAILLE);
     await expect(headings).toHaveCount(0);

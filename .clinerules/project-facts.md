@@ -109,7 +109,10 @@ translation, Three.js preview. Working branch: develop — never commit to main.
     public/index.html, app/models.py, app/geometry_spec.py,
     static/workers/csg-worker.js, static/workers/csg-worker-manifold.js.
 15. OpenSCAD/Braille_Cylinder_STL_Generator.scad is a VENDORED offline copy —
-    never edit it here; its home is the braille-stl-generator-openscad repo.
+    never edit it here. Its home is the GitHub repo
+    **braille-cylinder-stl-generator-openscad** (the local clone sits in a folder
+    named braille-stl-generator-openscad — the two spellings are the same repo;
+    OpenSCAD/VENDORED.json and a test both pin the GitHub name).
 
 ## Spec map — load exactly ONE file, only when the task matches
 Specs live in docs/specifications/.

@@ -37,10 +37,12 @@ Two caveats remain:
   not defects in the app. The local pass bar is Chromium + Firefox; CI runs
   WebKit on Linux, where it passes.
 
-One more thing worth knowing when running the local suite: under ten parallel workers,
-Firefox is sometimes still starting liblouis and Manifold when a test needs them, and that
-test fails with `Liblouis worker not initialized`. Re-running it on its own confirms it —
-it passes in a few seconds. A real defect fails alone too.
+One more thing worth knowing when running the local suite: locally Playwright uses many
+parallel workers and **no** retries, while CI uses one worker and two retries. Firefox is
+slower to start the liblouis and Manifold workers under that load, so any test that presses
+a worker-backed button without waiting for readiness can fail locally while passing on CI.
+The suite's helpers wait for readiness and rethrow anything that is not the documented
+not-ready message; a bare press is the bug, not the browser.
 
 The OpenSCAD version does not have this feature yet. Porting it is in progress.
 

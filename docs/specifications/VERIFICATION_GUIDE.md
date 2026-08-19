@@ -84,17 +84,18 @@ their JSON metadata from the current code.
 npx playwright test tests/e2e/ --project=chromium --project=firefox
 ```
 
-Expected: **104 tests, all passing**, in about 3 minutes.
-
-Measured 2026-08-18: 103 passed on the parallel run, and the one Firefox test that failed
-passed on its own in 4.8 seconds — the load transient described below, not a defect.
+Expected: **104 tests, all passing**, in about 3 minutes. Measured 2026-08-18: 104 passed.
 
 Chromium + Firefox is the local pass bar. Two notes on what you may see:
 
-- **A Firefox test can fail under load and pass on its own.** With ten workers in parallel,
-  Firefox is sometimes still starting liblouis and Manifold when a test needs them; the
-  failure says `Liblouis worker not initialized`. Re-run that one test by name to confirm —
-  if it passes alone in a few seconds, that is what happened. A real defect fails alone too.
+- **If a test fails with `Liblouis worker not initialized` or `requires the Manifold 3D
+  engine`, it pressed a button before that worker was up.** Firefox is slower to start both
+  under parallel load, and locally Playwright runs many workers with **no retries** (CI runs
+  one worker with two retries, which is why this class of failure hides on CI). The fix is
+  never a blanket retry: press through the helper that waits for readiness and rethrows
+  anything else — `previewBraille`, `generateBoth`, and `generateFully` in
+  `tests/e2e/doubleSided.spec.ts` are the working examples. A test that presses a
+  worker-backed button bare is the bug.
 - **Do not run WebKit locally on Windows.** It fails for environmental reasons, not app
   defects. CI runs WebKit on Linux, where it passes. See
   [KNOWN_ISSUES.md](../KNOWN_ISSUES.md).

@@ -205,7 +205,7 @@ range literals; the two are flagged in code as a change-both-in-one-commit pair.
 | Capacity per side | tactile: 14 cols × 4 rows = 56 cells | **Unchanged** — 56 cells per side, 112 total (interpoint never re-spaces the grid) |
 | `lines` on a Cylinder B request | Empty (counter plate needs no text) | **The front braille** — it places B's 1:1 paired recesses |
 | `back_lines` | Absent (byte-identical pre-feature payload) | Present, top-level, padded to `grid_rows` |
-| Download filenames | `Embossing_Cylinder_{preset}_{name}.stl` / `Counter_Cylinder_{preset}_{name}.stl` | `Cylinder_A_{preset}_{name}.stl` / `Cylinder_B_{preset}_{name}.stl` (both named from the front text; see STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md v1.5 §7) |
+| Download filenames | `Embossing_Cylinder_{preset}_{name}.stl` / `Counter_Cylinder_{preset}_{name}.stl` | `Cylinder_A_{preset}_{name}.stl` / `Cylinder_B_{preset}_{name}.stl` (both named from the front text; see STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md v1.8 §7) |
 | Shape | Cards and cylinders | **Cylinders only** — the UI never sends the flag for cards |
 
 Example at the test fixture inputs (front "abc" = ⠁⠃⠉ = 5 dots, back "def" = ⠙⠑⠋ =
@@ -362,7 +362,7 @@ mechanical assembly requirement, not software.
 
 ## 7. User Interface (`public/index.html`)
 
-Full pattern documented in UI_INTERFACE_CORE_SPECIFICATIONS.md v1.10 Section 4.8; summary
+Full pattern documented in UI_INTERFACE_CORE_SPECIFICATIONS.md v1.16 Section 4.8; summary
 here with the signed-off strings. **All wording below was signed off by Brennen
 2026-08-16 — reword only with his sign-off** (each string carries that comment in code).
 
@@ -398,8 +398,9 @@ Toggling ON reveals `#double-sided-section` containing the **Back of Card** fiel
   the 2026-08-16 signed-off note, which said "there is no automatic wrapping here yet" —
   false since the back text gained BANA auto-wrap (§7.4).
 - Live overflow warning (`#ds-back-overflow-warning` / `#ds-back-overflow-message`,
-  `role="status"`, `aria-live="polite"`, `hidden` when clear) directly after the help note.
-  See §7.4.
+  `hidden` when clear) directly after the help note. It carries **no** `role="status"` and
+  **no** `aria-live` — it announces through the shared `#a11y-status` region instead. See
+  §7.4 and §7.6.
 
 While ON, the front legend `#front-entry-legend` reads **"Front of Card — Enter Text for
 Braille Translation"** and restores its exact original text ("Enter Text for Braille
@@ -411,7 +412,8 @@ Toggling ON force-selects the tactile radio through a real `change` event (so
 persistence, the column dial, and the tactile submenu all react), sets **native
 `disabled`** on the visual radio (the repo's existing pattern for unavailable controls —
 there is no `aria-disabled` anywhere in the codebase), and shows the live lock note
-`#indicator-mode-lock-note` (`role="status"`, `aria-live="polite"`):
+`#indicator-mode-lock-note` (no `role="status"`, no `aria-live` — it announces through
+`#a11y-status`; see §7.6):
 
 > "**Locked:** Double-Sided Card is on, so the Row Indicator Style stays on the tactile
 > seam arrow — both cylinders of a double-sided pair need it. Turn the beta off to choose
@@ -422,8 +424,8 @@ snap-back).
 
 ### 7.3 The live gap warning
 
-`#ds-gap-warning` / `#ds-gap-message` (`role="status"`, `aria-live="polite"`) live inside
-`#double-sided-section` — visible only while the beta is on, the only time it can fire.
+`#ds-gap-warning` / `#ds-gap-message` (no `role="status"`, no `aria-live` — announced
+through `#a11y-status`; see §7.6) live inside `#double-sided-section` — visible only while the beta is on, the only time it can fire.
 `checkDoubleSidedGap()` recomputes on every form change via the form's input/change
 delegation, using `dsLatticeMinCenterDistance()` (a JS mirror of
 `interpoint.lattice_min_center_distance`). Hidden while the gap ≥ 0.50 mm. The message is
@@ -479,6 +481,48 @@ any of three paths. All three were **signed off by Brennen on 2026-08-17**; they
 The 2026-08-16 per-line "exceeds C available braille cells by X cells" error is **retired**:
 wrapping guarantees every emitted row fits, and a token that cannot fit at all now takes the
 BANA-undividable path above.
+
+### 7.6 How the beta's warnings are announced (`#a11y-status`)
+
+Added 2026-08-18 (Phase 05d/05e). **The four beta-flow boxes do not announce themselves.**
+`#ds-back-overflow-warning`, `#ds-gap-warning`, `#indicator-mode-lock-note` and
+`#tactile-gap-warning` are hidden between messages, and a live region that is hidden when
+its text is written is inserted into the accessibility tree already holding that text — an
+insertion is not a change, so nothing is spoken. `role="status"`/`aria-live` were therefore
+**removed** from all four: on a box hidden between messages they can never fire, and leaving
+them would let some assistive tech speak the warning twice.
+
+They announce through one always-present region instead:
+
+```html
+<div id="a11y-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+```
+
+written by `announceStatus(source, message)`:
+
+- **Scoped by source.** The owning box's id is stored in `dataset.source`; an empty message
+  clears the region **only if** the caller owns it, so one box clearing cannot wipe
+  another's message.
+- **An unchanged string is not a mutation**, which keeps the per-keystroke recomputes from
+  chattering.
+- **Each announcement repeats the box's own `textContent`**, so what is heard matches what
+  is shown, "Warning:" included, and no separate wording exists to drift or need sign-off.
+
+Two call sites are deliberately not a plain mirror, both found by listening rather than by
+reading the accessibility tree:
+
+- **The lock note is deferred one task** (`setTimeout(..., 0)`). Announced synchronously it
+  arrived before the checkbox's own "checked, expanded" — about 30 words before the user
+  learned the box they had just pressed was ticked.
+- **The back-text overflow warning announces only on hidden → shown.** Its text carries a
+  live cell count, so every keystroke was a real change and it talked over the user while
+  they typed. Measured 3 announcements before the change, 1 after, over the same typed
+  sentence.
+
+The tree proves a region *can* announce; only listening proves it announces usefully.
+The single-sided flow's `#error-message` reaches the same region through one
+MutationObserver rather than through `announceStatus()` calls — see
+STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md §8.
 
 ### 7.5 Persistence, reset, and no dials
 
@@ -593,6 +637,7 @@ The embossing test the beta was waiting on has been run and **passed**.
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-08-18 | 1.4 | **Section 7 corrected against the code** (web repo Phase 07 closeout, after Phase 05d/05e changed the announcement mechanism): §7.1, §7.2 and §7.3 no longer claim `role="status"`/`aria-live` on `#ds-back-overflow-warning`, `#indicator-mode-lock-note` and `#ds-gap-warning` — those attributes were removed from the markup because a box hidden between messages can never fire them. New §7.6 documents what replaced them: the always-present `#a11y-status` region, `announceStatus(source, message)` and its source scoping, the lock note's one-task deferral, and the overflow warning's hidden-to-shown gate. Also refreshed stale cross-reference versions: STL_EXPORT_AND_DOWNLOAD is at v1.8 and UI_INTERFACE_CORE at v1.16, not the v1.5 and v1.10 cited. Documentation only — no code, wire shape, or geometry changed by this edit. |
 | 2026-08-17 | 1.3 | **Placeholder corrected** (web repo Phase 04 closeout): `#back-text`'s placeholder said "Each line becomes one braille row", which stopped being true when v1.2 added BANA auto-wrap. Replaced with "Type the text for the back of the card here. It wraps across the rows automatically.", **signed off by Brennen on 2026-08-17**; §7.1 updated. This closes the last carried-over wording item from Phase 02. No code behaviour, wire shape, or geometry changed. |
 | 2026-08-17 | 1.2 | **Back of Card text reached parity with the front** (web repo Phase 02): the generate handler now runs the shared `banaAutoWrap()` over `#back-text` instead of translating one row per newline, and a live `#ds-back-overflow-warning` status region warns while the user types. §7.4 rewritten (wrapping rule, live-warning wording, three fail-closed blocking paths); the 2026-08-16 per-line "exceeds C available braille cells" error retired; the Back of Card help note replaced. All six new user-facing strings — the help note, the three blocking errors, and the two live-warning sentences — were **signed off by Brennen on 2026-08-17**. Wire shape, persistence keys, the toggle-off payload, and all geometry are unchanged. |
 | 2026-08-17 | 1.1 | Recorded the **physical validation** (new §10): two Bambu Lab X1C (0.4 mm nozzle) print rounds of Cylinder A/B pairs embossed real card stock legibly on both faces with the Option B footprints. Consequences written through the document — Option B is permanent (Option A is history, not a fallback switch); `BACK_GRID_DIRECTION = +1` is confirmed by physical handling and the "unverifiable sign" caveat in §2.3/§9 is closed (flip procedure retained as history); the status line in the Overview now says the BETA label waits on broader user testing, not on the embossing test. No code, geometry, or golden fixture changed. |
@@ -604,9 +649,9 @@ The embossing test the beta was waiting on has been run and **passed**.
 
 - `BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md` v1.4 §8 — the `back_lines` wire
   field, back translation, persistence keys
-- `UI_INTERFACE_CORE_SPECIFICATIONS.md` v1.10 §4.8 — the disclosure toggle pattern,
+- `UI_INTERFACE_CORE_SPECIFICATIONS.md` v1.16 §4.8 — the disclosure toggle pattern,
   accessibility validation results
-- `STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md` v1.5 §7 — the Cylinder A/B download
+- `STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md` v1.8 §7 — the Cylinder A/B download
   filenames
 - `RECESS_INDICATOR_SPECIFICATIONS.md` §4 — the tactile seam arrow the beta locks to
 - `SETTINGS_SCHEMA_CORE_SPECIFICATIONS.md` §5 — the validation gates from the schema's
