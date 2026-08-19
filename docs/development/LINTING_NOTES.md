@@ -19,9 +19,9 @@ Down from 97 errors to just 9! Major cleanup achieved.
 **Status:** Code works perfectly, tests pass - ruff doesn't recognize this pattern
 **Decision:** Safe to ignore - will be fixed when we add proper .pyi stub files (Phase 10+)
 
-### Test Script Imports (E402) - 2 instances
+### Test Script Imports (E402) - 1 instance
 **Issue:** Module imports after sys.path manipulation in test scripts
-**Locations:** scripts/smoke_test.py, tests/generate_golden_fixtures.py
+**Locations:** scripts/smoke_test.py
 **Status:** Expected and necessary - imports must come after sys.path setup
 **Decision:** Safe to ignore - test/script pattern
 

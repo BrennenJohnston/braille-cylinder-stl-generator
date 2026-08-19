@@ -402,9 +402,9 @@ def generate_ds_golden_fixtures():
     """
     Regenerate the double-sided golden STL pair and its metadata.
 
-    Run manually (python -m tests.test_golden from the repo root), like
-    tests/generate_golden_fixtures.py — never from the test suite. Existing
-    single-sided fixtures are not touched.
+    Run manually (python -m tests.test_golden from the repo root) — never from
+    the test suite. This is the only supported way to regenerate the pair.
+    Existing single-sided fixtures are not touched.
     """
     import importlib.metadata
 
