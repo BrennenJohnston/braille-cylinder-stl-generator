@@ -2974,6 +2974,15 @@
     <!-- Skip Navigation Link for Keyboard Users -->
     <a href="#main-content" class="skip-link" tabindex="0">Skip to main content</a>
 
+    <!-- Announcement channel for the warning boxes further down. Each of those
+         is hidden between messages, and a hidden element is not in the
+         accessibility tree at all, so revealing one with its text already
+         inside reads as an insertion rather than a change and is never
+         announced. This region is never hidden and never moves, so writing to
+         it is always a change. It carries no wording of its own - it repeats
+         the text of whichever box just appeared. -->
+    <div id="a11y-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+
 
 
     <main class="main-layout" id="main-content">
@@ -3237,7 +3246,11 @@
                                     <!-- Live back-text overflow warning. Same job, same shape, and the same
                                          run-id guard as the front's #auto-overflow-warning; both ids are
                                          load-bearing for computeBackOverflow(). -->
-                                    <div id="ds-back-overflow-warning" class="grade-note inline-warning" role="status" aria-live="polite"
+                                    <!-- Announced through #a11y-status, not from here: this box is
+                                         hidden between messages, so a live region on it cannot fire
+                                         on first appearance. Leaving one here as well would let some
+                                         screen readers speak later updates twice. -->
+                                    <div id="ds-back-overflow-warning" class="grade-note inline-warning"
                                          style="margin-top: 0.6em;" hidden>
                                         <strong>Warning:</strong> <span id="ds-back-overflow-message"></span>
                                     </div>
@@ -3246,7 +3259,8 @@
                             <!-- Live same-surface crowding warning (Phase 06 hook, moved here
                                  from after the Row Indicator Style fieldset; the ids and ARIA
                                  attributes are load-bearing for checkDoubleSidedGap()). -->
-                            <div id="ds-gap-warning" class="grade-note inline-warning" role="status" aria-live="polite"
+                            <!-- Announced through #a11y-status - see that region's note. -->
+                            <div id="ds-gap-warning" class="grade-note inline-warning"
                                  style="margin-top: 0.6em; display: none;">
                                 <strong>Warning:</strong> <span id="ds-gap-message"></span>
                             </div>
@@ -3293,14 +3307,18 @@
                                  its aria-describedby, so the lock reason travels with the
                                  disabled option. -->
                             <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
-                            <div id="indicator-mode-lock-note" class="grade-note" role="status" aria-live="polite"
+                            <!-- Announced through #a11y-status. Still referenced by the disabled
+                                 "Visual markers" radio's aria-describedby, which reads this text
+                                 whether or not the box is visible - that wiring is unaffected. -->
+                            <div id="indicator-mode-lock-note" class="grade-note"
                                  style="margin-top: 6px; font-size: 0.85em; display: none;">
                                 <strong>Locked:</strong> Double-Sided Card is on, so the Row Indicator Style stays on the tactile seam arrow — both cylinders of a double-sided pair need it. Turn the beta off to choose visual markers.
                             </div>
                             <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
                                 <strong>Tactile</strong> lets a blind user find the alignment point and tell which end is up by touch: the arrow is one continuous wedge, nothing like a braille dot, and raised-versus-recessed tells you which cylinder you are holding. It also frees the marker cells for text. Both plates of a pair must use the same style. Its dimensions live in the <strong>Tactile Indicator Dimensions</strong> submenu of Expert Mode.
                             </div>
-                            <div id="tactile-gap-warning" class="grade-note inline-warning" role="status" aria-live="polite"
+                            <!-- Announced through #a11y-status - see that region's note. -->
+                            <div id="tactile-gap-warning" class="grade-note inline-warning"
                                  style="margin-top: 0.6em; display: none;">
                                 <strong>Warning:</strong> <span id="tactile-gap-message"></span>
                             </div>
@@ -5711,6 +5729,25 @@
         // Visual mode: the gap must hold one cell's dot footprint, so the last
         // cell of a row cannot collide with the first across the seam.
         // Warns only; generation is not blocked.
+        // Speaks a warning box's text through #a11y-status, which - unlike the
+        // boxes themselves - is never hidden and so is always in the
+        // accessibility tree. `source` is the id of the box the message belongs
+        // to: a box only clears the channel if its own message is still the one
+        // showing, otherwise hiding one warning would silently wipe another's.
+        // Writing an unchanged string is not a mutation and announces nothing,
+        // which is what keeps the per-keystroke recomputes from chattering.
+        function announceStatus(source, message) {
+            const region = document.getElementById('a11y-status');
+            if (!region) return;
+            if (message) {
+                region.dataset.source = source;
+                region.textContent = message;
+            } else if (region.dataset.source === source) {
+                region.dataset.source = '';
+                region.textContent = '';
+            }
+        }
+
         function checkPhysicalFit() {
             const warningDiv = document.getElementById('tactile-gap-warning');
             const warningMsg = document.getElementById('tactile-gap-message');
@@ -5719,6 +5756,7 @@
             const shapeType = document.querySelector('input[name="shape_type"]:checked')?.value || 'cylinder';
             if (shapeType !== 'cylinder') {
                 warningDiv.style.display = 'none';
+                announceStatus('tactile-gap-warning', '');
                 return;
             }
 
@@ -5736,6 +5774,8 @@
                         `but this layout leaves ${seamGap.toFixed(1)} mm. Reduce the number of braille cells, ` +
                         'increase the cylinder diameter, or narrow the indicator in Expert Mode.';
                     warningDiv.style.display = 'block';
+                    announceStatus('tactile-gap-warning',
+                        warningDiv.textContent.replace(/\s+/g, ' ').trim());
                     return;
                 }
             } else {
@@ -5758,11 +5798,14 @@
                         'occupy, so the last cell of a row would collide with the first. ' +
                         'Reduce the number of braille cells or increase the cylinder diameter.';
                     warningDiv.style.display = 'block';
+                    announceStatus('tactile-gap-warning',
+                        warningDiv.textContent.replace(/\s+/g, ' ').trim());
                     return;
                 }
             }
 
             warningDiv.style.display = 'none';
+            announceStatus('tactile-gap-warning', '');
         }
 
         // Double-sided (interpoint) beta: printability thresholds for the ridge
@@ -5820,6 +5863,7 @@
             const toggle = document.getElementById('double_sided_enabled');
             if (!toggle || !toggle.checked) {
                 warningDiv.style.display = 'none';
+                announceStatus('ds-gap-warning', '');
                 return;
             }
 
@@ -5839,6 +5883,7 @@
 
             if (gap >= DS_SAME_SURFACE_GAP_RELIABLE_MM) {
                 warningDiv.style.display = 'none';
+                announceStatus('ds-gap-warning', '');
                 return;
             }
 
@@ -5856,6 +5901,8 @@
                     'double-sided dot or recess diameter, or check the interpoint offsets.';
             }
             warningDiv.style.display = 'block';
+            announceStatus('ds-gap-warning',
+                warningDiv.textContent.replace(/\s+/g, ' ').trim());
         }
 
         // BANA-compliant-ish auto wrapping for braille rows
@@ -6172,7 +6219,14 @@
                     : 'indicator-mode-visual-desc');
             }
             const lockNote = document.getElementById('indicator-mode-lock-note');
-            if (lockNote) lockNote.style.display = on ? 'block' : 'none';
+            if (lockNote) {
+                lockNote.style.display = on ? 'block' : 'none';
+                // Static text, shown once - so unlike the other boxes it never
+                // gets a second in-place write to fall back on, and without
+                // this it is silent every single time.
+                announceStatus('indicator-mode-lock-note',
+                    on ? lockNote.textContent.replace(/\s+/g, ' ').trim() : '');
+            }
         }
 
         document.getElementById('double_sided_enabled')?.addEventListener('change', () => {
@@ -6258,6 +6312,7 @@
             if (!warningDiv || !warningMsg) return;
             warningDiv.hidden = true;
             warningMsg.textContent = '';
+            announceStatus('ds-back-overflow-warning', '');
         }
 
         function computeBackOverflow() {
@@ -6319,6 +6374,8 @@
                 if (messages.length) {
                     warningMsg.textContent = messages.join(' ');
                     warningDiv.hidden = false;
+                    announceStatus('ds-back-overflow-warning',
+                        warningDiv.textContent.replace(/\s+/g, ' ').trim());
                 } else {
                     hideBackOverflow();
                 }

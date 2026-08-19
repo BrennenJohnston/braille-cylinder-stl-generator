@@ -1967,6 +1967,47 @@ element deleted outright** — layout with the beta off is unchanged, as require
 the byte-identical rule in `.clinerules/project-facts.md` §6b. No message wording
 changed; this is a timing fix only.
 
+**Fixed here — the four remaining beta-flow warning boxes.** An audit of every live
+region on the page found **8 of 10 absent from the accessibility tree at page load**;
+only `braille-unicode-live` (an `sr-only` region that is never hidden) was built
+correctly. `#pair-status` could be repaired in place because its whole content *is*
+the message, so `:empty` matches it. The other four cannot: each wraps a
+`<strong>Warning:</strong>` or, in the lock note's case, a full sentence of static
+text, so they are never empty and `:empty` never matches.
+
+Those four — `ds-back-overflow-warning`, `ds-gap-warning`,
+`indicator-mode-lock-note`, `tactile-gap-warning` — are instead announced through a
+**single shared `sr-only` mirror region, `#a11y-status`**, which is never hidden and
+never moves, so writing to it is always a change. `announceStatus(source, message)`
+takes the id of the owning box: a box only clears the channel when its own message is
+still the one showing, so hiding one warning cannot silently wipe another's. Writing
+an unchanged string is not a mutation and announces nothing, which is what stops the
+per-keystroke recomputes from chattering. Each announcement repeats the box's own
+`textContent`, so what is heard matches what is shown, "Warning:" included — the
+mirror authors no wording of its own.
+
+**`role="status"` and `aria-live="polite"` were removed from those four boxes.** This
+is a deliberate ARIA removal, and worth understanding rather than reverting: on a box
+that is hidden between messages those attributes can never fire on first appearance,
+and leaving them in place would let an assistive technology that *does* announce a
+newly-inserted live region speak the same warning twice — once from the box, once
+from the mirror. Everything else about the boxes is unchanged; in particular
+`#indicator-mode-lock-note` is still referenced by the disabled "Visual markers"
+radio's `aria-describedby`, which reads its text whether or not the box is visible,
+so that wiring is untouched.
+
+`#indicator-mode-lock-note` is the sharp case, and the reason this class of bug
+survives review: a box whose text updates repeatedly loses only its **first** message
+and works perfectly afterwards, but the lock note appears once with fixed text and
+was therefore silent **every single time**.
+
+Verified by driving the real UI, not by calling internals: the `role=status` node
+count holds at 6 across every write, and each of the four puts its own text on the
+channel — the lock note's "Locked: Double-Sided Card is on…" on toggling the beta,
+back-of-card overflow on over-long text, the same-surface gap warning on a squeezed
+lattice, and the tactile seam-gap warning on a reduced diameter — with the channel
+released again once the condition clears.
+
 **Outstanding, scheduled separately — `#error-message`.** The same defect affects
 the single-sided flow, where `#error-message` carries *every* progress notice,
 validation error and failure message. A blind user who overruns a line is shown
@@ -1976,10 +2017,15 @@ failure and it is app-wide, not beta-specific. The agreed fix is a separate,
 always-present `sr-only` mirror region that the code writes to alongside the visual
 box, leaving that box's styling and timing untouched — `#error-message` is
 `position: absolute` with its own background, border and shadow, so keeping it
-permanently in flow is not viable. Also outstanding: `#action-btn` changes its
-accessible name from "Generate STL file from entered text" to "Download generated
-STL file" with no announcement, so the control under the user's focus silently
-becomes a different control.
+permanently in flow is not viable. `#a11y-status` and `announceStatus()` already
+exist for this, so the scheduled work is wiring, not new machinery.
+
+Three more single-sided regions carry the identical defect and are scheduled with it:
+`auto-overflow-warning` (front-of-card overflow), `cylinder-overflow-warning` and
+`caps-warning`. Also outstanding: `#action-btn` changes its accessible name from
+"Generate STL file from entered text" to "Download generated STL file" with no
+announcement, so the control under the user's focus silently becomes a different
+control.
 
 ---
 
@@ -2613,6 +2659,7 @@ Low vision users benefit from enhanced depth perception:
 | 1.11 | 2026-08-17 | **Full ADA SOP executed against the beta flow.** Added Section 4.9 (button contrast tokens, the dark-theme fill-versus-boundary tension, the 44 px `#action-btn`, and the known remaining gaps). Rewrote the `--btn-primary-*` and `--btn-success-*` values in all three theme blocks of Section 1.2 and added four border tokens per theme: white labels were 2.28:1 on the old primary gradient and 2.54:1 on the old success fill, and neither Lighthouse nor axe-core could see it because a `background-image` defeats their sampling. `#action-btn` gained `min-height: 44px` (was 34 px on desktop). Validated after the change: W3C Nu 0 errors 0 warnings on the rendered beta-state DOM, Lighthouse accessibility 100/100 desktop and mobile, 48 of 48 contrast measurements passing across light/dark/high-contrast, keyboard walkthrough clean beta-on and beta-off, reflow clean at 320 px and at 75%/200% app font size on desktop |
 | 1.12 | 2026-08-18 | **Reflow and touch-target follow-up to the v1.11 audit, plus a user-facing rename.** Section 4.9 extended: the 320 px + 200% horizontal-scroll failure is fixed by releasing `flex-shrink: 0` on the two header toolbar groups and dropping `white-space: nowrap` from the theme label and button in the `max-width: 768px` block; `.font-size-controls .font-size-btn` gained a 44 × 44 px floor (scoped, not on the bare class); `.radio-option` gained `min-height: 44px`. Two newly found gaps recorded instead of fixed: the preview stepper buttons at 20 × 22 px, and the skip link's hardcoded `top: -40px` failing to hide a 102 px-tall link at 200% font. Separately, the Card Thickness control was renamed to **Print Layer Height** in user-facing text only — see CARD_THICKNESS_PRESET_SPECIFICATIONS.md v1.5. Validated after the change: W3C Nu 0 errors / 0 warnings, Lighthouse 100/100 desktop and mobile, 48 of 48 contrast measurements passing, keyboard walkthrough clean, all six viewport × font-size reflow combinations clean, ruff clean, 30 smoke passed, 90 e2e passed |
 | 1.13 | 2026-08-18 | **Live-region defect found by the NVDA walkthrough.** Added Section 4.10: a live region that is `display:none` when its text is written is inserted into the accessibility tree already holding that text, and an insertion is not a change, so nothing is announced. Measured with CDP `Accessibility.getFullAXTree` (`role=status` node count 4 at load, 5 after the first message). Fixed `#pair-status`, which silently swallowed the first of the three double-sided pair messages: the node now stays in the tree and `#pair-status:empty` clips it out of flow instead, with `.action-footer` measured identical (53.16 px) either way. Recorded `#error-message` (all single-sided progress, validation and failure messages, WCAG 4.1.3) and the unannounced `#action-btn` name change as outstanding, scheduled separately. Validated: W3C Nu 0 errors/0 warnings, Lighthouse accessibility 100/100 desktop and mobile |
+| 1.14 | 2026-08-18 | **Live-region fix extended to the whole double-sided beta flow.** Section 4.10 extended. An audit of every live region found 8 of 10 absent from the accessibility tree at page load. `#pair-status` took the `:empty` fix; the other four beta boxes (`ds-back-overflow-warning`, `ds-gap-warning`, `indicator-mode-lock-note`, `tactile-gap-warning`) are never empty - each wraps a `<strong>Warning:</strong>` or static text - so they are announced through a new shared always-present `sr-only` region `#a11y-status` via `announceStatus(source, message)`, which is source-scoped so one box clearing cannot wipe another's message. `role="status"`/`aria-live` removed from those four boxes to prevent double-speak; `aria-describedby` wiring on the lock note unaffected. Each announcement repeats the box's own textContent, so no new user-facing wording was authored. `#indicator-mode-lock-note` was silent every time, not just on first appearance. Verified by driving the real UI (role=status node count constant at 6). Remaining: `#error-message`, `auto-overflow-warning`, `cylinder-overflow-warning`, `caps-warning` and the `#action-btn` name change. Validated: W3C Nu 0 errors/0 warnings, Lighthouse accessibility 100/100 desktop and mobile, ruff clean, 119 tests passed |
 
 ---
 
