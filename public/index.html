@@ -5969,6 +5969,20 @@
             return Math.sqrt(bestSq);
         }
 
+        // How wide the bowl actually comes out, which is not its nominal
+        // diameter. Mirrors interpoint.printed_bowl_mouth_mm(): the two nominal
+        // numbers describe a spherical cap, but csg-worker-manifold.js centres
+        // that sphere ON the shell surface (radialOffset = cylRadius), so the
+        // cut is its whole lower half - 2 * sphere radius across. 1.345 mm for
+        // the 0.3 package's 1.3 x 0.5, 1.480 mm for the 0.4 package's 1.4 x 0.5.
+        // Used ONLY to decide which warning tail below applies; the gap this
+        // page reports stays nominal (see checkDoubleSidedGap).
+        function dsPrintedBowlMouth(bowlDiameter, bowlDepth) {
+            if (!(bowlDepth > 0)) return bowlDiameter;
+            const mouthRadius = bowlDiameter / 2;
+            return (mouthRadius * mouthRadius + bowlDepth * bowlDepth) / bowlDepth;
+        }
+
         // Double-sided footprints, keyed by the card-stock preset. Fixed by
         // decision - no dials (2026-08-16; keying added 2026-08-20): the
         // interpoint budget spends only the dot BASE diameter and the bowl
@@ -6058,6 +6072,20 @@
                 offsetX, offsetY, totalColumns, rows, dotSpacing, cellSpacing, lineSpacing);
             const gap = centerDistance - (dotDiameter + bowlDiameter) / 2;
 
+            // Two figures, on purpose (Brennen, FD-11b and 2026-08-21). `gap`
+            // is nominal and is the ONLY number quoted below, so this page, the
+            // generator's soft warning and the OpenSCAD port all report the
+            // same millimetres. `printedGap` measures the bowl's printed mouth,
+            // which is what app/validation.py's hard gate compares - so it, not
+            // the nominal figure, decides whether the user is told the ridge
+            // may come out thin or that generation will be blocked. Without
+            // this the box promised "thin or merged" on the 0.4 preset at
+            // offsets 1.16-1.18 and 1.32-1.34 mm and the request was then
+            // rejected. The visibility test above stays nominal: on the printed
+            // figure the 0.3 package (0.4953) would warn about itself.
+            const printedGap = centerDistance
+                - (dotDiameter + dsPrintedBowlMouth(bowlDiameter, dsFootprints.ds_bowl_depth)) / 2;
+
             if (gap >= DS_SAME_SURFACE_GAP_RELIABLE_MM) {
                 warningDiv.style.display = 'none';
                 announceDsGap('');
@@ -6068,7 +6096,7 @@
             const shared = `A ${dotDiameter.toFixed(2)} mm dot next to a ${bowlDiameter.toFixed(2)} mm recess at the ` +
                 `${offsetX.toFixed(2)} / ${offsetY.toFixed(2)} mm interpoint offset leaves ${gap.toFixed(3)} mm of ` +
                 'material between them';
-            if (gap < DS_SAME_SURFACE_GAP_FLOOR_MM) {
+            if (printedGap < DS_SAME_SURFACE_GAP_FLOOR_MM) {
                 warningMsg.textContent = `${shared} — less than the ${DS_SAME_SURFACE_GAP_FLOOR_MM.toFixed(2)} mm a ` +
                     '0.4 mm nozzle can print, so generation will be blocked. Reduce the double-sided dot or recess ' +
                     'diameter, or check the interpoint offsets.';

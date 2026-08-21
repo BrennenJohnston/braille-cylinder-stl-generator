@@ -551,6 +551,23 @@ test.describe('Double-Sided Card beta', () => {
     await expect(warning).toBeVisible();
     await expect(message).toContainText('0.326 mm');
     await expect(message).toContainText('generation will be blocked');
+
+    // Q2 at both offsets 1.17. The QUOTED gap is the nominal 0.355 mm, which
+    // sits in the marginal band - but the printed ridge is 0.315 mm and the
+    // backend rejects, so the box must say blocked (Brennen, 2026-08-21).
+    // Before that decision this row read "may come out thin or merged" and the
+    // user was then refused at generate time.
+    await page.locator('#interpoint_offset_x').fill('1.17');
+    await page.locator('#interpoint_offset_y').fill('1.17');
+    await expect(message).toContainText('0.355 mm');
+    await expect(message).toContainText('generation will be blocked');
+
+    // And 1.19, one step further in: printed 0.343 mm clears the floor, so the
+    // milder tail is correct there. The two rows bracket the band edge.
+    await page.locator('#interpoint_offset_x').fill('1.19');
+    await page.locator('#interpoint_offset_y').fill('1.19');
+    await expect(message).toContainText('0.383 mm');
+    await expect(message).toContainText('may come out thin or merged');
   });
 
   test('the backend rejects out-of-range double-sided payloads with HTTP 400', async ({ request }) => {

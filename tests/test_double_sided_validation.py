@@ -402,8 +402,8 @@ def test_only_the_hard_gate_measures_the_printed_mouth():
 
     One formula would be tidier and would silently undo Brennen's decision, so
     the split is asserted at the source: the hard gate converts to the printed
-    mouth, and the two soft warnings — the generator's and the browser's — do
-    not, which is what keeps all three generators quoting one number.
+    mouth, and the generator's soft warning does not, which is what keeps all
+    three generators quoting one number.
     """
     gate = _python_function_source('app/validation.py', 'validate_double_sided_settings')
     # The call, not the details key of the same name: the key alone would keep
@@ -414,9 +414,27 @@ def test_only_the_hard_gate_measures_the_printed_mouth():
     assert 'printed_bowl_mouth_mm' not in warning
     assert 'ds_bowl_depth' not in warning  # the nominal diameter is the only bowl figure it reads
 
+
+def test_the_browser_quotes_the_nominal_gap_but_decides_on_the_printed_one():
+    """
+    The browser's half of the split, which is a THREE-way division since 2026-08-21.
+
+    Brennen's decision that day: the live warning keeps REPORTING the nominal
+    gap — so this page, the generator and the OpenSCAD port quote one number —
+    but chooses its blocked-vs-marginal tail on the printed ridge, which is what
+    the hard gate actually compares. Visibility stays nominal too: on the
+    printed figure the 0.3 package (0.4953 mm) would warn about itself.
+    """
     browser = _js_function_source('public/index.html', 'function checkDoubleSidedGap() {', 8)
     assert 'const gap = centerDistance - (dotDiameter + bowlDiameter) / 2;' in browser
-    assert 'ds_bowl_depth' not in browser  # no hemisphere conversion in the live warning
+    assert '${gap.toFixed(3)} mm of ' in browser  # the quoted figure is still nominal
+    assert 'dsPrintedBowlMouth(bowlDiameter, dsFootprints.ds_bowl_depth)' in browser
+    assert 'if (printedGap < DS_SAME_SURFACE_GAP_FLOOR_MM) {' in browser  # the tail choice
+    assert 'if (gap >= DS_SAME_SURFACE_GAP_RELIABLE_MM) {' in browser  # visibility stays nominal
+
+    helper = _js_function_source('public/index.html', 'function dsPrintedBowlMouth(bowlDiameter, bowlDepth) {', 8)
+    assert 'return (mouthRadius * mouthRadius + bowlDepth * bowlDepth) / bowlDepth;' in helper
+    assert 'if (!(bowlDepth > 0)) return bowlDiameter;' in helper  # same fallback as the gate
 
 
 # -----------------------------------------------------------------------------

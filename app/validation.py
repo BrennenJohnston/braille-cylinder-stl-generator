@@ -286,10 +286,9 @@ def validate_double_sided_settings(settings_data: dict) -> bool:
        and both of those stay on the NOMINAL figure so all three generators
        report one number.
 
-    User-facing message wording signed off by Brennen (2026-08-16); reword
-    only with his sign-off. The gate-4 message is the one exception - it was
-    rewritten for the printed-mouth switch and carries a REVIEW-BRENNEN marker
-    until he signs it off.
+    User-facing message wording signed off by Brennen (2026-08-16), and gate
+    4's rewrite for the printed-mouth switch signed off 2026-08-21; reword
+    only with his sign-off.
 
     Args:
         settings_data: Settings dictionary from the request (flat CardSettings
@@ -405,7 +404,7 @@ def validate_double_sided_settings(settings_data: dict) -> bool:
     printed_gap = measure(printed_mouth)
     nominal_gap = measure(bowl_diameter)
 
-    # REVIEW-BRENNEN (PHASE 13b, 2026-08-21): new wording, awaiting sign-off.
+    # Wording SIGNED OFF by Brennen 2026-08-21 - reword only with his sign-off.
     # The gate moved onto the printed mouth (FD-11b), so quoting the nominal
     # bowl diameter beside a printed ridge would no longer add up for a user
     # checking the arithmetic; both numbers below are now printed figures.
