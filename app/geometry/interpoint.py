@@ -363,6 +363,35 @@ def lattice_min_center_distance(
     return math.sqrt(best_sq)
 
 
+def printed_bowl_mouth_mm(bowl_diameter: float, bowl_depth: float) -> float:
+    """
+    How wide the bowl actually comes out, which is not its nominal diameter.
+
+    `bowl_diameter` and `bowl_depth` describe a spherical cap — a mouth that
+    wide, cut that deep — and the sphere they imply has radius
+    (a^2 + h^2) / (2h) for mouth radius a and depth h. But the shipped Manifold
+    worker centres that sphere ON the shell surface
+    (static/workers/csg-worker-manifold.js, `radialOffset = cylRadius`), so what
+    gets cut is the whole lower half of it: a hemisphere `sphere_radius` deep
+    and 2 * `sphere_radius` across. The two nominal numbers are shape inputs to
+    the sphere and nothing more — neither is a printed dimension.
+
+    At the 0.3 package's 1.3 x 0.5 that is a 1.345 mm mouth; at the 0.4
+    package's 1.4 x 0.5, 1.480 mm. Note the sphere radius is MINIMISED at
+    bowl_depth = bowl_diameter / 2, so over part of the range a deeper nominal
+    bowl prints SHALLOWER and narrower.
+
+    The same convention lives in two places this function cannot reach: the
+    Manifold worker named above (JavaScript) and `_ds_bowl_cutter` in
+    tests/test_golden.py, which models the worker's mesh rather than calling
+    into app code. Change one, check all three.
+    """
+    if bowl_depth <= 0:
+        raise ValueError('bowl_depth must be > 0')
+    mouth_radius = bowl_diameter / 2.0
+    return (mouth_radius * mouth_radius + bowl_depth * bowl_depth) / bowl_depth
+
+
 def same_surface_min_gap(
     dot_dia: float,
     recess_dia: float,
@@ -383,6 +412,17 @@ def same_surface_min_gap(
 
     Compare against SAME_SURFACE_GAP_RELIABLE_MM (0.50) and
     SAME_SURFACE_GAP_FLOOR_MM (0.34).
+
+    `recess_dia` takes either bowl figure, and which one a caller passes is a
+    decision, not a detail (Brennen, 2026-08-20). The hard printability gate in
+    app/validation.py passes `printed_bowl_mouth_mm(...)`, because that is the
+    ridge a printer has to hold. The two soft crowding warnings — in
+    app/geometry_spec.py and public/index.html — pass the NOMINAL diameter, so
+    the browser, the generator and the OpenSCAD port all report one number to
+    the user and no warning threshold had to be re-decided. Feeding the printed
+    mouth to the warnings would make the 0.3 package warn about itself
+    (0.4953 mm against the 0.50 mm reliable line) even though it embosses
+    clean.
     """
     center_distance = lattice_min_center_distance(offset_x, offset_z, cols, rows, dot_pitch, cell_pitch, line_pitch)
     return center_distance - (dot_dia + recess_dia) / 2.0
@@ -505,7 +545,9 @@ def paired_nip_clearance(
     surface — the card travels through that gap. They counter-rotate at matched
     surface speed, so as A's dot passes the nip at angle -pi/2 + tau, B's bowl
     passes it at +pi/2 - tau. The bowl is modelled the way the shipped Manifold
-    worker cuts it: a sphere of radius (a^2 + h^2) / 2h centred ON B's surface.
+    worker cuts it — the hemisphere `printed_bowl_mouth_mm` describes, centred
+    ON B's surface — so the two nominal numbers are its shape inputs, not the
+    hole it leaves.
 
     Returns:
         NipResult(min_clearance_mm, max_dip_mm, tau_at_min_rad). Clearance is
@@ -519,8 +561,7 @@ def paired_nip_clearance(
         raise ValueError('bowl_depth must be > 0')
 
     tangential, height = _profile_outline(profile)
-    mouth_radius = bowl_diameter / 2.0
-    sphere_radius = (mouth_radius * mouth_radius + bowl_depth * bowl_depth) / (2.0 * bowl_depth)
+    sphere_radius = printed_bowl_mouth_mm(bowl_diameter, bowl_depth) / 2.0
     centre_a = np.array([0.0, radius + gap / 2.0])
     centre_b = np.array([0.0, -(radius + gap / 2.0)])
 

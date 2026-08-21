@@ -275,12 +275,21 @@ def validate_double_sided_settings(settings_data: dict) -> bool:
     4. The same-surface gap - material between a raised dot and the nearest
        back-side recess sharing one cylinder surface - must clear
        SAME_SURFACE_GAP_FLOOR_MM (0.34 mm, what a 0.4 mm nozzle can lay down).
-       The marginal band up to SAME_SURFACE_GAP_RELIABLE_MM (0.50 mm) is NOT
-       rejected here: geometry_spec.py returns it as a soft warning in the
-       spec's warnings array and the UI shows it live; this function only logs.
+       Measured on the recess's PRINTED mouth, not its nominal diameter
+       (Brennen, FD-11b 2026-08-20): the worker cuts the bowl as a hemisphere,
+       so it comes out wider than nominal and the nominal figure overstates the
+       ridge by 0.023 mm for the 0.3 package and 0.040 mm for the 0.4 one -
+       exactly the band where this gate used to pass a ridge the printer cannot
+       hold. The marginal band up to SAME_SURFACE_GAP_RELIABLE_MM (0.50 mm) is
+       NOT rejected here: geometry_spec.py returns it as a soft warning in the
+       spec's warnings array and the UI shows it live; this function only logs,
+       and both of those stay on the NOMINAL figure so all three generators
+       report one number.
 
     User-facing message wording signed off by Brennen (2026-08-16); reword
-    only with his sign-off.
+    only with his sign-off. The gate-4 message is the one exception - it was
+    rewritten for the printed-mouth switch and carries a REVIEW-BRENNEN marker
+    until he signs it off.
 
     Args:
         settings_data: Settings dictionary from the request (flat CardSettings
@@ -366,34 +375,70 @@ def validate_double_sided_settings(settings_data: dict) -> bool:
         settings_data, 'line_spacing', 'spacing.line_spacing_mm', interpoint.LINE_PITCH_MM
     )
 
-    same_surface_gap = interpoint.same_surface_min_gap(
-        dot_diameter,
-        bowl_diameter,
-        offsets['interpoint_offset_x'],
-        offsets['interpoint_offset_y'],
-        grid_columns,
-        grid_rows,
-        dot_spacing,
-        cell_spacing,
-        line_spacing,
-    )
-    if same_surface_gap < interpoint.SAME_SURFACE_GAP_FLOOR_MM:
+    def measure(recess_diameter: float) -> float:
+        return interpoint.same_surface_min_gap(
+            dot_diameter,
+            recess_diameter,
+            offsets['interpoint_offset_x'],
+            offsets['interpoint_offset_y'],
+            grid_columns,
+            grid_rows,
+            dot_spacing,
+            cell_spacing,
+            line_spacing,
+        )
+
+    bowl_depth = footprints['ds_bowl_depth']
+    measured_on_the_print = bowl_depth > 0
+    if measured_on_the_print:
+        printed_mouth = interpoint.printed_bowl_mouth_mm(bowl_diameter, bowl_depth)
+    else:
+        # The hemisphere conversion needs a depth to build a sphere from, and
+        # the schema lets ds_bowl_depth_mm be 0.0. Measure the nominal instead,
+        # which is what this gate did before the printed-ridge switch, and say
+        # so rather than pretending the number means what it usually means.
+        printed_mouth = bowl_diameter
+        logger.warning(
+            f'Double-sided bowl depth {bowl_depth} mm is not positive, so the printed mouth is undefined; '
+            'measuring the nominal recess diameter for the printability floor instead.'
+        )
+    printed_gap = measure(printed_mouth)
+    nominal_gap = measure(bowl_diameter)
+
+    # REVIEW-BRENNEN (PHASE 13b, 2026-08-21): new wording, awaiting sign-off.
+    # The gate moved onto the printed mouth (FD-11b), so quoting the nominal
+    # bowl diameter beside a printed ridge would no longer add up for a user
+    # checking the arithmetic; both numbers below are now printed figures.
+    if printed_gap < interpoint.SAME_SURFACE_GAP_FLOOR_MM:
+        recess_clause = (
+            f'the {bowl_diameter:.2f} mm recess is cut as a hemisphere, so it prints {printed_mouth:.2f} mm across'
+            if measured_on_the_print
+            else f'the recess is {bowl_diameter:.2f} mm across'
+        )
         raise ValidationError(
-            f'Double-sided crowding: a {dot_diameter:.2f} mm dot next to a {bowl_diameter:.2f} mm recess at the '
+            f'Double-sided crowding: {recess_clause}, and beside a {dot_diameter:.2f} mm dot at the '
             f'{offsets["interpoint_offset_x"]:.2f} / {offsets["interpoint_offset_y"]:.2f} mm interpoint offset '
-            f'leaves {same_surface_gap:.3f} mm of material between them — less than the '
+            f'that leaves {printed_gap:.3f} mm of material between them — less than the '
             f'{interpoint.SAME_SURFACE_GAP_FLOOR_MM:.2f} mm a 0.4 mm nozzle can lay down, so the ridge between '
-            'them would not print. Reduce the double-sided dot or recess diameter, or check the interpoint offsets.',
+            f'them would not print. Clearance is widest with both interpoint offsets at '
+            f'{interpoint.INTERPOINT_OFFSET_X_MM} mm and narrows toward either end of the range, so move them '
+            f'back toward {interpoint.INTERPOINT_OFFSET_X_MM} mm — or use a smaller double-sided dot or recess '
+            '(the 0.3 mm card stock preset pairs the same dot with a smaller recess).',
             {
-                'gap_mm': round(same_surface_gap, 3),
+                'gap_mm': round(printed_gap, 3),
                 'floor_mm': interpoint.SAME_SURFACE_GAP_FLOOR_MM,
                 'dot_diameter_mm': dot_diameter,
                 'bowl_diameter_mm': bowl_diameter,
+                'printed_bowl_mouth_mm': round(printed_mouth, 3),
+                'nominal_gap_mm': round(nominal_gap, 3),
             },
         )
-    if same_surface_gap < interpoint.SAME_SURFACE_GAP_RELIABLE_MM:
+    # Nominal on purpose: this mirrors the soft warning in app/geometry_spec.py,
+    # and FD-11(b) kept both warnings on the nominal figure. See
+    # interpoint.same_surface_min_gap for why.
+    if nominal_gap < interpoint.SAME_SURFACE_GAP_RELIABLE_MM:
         logger.warning(
-            f'Double-sided same-surface gap {same_surface_gap:.3f} mm is below the reliable '
+            f'Double-sided same-surface gap {nominal_gap:.3f} mm is below the reliable '
             f'{interpoint.SAME_SURFACE_GAP_RELIABLE_MM:.2f} mm; accepting — geometry_spec returns the soft warning.'
         )
 

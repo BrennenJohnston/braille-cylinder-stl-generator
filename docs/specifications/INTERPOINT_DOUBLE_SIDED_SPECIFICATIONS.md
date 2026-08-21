@@ -156,7 +156,26 @@ the way in.
 **Offset range rationale (1.15–1.35):** the same-surface gap (§5, gate 4) loses roughly
 0.18 mm for every 0.125 mm of offset error; below an offset of about 1.125 mm the Option B
 gap crosses the 0.34 mm printability floor. The range brackets the published 1.25 value
-with room to tune against a real print without ever entering unprintable territory.
+with room to tune against a real print.
+
+Clearance **peaks at 1.25 mm and falls off symmetrically** — 1.15 and 1.35 give the
+identical centre distance — so both ends of the range fail together, and the fix for a
+crowding rejection is always to move *back toward* 1.25 mm, never simply to raise or
+lower. Since the gate moved onto the printed ridge (v1.6, below) not every value in the
+range renders on every package. Measured 2026-08-21, sweeping both offsets in 0.01 mm
+steps (441 combinations per package) against the 0.34 mm floor:
+
+| Package | Combinations accepted | Band with both offsets moved together | Worst ridge in range |
+|---|---|---|---|
+| 0.3 preset (Option B) | 441 of 441 | the whole 1.15–1.35 | 0.354 mm |
+| 0.4 preset (Q2, shipped default) | 297 of 441 | **1.19–1.31 mm** | 0.286 mm |
+
+The **range itself did not narrow** (FD-11c, 2026-08-20): 1.15–1.35 stays in
+`settings.schema.json`, in `app/validation.py`'s gate 2, and on the OpenSCAD slider,
+because the 0.3 package legitimately uses the whole span. What changed is that gate 4
+now rejects 132 of the 0.4 package's combinations that the nominal figure used to pass —
+the tightest being 1.16/1.16, where 0.3405 mm nominal cleared the floor by 0.0005 mm but
+the printed ridge is 0.3005 mm.
 
 **Footprint rationale (two fixed packages keyed to the card-stock preset — Option B
 signed off 2026-08-16; the 0.4 package and the keying decided 2026-08-20):** front and
@@ -165,15 +184,15 @@ single-sided mode. At the 1.25/1.25 offset the closest front-to-back centre dist
 1.76777 mm; material left between a dot and its neighbouring recess = 1.76777 −
 (dot Ø + bowl mouth)/2. Each package has two gap figures because the worker cuts the
 bowl as a hemisphere whose mouth is wider than the nominal diameter (§6.4): the
-*nominal* figure is what the warnings compute, the *printed* figure is the ridge on
-the physical part.
+*nominal* figure is what the two warnings compute, the *printed* figure is the ridge on
+the physical part and, since 2026-08-21, what the hard gate measures (§5, gate 4).
 
 | Footprints | Gap (nominal) | Gap (printed) | Verdict |
 |---|---|---|---|
-| 0.3 preset — Option B: dot Ø1.2 × 0.8 tall + bowl Ø1.3 (schema default) | **+0.518 mm** | +0.495 mm | Embossed 0.3 mm stock cleanly (two rounds, 2026-08-17) |
+| 0.3 preset — Option B: dot Ø1.2 × 0.8 tall + bowl Ø1.3 (schema default; prints Ø1.345) | **+0.518 mm** | +0.495 mm | Embossed 0.3 mm stock cleanly (two rounds, 2026-08-17) |
 | 0.4 preset — Q2: dot Ø1.2 × 1.0 tall (base 0.5 + dome Ø1.0 × 0.5) + bowl Ø1.4 (prints Ø1.48 × 0.74) | +0.468 mm | +0.428 mm | Only package that embossed 0.4 mm stock cleanly (print matrix 2026-08-20); printed ridge measured clean; trips the live warning by design |
-| Option A: dot Ø1.5 + bowl Ø1.3 (documented history) | +0.368 mm | — | Fallback superseded by the keyed 0.4 package |
-| Single-sided sizes: dot Ø1.5 + bowl Ø1.8 | +0.118 mm | — | Rejected — below the 0.34 mm a 0.4 mm nozzle can print |
+| Option A: dot Ø1.5 + bowl Ø1.3 (documented history) | +0.368 mm | +0.345 mm | Fallback superseded by the keyed 0.4 package |
+| Single-sided sizes: dot Ø1.5 + bowl Ø1.8 (prints Ø2.12) | +0.118 mm | **−0.042 mm** | Rejected — the printed footprints overlap outright; the nominal figure read this as 0.118 mm of material |
 
 One footprint cannot serve both stocks — the print matrix showed the Q2 package tears
 0.35 mm card while Option B under-forms 0.4 mm card, the same fact that motivates the
@@ -238,8 +257,10 @@ HTTP 400 with no backend change. **Every gate is skipped when `double_sided_enab
 0 / absent / empty**, proven by tests that feed a config failing all gates with the flag
 off.
 
-The four hard gates, with their signed-off messages (wording signed off by Brennen
-2026-08-16 — reword only with his sign-off; `<...>` marks interpolated values):
+The four hard gates, with their messages (wording signed off by Brennen 2026-08-16 —
+reword only with his sign-off; `<...>` marks interpolated values). **Gate 4's message is
+the one exception:** it was rewritten on 2026-08-21 when the gate moved onto the printed
+mouth, and is awaiting sign-off.
 
 1. **Tactile lock.** `indicator_mode` must be `'tactile'` (the absent-key default
    `'visual'` also rejects):
@@ -255,18 +276,44 @@ The four hard gates, with their signed-off messages (wording signed off by Brenn
    > "Setting '`<double_sided.ds_* schema name>`' must be between `<min>` and `<max>` mm;
    > received `<value>`."
 4. **Same-surface gap floor.** `interpoint.same_surface_min_gap()` with the active
-   footprints, offsets, and grid must clear 0.34 mm:
-   > "Double-sided crowding: a `<dot>` mm dot next to a `<bowl>` mm recess at the
-   > `<x>` / `<y>` mm interpoint offset leaves `<gap>` mm of material between them — less
-   > than the 0.34 mm a 0.4 mm nozzle can lay down, so the ridge between them would not
-   > print. Reduce the double-sided dot or recess diameter, or check the interpoint
-   > offsets."
-   (The gap is quoted to three decimals; the single-sided footprints 1.5 + 1.8 produce
-   "0.118" and reject.)
+   footprints, offsets, and grid must clear 0.34 mm — measured on the recess's **printed
+   mouth**, `interpoint.printed_bowl_mouth_mm(bowl_diameter, bowl_depth)`, not its
+   nominal diameter (below). Message wording rewritten 2026-08-21 and **awaiting
+   Brennen's sign-off** (marked `REVIEW-BRENNEN` in `app/validation.py`):
+   > "Double-sided crowding: the `<bowl>` mm recess is cut as a hemisphere, so it prints
+   > `<mouth>` mm across, and beside a `<dot>` mm dot at the `<x>` / `<y>` mm interpoint
+   > offset that leaves `<gap>` mm of material between them — less than the 0.34 mm a
+   > 0.4 mm nozzle can lay down, so the ridge between them would not print. Clearance is
+   > widest with both interpoint offsets at 1.25 mm and narrows toward either end of the
+   > range, so move them back toward 1.25 mm — or use a smaller double-sided dot or
+   > recess (the 0.3 mm card stock preset pairs the same dot with a smaller recess)."
 
-**The marginal band (0.34–0.50 mm) is NOT rejected.** Validation only logs it; the
-user-facing channels are the `geometry_spec` soft warning (§6.3) and the live UI region
-(§7.3), both quoting the same numbers.
+   (The gap is quoted to three decimals; the single-sided footprints 1.5 + 1.8 now
+   produce "−0.042" against a printed mouth of "2.12" and reject, where the nominal
+   figure read "0.118".) The `details` dict carries `gap_mm` (the printed ridge the gate
+   compared), `floor_mm`, `dot_diameter_mm`, `bowl_diameter_mm` (still nominal — it is
+   the user's input), and since 2026-08-21 `printed_bowl_mouth_mm` and `nominal_gap_mm`,
+   so nothing the old message reported was lost. `details` is internal: `backend.py`
+   returns only the message text.
+
+   **Why printed here and nominal in the warnings (FD-11b, Brennen 2026-08-20).** The
+   assert is what actually stops an unprintable export, so it measures what actually
+   prints; the nominal figure overstates the ridge by 0.023 mm on the 0.3 package and
+   0.040 mm on the 0.4 one, and that band is exactly where this gate used to pass a ridge
+   the printer cannot hold. Switching the two soft warnings as well would have forced
+   `SAME_SURFACE_GAP_RELIABLE_MM` to be re-decided, because at the 0.50 mm line the
+   printed figure makes the **0.3 package warn about itself** (0.4953 mm) despite its
+   embossing clean on 0.3 mm stock. Leaving them nominal also keeps the browser, the
+   generator and the OpenSCAD port quoting one number. A test asserts the split at the
+   source in both directions, so consolidating onto one formula fails the suite.
+
+   **Non-positive `ds_bowl_depth`.** `ds_bowl_depth_mm` is documented 0.0–5.0, and a
+   0 mm depth gives no sphere to convert. The gate then measures the nominal diameter —
+   what it did before 2026-08-21 — and logs that it did. See §9.
+
+**The marginal band (0.34–0.50 mm nominal) is NOT rejected.** Validation only logs it,
+on the nominal figure; the user-facing channels are the `geometry_spec` soft warning
+(§6.3) and the live UI region (§7.3), both quoting the same nominal numbers.
 
 Related, in `backend.py`: when a request carries `back_lines`, it is validated with
 `validate_lines` + `validate_braille_lines(back_lines, 'positive')` +
@@ -471,6 +518,14 @@ Reference numbers (asserted by the e2e suite): 0.4 preset at offsets 1.25/1.25 �
 offset x 1.15 → "0.449 mm" marginal; both offsets 1.15 → "0.376 mm"; 0.4 preset at
 both 1.15 → "0.326 mm" blocked.
 
+**This warning computes the NOMINAL gap and keeps doing so** (FD-11b, §5 gate 4), which
+is what keeps its numbers identical to the generator's warning and the OpenSCAD port's.
+The consequence is that its *"generation will be blocked"* tail no longer predicts
+blocking exactly: on the 0.4 preset with both offsets at 1.16, 1.17, 1.18, 1.32, 1.33 or
+1.34 mm the box shows the milder "thin or merged" tail (nominal 0.34–0.37 mm) while the
+gate rejects the request (printed 0.30–0.33 mm). At 1.15 and 1.35 the box already says
+blocked. The OpenSCAD port has the same split by design; see §9.
+
 ### 7.4 Back-text wrapping, live warning, and error messages (fail closed)
 
 Since 2026-08-17 the Back of Card text has the same treatment as the front's Auto
@@ -605,7 +660,11 @@ Anything touching this feature must keep these green:
 4. **Unit/validation suites** — `tests/test_interpoint_math.py` reproduces every research
    number exactly (1.76777, 0.518, 0.118, nip clearances);
    `tests/test_double_sided_validation.py` covers the four gates at both the function and
-   the HTTP level.
+   the HTTP level, and since 2026-08-21 also pins the printed-mouth switch: both shipped
+   packages still pass at 1.25/1.25, 1.16/1.16 is newly rejected on the 0.4 package but
+   still accepted on the 0.3 one, the 0.4 package's diagonal band edges at 1.19 (accept)
+   and 1.18 (reject), and a source-level guard that fails if the hard gate stops using
+   the printed mouth **or** if either soft warning starts using it.
 
 **Do not assert `is_watertight` on raised-arrow plates** (single-sided embossing plate
 and double-sided Cylinder A): at the default 10 mm arrow length on 10 mm line spacing,
@@ -634,6 +693,18 @@ pre-beta output — product behavior, not a regression. B plates (recess outline
   settings-level only.
 - **Worker bowl-depth drift** (§6.4) and the **arrow tangency pinch edges** (§8) are
   documented pre-existing behavior, not bugs introduced by this feature.
+- **The live UI warning under-predicts blocking in a narrow band** (§7.3) — a
+  consequence of FD-11b, shared with the OpenSCAD port, not a defect in either. On the
+  0.4 preset, six diagonal offsets (1.16–1.18 and 1.32–1.34 mm) show "may come out thin
+  or merged" and are then rejected at generate time. Open for Brennen: leave as is (one
+  number everywhere, at the cost of a surprising rejection), or give the browser the
+  printed figure for the *blocked/marginal* decision only while it keeps quoting the
+  nominal gap.
+- **A 0 mm `ds_bowl_depth` is schema-legal and means two different things** (§5, gate 4)
+  — report-only, and not reachable from the UI, which ships fixed footprints. The gate
+  falls back to the nominal diameter, while `csg-worker-manifold.js` substitutes its own
+  0.8 mm default (`params.bowl_depth > 0 ? params.bowl_depth : 0.8`) and cuts a bowl the
+  request never asked for. Nothing here validates that substitution away.
 - **Rotational sync** between the two cylinders must stay within about ±1.0° (§6.5) — a
   requirement on the mechanical assembly, outside this codebase.
 
@@ -703,6 +774,7 @@ and separated**. Full record: the research folder's `00_PROJECT_MEMORY.md`, FD-8
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-08-21 | 1.6 | **The hard printability gate now measures the recess's PRINTED mouth** (FD-11b, approved by Brennen 2026-08-20; the OpenSCAD port made the same switch in its Phase 12, so the two generators now agree on what is exportable). New `interpoint.printed_bowl_mouth_mm(bowl_diameter, bowl_depth)` replaces the sphere-radius expression that was inline in `paired_nip_clearance`; `app/validation.py` gate 4 feeds its result to the same `same_surface_min_gap()` rather than carrying a second formula. **The two soft warnings — `app/geometry_spec.py` and `checkDoubleSidedGap()` in `public/index.html` — deliberately stay on the NOMINAL figure**, and a test pins the split at the source in both directions. Neither threshold moved (floor 0.34, reliable 0.50) and neither did the 1.15–1.35 offset range. Measured consequence, swept in 0.01 mm steps: the 0.3 package keeps all 441 offset combinations, the 0.4 package keeps 297 and loses 132 the nominal figure used to pass; **both shipped defaults are unaffected** (printed 0.495 and 0.428 mm at 1.25/1.25). §3 gains the measured band table and the printed figures for Option A (0.345) and the single-sided sizes (−0.042); §5 gate 4 rewritten with the new message, the extended `details` dict, and the non-positive-depth fallback; §7.3 records that the live warning's "will be blocked" tail under-predicts in a six-value band; §9 gains that band and the 0 mm bowl-depth note. Gate 4's message is **awaiting Brennen's sign-off** (`REVIEW-BRENNEN` in `app/validation.py`). No geometry, footprint, or golden fixture changed. |
 | 2026-08-20 | 1.5 | **Footprints keyed to the card-stock preset** (research memory FD-8/FD-9): 0.3 preset → Option B (unchanged, still the schema/models defaults), 0.4 preset → the Q2 print-matrix winner (dot Ø1.2 × 1.0 mm tall, dome Ø1.0; bowl Ø1.4 nominal → printed Ø1.48 × 0.74). §3 rationale rewritten with both packages and nominal-vs-printed gap figures (Q2: 0.468 nominal / 0.428 printed, measured printing clean); §6.1 wire shape (footprints now numbers from `DS_FOOTPRINTS[preset]`); §6.4 bowl convention now authoritative and used by the regenerated goldens; §7.3 new reference numbers — the 0.4 preset shows the warning at defaults by design; §7.5 keying; §7.6 documents `announceDsGap` (the persistent warning announces only on change, fixing it talking over the back-overflow announcement); §8 anchors updated (16 e2e tests; goldens regenerated 2026-08-20 with the worker bowl convention, still Option B footprints); Overview/§9/§10 corrected — the 2026-08 physical pass was 0.3 mm stock only — and §10 gains the 2026-08-20 print-matrix record, the Q2 decision, and the 1.0 mm die-height housing ceiling. Wire payloads change only with the beta ON; toggle-off stays byte-identical. |
 | 2026-08-18 | 1.4 | **Section 7 corrected against the code** (web repo Phase 07 closeout, after Phase 05d/05e changed the announcement mechanism): §7.1, §7.2 and §7.3 no longer claim `role="status"`/`aria-live` on `#ds-back-overflow-warning`, `#indicator-mode-lock-note` and `#ds-gap-warning` — those attributes were removed from the markup because a box hidden between messages can never fire them. New §7.6 documents what replaced them: the always-present `#a11y-status` region, `announceStatus(source, message)` and its source scoping, the lock note's one-task deferral, and the overflow warning's hidden-to-shown gate. Also refreshed stale cross-reference versions: STL_EXPORT_AND_DOWNLOAD is at v1.8 and UI_INTERFACE_CORE at v1.16, not the v1.5 and v1.10 cited. Documentation only — no code, wire shape, or geometry changed by this edit. |
 | 2026-08-17 | 1.3 | **Placeholder corrected** (web repo Phase 04 closeout): `#back-text`'s placeholder said "Each line becomes one braille row", which stopped being true when v1.2 added BANA auto-wrap. Replaced with "Type the text for the back of the card here. It wraps across the rows automatically.", **signed off by Brennen on 2026-08-17**; §7.1 updated. This closes the last carried-over wording item from Phase 02. No code behaviour, wire shape, or geometry changed. |

@@ -582,7 +582,10 @@ test.describe('Double-Sided Card beta', () => {
     expect((await post(payload({ interpoint_offset_y: 1.4 }))).status()).toBe(400);
     // Gate 3: a ds_* value outside its settings.schema.json range.
     expect((await post(payload({ ds_bowl_depth: 9 }))).status()).toBe(400);
-    // Gate 4: same-surface gap 0.118 mm < the 0.34 mm floor.
+    // Gate 4: the printed ridge, -0.042 mm, is under the 0.34 mm floor. Since
+    // 2026-08-21 this gate measures the recess's printed mouth (the 1.8 mm bowl
+    // is cut as a hemisphere and comes out 2.12 mm across), so the nominal
+    // 0.118 mm this used to quote is no longer the figure being compared.
     expect((await post(payload({ ds_dot_base_diameter: 1.5, ds_bowl_base_diameter: 1.8 }))).status()).toBe(400);
   });
 

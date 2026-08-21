@@ -322,14 +322,19 @@ the `minimum`/`maximum` values in settings.schema.json are documentation only:
   surface, computed by `interpoint.same_surface_min_gap()` with the active offsets
   and grid — must clear 0.34 mm (`SAME_SURFACE_GAP_FLOOR_MM`, what a 0.4 mm nozzle
   can lay down); below that the request is rejected with the gap quoted to three
-  decimals. The marginal band 0.34–0.50 mm (`SAME_SURFACE_GAP_RELIABLE_MM`) is NOT
-  rejected: geometry_spec returns it as a soft warning in the spec's `warnings`
-  array, and the UI recomputes the same gap live (`checkDoubleSidedGap()` in
-  public/index.html, status region `#ds-gap-warning`). Reference values at offsets
-  1.25/1.25: Option B / 0.3-preset dot 1.2 + bowl 1.3 → 0.518 mm (clean); the
-  0.4-preset Q2 package dot 1.2 + bowl 1.4 → 0.468 mm (warn — the shipped default
-  with the beta on, accepted by design since 2026-08-20); dot 1.2 + bowl 1.5 →
-  0.418 mm (warn); single-sided dot 1.5 + bowl 1.8 → 0.118 mm (reject).
+  decimals. **Since 2026-08-21 the rejection measures the recess's PRINTED mouth**,
+  `interpoint.printed_bowl_mouth_mm(bowl_diameter, bowl_depth)` — the worker cuts the
+  bowl as a hemisphere, so it comes out wider than nominal. The marginal band
+  0.34–0.50 mm (`SAME_SURFACE_GAP_RELIABLE_MM`) is NOT rejected, and both soft
+  channels deliberately keep measuring the NOMINAL diameter: geometry_spec returns
+  the warning in the spec's `warnings` array, and the UI recomputes the same gap live
+  (`checkDoubleSidedGap()` in public/index.html, status region `#ds-gap-warning`).
+  See INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md v1.6 §5 for why the two differ.
+  Reference values at offsets 1.25/1.25, nominal then printed: Option B / 0.3-preset
+  dot 1.2 + bowl 1.3 → 0.518 / 0.495 mm (clean); the 0.4-preset Q2 package dot 1.2 +
+  bowl 1.4 → 0.468 / 0.428 mm (warn — the shipped default with the beta on, accepted
+  by design since 2026-08-20); dot 1.2 + bowl 1.5 → 0.418 / 0.355 mm (warn);
+  single-sided dot 1.5 + bowl 1.8 → 0.118 nominal but **−0.042 printed** (reject).
 - The six `ds_*` footprint values must stay inside their schema ranges
   (`ds_dot_base_diameter_mm` 0.5–3.0, `ds_dot_base_height_mm` 0.0–2.0,
   `ds_dot_dome_diameter_mm` 0.5–3.0, `ds_dot_dome_height_mm` 0.1–2.0,
@@ -495,4 +500,5 @@ Before completing any task involving settings:
 - 2026-07-31 — Changed `spacing.grid_columns` default from 14 to 15 and the per-mode text-cell recommendations to 13 visual (either toggle state) and 14 tactile (Sections 3.3 and 3.6); replaced the visual-mode physical-fit warning rule with the dot-footprint threshold `dot_spacing + max(rounded_dot_base_diameter, emboss_dot_base_diameter)` (Section 3.6).
 - 2026-08-16 — Added the double-sided (interpoint) beta hard gates to Section 5: tactile indicator lock, interpoint offset range [1.15, 1.35] mm, the six `ds_*` footprint schema ranges, and the 0.34 mm same-surface-gap floor, enforced by `validate_double_sided_settings()` in app/validation.py when the beta is on (the schema's own min/max otherwise remain documentation only); noted the 0.34–0.50 mm marginal band stays a soft warning (geometry_spec `warnings` + live UI region `#ds-gap-warning`). All user-facing message wording signed off by Brennen the same day.
 - 2026-08-16 — Recorded the double-sided (interpoint) beta FIELDS added to `settings.schema.json`: the grouped `double_sided` object (`enabled` default false; `interpoint_offset_x_mm` / `interpoint_offset_y_mm` default 1.25, range 1.15–1.35; six `ds_*` footprint fields — dot base Ø1.2 / base height 0.4 / dome Ø0.8 / dome height 0.4, bowl Ø1.3 × 0.5 deep) plus `text.back_lines` (same braille-only pattern as `text.lines`). CardSettings stores them FLAT with the `_mm` dropped (the toggle as int 0/1 `double_sided_enabled`), the repo's existing grouped-to-flat convention. Full parameter catalog, naming bridge, and behavior: INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md.
+- 2026-08-21 — Section 5's same-surface-gap gate now measures the recess's PRINTED mouth (`interpoint.printed_bowl_mouth_mm`) rather than its nominal diameter, because the worker cuts the bowl as a hemisphere; the two soft warnings deliberately stay on the nominal figure. Reference values gain their printed column, and the single-sided 1.5 + 1.8 case is restated as −0.042 mm printed against the 0.118 mm nominal it used to quote. No schema field, default, or range changed — `ds_bowl_depth_mm` is still 0.0–5.0, though its 5.0 maximum can no longer be combined with a small mouth and pass the gate. Rationale and the measured per-package offset bands: INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md v1.6 §3, §5.
 - 2026-08-20 — Documented the six `double_sided.ds_*` defaults as the 0.3 mm-stock package (Option B, the absent-field fallback); the UI now sends the package for the selected card-stock preset (0.4 → the Q2 print-matrix winner: base_height 0.5, dome 1.0 × 0.5, bowl 1.4), source of truth `interpoint.DS_FOOTPRINTS_BY_PRESET`, smoke-guarded against public/index.html's copy. Section 5 reference values gain the Q2 gap (0.468 mm — a soft warning that now shows at the shipped defaults with the beta on, accepted by design). Schema descriptions updated in the same commit.
