@@ -555,6 +555,19 @@ changeable by the user afterward.
 
 ---
 
+### Double-Sided Footprints Follow the Preset (2026-08-20)
+
+The double-sided beta's six `ds_*` footprint values are NOT in `THICKNESS_PRESETS`
+and have no dials, but the preset radio now selects which fixed package the generate
+handler sends when the beta is on: `DS_FOOTPRINTS['0.3']` is Option B (dot ⌀1.2 ×
+0.8 mm tall, bowl ⌀1.3), `DS_FOOTPRINTS['0.4']` is the Q2 print-matrix winner (dot
+⌀1.2 × 1.0 mm tall with dome ⌀1.0, bowl ⌀1.4). A 'custom' selection falls back to
+the last persisted preset, then '0.4'. Source-of-truth pairing:
+`app/geometry/interpoint.py` `DS_FOOTPRINTS_BY_PRESET`, diffed against the UI by
+`tests/test_smoke.py::test_ui_ds_footprints_match_interpoint_packages`. On the 0.4
+preset the crowding warning shows whenever the beta is on — by design; see
+INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §3, §7.3, §7.5.
+
 ## 6. LocalStorage Persistence
 
 ### Keys Stored
@@ -779,6 +792,7 @@ The preset system is designed to **never fail visibly**:
 | 2026-07-30 | 1.4 | Added the five tactile indicator dimensions to both presets (32 parameters total). Corrected the documented `grid_columns` values to the 11 actually shipped, dropped the stale line-number and `templates/index.html` references, and updated the Expert Mode submenu map for the Tactile Indicator Dimensions and Translation Options submenus. Presets also now feed the `{preset}` segment of STL file names. |
 | 2026-08-18 | 1.5 | **User-facing rename, no API change.** The visible legend became "Print Layer Height" (was "Card Thickness") and the radiogroup `aria-label` became "Select print layer height preset", because both presets set `card_thickness: 2.0` and nothing about card thickness varies between them. Seven strings changed in `public/index.html`; the confirmation message is now `Layer height preset "X.Xmm" applied. All parameters updated.` and the explanatory note gained "The card itself stays 2 mm thick either way." The three sr-only descriptions were already correct and are unchanged, as are `card_thickness_preset`, the localStorage key, and this filename. Approved by Brennen 2026-08-18. |
 | 2026-08-19 | 1.6 | **Corrects v1.5 and an error older than it.** The 0.3 / 0.4 numbers are the thickness of the paper CARD STOCK being embossed, not the printer's layer height, so the visible legend is back to "Card Thickness" and the radiogroup `aria-label` to "Select card thickness preset". v1.5's argument was that `card_thickness: 2.0` never varies between presets — but that field is the printed PLASTIC PLATE's thickness, not the paper. What the presets change is bowl depth (0.5 → 0.8 mm) and dot height (0.8 → 1.0 mm), both radial dimensions on an upright print that a layer height cannot motivate. The three sr-only descriptions had said "layer height" since v1.0 and were wrong all along; they now read "Preset settings optimized for embossing 0.Xmm card stock". Confirmation message is `Card thickness preset "X.Xmm" applied. All parameters updated.` Ten strings and three code comments changed in `public/index.html`. `card_thickness_preset`, the localStorage key and this filename are unchanged, as in v1.5. Approved by Brennen 2026-08-19. |
+| 2026-08-20 | 1.7 | The preset radio now also selects the double-sided beta's fixed footprint package (no new dials): 0.3 → Option B, 0.4 → the Q2 print-matrix winner, sent on the wire only when the beta is on. New Section 5 subsection "Double-Sided Footprints Follow the Preset"; source of truth `interpoint.DS_FOOTPRINTS_BY_PRESET`, smoke-guarded against the UI copy. Also corrected four stale "optimized for 0.3mm layer" code comments in the 0.3 preset to "card stock" (leftovers of the naming confusion fixed in v1.6). |
 
 ---
 

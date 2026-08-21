@@ -3,7 +3,7 @@
   "fixture_name": "ds_cylinderB_golden",
   "plate_type": "negative",
   "generation": {
-    "note": "Rendered by tests/test_golden.py generate_ds_golden_fixtures() from extract_cylinder_geometry_spec called directly with back_lines= (no request route yet). Z-up, theta as emitted; browser workers negate theta for Three.js.",
+    "note": "Rendered by tests/test_golden.py generate_ds_golden_fixtures() from extract_cylinder_geometry_spec called directly with back_lines= (no request route yet). Z-up, theta as emitted; browser workers negate theta for Three.js. Bowls are cut centre-on-surface (the shipping worker convention).",
     "front_lines": [
       "\u2801\u2803\u2809",
       "",
@@ -36,13 +36,13 @@
       "wall_thickness": 2.0,
       "seam_offset_deg": 355.0
     },
-    "generated": "2026-08-16",
+    "generated": "2026-08-20",
     "trimesh_version": "4.10.1",
     "manifold3d_version": "3.3.2"
   },
   "expected_properties": {
-    "face_count": 14056,
-    "vertex_count": 7030,
+    "face_count": 14914,
+    "vertex_count": 7459,
     "is_watertight": true,
     "bbox_min": [
       -15.754814147949219,
@@ -54,7 +54,7 @@
       15.375,
       52.0
     ],
-    "volume": 38487.365972596155,
-    "surface_area": 6589.134345266813
+    "volume": 38486.1843816535,
+    "surface_area": 6592.195563812918
   }
 }

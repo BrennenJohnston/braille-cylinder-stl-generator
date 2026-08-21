@@ -9,11 +9,13 @@
  * feature existed (public training videos depend on the single-sided flow),
  * so the off-state payload is pinned to a pre-feature snapshot.
  *
- * The beta ships FIXED at Option B (offsets 1.25/1.25 mm, dot ⌀1.2 mm,
- * bowl ⌀1.3 mm — decided 2026-08-16): there are no offset/footprint dials in
- * the UI, so the live gap warning is exercised by injecting the dial inputs
- * checkDoubleSidedGap() reads, and the offset range is asserted at the
- * backend via direct POSTs.
+ * The beta ships with FIXED footprints — no dials (decided 2026-08-16;
+ * preset keying added 2026-08-20): the wire carries the ds package for the
+ * selected card-stock preset (0.3 → Option B, dot ⌀1.2 + bowl ⌀1.3; 0.4 →
+ * the Q2 print-matrix winner, dot ⌀1.2 × 1.0 mm tall + bowl ⌀1.4). The
+ * offsets (1.25/1.25 mm) stay adjustable by design, so the live gap warning
+ * is exercised by injecting the offset dial inputs checkDoubleSidedGap()
+ * reads, and the offset range is asserted at the backend via direct POSTs.
  *
  * @see docs/specifications/STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md
  */
@@ -399,18 +401,34 @@ test.describe('Double-Sided Card beta', () => {
     }
 
     // The settings object carries the FLAT CardSettings spellings — the
-    // grouped double_sided.*_mm schema names would be silently ignored.
+    // grouped double_sided.*_mm schema names would be silently ignored. The
+    // footprints are the preset package: the default 0.4 preset sends the
+    // Q2 print-matrix winner (decided 2026-08-20).
     const settings = body.settings as Record<string, unknown>;
     expect(settings.indicator_mode).toBe('tactile');
     expect(settings.double_sided_enabled).toBe(1);
     expect(Number(settings.interpoint_offset_x)).toBe(1.25);
     expect(Number(settings.interpoint_offset_y)).toBe(1.25);
     expect(Number(settings.ds_dot_base_diameter)).toBe(1.2);
-    expect(Number(settings.ds_dot_base_height)).toBe(0.4);
-    expect(Number(settings.ds_dot_dome_diameter)).toBe(0.8);
-    expect(Number(settings.ds_dot_dome_height)).toBe(0.4);
-    expect(Number(settings.ds_bowl_base_diameter)).toBe(1.3);
+    expect(Number(settings.ds_dot_base_height)).toBe(0.5);
+    expect(Number(settings.ds_dot_dome_diameter)).toBe(1.0);
+    expect(Number(settings.ds_dot_dome_height)).toBe(0.5);
+    expect(Number(settings.ds_bowl_base_diameter)).toBe(1.4);
     expect(Number(settings.ds_bowl_depth)).toBe(0.5);
+
+    // The 0.3 preset switches the wire to the Option B package (validated
+    // 2026-08-17) without any ds dials existing. The preset toast lands in
+    // #error-text, which generate() reads on slow runs, so clear it first.
+    await page.locator('input[name="card_thickness_preset"][value="0.3"]').check();
+    await page.evaluate(() => { const t = document.getElementById('error-text'); if (t) t.textContent = ''; });
+    await generate(page, spec, 2);
+    const settings03 = (spec.bodies[1] as Record<string, unknown>).settings as Record<string, unknown>;
+    expect(Number(settings03.ds_dot_base_diameter)).toBe(1.2);
+    expect(Number(settings03.ds_dot_base_height)).toBe(0.4);
+    expect(Number(settings03.ds_dot_dome_diameter)).toBe(0.8);
+    expect(Number(settings03.ds_dot_dome_height)).toBe(0.4);
+    expect(Number(settings03.ds_bowl_base_diameter)).toBe(1.3);
+    expect(Number(settings03.ds_bowl_depth)).toBe(0.5);
   });
 
   test('Cylinder B payload keeps the front braille for its 1:1 paired recesses', async ({ page }) => {
@@ -471,26 +489,34 @@ test.describe('Double-Sided Card beta', () => {
     expect(await downloadName(page)).toBe('Embossing_Cylinder_0.4_abc.stl');
   });
 
-  test('the live gap warning fires at a 1.15 mm offset and stays quiet at 1.25 mm', async ({ page }) => {
+  test('the live gap warning follows the card-stock preset package and the offsets', async ({ page }) => {
     await openApp(page);
     await page.locator('#double_sided_enabled').check();
 
     const warning = page.locator('#ds-gap-warning');
     const message = page.locator('#ds-gap-message');
-    // Option B defaults: same-surface gap 0.518 mm ≥ the 0.50 mm reliable floor.
+    // The default 0.4 preset carries the Q2 package (dot 1.2 + bowl 1.4):
+    // nominal gap 0.468 mm, below the 0.50 mm reliable line BY DESIGN (the
+    // printed 0.428 mm ridge was measured printing clean on 2026-08-20), so
+    // the warning is visible at the shipped defaults whenever the beta is on.
+    await expect(warning).toBeVisible();
+    await expect(message).toContainText('0.468 mm');
+    await expect(message).toContainText('may come out thin or merged');
+
+    // The 0.3 preset switches to Option B (dot 1.2 + bowl 1.3): gap 0.518 mm,
+    // above the reliable line - quiet.
+    await page.locator('input[name="card_thickness_preset"][value="0.3"]').check();
     await expect(warning).toBeHidden();
 
-    // The beta ships fixed at Option B with no dials, so inject the dial
-    // inputs checkDoubleSidedGap() reads (flat CardSettings ids) into the
-    // form; page.fill() then dispatches real input events that re-run the
-    // check through the form's input/change delegation.
+    // The offsets stay adjustable by design (D1), but their dials arrive with
+    // a later phase, so inject the inputs checkDoubleSidedGap() reads (flat
+    // CardSettings ids); page.fill() then dispatches real input events that
+    // re-run the check through the form's input/change delegation.
     await page.evaluate(() => {
       const form = document.getElementById('braille-form');
       for (const [id, value] of [
         ['interpoint_offset_x', '1.25'],
         ['interpoint_offset_y', '1.25'],
-        ['ds_dot_base_diameter', '1.2'],
-        ['ds_bowl_base_diameter', '1.3'],
       ]) {
         const input = document.createElement('input');
         input.type = 'number';
@@ -501,27 +527,29 @@ test.describe('Double-Sided Card beta', () => {
       }
     });
 
-    // Offset x 1.15 (y 1.25): gap 0.449 mm — marginal, printable but thin.
+    // Offset x 1.15 (y 1.25) on Option B: gap 0.449 mm - marginal, printable
+    // but thin.
     await page.locator('#interpoint_offset_x').fill('1.15');
     await expect(warning).toBeVisible();
     await expect(message).toContainText('0.449 mm');
     await expect(message).toContainText('may come out thin or merged');
 
-    // Both offsets 1.15: gap 0.376 mm — still the marginal variant.
+    // Both offsets 1.15: gap 0.376 mm - still the marginal variant.
     await page.locator('#interpoint_offset_y').fill('1.15');
     await expect(message).toContainText('0.376 mm');
 
-    // Back to the shipped 1.25/1.25: gap 0.518 mm, no warning.
+    // Back to the shipped 1.25/1.25: gap 0.518 mm, quiet again.
     await page.locator('#interpoint_offset_x').fill('1.25');
     await page.locator('#interpoint_offset_y').fill('1.25');
     await expect(warning).toBeHidden();
 
-    // Legacy single-sided footprints (dot 1.5 + bowl 1.8): gap 0.118 mm —
-    // under the 0.34 mm nozzle floor, the "generation will be blocked" variant.
-    await page.locator('#ds_dot_base_diameter').fill('1.5');
-    await page.locator('#ds_bowl_base_diameter').fill('1.8');
+    // The Q2 package at both offsets 1.15: gap 0.326 mm - under the 0.34 mm
+    // nozzle floor, the "generation will be blocked" variant.
+    await page.locator('#interpoint_offset_x').fill('1.15');
+    await page.locator('#interpoint_offset_y').fill('1.15');
+    await page.locator('input[name="card_thickness_preset"][value="0.4"]').check();
     await expect(warning).toBeVisible();
-    await expect(message).toContainText('0.118 mm');
+    await expect(message).toContainText('0.326 mm');
     await expect(message).toContainText('generation will be blocked');
   });
 

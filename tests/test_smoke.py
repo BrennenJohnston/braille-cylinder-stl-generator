@@ -632,3 +632,27 @@ def test_braille_to_dots_braille_blank_pattern():
     # U+2800 is the "braille pattern blank" - a valid braille character with no dots
     result = braille_to_dots('⠀')
     assert result == [0, 0, 0, 0, 0, 0], f'Expected empty cell for ⠀ (U+2800), got {result}'
+
+
+def test_ui_ds_footprints_match_interpoint_packages():
+    """
+    public/index.html's DS_FOOTPRINTS and app/geometry/interpoint.py's
+    DS_FOOTPRINTS_BY_PRESET are two copies of the same signed-off packages
+    (0.3 -> Option B, 0.4 -> the 2026-08-20 Q2 print-matrix winner).
+    Cross-file default drift is this project's #1 historical bug source,
+    so the two copies are diffed here.
+    """
+    import re
+    from pathlib import Path
+
+    from app.geometry import interpoint
+
+    html = (Path(__file__).resolve().parents[1] / 'public' / 'index.html').read_text(encoding='utf-8')
+    match = re.search(r'const DS_FOOTPRINTS = \{(.*?)\n {8}\};', html, re.DOTALL)
+    assert match, 'DS_FOOTPRINTS block not found in public/index.html'
+    ui_packages = {}
+    for preset in re.finditer(r"'(0\.[34])': \{(.*?)\}", match.group(1), re.DOTALL):
+        pairs = re.findall(r'(ds_\w+): ([0-9.]+)', preset.group(2))
+        assert len(pairs) == 6, f'expected 6 ds fields in the {preset.group(1)} package'
+        ui_packages[preset.group(1)] = {name: float(value) for name, value in pairs}
+    assert ui_packages == interpoint.DS_FOOTPRINTS_BY_PRESET

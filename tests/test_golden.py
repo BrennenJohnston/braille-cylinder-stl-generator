@@ -155,6 +155,11 @@ def test_golden_specs_ignore_an_absent_or_off_double_sided_flag(client, fixtures
 # z = 0. The browser workers negate theta for Three.js; the pairing mirror
 # (A at theta, B at -theta) is unaffected by that global sign.
 #
+# Bowls are cut with the shipping worker's centre-on-surface convention (cut
+# depth = sphere radius, mouth = its diameter), NOT the exact-depth Python
+# convention - decided 2026-08-19 (the app's geometry is what has been
+# printed and embossed); fixtures regenerated 2026-08-20.
+#
 # The specs are built by calling extract_cylinder_geometry_spec directly:
 # back_lines has no request route until the backend plumbing phase lands.
 # ---------------------------------------------------------------------------
@@ -285,7 +290,13 @@ def _ds_rounded_dot_meshes(dot):
 
 
 def _ds_bowl_cutter(dot):
-    """Sphere whose cut leaves a bowl of exactly bowl_depth (the Python convention)."""
+    """
+    Bowl sphere centred ON the shell surface (the shipping worker convention).
+
+    csg-worker-manifold.js sets radialOffset = cylRadius, so the printed bowl
+    is a hemisphere of radius sphere_radius: the cut is sphere_radius deep
+    and 2 * sphere_radius across, and bowl_depth sets NEITHER directly.
+    """
     import trimesh
 
     params = dot['params']
@@ -294,7 +305,7 @@ def _ds_bowl_cutter(dot):
     sphere_radius = (bowl_radius * bowl_radius + bowl_depth * bowl_depth) / (2.0 * bowl_depth)
     sphere = trimesh.creation.icosphere(subdivisions=_DS_SPHERE_SUBDIVISIONS, radius=sphere_radius)
     theta = dot['theta']
-    center_radius = dot['radius'] + sphere_radius - bowl_depth
+    center_radius = dot['radius']
     sphere.apply_translation([center_radius * math.cos(theta), center_radius * math.sin(theta), dot['y']])
     return sphere
 
@@ -428,13 +439,14 @@ def generate_ds_golden_fixtures():
                 'note': (
                     'Rendered by tests/test_golden.py generate_ds_golden_fixtures() from '
                     'extract_cylinder_geometry_spec called directly with back_lines= (no request route yet). '
-                    'Z-up, theta as emitted; browser workers negate theta for Three.js.'
+                    'Z-up, theta as emitted; browser workers negate theta for Three.js. '
+                    'Bowls are cut centre-on-surface (the shipping worker convention).'
                 ),
                 'front_lines': DS_FIXTURE_FRONT_LINES,
                 'back_lines': DS_FIXTURE_BACK_LINES,
                 'settings': DS_FIXTURE_SETTINGS,
                 'cylinder_params': DS_FIXTURE_CYLINDER_PARAMS,
-                'generated': '2026-08-16',
+                'generated': '2026-08-20',
                 'trimesh_version': importlib.metadata.version('trimesh'),
                 'manifold3d_version': importlib.metadata.version('manifold3d'),
             },
@@ -559,9 +571,13 @@ def test_ds_golden_fixture_matches_regenerated_geometry(fixtures_dir, plate_type
     for dot in spec['dots']:
         theta, y_local, radius = dot['theta'], dot['y'], dot['radius']
         if dot['is_recess']:
-            depth = dot['params']['bowl_depth']
-            outside_points.append(surface_point(theta, radius - depth / 2.0, y_local))
-            inside_points.append(surface_point(theta, radius - depth - 0.2, y_local))
+            bowl_radius = dot['params']['bowl_radius']
+            bowl_depth = dot['params']['bowl_depth']
+            # Centre-on-surface: the cut is a hemisphere sphere-radius deep,
+            # not bowl_depth deep - probe against the depth actually cut.
+            cut_depth = (bowl_radius**2 + bowl_depth**2) / (2.0 * bowl_depth)
+            outside_points.append(surface_point(theta, radius - cut_depth / 2.0, y_local))
+            inside_points.append(surface_point(theta, radius - cut_depth - 0.2, y_local))
         else:
             dot_height = dot['params']['base_height'] + dot['params']['dome_height']
             inside_points.append(surface_point(theta, radius + 0.75 * dot_height, y_local))

@@ -64,8 +64,16 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      interpoint_offset_x/_y; interpoint.py calls the y number offset_z).
    - Double-sided = 1:1 paired recesses on BOTH cylinders (no universal
      counter grid) + Row Indicator Style locked to tactile. Footprints ship
-     FIXED at Option B: dot ⌀1.2 (0.4 base + 0.4 dome, dome ⌀0.8) + bowl
-     ⌀1.3 × 0.5 mm — no UI dials, by decision (2026-08-16).
+     FIXED — no UI dials (2026-08-16) — and KEYED to the card-stock preset
+     since 2026-08-20: 0.3 preset → Option B dot ⌀1.2 (0.4 base + 0.4 dome,
+     dome ⌀0.8) + bowl ⌀1.3 × 0.5 mm (still the schema/models defaults);
+     0.4 preset → Q2 dot ⌀1.2 (0.5 base + 0.5 dome, dome ⌀1.0; total 1.0)
+     + bowl ⌀1.4 × 0.5 mm (prints ⌀1.48 × 0.74). Source of truth:
+     interpoint.DS_FOOTPRINTS_BY_PRESET = index.html DS_FOOTPRINTS (a smoke
+     test diffs them). The 0.4 package trips the crowding warning by design
+     (nominal gap 0.468; printed ridge 0.428, measured clean 2026-08-20).
+     Die heights above 1.0 mm scrape the embosser housing — never raise
+     them on your own.
    - csg-worker-manifold.js partitions dots per dot on is_recess (true →
      subtract, false → union, absent → legacy plate-wide rule); CSG order:
      shell → union raised → subtract recesses. Never reorder.

@@ -921,20 +921,26 @@ differs from the schema. See "Reading the default tables" in the Overview for wh
 ### Double-Sided (BETA) Footprints
 
 The double-sided beta does not use the dials above. Its dot and bowl sizes are **fixed
-constants** with no UI controls, and they are permanent following the 2026-08 physical
-embossing test:
+packages** with no UI controls, keyed to the card-stock preset since 2026-08-20 — the
+print matrix showed one footprint cannot serve both stocks (the 0.4 package tears
+0.35 mm card; Option B under-forms 0.4 mm card):
 
-| Parameter | Value | Description |
-|-----------|-------|-------------|
-| `ds_dot_base_diameter` | 1.2 mm | Raised dot base diameter |
-| `ds_dot_base_height` | 0.4 mm | Rounded base height below the dome |
-| `ds_dot_dome_diameter` | 0.8 mm | Diameter where the dome meets the base |
-| `ds_dot_dome_height` | 0.4 mm | Dome height (total dot height 0.8 mm) |
-| `ds_bowl_base_diameter` | 1.3 mm | Paired bowl recess opening |
-| `ds_bowl_depth` | 0.5 mm | Paired bowl recess depth (nominal; see Section 5) |
+| Parameter | 0.3 preset (Option B, schema default) | 0.4 preset (Q2, 2026-08-20) | Description |
+|-----------|--------------------------------------|------------------------------|-------------|
+| `ds_dot_base_diameter` | 1.2 mm | 1.2 mm | Raised dot base diameter |
+| `ds_dot_base_height` | 0.4 mm | 0.5 mm | Rounded base height below the dome |
+| `ds_dot_dome_diameter` | 0.8 mm | 1.0 mm | Diameter where the dome meets the base |
+| `ds_dot_dome_height` | 0.4 mm | 0.5 mm | Dome height (total dot height 0.8 / 1.0 mm) |
+| `ds_bowl_base_diameter` | 1.3 mm | 1.4 mm | Paired bowl recess opening |
+| `ds_bowl_depth` | 0.5 mm | 0.5 mm | Paired bowl recess depth (nominal; see Section 5) |
 
-Full rationale, ranges, and the physical validation record:
-`INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md`.
+Option B remains the schema/models default (absent-field fallback) and was physically
+validated 2026-08-17; the Q2 package is the only one that embossed 0.4 mm stock
+cleanly (print matrix, 2026-08-20). Die heights above 1.0 mm scrape the embosser's
+cylinder-holder housing — never raise them without Brennen's sign-off. Source of
+truth: `app/geometry/interpoint.py` `DS_FOOTPRINTS_BY_PRESET` = `public/index.html`
+`DS_FOOTPRINTS` (a smoke test diffs the two). Full rationale, ranges, and the
+physical validation record: `INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md`.
 
 ---
 
@@ -1157,6 +1163,7 @@ Use these logs to verify that:
 | 2024-12-07 | 1.4 | Bug 7 fix VERIFIED by user testing - rounded dots now correctly positioned flush with cylinder surface |
 | 2026-08-17 | 1.5 | **Defaults refreshed against the code** (docs only, no code or fixture changed). Corrected `use_rounded_dots` default from 0 to **1** - Rounded, not Cone, is the default emboss family at every layer (Sections 1 and 9). Every "Default Parameter Values" table now carries both the schema/`app/models.py` default and the live-UI value, because `restoreThicknessPreset()` applies the 0.4 mm preset on page load and overwrites most dot dials; Section 9 adds the 0.3 mm preset column and the fixed double-sided BETA footprints. Added Section 5 "Cut Depth Convention", documenting as **intentional** the Manifold worker cutting bowls from a sphere centred on the surface: nominal 1.8 x 0.8 cuts about 0.906 mm and nominal 1.3 x 0.5 cuts 0.667-0.672 mm, versus the Python renderer's exact nominal depth used by the golden fixtures. Deeper is the safe direction for nip clearance. |
 
+| 2026-08-20 | 1.6 | Section 9's double-sided footprints table now carries TWO packages keyed to the card-stock preset (research memory FD-8/FD-9): 0.3 preset → Option B (unchanged, still the schema default), 0.4 preset → the Q2 print-matrix winner (base height 0.5, dome Ø1.0 × 0.5, bowl Ø1.4) — one footprint cannot serve both stocks (Q2 tears 0.35 mm card; Option B under-forms 0.4 mm card). Records the 1.0 mm die-height housing ceiling. |
 ---
 
 ## 13. Related Documentation

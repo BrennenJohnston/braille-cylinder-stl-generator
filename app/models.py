@@ -246,7 +246,11 @@ class CardSettings:
             'interpoint_offset_y': 1.25,
             # Double-sided dots are smaller than single-sided ones because a dot
             # and a neighbouring back-side recess share one surface: 1.2 dot in
-            # a 1.3 bowl leaves 0.518 mm of printable material between them.
+            # a 1.3 bowl leaves 0.518 mm of printable material between them
+            # (nominal; 0.495 as printed). These defaults are the 0.3 mm-stock
+            # package (Option B) and act as the absent-field fallback; the UI
+            # sends the package for the selected card-stock preset - see
+            # interpoint.DS_FOOTPRINTS_BY_PRESET.
             'ds_dot_base_diameter': 1.2,
             'ds_dot_base_height': 0.4,
             'ds_dot_dome_diameter': 0.8,

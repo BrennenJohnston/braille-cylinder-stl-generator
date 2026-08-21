@@ -95,6 +95,34 @@ DS_DOT_HEIGHT_MM = DS_DOT_BASE_HEIGHT_MM + DS_DOT_DOME_HEIGHT_MM
 DS_BOWL_DIAMETER_MM = 1.3
 DS_BOWL_DEPTH_MM = 0.5
 
+# Footprint packages keyed by the UI's card-stock preset (decided 2026-08-20,
+# FD-8/FD-9: the print matrix showed one fixed footprint cannot serve both
+# stocks - the package that suits 0.4 mm card tears 0.35 mm card, and the one
+# that suits thin card under-forms thick card). The DS_* module constants
+# above are the 0.3 mm package (Option B) and stay the schema/CardSettings
+# absent-field defaults; the 0.4 mm package is the Q2 print-matrix winner
+# (clean emboss on 0.4 mm stock, 2026-08-20). public/index.html's
+# DS_FOOTPRINTS must stay in lockstep - tests/test_smoke.py::
+# test_ui_ds_footprints_match_interpoint_packages diffs the two.
+DS_FOOTPRINTS_BY_PRESET = {
+    '0.3': {
+        'ds_dot_base_diameter': DS_DOT_BASE_DIAMETER_MM,
+        'ds_dot_base_height': DS_DOT_BASE_HEIGHT_MM,
+        'ds_dot_dome_diameter': DS_DOT_DOME_DIAMETER_MM,
+        'ds_dot_dome_height': DS_DOT_DOME_HEIGHT_MM,
+        'ds_bowl_base_diameter': DS_BOWL_DIAMETER_MM,
+        'ds_bowl_depth': DS_BOWL_DEPTH_MM,
+    },
+    '0.4': {
+        'ds_dot_base_diameter': 1.2,
+        'ds_dot_base_height': 0.5,
+        'ds_dot_dome_diameter': 1.0,
+        'ds_dot_dome_height': 0.5,
+        'ds_bowl_base_diameter': 1.4,
+        'ds_bowl_depth': 0.5,
+    },
+}
+
 # Printability thresholds for the material left between a dot and a neighbouring
 # recess on the same surface (Bambu X1C, 0.4 mm nozzle: Arachne widens anything
 # from 0.1 to 0.34 mm up to 0.34 mm, and drops below 0.1 mm).

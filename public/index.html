@@ -5969,13 +5969,68 @@
             return Math.sqrt(bestSq);
         }
 
+        // Double-sided footprints, keyed by the card-stock preset. Fixed by
+        // decision - no dials (2026-08-16; keying added 2026-08-20): the
+        // interpoint budget spends only the dot BASE diameter and the bowl
+        // MOUTH, and neither can move safely, so the packages ship as
+        // constants. '0.3' is Option B, physically validated on 0.3 mm stock;
+        // '0.4' is the Q2 print-matrix winner, validated on 0.4 mm stock.
+        // Keep in lockstep with app/geometry/interpoint.py
+        // DS_FOOTPRINTS_BY_PRESET (a smoke test diffs the two).
+        const DS_FOOTPRINTS = {
+            '0.4': {
+                ds_dot_base_diameter: 1.2,
+                ds_dot_base_height: 0.5,
+                ds_dot_dome_diameter: 1.0,
+                ds_dot_dome_height: 0.5,
+                ds_bowl_base_diameter: 1.4,
+                ds_bowl_depth: 0.5
+            },
+            '0.3': {
+                ds_dot_base_diameter: 1.2,
+                ds_dot_base_height: 0.4,
+                ds_dot_dome_diameter: 0.8,
+                ds_dot_dome_height: 0.4,
+                ds_bowl_base_diameter: 1.3,
+                ds_bowl_depth: 0.5
+            }
+        };
+
+        // The package for the currently selected card-stock preset. 'custom'
+        // has no double-sided meaning (there are no ds dials to customize),
+        // so it falls back to the last persisted preset choice, then to '0.4'
+        // (the load default).
+        function activeDsFootprints() {
+            let key = document.querySelector('input[name="card_thickness_preset"]:checked')?.value;
+            if (!DS_FOOTPRINTS[key]) {
+                try { key = localStorage.getItem('braille_prefs_thickness_preset'); } catch (e) { /* fall through */ }
+            }
+            return DS_FOOTPRINTS[key] || DS_FOOTPRINTS['0.4'];
+        }
+
         // Live same-surface crowding warning for the double-sided beta,
         // recomputed with the seam-gap warning on every form change. Hidden
-        // whenever the #double_sided_enabled toggle is off. The dial ids read
-        // here are the flat CardSettings names, the same convention as every
-        // other dial on the page; absent dials fall back to the signed-off
-        // Option B defaults (dot base ⌀1.2 mm, bowl ⌀1.3 mm, offsets
-        // 1.25/1.25 mm).
+        // whenever the #double_sided_enabled toggle is off. The offset dial
+        // ids are the flat CardSettings names; absent dials fall back to the
+        // 1.25/1.25 mm defaults. The footprints come from the preset package
+        // above - so on the 0.4 preset this warning shows whenever the beta
+        // is on: the Q2 package's 0.468 mm nominal gap sits below the 0.50 mm
+        // reliable line by design, and its printed 0.428 mm ridge was
+        // measured printing clean on 2026-08-20 (FD-8b).
+        // The crowding warning can now persist for a whole session (the 0.4
+        // preset package sits below the reliable line by design), and
+        // announceStatus rewrites the shared #a11y-status region even for
+        // identical text - which would re-announce this warning on every form
+        // change and stomp other sources' announcements (e.g. the back-text
+        // overflow warning). Announce only when the message actually changes;
+        // the visible warning box is unaffected.
+        let lastDsGapAnnouncement = '';
+        function announceDsGap(message) {
+            if (message === lastDsGapAnnouncement) return;
+            lastDsGapAnnouncement = message;
+            announceStatus('ds-gap-warning', message);
+        }
+
         function checkDoubleSidedGap() {
             const warningDiv = document.getElementById('ds-gap-warning');
             const warningMsg = document.getElementById('ds-gap-message');
@@ -5984,14 +6039,15 @@
             const toggle = document.getElementById('double_sided_enabled');
             if (!toggle || !toggle.checked) {
                 warningDiv.style.display = 'none';
-                announceStatus('ds-gap-warning', '');
+                announceDsGap('');
                 return;
             }
 
             const offsetX = parseFloat(document.getElementById('interpoint_offset_x')?.value) || 1.25;
             const offsetY = parseFloat(document.getElementById('interpoint_offset_y')?.value) || 1.25;
-            const dotDiameter = parseFloat(document.getElementById('ds_dot_base_diameter')?.value) || 1.2;
-            const bowlDiameter = parseFloat(document.getElementById('ds_bowl_base_diameter')?.value) || 1.3;
+            const dsFootprints = activeDsFootprints();
+            const dotDiameter = dsFootprints.ds_dot_base_diameter;
+            const bowlDiameter = dsFootprints.ds_bowl_base_diameter;
             const totalColumns = getAvailableColumns() + getReservedMarkerColumns();
             const rows = parseInt(document.getElementById('grid_rows')?.value) || 4;
             const dotSpacing = parseFloat(document.getElementById('dot_spacing')?.value) || 2.5;
@@ -6004,7 +6060,7 @@
 
             if (gap >= DS_SAME_SURFACE_GAP_RELIABLE_MM) {
                 warningDiv.style.display = 'none';
-                announceStatus('ds-gap-warning', '');
+                announceDsGap('');
                 return;
             }
 
@@ -6022,8 +6078,7 @@
                     'double-sided dot or recess diameter, or check the interpoint offsets.';
             }
             warningDiv.style.display = 'block';
-            announceStatus('ds-gap-warning',
-                warningDiv.textContent.replace(/\s+/g, ' ').trim());
+            announceDsGap(warningDiv.textContent.replace(/\s+/g, ' ').trim());
         }
 
         // BANA-compliant-ish auto wrapping for braille rows
@@ -7052,19 +7107,19 @@
                 dot_spacing: 2.5,
                 braille_x_adjust: 0.0,
                 braille_y_adjust: 0.0,
-                // Emboss Dot (Rounded) - optimized for 0.3mm layer
+                // Emboss Dot (Rounded) - optimized for 0.3mm card stock
                 rounded_dot_base_diameter: 1.2,
                 rounded_dot_base_height: 0.4,
                 rounded_dot_dome_diameter: 0.8,
                 rounded_dot_dome_height: 0.4,
-                // Emboss Dot (Cone) - optimized for 0.3mm layer
+                // Emboss Dot (Cone) - optimized for 0.3mm card stock
                 emboss_dot_base_diameter: 1.2,
                 emboss_dot_height: 0.6,
                 emboss_dot_flat_hat: 0.2,
-                // Counter Dot (Bowl/Rounded) - optimized for 0.3mm layer
+                // Counter Dot (Bowl/Rounded) - optimized for 0.3mm card stock
                 bowl_counter_dot_base_diameter: 1.5,
                 counter_dot_depth: 0.5,
-                // Counter Dot (Cone) - optimized for 0.3mm layer
+                // Counter Dot (Cone) - optimized for 0.3mm card stock
                 cone_counter_dot_base_diameter: 1.5,
                 cone_counter_dot_height: 0.5,
                 cone_counter_dot_flat_hat: 0.8,
@@ -8277,21 +8332,25 @@
             // Double-sided beta settings ride inside `settings` under the FLAT
             // CardSettings names (the grouped `_mm` schema spellings would be
             // silently ignored by the backend). The flag is 0/1 like
-            // indicator_shapes. Dials arrive in Phase 08; absent dials fall back
-            // to the signed-off Option B defaults (offsets 1.25/1.25 mm; dot base
-            // ⌀1.2 × 0.4 mm + dome ⌀0.8 × 0.4 mm; bowl ⌀1.3 × 0.5 mm deep).
-            // When the beta is off nothing is added, keeping the request payload
-            // byte-identical to the single-sided one.
+            // indicator_shapes. The offsets stay adjustable by design (D1);
+            // absent dials fall back to the 1.25/1.25 mm defaults. The
+            // footprints have no dials: the wire carries the package for the
+            // selected card-stock preset (0.3 -> Option B, validated
+            // 2026-08-17; 0.4 -> the Q2 print-matrix winner, validated
+            // 2026-08-20 - see DS_FOOTPRINTS). When the beta is off nothing is
+            // added, keeping the request payload byte-identical to the
+            // single-sided one.
             if (doubleSidedOn) {
+                const dsFootprints = activeDsFootprints();
                 settings.double_sided_enabled = 1;
                 settings.interpoint_offset_x = document.getElementById('interpoint_offset_x')?.value || '1.25';
                 settings.interpoint_offset_y = document.getElementById('interpoint_offset_y')?.value || '1.25';
-                settings.ds_dot_base_diameter = document.getElementById('ds_dot_base_diameter')?.value || '1.2';
-                settings.ds_dot_base_height = document.getElementById('ds_dot_base_height')?.value || '0.4';
-                settings.ds_dot_dome_diameter = document.getElementById('ds_dot_dome_diameter')?.value || '0.8';
-                settings.ds_dot_dome_height = document.getElementById('ds_dot_dome_height')?.value || '0.4';
-                settings.ds_bowl_base_diameter = document.getElementById('ds_bowl_base_diameter')?.value || '1.3';
-                settings.ds_bowl_depth = document.getElementById('ds_bowl_depth')?.value || '0.5';
+                settings.ds_dot_base_diameter = dsFootprints.ds_dot_base_diameter;
+                settings.ds_dot_base_height = dsFootprints.ds_dot_base_height;
+                settings.ds_dot_dome_diameter = dsFootprints.ds_dot_dome_diameter;
+                settings.ds_dot_dome_height = dsFootprints.ds_dot_dome_height;
+                settings.ds_bowl_base_diameter = dsFootprints.ds_bowl_base_diameter;
+                settings.ds_bowl_depth = dsFootprints.ds_bowl_depth;
             }
 
             // Debug: Log the settings being sent

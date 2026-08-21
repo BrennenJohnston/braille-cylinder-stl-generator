@@ -16,13 +16,15 @@ paired 1:1 with a real dot on the other cylinder. When the toggle is OFF the app
 exactly as before the feature existed; this is proven, not assumed (see
 [Section 8, Regression anchors](#8-regression-anchors)).
 
-**Status: BETA — physically validated 2026-08.** The geometry is complete and tested in
-software, and the open physical question is now answered: two printed rounds of Cylinder
-A/B pairs embossed real card stock with braille legible on BOTH faces (see
-[Section 10, Physical validation](#10-physical-validation-2026-08)). The Option B
-footprints are therefore **permanent**. The feature still ships with fixed footprints (no
-tuning dials) and still carries "(BETA — for testing)" in its UI label — that label now
-waits on broader user testing, not on the embossing test.
+**Status: BETA — physically validated 2026-08, per stock thickness.** The geometry is
+complete and tested in software. The original two print rounds embossed **0.3 mm card
+stock** legibly on both faces — the same pair did NOT emboss 0.4 mm stock (corrected
+2026-08-19). A controlled print matrix then found the 0.4 mm answer, and since
+2026-08-20 the beta ships **two fixed footprint packages keyed to the card-stock
+preset** — 0.3 → Option B, 0.4 → the Q2 matrix winner (see
+[Section 10, Physical validation](#10-physical-validation-2026-08)). Still no tuning
+dials, and the UI label still carries "(BETA — for testing)" — that label now waits on
+broader user testing, not on the embossing test.
 
 **Code is authoritative.** Where this document and the code disagree, the code wins — flag
 the mismatch, do not silently edit either side. Authoritative sources in order:
@@ -156,16 +158,29 @@ the way in.
 gap crosses the 0.34 mm printability floor. The range brackets the published 1.25 value
 with room to tune against a real print without ever entering unprintable territory.
 
-**Footprint rationale (Option B, signed off 2026-08-16):** front and back features share
-one cylinder surface, so double-sided mode needs smaller dies than single-sided mode. At
-the 1.25/1.25 offset the closest front-to-back centre distance is 1.76777 mm; material
-left between a dot and its neighbouring recess = 1.76777 − (dot Ø + bowl Ø)/2:
+**Footprint rationale (two fixed packages keyed to the card-stock preset — Option B
+signed off 2026-08-16; the 0.4 package and the keying decided 2026-08-20):** front and
+back features share one cylinder surface, so double-sided mode needs smaller dies than
+single-sided mode. At the 1.25/1.25 offset the closest front-to-back centre distance is
+1.76777 mm; material left between a dot and its neighbouring recess = 1.76777 −
+(dot Ø + bowl mouth)/2. Each package has two gap figures because the worker cuts the
+bowl as a hemisphere whose mouth is wider than the nominal diameter (§6.4): the
+*nominal* figure is what the warnings compute, the *printed* figure is the ridge on
+the physical part.
 
-| Footprints | Same-surface gap | Verdict |
-|---|---|---|
-| Option B: dot Ø1.2 + bowl Ø1.3 (shipped) | **+0.518 mm** | Prints reliably (≥ 0.50) |
-| Option A: dot Ø1.5 + bowl Ø1.3 (documented fallback) | +0.368 mm | Marginal band — fallback if Option B domes are too faint on card stock |
-| Single-sided sizes: dot Ø1.5 + bowl Ø1.8 | +0.118 mm | Rejected — below the 0.34 mm a 0.4 mm nozzle can print |
+| Footprints | Gap (nominal) | Gap (printed) | Verdict |
+|---|---|---|---|
+| 0.3 preset — Option B: dot Ø1.2 × 0.8 tall + bowl Ø1.3 (schema default) | **+0.518 mm** | +0.495 mm | Embossed 0.3 mm stock cleanly (two rounds, 2026-08-17) |
+| 0.4 preset — Q2: dot Ø1.2 × 1.0 tall (base 0.5 + dome Ø1.0 × 0.5) + bowl Ø1.4 (prints Ø1.48 × 0.74) | +0.468 mm | +0.428 mm | Only package that embossed 0.4 mm stock cleanly (print matrix 2026-08-20); printed ridge measured clean; trips the live warning by design |
+| Option A: dot Ø1.5 + bowl Ø1.3 (documented history) | +0.368 mm | — | Fallback superseded by the keyed 0.4 package |
+| Single-sided sizes: dot Ø1.5 + bowl Ø1.8 | +0.118 mm | — | Rejected — below the 0.34 mm a 0.4 mm nozzle can print |
+
+One footprint cannot serve both stocks — the print matrix showed the Q2 package tears
+0.35 mm card while Option B under-forms 0.4 mm card, the same fact that motivates the
+single-sided presets — so the UI sends the package for the selected card-stock preset
+(§6.1, §7.5) and the schema defaults stay Option B as the absent-field fallback. A
+machine-side limit from the same tests: die heights above 1.0 mm scrape the embosser's
+cylinder-holder housing (§10), so both packages sit at or below 1.0 mm.
 
 Thresholds (constants in `app/geometry/interpoint.py`): `SAME_SURFACE_GAP_RELIABLE_MM`
 = 0.50, `SAME_SURFACE_GAP_FLOOR_MM` = 0.34 (Bambu X1C Arachne wall generator: paths from
@@ -275,9 +290,12 @@ plates (recesses on A, raised dots on B). Decided by Brennen 2026-08-16.
    then padded to `grid_rows`. Fails **closed** on too many lines, a failed translation,
    or an over-long translated row (§7.4 strings).
 4. The request body gains a top-level `back_lines` and, inside `settings`, the flat
-   double-sided fields — `double_sided_enabled` as the NUMBER 1, offsets and footprints
-   as strings with Option B fallbacks — **only when the beta is on**. Key order is
-   unchanged, so the toggle-off payload is byte-identical to the pre-feature payload.
+   double-sided fields — `double_sided_enabled` as the NUMBER 1, offsets as strings
+   with 1.25 fallbacks, and the six footprints as NUMBERS from `DS_FOOTPRINTS[preset]`
+   (`activeDsFootprints()`: the package for the selected card-stock preset; 'custom'
+   falls back to the last persisted preset, then '0.4') — **only when the beta is on**.
+   Key order is unchanged, so the toggle-off payload is byte-identical to the
+   pre-feature payload.
 
 ### 6.2 Backend (`backend.py`)
 
@@ -342,11 +360,14 @@ shell → union raised dots → union raised markers (arrows)
       → subtract recess dots → subtract recess markers
 ```
 
-**Measured bowl-depth drift (report-only):** the worker cuts the bowl from a sphere
-centred ON the cylinder surface, so the nominal 1.3 × 0.5 mm bowl comes out 0.667–0.672 mm
-deep on live worker output (~0.6725 predicted), versus the exact 0.5 mm Python convention
-used by the golden fixtures. Deeper is the **safe** direction for nip clearance; left
-as-is by decision.
+**Bowl-cut convention (authoritative since 2026-08-19):** the worker cuts the bowl from
+a sphere centred ON the cylinder surface — a hemisphere of radius (a² + h²)/(2h) — so
+the nominal 1.3 × 0.5 mm bowl comes out 0.667–0.672 mm deep (0.6725 predicted) with a
+1.345 mm mouth, and `ds_bowl_depth` sets neither directly. This is what has been
+printed and embossed, so it is the convention of record: the golden fixtures render it
+since 2026-08-20, and the OpenSCAD port was changed to match. The warnings still quote
+gaps from the NOMINAL bowl diameter and so understate crowding by (printed mouth −
+nominal)/2 — flagged for the warnings phase.
 
 ### 6.5 Nip kinematics (why the pair cannot collide)
 
@@ -441,9 +462,14 @@ a shared prefix plus one of two tails:
 >   will be blocked. Reduce the double-sided dot or recess diameter, or check the
 >   interpoint offsets."
 
-Reference numbers (asserted by the e2e suite): offsets 1.25/1.25 → hidden (gap 0.518);
-offset x 1.15 → "0.449 mm" marginal; both 1.15 → "0.376 mm"; footprints 1.5/1.8 →
-"0.118 mm" blocked.
+The footprints come from the selected card-stock preset's package
+(`activeDsFootprints()`, §7.5), so on the 0.4 preset the warning is visible whenever
+the beta is on: the Q2 package's 0.468 mm nominal gap sits below the 0.50 mm line by
+design (its printed 0.428 mm ridge was measured printing clean, 2026-08-20).
+Reference numbers (asserted by the e2e suite): 0.4 preset at offsets 1.25/1.25 →
+"0.468 mm" marginal; 0.3 preset at 1.25/1.25 → hidden (gap 0.518); 0.3 preset,
+offset x 1.15 → "0.449 mm" marginal; both offsets 1.15 → "0.376 mm"; 0.4 preset at
+both 1.15 → "0.326 mm" blocked.
 
 ### 7.4 Back-text wrapping, live warning, and error messages (fail closed)
 
@@ -508,8 +534,8 @@ written by `announceStatus(source, message)`:
 - **Each announcement repeats the box's own `textContent`**, so what is heard matches what
   is shown, "Warning:" included, and no separate wording exists to drift or need sign-off.
 
-Two call sites are deliberately not a plain mirror, both found by listening rather than by
-reading the accessibility tree:
+Three call sites are deliberately not a plain mirror, each found by listening (or by a
+test that listens) rather than by reading the accessibility tree:
 
 - **The lock note is deferred one task** (`setTimeout(..., 0)`). Announced synchronously it
   arrived before the checkbox's own "checked, expanded" — about 30 words before the user
@@ -518,6 +544,12 @@ reading the accessibility tree:
   live cell count, so every keystroke was a real change and it talked over the user while
   they typed. Measured 3 announcements before the change, 1 after, over the same typed
   sentence.
+- **The gap warning announces only when its message changes** (`announceDsGap`, added
+  2026-08-20 with the preset keying). On the 0.4 preset the warning box is visible for
+  the whole session, and `announceStatus` rewrites the region even for identical text —
+  so its per-keystroke recompute kept re-taking the region and talked over the
+  back-overflow warning (caught by the e2e suite). Announcing only on change restores
+  one polite announcement per real event; the visible box is unaffected.
 
 The tree proves a region *can* announce; only listening proves it announces usefully.
 The single-sided flow's `#error-message` reaches the same region through one
@@ -531,10 +563,13 @@ STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md §8.
   and re-applies the lock), cleared by Reset and by Clear-all. Also documented in
   BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md v1.4 (Section 8 and the Section 11
   localStorage table).
-- **There are no offset or footprint dials, by decision** (Brennen, 2026-08-16): the beta
-  ships FIXED at Option B. The `ds_*` values and offsets are overridable only via a
-  saved-settings JSON or a direct payload; dials come only if the physical embossing test
-  calls for tuning.
+- **There are no offset or footprint dials, by decision** (Brennen, 2026-08-16; preset
+  keying added 2026-08-20): the footprints ship as fixed packages keyed to the
+  card-stock preset — 0.3 → Option B, 0.4 → the Q2 print-matrix winner — via
+  `DS_FOOTPRINTS` / `activeDsFootprints()` ('custom' falls back to the last persisted
+  preset, then '0.4'). The offsets are overridable only via a saved-settings JSON or a
+  direct payload; footprint dials stay deliberately absent — the interpoint budget
+  leaves no safe adjustment room (§3).
 
 ---
 
@@ -546,14 +581,18 @@ Anything touching this feature must keep these green:
    `ds_cylinderB_golden.stl` (+ `.json` metadata siblings): front "abc" / back "def",
    Option B footprints, tactile, 14 × 4, offsets 1.25/1.25, solid shell (no cutout).
    A = 5 raised + 8 bowls, B = 5 bowls + 8 raised, 4 arrows each. Regenerate ONLY via
-   `python -m tests.test_golden` from the repo root. Bowls are cut at the **exact Python
-   depth convention (0.5 mm)**, not the worker's deeper drift (§6.4). These are the first
+   `python -m tests.test_golden` from the repo root. Bowls are cut with the **worker's
+   centre-on-surface convention** (0.6725 mm deep at the Option B nominals, §6.4) since
+   the 2026-08-20 regeneration. The fixtures pin the Option B (0.3-preset) package: the
+   generator refuses a spec with warnings, and the 0.4/Q2 package trips the crowding
+   warning by design. These are the first
    files that literally match project-facts' "NEVER modify `tests/fixtures/*_golden.stl`"
    glob.
-2. **E2E suite** — `tests/e2e/doubleSided.spec.ts` (9 tests; local pass bar Chromium +
+2. **E2E suite** — `tests/e2e/doubleSided.spec.ts` (16 tests; local pass bar Chromium +
    Firefox, decided 2026-08-16 — WebKit stays with CI on Linux): pins the toggle-off
    payload to an embedded pre-feature snapshot, the tactile lock, the wire shape
-   (top-level `back_lines`, flat ds settings, B carrying the front braille), the
+   (top-level `back_lines`, flat ds settings as the preset-keyed package — Q2 on the
+   default 0.4 preset, Option B on 0.3 — B carrying the front braille), the
    5-raised/8-recessed vs 8/5 paired spec split with no universal grid, all three
    download filenames, the live warning numbers (§7.3), the backend 400 gates, and
    keyboard-only operation of the toggle.
@@ -584,7 +623,9 @@ pre-beta output — product behavior, not a regression. B plates (recess outline
   ever disagrees.
 - ~~**Physical dome conformance is unproven**~~ — **CLOSED 2026-08.** The Ø1.2 mm Option B
   die raises a legible dome on real card stock over two print rounds (§10). Option B is
-  permanent; the Option A fallback (§3) stays documented as history only.
+  permanent; the Option A fallback (§3) stays documented as history only. **Amended
+  2026-08-20:** that pass was on 0.3 mm stock only; 0.4 mm stock needs the taller Q2
+  package, keyed to the card-stock preset (§3, §10).
 - **Front lines on a double-sided Cylinder B request bypass the braille-charset check**
   (pre-existing `validate_braille_lines(lines, plate_type)` signature; report-only). They
   only become recesses there, and the paired Cylinder A request does validate them.
@@ -608,7 +649,7 @@ The embossing test the beta was waiting on has been run and **passed**.
 | Printer / nozzle | Bambu Lab X1C, 0.4 mm nozzle |
 | Rounds | Two, each a full Cylinder A + Cylinder B pair |
 | Footprints under test | Option B — dot Ø1.2 mm (0.4 mm rounded base + 0.4 mm dome, dome Ø0.8 mm); paired bowl Ø1.3 × 0.5 mm deep |
-| Medium | Real card stock, embossed through the paired cylinders |
+| Medium | Real card stock, embossed through the paired cylinders — **0.3 mm stock** (corrected 2026-08-19: the same pair did NOT emboss 0.4 mm stock) |
 | Outcome | Braille legible on **both** faces of the card |
 
 **What this closes**
@@ -616,7 +657,8 @@ The embossing test the beta was waiting on has been run and **passed**.
 1. **Option B is permanent.** The smaller double-sided die raises a readable dome, so the
    shipped footprints stay fixed with no tuning dials. **Option A (dot Ø1.5 + bowl Ø1.3)
    is documented history only** — there is no fallback switch to it, in the UI or in the
-   settings.
+   settings. **Amended 2026-08-20: permanent as the 0.3-preset package**; the 0.4 preset
+   ships the Q2 package (the 2026-08-20 record below).
 2. **`BACK_GRID_DIRECTION = +1` is confirmed** (§2.3). Handling the printed pair showed
    the back features landing where the spec says they should — left of Cylinder A's raised
    arrows, viewed from outside the cylinder with the top upward. The "unverifiable sign"
@@ -631,12 +673,37 @@ The embossing test the beta was waiting on has been run and **passed**.
   That is a requirement on whoever assembles the machine, not something this codebase can
   enforce.
 
+**The 0.4 mm answer (print matrix, 2026-08-20).** Option B could not emboss 0.4 mm stock
+(0.40 mm of usable push against the 0.60 mm the single-sided 0.4 preset gets). A
+controlled matrix — Control (= Option B) / Q1 (dot raised to 1.0 mm) / Q2 (Q1 + bowl
+Ø1.4) — was printed as paired cylinders and embossed:
+
+| Stock | Control | Q1 | Q2 |
+|---|---|---|---|
+| 0.35 mm testers | 1.4 × 1.3 mm base, 0.55 tall, clean | 1.45 × 1.3, 0.65, minimal breakthroughs | 1.5 × 1.4, 0.75, many breakthroughs |
+| 0.40 mm (one card) | — | — | **1.4 × 1.4, 0.40 tall, clean** |
+
+Findings, all first-hand: embossed height tracks dot push until the paper is pressed to
+the bowl floor — **floor contact is the breakthrough mechanism**; embossed width tracks
+the bowl mouth (±0.06 mm); 0.4 mm stock is stiffness-limited (it converted only ~⅔ of
+the available push); and a 0.05 mm stock change flipped the same Q2 pair from many
+breakthroughs to a clean under-formed dot — no single footprint can serve both stocks.
+A follow-up (Q3) matrix probing taller and blunter dots was contaminated by a
+machine-side discovery: **die heights above 1.0 mm scrape the embosser's
+cylinder-holder housing** (Brennen, 2026-08-20), so 1.0 mm is the die-height ceiling on
+the current hardware. With no further 0.4 mm stock on hand, Brennen decided 2026-08-20:
+**Q2 is the 0.4-stock package** — the only clean 0.4 mm emboss, and its 1.0 mm height
+clears the housing — keyed to the card-stock preset. Its printed 0.428 mm same-surface
+ridge was inspected on the printed cylinders (row of full cells, both faces): **clean
+and separated**. Full record: the research folder's `00_PROJECT_MEMORY.md`, FD-8/FD-9.
+
 ---
 
 ## Document History
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-08-20 | 1.5 | **Footprints keyed to the card-stock preset** (research memory FD-8/FD-9): 0.3 preset → Option B (unchanged, still the schema/models defaults), 0.4 preset → the Q2 print-matrix winner (dot Ø1.2 × 1.0 mm tall, dome Ø1.0; bowl Ø1.4 nominal → printed Ø1.48 × 0.74). §3 rationale rewritten with both packages and nominal-vs-printed gap figures (Q2: 0.468 nominal / 0.428 printed, measured printing clean); §6.1 wire shape (footprints now numbers from `DS_FOOTPRINTS[preset]`); §6.4 bowl convention now authoritative and used by the regenerated goldens; §7.3 new reference numbers — the 0.4 preset shows the warning at defaults by design; §7.5 keying; §7.6 documents `announceDsGap` (the persistent warning announces only on change, fixing it talking over the back-overflow announcement); §8 anchors updated (16 e2e tests; goldens regenerated 2026-08-20 with the worker bowl convention, still Option B footprints); Overview/§9/§10 corrected — the 2026-08 physical pass was 0.3 mm stock only — and §10 gains the 2026-08-20 print-matrix record, the Q2 decision, and the 1.0 mm die-height housing ceiling. Wire payloads change only with the beta ON; toggle-off stays byte-identical. |
 | 2026-08-18 | 1.4 | **Section 7 corrected against the code** (web repo Phase 07 closeout, after Phase 05d/05e changed the announcement mechanism): §7.1, §7.2 and §7.3 no longer claim `role="status"`/`aria-live` on `#ds-back-overflow-warning`, `#indicator-mode-lock-note` and `#ds-gap-warning` — those attributes were removed from the markup because a box hidden between messages can never fire them. New §7.6 documents what replaced them: the always-present `#a11y-status` region, `announceStatus(source, message)` and its source scoping, the lock note's one-task deferral, and the overflow warning's hidden-to-shown gate. Also refreshed stale cross-reference versions: STL_EXPORT_AND_DOWNLOAD is at v1.8 and UI_INTERFACE_CORE at v1.16, not the v1.5 and v1.10 cited. Documentation only — no code, wire shape, or geometry changed by this edit. |
 | 2026-08-17 | 1.3 | **Placeholder corrected** (web repo Phase 04 closeout): `#back-text`'s placeholder said "Each line becomes one braille row", which stopped being true when v1.2 added BANA auto-wrap. Replaced with "Type the text for the back of the card here. It wraps across the rows automatically.", **signed off by Brennen on 2026-08-17**; §7.1 updated. This closes the last carried-over wording item from Phase 02. No code behaviour, wire shape, or geometry changed. |
 | 2026-08-17 | 1.2 | **Back of Card text reached parity with the front** (web repo Phase 02): the generate handler now runs the shared `banaAutoWrap()` over `#back-text` instead of translating one row per newline, and a live `#ds-back-overflow-warning` status region warns while the user types. §7.4 rewritten (wrapping rule, live-warning wording, three fail-closed blocking paths); the 2026-08-16 per-line "exceeds C available braille cells" error retired; the Back of Card help note replaced. All six new user-facing strings — the help note, the three blocking errors, and the two live-warning sentences — were **signed off by Brennen on 2026-08-17**. Wire shape, persistence keys, the toggle-off payload, and all geometry are unchanged. |
