@@ -1163,6 +1163,30 @@ INDICATOR_OVERCUT = 0.05;
 // Keep in sync with the web preview's three.js shell segments.
 CYLINDER_SHELL_FN = 64;
 
+// -----------------------------------------------------------------------------
+// RAISED-DOT BASE EMBED
+// -----------------------------------------------------------------------------
+// Because the shell is a 64-sided prism, each facet dips SHELL_FACET_DIP inside
+// the ideal radius at its centre. A raised dot whose flat base sits at exactly
+// `radius` therefore spans that void and exports as a SEPARATE connected body:
+// measured 2026-08-21, 32 bodies on the single-sided default and 6 / 9 on the
+// double-sided pair, which is where the negative Genus readings came from.
+// Sinking the base deeper than the dip fuses dot to shell.
+//
+// DERIVED, not a constant, because the dip scales with radius: 0.0186 mm at the
+// shipped 30.8 mm but 0.0602 mm at the 100 mm ceiling, so any fixed figure small
+// enough to be tidy leaves large cylinders floating (0.05 mm still splits a
+// 100 mm cylinder into 7 bodies). The factor of two is the overlap margin - the
+// same "overlap, never touch" rule INDICATOR_OVERCUT follows.
+//
+// This does NOT change how far a dot stands proud of the shell. The base frustum
+// is LENGTHENED downward along its own taper, so its radius at `radius` is still
+// the full base diameter and every surface at or above the shell is untouched -
+// see braille_dot_centered(). Declared after CYLINDER_SHELL_FN for the same
+// source-order reason as TACTILE_SEAM_WALL_MIN below.
+SHELL_FACET_DIP = radius * (1 - cos(180 / CYLINDER_SHELL_FN));
+DOT_BASE_EMBED  = SHELL_FACET_DIP * 2;
+
 // "INVALID CHARACTERS" warning text placement (rendered above the cylinder
 // when get_dot_pattern() returns the bad-pattern marker for an untranslated
 // English glyph).
@@ -1455,15 +1479,25 @@ module braille_dot_centered() {
         _R_sphere = (_dome_r * _dome_r + _preset_rounded_dot_dome_height * _preset_rounded_dot_dome_height) / (2 * _preset_rounded_dot_dome_height);
         _center_z = _preset_rounded_dot_base_height + _preset_rounded_dot_dome_height - _R_sphere;
         
+        // Skirt: the frustum continues DOT_BASE_EMBED below the shell surface on
+        // its own taper, so its radius AT the surface is still the full base
+        // diameter and the dot's standing height is unchanged.
+        _base_r  = _preset_rounded_dot_base_diameter / 2;
+        _top_r   = _preset_rounded_dot_dome_diameter / 2;
+        _skirt_r = _preset_rounded_dot_base_height > 0
+                   ? _base_r + (_base_r - _top_r) * DOT_BASE_EMBED / _preset_rounded_dot_base_height
+                   : _base_r;
+        _frustum_h = _preset_rounded_dot_base_height + DOT_BASE_EMBED;
+
         // Center the combined geometry at Z=0
         translate([0, 0, -_total_height / 2]) {
             union() {
                 // Frustum base
-                translate([0, 0, _preset_rounded_dot_base_height / 2])
+                translate([0, 0, _frustum_h / 2 - DOT_BASE_EMBED])
                 cylinder(
-                    h = _preset_rounded_dot_base_height,
-                    r1 = _preset_rounded_dot_base_diameter / 2,
-                    r2 = _preset_rounded_dot_dome_diameter / 2,
+                    h = _frustum_h,
+                    r1 = _skirt_r,
+                    r2 = _top_r,
                     center = true,
                     $fn = cone_segments
                 );
@@ -1477,11 +1511,19 @@ module braille_dot_centered() {
             }
         }
     } else {
-        // Cone frustum - already centered
+        // Cone frustum, centered on the ORIGINAL height so the caller's radial
+        // placement still puts the flat hat at radius + height; the skirt hangs
+        // below on the same taper.
+        _cone_base_r  = _preset_emboss_dot_base_diameter / 2;
+        _cone_top_r   = _preset_emboss_dot_flat_hat / 2;
+        _cone_skirt_r = _cone_base_r
+                        + (_cone_base_r - _cone_top_r) * DOT_BASE_EMBED / _preset_emboss_dot_height;
+
+        translate([0, 0, -DOT_BASE_EMBED / 2])
         cylinder(
-            h = _preset_emboss_dot_height,
-            r1 = _preset_emboss_dot_base_diameter / 2,
-            r2 = _preset_emboss_dot_flat_hat / 2,
+            h = _preset_emboss_dot_height + DOT_BASE_EMBED,
+            r1 = _cone_skirt_r,
+            r2 = _cone_top_r,
             center = true,
             $fn = cone_segments
         );
@@ -1494,12 +1536,18 @@ module braille_dot_centered() {
 module ds_braille_dot_centered() {
     _center_z = DS_DOT_BASE_H + DS_DOT_DOME_H - DS_DOT_DOME_R;
 
+    // Same DOT_BASE_EMBED skirt as the single-sided dot; DS_DOT_BASE_H is fixed
+    // by the package so it is never zero.
+    _ds_skirt_r = DS_DOT_BASE_DIA / 2
+                  + (DS_DOT_BASE_DIA / 2 - DS_DOT_DOME_DIA / 2) * DOT_BASE_EMBED / DS_DOT_BASE_H;
+    _ds_frustum_h = DS_DOT_BASE_H + DOT_BASE_EMBED;
+
     translate([0, 0, -DS_DOT_HEIGHT / 2]) {
         union() {
-            translate([0, 0, DS_DOT_BASE_H / 2])
+            translate([0, 0, _ds_frustum_h / 2 - DOT_BASE_EMBED])
             cylinder(
-                h = DS_DOT_BASE_H,
-                r1 = DS_DOT_BASE_DIA / 2,
+                h = _ds_frustum_h,
+                r1 = _ds_skirt_r,
                 r2 = DS_DOT_DOME_DIA / 2,
                 center = true,
                 $fn = cone_segments

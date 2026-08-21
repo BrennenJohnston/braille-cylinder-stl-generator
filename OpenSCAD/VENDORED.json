@@ -1,15 +1,15 @@
 {
   "$comment": "Provenance for the vendored OpenSCAD copy. Every file below is copied verbatim from the upstream repository at the recorded tag, except where a note says otherwise. Edit them upstream, never here. Each sha256 is of the bytes this repo ships, which for a file with an 'edited on copy' note is deliberately not the upstream hash; tests/test_vendored_openscad.py fails if any file drifts from its record.",
   "upstream_repo": "https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad",
-  "upstream_tag": "v2.6.0",
-  "upstream_commit": "fb854ea0ebae6dafc4ea1838f8007956fd1f8ff8",
+  "upstream_tag": "v2.6.1",
+  "upstream_commit": "ea866426a5172238780820d8068553d62cfc315b",
   "upstream_release_date": "2026-08-21",
   "vendored_on": "2026-08-21",
   "canonical": "upstream",
   "files": {
     "Braille_Cylinder_STL_Generator.scad": {
       "upstream_path": "makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad",
-      "sha256": "22772f0da1c70df295d9c83e0bf7e6eda7ecc9adb42b32e2445e4dff47350157",
+      "sha256": "92204533b70e90077ef88fbd447c516f1269b4be60669b6bbe3fb168582ae374",
       "note": "The MakerWorld single-file build is vendored rather than the dual-file desktop build, so the download is self-contained (no include <presets.scad>). Renamed on copy: this repo ships one file, so the _MakerWorld_v2 suffix would only confuse."
     },
     "LICENSE": {

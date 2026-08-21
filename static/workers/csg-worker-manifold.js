@@ -101,11 +101,42 @@ async function initManifold() {
 })();
 
 /**
+ * Tessellation of the cylinder shell and of every band concentric with it.
+ * Also the source of the raised-dot base embed below, so the two can never
+ * drift apart: a coarser shell dips further inside the ideal radius and needs
+ * a deeper embed to stay fused.
+ */
+const CYLINDER_SHELL_SEGMENTS = 64;
+
+/**
+ * How far a raised dot's base must sink below the ideal cylinder radius to fuse
+ * with the shell instead of floating over it.
+ *
+ * The shell is a regular prism, so each facet dips this far inside the ideal
+ * radius at its centre. A dot whose flat base sat at exactly cylRadius spanned
+ * that void and exported as a SEPARATE connected body - measured 2026-08-21 on
+ * a real browser export: 1 shell + 1 body per raised dot. Watertight, but a
+ * loose body some toolchains can drop, and a void under a tactile feature.
+ *
+ * DERIVED, not a constant, because the dip scales with radius: 0.0186 mm on the
+ * default 30.8 mm cylinder but 0.1205 mm at the 200 mm the UI allows, so any
+ * fixed figure small enough to be tidy leaves large cylinders floating. The
+ * factor of two is the overlap margin.
+ *
+ * This does NOT change how far a dot stands proud: the base frustum is
+ * LENGTHENED downward along its own taper, so its radius at the shell surface
+ * is exactly the base diameter it always was.
+ */
+function raisedDotBaseEmbed(cylRadius) {
+    return cylRadius * (1 - Math.cos(Math.PI / CYLINDER_SHELL_SEGMENTS)) * 2;
+}
+
+/**
  * Create a cylinder using Manifold primitives
  * Manifold.cylinder(height, radiusLow, radiusHigh, circularSegments)
  * Creates a cylinder along the Z-axis, centered at origin
  */
-function createManifoldCylinder(height, radius, segments = 64) {
+function createManifoldCylinder(height, radius, segments = CYLINDER_SHELL_SEGMENTS) {
     return Manifold.cylinder(height, radius, radius, segments, true);
 }
 
@@ -194,6 +225,10 @@ function createCylinderDotManifold(spec) {
     const shape = params.shape || 'standard';
     const isRecess = is_recess || shape === 'hemisphere' || shape === 'bowl';
 
+    // Recesses are subtracted, so they have no floating-body problem and get no
+    // skirt; zero here also keeps their geometry byte-identical.
+    const baseEmbed = isRecess ? 0 : raisedDotBaseEmbed(cylRadius);
+
     let dot = null;
     let dotHeight = 0;
 
@@ -209,10 +244,14 @@ function createCylinderDotManifold(spec) {
             dotHeight = baseHeight + domeHeight;
 
             if (baseHeight > 0) {
-                // Create frustum base
-                const frustum = createManifoldFrustum(baseRadius, topRadius, baseHeight, 24);
-                // Frustum is centered at origin, move so base is at z=0
-                const positionedFrustum = frustum.translate([0, 0, baseHeight / 2]);
+                // Create frustum base, continued baseEmbed below z=0 on its own
+                // taper so it bites into the shell without moving the profile the
+                // paper meets: its radius at z=0 is still baseRadius.
+                const skirtRadius = baseRadius + (baseRadius - topRadius) * baseEmbed / baseHeight;
+                const frustumHeight = baseHeight + baseEmbed;
+                const frustum = createManifoldFrustum(skirtRadius, topRadius, frustumHeight, 24);
+                // Frustum is centered at origin, move so its base is at -baseEmbed
+                const positionedFrustum = frustum.translate([0, 0, frustumHeight / 2 - baseEmbed]);
                 frustum.delete();
 
                 // Create dome on top of frustum
@@ -233,11 +272,22 @@ function createCylinderDotManifold(spec) {
                 dot = combinedDot.translate([0, 0, -dotHeight / 2]);
                 combinedDot.delete();
             } else {
-                // Dome only - also needs centering
+                // Dome only. The cap's base circle would sit flat on the shell, so
+                // it gets the same treatment: a stub frustum living entirely below
+                // z=0, invisible from outside.
                 const unceneredDome = createSphericalCap(domeRadius, domeHeight, 24);
+                let withSkirt = unceneredDome;
+                if (baseEmbed > 0) {
+                    const skirt = createManifoldFrustum(baseRadius, topRadius, baseEmbed, 24);
+                    const positionedSkirt = skirt.translate([0, 0, -baseEmbed / 2]);
+                    skirt.delete();
+                    withSkirt = unceneredDome.add(positionedSkirt);
+                    unceneredDome.delete();
+                    positionedSkirt.delete();
+                }
                 // Spherical cap spans [0, domeHeight], center it at origin
-                dot = unceneredDome.translate([0, 0, -domeHeight / 2]);
-                unceneredDome.delete();
+                dot = withSkirt.translate([0, 0, -domeHeight / 2]);
+                withSkirt.delete();
             }
 
         } else if (shape === 'hemisphere') {
@@ -271,7 +321,13 @@ function createCylinderDotManifold(spec) {
             const topRadius = (params.top_radius >= 0) ? params.top_radius : 0.25;
             const height = (params.height > 0) ? params.height : 0.5;
             dotHeight = height;
-            dot = createManifoldFrustum(baseRadius, topRadius, height, 24);
+            // Same skirt as the rounded dot. dotHeight stays the ORIGINAL height
+            // so the radial placement below is untouched: the flat hat ends up at
+            // cylRadius + height and the extra length hangs below the surface.
+            const skirtRadius = baseRadius + (baseRadius - topRadius) * baseEmbed / height;
+            const embedded = createManifoldFrustum(skirtRadius, topRadius, height + baseEmbed, 24);
+            dot = embedded.translate([0, 0, -baseEmbed / 2]);
+            embedded.delete();
         }
 
         if (!dot) return null;
@@ -1269,8 +1325,8 @@ function createCylinderTactileArrowManifold(spec) {
 
         // Band tall enough to cover the arrow's axial extent, centered on it.
         const bandHeight = length + 2 * delta + 2;
-        const bandOuter = createManifoldCylinder(bandHeight, outerRadius, 64);
-        const bandInner = createManifoldCylinder(bandHeight + 2, innerRadius, 64);
+        const bandOuter = createManifoldCylinder(bandHeight, outerRadius, CYLINDER_SHELL_SEGMENTS);
+        const bandInner = createManifoldCylinder(bandHeight + 2, innerRadius, CYLINDER_SHELL_SEGMENTS);
         const bandAtOrigin = bandOuter.subtract(bandInner);
         bandOuter.delete();
         bandInner.delete();
@@ -1305,7 +1361,7 @@ function createCylinderShellManifold(spec) {
 
     try {
         // Create outer cylinder
-        const outer = createManifoldCylinder(validHeight, validRadius, 64);
+        const outer = createManifoldCylinder(validHeight, validRadius, CYLINDER_SHELL_SEGMENTS);
 
         // Check for polygon cutout
         const validPoints = (polygon_points && polygon_points.length >= 3)
@@ -1337,7 +1393,7 @@ function createCylinderShellManifold(spec) {
             // No polygon - create hollow cylinder using wall thickness
             const innerRadius = validRadius - validThickness;
             if (innerRadius > 0) {
-                const inner = createManifoldCylinder(validHeight + 0.2, innerRadius, 64);
+                const inner = createManifoldCylinder(validHeight + 0.2, innerRadius, CYLINDER_SHELL_SEGMENTS);
                 const shell = outer.subtract(inner);
                 outer.delete();
                 inner.delete();

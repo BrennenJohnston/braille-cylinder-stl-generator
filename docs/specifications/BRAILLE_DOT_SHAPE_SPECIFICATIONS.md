@@ -807,6 +807,65 @@ if (shape === 'cone') {
 | Bowl | Counter | `cylRadius` |
 | Cone | Counter | `cylRadius - dotHeight/2` |
 
+The radial offset is unchanged by the base embed described next: the skirt is
+added to the *solid*, below the module's own origin, so every one of these
+formulas still places the dot exactly where it always did.
+
+### Raised-dot base embed: why a dot's base sinks below `cylRadius`
+
+The cylinder shell is a **64-sided prism**, not a true cylinder
+(`CYLINDER_SHELL_SEGMENTS` in `csg-worker-manifold.js`, `CYLINDER_SHELL_FN` in
+the OpenSCAD generator). Each facet therefore dips *inside* the ideal radius at
+its centre by the chord sagitta:
+
+```
+facetDip = cylRadius x (1 - cos(180 deg / 64))
+         = 0.0186 mm at the default 30.8 mm cylinder
+         = 0.1205 mm at the 200 mm the diameter input allows
+```
+
+A raised dot's flat base sat at exactly `cylRadius`, spanning that dip instead
+of biting into it. The dot touched the shell only along the facet edges and
+exported as a **separate connected body**. Measured 2026-08-21 on real exports:
+
+| Model | Bodies before | Bodies after |
+|---|---|---|
+| Browser single-sided emboss cylinder, `abc` | 6 (1 shell + 5 dots) | **1** |
+| OpenSCAD single-sided emboss default | 32 (1 shell + 31 dots) | **1** |
+| OpenSCAD double-sided Cylinder A | 6 | **1** |
+| OpenSCAD double-sided Cylinder B | 9 | **1** |
+
+All of these were watertight before and remain so - it was a **topology
+artefact, not a hole** - but a loose body can be shifted or dropped by some
+toolchains, the gap was a real void under a tactile feature, and the resulting
+negative Genus reading masks any future manifoldness bug.
+
+`raisedDotBaseEmbed(cylRadius)` returns `facetDip x 2` and the dot's base frustum
+is **lengthened downward along its own taper** by that much:
+
+```javascript
+skirtRadius  = baseRadius + (baseRadius - topRadius) x baseEmbed / baseHeight;
+frustumHeight = baseHeight + baseEmbed;
+```
+
+Continuing the same cone is what keeps the change invisible: the frustum's radius
+**at** `cylRadius` is still exactly `baseRadius`, so the dot's profile at the
+surface and its height above it are untouched. Verified by measurement - the
+furthest vertex from the axis is identical before and after in every
+configuration tested (browser export 16.400001 mm; OpenSCAD 16.39767 mm on the
+0.4 package, 16.19812 mm on the 0.3 package).
+
+The embed is **derived, not a constant**, because the facet dip scales with
+radius. A fixed 0.05 mm - the figure `tests/test_golden.py` uses for its own
+renderer - fuses every shipped preset but still leaves a 100 mm cylinder in 7
+pieces. Recesses get **no** embed (`baseEmbed = 0` when `isRecess`): they are
+subtracted, so they never had the problem, and zeroing it keeps their geometry
+byte-identical.
+
+**Known, reported, not fixed:** inside every *rounded* dot the dome's base circle
+meets the frustum's top with zero overlap and mismatched tessellation. It welds
+today, but it is a tangency rather than an overlap.
+
 ### Orientation Rotations
 
 All non-spherical shapes must be rotated to point radially outward on the cylinder surface.
@@ -1015,6 +1074,12 @@ geometry = createConeFrustum(topRadius, baseRadius, height);
 **Cause:** Incorrect radial offset for shape type
 **Solution:** Use shape-specific radial offset formulas
 
+**Related, and a different failure:** a dot can be at the correct radial offset
+and *still* export as its own connected body, because the faceted shell dips
+inside the ideal radius under it. That is the base embed, Section 7 - the
+symptom there is a body count above 1 and a negative Genus, not a dot that looks
+wrong.
+
 ### Bug 4: Hemisphere Depth Doesn't Match Diameter
 
 **Symptom:** Hemisphere appears too shallow or too deep
@@ -1163,6 +1228,7 @@ Use these logs to verify that:
 | 2024-12-07 | 1.4 | Bug 7 fix VERIFIED by user testing - rounded dots now correctly positioned flush with cylinder surface |
 | 2026-08-17 | 1.5 | **Defaults refreshed against the code** (docs only, no code or fixture changed). Corrected `use_rounded_dots` default from 0 to **1** - Rounded, not Cone, is the default emboss family at every layer (Sections 1 and 9). Every "Default Parameter Values" table now carries both the schema/`app/models.py` default and the live-UI value, because `restoreThicknessPreset()` applies the 0.4 mm preset on page load and overwrites most dot dials; Section 9 adds the 0.3 mm preset column and the fixed double-sided BETA footprints. Added Section 5 "Cut Depth Convention", documenting as **intentional** the Manifold worker cutting bowls from a sphere centred on the surface: nominal 1.8 x 0.8 cuts about 0.906 mm and nominal 1.3 x 0.5 cuts 0.667-0.672 mm, versus the Python renderer's exact nominal depth used by the golden fixtures. Deeper is the safe direction for nip clearance. |
 
+| 2026-08-21 | 1.7 | Section 7 gains **"Raised-dot base embed"**, and Bug 3 cross-references it. Raised dots are now sunk below the shell surface by twice the 64-segment facet sagitta so they fuse with the shell instead of exporting as separate connected bodies - measured 6 bodies down to 1 on a real browser export, 32 down to 1 on the OpenSCAD single-sided default. **No dimension changed**: the base frustum is lengthened downward along its own taper, so its radius at the surface and the dot's height above it are byte-stable (browser dome apex 16.400001 mm before and after). Recesses are unaffected. Both generators moved together (`static/workers/csg-worker-manifold.js`, OpenSCAD 2.6.1); `tests/fixtures/*_golden.stl` were NOT regenerated - their renderer already sank a 0.05 mm skirt of its own. |
 | 2026-08-20 | 1.6 | Section 9's double-sided footprints table now carries TWO packages keyed to the card-stock preset (research memory FD-8/FD-9): 0.3 preset → Option B (unchanged, still the schema default), 0.4 preset → the Q2 print-matrix winner (base height 0.5, dome Ø1.0 × 0.5, bowl Ø1.4) — one footprint cannot serve both stocks (Q2 tears 0.35 mm card; Option B under-forms 0.4 mm card). Records the 1.0 mm die-height housing ceiling. |
 ---
 
