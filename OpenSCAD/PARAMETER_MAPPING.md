@@ -72,8 +72,8 @@ Expert Mode.
 |--------------------|----------------|---------|----------------|-------|
 | `indicator_mode` | `indicator_mode` | `"Visual"` | `"Visual"`, `"Tactile"` | `Visual` = recessed marker cells at the start of each row (current behavior). `Tactile` = raised arrow on the emboss plate + matching recess on the counter plate, in the seam gap. See Note 3. |
 | `tactile_indicator_width` | `tactile_indicator_width` | 4.0 mm | 2–10 mm | Indicator width around the cylinder |
-| `tactile_indicator_length` | `tactile_indicator_length` | 5.0 mm | 2–15 mm | Indicator length along the cylinder axis; the default matches the 5 mm braille dot field height |
-| `tactile_indicator_raise` | `tactile_indicator_raise` | 0.8 mm | 0–2 mm | How far the emboss arrow stands proud. Kept below the braille dot height so the dots carry the rolling pressure |
+| `tactile_indicator_length` | `tactile_indicator_length` | 10.0 mm | 2–15 mm | Indicator length along the cylinder axis; long enough for a fingertip to read the direction of the point in one pass. At the 10 mm default `line_spacing`, each row's arrow meets the base of the one above |
+| `tactile_indicator_raise` | `tactile_indicator_raise` | 0.5 mm | 0–2 mm | How far the emboss arrow stands proud. Kept below the braille dot height so the dots carry the rolling pressure |
 | `tactile_recess_clearance` | `tactile_recess_clearance` | 0.2 mm | 0–1 mm | Outline margin around the counter recess |
 | `tactile_recess_extra_depth` | `tactile_recess_extra_depth` | 0.2 mm | 0–1 mm | Counter recess depth beyond the raise; 0 = exact same-depth nesting |
 

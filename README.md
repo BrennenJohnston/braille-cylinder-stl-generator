@@ -119,8 +119,9 @@ Issues and pull requests for the OpenSCAD program belong upstream. Nothing in
 
 The web app translates automatically; the OpenSCAD version needs you to translate manually (using [Branah.com](https://www.branah.com/braille-translator)), but it works without an internet connection and integrates with existing CAD workflows.
 
-The two are not at parity right now: the OpenSCAD version is single-sided only. Porting the
-double-sided (interpoint) beta to it is in progress.
+As of v2.6.0 the OpenSCAD companion includes the **double-sided (interpoint) beta** as well,
+with the same paired Cylinder A / Cylinder B workflow. Back-of-card text there is
+pre-translated braille only, like the front — automatic translation stays a web-app feature.
 
 ## Project layout
 
