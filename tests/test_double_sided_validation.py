@@ -154,11 +154,13 @@ def test_footprint_boundaries_are_accepted():
     """
     Schema min/max values that also clear the gap floor pass validation.
 
-    ds_bowl_depth takes its MINIMUM here rather than its maximum. Since Phase
-    13b the floor gate measures the printed mouth, and a 0.5 mm bowl cut 5.0 mm
-    deep prints 5.01 mm across — see the test below. Depth 0.0 is the schema
-    minimum and has no hemisphere to convert, so it exercises the gate's
-    non-positive-depth path as well.
+    ds_bowl_depth is neither its minimum nor its maximum here. Since Phase 13b
+    the floor gate measures the printed mouth, and a 0.5 mm bowl cut 5.0 mm deep
+    prints 5.01 mm across — see the test below. The schema minimum 0.0 is
+    rejected outright in double-sided mode (see the zero-depth test below), and
+    the printed mouth (a^2 + h^2) / h runs away as the depth approaches zero, so
+    the value that clears the floor is the hemisphere h = a = 0.25 mm, which
+    prints exactly the nominal 0.5 mm across.
     """
     assert (
         validate_settings(
@@ -168,7 +170,7 @@ def test_footprint_boundaries_are_accepted():
                 ds_dot_dome_diameter=3.0,
                 ds_dot_dome_height=0.1,
                 ds_bowl_base_diameter=0.5,
-                ds_bowl_depth=0.0,
+                ds_bowl_depth=0.25,
             )
         )
         is True
@@ -310,27 +312,36 @@ def test_offset_range_itself_did_not_narrow():
     assert validate_settings(_package('0.3', interpoint_offset_x=1.15, interpoint_offset_y=1.15)) is True
 
 
-def test_non_positive_bowl_depth_falls_back_to_the_nominal_diameter(caplog):
+def test_non_positive_bowl_depth_is_rejected_in_double_sided_mode():
     """
-    ds_bowl_depth_mm 0.0 is schema-legal, and a hemisphere cannot be built from it.
+    ds_bowl_depth_mm 0.0 is schema-legal, because a SINGLE-sided counter plate
+    may legitimately ask for no recesses at all. Double-sided cannot: the paired
+    bowl is what receives the opposing cylinder's dot, so a depthless one leaves
+    the two cylinders pressing solid against solid at the nip.
 
-    The gate measures the nominal diameter in that case — what it did before
-    Phase 13b — and says so in the log rather than reporting a printed figure
-    it did not compute.
+    The gate used to accept it and measure the nominal diameter instead. It now
+    refuses, which is also what keeps printed_bowl_mouth_mm's own ValueError
+    unreachable from this path rather than merely worked around.
     """
-    with caplog.at_level(logging.WARNING, logger=VALIDATION_LOGGER):
-        assert validate_settings(_package('0.4', ds_bowl_depth=0.0)) is True
-    assert [r for r in _double_sided_log_records(caplog) if 'not positive' in r.message]
+    with pytest.raises(ValidationError) as excinfo:
+        validate_settings(_package('0.4', ds_bowl_depth=0.0))
+    assert 'must be greater than 0 mm' in str(excinfo.value)
+    assert excinfo.value.details['key'] == 'ds_bowl_depth'
+    assert excinfo.value.details['value'] == 0.0
+
+    # A negative depth never reaches that gate: the schema range check above it
+    # rejects anything below 0.0 first, with its own message.
+    with pytest.raises(ValidationError) as negative:
+        validate_settings(_package('0.4', ds_bowl_depth=-0.5))
+    assert 'must be between 0.0 and 5.0 mm' in str(negative.value)
+
+    # The underlying math still fails closed on its own, and the gate above is
+    # what stops validation from ever reaching it.
     with pytest.raises(ValueError, match='bowl_depth must be > 0'):
         ip.printed_bowl_mouth_mm(1.4, 0.0)
 
-    # And when a zero-depth config does fail the floor, the message must not
-    # claim a hemisphere it never computed.
-    with pytest.raises(ValidationError) as excinfo:
-        validate_settings(_ds_settings(ds_dot_base_diameter=1.5, ds_bowl_base_diameter=1.8, ds_bowl_depth=0.0))
-    assert 'the recess is 1.80 mm across' in str(excinfo.value)
-    assert 'hemisphere' not in str(excinfo.value)
-    assert excinfo.value.details['gap_mm'] == pytest.approx(0.118, abs=0.001)
+    # A positive depth is unaffected: the shipped 0.4 package still validates.
+    assert validate_settings(_package('0.4')) is True
 
 
 # -----------------------------------------------------------------------------

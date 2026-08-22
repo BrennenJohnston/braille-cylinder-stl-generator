@@ -305,9 +305,21 @@ printed-mouth switch was signed off **2026-08-21**. Reword only with his sign-of
    generator and the OpenSCAD port quoting one number. A test asserts the split at the
    source in both directions, so consolidating onto one formula fails the suite.
 
-   **Non-positive `ds_bowl_depth`.** `ds_bowl_depth_mm` is documented 0.0–5.0, and a
-   0 mm depth gives no sphere to convert. The gate then measures the nominal diameter —
-   what it did before 2026-08-21 — and logs that it did. See §9.
+   **Non-positive `ds_bowl_depth` — REJECTED since 2026-08-21.** `ds_bowl_depth_mm` is
+   documented 0.0–5.0 because a *single-sided* counter plate may legitimately ask for no
+   recesses at all (a flat counter plate). Double-sided cannot: the paired bowl is what
+   receives the opposing cylinder's dot, so a depthless one leaves the two cylinders
+   pressing solid against solid at the nip. `validate_double_sided_settings` now raises
+   before any measurement is attempted:
+
+   > Setting 'double_sided.ds_bowl_depth_mm' must be greater than 0 mm in double-sided
+   > mode; the paired recess is what receives the opposing cylinder's dot, so a depth of
+   > 0 mm would leave the two cylinders pressing solid against solid. Received 0.0.
+
+   This retires the nominal-diameter fallback the gate carried between 2026-08-21's two
+   revisions, and keeps `printed_bowl_mouth_mm`'s own `ValueError` unreachable from this
+   path rather than merely worked around. A NEGATIVE depth never reaches this check — the
+   0.0–5.0 range test above it rejects those first, with its own message.
 
 **The marginal band (0.34–0.50 mm nominal) is NOT rejected.** Validation only logs it,
 on the nominal figure; the user-facing channels are the `geometry_spec` soft warning
@@ -532,7 +544,8 @@ same day he signed off gate 4's message). The two are computed side by side:
 
 `dsPrintedBowlMouth(bowlDiameter, bowlDepth)` in `public/index.html` mirrors
 `interpoint.printed_bowl_mouth_mm`, including its fallback to the nominal diameter for a
-non-positive depth. Before this, the box promised "may come out thin or merged" on the
+non-positive depth — which since 2026-08-21 is doubly unreachable: the UI ships fixed
+footprints, and validation now rejects a 0 mm double-sided depth outright. Before this, the box promised "may come out thin or merged" on the
 0.4 preset at both offsets 1.16–1.18 or 1.32–1.34 mm and the request was then rejected;
 now those six values read "generation will be blocked" while still quoting their nominal
 0.340–0.369 mm. Two e2e rows bracket the band edge: 1.17/1.17 quotes "0.355 mm" and says
@@ -738,11 +751,14 @@ pre-beta output — product behavior, not a regression. B plates (recess outline
   still quoting the nominal gap (§7.3). Rejected: leaving it (a surprising rejection for
   an assistive-tech user is worse than a three-way split), and switching the browser
   fully to printed (that is the 0.3-package self-warning FD-11b exists to avoid).
-- **A 0 mm `ds_bowl_depth` is schema-legal and means two different things** (§5, gate 4)
-  — report-only, and not reachable from the UI, which ships fixed footprints. The gate
-  falls back to the nominal diameter, while `csg-worker-manifold.js` substitutes its own
-  0.8 mm default (`params.bowl_depth > 0 ? params.bowl_depth : 0.8`) and cuts a bowl the
-  request never asked for. Nothing here validates that substitution away.
+- ~~**A 0 mm `ds_bowl_depth` is schema-legal and means two different things**~~ —
+  **CLOSED 2026-08-21.** The gap was real and slightly worse than recorded here: the
+  worker's 0.8 mm substitution was reachable from the *single-sided* Bowl Recess Dot
+  Depth dial (`min="0"`) as well, and on the card counter plate the same 0 mm raised
+  `ZeroDivisionError` -> HTTP 500. `app/geometry_spec.py` now emits no bowl at all at
+  0 mm depth, which makes the substitution unreachable on every path; double-sided 0 mm
+  is rejected by gate 4 (§5). See `BRAILLE_DOT_SHAPE_SPECIFICATIONS.md` §5, "A depth of
+  0 mm means no recess, not a default one".
 - **Rotational sync** between the two cylinders must stay within about ±1.0° (§6.5) — a
   requirement on the mechanical assembly, outside this codebase.
 
@@ -813,6 +829,7 @@ and separated**. Full record: the research folder's `00_PROJECT_MEMORY.md`, FD-8
 | Date | Version | Changes |
 |------|---------|---------|
 | 2026-08-21 | 1.8 | **Section 7.6 corrected and extended** (post-initiative accessibility hygiene bundle). The bullet claiming "an unchanged string is not a mutation, which keeps the per-keystroke recomputes from chattering" was **wrong and contradicted the `announceDsGap` bullet in the same list**: `announceStatus()` assigns `textContent` unconditionally, and assigning an identical string still replaces the text node. Disproved by measurement - `#caps-warning`, whose text never changes, announced **11 times over 11 keystrokes** when wired without a gate. The bullet now states that writing does not deduplicate and that frequent callers must gate themselves. Also records the three non-beta sources that joined the channel the same day (`auto-overflow-warning`, `cylinder-overflow-warning`, `caps-warning`), bringing the wired total to **nine**. Documentation and one UI file only - no beta behaviour, wire shape, footprint, threshold, or geometry changed, and the toggle-off payload is untouched. |
+| 2026-08-21 | 1.8 | **A 0 mm `ds_bowl_depth` is now REJECTED in double-sided mode** (§5 gate 4; the §9 gap is struck as closed). The gap recorded at v1.6/v1.7 turned out to understate the problem: `csg-worker-manifold.js`'s 0.8 mm substitution was reachable from the shipped *single-sided* Bowl Recess Dot Depth dial too, and the card counter plate raised `ZeroDivisionError` -> HTTP 500 on the same input. `app/geometry_spec.py` now declines to emit a depthless bowl on all three paths, so 0 mm single-sided means what it says — a flat counter plate, reported through `spec['warnings']` and the log — while double-sided 0 mm fails with a message naming the nip. The gate's nominal-diameter fallback and its `measured_on_the_print` branch are gone; `dsPrintedBowlMouth()`'s matching fallback is left in place but is now doubly unreachable. Two tests were rewritten from the old contract to the new one; `test_footprint_boundaries_are_accepted` moves `ds_bowl_depth` from 0.0 to the hemisphere 0.25 mm, the value that minimises the printed mouth for a 0.5 mm bowl. **No threshold, range, footprint, geometry, or golden fixture changed** — schema range stays 0.0–5.0 and both shipped depths (0.5 double-sided, 0.8 single-sided) are byte-identical. |
 | 2026-08-21 | 1.7 | **Phase 13b closeout — Brennen's two decisions, taken the same day.** (1) Gate 4's rewritten message is **SIGNED OFF as written**; the `REVIEW-BRENNEN` marker is gone from `app/validation.py` and §5 records the sign-off date. He kept the version that leads with why the recess prints wider than the number the user set, over a shorter fix-first variant and over mirroring the .scad's text — the .scad's names the 0.3 mm preset as *the* fix, which would mislead anyone setting footprints straight over the API. (2) **The live UI warning now chooses its blocked-vs-marginal tail on the PRINTED ridge** while still quoting the nominal gap, closing the §9 gap this phase opened: on the 0.4 preset at both offsets 1.16–1.18 or 1.32–1.34 mm the box said "may come out thin or merged" and generate then failed with a 400. New `dsPrintedBowlMouth()` in `public/index.html` mirrors `interpoint.printed_bowl_mouth_mm`, fallback included. **Visibility and the quoted figure stay nominal** — on the printed figure the 0.3 package would warn about itself, which is the whole of FD-11(b). §7.3 gains the three-way table and the band-edge e2e rows (1.17 → "0.355 mm" blocked, 1.19 → "0.383 mm" thin or merged); §9's entry is struck with the rejected alternatives recorded. The source guard splits into two tests, one per repo half. No threshold, range, geometry, footprint, or golden fixture changed. |
 | 2026-08-21 | 1.6 | **The hard printability gate now measures the recess's PRINTED mouth** (FD-11b, approved by Brennen 2026-08-20; the OpenSCAD port made the same switch in its Phase 12, so the two generators now agree on what is exportable). New `interpoint.printed_bowl_mouth_mm(bowl_diameter, bowl_depth)` replaces the sphere-radius expression that was inline in `paired_nip_clearance`; `app/validation.py` gate 4 feeds its result to the same `same_surface_min_gap()` rather than carrying a second formula. **The two soft warnings — `app/geometry_spec.py` and `checkDoubleSidedGap()` in `public/index.html` — deliberately stay on the NOMINAL figure**, and a test pins the split at the source in both directions. Neither threshold moved (floor 0.34, reliable 0.50) and neither did the 1.15–1.35 offset range. Measured consequence, swept in 0.01 mm steps: the 0.3 package keeps all 441 offset combinations, the 0.4 package keeps 297 and loses 132 the nominal figure used to pass; **both shipped defaults are unaffected** (printed 0.495 and 0.428 mm at 1.25/1.25). §3 gains the measured band table and the printed figures for Option A (0.345) and the single-sided sizes (−0.042); §5 gate 4 rewritten with the new message, the extended `details` dict, and the non-positive-depth fallback; §7.3 records that the live warning's "will be blocked" tail under-predicts in a six-value band; §9 gains that band and the 0 mm bowl-depth note. Gate 4's message shipped in this version awaiting Brennen's sign-off (`REVIEW-BRENNEN` in `app/validation.py`) — ***superseded hours later by v1.7 above, which records the sign-off; no marker remains in the repo.*** No geometry, footprint, or golden fixture changed. |
 | 2026-08-20 | 1.5 | **Footprints keyed to the card-stock preset** (research memory FD-8/FD-9): 0.3 preset → Option B (unchanged, still the schema/models defaults), 0.4 preset → the Q2 print-matrix winner (dot Ø1.2 × 1.0 mm tall, dome Ø1.0; bowl Ø1.4 nominal → printed Ø1.48 × 0.74). §3 rationale rewritten with both packages and nominal-vs-printed gap figures (Q2: 0.468 nominal / 0.428 printed, measured printing clean); §6.1 wire shape (footprints now numbers from `DS_FOOTPRINTS[preset]`); §6.4 bowl convention now authoritative and used by the regenerated goldens; §7.3 new reference numbers — the 0.4 preset shows the warning at defaults by design; §7.5 keying; §7.6 documents `announceDsGap` (the persistent warning announces only on change, fixing it talking over the back-overflow announcement); §8 anchors updated (16 e2e tests; goldens regenerated 2026-08-20 with the worker bowl convention, still Option B footprints); Overview/§9/§10 corrected — the 2026-08 physical pass was 0.3 mm stock only — and §10 gains the 2026-08-20 print-matrix record, the Q2 decision, and the 1.0 mm die-height housing ceiling. Wire payloads change only with the beta ON; toggle-off stays byte-identical. |

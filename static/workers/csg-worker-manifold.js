@@ -300,6 +300,12 @@ function createCylinderDotManifold(spec) {
         } else if (shape === 'bowl') {
             // Bowl (spherical cap) recess
             const bowlRadius = (params.bowl_radius > 0) ? params.bowl_radius : 1.5;
+            // These fallbacks are unreachable: app/geometry_spec.py declines to
+            // emit a bowl at all when the depth is not positive, because 0 mm
+            // means no recess rather than a default one. Left as a divide-by-
+            // zero guard for sphereR below - do NOT treat 0.8 as a default to
+            // rely on, it is the single-sided depth and was silently overriding
+            // both a 0 mm request and the 0.5 mm double-sided value.
             const bowlDepth = (params.bowl_depth > 0) ? params.bowl_depth : 0.8;
             dotHeight = bowlDepth;
             // Calculate sphere radius for bowl

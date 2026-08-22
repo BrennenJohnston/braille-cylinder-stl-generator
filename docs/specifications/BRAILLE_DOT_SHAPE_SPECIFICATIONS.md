@@ -555,6 +555,7 @@ if (shape === 'bowl') {
 ```javascript
 if (shape === 'bowl') {
     const bowlRadius = (params.bowl_radius > 0) ? params.bowl_radius : 1.5;
+    // Unreachable since 2026-08-21 - see "A depth of 0 mm means no recess" below.
     const bowlDepth = (params.bowl_depth > 0) ? params.bowl_depth : 0.8;
     dotHeight = bowlDepth;
 
@@ -563,6 +564,35 @@ if (shape === 'bowl') {
     dot = createManifoldSphere(sphereR, 24);
 }
 ```
+
+### A depth of 0 mm means no recess, not a default one
+
+A spherical cap of zero depth has no volume, and the sphere it implies has
+radius `(a^2 + h^2) / 2h`, which is undefined at `h = 0`. Both workers guard
+that division by substituting **0.8 mm**. That substitution used to be
+reachable, and it was wrong in two ways at once: the user asked for no recess
+and got the deepest one the app ships, and 0.8 mm is the *single-sided* depth,
+so a double-sided run got a number belonging to the other mode rather than its
+own 0.5 mm.
+
+Since 2026-08-21 `app/geometry_spec.py` resolves the singularity upstream, in
+the only place that can tell the two intents apart:
+
+| Path | Setting | Behaviour at 0 mm |
+|---|---|---|
+| Card counter plate (`_create_dot_spec`) | `counter_dot_depth` | No bowl is emitted. Previously raised `ZeroDivisionError` and returned HTTP 500. |
+| Cylinder counter plate (`_create_cylinder_dot_spec`) | `counter_dot_depth` | No bowl is emitted. |
+| Double-sided paired recess (`_create_ds_cylinder_dot_spec`) | `ds_bowl_depth` | Unreachable - `app/validation.py` rejects the request first. |
+
+Single-sided 0 mm is a **supported request**: it produces a flat counter plate,
+which is why `settings.schema.json` keeps its minimum at 0.0 and the UI keeps
+`min="0"`. The omission is never silent - the cylinder spec returns a user-facing
+warning in `spec['warnings']` and both paths log one line per request.
+
+Double-sided 0 mm is **rejected** in `validate_double_sided_settings`, because
+there the paired bowl is what receives the opposing cylinder's dot: a depthless
+one leaves the two cylinders pressing solid against solid at the nip. Negative
+depths never reach either check - the schema range rejects them first.
 
 ### Default Parameter Values
 
@@ -1228,6 +1258,7 @@ Use these logs to verify that:
 | 2024-12-07 | 1.4 | Bug 7 fix VERIFIED by user testing - rounded dots now correctly positioned flush with cylinder surface |
 | 2026-08-17 | 1.5 | **Defaults refreshed against the code** (docs only, no code or fixture changed). Corrected `use_rounded_dots` default from 0 to **1** - Rounded, not Cone, is the default emboss family at every layer (Sections 1 and 9). Every "Default Parameter Values" table now carries both the schema/`app/models.py` default and the live-UI value, because `restoreThicknessPreset()` applies the 0.4 mm preset on page load and overwrites most dot dials; Section 9 adds the 0.3 mm preset column and the fixed double-sided BETA footprints. Added Section 5 "Cut Depth Convention", documenting as **intentional** the Manifold worker cutting bowls from a sphere centred on the surface: nominal 1.8 x 0.8 cuts about 0.906 mm and nominal 1.3 x 0.5 cuts 0.667-0.672 mm, versus the Python renderer's exact nominal depth used by the golden fixtures. Deeper is the safe direction for nip clearance. |
 
+| 2026-08-21 | 1.8 | Section 5 gains **"A depth of 0 mm means no recess, not a default one"**. A bowl depth of 0 mm used to reach both CSG workers, whose divide-by-zero guard silently substituted **0.8 mm** - geometry the user never asked for, and the single-sided depth even on a double-sided run (whose own default is 0.5 mm). `app/geometry_spec.py` now declines to emit a depthless bowl on all three paths, which also fixes a `ZeroDivisionError` -> HTTP 500 on the card counter plate that no one had reported. Single-sided 0 mm stays legal and means a flat counter plate (schema minimum 0.0 and the UI `min="0"` are unchanged), reported through `spec['warnings']` and the log; double-sided 0 mm is now rejected in `validate_double_sided_settings`, which retires the nominal-diameter workaround that stood at `app/validation.py:396`. **No shipped dimension moved**: 0.8 mm single-sided and 0.5 mm double-sided are byte-identical before and after. |
 | 2026-08-21 | 1.7 | Section 7 gains **"Raised-dot base embed"**, and Bug 3 cross-references it. Raised dots are now sunk below the shell surface by twice the 64-segment facet sagitta so they fuse with the shell instead of exporting as separate connected bodies - measured 6 bodies down to 1 on a real browser export, 32 down to 1 on the OpenSCAD single-sided default. **No dimension changed**: the base frustum is lengthened downward along its own taper, so its radius at the surface and the dot's height above it are byte-stable (browser dome apex 16.400001 mm before and after). Recesses are unaffected. Both generators moved together (`static/workers/csg-worker-manifold.js`, OpenSCAD 2.6.1); `tests/fixtures/*_golden.stl` were NOT regenerated - their renderer already sank a 0.05 mm skirt of its own. |
 | 2026-08-20 | 1.6 | Section 9's double-sided footprints table now carries TWO packages keyed to the card-stock preset (research memory FD-8/FD-9): 0.3 preset → Option B (unchanged, still the schema default), 0.4 preset → the Q2 print-matrix winner (base height 0.5, dome Ø1.0 × 0.5, bowl Ø1.4) — one footprint cannot serve both stocks (Q2 tears 0.35 mm card; Option B under-forms 0.4 mm card). Records the 1.0 mm die-height housing ceiling. |
 ---

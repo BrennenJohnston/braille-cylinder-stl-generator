@@ -112,6 +112,10 @@ def extract_card_geometry_spec(
         'markers': [],
     }
 
+    # Counts recesses declined for having no depth, so the omission is reported
+    # once per request rather than silently or once per dot.
+    zero_depth_recesses = 0
+
     # Dot positioning constants
     dot_col_offsets = [-settings.dot_spacing / 2, settings.dot_spacing / 2]
     dot_row_offsets = [settings.dot_spacing, 0, -settings.dot_spacing]
@@ -179,7 +183,10 @@ def extract_card_geometry_spec(
                     recess_shape = recess_shape_map.get(recess_shape_int, 'bowl')
 
                     dot_spec = _create_dot_spec(dot_x, dot_y, settings, recess_shape, plate_type)
-                    spec['dots'].append(dot_spec)
+                    if dot_spec is None:
+                        zero_depth_recesses += 1
+                    else:
+                        spec['dots'].append(dot_spec)
 
     else:
         # Positive plate: add row indicators for ALL rows (including empty rows),
@@ -284,13 +291,19 @@ def extract_card_geometry_spec(
                     dot_spec = _create_dot_spec(dot_x, dot_y, settings, 'standard', plate_type)
                     spec['dots'].append(dot_spec)
 
+    if zero_depth_recesses:
+        logger.warning(
+            f'A recess depth of 0 mm was requested, so {zero_depth_recesses} counter recess(es) '
+            'were not cut. Nothing is carved at that depth; set a positive depth if you wanted bowls.'
+        )
+
     return spec
 
 
 def _create_dot_spec(
     x: float, y: float, settings: Any, shape_type: str = 'standard', plate_type: str = 'positive'
-) -> dict[str, Any]:
-    """Create a dot specification dict."""
+) -> dict[str, Any] | None:
+    """Create a dot specification dict, or None when the dot has no volume to cut."""
     z = settings.card_thickness
 
     if shape_type == 'hemisphere':
@@ -327,6 +340,11 @@ def _create_dot_spec(
             bowl_base = 1.8
         radius = bowl_base / 2
         depth = float(getattr(settings, 'counter_dot_depth', 0.8))
+        # A zero-depth bowl is not a shallow bowl, it is no bowl: the spherical
+        # cap has no volume and its sphere radius (a^2 + h^2) / 2h is undefined.
+        # Cut nothing, and let the caller count the omission.
+        if depth <= 0:
+            return None
         return {
             'type': 'rounded',
             'x': x,
@@ -516,6 +534,10 @@ def extract_cylinder_geometry_spec(
     }
     spec['warnings'].extend(double_sided_warnings)
 
+    # Counts recesses declined for having no depth, so the omission is reported
+    # once per request rather than silently or once per dot.
+    zero_depth_recesses = 0
+
     # Seam gap: the arc between the last and first cell centers, measured the long
     # way around through the seam, where the tactile indicator sits. Warn (do not
     # fail) when the gap can no longer hold the indicator plus a clear zone either
@@ -649,18 +671,23 @@ def extract_cylinder_geometry_spec(
 
                         # Transform to 3D cylindrical coordinates
                         dot_spec = _create_cylinder_dot_spec(dot_angle, dot_y, radius, settings, plate_type='negative')
-                        spec['dots'].append(dot_spec)
+                        if dot_spec is None:
+                            zero_depth_recesses += 1
+                        else:
+                            spec['dots'].append(dot_spec)
 
         if double_sided:
             # Cylinder B in double-sided mode. The order mirrors Cylinder A's —
             # front features first, then back — so A's dot list and B's line up
             # index for index, each pair meeting at theta and -theta.
             for planar_angle, dot_y in _text_dot_placements(layout, lines):
-                spec['dots'].append(
-                    _create_ds_cylinder_dot_spec(
-                        apply_seam_mirrored(planar_angle), dot_y, radius, settings, is_recess=True
-                    )
+                ds_recess = _create_ds_cylinder_dot_spec(
+                    apply_seam_mirrored(planar_angle), dot_y, radius, settings, is_recess=True
                 )
+                if ds_recess is None:
+                    zero_depth_recesses += 1
+                else:
+                    spec['dots'].append(ds_recess)
             for planar_angle, dot_y in _back_dot_placements(layout, back_lines):
                 spec['dots'].append(
                     _create_ds_cylinder_dot_spec(
@@ -790,9 +817,21 @@ def extract_cylinder_geometry_spec(
             # universal grid. Same mapping as A's own dots (apply_seam), so the
             # recess lands at -theta of B's dot: an exact pairing.
             for planar_angle, dot_y in _back_dot_placements(layout, back_lines):
-                spec['dots'].append(
-                    _create_ds_cylinder_dot_spec(apply_seam(planar_angle), dot_y, radius, settings, is_recess=True)
+                ds_recess = _create_ds_cylinder_dot_spec(
+                    apply_seam(planar_angle), dot_y, radius, settings, is_recess=True
                 )
+                if ds_recess is None:
+                    zero_depth_recesses += 1
+                else:
+                    spec['dots'].append(ds_recess)
+
+    if zero_depth_recesses:
+        zero_depth_note = (
+            f'A recess depth of 0 mm was requested, so {zero_depth_recesses} counter recess(es) '
+            'were not cut. Nothing is carved at that depth; set a positive depth if you wanted bowls.'
+        )
+        spec['warnings'].append(zero_depth_note)
+        logger.warning(zero_depth_note)
 
     logger.info(
         f'Cylinder geometry spec ({spec["indicator_mode"]} indicators): '
@@ -1000,7 +1039,7 @@ def _create_tactile_indicator_spec(y_local: float, radius: float, settings: Any,
 
 def _create_cylinder_dot_spec(
     theta: float, y_local: float, radius: float, settings: Any, plate_type: str = 'positive'
-) -> dict[str, Any]:
+) -> dict[str, Any] | None:
     """
     Create a dot spec with 3D position on cylinder surface.
 
@@ -1060,6 +1099,9 @@ def _create_cylinder_dot_spec(
                 bowl_base = 1.8
             bowl_radius = bowl_base / 2
             bowl_depth = float(getattr(settings, 'counter_dot_depth', 0.8))
+            # See _create_dot_spec: depth 0 means no recess, not a default one.
+            if bowl_depth <= 0:
+                return None
             return {
                 'type': 'cylinder_dot',
                 'x': x,
@@ -1146,7 +1188,7 @@ def _create_cylinder_dot_spec(
 
 def _create_ds_cylinder_dot_spec(
     theta: float, y_local: float, radius: float, settings: Any, is_recess: bool
-) -> dict[str, Any]:
+) -> dict[str, Any] | None:
     """
     Create one double-sided dot spec: a rounded raised dot or its paired bowl.
 
@@ -1173,6 +1215,9 @@ def _create_ds_cylinder_dot_spec(
     if is_recess:
         bowl_diameter = float(getattr(settings, 'ds_bowl_base_diameter', interpoint.DS_BOWL_DIAMETER_MM))
         bowl_depth = float(getattr(settings, 'ds_bowl_depth', interpoint.DS_BOWL_DEPTH_MM))
+        # See _create_dot_spec: depth 0 means no recess, not a default one.
+        if bowl_depth <= 0:
+            return None
         return {
             'type': 'cylinder_dot',
             'x': x,

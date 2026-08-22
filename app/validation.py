@@ -388,19 +388,20 @@ def validate_double_sided_settings(settings_data: dict) -> bool:
         )
 
     bowl_depth = footprints['ds_bowl_depth']
-    measured_on_the_print = bowl_depth > 0
-    if measured_on_the_print:
-        printed_mouth = interpoint.printed_bowl_mouth_mm(bowl_diameter, bowl_depth)
-    else:
-        # The hemisphere conversion needs a depth to build a sphere from, and
-        # the schema lets ds_bowl_depth_mm be 0.0. Measure the nominal instead,
-        # which is what this gate did before the printed-ridge switch, and say
-        # so rather than pretending the number means what it usually means.
-        printed_mouth = bowl_diameter
-        logger.warning(
-            f'Double-sided bowl depth {bowl_depth} mm is not positive, so the printed mouth is undefined; '
-            'measuring the nominal recess diameter for the printability floor instead.'
+    # The schema lets ds_bowl_depth_mm be 0.0 because a SINGLE-sided counter
+    # plate may legitimately ask for no recesses at all. Double-sided cannot:
+    # the paired bowl is what receives the opposing cylinder's dot, so a
+    # depthless one leaves the two cylinders meeting solid on solid at the nip.
+    # Rejecting here also keeps printed_bowl_mouth_mm's own ValueError
+    # unreachable from this path.
+    if bowl_depth <= 0:
+        raise ValidationError(
+            "Setting 'double_sided.ds_bowl_depth_mm' must be greater than 0 mm in double-sided mode; "
+            "the paired recess is what receives the opposing cylinder's dot, so a depth of 0 mm would "
+            f'leave the two cylinders pressing solid against solid. Received {bowl_depth}.',
+            {'key': 'ds_bowl_depth', 'value': bowl_depth, 'min': 0.0, 'max': 5.0},
         )
+    printed_mouth = interpoint.printed_bowl_mouth_mm(bowl_diameter, bowl_depth)
     printed_gap = measure(printed_mouth)
     nominal_gap = measure(bowl_diameter)
 
@@ -409,10 +410,11 @@ def validate_double_sided_settings(settings_data: dict) -> bool:
     # bowl diameter beside a printed ridge would no longer add up for a user
     # checking the arithmetic; both numbers below are now printed figures.
     if printed_gap < interpoint.SAME_SURFACE_GAP_FLOOR_MM:
+        # The nominal-only alternative this used to carry was for a zero depth,
+        # which the gate above now rejects outright; the printed wording is the
+        # only one reachable, and it is unchanged.
         recess_clause = (
             f'the {bowl_diameter:.2f} mm recess is cut as a hemisphere, so it prints {printed_mouth:.2f} mm across'
-            if measured_on_the_print
-            else f'the recess is {bowl_diameter:.2f} mm across'
         )
         raise ValidationError(
             f'Double-sided crowding: {recess_clause}, and beside a {dot_diameter:.2f} mm dot at the '

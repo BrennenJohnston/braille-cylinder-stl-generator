@@ -656,3 +656,89 @@ def test_ui_ds_footprints_match_interpoint_packages():
         assert len(pairs) == 6, f'expected 6 ds fields in the {preset.group(1)} package'
         ui_packages[preset.group(1)] = {name: float(value) for name, value in pairs}
     assert ui_packages == interpoint.DS_FOOTPRINTS_BY_PRESET
+
+
+def test_zero_recess_depth_cuts_no_cylinder_bowls(client):
+    """
+    Bowl Recess Dot Depth 0 mm means NO recess, not the shipped default.
+
+    The Manifold worker substitutes 0.8 mm for a non-positive bowl_depth
+    (static/workers/csg-worker-manifold.js), so a spec that still carried
+    depth 0 handed the user an 0.8 mm bowl they never asked for. The spec now
+    declines to emit those dots, which makes that substitution unreachable.
+    """
+    payload = {
+        'lines': ['⠁⠃', '', '', ''],
+        'plate_type': 'negative',
+        'shape_type': 'cylinder',
+        'grade': 'g1',
+        'settings': {'grid_rows': 4, 'grid_columns': 4, 'recess_shape': 1, 'counter_dot_depth': 0.0},
+        'cylinder_params': {'diameter': 60.0, 'height': 40.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0},
+    }
+
+    resp = client.post('/geometry_spec', json=payload, headers={'Content-Type': 'application/json'})
+    assert resp.status_code == 200, resp.data
+    data = resp.get_json()
+    assert data['dots'] == [], f'expected no recesses at 0 mm depth, got {len(data["dots"])}'
+    assert any('0 mm' in w for w in data.get('warnings', [])), (
+        f'the omission must be reported to the user, not silent; warnings were {data.get("warnings")}'
+    )
+
+    # Markers are untouched: only the recess dots go.
+    settings = CardSettings(**payload['settings'])
+    assert len(data['markers']) == settings.grid_rows * 2
+
+
+def test_zero_recess_depth_does_not_crash_the_card_plate(client):
+    """
+    The card counter plate divides by the depth to size its sphere, so 0 mm
+    used to raise ZeroDivisionError and return a 500. It now cuts nothing.
+    """
+    payload = {
+        'lines': ['⠁⠃', '', '', ''],
+        'plate_type': 'negative',
+        'shape_type': 'card',
+        'grade': 'g1',
+        'settings': {'grid_rows': 4, 'grid_columns': 4, 'recess_shape': 1, 'counter_dot_depth': 0.0},
+    }
+
+    resp = client.post('/geometry_spec', json=payload, headers={'Content-Type': 'application/json'})
+    assert resp.status_code == 200, resp.data
+    data = resp.get_json()
+    assert all(d.get('type') != 'rounded' for d in data['dots']), 'no bowl may be cut at 0 mm depth'
+
+
+def test_positive_recess_depths_are_unchanged():
+    """
+    The zero-depth guard must not move any dimension a user actually prints.
+    These are the shipped depths: 0.8 mm single-sided, 0.5 mm double-sided.
+    """
+    from app.geometry_spec import _create_cylinder_dot_spec, _create_dot_spec, _create_ds_cylinder_dot_spec
+
+    settings = CardSettings(**{'counter_dot_depth': 0.8, 'recess_shape': 1, 'use_bowl_recess': 1})
+    card = _create_dot_spec(0.0, 0.0, settings, shape_type='bowl', plate_type='negative')
+    assert card['params']['dome_height'] == 0.8
+
+    cylinder = _create_cylinder_dot_spec(0.0, 0.0, 15.4, settings, plate_type='negative')
+    assert cylinder['params'] == {'shape': 'bowl', 'bowl_radius': 0.9, 'bowl_depth': 0.8}
+
+    ds_settings = CardSettings(**{'shape_type': 'cylinder'})
+    ds_settings.ds_bowl_depth = 0.5
+    ds = _create_ds_cylinder_dot_spec(0.0, 0.0, 15.4, ds_settings, is_recess=True)
+    assert ds['params'] == {'shape': 'bowl', 'bowl_radius': 0.65, 'bowl_depth': 0.5}
+
+
+def test_zero_ds_bowl_depth_cuts_no_paired_recess():
+    """
+    ds_bowl_depth_mm is schema-legal at 0.0 and reaches the same worker line
+    as the single-sided depth, so it gets the same treatment.
+    """
+    from app.geometry_spec import _create_ds_cylinder_dot_spec
+
+    settings = CardSettings(**{'shape_type': 'cylinder'})
+    settings.ds_bowl_depth = 0.0
+    assert _create_ds_cylinder_dot_spec(0.0, 0.0, 15.4, settings, is_recess=True) is None
+
+    # The raised dot on the same cylinder is unaffected - only the bowl goes.
+    raised = _create_ds_cylinder_dot_spec(0.0, 0.0, 15.4, settings, is_recess=False)
+    assert raised is not None and raised['is_recess'] is False
