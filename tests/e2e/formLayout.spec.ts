@@ -160,6 +160,8 @@ test.describe('Form column layout', () => {
     await expect(edges).toHaveClass(/active/);
   });
 
+  const toHundredthPx = (value: number) => Math.round(value * 100) / 100;
+
   test('keeps every preview overlay control at the 44x44 px floor', async ({ page }) => {
     await openApp(page);
 
@@ -180,8 +182,15 @@ test.describe('Form column layout', () => {
       for (const id of controls) {
         const box = await page.locator(`#${id}`).boundingBox();
         expect(box, `#${id} at ${fontSize} has no box`).not.toBeNull();
-        expect.soft(box!.width, `#${id} width at ${fontSize}`).toBeGreaterThanOrEqual(44);
-        expect.soft(box!.height, `#${id} height at ${fontSize}`).toBeGreaterThanOrEqual(44);
+        // Firefox multiplies a px min-width by the app's own font step in
+        // floating point, so a control that IS 44 px can measure
+        // 43.99998474121094 - 1.5e-5 px under the floor, and only at 75%.
+        // Round to the nearest hundredth of a pixel: no display can resolve
+        // finer, and a control that is genuinely 43 px still rounds to 43
+        // and still fails. Do not lower the floor instead - it caught real
+        // 20x22 px buttons.
+        expect.soft(toHundredthPx(box!.width), `#${id} width at ${fontSize}`).toBeGreaterThanOrEqual(44);
+        expect.soft(toHundredthPx(box!.height), `#${id} height at ${fontSize}`).toBeGreaterThanOrEqual(44);
       }
     }
   });
