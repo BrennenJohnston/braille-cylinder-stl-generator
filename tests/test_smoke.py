@@ -742,3 +742,43 @@ def test_zero_ds_bowl_depth_cuts_no_paired_recess():
     # The raised dot on the same cylinder is unaffected - only the bowl goes.
     raised = _create_ds_cylinder_dot_spec(0.0, 0.0, 15.4, settings, is_recess=False)
     assert raised is not None and raised['is_recess'] is False
+
+
+def test_payload_fallback_literals_match_the_shipped_defaults():
+    """
+    The /geometry_spec payload builder in public/index.html reads each dial as
+    `document.getElementById('x')?.value || 'literal'`. An empty input is the
+    empty string, which is falsy, so CLEARING a box hands that literal straight
+    to the geometry - these are live fallbacks, not dead code.
+
+    Nothing pinned them, and twice now a literal has been left behind when the
+    real default moved: the tactile pair sat at the OpenSCAD generator's old
+    5.0 / 0.8 after the defaults became 10.0 / 0.5 (fixed 33f11d6), and
+    counter_dot_depth carried 0.6 - which is not this parameter's default at all
+    but `indicators.depth_mm`, a different schema field (fixed 2026-08-22).
+
+    Pinned at the source rather than through the browser on purpose: an e2e test
+    has to edit a dial, and restoreThicknessPreset() re-applies the card-stock
+    preset over every dial on load, which makes any such test racy. Measured at
+    roughly 1 run in 3 before it was abandoned.
+    """
+    import re
+    from pathlib import Path
+
+    html = (Path(__file__).resolve().parents[1] / 'public' / 'index.html').read_text(encoding='utf-8')
+
+    # field name -> the value the app should fall back to, and where that is set
+    expected = {
+        'counter_dot_depth': ('0.8', "settings.schema.json dots.bowl.depth_mm and app/models.py"),
+        'tactile_indicator_length': ('10.0', 'the 2026-07-30 tactile defaults'),
+        'tactile_indicator_raise': ('0.5', 'the 2026-07-30 tactile defaults'),
+    }
+
+    for field, (want, source) in expected.items():
+        pattern = rf"{field}: document\.getElementById\('{field}'\)\?\.value \|\| '([0-9.]+)'"
+        match = re.search(pattern, html)
+        assert match, f'payload fallback for {field} not found in public/index.html'
+        assert match.group(1) == want, (
+            f"Emptying the {field} box would send {match.group(1)}, but the shipped default is "
+            f'{want} ({source}). A fallback literal must never be a second, drifting copy of a default.'
+        )

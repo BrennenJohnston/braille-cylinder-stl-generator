@@ -398,7 +398,7 @@ class CardSettings:
         try:
             depth = float(getattr(self, 'counter_dot_depth', 0.8))
         except Exception:
-            depth = 0.6
+            depth = 0.8
         self.counter_dot_depth = max(0.0, min(depth, self.card_thickness - self.epsilon_mm))
         self.plate_thickness = self.card_thickness
         self.epsilon = self.epsilon_mm
