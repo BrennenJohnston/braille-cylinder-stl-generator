@@ -99,7 +99,7 @@ async function generate(page: Page, state: { called: boolean }) {
     if (state.called) return;
 
     // #error-text is also where the app puts INFORMATIONAL notices - the card
-    // thickness preset's "All parameters updated." lands there on load, with
+    // thickness preset's "All parameters updated." lands there when a preset is clicked (before 2026-08-22, also on load), with
     // class `info` on the wrapper. Treating that as a blocking error turns a
     // notice into a spurious failure, so only fail when it is not marked info.
     const notice = await page.locator('#error-message').getAttribute('class');

@@ -601,8 +601,10 @@ INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §3, §7.3, §7.5.
         }
 
         // Apply the preset to ensure all values are consistent
-        // This fixes the issue where HTML defaults don't match preset values
-        applyThicknessPreset(presetToApply);
+        // This fixes the issue where HTML defaults don't match preset values.
+        // Silently (no notice, no announcement): a load restore is not a
+        // user action.
+        applyThicknessPreset(presetToApply, false, false);
         log.debug('Applied thickness preset on load:', presetToApply);
     } catch (e) {
         log.debug('Error restoring thickness preset:', e);
@@ -614,6 +616,14 @@ INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §3, §7.3, §7.5.
 - **Problem**: Original implementation only set the radio button but didn't apply preset values on load
 - **Result**: HTML default values (which didn't match presets) were displayed instead
 - **Solution**: Now applies the preset on page load, ensuring consistency
+
+**Silent since 2026-08-22**: `applyThicknessPreset(presetKey, applyShape, showNotice)`
+takes a third parameter, default `true`; the load-time restore passes `false`, so the
+values are still applied on load exactly as before but the confirmation message is
+neither shown nor announced then. The first NVDA listening run (POST15_6) proved the
+mirrored announcement — `Card thickness preset "0.4mm" applied. All parameters
+updated.` — was spoken on every focused load or reload, before the user had touched
+anything. Clicking a preset still shows the notice and announces it once.
 
 ---
 
@@ -792,6 +802,7 @@ The preset system is designed to **never fail visibly**:
 | 2026-08-19 | 1.6 | **Corrects v1.5 and an error older than it.** The 0.3 / 0.4 numbers are the thickness of the paper CARD STOCK being embossed, not the printer's layer height, so the visible legend is back to "Card Thickness" and the radiogroup `aria-label` to "Select card thickness preset". v1.5's argument was that `card_thickness: 2.0` never varies between presets — but that field is the printed PLASTIC PLATE's thickness, not the paper. What the presets change is bowl depth (0.5 → 0.8 mm) and dot height (0.8 → 1.0 mm), both radial dimensions on an upright print that a layer height cannot motivate. The three sr-only descriptions had said "layer height" since v1.0 and were wrong all along; they now read "Preset settings optimized for embossing 0.Xmm card stock". Confirmation message is `Card thickness preset "X.Xmm" applied. All parameters updated.` Ten strings and three code comments changed in `public/index.html`. `card_thickness_preset`, the localStorage key and this filename are unchanged, as in v1.5. Approved by Brennen 2026-08-19. |
 | 2026-08-20 | 1.7 | The preset radio now also selects the double-sided beta's fixed footprint package (no new dials): 0.3 → Option B, 0.4 → the Q2 print-matrix winner, sent on the wire only when the beta is on. New Section 5 subsection "Double-Sided Footprints Follow the Preset"; source of truth `interpoint.DS_FOOTPRINTS_BY_PRESET`, smoke-guarded against the UI copy. Also corrected four stale "optimized for 0.3mm layer" code comments in the 0.3 preset to "card stock" (leftovers of the naming confusion fixed in v1.6). |
 | 2026-08-21 | 1.8 | **Documentation only — no behavior change.** Removed the three remaining `templates/index.html` references (that folder is empty and deprecated): the Source Priority entry (list renumbered 1–3), the stale line-number pair on `applyThicknessPreset()` (now cited by function name, since line numbers in `public/index.html` have moved twice this month), and the Section 10 checklist row asserting the two HTML files matched. The Section 2 line already calling the copy deprecated is unchanged. Part of the templates/ reference sweep (Phase 07b). |
+| 2026-08-22 | 1.9 | **The load-time restore is now silent.** `applyThicknessPreset()` gained a third parameter `showNotice` (default `true`) and `restoreThicknessPreset()` passes `false`: values are still applied on load exactly as before, but the confirmation message is no longer shown or announced then. Found by the first NVDA listening run (POST15_6): the mirrored announcement was spoken on every focused load or reload, before the user had done anything. Clicking a preset is unchanged — notice shown and announced once. Verified by probe on Chromium and Firefox (the load-time `#a11y-status` write is gone). Approved by Brennen 2026-08-22 (FD-20). |
 
 ---
 

@@ -74,7 +74,8 @@ if it did not, failing with a named message rather than a confusing downstream o
 Two related traps were fixed in the same pass. `generate()` read `#error-text`
 and treated anything there as fatal, but that element also carries
 **informational** notices - the card-thickness preset's "All parameters updated."
-lands there on load with class `info` on the wrapper - so a notice could fail a
+lands there with class `info` on the wrapper whenever a preset is clicked (and,
+until 2026-08-22, on every page load) - so a notice could fail a
 run; the check now skips `info`. And `restoreThicknessPreset()` re-applies the
 card-stock preset across every dial after load, and can apply more than once, so
 **an e2e test that edits a dial can have its edit silently overwritten** and then

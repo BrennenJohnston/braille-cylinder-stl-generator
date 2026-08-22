@@ -5950,10 +5950,29 @@
             });
         })();
 
+        // Debounced 250 ms like the overflow checks: this recomputes on every
+        // keystroke into the cells, diameter and spacing dials, and its text
+        // embeds the live numbers, so each digit typed is a "different string"
+        // to announceStatus. Measured in the first NVDA run (2026-08-22,
+        // POST15_6): four announcements in 5.3 s while a value was typed.
+        let physicalFitTimer = null;
         function checkPhysicalFit() {
+            if (physicalFitTimer) clearTimeout(physicalFitTimer);
+            physicalFitTimer = setTimeout(() => {
+                physicalFitTimer = null;
+                checkPhysicalFitNow();
+            }, 250);
+        }
+
+        function checkPhysicalFitNow() {
             const warningDiv = document.getElementById('tactile-gap-warning');
             const warningMsg = document.getElementById('tactile-gap-message');
             if (!warningDiv || !warningMsg) return;
+            // Hidden-to-shown gate, same reason as the overflow boxes: once the
+            // user has been told the layout does not fit, the box stays on
+            // screen updating its numbers, and re-announcing every change talks
+            // over them while they are still typing.
+            const wasHidden = warningDiv.style.display === 'none';
 
             const shapeType = document.querySelector('input[name="shape_type"]:checked')?.value || 'cylinder';
             if (shapeType !== 'cylinder') {
@@ -5976,8 +5995,10 @@
                         `but this layout leaves ${seamGap.toFixed(1)} mm. Reduce the number of braille cells, ` +
                         'increase the cylinder diameter, or narrow the indicator in Expert Mode.';
                     warningDiv.style.display = 'block';
-                    announceStatus('tactile-gap-warning',
-                        warningDiv.textContent.replace(/\s+/g, ' ').trim());
+                    if (wasHidden) {
+                        announceStatus('tactile-gap-warning',
+                            warningDiv.textContent.replace(/\s+/g, ' ').trim());
+                    }
                     return;
                 }
             } else {
@@ -6000,8 +6021,10 @@
                         'occupy, so the last cell of a row would collide with the first. ' +
                         'Reduce the number of braille cells or increase the cylinder diameter.';
                     warningDiv.style.display = 'block';
-                    announceStatus('tactile-gap-warning',
-                        warningDiv.textContent.replace(/\s+/g, ' ').trim());
+                    if (wasHidden) {
+                        announceStatus('tactile-gap-warning',
+                            warningDiv.textContent.replace(/\s+/g, ' ').trim());
+                    }
                     return;
                 }
             }
@@ -7325,7 +7348,7 @@
          *        Braille Dot Shape to "Rounded" (the preset default). Left false on page-load
          *        restore so a user's persisted shape choice is not overridden.
          */
-        function applyThicknessPreset(presetKey, applyShape = false) {
+        function applyThicknessPreset(presetKey, applyShape = false, showNotice = true) {
             const preset = THICKNESS_PRESETS[presetKey];
             if (!preset) {
                 log.debug('Unknown thickness preset:', presetKey);
@@ -7368,16 +7391,21 @@
             try { resetToGenerateState(); } catch (e) { log.error('Generate button failed to reset after the preset:', e); }
             try { refreshLiveWarnings(); } catch (e) { log.error('Live warnings failed to refresh after the preset:', e); }
 
-            // Show confirmation message
-            try {
-                errorText.textContent = `Card thickness preset "${presetKey}mm" applied. All parameters updated.`;
-                errorDiv.style.display = 'flex';
-                errorDiv.className = 'error-message info';
-                setTimeout(() => {
-                    errorDiv.style.display = 'none';
-                    errorDiv.className = 'error-message';
-                }, 3000);
-            } catch (e) { /* ignore */ }
+            // Show confirmation message — skipped for the silent restore on
+            // page load: nothing the user did just changed, and the mirrored
+            // announcement spoke over page load in the first NVDA listening
+            // run (2026-08-22, POST15_6).
+            if (showNotice) {
+                try {
+                    errorText.textContent = `Card thickness preset "${presetKey}mm" applied. All parameters updated.`;
+                    errorDiv.style.display = 'flex';
+                    errorDiv.className = 'error-message info';
+                    setTimeout(() => {
+                        errorDiv.style.display = 'none';
+                        errorDiv.className = 'error-message';
+                    }, 3000);
+                } catch (e) { /* ignore */ }
+            }
         }
 
         // Wire up thickness preset radio buttons
@@ -7441,8 +7469,11 @@
                 }
 
                 // Apply the preset to ensure all values are consistent
-                // This fixes the issue where HTML defaults don't match preset values
-                applyThicknessPreset(presetToApply);
+                // This fixes the issue where HTML defaults don't match preset values.
+                // Silently (no notice, no announcement): a load restore is not a
+                // user action, and the announcement spoke over page load in the
+                // first NVDA listening run (2026-08-22, POST15_6).
+                applyThicknessPreset(presetToApply, false, false);
                 log.debug('Applied thickness preset on load:', presetToApply);
             } catch (e) {
                 log.debug('Error restoring thickness preset:', e);
