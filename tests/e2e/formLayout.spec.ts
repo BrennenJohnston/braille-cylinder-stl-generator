@@ -160,6 +160,59 @@ test.describe('Form column layout', () => {
     await expect(edges).toHaveClass(/active/);
   });
 
+  test('keeps every preview overlay control at the 44x44 px floor', async ({ page }) => {
+    await openApp(page);
+
+    // These five shared the .font-size-btn class with the header controls, and
+    // the 2026-08-18 fix was scoped to .font-size-controls - so the steppers sat
+    // at 20x22 px and #edges-toggle at 49x20 px for three more days, under the
+    // WCAG 2.5.5 floor. The floor is spelled out in px on purpose: an em-based
+    // size drops back under it as soon as the app font size is reduced, which is
+    // why 75% is checked here and not just the default.
+    const controls = ['brightness-decrease', 'brightness-increase',
+                      'contrast-decrease', 'contrast-increase', 'edges-toggle'];
+
+    for (const fontSize of ['100%', '75%']) {
+      // applyFontSize() scales the ROOT only; scaling body as well compounds and
+      // measures a layout no user can produce.
+      await page.evaluate((size) => { document.documentElement.style.fontSize = size; }, fontSize);
+
+      for (const id of controls) {
+        const box = await page.locator(`#${id}`).boundingBox();
+        expect(box, `#${id} at ${fontSize} has no box`).not.toBeNull();
+        expect.soft(box!.width, `#${id} width at ${fontSize}`).toBeGreaterThanOrEqual(44);
+        expect.soft(box!.height, `#${id} height at ${fontSize}`).toBeGreaterThanOrEqual(44);
+      }
+    }
+  });
+
+  test('keeps the skip link fully off screen at every app font size', async ({ page }) => {
+    await openApp(page);
+
+    // The link was hidden by a hardcoded top: -40px, which cannot cover an
+    // element whose height scales with the font size - it left 19 px of itself
+    // sitting over the header at 200%. transform: translateY(-100%) is always
+    // exactly one link-height, so this has to hold at every step of the scale.
+    const link = page.locator('.skip-link');
+
+    for (const fontSize of ['100%', '125%', '150%', '175%', '200%']) {
+      await page.evaluate((size) => { document.documentElement.style.fontSize = size; }, fontSize);
+      const box = await link.boundingBox();
+      expect(box, `skip link at ${fontSize} has no box`).not.toBeNull();
+      expect.soft(box!.y + box!.height, `skip link visible height at ${fontSize}`).toBeLessThanOrEqual(1);
+    }
+
+    // ...and it must still come fully on screen when focused, at the largest size.
+    // Polled rather than read once: the reveal is a 0.3s transform transition, so
+    // an immediate read catches the link mid-slide and not where it lands.
+    await link.focus();
+    await expect(link).toBeFocused();
+    await expect.poll(
+      async () => (await link.boundingBox())!.y,
+      { message: 'skip link never slid fully on screen when focused' },
+    ).toBeGreaterThanOrEqual(-1);
+  });
+
   test('lets the user set their own braille cell count without it being overwritten', async ({ page }) => {
     await openApp(page);
 
