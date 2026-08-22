@@ -89,7 +89,7 @@ const useManifolWorker = shapeType === 'cylinder' && manifoldWorkerReady;
 **Rate limit**: 20 requests/minute (higher than STL endpoints since it's lightweight)
 
 ### 5. ✅ Frontend Integration (Fixed 2024-12-08)
-**Location**: `public/index.html` and `templates/index.html`
+**Location**: `public/index.html`
 
 **Changes (Bug Fix)**:
 - CSG worker variables added: `csgWorker`, `csgWorkerReady`, `csgRequestId`, `pendingCsgRequests`

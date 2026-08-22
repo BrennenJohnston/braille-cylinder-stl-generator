@@ -61,7 +61,7 @@ ruff format .
 
 **JavaScript:** ES6+. Document complex logic.
 
-**Architecture:** Read the relevant specification docs in `docs/specifications/` before changing how a feature works. The two HTML files (`public/index.html` and `templates/index.html`) must stay in sync.
+**Architecture:** Read the relevant specification docs in `docs/specifications/` before changing how a feature works. The whole UI is one file, `public/index.html`.
 
 ## Testing
 

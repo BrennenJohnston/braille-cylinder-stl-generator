@@ -3,6 +3,8 @@
 **Date:** 2024-12-06
 **Reference Document:** `BRAILLE_DOT_ADJUSTMENTS_SPECIFICATIONS.md`
 
+> **Note added 2026-08-21:** `templates/index.html` was removed from the repository after this report was written; `public/index.html` is now the only HTML build. The findings below are left exactly as recorded on the verification date and have not been re-checked against `public/index.html`.
+
 ---
 
 ## Executive Summary

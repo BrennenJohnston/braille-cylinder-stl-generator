@@ -27,9 +27,8 @@ This document defines the Card Thickness Preset System, a frontend convenience f
 ## Source Priority (Order of Correctness)
 
 1. `public/index.html` — Production frontend with preset definitions
-2. `templates/index.html` — Template source (should match public/)
-3. This specification document
-4. SETTINGS_SCHEMA_CORE_SPECIFICATIONS.md — Backend schema for individual parameters
+2. This specification document
+3. SETTINGS_SCHEMA_CORE_SPECIFICATIONS.md — Backend schema for individual parameters
 
 ---
 
@@ -288,7 +287,7 @@ Styling:
 
 ### Function: `applyThicknessPreset(presetKey)`
 
-**Location**: `public/index.html` ~lines 4302-4342, `templates/index.html` ~lines 4091-4131
+**Location**: `public/index.html` — `applyThicknessPreset()`
 
 **Purpose**: Applies all values from a preset to the form inputs
 
@@ -735,7 +734,6 @@ The preset system is designed to **never fail visibly**:
 ### Implementation Consistency
 
 - [x] `public/index.html` contains preset definitions
-- [x] `templates/index.html` matches `public/index.html` exactly
 - [x] All 26 parameters have corresponding `<input>` elements with matching IDs
 - [x] Both `change` and `click` events are attached to radio buttons
 - [x] Preset is applied on page load (2025-12-07 fix)
@@ -793,6 +791,7 @@ The preset system is designed to **never fail visibly**:
 | 2026-08-18 | 1.5 | **User-facing rename, no API change.** The visible legend became "Print Layer Height" (was "Card Thickness") and the radiogroup `aria-label` became "Select print layer height preset", because both presets set `card_thickness: 2.0` and nothing about card thickness varies between them. Seven strings changed in `public/index.html`; the confirmation message is now `Layer height preset "X.Xmm" applied. All parameters updated.` and the explanatory note gained "The card itself stays 2 mm thick either way." The three sr-only descriptions were already correct and are unchanged, as are `card_thickness_preset`, the localStorage key, and this filename. Approved by Brennen 2026-08-18. |
 | 2026-08-19 | 1.6 | **Corrects v1.5 and an error older than it.** The 0.3 / 0.4 numbers are the thickness of the paper CARD STOCK being embossed, not the printer's layer height, so the visible legend is back to "Card Thickness" and the radiogroup `aria-label` to "Select card thickness preset". v1.5's argument was that `card_thickness: 2.0` never varies between presets — but that field is the printed PLASTIC PLATE's thickness, not the paper. What the presets change is bowl depth (0.5 → 0.8 mm) and dot height (0.8 → 1.0 mm), both radial dimensions on an upright print that a layer height cannot motivate. The three sr-only descriptions had said "layer height" since v1.0 and were wrong all along; they now read "Preset settings optimized for embossing 0.Xmm card stock". Confirmation message is `Card thickness preset "X.Xmm" applied. All parameters updated.` Ten strings and three code comments changed in `public/index.html`. `card_thickness_preset`, the localStorage key and this filename are unchanged, as in v1.5. Approved by Brennen 2026-08-19. |
 | 2026-08-20 | 1.7 | The preset radio now also selects the double-sided beta's fixed footprint package (no new dials): 0.3 → Option B, 0.4 → the Q2 print-matrix winner, sent on the wire only when the beta is on. New Section 5 subsection "Double-Sided Footprints Follow the Preset"; source of truth `interpoint.DS_FOOTPRINTS_BY_PRESET`, smoke-guarded against the UI copy. Also corrected four stale "optimized for 0.3mm layer" code comments in the 0.3 preset to "card stock" (leftovers of the naming confusion fixed in v1.6). |
+| 2026-08-21 | 1.8 | **Documentation only — no behavior change.** Removed the three remaining `templates/index.html` references (that folder is empty and deprecated): the Source Priority entry (list renumbered 1–3), the stale line-number pair on `applyThicknessPreset()` (now cited by function name, since line numbers in `public/index.html` have moved twice this month), and the Section 10 checklist row asserting the two HTML files matched. The Section 2 line already calling the copy deprecated is unchanged. Part of the templates/ reference sweep (Phase 07b). |
 
 ---
 

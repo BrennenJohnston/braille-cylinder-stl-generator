@@ -1,5 +1,7 @@
 # Surface Dimensions Implementation Verification Report
 
+> **Note added 2026-08-21:** `templates/index.html` was removed from the repository after this report was written; `public/index.html` is now the only HTML build. The findings below are left exactly as recorded on the verification date and have not been re-checked against `public/index.html`.
+
 ## Verification Date
 December 2024
 

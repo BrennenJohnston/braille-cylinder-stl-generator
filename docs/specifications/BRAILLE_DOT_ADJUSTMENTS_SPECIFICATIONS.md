@@ -744,7 +744,9 @@ if (shape === 'cone') {
 ### UI Input Collection (JavaScript)
 
 ```javascript
-// From templates/index.html — getSettings() function
+// From public/index.html — the settings object built in runGenerateForCurrentPlate().
+// The getSettings() wrapper below is illustrative only; the real code builds this
+// object inline, with more fields and a different order.
 
 function getSettings() {
     return {
@@ -1168,6 +1170,7 @@ sphere_center_z = plate_thickness - (R - depth)
 | Date | Version | Author | Changes |
 |------|---------|--------|---------|
 | 2024-12-06 | 1.0 | Contributor | Initial specification |
+| 2026-08-21 | 1.1 | Contributor | **Documentation only — no behavior change.** The UI Input Collection snippet cited `templates/index.html` (empty and deprecated) and a `getSettings()` function; neither exists. It now cites the settings object built in `runGenerateForCurrentPlate()` in `public/index.html`, and flags the `getSettings()` wrapper shown as illustrative. Part of the templates/ reference sweep (Phase 07b). |
 
 ---
 

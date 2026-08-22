@@ -568,7 +568,7 @@ def is_braille_char(char: str) -> bool:
 
 ### Translation Request Function
 
-**Source:** `templates/index.html` (inferred from patterns)
+**Source:** `public/index.html` — the `translateWithLiblouis()` wrapper (simplified below)
 
 ```javascript
 // Frontend wrapper for translation via web worker
@@ -1062,7 +1062,7 @@ Each table entry returned by `/liblouis/tables`:
 
 ### Frontend Table Loading
 
-**Source:** `templates/index.html` (lines 2426-2438)
+**Source:** `public/index.html` — `loadLanguageOptions()`
 
 ```javascript
 async function loadLanguageOptions() {
@@ -1218,6 +1218,8 @@ All geometry generation modules use the canonical `braille_to_dots` function fro
 ---
 
 ## 13. Implementation Verification Report
+
+> **Note added 2026-08-21:** `templates/index.html` was removed from the repository after this verification ran; `public/index.html` is now the only HTML build. The tables in this section are left exactly as recorded on the verification date and have not been re-checked against `public/index.html`. For current locations see Appendix C and Section 7.
 
 ### Verification Date
 
@@ -1500,7 +1502,7 @@ Tables are processed left-to-right:
 | File | Purpose |
 |------|---------|
 | `static/liblouis-worker.js` | Web Worker with Liblouis |
-| `templates/index.html` | `translateWithLiblouis()` wrapper |
+| `public/index.html` | `translateWithLiblouis()` wrapper |
 
 ### Files That Discover/Scan Tables
 
@@ -1510,8 +1512,9 @@ Tables are processed left-to-right:
 
 ---
 
-*Document Version: 1.2*
+*Document Version: 1.3*
 *Last Updated: 2026-07-30 — added the `backTranslate` worker message (braille → text) used by the "Translate to Text" button and by STL file naming*
+*Revised 2026-08-21 (v1.3) — `templates/index.html` reference sweep (Phase 07b). Section 7 and Appendix C now cite `public/index.html` by function name (`translateWithLiblouis()`, `loadLanguageOptions()`) instead of a deleted file with stale line numbers. Section 13's dated verification tables are left exactly as recorded, with a note that `templates/index.html` has since been removed.*
 *Cross-System Compliance Verification Completed: 2024-12-06*
 *Total Components Verified: 28*
 *Compliance Rate: 100%*

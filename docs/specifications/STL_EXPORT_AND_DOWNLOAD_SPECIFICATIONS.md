@@ -19,7 +19,7 @@ This document specifies the STL export and download system in the Braille Card a
 2. `geometry_spec.py` — Geometry specification extraction
 3. `static/workers/csg-worker.js` — Client-side CSG for cards (three-bvh-csg)
 4. `static/workers/csg-worker-manifold.js` — Client-side CSG for cylinders (Manifold WASM, guarantees manifold output)
-5. `templates/index.html` / `public/index.html` — Frontend orchestration with dual worker selection
+5. `public/index.html` — Frontend orchestration with dual worker selection
 
 ---
 
@@ -127,7 +127,7 @@ The STL generation system follows a **client-only architecture** where:
 ### Decision Logic (Updated 2024-12-08)
 
 ```javascript
-// From templates/index.html - NO FALLBACK
+// From public/index.html - NO FALLBACK
 // All STL generation uses client-side CSG exclusively
 
 // On form submit, after braille translation:
@@ -351,7 +351,7 @@ The `/geometry_spec` endpoint returns a JSON object describing all geometric pri
 
 ### Worker Initialization
 
-**Source:** `templates/index.html`
+**Source:** `public/index.html` — the CSG worker setup inside the `window` `load` handler. The `initCSGWorker()` wrapper below is illustrative only; the real code runs inline and probes the worker file with `fetch()` first.
 
 ```javascript
 // Initialize CSG worker
@@ -1003,7 +1003,7 @@ contrast.
 ### Error Handling Implementation
 
 ```javascript
-// From templates/index.html - NO FALLBACK
+// From public/index.html - NO FALLBACK
 try {
     const stlData = await generateSTLClientSide({...});
     // Success path
@@ -1542,6 +1542,7 @@ idle. After a pair run the action button always reads "Generate STL".
 | 1.7 | 2026-08-18 | **Paired download is no longer automatic (accessibility).** An NVDA run hit Chrome's "wants to: Download multiple files" prompt, which the page cannot relabel - it names no file, gives no reason, and Tab cycles Close/Allow/Block indefinitely - and the run ended in "Download blocked" with neither cylinder saved. The status line meant to rescue that case was never announced either, because the Save As dialog from the first automatic download had already taken focus off the page. Both automatic `downloadPairFile()` calls removed; each cylinder is now saved by pressing its own button, so one gesture never produces more than one download. The 2026-08-17 measurement that found this safe was taken without a screen reader running. Section 15 step 6 and the Downloads subsection rewritten; completion wording replaced, **signed off by Brennen 2026-08-18**. Verified: 0 automatic downloads, both buttons shown, focus retained on Generate Both, one file per button press |
 | 1.8 | 2026-08-18 | **Generate and Download split into two controls (accessibility).** Section 8 rewritten. `#action-btn` no longer renames itself into a download control while the user's focus sits on it; a separate `#download-stl-btn` appears beside it, matching the pair buttons. Also fixed in the same pass: (a) progress messages had never displayed for ANYONE - the `#error-message` box was emptied between runs but never declassed, and `restoreThicknessPreset()` leaves an `error-message` class on every page load, which the "is a blocking error showing?" guard read as real, so `runGenerateForCurrentPlate()` now clears the class too; (b) nothing in the single-plate flow could announce at all (WCAG 4.1.3) - the box is now mirrored to `#a11y-status` by one MutationObserver covering all ~20 call sites, and its `role="alert"`/`aria-live` removed to prevent double-speak; (c) the old visible "Download STL" vs spoken "Download generated STL file" failed WCAG 2.5.3 Label in Name. New completion announcement and the new button name both **signed off by Brennen 2026-08-18**. Verified: action button never leaves data-state=generate, validation/progress/completion all spoken, one file per press, form edits retract the download, 310x44px, contrast 7.25/8.35/15.18:1 |
 | 1.5 | 2026-08-16 | **DOUBLE-SIDED NAMING (Phase 09):** When the Double-Sided Card beta is on, downloads are named `Cylinder_A_{preset}_{name}` (positive) / `Cylinder_B_{preset}_{name}` (negative); both take `{name}` from the front text. Single-sided names unchanged. Updated Section 7; covered by tests/e2e/doubleSided.spec.ts. |
+| 1.9 | 2026-08-21 | **Documentation only — no behavior change.** Removed the last `templates/index.html` citations (that folder is empty and deprecated). The Source Priority list now names one frontend file; the two `// From templates/index.html - NO FALLBACK` code comments now name `public/index.html`; and Section 4's Worker Initialization source now points at the CSG worker setup inside the `window` `load` handler, flagging the `initCSGWorker()` snippet as illustrative because no function of that name exists in the real code. Part of the templates/ reference sweep (Phase 07b). |
 
 ---
 

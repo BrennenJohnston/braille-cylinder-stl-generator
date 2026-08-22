@@ -1315,7 +1315,8 @@ first_row_center_y = height - space_above - dot_spacing
 
 ---
 
-*Document Version: 1.1*
-*Last Updated: December 2024*
+*Document Version: 1.2*
+*Last Updated: 2026-08-21*
 *Revision Notes: Added detailed debug logging information and troubleshooting checklist for cylinder dot positioning (Section 10.7)*
-*Source Files Referenced: backend.py, wsgi.py, app/models.py, geometry_spec.py, static/workers/csg-worker.js, templates/index.html*
+*Revision Notes (1.2, 2026-08-21): Documentation only — the Source Files Referenced line named `templates/index.html`, an empty deprecated folder; it now names `public/index.html`. Part of the templates/ reference sweep (Phase 07b).*
+*Source Files Referenced: backend.py, wsgi.py, app/models.py, geometry_spec.py, static/workers/csg-worker.js, public/index.html*
