@@ -43,8 +43,10 @@ Two caveats remain:
 
   The local pass bar is still Chromium + Firefox, and CI still runs WebKit on Linux. The
   original 41-failure reading has no surviving evidence; a whole-suite collapse of that
-  shape is what the stale-server trap below produces, which is the most likely explanation
-  but cannot now be confirmed.
+  shape is what the stale-server trap below produces, which remains the most likely
+  explanation but cannot now be confirmed. The per-test fill flake described below is a
+  second known cause of spurious local failures, though it would not by itself take down
+  41 tests at once.
 
 **A leftover server on port 5001 used to hijack local runs (fixed 2026-08-21).**
 `playwright.config.ts` set `reuseExistingServer: !process.env.CI`, so locally any server
@@ -56,6 +58,29 @@ working tree that already had the fix. CI never saw it, because CI set the flag 
 The setting is now `false` unconditionally, so a busy port is a loud error instead of a
 silent substitution. If a run now fails to start, something else is on 5001 — find it with
 `netstat -ano | findstr :5001` and stop it.
+
+**The suite had a second, unrelated flake, also fixed 2026-08-22.** The stale
+server was a real cause and was reproduced, but it was not the only one: a single
+Playwright `fill()` on `#braille-unicode` does not always land under full-suite
+parallelism, which surfaced as an intermittent "Please enter text in at least one
+line" from `generate()` - most often at `tests/e2e/tactileIndicator.spec.ts:123`,
+the same test the stale server also broke, which is how the two got conflated.
+It is NOT the app clearing the field: instrumenting the textarea's `value` setter
+to record every write caught a run that ended empty with **zero writes**, so
+nothing in page script touched it. All fourteen braille fills across five specs
+now go through a `fillBraille()` helper that verifies the text landed and re-fills
+if it did not, failing with a named message rather than a confusing downstream one.
+
+Two related traps were fixed in the same pass. `generate()` read `#error-text`
+and treated anything there as fatal, but that element also carries
+**informational** notices - the card-thickness preset's "All parameters updated."
+lands there on load with class `info` on the wrapper - so a notice could fail a
+run; the check now skips `info`. And `restoreThicknessPreset()` re-applies the
+card-stock preset across every dial after load, and can apply more than once, so
+**an e2e test that edits a dial can have its edit silently overwritten** and then
+assert the preset's value instead. That last one is not fixed - pin dial values at
+the source instead (see
+`tests/test_smoke.py::test_payload_fallback_literals_match_the_shipped_defaults`).
 
 One more thing worth knowing when running the local suite: locally Playwright uses many
 parallel workers and **no** retries, while CI uses one worker and two retries. Firefox is

@@ -98,13 +98,42 @@ async function generate(page: Page, state: { called: boolean }) {
     }
     if (state.called) return;
 
+    // #error-text is also where the app puts INFORMATIONAL notices - the card
+    // thickness preset's "All parameters updated." lands there on load, with
+    // class `info` on the wrapper. Treating that as a blocking error turns a
+    // notice into a spurious failure, so only fail when it is not marked info.
+    const notice = await page.locator('#error-message').getAttribute('class');
+    const isInfo = notice?.includes('info') ?? false;
     const error = await page.locator('#error-text').textContent();
-    if (error && !/Manifold 3D engine/.test(error)) {
+    if (error && !isInfo && !/Manifold 3D engine/.test(error)) {
       throw new Error(`Generation was blocked before reaching /geometry_spec: ${error}`);
     }
     await page.waitForTimeout(1000);
   }
   throw new Error('The Manifold worker never became ready');
+}
+
+/**
+ * Fill the Braille (Unicode) field and prove the text landed.
+ *
+ * Under full-suite parallelism a single fill() on this textarea does not always
+ * take - measured as an intermittent "Please enter text in at least one line"
+ * from generate(). It is NOT the app clearing the field: instrumenting the
+ * element's value setter to record every write and its stack caught a run that
+ * ended empty with ZERO writes recorded, so nothing in page script touched it.
+ * The value simply never arrived.
+ *
+ * Re-filling is therefore input reliability, not a retry of anything under
+ * test; every assertion in these specs stays strict, and a field that refuses
+ * the text fails with a named message instead of a confusing downstream one.
+ */
+async function fillBraille(page: Page, text: string) {
+  const field = page.locator('#braille-unicode');
+  for (let attempt = 0; attempt < 5; attempt++) {
+    await field.fill(text);
+    if ((await field.inputValue()) === text) return;
+  }
+  throw new Error('the Braille (Unicode) field never accepted its text after 5 fills');
 }
 
 test.describe('Editable Unicode braille field', () => {
@@ -137,7 +166,7 @@ test.describe('Editable Unicode braille field', () => {
 
     // Edit the 15-cell result down to the 13 cells that fit a default row.
     const field = page.locator('#braille-unicode');
-    await field.fill(PHONE_13_CELLS);
+    await fillBraille(page, PHONE_13_CELLS);
     await expect(page.locator('#braille-unicode-status')).toContainText('Edited');
 
     const spec = await interceptGeometrySpec(page);
@@ -150,7 +179,7 @@ test.describe('Editable Unicode braille field', () => {
     await openApp(page);
 
     const pasted = '\u2813\u2811\u2807\u2807\u2815';  // hello
-    await page.locator('#braille-unicode').fill(pasted);
+    await fillBraille(page, pasted);
 
     const spec = await interceptGeometrySpec(page);
     await generate(page, spec);
@@ -182,7 +211,7 @@ test.describe('Editable Unicode braille field', () => {
     await openApp(page);
 
     const spec = await interceptGeometrySpec(page);
-    await page.locator('#braille-unicode').fill('hello');
+    await fillBraille(page, 'hello');
     await page.locator('#action-btn').click();
 
     await expect(page.locator('#error-text')).toContainText('not a braille character', { timeout: 15_000 });
@@ -194,7 +223,7 @@ test.describe('Editable Unicode braille field', () => {
 
     const spec = await interceptGeometrySpec(page);
     // 14 cells against the default 13-text-cell row
-    await page.locator('#braille-unicode').fill('\u2801'.repeat(14));
+    await fillBraille(page, '\u2801'.repeat(14));
     await page.locator('#action-btn').click();
 
     await expect(page.locator('#error-text')).toContainText('the maximum is 13', { timeout: 15_000 });
@@ -214,7 +243,7 @@ test.describe('Editable Unicode braille field', () => {
     await expect(field).toHaveValue('');
 
     // Dirty: a hand-edit outranks the English inputs
-    await field.fill('\u2801\u2803');
+    await fillBraille(page, '\u2801\u2803');
     await page.locator('#line1').fill('something else entirely');
     await expect(field).toHaveValue('\u2801\u2803');
   });
@@ -223,7 +252,7 @@ test.describe('Editable Unicode braille field', () => {
     await openApp(page);
 
     // hello, in uncontracted UEB: h e l l o
-    await page.locator('#braille-unicode').fill('\u2813\u2811\u2807\u2807\u2815');
+    await fillBraille(page, '\u2813\u2811\u2807\u2807\u2815');
 
     // Same warm-up problem as Translate to Braille: the worker loads async.
     const line1 = page.locator('#line1');

@@ -148,8 +148,14 @@ async function generate(page: Page, state: { bodies: unknown[] }, n: number) {
     }
     if (state.bodies.length >= n) return;
 
+    // #error-text is also where the app puts INFORMATIONAL notices - the card
+    // thickness preset's "All parameters updated." lands there on load, with
+    // class `info` on the wrapper. Treating that as a blocking error turns a
+    // notice into a spurious failure, so only fail when it is not marked info.
+    const notice = await page.locator('#error-message').getAttribute('class');
+    const isInfo = notice?.includes('info') ?? false;
     const error = await page.locator('#error-text').textContent();
-    if (error && !TRANSIENT_ERRORS.test(error)) {
+    if (error && !isInfo && !TRANSIENT_ERRORS.test(error)) {
       throw new Error(`Generation was blocked before reaching /geometry_spec: ${error}`);
     }
     lastError = error || lastError;
@@ -230,8 +236,14 @@ async function generateFully(
       await expect(page.locator('#action-btn')).toHaveAttribute('data-state', 'generate');
       return state.responses[n - 1];
     }
+    // #error-text is also where the app puts INFORMATIONAL notices - the card
+    // thickness preset's "All parameters updated." lands there on load, with
+    // class `info` on the wrapper. Treating that as a blocking error turns a
+    // notice into a spurious failure, so only fail when it is not marked info.
+    const notice = await page.locator('#error-message').getAttribute('class');
+    const isInfo = notice?.includes('info') ?? false;
     const error = await page.locator('#error-text').textContent();
-    if (error && !TRANSIENT_ERRORS.test(error)) {
+    if (error && !isInfo && !TRANSIENT_ERRORS.test(error)) {
       throw new Error(`Generation was blocked before reaching /geometry_spec: ${error}`);
     }
     lastError = error || lastError;
