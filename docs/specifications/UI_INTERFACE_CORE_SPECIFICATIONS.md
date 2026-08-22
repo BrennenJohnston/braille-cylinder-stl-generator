@@ -199,6 +199,18 @@ All theme-dependent colors are defined using CSS custom properties (variables) o
     --info-border: #93c5fd;
     --info-text: #1e40af;
 
+    /* Front-of-card warning and note text (added 2026-08-21). Measured on
+       --bg-secondary, the surface all three boxes sit on: 6.18:1 and 5.08:1.
+       Both reuse a value already in this palette rather than adding a new hex
+       - --warning-text is --error-text, --note-text is --btn-success-bg. */
+    --warning-text: #b91c1c;
+    --note-text: #0f7a5a;
+
+    /* Skip link label. One value serves all three themes - it clears 4.5:1 on
+       every --border-focus (5.21 / 9.20 / 6.70), so it is declared once here
+       and not repeated per theme. See Section 4.1. */
+    --skip-link-text: #000000;
+
     /* Shadow colors */
     --shadow-light: rgba(49,130,206,0.10);
     --shadow-medium: rgba(49,130,206,0.18);
@@ -262,6 +274,11 @@ All theme-dependent colors are defined using CSS custom properties (variables) o
     --info-bg: #2c5282;
     --info-border: #3182ce;
     --info-text: #bee3f8;
+
+    /* 7.81:1 and 6.76:1 on --bg-secondary. Same reuse as the light theme:
+       --error-text and --btn-success-border. */
+    --warning-text: #fed7d7;
+    --note-text: #6ee7b7;
 
     /* Shadow colors */
     --shadow-light: rgba(0,0,0,0.3);
@@ -328,6 +345,13 @@ All theme-dependent colors are defined using CSS custom properties (variables) o
     --info-bg: #0000ff;
     --info-border: #0000ff;
     --info-text: #02fe05;
+
+    /* Declared for completeness only: the [data-theme="high-contrast"]
+       .grade-note rule forces #fdfe00 with !important and the strong rule
+       forces #02fe05, so neither token paints. Both already clear the floor
+       (16.04:1 body, 12.58:1 label). */
+    --warning-text: #fdfe00;
+    --note-text: #fdfe00;
 
     /* No shadows in high contrast mode */
     --shadow-light: none;
@@ -1536,7 +1560,7 @@ A skip link is provided for keyboard users to bypass the header and jump directl
     left: 0;
     transform: translateY(-100%);  /* Hidden by its OWN height */
     background: var(--border-focus);
-    color: white;
+    color: var(--skip-link-text);
     padding: 8px 16px;
     text-decoration: none;
     border-radius: 0 0 8px 0;
@@ -1550,6 +1574,24 @@ A skip link is provided for keyboard users to bypass the header and jump directl
     outline-offset: 2px;
 }
 ```
+
+**Why the label is `var(--skip-link-text)` and not `white` (fixed 2026-08-21).**
+White on `--border-focus` failed WCAG 2.1 SC 1.4.3 (AA) in **all three themes** -
+4.03:1 light, 2.28:1 dark, 3.14:1 high contrast, against a 4.5:1 floor.
+
+The obvious repair, darkening `--border-focus` itself, was measured and **rejected**.
+That token is also the page-wide focus-ring colour, and the two jobs pull apart: a
+blue dark enough to carry white text at 4.5:1 (`#2c5282`, 7.97:1) measures **1.51:1
+against the dark theme's page** and 2.47:1 against high-contrast black, dropping every
+focus ring on the page below the 3:1 non-text floor of WCAG 2.2 SC 1.4.11. Fixing one
+AA failure would have created dozens.
+
+The label moves instead. `#000000` clears 4.5:1 on all three focus colours -
+**5.21:1 / 9.20:1 / 6.70:1** - so it needs no per-theme value, and the background,
+the focus ring, and every other consumer of `--border-focus` are untouched. Chosen by
+Brennen 2026-08-21 (FD-19c) over a decoupled `--skip-link-bg` token, which would have
+kept white-on-blue but left the box itself at 2.18:1 / 2.47:1 against the page in the
+dark and high-contrast themes, relying on the focus outline alone for its boundary.
 
 **Why `translateY(-100%)` and not a pixel offset (fixed 2026-08-21).** The rule was
 `top: -40px`, a fixed lift that cannot hide an element whose height scales with the
@@ -1955,6 +1997,44 @@ failures were found on 2026-08-17 and fixed the next day:
   grows to 102 px tall, so roughly 62 px of it stays on screen over the page header.
   Pre-existing and verified against the previous commit — it is a fixed pixel offset
   hiding an element whose height scales with the font.
+
+**Warning and note text tokens (fixed 2026-08-21).** The three front-of-card boxes
+`#auto-overflow-warning`, `#cylinder-overflow-warning` and `#caps-warning` hardcoded
+their colour in a `style=` attribute — `#d73502` on the two overflow warnings,
+`#059669` on the capitalization note — which both failed WCAG 2.1 SC 1.4.3 (AA) and
+broke the standing rule that every colour comes from a design token. One fix served
+both: the values moved into `--warning-text` and `--note-text` in all three theme
+blocks of Section 1.2.
+
+| Box | Theme | Was | Now | Ratio before → after |
+|---|---|---|---|---|
+| Both overflow warnings | light | `#d73502` | `var(--warning-text)` `#b91c1c` | 4.56:1 → **6.18:1** |
+| Both overflow warnings | dark | `#d73502` | `var(--warning-text)` `#fed7d7` | **2.16:1** → **7.81:1** |
+| Capitalization note | light | `#059669` | `var(--note-text)` `#0f7a5a` | **3.60:1** → **5.08:1** |
+| Capitalization note | dark | `#059669` | `var(--note-text)` `#6ee7b7` | **2.74:1** → **6.76:1** |
+| All three | high contrast | (overridden) | (overridden) | 16.04:1 / 12.58:1, unchanged |
+
+All ratios are against `--bg-secondary`, the surface the boxes sit on, which is the
+worst case — `--bg-primary` is lighter in the light theme and darker in the dark
+theme, so both tokens measure higher there. High contrast never changed because
+`[data-theme="high-contrast"] .grade-note` forces `#fdfe00` with `!important`, which
+outranks a normal inline declaration; the tokens are declared in that block for
+completeness and never paint.
+
+**Why these values.** Both reuse a hex already in the palette rather than introducing
+a new one — `--warning-text` takes `--error-text`'s value in each theme, `--note-text`
+takes `--btn-success-bg` (light) and `--btn-success-border` (dark). Chosen by Brennen
+2026-08-21 (FD-19a, FD-19b). Note that the light-theme `#d73502` this replaces was
+*passing*, at 4.56:1 — by 0.06. A token used in two themes should not sit on that
+margin, so it was moved with the failing values rather than left alone.
+
+**The tooling trap, again.** Lighthouse scored **100/100 with all eleven of these
+failures live**, on desktop and mobile, exactly as it had in v1.11 for the button
+gradients. Two causes: an inline colour on a box that is `display: none` at audit
+time is never sampled, and the page background is a `background-image` gradient,
+which defeats sampling outright. **A Lighthouse accessibility score of 100 is
+necessary but never sufficient evidence on this page — contrast must be measured
+directly, with the boxes forced visible, in each of the three themes.**
 
 ---
 
@@ -2760,6 +2840,7 @@ Low vision users benefit from enhanced depth perception:
 | 1.15 | 2026-08-18 | **Refinements from hearing the fix run under NVDA.** Section 4.10 extended. The lock note was being queued ahead of the checkbox's own "checked, expanded" because it was written synchronously in the change handler, so the user waited out a 30-word sentence to learn the box was ticked - now deferred one task so the control's state is spoken first. `ds-back-overflow-warning` announced on every keystroke (its text carries a live cell count, so each character is a real change): now announces only on the hidden-to-shown transition, measured 3 announcements before and 1 after over the same typed sentence. Neither was visible in the accessibility tree - the tree proves a region CAN announce, only listening proves it announces usefully |
 | 1.16 | 2026-08-18 | **Single-plate flow made audible; Generate/Download split.** Section 4.10: `#error-message` is now mirrored to `#a11y-status` by one MutationObserver, closing the WCAG 4.1.3 failure that left every validation error, progress notice and failure message silent. Its `role="alert"`/`aria-live` removed to prevent double-speak. `#action-btn` no longer renames itself into a download control under the user's focus - a separate `#download-stl-btn` appears instead (styled under its own selectors, 310x44px, contrast 7.25/8.35/15.18:1 across the three themes). Full rationale in STL Export and Download Specifications §8 |
 | 1.17 | 2026-08-21 | **The last three unwired live regions, the two remaining touch-target gaps, and the skip link.** Section 4.10: `auto-overflow-warning`, `cylinder-overflow-warning` and `caps-warning` had carried textbook-correct `role="status" aria-live="polite"` on boxes hidden between messages and were in no announcement path at all - a shipped **WCAG 2.1 SC 4.1.3 (AA)** failure covering the front-of-card overflow warning users hit most. Attributes removed from all three; each now announces its own `textContent` through `#a11y-status`, gated hidden-to-shown, via `hideAutoOverflow()` / `hideCylinderOverflow()` / the inline clear in `updateCapsWarning()`. **No user-facing wording was authored.** The capitalization note needed measuring rather than reasoning about: its text is fixed, but `announceStatus()` assigns `textContent` unconditionally and an identical assignment still replaces the text node, and `updateCapsWarning()` runs on every keystroke with no debounce - **11 announcements over 11 keystrokes without a gate, 1 with it** (INTERPOINT §7.6's contradictory "an unchanged string is not a mutation" bullet corrected in the same pass). Section 4.1: the skip link's `top: -40px` replaced by `transform: translateY(-100%)`, which hides it by its own height at any font size - measured leak **0/3/8/13/19 px at 100/125/150/175/200% before, 0 px at all five after**; the original finding's "102 px tall, ~62 px showing" came from a probe that scaled `<html>` and `<body>` together and is corrected in place. Section 3.8: `.preview-stepper-btn` **20x22 -> 44x44 px** and `.preview-toggle-btn` **49x20 -> 49x44 px** (`min-width: max(4em, 44px)`), closing the last WCAG 2.5.5 gaps from v1.12; the overlay grows 35 -> 56 px at 100% font and 128 -> 131 px at 200%, wrapping to two rows inside the viewer with nothing clipped. Separately, all **21 empty `catch` blocks** in `public/index.html` now log (12 `log.error`, 9 `log.debug`), per core rule 13; every `try` kept, no path made able to throw. Validated: W3C Nu **0 errors 0 warnings**, Lighthouse accessibility **100/100 desktop and mobile, 0 failing audits** (`target-size` passing), reflow **0 failures of 6** viewport x font-size combinations, 8 accordion toggles with 0 `aria-expanded`/`aria-controls` defects, ruff clean, **135 pytest / 2 vitest / 106 e2e** (chromium+firefox) unchanged from baseline. **Contrast: 11 pre-existing failures found and NOT introduced here** - identical counts measured against the parent commit; reported separately, see below. |
+| 1.18 | 2026-08-21 | **The 11 contrast failures v1.17 reported are closed; three colours become tokens.** All eleven were pre-existing and none were introduced by v1.17 — proved by re-running the identical probe against parent commit `9aff093` and getting the same 11 at the same values. Section 1.2: three new tokens per theme block. `--warning-text` and `--note-text` replace the hardcoded inline `color: #d73502` and `color: #059669` on `#auto-overflow-warning`, `#cylinder-overflow-warning` and `#caps-warning`, which broke the design-token rule as well as WCAG 2.1 SC 1.4.3 (AA): the overflow warnings went **2.16:1 → 7.81:1** dark and 4.56:1 → **6.18:1** light, the capitalization note **2.74:1 → 6.76:1** dark and **3.60:1 → 5.08:1** light. Both tokens reuse a hex already in the palette (`--error-text`; `--btn-success-bg` / `--btn-success-border`) rather than adding a new one. The light `#d73502` was *passing* at 4.56:1 — by 0.06 — and was moved anyway rather than leave a two-theme token on that margin. High contrast never failed and never changed: `.grade-note` forces `#fdfe00` with `!important`, which outranks a normal inline declaration. Section 4.1: `.skip-link` was `color: white` on `--border-focus` and failed **all three themes** at 4.03 / 2.28 / 3.14:1; the label is now `var(--skip-link-text)` `#000000`, measuring **5.21 / 9.20 / 6.70:1**. Darkening `--border-focus` itself was measured and rejected — it is also the page-wide focus-ring colour, and a blue dark enough for white text (`#2c5282`, 7.97:1) falls to **1.51:1 against the dark theme page**, breaking WCAG 2.2 SC 1.4.11 for every focus ring on the page. All three values chosen by Brennen 2026-08-21 (FD-19a/b/c). Section 4.9 extended with the before/after table and the tooling trap: **Lighthouse scored 100/100 with all eleven failures live**, because an inline colour on a `display:none` box is never sampled and a `background-image` page gradient defeats sampling outright. Validated after the change: contrast **11 failures → 0** across light/dark/high-contrast, plus a new page-wide sweep over *every* visible text element in all three themes at **0 failures** (proved to detect: it reports the 3 skip-link failures when run against the pre-fix file). W3C Nu **0 errors 0 warnings**, Lighthouse accessibility **100/100 desktop and mobile, 0 failing audits**, reflow **0 of 6** viewport × font-size combinations, ruff clean, **135 pytest / 2 vitest / 122 e2e** (chromium+firefox) all unchanged from baseline. No user-facing string, geometry, worker, settings or live-region behaviour changed. |
 
 ---
 

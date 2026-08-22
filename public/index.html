@@ -96,6 +96,20 @@
             --info-bg: #dbeafe;
             --info-border: #93c5fd;
             --info-text: #1e40af;
+            /* Front-of-card warning and note text, measured on --bg-secondary,
+               the surface all three boxes sit on. Reuses values already in this
+               palette (--error-text and --btn-success-bg) rather than adding new
+               hexes: 6.18:1 and 5.08:1. The inline #d73502 and #059669 these
+               replace measured 4.56:1 - passing on a 0.06 margin - and 3.60:1,
+               failing. Chosen by Brennen 2026-08-21 (FD-19a, FD-19b). */
+            --warning-text: #b91c1c;
+            --note-text: #0f7a5a;
+            /* The skip link sits on --border-focus, which has to stay bright
+               enough to serve as the page-wide focus ring (3:1, SC 1.4.11), so
+               the text on it is what moves. One value clears 4.5:1 on all three
+               focus colours - 5.21 / 9.20 / 6.70 - so it is not per-theme.
+               Chosen by Brennen 2026-08-21 (FD-19c). */
+            --skip-link-text: #000000;
             --shadow-light: rgba(49,130,206,0.10);
             --shadow-medium: rgba(49,130,206,0.18);
             /* 3.7:1 against --stl-background, clearing WCAG 2.2 SC 1.4.11 (3:1).
@@ -149,6 +163,10 @@
             --info-bg: #2c5282;
             --info-border: #3182ce;
             --info-text: #bee3f8;
+            /* 7.81:1 and 6.76:1 on --bg-secondary. Same reuse as the light
+               theme: --error-text and --btn-success-border. */
+            --warning-text: #fed7d7;
+            --note-text: #6ee7b7;
             --shadow-light: rgba(0,0,0,0.3);
             --shadow-medium: rgba(0,0,0,0.5);
             --stl-mesh-color: #90cdf4; /* 7.0:1 against --stl-background */
@@ -196,6 +214,11 @@
             --info-bg: #0000ff;
             --info-border: #0000ff;
             --info-text: #02fe05; /* Green instead of white */
+            /* Declared for completeness only: the .grade-note rule below forces
+               #fdfe00 with !important and the strong rule forces #02fe05, so
+               these never paint. Both already clear the floor (16.04:1, 12.58:1). */
+            --warning-text: #fdfe00;
+            --note-text: #fdfe00;
             --shadow-light: transparent;
             --shadow-medium: transparent;
             --stl-mesh-color: #00ffff; /* Bright cyan, 16.7:1 against black */
@@ -439,7 +462,7 @@
             left: 0;
             transform: translateY(-100%);
             background: var(--border-focus);
-            color: white;
+            color: var(--skip-link-text);
             padding: 8px 16px;
             text-decoration: none;
             border-radius: 0 0 8px 0;
@@ -3222,7 +3245,7 @@
                                      leaving one would let some screen readers speak later
                                      updates twice. -->
                                 <div id="auto-overflow-warning" class="grade-note"
-                                     style="margin-top: 0.6em; color: #d73502; display: none;">
+                                     style="margin-top: 0.6em; color: var(--warning-text); display: none;">
                                     <strong>Warning:</strong> <span id="auto-overflow-message"></span>
                                 </div>
                             </div>
@@ -3734,7 +3757,7 @@
                                          fire on first appearance. Same reason as
                                          #auto-overflow-warning. -->
                                     <div id="cylinder-overflow-warning" class="grade-note"
-                                         style="margin-top: 10px; color: #d73502; display: none;">
+                                         style="margin-top: 10px; color: var(--warning-text); display: none;">
                                         <strong>Warning:</strong> <span id="cylinder-overflow-message"></span>
                                     </div>
                                 </div>
@@ -3823,7 +3846,7 @@
                                      messages, so a live region on this box can never fire on first
                                      appearance. Same reason as #auto-overflow-warning. -->
                                 <div id="caps-warning" class="grade-note"
-                                     style="margin-top: 0.6em; color: #059669; display: none;">
+                                     style="margin-top: 0.6em; color: var(--note-text); display: none;">
                                     <strong>Note:</strong> Capital letters in your text will not be translated because "Capitalized Letters" is disabled. Enable it above if you need capitals in braille.
                                 </div>
                                 <!-- Number sign style (non-standard repetition available, default off) -->
