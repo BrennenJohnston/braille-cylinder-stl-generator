@@ -1250,11 +1250,18 @@ updateContrastStepper();
     text-align: center;
 }
 
+/* Stepper buttons: 44x44 floor (WCAG 2.5.5), raised 2026-08-21 from 1.6em */
+.preview-stepper-btn {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    padding: 0.2em 0.35em !important;
+}
+
 /* Edge outline toggle - same stepper metrics, but wide enough for a word */
 .preview-toggle-btn {
-    min-width: 4em;
-    min-height: 1.6em;
-    padding: 0.2em 0.6em;
+    min-width: max(4em, 44px) !important;
+    min-height: 44px !important;
+    padding: 0.2em 0.6em !important;
 }
 
 /* Same WCAG-AA active blues the Expert Mode toggles use */
@@ -1525,23 +1532,49 @@ A skip link is provided for keyboard users to bypass the header and jump directl
 ```css
 .skip-link {
     position: absolute;
-    top: -40px;
+    top: 0;
     left: 0;
+    transform: translateY(-100%);  /* Hidden by its OWN height */
     background: var(--border-focus);
     color: white;
     padding: 8px 16px;
     text-decoration: none;
     border-radius: 0 0 8px 0;
     z-index: 1000;
-    transition: top 0.3s;
+    transition: transform 0.3s;
 }
 
 .skip-link:focus {
-    top: 0;  /* Becomes visible when focused */
+    transform: translateY(0);  /* Becomes visible when focused */
     outline: 3px solid var(--border-focus);
     outline-offset: 2px;
 }
 ```
+
+**Why `translateY(-100%)` and not a pixel offset (fixed 2026-08-21).** The rule was
+`top: -40px`, a fixed lift that cannot hide an element whose height scales with the
+app font size. Measured on the real UI, driving `applyFontSize()`'s own scale:
+
+| App font size | Link height | Showing on screen, unfocused (was) | (now) |
+|---|---|---|---|
+| 100% | 37 px | 0 px | 0 px |
+| 125% | 43 px | 3 px | 0 px |
+| 150% | 48 px | 8 px | 0 px |
+| 175% | 53 px | 13 px | 0 px |
+| 200% | 59 px | **19 px** | **0 px** |
+
+`translateY(-100%)` is always exactly one link-height, whatever that height turns out
+to be, so the leak closes at every step of the scale. Focusing it still brings it
+fully on screen at `y = 0`. The transition moved from `top` to `transform` with it;
+`prefers-reduced-motion` still neutralises it through the global
+`transition-duration: 0.01ms` override.
+
+> **Correction to the original finding.** The 2026-08-18 audit recorded this as a
+> **102 px** link leaving **~62 px** on screen at 200%. Those numbers came from a
+> measurement that scaled `<html>` *and* `<body>` together, which compounds;
+> `applyFontSize()` sets the root only. The defect was real and is fixed, but its
+> true size was 59 px and 19 px. Recorded so the smaller number is not mistaken for
+> an incomplete fix.
 
 ### 4.2 Focus Indicators
 
@@ -2051,12 +2084,44 @@ box, leaving that box's styling and timing untouched — `#error-message` is
 permanently in flow is not viable. `#a11y-status` and `announceStatus()` already
 exist for this, so the scheduled work is wiring, not new machinery.
 
-Three more single-sided regions carry the identical defect and are scheduled with it:
-`auto-overflow-warning` (front-of-card overflow), `cylinder-overflow-warning` and
-`caps-warning`. Also outstanding: `#action-btn` changes its accessible name from
-"Generate STL file from entered text" to "Download generated STL file" with no
-announcement, so the control under the user's focus silently becomes a different
-control.
+**Fixed 2026-08-21 — the last three regions: `auto-overflow-warning`,
+`cylinder-overflow-warning` and `caps-warning`.** These carried the identical defect
+for three days longer than the rest, because the phase that was to fix them lost its
+slot to a numbering collision. All three had textbook-correct
+`role="status" aria-live="polite"` on a box that is `display:none` between messages,
+and none was among `announceStatus()`'s wired sources — so the front-of-card overflow
+warning, the one users hit most often, was silent every time it appeared. The
+attributes were removed from all three boxes and each now announces its own
+`textContent` through `#a11y-status`, exactly as the beta-flow boxes do. No wording
+was authored: what is heard is the box's own text, "Warning:" and "Note:" included.
+
+Each of the three writes and clears through a small helper so no call site can drift:
+`hideAutoOverflow()`, `hideCylinderOverflow()`, and the inline clear in
+`updateCapsWarning()`. All three announce **only on the transition from hidden to
+shown**, for the reason `ds-back-overflow-warning` does.
+
+**The capitalization note is the one that had to be measured rather than reasoned
+about.** Its text is fixed, so the expectation was that the "an unchanged string is
+not a mutation" property above would suppress its repeats by itself. It does not:
+`announceStatus()` assigns `textContent` unconditionally, and assigning an identical
+string still replaces the text node — a real DOM mutation. `updateCapsWarning()` also
+runs on **every keystroke with no debounce**, unlike the two overflow checks which are
+debounced by 250 ms. Measured on the real UI: **11 announcements over 11 keystrokes
+without the gate, 1 with it.** The same hidden-to-shown gate the overflow boxes use is
+therefore applied here too, despite the static text.
+
+Verified by driving the real UI: the `role=status` node count is **6 at page load and
+6 while each of the three warnings is shown** — previously each one pushed the tree to
+7 whenever it appeared — and each box announces once per episode and releases the
+channel when its condition clears. Listening steps for all three are in
+[NVDA Live Warnings Walkthrough](../development/NVDA_LIVE_WARNINGS_WALKTHROUGH.md).
+
+**With these three, every live region on the page is accounted for.** The
+`#action-btn` silent-rename defect listed here as outstanding was in fact resolved on
+2026-08-18 by the Generate/Download split — `#action-btn` keeps its name and role for
+its whole life and the file is offered by a separate `#download-stl-btn` (see STL
+Export and Download Specifications §8, v1.8). This paragraph had not been updated to
+match; corrected 2026-08-21.
 
 ---
 
@@ -2694,6 +2759,7 @@ Low vision users benefit from enhanced depth perception:
 | 1.14 | 2026-08-18 | **Live-region fix extended to the whole double-sided beta flow.** Section 4.10 extended. An audit of every live region found 8 of 10 absent from the accessibility tree at page load. `#pair-status` took the `:empty` fix; the other four beta boxes (`ds-back-overflow-warning`, `ds-gap-warning`, `indicator-mode-lock-note`, `tactile-gap-warning`) are never empty - each wraps a `<strong>Warning:</strong>` or static text - so they are announced through a new shared always-present `sr-only` region `#a11y-status` via `announceStatus(source, message)`, which is source-scoped so one box clearing cannot wipe another's message. `role="status"`/`aria-live` removed from those four boxes to prevent double-speak; `aria-describedby` wiring on the lock note unaffected. Each announcement repeats the box's own textContent, so no new user-facing wording was authored. `#indicator-mode-lock-note` was silent every time, not just on first appearance. Verified by driving the real UI (role=status node count constant at 6). Remaining: `#error-message`, `auto-overflow-warning`, `cylinder-overflow-warning`, `caps-warning` and the `#action-btn` name change. Validated: W3C Nu 0 errors/0 warnings, Lighthouse accessibility 100/100 desktop and mobile, ruff clean, 119 tests passed |
 | 1.15 | 2026-08-18 | **Refinements from hearing the fix run under NVDA.** Section 4.10 extended. The lock note was being queued ahead of the checkbox's own "checked, expanded" because it was written synchronously in the change handler, so the user waited out a 30-word sentence to learn the box was ticked - now deferred one task so the control's state is spoken first. `ds-back-overflow-warning` announced on every keystroke (its text carries a live cell count, so each character is a real change): now announces only on the hidden-to-shown transition, measured 3 announcements before and 1 after over the same typed sentence. Neither was visible in the accessibility tree - the tree proves a region CAN announce, only listening proves it announces usefully |
 | 1.16 | 2026-08-18 | **Single-plate flow made audible; Generate/Download split.** Section 4.10: `#error-message` is now mirrored to `#a11y-status` by one MutationObserver, closing the WCAG 4.1.3 failure that left every validation error, progress notice and failure message silent. Its `role="alert"`/`aria-live` removed to prevent double-speak. `#action-btn` no longer renames itself into a download control under the user's focus - a separate `#download-stl-btn` appears instead (styled under its own selectors, 310x44px, contrast 7.25/8.35/15.18:1 across the three themes). Full rationale in STL Export and Download Specifications §8 |
+| 1.17 | 2026-08-21 | **The last three unwired live regions, the two remaining touch-target gaps, and the skip link.** Section 4.10: `auto-overflow-warning`, `cylinder-overflow-warning` and `caps-warning` had carried textbook-correct `role="status" aria-live="polite"` on boxes hidden between messages and were in no announcement path at all - a shipped **WCAG 2.1 SC 4.1.3 (AA)** failure covering the front-of-card overflow warning users hit most. Attributes removed from all three; each now announces its own `textContent` through `#a11y-status`, gated hidden-to-shown, via `hideAutoOverflow()` / `hideCylinderOverflow()` / the inline clear in `updateCapsWarning()`. **No user-facing wording was authored.** The capitalization note needed measuring rather than reasoning about: its text is fixed, but `announceStatus()` assigns `textContent` unconditionally and an identical assignment still replaces the text node, and `updateCapsWarning()` runs on every keystroke with no debounce - **11 announcements over 11 keystrokes without a gate, 1 with it** (INTERPOINT §7.6's contradictory "an unchanged string is not a mutation" bullet corrected in the same pass). Section 4.1: the skip link's `top: -40px` replaced by `transform: translateY(-100%)`, which hides it by its own height at any font size - measured leak **0/3/8/13/19 px at 100/125/150/175/200% before, 0 px at all five after**; the original finding's "102 px tall, ~62 px showing" came from a probe that scaled `<html>` and `<body>` together and is corrected in place. Section 3.8: `.preview-stepper-btn` **20x22 -> 44x44 px** and `.preview-toggle-btn` **49x20 -> 49x44 px** (`min-width: max(4em, 44px)`), closing the last WCAG 2.5.5 gaps from v1.12; the overlay grows 35 -> 56 px at 100% font and 128 -> 131 px at 200%, wrapping to two rows inside the viewer with nothing clipped. Separately, all **21 empty `catch` blocks** in `public/index.html` now log (12 `log.error`, 9 `log.debug`), per core rule 13; every `try` kept, no path made able to throw. Validated: W3C Nu **0 errors 0 warnings**, Lighthouse accessibility **100/100 desktop and mobile, 0 failing audits** (`target-size` passing), reflow **0 failures of 6** viewport x font-size combinations, 8 accordion toggles with 0 `aria-expanded`/`aria-controls` defects, ruff clean, **135 pytest / 2 vitest / 106 e2e** (chromium+firefox) unchanged from baseline. **Contrast: 11 pre-existing failures found and NOT introduced here** - identical counts measured against the parent commit; reported separately, see below. |
 
 ---
 

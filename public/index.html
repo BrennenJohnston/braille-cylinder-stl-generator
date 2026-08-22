@@ -429,21 +429,26 @@
         }
 
         /* Skip Link for Keyboard Navigation */
+        /* Hidden by its OWN height, not by a fixed -40px offset. The link grows
+           with the app font size, so at 200% a 40 px lift left roughly 62 px of
+           it sitting over the header; translateY(-100%) is always exactly one
+           link-height whatever that height turns out to be. */
         .skip-link {
             position: absolute;
-            top: -40px;
+            top: 0;
             left: 0;
+            transform: translateY(-100%);
             background: var(--border-focus);
             color: white;
             padding: 8px 16px;
             text-decoration: none;
             border-radius: 0 0 8px 0;
             z-index: 1000;
-            transition: top 0.3s;
+            transition: transform 0.3s;
         }
 
         .skip-link:focus {
-            top: 0;
+            transform: translateY(0);
             outline: 3px solid var(--border-focus);
             outline-offset: 2px;
         }
@@ -1256,9 +1261,13 @@
             gap: 0.2em;
         }
 
+        /* WCAG 2.5.5: these rendered 20x22 px, well under the 44x44 floor. The
+           floor is an absolute size, so it is spelled out in px the same way the
+           toolbar's other targets are. The overlay already wraps, so the taller
+           row reflows onto a second line instead of clipping. */
         .preview-stepper-btn {
-            min-width: 1.6em !important;
-            min-height: 1.6em !important;
+            min-width: 44px !important;
+            min-height: 44px !important;
             padding: 0.2em 0.35em !important;
             font-size: 0.8em !important;
             border-radius: 4px !important;
@@ -1272,10 +1281,13 @@
             border-radius: 4px !important;
         }
 
-        /* Edge outline toggle - same stepper metrics, but wide enough for a word */
+        /* Edge outline toggle - same stepper metrics, but wide enough for a word.
+           Rendered 49x20 px, so the height was under the 44x44 floor (WCAG 2.5.5).
+           The width keeps its 4em word allowance with 44px as a hard floor, since
+           4em of a 0.7em font falls under 44px once the app font size is reduced. */
         .preview-toggle-btn {
-            min-width: 4em !important;
-            min-height: 1.6em !important;
+            min-width: max(4em, 44px) !important;
+            min-height: 44px !important;
             padding: 0.2em 0.6em !important;
             font-size: 0.7em !important;
             border-radius: 4px !important;
@@ -3203,7 +3215,13 @@
                             <div id="auto-input-container" style="display: none;">
                                 <label for="auto-text" class="line-label">Auto Placement Text</label>
                                 <textarea id="auto-text" rows="4" placeholder="Type all your text here. It will be translated to braille and auto-wrapped across rows based on available cells." style="width: 100%; resize: vertical;" autocomplete="off"></textarea>
-                                <div id="auto-overflow-warning" class="grade-note" role="status" aria-live="polite"
+                                <!-- Announced through #a11y-status, not from here: this box is
+                                     display:none between messages, so it is inserted into the
+                                     accessibility tree already holding its text, and an insertion
+                                     is not a change. A live region here could never fire, and
+                                     leaving one would let some screen readers speak later
+                                     updates twice. -->
+                                <div id="auto-overflow-warning" class="grade-note"
                                      style="margin-top: 0.6em; color: #d73502; display: none;">
                                     <strong>Warning:</strong> <span id="auto-overflow-message"></span>
                                 </div>
@@ -3711,7 +3729,11 @@
                                             Rotates the starting position of braille text around the cylinder
                                         </div>
                                     </div>
-                                    <div id="cylinder-overflow-warning" class="grade-note" role="status" aria-live="polite"
+                                    <!-- Announced through #a11y-status, not from here: hidden
+                                         between messages, so a live region on this box can never
+                                         fire on first appearance. Same reason as
+                                         #auto-overflow-warning. -->
+                                    <div id="cylinder-overflow-warning" class="grade-note"
                                          style="margin-top: 10px; color: #d73502; display: none;">
                                         <strong>Warning:</strong> <span id="cylinder-overflow-message"></span>
                                     </div>
@@ -3797,7 +3819,10 @@
                                     </div>
                                 </div>
                                 <!-- Capitalization warning (shown when caps disabled + uppercase detected) -->
-                                <div id="caps-warning" class="grade-note" role="status" aria-live="polite"
+                                <!-- Announced through #a11y-status, not from here: hidden between
+                                     messages, so a live region on this box can never fire on first
+                                     appearance. Same reason as #auto-overflow-warning. -->
+                                <div id="caps-warning" class="grade-note"
                                      style="margin-top: 0.6em; color: #059669; display: none;">
                                     <strong>Note:</strong> Capital letters in your text will not be translated because "Capitalized Letters" is disabled. Enable it above if you need capitals in braille.
                                 </div>
@@ -4181,13 +4206,13 @@
             try {
                 const select = document.getElementById('language-table');
                 select.addEventListener('change', () => {
-                    try { localStorage.setItem('braille_prefs_language_table', select.value); } catch (e) {}
+                    try { localStorage.setItem('braille_prefs_language_table', select.value); } catch (e) { log.debug('Could not save the language preference:', e); }
                     // Keep per-line language dropdowns in sync with available options
-                    try { syncLineLanguageSelects(); } catch (e) {}
+                    try { syncLineLanguageSelects(); } catch (e) { log.error('Per-line language selects failed to sync:', e); }
                 });
                 // Populate per-line selects once options are loaded
-                try { syncLineLanguageSelects(); } catch (e) {}
-            } catch (e) {}
+                try { syncLineLanguageSelects(); } catch (e) { log.error('Per-line language selects failed to populate:', e); }
+            } catch (e) { log.error('Language select wiring failed; per-line languages may not follow the main one:', e); }
         });
 
 
@@ -5112,7 +5137,7 @@
             gridColumnsNote.textContent = `${explanation} Recommended value: ${recommended}.`;
         }
         // Expose for other handlers safely
-        try { window.updateGridColumnsForPlateType = updateGridColumnsForPlateType; } catch (e) {}
+        try { window.updateGridColumnsForPlateType = updateGridColumnsForPlateType; } catch (e) { log.debug('Could not expose updateGridColumnsForPlateType on window:', e); }
 
         // Re-attached whenever the line inputs are rebuilt from grid_rows. The
         // warnings these inputs feed are refreshed by the form-level delegation;
@@ -5277,6 +5302,16 @@
         // checkPhysicalFit()'s job. Debounced: each check is async liblouis calls.
         let cylinderOverflowTimer = null;
         let cylinderOverflowRun = 0;
+
+        function hideCylinderOverflow() {
+            const warningDiv = document.getElementById('cylinder-overflow-warning');
+            const warningMessage = document.getElementById('cylinder-overflow-message');
+            if (!warningDiv || !warningMessage) return;
+            warningDiv.style.display = 'none';
+            warningMessage.textContent = '';
+            announceStatus('cylinder-overflow-warning', '');
+        }
+
         function checkCylinderOverflow() {
             if (cylinderOverflowTimer) clearTimeout(cylinderOverflowTimer);
             cylinderOverflowTimer = setTimeout(() => {
@@ -5292,14 +5327,14 @@
 
             const shapeTypeElement = document.querySelector('input[name="shape_type"]:checked');
             if (!shapeTypeElement || shapeTypeElement.value !== 'cylinder') {
-                warningDiv.style.display = 'none';
+                hideCylinderOverflow();
                 return;
             }
 
             const placementMode = document.querySelector('input[name="placement_mode"]:checked')?.value || 'manual';
             if (placementMode === 'auto') {
                 // Auto text is checked per-row by computeAutoOverflow() in its own warning box
-                warningDiv.style.display = 'none';
+                hideCylinderOverflow();
                 computeAutoOverflow();
                 return;
             }
@@ -5322,10 +5357,19 @@
                 }
                 if (runId !== cylinderOverflowRun) return; // superseded by newer input
                 if (problems.length) {
+                    // Hidden-to-shown gate, same reason as the auto-placement and
+                    // back-of-card overflow boxes: this recomputes per keystroke
+                    // and the text carries a live cell count, so every character
+                    // typed would otherwise be announced over the user.
+                    const wasHidden = warningDiv.style.display === 'none';
                     warningMessage.textContent = problems.join(' ') + ' Shorten the text or raise the number of braille cells in Expert Mode.';
                     warningDiv.style.display = 'block';
+                    if (wasHidden) {
+                        announceStatus('cylinder-overflow-warning',
+                            warningDiv.textContent.replace(/\s+/g, ' ').trim());
+                    }
                 } else {
-                    warningDiv.style.display = 'none';
+                    hideCylinderOverflow();
                 }
             })().catch(() => { /* translation not ready; skip the preview warning */ });
         }
@@ -5749,7 +5793,21 @@
 
             const warning = document.getElementById('caps-warning');
             if (warning) {
-                warning.style.display = (capsDisabled && hasUppercase) ? 'block' : 'none';
+                const wasHidden = warning.style.display === 'none';
+                const show = capsDisabled && hasUppercase;
+                warning.style.display = show ? 'block' : 'none';
+                // Gated hidden-to-shown like the overflow warnings, even though
+                // this box's text never changes. announceStatus() assigns
+                // textContent unconditionally, and assigning the SAME string
+                // still replaces the text node - a real mutation that some
+                // assistive tech speaks again. Measured: 11 announcements over
+                // 11 keystrokes without this gate, 1 with it.
+                if (show && wasHidden) {
+                    announceStatus('caps-warning',
+                        warning.textContent.replace(/\s+/g, ' ').trim());
+                } else if (!show) {
+                    announceStatus('caps-warning', '');
+                }
             }
         }
 
@@ -6455,6 +6513,14 @@
         // a series of async liblouis calls.
         let autoOverflowTimer = null;
         let autoOverflowRun = 0;
+
+        function hideAutoOverflow() {
+            if (!autoWarning || !autoWarningMsg) return;
+            autoWarning.style.display = 'none';
+            autoWarningMsg.textContent = '';
+            announceStatus('auto-overflow-warning', '');
+        }
+
         function computeAutoOverflow() {
             if (autoOverflowTimer) clearTimeout(autoOverflowTimer);
             autoOverflowTimer = setTimeout(() => {
@@ -6469,8 +6535,7 @@
             const tableName = languageSelect?.value || DEFAULT_LANGUAGE_TABLE;
             const src = (autoText?.value || '').trim();
             if (!src) {
-                autoWarning.style.display = 'none';
-                autoWarningMsg.textContent = '';
+                hideAutoOverflow();
                 return;
             }
             try {
@@ -6498,14 +6563,28 @@
                 }
 
                 if (messages.length) {
+                    // Announce only as the warning appears. This recomputes on
+                    // every keystroke and the text carries a live cell count, so
+                    // each character typed produces a different string - a real
+                    // change, and announcing all of them talks over the user
+                    // while they are still typing. Once they have been told the
+                    // text overflows, the box stays on screen and repeating it
+                    // adds nothing. Same gate as #ds-back-overflow-warning.
+                    const wasHidden = autoWarning.style.display === 'none';
                     autoWarningMsg.textContent = messages.join(' ');
                     autoWarning.style.display = 'block';
+                    if (wasHidden) {
+                        announceStatus('auto-overflow-warning',
+                            autoWarning.textContent.replace(/\s+/g, ' ').trim());
+                    }
                 } else {
-                    autoWarning.style.display = 'none';
-                    autoWarningMsg.textContent = '';
+                    hideAutoOverflow();
                 }
             } catch (e) {
-                // Ignore preview warning if translation not available
+                // liblouis unavailable or still starting: leave the box as it is
+                // rather than guess. Generation runs the same wrap itself and
+                // fails closed, so a missed live warning cannot emboss bad braille.
+                log.debug('Auto-placement overflow check skipped:', e);
             }
         }
 
@@ -6628,14 +6707,10 @@
 
             const placementMode = document.querySelector('input[name="placement_mode"]:checked')?.value || 'manual';
             if (placementMode === 'auto') {
-                const cylinderWarning = document.getElementById('cylinder-overflow-warning');
-                if (cylinderWarning) cylinderWarning.style.display = 'none';
+                hideCylinderOverflow();
                 computeAutoOverflow();
             } else {
-                if (autoWarning) {
-                    autoWarning.style.display = 'none';
-                    autoWarningMsg.textContent = '';
-                }
+                hideAutoOverflow();
                 checkCylinderOverflow();
             }
         }
@@ -6651,7 +6726,7 @@
 
         // Persistence: save and restore user settings
         function persistValue(key, value) {
-            try { localStorage.setItem(key, value); } catch (e) {}
+            try { localStorage.setItem(key, value); } catch (e) { log.debug('Could not save setting', key, e); }
         }
         function readPersisted(key) {
             try { return localStorage.getItem(key); } catch (e) { return null; }
@@ -6708,7 +6783,7 @@
                 'braille_prefs_double_sided_enabled',
                 'braille_prefs_back_text'
             ];
-            keys.forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+            keys.forEach(k => { try { localStorage.removeItem(k); } catch (e) { log.debug('Could not clear saved setting', k, e); } });
         }
 
         function applyPersistedSettings() {
@@ -6989,10 +7064,10 @@
         }
 
         // On load, restore persisted settings, then wire listeners
-        try { applyPersistedSettings(); } catch (e) {}
-        try { wirePersistenceListeners(); } catch (e) {}
+        try { applyPersistedSettings(); } catch (e) { log.error('Saved settings failed to restore; the form is showing defaults:', e); }
+        try { wirePersistenceListeners(); } catch (e) { log.error('Persistence listeners failed to wire; settings will not be saved:', e); }
         // After restoring persisted settings, update placement UI to reflect restored mode
-        try { updatePlacementUI(); } catch (e) {}
+        try { updatePlacementUI(); } catch (e) { log.error('Placement UI failed to initialise:', e); }
         // Restored double-sided state fires no events either: reveal the Back of
         // Card section and apply the tactile lock by hand when it came back on.
         // The try stays so a throw here cannot stop page startup; the catch says
@@ -7002,7 +7077,7 @@
         try { updateDoubleSidedUI(); } catch (e) { log.error('Double-sided UI failed to initialise:', e); }
         // Restored settings are written straight to the DOM and fire no events, so
         // the warnings are seeded by hand against whatever came back from storage.
-        try { refreshLiveWarnings(); } catch (e) {}
+        try { refreshLiveWarnings(); } catch (e) { log.error('Live warnings failed to seed from restored settings:', e); }
 
         // Reset to defaults button
         const resetBtn = document.getElementById('reset-defaults-btn');
@@ -7017,15 +7092,15 @@
                     const langSelect = document.getElementById('language-table');
                     if (langSelect) {
                         langSelect.value = DEFAULT_LANGUAGE_TABLE;
-                        try { localStorage.setItem('braille_prefs_language_table', DEFAULT_LANGUAGE_TABLE); } catch (e) {}
+                        try { localStorage.setItem('braille_prefs_language_table', DEFAULT_LANGUAGE_TABLE); } catch (e) { log.debug('Could not save the default language preference:', e); }
                     }
-                } catch (e) {}
+                } catch (e) { log.error('Language reset to the BANA default failed:', e); }
                 // Reset thickness preset to default (0.4mm)
                 try {
                     localStorage.setItem('braille_prefs_thickness_preset', '0.4');
                     const thicknessRadio = document.querySelector('input[name="card_thickness_preset"][value="0.4"]');
                     if (thicknessRadio) thicknessRadio.checked = true;
-                } catch (e) {}
+                } catch (e) { log.debug('Could not reset the saved thickness preset:', e); }
                 // Reset radio groups to defaultChecked
                 const radioGroups = new Map();
                 document.querySelectorAll('input[type="radio"]').forEach(r => {
@@ -7214,7 +7289,7 @@
             if (radio && !radio.checked) {
                 radio.checked = true;
                 // Persist the detected preset state
-                try { localStorage.setItem('braille_prefs_thickness_preset', detectedPreset); } catch (e) {}
+                try { localStorage.setItem('braille_prefs_thickness_preset', detectedPreset); } catch (e) { log.debug('Could not save the detected thickness preset:', e); }
                 log.debug('Preset auto-switched to:', detectedPreset);
             }
         }
@@ -7256,19 +7331,19 @@
 
                     // Also persist the value to localStorage
                     const persistKey = `braille_prefs_${inputId}`;
-                    try { localStorage.setItem(persistKey, value); } catch (e) {}
+                    try { localStorage.setItem(persistKey, value); } catch (e) { log.debug('Could not save preset value for', inputId, e); }
                 }
             });
 
             // Persist the selected preset
-            try { localStorage.setItem('braille_prefs_thickness_preset', presetKey); } catch (e) {}
+            try { localStorage.setItem('braille_prefs_thickness_preset', presetKey); } catch (e) { log.debug('Could not save the selected thickness preset:', e); }
 
             // Update related UI elements. A preset supersedes any hand-typed cell
             // count, so the dial goes back to auto-filling from the recommendation.
-            try { clearGridColumnsDirty(); } catch (e) {}
-            try { updateGridColumnsForPlateType(); } catch (e) {}
-            try { resetToGenerateState(); } catch (e) {}
-            try { refreshLiveWarnings(); } catch (e) {}
+            try { clearGridColumnsDirty(); } catch (e) { log.error('Could not clear the hand-typed cell-count flag:', e); }
+            try { updateGridColumnsForPlateType(); } catch (e) { log.error('Cell-count recommendation failed to refresh after the preset:', e); }
+            try { resetToGenerateState(); } catch (e) { log.error('Generate button failed to reset after the preset:', e); }
+            try { refreshLiveWarnings(); } catch (e) { log.error('Live warnings failed to refresh after the preset:', e); }
 
             // Show confirmation message
             try {

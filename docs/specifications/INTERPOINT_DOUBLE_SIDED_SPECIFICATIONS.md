@@ -600,8 +600,15 @@ written by `announceStatus(source, message)`:
 - **Scoped by source.** The owning box's id is stored in `dataset.source`; an empty message
   clears the region **only if** the caller owns it, so one box clearing cannot wipe
   another's message.
-- **An unchanged string is not a mutation**, which keeps the per-keystroke recomputes from
-  chattering.
+- **Writing does NOT deduplicate.** `announceStatus()` assigns `textContent`
+  unconditionally, and assigning an identical string still replaces the text node — a
+  real DOM mutation that assistive tech can speak again. Callers that recompute
+  frequently must gate themselves; see the three exceptions below.
+  *(Corrected 2026-08-21. This bullet previously claimed "an unchanged string is not a
+  mutation, which keeps the per-keystroke recomputes from chattering", which
+  contradicted the `announceDsGap` bullet further down the same list and was disproved
+  by measurement: `#caps-warning`, whose text never changes, announced **11 times over
+  11 keystrokes** when wired without a gate.)*
 - **Each announcement repeats the box's own `textContent`**, so what is heard matches what
   is shown, "Warning:" included, and no separate wording exists to drift or need sign-off.
 
@@ -621,6 +628,20 @@ test that listens) rather than by reading the accessibility tree:
   so its per-keystroke recompute kept re-taking the region and talked over the
   back-overflow warning (caught by the e2e suite). Announcing only on change restores
   one polite announcement per real event; the visible box is unaffected.
+
+**Three more sources joined on 2026-08-21, from outside the beta flow.**
+`#auto-overflow-warning`, `#cylinder-overflow-warning` and `#caps-warning` had the
+identical defect and were the last unwired regions on the page. All three had their
+`role="status"`/`aria-live` removed and now announce their own `textContent` through
+this channel, each gated hidden → shown. Their sources are their own box ids, so the
+scoping rule above covers them unchanged. Full account, including why the
+capitalization note needed a gate despite having fixed text, is in
+UI_INTERFACE_CORE_SPECIFICATIONS.md §4.10.
+
+**The wired sources are now nine:** `ds-back-overflow-warning`, `ds-gap-warning`,
+`indicator-mode-lock-note`, `tactile-gap-warning`, `stl-ready`, `error-message`
+(via MutationObserver), `auto-overflow-warning`, `cylinder-overflow-warning` and
+`caps-warning`.
 
 The tree proves a region *can* announce; only listening proves it announces usefully.
 The single-sided flow's `#error-message` reaches the same region through one
@@ -791,6 +812,7 @@ and separated**. Full record: the research folder's `00_PROJECT_MEMORY.md`, FD-8
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-08-21 | 1.8 | **Section 7.6 corrected and extended** (post-initiative accessibility hygiene bundle). The bullet claiming "an unchanged string is not a mutation, which keeps the per-keystroke recomputes from chattering" was **wrong and contradicted the `announceDsGap` bullet in the same list**: `announceStatus()` assigns `textContent` unconditionally, and assigning an identical string still replaces the text node. Disproved by measurement - `#caps-warning`, whose text never changes, announced **11 times over 11 keystrokes** when wired without a gate. The bullet now states that writing does not deduplicate and that frequent callers must gate themselves. Also records the three non-beta sources that joined the channel the same day (`auto-overflow-warning`, `cylinder-overflow-warning`, `caps-warning`), bringing the wired total to **nine**. Documentation and one UI file only - no beta behaviour, wire shape, footprint, threshold, or geometry changed, and the toggle-off payload is untouched. |
 | 2026-08-21 | 1.7 | **Phase 13b closeout — Brennen's two decisions, taken the same day.** (1) Gate 4's rewritten message is **SIGNED OFF as written**; the `REVIEW-BRENNEN` marker is gone from `app/validation.py` and §5 records the sign-off date. He kept the version that leads with why the recess prints wider than the number the user set, over a shorter fix-first variant and over mirroring the .scad's text — the .scad's names the 0.3 mm preset as *the* fix, which would mislead anyone setting footprints straight over the API. (2) **The live UI warning now chooses its blocked-vs-marginal tail on the PRINTED ridge** while still quoting the nominal gap, closing the §9 gap this phase opened: on the 0.4 preset at both offsets 1.16–1.18 or 1.32–1.34 mm the box said "may come out thin or merged" and generate then failed with a 400. New `dsPrintedBowlMouth()` in `public/index.html` mirrors `interpoint.printed_bowl_mouth_mm`, fallback included. **Visibility and the quoted figure stay nominal** — on the printed figure the 0.3 package would warn about itself, which is the whole of FD-11(b). §7.3 gains the three-way table and the band-edge e2e rows (1.17 → "0.355 mm" blocked, 1.19 → "0.383 mm" thin or merged); §9's entry is struck with the rejected alternatives recorded. The source guard splits into two tests, one per repo half. No threshold, range, geometry, footprint, or golden fixture changed. |
 | 2026-08-21 | 1.6 | **The hard printability gate now measures the recess's PRINTED mouth** (FD-11b, approved by Brennen 2026-08-20; the OpenSCAD port made the same switch in its Phase 12, so the two generators now agree on what is exportable). New `interpoint.printed_bowl_mouth_mm(bowl_diameter, bowl_depth)` replaces the sphere-radius expression that was inline in `paired_nip_clearance`; `app/validation.py` gate 4 feeds its result to the same `same_surface_min_gap()` rather than carrying a second formula. **The two soft warnings — `app/geometry_spec.py` and `checkDoubleSidedGap()` in `public/index.html` — deliberately stay on the NOMINAL figure**, and a test pins the split at the source in both directions. Neither threshold moved (floor 0.34, reliable 0.50) and neither did the 1.15–1.35 offset range. Measured consequence, swept in 0.01 mm steps: the 0.3 package keeps all 441 offset combinations, the 0.4 package keeps 297 and loses 132 the nominal figure used to pass; **both shipped defaults are unaffected** (printed 0.495 and 0.428 mm at 1.25/1.25). §3 gains the measured band table and the printed figures for Option A (0.345) and the single-sided sizes (−0.042); §5 gate 4 rewritten with the new message, the extended `details` dict, and the non-positive-depth fallback; §7.3 records that the live warning's "will be blocked" tail under-predicts in a six-value band; §9 gains that band and the 0 mm bowl-depth note. Gate 4's message shipped in this version awaiting Brennen's sign-off (`REVIEW-BRENNEN` in `app/validation.py`) — ***superseded hours later by v1.7 above, which records the sign-off; no marker remains in the repo.*** No geometry, footprint, or golden fixture changed. |
 | 2026-08-20 | 1.5 | **Footprints keyed to the card-stock preset** (research memory FD-8/FD-9): 0.3 preset → Option B (unchanged, still the schema/models defaults), 0.4 preset → the Q2 print-matrix winner (dot Ø1.2 × 1.0 mm tall, dome Ø1.0; bowl Ø1.4 nominal → printed Ø1.48 × 0.74). §3 rationale rewritten with both packages and nominal-vs-printed gap figures (Q2: 0.468 nominal / 0.428 printed, measured printing clean); §6.1 wire shape (footprints now numbers from `DS_FOOTPRINTS[preset]`); §6.4 bowl convention now authoritative and used by the regenerated goldens; §7.3 new reference numbers — the 0.4 preset shows the warning at defaults by design; §7.5 keying; §7.6 documents `announceDsGap` (the persistent warning announces only on change, fixing it talking over the back-overflow announcement); §8 anchors updated (16 e2e tests; goldens regenerated 2026-08-20 with the worker bowl convention, still Option B footprints); Overview/§9/§10 corrected — the 2026-08 physical pass was 0.3 mm stock only — and §10 gains the 2026-08-20 print-matrix record, the Q2 decision, and the 1.0 mm die-height housing ceiling. Wire payloads change only with the beta ON; toggle-off stays byte-identical. |
