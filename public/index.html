@@ -3234,6 +3234,12 @@
                                     Manual Placement
                                 </label>
                             </div>
+                            <!-- Visible in BOTH placement modes on purpose: the fact it
+                                 states lives on the Row Indicator radios two panels away,
+                                 where nobody short of cells ever finds it (FD-20c). -->
+                            <div class="grade-note" style="margin-top: 0.4em; font-size: 0.85em;">
+                                Tip: need one more cell per line? The tactile arrow Row Indicator Style reserves no cells for markers, so every cell in the row is available for your text.
+                            </div>
                             <!-- Auto placement textarea (hidden by default) -->
                             <div id="auto-input-container" style="display: none;">
                                 <label for="auto-text" class="line-label">Auto Placement Text</label>
@@ -3589,7 +3595,7 @@
                                         <label for="grid_columns" id="grid_columns_label">Number of Braille Cells (Characters):</label>
                                         <input type="number" id="grid_columns" name="grid_columns" value="13" style="width: 110px;" autocomplete="off">
                                         <div id="grid_columns_note" class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
-                                            For embossing plates: 2 cells per row are reserved for the indicator letter and alignment triangle, so the recommended 13 text cells use 15 columns in total. Recommended value: 13.
+                                            This counts braille cells for your text only. The indicator letter and alignment triangle take their own space at the end of the row and are never part of this count — with them present, 13 text cells is the most that fits. Recommended value: 13.
                                         </div>
                                     </div>
                                     <div style="margin-top: 6px;">
@@ -5128,15 +5134,21 @@
                 : 'Available Braille Cells for Text:';
 
             // Capacity contract: the dial counts TEXT cells only; marker columns
-            // are added on top for the payload. Visual mode recommends 13 text
+            // are added on top for the payload. Letters on recommends 13 text
             // cells because that is what a phone number takes on one row: 13 in
             // UEB when written with periods (⠼⠃⠚⠋⠲⠋⠁⠋⠲⠛⠋⠛⠓ for 206.616.7678),
             // and 13 for the hyphenated form once the repeated number signs are
             // edited out in the Braille (Unicode) field. With indicator letters
             // on that is 15 total columns, which still clears the seam by more
             // than a dot footprint on the default 30.75 mm cylinder (see
-            // checkPhysicalFit). Tactile mode reserves no marker columns, so its
+            // checkPhysicalFit). Letters OFF frees the letter column to text:
+            // 14 text cells + the triangle = 15 total again, the same seam
+            // footprint (raised from 13 on 2026-08-22, FD-20 — supersedes the
+            // 2026-07-31 both-states-13 choice; a 13-cell phone number still
+            // fits either way). Tactile mode reserves no marker columns, so its
             // 14 text cells are 14 total.
+            // Note wording is FD-20c-shaped: availability is text cells only,
+            // and marker columns never appear in what the user reads or hears.
             let explanation;
             let recommended;
             if (tactile) {
@@ -5144,14 +5156,14 @@
                 recommended = '14';
             } else if (plateType === 'positive') {
                 explanation = indicatorOn
-                    ? 'For embossing plates: 2 cells per row are reserved for the indicator letter and alignment triangle, so the recommended 13 text cells use 15 columns in total.'
-                    : 'Indicator letters off: 1 cell per row is reserved for the alignment triangle, so the recommended 13 text cells use 14 columns in total.';
-                recommended = '13';
+                    ? 'This counts braille cells for your text only. The indicator letter and alignment triangle take their own space at the end of the row and are never part of this count — with them present, 13 text cells is the most that fits.'
+                    : 'This counts braille cells for your text only. With indicator letters off, just the alignment triangle takes its own space at the end of the row — 14 text cells is the most that fits.';
+                recommended = indicatorOn ? '13' : '14';
             } else {
                 explanation = indicatorOn
-                    ? 'For counter plates: 2 cells per row are reserved for the indicator square and alignment triangle, so the recommended 13 text cells use 15 columns in total.'
-                    : 'Indicator letters off: 1 cell per row is reserved for the alignment triangle, so the recommended 13 text cells use 14 columns in total.';
-                recommended = '13';
+                    ? 'This counts braille cells for your text only. The indicator square and alignment triangle take their own space at the end of the row and are never part of this count — with them present, 13 text cells is the most that fits.'
+                    : 'This counts braille cells for your text only. With indicator letters off, just the alignment triangle takes its own space at the end of the row — 14 text cells is the most that fits.';
+                recommended = indicatorOn ? '13' : '14';
             }
 
             if (!preserveValue && !gridColumnsDirty) {
@@ -6014,11 +6026,12 @@
                 );
                 const required = dotSpacing + dotDiameter;
                 if (seamGap < required) {
-                    const reserved = getReservedMarkerColumns();
-                    warningMsg.textContent = `This layout needs ${totalColumns} columns (${getAvailableColumns()} text + ` +
-                        `${reserved} marker) at ${cellSpacing} mm spacing on a ${diameter} mm cylinder, which leaves ` +
-                        `${seamGap.toFixed(1)} mm across the seam — less than the ${required.toFixed(1)} mm a cell's dots ` +
-                        'occupy, so the last cell of a row would collide with the first. ' +
+                    // Text cells only in the sentence (FD-20c): the marker
+                    // columns stay in the seam math above but never in what
+                    // the user reads or hears.
+                    warningMsg.textContent = `This layout does not fit around the cylinder: ${getAvailableColumns()} braille cells ` +
+                        `at ${cellSpacing} mm spacing on a ${diameter} mm cylinder leave ${seamGap.toFixed(1)} mm at the seam, ` +
+                        `and a cell's dots need ${required.toFixed(1)} mm clear — the last cell would collide with the first. ` +
                         'Reduce the number of braille cells or increase the cylinder diameter.';
                     warningDiv.style.display = 'block';
                     if (wasHidden) {

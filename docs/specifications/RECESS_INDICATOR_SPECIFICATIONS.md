@@ -43,10 +43,14 @@ Reserved marker columns per row:
 | Mode / Toggle | Reserved columns | Text cells at defaults |
 |---------------|------------------|------------------------|
 | `visual`, toggle On (1) | 2 (letter + triangle) | 13 (15 total, 5.6 mm seam gap) |
-| `visual`, toggle Off (0) | 1 (triangle only) | 13 (14 total, 12.1 mm seam gap) |
+| `visual`, toggle Off (0) | 1 (triangle only) | 14 (15 total, 5.6 mm seam gap) |
 | `tactile` | 0 | 14 recommended (14 total, 12.1 mm seam gap; 15 leaves 5.6 mm, too little for the arrow) |
 
-Visual mode recommends 13 text cells whichever way the toggle is set, because that is what a phone number takes on one row: a period-formatted number translates to exactly 13 cells under UEB (`206.616.7678` → `⠼⠃⠚⠋⠲⠋⠁⠋⠲⠛⠋⠛⠓`, one number sign), and a hyphenated one comes to 13 once the repeated number signs are edited out in the Braille (Unicode) field (`⠼⠑⠁⠚⠤⠃⠃⠊⠤⠛⠊⠁⠓`).
+With indicator letters on, visual mode recommends 13 text cells because that is what a phone number takes on one row: a period-formatted number translates to exactly 13 cells under UEB (`206.616.7678` → `⠼⠃⠚⠋⠲⠋⠁⠋⠲⠛⠋⠛⠓`, one number sign), and a hyphenated one comes to 13 once the repeated number signs are edited out in the Braille (Unicode) field (`⠼⠑⠁⠚⠤⠃⠃⠊⠤⠛⠊⠁⠓`).
+
+With indicator letters off, the recommendation is **14** (raised from 13 on 2026-08-22, FD-20 — superseding the 2026-07-31 v3.2 decision that kept 13 in both toggle states): the freed letter column goes to text, the triangle still takes one column, and 14 + 1 = 15 total columns is the same seam footprint as the letters-on default, so nothing prints tighter and a 13-cell phone number still fits either way. This also matched the shipped help text, which had promised "up to 14 cells with indicator letters turned off" all along.
+
+The dial note and the seam-fit warning report availability in **text cells only** (FD-20c, from the first NVDA listening run): marker columns stay in the seam arithmetic but never appear in user-facing sentences, because hearing "needs 14 cells but 13 are available" next to "needs 16 columns (14 text + 2 marker)" is a units mix a screen-reader user cannot untangle.
 
 The single source for this arithmetic is `_reserved_marker_columns(settings, tactile_on)` in `app/geometry_spec.py`, mirrored by `getReservedMarkerColumns()` in `public/index.html` and the `reserved` calculation in `validate_line_lengths()`.
 
@@ -948,6 +952,7 @@ When implementing or modifying indicator code, verify:
 | 2026-07-30 | 3.1 | Tactile defaults changed to `tactile_indicator_length` 10.0 mm and `tactile_indicator_raise` 0.5 mm; all five dimensions added to both Card Thickness presets; the dials moved into their own Expert Mode submenu shown only in tactile mode |
 | 2026-07-31 | 3.2 | Per-row text capacity at defaults changed to 13 cells in visual mode (either toggle state, `grid_columns` default 15) and 14 in tactile mode, so a 13-cell UEB phone number fits one row |
 | 2026-08-16 | 3.3 | Double-sided (interpoint) beta: `indicator_mode` is LOCKED to `tactile` whenever `double_sided_enabled` is on — the UI disables the visual radio and `validate_double_sided_settings()` rejects non-tactile double-sided requests with HTTP 400. Cylinder A keeps the raised arrows, Cylinder B the recesses, and the arrow's 180° position is the fixed point of the A/B pairing mirror. See INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md |
+| 2026-08-22 | 3.4 | **Letters-off recommendation raised 13 → 14, and all availability wording moves to text cells only (FD-20).** Supersedes v3.2's both-states-13: with letters off, 14 text + 1 triangle = 15 total columns — the identical seam footprint to the letters-on default (5.6 mm gap), so nothing prints tighter, a 13-cell phone number still fits, and the shipped help text (which already said "up to 14") stops contradicting the dial. The cells-dial note (all three visual variants) and the seam-fit warning were rewritten after the first NVDA listening run heard "needs 14 cells but 13 are available" beside "needs 16 columns (14 text + 2 marker)" — marker columns stay in the arithmetic, never in the sentences. A tip under Placement Mode now says the tactile style frees one more cell. Backend arithmetic, `_reserved_marker_columns()`, wire shape, and all defaults with letters ON are unchanged. Approved by Brennen 2026-08-22. |
 
 ---
 
