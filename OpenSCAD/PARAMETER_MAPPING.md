@@ -53,6 +53,47 @@ triggers a `TOO MANY LINES: n/grid_rows` warning — a console `echo()` plus red
 text above the cylinder for the MakerWorld preview, which has no console. The
 web app blocks the same case before generation instead of warning after.
 
+### Double-Sided Card (BETA)
+
+Emboss BOTH faces of one card in a single pass. Turning `double_sided` On forces
+Tactile row indicators, replaces the counter plate's universal recess grid with
+1:1 paired seats, and renames the pair: **Cylinder A** is the Embossing Plate and
+**Cylinder B** the Counter Plate. The single-sided names and files are unchanged —
+this renaming applies only while double-sided is On.
+
+Back-side text is **pre-translated Unicode braille in both versions**. The web app
+translates front text with Liblouis but not back text, and OpenSCAD has no Liblouis
+at all, so this is the one place the two versions work identically by necessity.
+
+| OpenSCAD Parameter | Web App Equivalent | Notes |
+|--------------------|-------------------|-------|
+| `double_sided` | Double-Sided Card (BETA) toggle | `"Off"` (default), `"On"`. Web schema home `double_sided.enabled`; on the wire it is the flat integer `double_sided_enabled` (0/1), never sent for cards. OpenSCAD accepts the Customizer's `On`/`Off` and the lowercase `on`/`off` the test system passes with `-D`. |
+| `Back_Line_1` … `Back_Line_10` | `back_lines[0]` … `back_lines[9]` | **Composite mapping.** OpenSCAD needs one fixed field per row because the Customizer cannot add fields on demand; the web app carries the whole back face as ONE top-level array, `back_lines`, sent beside `lines`. Read only while `double_sided` is On. Settings-file spelling is `text.back_lines`; the Python keyword is `back_lines=`. |
+| `interpoint_offset_x_mm` | `interpoint_offset_x` | Circumferential half of the diagonal shift between the front and back grids, measured around the cylinder. Default **1.25 mm**, range **1.15–1.35 mm**. Web schema home `double_sided.interpoint_offset_x_mm`. |
+| `interpoint_offset_y_mm` | `interpoint_offset_y` | Axial half of the same diagonal shift, measured along the cylinder: back rows sit this far above the front rows. Default **1.25 mm**, range **1.15–1.35 mm**. Web schema home `double_sided.interpoint_offset_y_mm`; the web repo's `app/geometry/interpoint.py` calls this same number `offset_z`. |
+
+All ten back rows stay in this one tab, unlike the front's `Line_1`–`Line_8` /
+`Line_9`–`Line_10` split. That split exists only to keep the always-visible main
+text tab at eight fields; this tab is opt-in, so splitting it would send a
+double-sided user to a second tab — one that also holds single-sided fields — to
+finish one job.
+
+**Two asserts guard the offsets, not one.** The 1.15–1.35 mm range is enforced by
+an assert in the `.scad`, so a value outside it stops the render rather than
+exporting an unprintable pair. A second assert then checks the printed ridge
+between a raised dot and its neighbouring recess against the 0.34 mm floor.
+Clearance **peaks at 1.25 mm and falls off symmetrically**, so 1.15 and 1.35 are
+equally bad and the fix is always to move back *toward* 1.25 — never simply to
+increase or decrease. On the 0.4 mm card-stock package the renderable band is
+effectively **1.19–1.31 mm** (measured 2026-08-20); the 0.3 mm package accepts the
+whole range. The slider deliberately keeps the full 1.15–1.35 because that is the
+web schema's range and the 0.3 package uses all of it.
+
+The paired dot and bowl footprints are **fixed and keyed to the card-stock
+preset** — there are no double-sided dial parameters to map. See
+`paper_thickness_preset` below and `docs/specifications/INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md`
+in the web repository for the two packages.
+
 ### Plate Selection
 | OpenSCAD Parameter | Web App Equivalent | Values |
 |--------------------|-------------------|--------|
@@ -319,7 +360,7 @@ All default values match the web-based generator's defaults (0.4mm paper preset 
 
 4. **Rounded vs. Cone**: The web app calls these "Rounded" and "Cone" - both terms refer to the combined emboss+counter shape pair.
 
-5. **Counter Plate Universality**: Counter plates have recesses at ALL possible dot positions (all 6 dots × all cells × all rows), making them universal for any braille pattern.
+5. **Counter Plate Universality**: Counter plates have recesses at ALL possible dot positions (all 6 dots × all cells × all rows), making them universal for any braille pattern. **This holds for single-sided only.** With `double_sided` On there is no universal grid: both cylinders carry 1:1 paired recesses, one per actual dot on the opposing face, so a double-sided pair is specific to its text and cannot be reused for another message.
 
 6. **Parameter Names**: OpenSCAD uses snake_case (e.g., `grid_columns`) to match the web app's JavaScript variable names, ensuring consistency across platforms.
 
