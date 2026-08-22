@@ -31,11 +31,31 @@ Two caveats remain:
   phase than that and a front dot can meet the back of the card where its paired bowl is
   not, so the emboss degrades. Nothing in this app can enforce that — it belongs to
   whoever builds and aligns the machine.
-- **Local WebKit end-to-end tests fail on Windows.** Running the Playwright suite locally
-  against WebKit on Windows fails almost everything — measured 2026-08-18: of 52 tests, 41
-  failed, 6 passed, 5 skipped. Those failures are environmental (the Windows WebKit build),
-  not defects in the app. The local pass bar is Chromium + Firefox; CI runs
-  WebKit on Linux, where it passes.
+- ~~**Local WebKit end-to-end tests fail on Windows.**~~ **Not reproducible — corrected
+  2026-08-21.** This entry used to say that running the suite locally against WebKit on
+  Windows "fails almost everything", citing 41 failed / 6 passed / 5 skipped of 52 on
+  2026-08-18. A full run the same day passed everything, so one of the two numbers was
+  always wrong. Re-measured deliberately on 2026-08-21, three consecutive runs on this
+  machine: **56 passed, 5 skipped, 0 failed** every time (61 tests — the suite has grown
+  since the 52 quoted above). The five skips are deliberate `test.skip()` calls, not
+  errors: four WebGL-degradation tests and one scrollbar test that the suite excludes on
+  WebKit by design.
+
+  The local pass bar is still Chromium + Firefox, and CI still runs WebKit on Linux. The
+  original 41-failure reading has no surviving evidence; a whole-suite collapse of that
+  shape is what the stale-server trap below produces, which is the most likely explanation
+  but cannot now be confirmed.
+
+**A leftover server on port 5001 used to hijack local runs (fixed 2026-08-21).**
+`playwright.config.ts` set `reuseExistingServer: !process.env.CI`, so locally any server
+already holding port 5001 — a `backend.py` left over from another checkout, a worktree, or
+an interrupted run — was silently adopted, and the suite then tested *that* tree's code
+while your own files looked correct. Reproduced on 2026-08-21 by staging a pre-fix server
+on 5001: `tactileIndicator.spec.ts:123` failed with "Expected: 10, Received: 5" against a
+working tree that already had the fix. CI never saw it, because CI set the flag to `false`.
+The setting is now `false` unconditionally, so a busy port is a loud error instead of a
+silent substitution. If a run now fails to start, something else is on 5001 — find it with
+`netstat -ano | findstr :5001` and stop it.
 
 One more thing worth knowing when running the local suite: locally Playwright uses many
 parallel workers and **no** retries, while CI uses one worker and two retries. Firefox is
