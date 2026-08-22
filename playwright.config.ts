@@ -61,7 +61,15 @@ export default defineConfig({
   webServer: {
     command: 'python backend.py',
     port: 5001,
-    reuseExistingServer: !process.env.CI,
+    // NEVER reuse. With reuse on, any server already holding this port - a
+    // leftover backend.py from another checkout, worktree, or an interrupted
+    // run - is silently adopted, and the whole local suite then tests THAT
+    // tree's code while your files look correct. Reproduced 2026-08-21: a
+    // pre-fix server on 5001 reproduced tactileIndicator.spec.ts:123's
+    // "Expected: 10, Received: 5" against a working tree that already had the
+    // fix. CI never saw it because CI set this to false. A busy port must be a
+    // loud error, not a silent substitution.
+    reuseExistingServer: false,
     timeout: 120000, // 2 minutes for server startup
     env: {
       PORT: '5001',
