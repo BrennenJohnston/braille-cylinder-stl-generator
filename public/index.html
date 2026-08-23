@@ -3390,8 +3390,11 @@
                                     <option value="en-us-g2.ctb">English (EBAE), United States — contracted (grade 2)</option>
                                     <option value="en-us-g1.ctb">English (EBAE), United States — uncontracted (grade 1)</option>
                                 </select>
-                                <div id="language-help" class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
-                                    Default: English (UEB), United States — contracted (grade 2). The BANA <em>Guidelines for Brailling Business Cards</em> (March 2024) says to follow <em>The Rules of Unified English Braille</em>, and every worked example in that fact sheet is contracted UEB. Contractions also pack more of a name, phone number, or e-mail address into the 13–14 cells a card row allows. Switch to uncontracted (grade 1) only if your reader has asked for it.
+                                <!-- ADA SOP Step 6.8: the id sits on the LAST sentence - the only one that tells
+                                     the user something the combobox does not already announce. The BANA
+                                     rationale stays on the page, visible (audit F-D). -->
+                                <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
+                                    Default: English (UEB), United States — contracted (grade 2). The BANA <em>Guidelines for Brailling Business Cards</em> (March 2024) says to follow <em>The Rules of Unified English Braille</em>, and every worked example in that fact sheet is contracted UEB. Contractions also pack more of a name, phone number, or e-mail address into the 13–14 cells a card row allows. <span id="language-help">Switch to uncontracted (grade 1) only if your reader has asked for it.</span>
                                 </div>
                             </div>
                         </fieldset>
