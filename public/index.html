@@ -3134,7 +3134,11 @@
                     <div class="stl-preview-label" id="stl-preview-label" role="note" aria-label="STL Preview information">
                         <strong>3D STL Preview</strong> — Interactive preview only (drag to rotate, scroll to zoom)
                     </div>
-                    <div id="viewer" role="img" aria-label="3D preview of braille embossing plate. Interactive 3D model requires mouse or touch to rotate and zoom. Shows raised braille dots on plate surface." aria-describedby="viewer-instructions" tabindex="0">
+                    <!-- Deliberately NOT a tab stop: there is no keydown handler here, so
+                         focusing it only announced ~65 words ending in "requires mouse or
+                         touch" (audit F-G / D4). role="img" keeps it readable in browse
+                         mode. Adding real keyboard controls is a separate feature. -->
+                    <div id="viewer" role="img" aria-label="3D preview of braille embossing plate. Interactive 3D model requires mouse or touch to rotate and zoom. Shows raised braille dots on plate surface." aria-describedby="viewer-instructions">
                         <!-- Announced through #a11y-status, not from here. This box is
                              display:none between messages, so a live region on it can
                              never fire on first appearance; leaving one would also let
