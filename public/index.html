@@ -3261,8 +3261,7 @@
                             </div>
                             <!-- Downward half of the two-way translation: text above → braille below -->
                             <div class="translate-row">
-                                <button type="button" id="translate-to-braille-btn" class="btn-translate"
-                                        aria-describedby="braille-unicode-help">Translate to Braille ↓</button>
+                                <button type="button" id="translate-to-braille-btn" class="btn-translate">Translate to Braille ↓</button>
                             </div>
                             <div class="grade-note" style="margin-top: 0.6em; font-size: 0.85em;">
                                 Capital letters are translated by default (each adds a capital-indicator cell). To save cells you can disable capitalization in Expert Mode, where number-sign options also live.
@@ -3275,8 +3274,7 @@
                                           aria-describedby="braille-unicode-help braille-unicode-status"></textarea>
                                 <!-- Upward half of the two-way translation: braille here → text above -->
                                 <div class="translate-row">
-                                    <button type="button" id="translate-to-text-btn" class="btn-translate"
-                                            aria-describedby="braille-unicode-help">Translate to Text ↑</button>
+                                    <button type="button" id="translate-to-text-btn" class="btn-translate">Translate to Text ↑</button>
                                     <span id="braille-unicode-status" class="grade-note" style="margin: 0; font-size: 0.85em;"></span>
                                 </div>
                                 <div id="braille-unicode-help" class="grade-note" style="margin-top: 0.6em; font-size: 0.85em;">
@@ -3513,7 +3511,7 @@
                         <div class="expert-submenu">
                             <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-shapes">
                                 <span class="expert-submenu-title">Shape Selection</span>
-                                <span class="expert-submenu-icon">▼</span>
+                                <span class="expert-submenu-icon" aria-hidden="true">▼</span>
                             </button>
                             <div id="expert-panel-shapes" class="expert-submenu-content" style="display: none;">
                                 <!-- Output Shape Selection (moved into Expert Mode) -->
@@ -3586,7 +3584,7 @@
                         <div class="expert-submenu">
                             <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-spacing">
                                 <span class="expert-submenu-title">Braille Spacing</span>
-                                <span class="expert-submenu-icon">▼</span>
+                                <span class="expert-submenu-icon" aria-hidden="true">▼</span>
                             </button>
                             <div id="expert-panel-spacing" class="expert-submenu-content" style="display: none;">
                                 <div class="grade-selection">
@@ -3634,7 +3632,7 @@
                         <div class="expert-submenu">
                             <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-dots">
                                 <span class="expert-submenu-title">Braille Dot Adjustments</span>
-                                <span class="expert-submenu-icon">▼</span>
+                                <span class="expert-submenu-icon" aria-hidden="true">▼</span>
                             </button>
                             <div id="expert-panel-dots" class="expert-submenu-content" style="display: none;">
                                 <div class="grade-selection" id="rounded_dot_group" style="margin-top: 8px;">
@@ -3724,7 +3722,7 @@
                         <div class="expert-submenu">
                             <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-dimensions">
                                 <span class="expert-submenu-title">Surface Dimensions</span>
-                                <span class="expert-submenu-icon">▼</span>
+                                <span class="expert-submenu-icon" aria-hidden="true">▼</span>
                             </button>
                             <div id="expert-panel-dimensions" class="expert-submenu-content" style="display: none;">
                                 <div class="grade-selection">
@@ -3786,7 +3784,7 @@
                         <div class="expert-submenu" id="tactile-indicator-submenu">
                             <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-tactile">
                                 <span class="expert-submenu-title">Tactile Indicator Dimensions</span>
-                                <span class="expert-submenu-icon">▼</span>
+                                <span class="expert-submenu-icon" aria-hidden="true">▼</span>
                             </button>
                             <div id="expert-panel-tactile" class="expert-submenu-content" style="display: none;">
                                 <div class="grade-selection" id="tactile-indicator-dimensions">
@@ -3827,7 +3825,7 @@
                         <div class="expert-submenu">
                             <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-translation">
                                 <span class="expert-submenu-title">Translation Options</span>
-                                <span class="expert-submenu-icon">▼</span>
+                                <span class="expert-submenu-icon" aria-hidden="true">▼</span>
                             </button>
                             <div id="expert-panel-translation" class="expert-submenu-content" style="display: none;">
                                 <!-- Capitalized Letters toggle -->
