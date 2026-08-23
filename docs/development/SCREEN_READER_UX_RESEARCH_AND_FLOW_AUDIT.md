@@ -462,6 +462,163 @@ started.**
 
 ---
 
+## 2.7 Rebuilding the probes — `build/` is gitignored
+
+`build/a11yverify/post15_7/` is not tracked. Item D set the precedent for this in
+`ADA_ACCESSIBILITY_VALIDATION_SOP.md` §6.8.4, which carries a rebuild listing for
+`axprobe.cjs`; this section does the same for the item E probes, so the gate named in
+finding **F-O** and in `POST15_7G` cannot silently disappear when `build/` is cleared.
+
+Item E wrote six scripts. Five are variants used once to isolate the finding, and are
+described rather than listed: `axprobe_ranges.cjs` (per-dial `aria-valuemin`/`valuemax`
+off the AX tree, scoring REAL RANGE against Chrome's synthesised PLACEHOLDER 0/0 —
+open every accordion first, a hidden node is *ignored* in the tree and drops out of the
+count), `constraint_sideeffect.cjs` (the 0 → 10 of 10 measurement),
+`constraint_existing_20.cjs` (the same over the 20 previously-bounded dials — this is
+the one that proved F-O pre-existing), `constraint_visible_path.cjs` (a *visible*
+invalid dial: focused, with "Value must be less than or equal to 5."), and
+`constraint_collapse_trap.cjs` (the reload path).
+
+**The sixth, `constraint_gate.cjs`, is the one that matters and is listed in full
+below.** It folds the two halves that form the gate into a single run: which dials
+block the Generate click, and whether a bad value survives a reload to leave the
+button silently dead. Run it before AND after any change to `#action-btn`,
+`<form id="braille-form">`, or `requestSubmit()`, and before adding `min`/`max` to any
+further control.
+
+```
+python backend.py                                  # port 5001 must be free
+node build/a11yverify/post15_7/constraint_gate.cjs
+```
+
+**Verified 2026-08-22** against `develop` @ `e61e9a9`, and this is its real output —
+16 of 16 blocked, the in-range control still submits, and Part 2 reproduces F-O:
+
+```
+  BLOCKED: 16 of 16 - grid_columns, grid_rows, cell_spacing, line_spacing, dot_spacing,
+  braille_x_adjust, braille_y_adjust, emboss_dot_base_diameter, emboss_dot_height,
+  emboss_dot_flat_hat, rounded_dot_base_diameter, rounded_dot_dome_height,
+  cylinder_diameter_mm, seam_offset_deg, tactile_indicator_width, counter_dot_depth
+  CONTROL (all in range): submit=YES
+
+  dot_spacing after reload = 99   reachable = false
+  submit fired = NO
+  console = An invalid form control with name='dot_spacing' is not focusable.
+  VERDICT: F-O REPRODUCES - bad value persisted, dial unreachable, Generate silently dead
+```
+
+Note that the blocked list mixes both families: the ten dials item E bounded AND six
+that were already bounded before it ran. That is the point — F-O is not item E's doing.
+
+```javascript
+// POST15_7 - THE CONSTRAINT GATE. Minimal rebuild of the item E probes, in one file.
+// This is the listing carried in the audit so the gate survives build/ being cleared.
+// Run before AND after any change to #action-btn, <form id="braille-form">, or
+// requestSubmit(), and before adding min/max to any further control.
+//   python backend.py        (port 5001 must be free)
+//   node constraint_gate.cjs
+const { chromium } = require('@playwright/test');
+
+// One value outside the range of each dial that can be typed into.
+const BAD = {
+  grid_columns: '99', grid_rows: '999', cell_spacing: '99', line_spacing: '99',
+  dot_spacing: '99', braille_x_adjust: '-99', braille_y_adjust: '99',
+  emboss_dot_base_diameter: '99', emboss_dot_height: '99', emboss_dot_flat_hat: '99',
+  rounded_dot_base_diameter: '99', rounded_dot_dome_height: '99',
+  cylinder_diameter_mm: '9999', seam_offset_deg: '9999',
+  tactile_indicator_width: '99', counter_dot_depth: '99',
+};
+
+const boot = async (page) => {
+  await page.goto('http://localhost:5001/');
+  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(6000); // liblouis WASM + the thickness preset settle late
+};
+
+// Counts submit events without letting a real generation run.
+const arm = (page) => page.evaluate(() => {
+  const form = document.getElementById('braille-form');
+  window.__g = { submits: 0 };
+  form.addEventListener('submit', (e) => {
+    window.__g.submits += 1;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+  }, true);
+});
+
+const clickGenerate = (page) => page.evaluate(async () => {
+  window.__g.submits = 0;
+  document.getElementById('action-btn').click();
+  await new Promise((r) => setTimeout(r, 300));
+  return window.__g.submits;
+});
+
+(async () => {
+  const browser = await chromium.launch();
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await ctx.newPage();
+  const errs = [];
+  page.on('console', (m) => { if (m.type() === 'error') errs.push(m.text()); });
+  await boot(page);
+  await arm(page);
+
+  // PART 1 - which dials block generation when set out of range.
+  console.log('=== PART 1: out-of-range entry vs the Generate click ===');
+  const blocked = [];
+  for (const [id, bad] of Object.entries(BAD)) {
+    const present = await page.evaluate((i) => !!document.getElementById(i), id);
+    if (!present) { console.log(`  ${id.padEnd(28)} (not in document)`); continue; }
+    await page.evaluate(({ i, v }) => {
+      const el = document.getElementById(i);
+      el.dataset.prev = el.value;
+      el.value = v;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }, { i: id, v: bad });
+    const submits = await clickGenerate(page);
+    if (submits === 0) blocked.push(id);
+    console.log(`  ${id.padEnd(28)} typed ${bad.padEnd(6)} submit=${submits ? 'YES' : 'NO  <-- blocked'}`);
+    await page.evaluate((i) => {
+      const el = document.getElementById(i);
+      el.value = el.dataset.prev;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }, id);
+  }
+  console.log(`\n  BLOCKED: ${blocked.length} of ${Object.keys(BAD).length} - ${blocked.join(', ') || '(none)'}`);
+  console.log(`  CONTROL (all in range): submit=${await clickGenerate(page) ? 'YES' : 'NO  <-- broken'}`);
+
+  // PART 2 - the trap: does a bad value survive a reload and leave a dead button?
+  console.log('\n=== PART 2: does a bad value persist and kill Generate silently? ===');
+  await page.evaluate(() => {
+    const el = document.getElementById('dot_spacing');
+    el.value = '99';
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await page.waitForTimeout(400);
+  await page.reload();
+  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(6000);
+  await arm(page);
+  errs.length = 0;
+  const after = await clickGenerate(page);
+  const persisted = await page.inputValue('#dot_spacing');
+  const reachable = await page.isVisible('#dot_spacing');
+  console.log(`  dot_spacing after reload = ${persisted}   reachable = ${reachable}`);
+  console.log(`  submit fired = ${after ? 'YES' : 'NO'}`);
+  console.log(`  console = ${errs.length ? errs.join(' | ') : '(none)'}`);
+  console.log(`\n  VERDICT: ${persisted === '99' && after === 0
+    ? (reachable ? 'blocked, but the dial is reachable so the browser can show its message'
+      : 'F-O REPRODUCES - bad value persisted, dial unreachable, Generate silently dead')
+    : 'F-O does not reproduce in this build'}`);
+
+  await browser.close();
+})().catch((e) => { console.error('GATE FAILED:', e); process.exit(1); });
+```
+
+---
+
 ## What this audit did not cover
 
 - **Fixes.** Deliberately none. This document ends at an approved list.
@@ -515,6 +672,7 @@ Old -> new: ruff clean -> clean; 140 -> 140 pytest; 2 -> 2 vitest; 122 -> 122 e2
 | 1.5 | 2026-08-22 | **F-A closed — the finding this audit called the highest-value change in it.** F-A struck through and fixed in place (with criterion **C2** closed alongside it, since the six accordion headers are what C2 measures); §2.1's headline heading count, §2.4's D1 answer and §2.6's step 4 all annotated with what landed. Two commits, item C: six `<h3>` wrappers round the accordion buttons (APG/GOV.UK), then `<h2>`s inside the five major section legends. **Visible headings 1 → 6 on load, 11 with Expert Mode open, 12 with the double-sided beta on as well; no skipped level in any state.** Levels chosen h2/h3 and the reasoning recorded in UI_INTERFACE_CORE v1.22 §4.11, along with the one thing left open — the Expert Mode disclosure button still carries no heading, so a strict outline nests the h3s under *Select Plate to Generate*. Validated: W3C Nu **0 errors / 0 warnings on source AND rendered DOM**, Lighthouse **100/100 desktop and mobile**, reflow **0 of 6**, tab ring **unchanged at 32**, description budget **unchanged at 430 words / 18 nodes**, every `role=group` name unchanged, header screenshots **byte-identical**, suite **140 pytest / 2 vitest / 122 e2e** unchanged. **Still unheard: nobody has run NVDA against this.** |
 | 1.4 | 2026-08-22 | **Four more findings closed — the small self-contained batch (item B), four separate commits, no user-visible sentence and no pixel changed.** F-K, F-N, F-G and F-H struck through and marked fixed in place; F-F's count re-measured because F-G moved it; §2.6 step 3 and the D4/D5 answers annotated. **F-K** (`23575ab`): `aria-describedby` dropped from the four `line_lang_N` selects and the orphan `line{N}-lang-help` spans deleted — descriptions on those selects **4 → 0**, spans in the DOM **4 → 0**, `#line{N}-help` untouched. **F-N** (`63d5778`): the redundant `aria-label` off the Card Thickness radiogroup — named grouping nodes **16 → 15**, and the group now matches its two siblings. **F-G / D4** (`847ea09`): `tabindex="0"` off `#viewer` — **tab ring 33 → 32**, a ring diff showing exactly one removal. **F-H / D5** (`8b8f532`): the h1 stops being a flex container and its spans go inline — `innerText` **`"Custom Braille\nSTL Generator"` → `"Custom Braille STL Generator"`**. **Two premises in this document were checked against the live page before editing, and one was wrong.** F-N's was right, and is now recorded with the measurement that proves it. F-H's was wrong about the *look*: the title does not wrap onto two lines at any tested width or font size, so D5's "get the two-line look from CSS" had nothing to move, and its single text node would have flattened the two-tone that CSS cannot reproduce on half a text node. Brennen was shown both renderings and chose the span-preserving route. A third premise needed a correction of scope rather than fact: F-K's four rows are `display:none` in the default auto placement mode, so they only reach a screen reader in Manual — which is where the original NVDA log caught them, and why the default-state description budget stays at **430 words**. Evidence: `axprobe.cjs`, `axprobe2.cjs` and a new `axprobe4.cjs` (grouping nodes, per-line descriptions, ring membership), plus before/after title screenshots at 1440 px and 320 px × 100% and 200%. Suite unchanged before and after: ruff clean, 140 pytest, 2 vitest, 122 e2e. W3C Nu: 0 errors, 0 warnings. **Still measured by probe, not by ear** — the re-listen remains item G's closing step. |
 | 1.3 | 2026-08-22 | **First fixes land — the two free wins (item A).** F-B's glyph leak and F-C are struck through and marked fixed in place, in the POST15_4 pattern; neither is deleted, and the parts of each that remain open are named where they stand. Six `.expert-submenu-icon` spans gained `aria-hidden="true"` and both Translate buttons lost `aria-describedby`. Re-measured with the same instrument that produced the original numbers, plus a third probe (`axprobe3.cjs`) written for this item because `axprobe.cjs` prints names only for nodes that carry a description and the accordion toggles carry none: **accordion names leaking a triangle 5 → 0**, **`#braille-unicode-help` hosts 3 → 1**, **description words in one full read 574 → 430**, a drop of exactly the predicted 144. §2.1 and §2.6 annotated with the new figures. **Two things deliberately NOT done:** no paragraph was reworded (D2 step 2, item F), and the six toggles are still bare buttons rather than headings (D1, item C) — so F-B is only half closed. Two spec documents updated alongside: `UI_INTERFACE_CORE_SPECIFICATIONS.md` v1.20 (§4.5 and §4.7, the latter having documented the exact wiring that was removed) and `SURFACE_DIMENSIONS_SPECIFICATIONS.md` v1.3, whose HTML sample would otherwise have taught the pre-fix chevron markup to the next submenu. Suite unchanged before and after: ruff clean, 140 pytest, 2 vitest, 122 e2e. **Measured by probe, not yet confirmed by ear** — the re-listen is item G's closing step. |
+| 1.4 | 2026-08-22 | **Scheduling and evidence-durability decisions taken at the item E closeout (FD-23), no measurement changed.** New **section 2.7** carries a rebuild listing for the item E probes, because `build/` is gitignored and F-O's gate is named in `POST15_7G` — it follows the precedent ADA SOP §6.8.4 set for `axprobe.cjs`. Five probes are described; the sixth, `constraint_gate.cjs`, folds both halves of the gate into one run and is listed in full, **verified against develop @ `e61e9a9`** (BLOCKED 16 of 16, CONTROL submit=YES, Part 2 reproducing F-O). **F-O now has an owner:** it is `POST15_7H`, scheduled to run BEFORE item G so G inherits a form that behaves correctly, and G's prerequisite was updated to require it. §2.5 Contradiction 2 also has an owner, `POST15_7I`, whose drafting surfaced two further problems inside it — the six fields are renamed rather than missing, and several schema `minimum` values disagree with `app/validation.py`'s floor. Two small flags (`hemi_counter_dot_base_diameter`'s missing table row, the `grid_columns` dial-vs-wire difference) stay tracked and unfixed by decision. |
 | 1.2 | 2026-08-22 | **A correction, found while writing the follow-up prompt files.** D8's approved instruction — copy `min`/`max` verbatim from `settings.schema.json` — **cannot be carried out as written**, and neither could F-M's claim that the ranges are enforced there. Checked field by field: 6 of the 13 fields are absent from the schema under any matching name, and none of the other 7 carries a `maximum` (only a `minimum` of 0 or 1). All thirteen ranges do exist in `app/validation.py`. F-M and D8 corrected in place, and a **second spec contradiction** added to §2.5 — the schema is the declared single source of truth yet is the incomplete one. Switching sources is not an assistant's call, so `POST15_7E` opens by putting it back to Brennen. Brennen's *principle* (numbers copied, never chosen) is unchanged; only the source is in question. **Also recorded:** the seven follow-up prompt files `POST15_7A`–`POST15_7G` were written into the planning folder, one per item in §2.6. No measurement or finding severity changed. |
 | 1.3 | 2026-08-22 | **Item E ran and closed F-M.** All 13 bare dials now declare `min`/`max`, taken from `app/validation.py` after Brennen was asked which source to use — the v1.2 correction had established the schema could not supply them, and switching sources was his call, not an assistant's (FD-22, Q1). Measured over CDP: dials announcing a real range **19 → 29**; the placeholder pair Chrome synthesises for a bare spinbutton (`valuemin=0, valuemax=0`) is gone. Two corrections of fact to this document, both from measurement rather than reading: the six "absent" schema fields are **renamed, not missing**, and three of the 13 (`card_width`/`_height`/`_thickness`) are in a `<div hidden>` and reach no screen reader at all, so the announcement gain is **10 dials, not 13**. The side-effect check D8 required found a genuine behaviour change and is recorded as a new finding **F-O** — it is pre-existing for the 20 already-bounded dials, and Brennen chose to ship item E as-is and track it rather than mask it with `novalidate`. §2.5 Contradiction 2 is now an explicitly tracked item (FD-22, Q2). Suite green throughout: ruff clean, 140 pytest, 2 vitest, 122 e2e, unchanged before and after. |
 | 1.1 | 2026-08-22 | **All eight decision points answered by Brennen the same day** — he chose the recommended option in every case. §2.4 rewritten from open questions into recorded answers, with the reasoning for the two deliberate *non*-changes preserved: F-I's keystroke stacking is left alone as two individually correct messages (only F-J's duplication is fixed), and 3D-preview keyboard controls are set aside as a separate feature rather than folded into D4's one-line fix. §2.6 promoted from "suggested order" to the approved implementation sequence. **Still nothing implemented**, and every wording change returns as a draft first. No finding, measurement or count changed. |
