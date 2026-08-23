@@ -3295,8 +3295,14 @@
                                     <button type="button" id="translate-to-text-btn" class="btn-translate">Translate to Text ↑</button>
                                     <span id="braille-unicode-status" class="grade-note" style="margin: 0; font-size: 0.85em;"></span>
                                 </div>
-                                <div id="braille-unicode-help" class="grade-note" style="margin-top: 0.6em; font-size: 0.85em;">
-                                    Accepts braille characters only (U+2800–U+28FF). Press <strong>Translate to Braille</strong> to fill this field from the text above, then edit any cell you want to change — or paste braille straight in and press <strong>Translate to Text</strong> to read it back in English. <strong>Whenever this field has content it is used exactly as written</strong>, so what you read here is what gets embossed. Clear it to go back to translating the text above.
+                                <!-- ADA SOP Step 6.8: the id sits on the FIRST SENTENCE, not the div. The rest of
+                                     this paragraph stays on the page and stays visible - it is simply not
+                                     forced into speech on every visit to the field. Moving the id back to
+                                     the div restores a 72-word description (audit F-C). Note the textarea
+                                     also describes itself with #braille-unicode-status, so the ceiling here
+                                     is 25 MINUS that live status (8-12 words). -->
+                                <div class="grade-note" style="margin-top: 0.6em; font-size: 0.85em;">
+                                    <span id="braille-unicode-help">Accepts braille characters only (U+2800–U+28FF).</span> Press <strong>Translate to Braille</strong> to fill this field from the text above, then edit any cell you want to change — or paste braille straight in and press <strong>Translate to Text</strong> to read it back in English. <strong>Whenever this field has content it is used exactly as written</strong>, so what you read here is what gets embossed. Clear it to go back to translating the text above.
                                 </div>
                                 <div id="braille-unicode-live" class="sr-only" role="status" aria-live="polite"></div>
                             </div>
