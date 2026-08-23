@@ -2174,6 +2174,16 @@
         .expert-submenu {
             margin-top: 0.8em;
         }
+        /* APG Accordion: each header button is the sole child of a real
+           heading. The heading carries semantics only - these resets stop the
+           browser's h3 defaults from resizing or re-spacing the button. */
+        .expert-submenu-heading {
+            margin: 0;
+            font-size: inherit;
+            font-weight: inherit;
+            line-height: inherit;
+            color: inherit;
+        }
         .expert-submenu-toggle {
             background: var(--bg-secondary);
             border: 1px solid var(--border-primary);
@@ -3510,10 +3520,12 @@
 
                         <!-- Submenu: Shape Selection -->
                         <div class="expert-submenu">
-                            <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-shapes">
-                                <span class="expert-submenu-title">Shape Selection</span>
-                                <span class="expert-submenu-icon" aria-hidden="true">▼</span>
-                            </button>
+                            <h3 class="expert-submenu-heading">
+                                <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-shapes">
+                                    <span class="expert-submenu-title">Shape Selection</span>
+                                    <span class="expert-submenu-icon" aria-hidden="true">▼</span>
+                                </button>
+                            </h3>
                             <div id="expert-panel-shapes" class="expert-submenu-content" style="display: none;">
                                 <!-- Output Shape Selection (moved into Expert Mode) -->
                                 <div class="grade-selection">
@@ -3583,10 +3595,12 @@
 
                         <!-- Submenu: Braille Spacing -->
                         <div class="expert-submenu">
-                            <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-spacing">
-                                <span class="expert-submenu-title">Braille Spacing</span>
-                                <span class="expert-submenu-icon" aria-hidden="true">▼</span>
-                            </button>
+                            <h3 class="expert-submenu-heading">
+                                <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-spacing">
+                                    <span class="expert-submenu-title">Braille Spacing</span>
+                                    <span class="expert-submenu-icon" aria-hidden="true">▼</span>
+                                </button>
+                            </h3>
                             <div id="expert-panel-spacing" class="expert-submenu-content" style="display: none;">
                                 <div class="grade-selection">
                                     <label class="grade-label" style="font-size: 1.2em; font-weight: 700;">Braille Dimensions</label>
@@ -3631,10 +3645,12 @@
 
                         <!-- Submenu: Braille Dot Adjustments -->
                         <div class="expert-submenu">
-                            <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-dots">
-                                <span class="expert-submenu-title">Braille Dot Adjustments</span>
-                                <span class="expert-submenu-icon" aria-hidden="true">▼</span>
-                            </button>
+                            <h3 class="expert-submenu-heading">
+                                <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-dots">
+                                    <span class="expert-submenu-title">Braille Dot Adjustments</span>
+                                    <span class="expert-submenu-icon" aria-hidden="true">▼</span>
+                                </button>
+                            </h3>
                             <div id="expert-panel-dots" class="expert-submenu-content" style="display: none;">
                                 <div class="grade-selection" id="rounded_dot_group" style="margin-top: 8px;">
                                     <label class="grade-label" style="font-size: 1.2em; font-weight: 700;">Embossing Braille Dot Dimensions (Rounded Shape)</label>
@@ -3721,10 +3737,12 @@
 
                         <!-- Submenu: Surface Dimensions -->
                         <div class="expert-submenu">
-                            <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-dimensions">
-                                <span class="expert-submenu-title">Surface Dimensions</span>
-                                <span class="expert-submenu-icon" aria-hidden="true">▼</span>
-                            </button>
+                            <h3 class="expert-submenu-heading">
+                                <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-dimensions">
+                                    <span class="expert-submenu-title">Surface Dimensions</span>
+                                    <span class="expert-submenu-icon" aria-hidden="true">▼</span>
+                                </button>
+                            </h3>
                             <div id="expert-panel-dimensions" class="expert-submenu-content" style="display: none;">
                                 <div class="grade-selection">
                                     <label class="grade-label" style="font-size: 1.2em; font-weight: 700;">Cylinder Dimensions</label>
@@ -3783,10 +3801,12 @@
 
                         <!-- Submenu: Tactile Indicator Dimensions (shown only in tactile mode) -->
                         <div class="expert-submenu" id="tactile-indicator-submenu">
-                            <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-tactile">
-                                <span class="expert-submenu-title">Tactile Indicator Dimensions</span>
-                                <span class="expert-submenu-icon" aria-hidden="true">▼</span>
-                            </button>
+                            <h3 class="expert-submenu-heading">
+                                <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-tactile">
+                                    <span class="expert-submenu-title">Tactile Indicator Dimensions</span>
+                                    <span class="expert-submenu-icon" aria-hidden="true">▼</span>
+                                </button>
+                            </h3>
                             <div id="expert-panel-tactile" class="expert-submenu-content" style="display: none;">
                                 <div class="grade-selection" id="tactile-indicator-dimensions">
                                     <div class="grade-note" style="margin-bottom: 6px; font-size: 0.85em;">
@@ -3824,10 +3844,12 @@
 
                         <!-- Submenu: Translation Options -->
                         <div class="expert-submenu">
-                            <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-translation">
-                                <span class="expert-submenu-title">Translation Options</span>
-                                <span class="expert-submenu-icon" aria-hidden="true">▼</span>
-                            </button>
+                            <h3 class="expert-submenu-heading">
+                                <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-translation">
+                                    <span class="expert-submenu-title">Translation Options</span>
+                                    <span class="expert-submenu-icon" aria-hidden="true">▼</span>
+                                </button>
+                            </h3>
                             <div id="expert-panel-translation" class="expert-submenu-content" style="display: none;">
                                 <!-- Capitalized Letters toggle -->
                                 <div class="line-input-mode-toggle" style="display: flex; align-items: center; gap: 1em; flex-wrap: wrap;" role="radiogroup" aria-labelledby="caps-toggle-label">
@@ -7531,7 +7553,9 @@
             const submenuToggles = Array.from(document.querySelectorAll('.expert-submenu-toggle'));
             submenuToggles.forEach(toggle => {
                 toggle.addEventListener('click', () => {
-                    const content = toggle.nextElementSibling;
+                    // Resolved by aria-controls, not by sibling order: the button
+                    // is now wrapped in its heading, so it has no next sibling.
+                    const content = document.getElementById(toggle.getAttribute('aria-controls'));
                     if (!content) return;
                     const isOpen = toggle.getAttribute('aria-expanded') === 'true';
 
