@@ -3427,7 +3427,11 @@
                                  said "layer height" since the feature first shipped, which is
                                  what made the visible label look like the wrong one. -->
                             <legend class="grade-label">Card Thickness</legend>
-                            <div class="radio-group thickness-toggle" role="radiogroup" aria-required="true" aria-label="Select card thickness preset">
+                            <!-- No aria-label here on purpose: the <legend> above is this
+                                 group's only name. Labelling the radiogroup as well made
+                                 NVDA announce two groups for one set of radios, which no
+                                 sibling group in this file does (audit F-N). -->
+                            <div class="radio-group thickness-toggle" role="radiogroup" aria-required="true">
                                 <label class="radio-option">
                                     <input type="radio" name="card_thickness_preset" value="0.4" checked aria-describedby="thickness-04-desc">
                                     <span class="radio-text">0.4mm</span>
