@@ -3286,9 +3286,15 @@
               <div class="form-scroll">
                 <div class="info-panel">
                     <p><strong>What Does This Program Do?</strong></p>
-                    <p>Generates custom braille embossing plates for cylinders such as labels and containers.
-                       <a href="https://github.com/BrennenJohnston/braille-cylinder-stl-generator" target="_blank" rel="noopener noreferrer">View on GitHub</a>
-                    </p>
+                    <!-- The second link to this repository used to sit here,
+                         named "View on GitHub" against the banner link's "View
+                         source code on GitHub (opens in new tab)". Two links,
+                         one destination, two names is a WCAG 2.4.4 smell, and
+                         this one cost a Tab stop inside <main> ahead of the
+                         task. Removed on Brennen's call (FD-27a); the
+                         destination is still reachable from the banner and
+                         from the help modal. -->
+                    <p>Generates custom braille embossing plates for cylinders such as labels and containers.</p>
 
                     <p><strong>First Step: Decide What to Include</strong></p>
                     <p>Braille space is limited. Not everything from print will fit.</p>
