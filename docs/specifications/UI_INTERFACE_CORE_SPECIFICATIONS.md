@@ -1548,11 +1548,87 @@ renderer.domElement.addEventListener('webglcontextrestored', () => {
 
 ### 4.1 Skip Link Navigation
 
-A skip link is provided for keyboard users to bypass the header and jump directly to the main content:
+**Two** skip links are provided for keyboard users. The first bypasses the banner — the
+theme toggle, the font-size controls, the source link and the help button — and lands in
+the main content. The second carries on to the braille text entry, because on this page
+"main content" and "the thing you came to do" are not the same place.
 
 ```html
 <a href="#main-content" class="skip-link" tabindex="0">Skip to main content</a>
+<a href="#front-entry-heading" class="skip-link" tabindex="0">Skip to braille text entry</a>
 ```
+
+> **The sentence above was false until 2026-08-23, and this is the change that made it
+> true.** It claimed the link let keyboard users "bypass the header and jump directly to
+> the main content". **There was no header.** The font-size, theme, GitHub and help
+> controls all sat *inside* `<main>`, so the link bypassed **zero** focusable controls and
+> landed the user immediately before the font-size buttons — audit finding **F-E**, probe
+> `focusableBeforeTarget: 0`, `firstInsideTarget: font-decrease`. POST15_7 item G moved the
+> chrome out rather than softening the sentence. Recorded here because a spec that
+> describes an intention as though it were behaviour is worse than one that says nothing.
+
+#### The banner, and why the whole top bar moved rather than half of it
+
+`<header role="banner">` sits **above** `<main>` and holds the compact top bar: the `<h1>`
+and the utility controls together. A `<header>` nested inside `<main>` is *not* a banner
+landmark, so it has to be a sibling — which is why `<body>` is a flex **column** and
+`.main-layout` takes `flex: 1 1 auto; min-height: 0` instead of a second `height: 100vh`.
+
+The `role="banner"` is redundant on a top-level `<header>` and is kept deliberately as
+belt-and-braces for older assistive technology; semantic HTML is doing the actual work.
+
+Item G's own prompt asked for the `<h1>` to stay in `<main>` and only the chrome to move.
+Both versions were built and measured, and Brennen chose to move the bar whole:
+
+| | h1 stays in main | **bar moves whole (shipped)** |
+|---|---|---|
+| Content height, 1440×900 @100% | 808 → 763 px | 808 → **808** |
+| @200% | 634 → 618 px | 634 → **634** |
+| 1024×800 | 671 → 663 px | 671 → **671** |
+| "Translate to Text" on load | **below the fold** | visible |
+
+Splitting the div turns the one-row top bar into two rows on a layout locked to the
+viewport, and the app pays for it in height. Moving it whole satisfies the constraint that
+mattered — the `<h1>` is still the **first heading in document order**, because the banner
+is above `<main>` — and `id="main-heading"` still resolves for `<form aria-labelledby>`,
+which is an IDREF and does not care about ancestry.
+
+#### Both targets carry `tabindex="-1"`, and that is load-bearing
+
+`<main id="main-content" tabindex="-1">` and `<h2 id="front-entry-heading" tabindex="-1">`.
+
+**Without it a skip link does not move focus at all.** A fragment link to a non-focusable
+element only shifts the *sequential-navigation start point*: Tab continues from the target,
+but `document.activeElement` stays on `<body>`, so a screen reader in focus mode is told
+nothing and Safari moves nothing whatsoever. Measured on this page — before the attribute
+was added, activating "Skip to main content" left focus on `<body>`. `-1` keeps both
+elements out of the Tab ring (verified: ring size unchanged, neither id appears in it), and
+both draw the normal 3px focus ring on arrival, so the jump is visible as well as spoken.
+
+The second link targets the **section heading and not `#auto-text`** for the same class of
+reason: Manual Placement hides `#auto-input-container`, and a fragment link to a
+`display:none` element moves nothing either. The heading is present in both placement
+modes, so the link cannot go dead. Verified in both modes.
+
+#### What the landmark inventory looks like now
+
+| Landmark | Label |
+|---|---|
+| `banner` | — |
+| `main` | — |
+| `region` | 3D STL Preview |
+| `region` | Braille Cylinder Configuration |
+| `form` | Custom Braille STL Generator |
+
+Five, where there were four and none of them a banner.
+
+**What this did NOT fix, stated plainly.** The tab ring is **32 stops before and 32 after**,
+and **14 of them still precede the first control that does the app's job** — exactly the
+figure audit finding **F-F** opened with. The added skip link and the removed duplicate
+GitHub link cancel each other out. What changed is that a keyboard user no longer has to
+walk the ring: **three keystrokes** reach the text entry. Reordering the columns to shorten
+the ring itself was offered and declined — it would put DOM order out of step with visual
+order for sighted keyboard users (WCAG 2.4.3). See FD-27b.
 
 ```css
 .skip-link {
@@ -3107,6 +3183,7 @@ STL Generator"` → **`"Custom Braille STL Generator"`**. The font size moved on
 | 1.20 | 2026-08-22 | **Eight attribute edits that remove roughly a fifth of everything a screen reader says — no wording and no visual change.** The first of the follow-on items from the POST15_7 audit (FD-21, decisions D1-icons and D2 step 1); both were Brennen's approved options. Section 4.5: the six `.expert-submenu-icon` chevrons gained `aria-hidden="true"`, so the decorative `▼` stops being folded into the toggle's accessible name — NVDA had been saying "Shape Selection▼ button collapsed", 17 times for that one button in a measured 34-minute session, while `#expert-toggle-icon` one line away was already marked correctly (audit F-B). Measured on the live AX tree: **5 of 5 exposed accordion names leaked a triangle before, 0 after** (the sixth, Tactile Indicator Dimensions, is hidden unless Row Indicator Style is *Tactile seam arrow*, so it has no AX node in the default state; all six spans carry the attribute). The glyph swap uses `icon.textContent = …`, which replaces only the text node — `aria-hidden` was verified to survive open and close, ▼ → ▲ → ▼, so no JS change was needed. Section 4.7: `aria-describedby="braille-unicode-help"` **removed from `#translate-to-braille-btn` and `#translate-to-text-btn`**. That 72-word paragraph was wired to three controls at once and accounted for 59 exposures, 4,913 words and **30.9% of all speech** (audit F-C); it is unchanged, still visible directly under the field, and still described by `#braille-unicode`, which is the control it is actually about. Measured on the live AX tree: hosts **3 → 1**, nodes carrying a description **20 → 18**, and total description words reachable in one full read of the default page **574 → 430** — a drop of exactly 144, the predicted 72 × 2. **No text was reworded** — shortening the three long paragraphs is D2 step 2 and returns to Brennen as a draft first. Validated: ruff clean, **140 pytest / 2 vitest / 122 e2e** (chromium+firefox), every count unchanged before and after. The speech reduction is measured by accessibility-tree probe, **not yet confirmed by ear**. |
 | 1.22 | 2026-08-22 | **The page gets a heading map: 1 visible heading → 6 on load, 11 with Expert Mode open, 12 with the beta on — and not one pixel moved.** New Section 4.11 records the outline, the level choice and both load-bearing consequences; §4.5's submenu paragraph updated to match. Audit finding F-A, decision D1. **Part 1:** the six `.expert-submenu-toggle` buttons are each now the sole child of an `<h3>`, per the WAI-ARIA APG Accordion pattern and GOV.UK. That broke `initExpertSubmenus()`, which found its panel with `toggle.nextElementSibling` — now `null` — so the handler resolves `aria-controls`, which all six already carried. **Part 2:** Enter Text, Double-Sided Card, Row Indicator Style, Card Thickness and Select Plate each gained an `<h2>` **inside** the existing `<legend>`, keeping the fieldset grouping intact; `updateDoubleSidedUI()` now writes to `#front-entry-heading`, because assigning `legend.textContent` would have deleted the heading. **Levels: h2 for the five sections (one step below the h1), h3 for the six accordions (one deeper again, and only reachable inside Expert Mode); no level is skipped in any state.** Recorded, not hidden: the Expert Mode button itself carries no heading, so a strict outline nests the h3s under *Select Plate to Generate*. Validated: **W3C Nu 0 errors / 0 warnings on the source file AND the rendered DOM** (this is what proves heading-in-legend is legal), Lighthouse accessibility **100/100 desktop and mobile, 0 failing audits**, reflow **0 failures of 6**, 8 accordion toggles with **0 `aria-expanded`/`aria-controls` defects** and the toggle still flipping, tab ring **unchanged at 32**, description budget **unchanged at 430 words / 18 nodes**, every `role=group` name unchanged, header screenshots **byte-identical**. Suite unchanged: ruff clean, **140 pytest / 2 vitest / 122 e2e**. **The outline is proven by probe; that it helps is not proven until it is heard under NVDA.** |
 | 1.24 | 2026-08-22 | **The three longest spoken descriptions drop from 239 words to 35, and not one word of them was rewritten.** New **Section 4.13** records the sentence-span pattern; §4.7 gains a pointer to it. Audit F-C / F-D, decision D2 step 2, each keeper approved by Brennen as a draft before the edit (FD-25). Applied to a **pure sentence split**: the `id` moved onto a `<span>` around ONE sentence that was already in the paragraph, and every other sentence stayed in the same div, in the same order, visible. **Not one word was rewritten, nothing was deleted from the page, and no pixel moved** (the span is inline, so the note still renders as one flowing paragraph) — which is what let this be applied to a signed-off string. Measured on the live accessibility tree: `#braille-unicode-help` **72 → 5 w**, `#double-sided-note` **96 → 17 w** (the beta warning lifted whole, so the 2026-08-16 sign-off is intact word for word), `#language-help` **71 → 13 w**; total description words in one full read of the default page **430 → 226**. §4.13 also records a trap the Step 6.8 probe cannot show on its own: `#braille-unicode` has **two** describedby targets, so its budget is 25 minus a live status worth 8–12 words — that ruled out the 20-word "used exactly as written" sentence, which would have measured 28 w. Also here: the **Disabled** capitals radio lost its `sr-only` description, which duplicated both the live `#caps-warning` and the visible `.grade-note` beneath it (audit F-J, decision D6). Deliberately NOT done: relocating anything to the help guide (Step 6.8.2 makes that a separate change), and the three descriptions still over the ceiling — Tactile seam arrow 43 w, 3D preview 38 w, Visual markers 26 w — which Brennen chose to leave and log (FD-25d). Suite unmoved before and after: ruff clean, **140 pytest / 2 vitest / 134 e2e** (chromium+firefox). Measured by probe; **not yet heard under NVDA**. |
+| 1.25 | 2026-08-23 | **The page gets a banner, and §4.1's opening sentence stops being false.** POST15_7 item G, decision D3, closing audit findings F-E and F-L and §2.5 Contradiction 1; F-F **partly**. §4.1 said the skip link let users "bypass the header and jump directly to the main content" — there was no header, the chrome sat inside `<main>`, and the link bypassed **zero** controls. The chrome moved instead of the sentence being softened: `<header role="banner">` above `<main>`, so **landmarks 4 → 5**, `focusableBeforeTarget` **0 → 7**, `firstInsideTarget` **font-decrease → brightness-decrease**. `<body>` became a flex column to take the sibling at all. **The whole top bar moved, not half of it, and Brennen chose that from two built and measured versions** — leaving the `<h1>` in `<main>` costs 45px of app height on a layout locked to the viewport and pushes "Translate to Text" below the fold, while moving the bar whole is pixel-exact (808 → 808, and identical at 200% and 1024px); the `<h1>` is still the first heading either way. **A defect found while verifying and fixed here:** the skip link never moved FOCUS — a fragment link to a non-focusable element only shifts the sequential-navigation start point, so `activeElement` stayed on `<body>`; `<main>` now carries `tabindex="-1"`, as does the second link's target. **A second skip link** goes straight to the text entry (FD-27b), targeting the section heading rather than `#auto-text` because Manual Placement hides that textarea. **F-L closed** by widening `<form>` to wrap `.form-scroll` and `.action-footer` rather than moving the button — the button cannot move, the footer is pinned outside the scrolling pane and is `position:sticky` on mobile; the AX tree now puts the button under the form, both constraint probes are byte-identical before and after, and no rendered element moved. **Stated plainly: F-F's headline number did not improve** — 32 stops before and after, 14 still ahead of the task — because the added link and the removed duplicate GitHub link cancel; what changed is that three keystrokes now reach the task. Suite: ruff clean, 140 pytest, 2 vitest, 134 e2e, before and after. |
 | 1.23 | 2026-08-22 | **The Generate button could die in silence; it no longer can.** Added Section 4.12. `#action-btn` generates through `form.requestSubmit()`, which runs native constraint validation first, so any `:invalid` control aborted generation — and when that control was not reachable the browser could not focus it, logged `not focusable` to the console and produced **no message at all**. Not an edge case: **all 33 numeric dials carry `min`/`max` and none is rendered on a fresh load**, so that was the only state a default load could be in. A capture-phase `invalid` listener now reveals the control through its own accordion toggle (keeping `aria-expanded` truthful), focuses it, and states the problem through `#error-message`, which §4.10's mirror already relays to `#a11y-status` — no new live region, and one message however many controls failed. The **visible-dial path is deliberately unchanged**. Saved values are now validated on restore: an unusable one is refused, the field falls back to its shipped default, and the discard is announced — refused and reported, never clamped (accessibility rule 11) and never silent. Wording approved by Brennen; a `step` mismatch gets its own sentence because 2.55 is *inside* `dot_spacing`'s 1–5 range and still refused. Regression cover: `tests/e2e/constraintValidation.spec.ts`, e2e 122 → 134. One defect found and left open by decision — `cylinder_diameter_mm` ships at 30.75 with `min="10" step="0.1"`, so the shipped default is itself invalid whenever the saved preset is `custom`; pre-existing, and a public-parameter call. |
 
 ---
