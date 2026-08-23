@@ -1,8 +1,11 @@
 # Screen-Reader UX Research and Flow Audit
 
-**Status:** research and audit only — nothing in this document has been implemented.
-It ends with a prioritised list and a set of decisions for Brennen. Fixes get their
-own work items once he has chosen among the options.
+**Status:** research and audit only — **nothing in this document has been
+implemented.** All eight decision points were put to Brennen on 2026-08-22 and **all
+eight are answered** (§2.4); he chose the recommended option in every case. §2.6 is
+therefore now an approved plan rather than a proposal, and the fixes are follow-on
+work items. Every wording change still returns to him as a draft before it ships
+(accessibility rule 12).
 
 **Why this exists.** The first real NVDA run of the app (2026-08-22, recorded in
 `NVDA_LIVE_WARNINGS_WALKTHROUGH.md` v1.2 and `00_PROJECT_MEMORY.md` FD-20) *passed*
@@ -278,52 +281,62 @@ Recording these so a later pass does not re-litigate them:
 - **`#line{i}-help` ("Maximum 50 characters for line N") earns its place** — it adds
   the limit, which the label does not carry. Only its sibling F-K is duplication.
 
-## 2.4 Decision points for Brennen
+## 2.4 Decision points — ALL EIGHT ANSWERED (Brennen, 2026-08-22)
 
-Wording and structure are his calls, not mine (accessibility rules 11 and 12). Nothing
-below has been changed.
+Wording and structure are his calls, not mine (accessibility rules 11 and 12). He was
+asked all eight at the close of this audit and **chose the recommended option in every
+case**. Nothing has been implemented yet — each answer below becomes work in a
+follow-on item, and every wording change still comes back to him as a draft before it
+ships.
 
-**D1 — Headings (F-A, F-B).** Adding real headings is the highest-value change in this
-document, and it is also the one most likely to shift the visual design. Options:
-(a) wrap the six accordion buttons in `<h3>`, per APG and GOV.UK — no visible change
-if the heading is styled to inherit; (b) also promote the major fieldset legends to
-headings; (c) headings only inside Expert Mode. **Recommendation: (a) plus (b).**
+**D1 — Headings (F-A, F-B). ANSWERED: accordions *and* section legends.** Wrap the six
+Expert Mode accordion buttons in `<h3>` per APG and GOV.UK, **and** promote the major
+fieldset legends — Enter Text, Double-Sided Card, Card Thickness, Row Indicator Style,
+Select Plate — to real headings. Styled to inherit, so nothing needs to look different.
+This is the change that turns the page from one heading into a navigable map.
 
-**D2 — The three long descriptions (F-C, F-D).** For each of the three, choose:
-keep as-is / shorten to one sentence and move the rest to visible text / move to the
-help guide. The braille-field paragraph (F-C) has a cheap partial fix available with
-no wording change at all: drop `aria-describedby` from the two Translate buttons and
-leave it on the textarea, which alone removes about 20% of all speech.
+**D2 — The three long descriptions (F-C, F-D). ANSWERED: unwire the extras, then
+shorten.** Two steps, in order. (1) Drop `aria-describedby` from the two Translate
+buttons — no wording change, removes roughly a fifth of all speech. (2) Shorten all
+three paragraphs to one sentence each, with the **full text staying visible on the page
+where it already is** — nothing is deleted, it just stops being forced into speech on
+every pass. Wording drafts come back for approval before anything ships.
 
-**D3 — Page chrome and the skip link (F-E, F-F).** Whether to move the accessibility
-controls, theme, help and GitHub links into a `<header role="banner">` above `<main>`.
-This makes the skip link real and cuts 15 pre-task tab stops to a handful. It is a
-structural change to a file with a lot of history, so it is worth deciding
-deliberately rather than folding into a wording pass.
+**D3 — Page chrome and the skip link (F-E, F-F). ANSWERED: move chrome into a banner.**
+Put the font-size, theme, GitHub and help controls into a `<header role="banner">`
+above `<main>`. This makes the skip link real, cuts the 15 pre-task tab stops to a
+handful, and adds a proper banner landmark. Structural edit to a file with a lot of
+history — it wants its own careful pass, not a fold-in.
 
-**D4 — The 3D preview (F-G).** Either remove `tabindex="0"` so it stops being a dead
-tab stop, or give it real keyboard controls (arrows to rotate, +/− to zoom). Removing
-it is a one-line change; adding controls is a feature. Which?
+**D4 — The 3D preview (F-G). ANSWERED: remove it from the tab ring.** Drop
+`tabindex="0"`. It stays fully readable in browse mode with its label intact; it just
+stops being a stop that leads nowhere. Keyboard controls for the preview were
+considered and set aside as a separate feature, not part of this cleanup.
 
-**D5 — The `<h1>` (F-H).** Confirm the intent is one product name that *wraps* onto
-two lines, and fix it in CSS rather than with a duplicate `aria-label`.
+**D5 — The `<h1>` (F-H). ANSWERED: one text node, wrap in CSS.** Confirmed that the
+intent is one product name that happens to wrap onto two lines. Make the heading a
+single text node and get the two-line look from CSS width/centering instead of two
+`display:block` spans — correct in every mode and every screen reader, and no
+duplicate `aria-label`.
 
-**D6 — Announcement policy (F-I, F-J).** Do we want a rule such as "at most one
-live-region message per user action, most urgent first"? That is a design decision
-with follow-on work, not a bug fix.
+**D6 — Announcement stacking (F-I, F-J). ANSWERED: fix the duplicate only.** Stop the
+capitalisation note repeating what the "Disabled" radio's own description already says
+(F-J). **The keystroke stacking in F-I is deliberately left alone** — it is two
+individually correct messages landing before the user's next keypress, and a general
+"one message per action" policy would be guesswork without a real user test to justify
+it. Revisit if a screen-reader user reports it.
 
-**D7 — Verbosity rule adoption (§1.5).** Adopt as the project's written standard? If
-so it belongs in `ADA_ACCESSIBILITY_VALIDATION_SOP.md` as a check, so future work is
-measured against it rather than re-arguing each paragraph.
+**D7 — Verbosity rule adoption (§1.5). ANSWERED: adopt into the SOP as written.** The
+rule goes into `ADA_ACCESSIBILITY_VALIDATION_SOP.md` as a check, at the 15-word target
+and 25-word ceiling stated here, so future work is measured against a number rather
+than re-arguing each paragraph. `axprobe.cjs` re-measures it in one command.
 
-**D8 — Dial ranges (F-M).** Whether to put `min`/`max` on the 13 numeric inputs that
-lack them, so the allowed range is announced. **The numbers must be copied from
-`settings.schema.json`, never chosen here** — several of these are tactile parameters
-governed by accessibility rule 11, and this audit deliberately proposes no values. The
-open question is whether exposing the range on the control could change any existing
-behaviour (browser-level constraint validation would begin rejecting out-of-range
-entry, where today only the server rejects it), which is a functional change worth
-deciding rather than assuming.
+**D8 — Dial ranges (F-M). ANSWERED: add from the schema, check side-effects first.**
+Copy `min`/`max` **verbatim from `settings.schema.json` — never chosen here**, since
+several are tactile parameters governed by accessibility rule 11. Before committing,
+confirm that adding them changes no existing behaviour: browser-level constraint
+validation would begin marking out-of-range entry invalid, where today only the server
+rejects it. That check gets reported before the change ships.
 
 ## 2.5 Spec contradiction — flagged, not fixed
 
@@ -347,7 +360,10 @@ Nothing has been changed. If D3 is approved, the fix and this sentence should mo
 together; if D3 is declined, the sentence still needs correcting to describe what the
 link really does.
 
-## 2.6 Suggested order, if all are approved
+## 2.6 Approved implementation order
+
+All eight decisions are answered, so this is the agreed sequence — cheapest and safest
+first, each step independently shippable. **None of it has been started.**
 
 1. **F-B icons** — six `aria-hidden="true"` attributes; no visible change, no wording
    change, immediately removes a glyph from six accessible names.
@@ -411,4 +427,5 @@ Old -> new: ruff clean -> clean; 140 -> 140 pytest; 2 -> 2 vitest; 122 -> 122 e2
 
 | Version | Date | Changes |
 |---|---|---|
+| 1.1 | 2026-08-22 | **All eight decision points answered by Brennen the same day** — he chose the recommended option in every case. §2.4 rewritten from open questions into recorded answers, with the reasoning for the two deliberate *non*-changes preserved: F-I's keystroke stacking is left alone as two individually correct messages (only F-J's duplication is fixed), and 3D-preview keyboard controls are set aside as a separate feature rather than folded into D4's one-line fix. §2.6 promoted from "suggested order" to the approved implementation sequence. **Still nothing implemented**, and every wording change returns as a draft first. No finding, measurement or count changed. |
 | 1.0 | 2026-08-22 | Created for POST-15 item 7 (FD-20d), in a fresh session after POST15_6 closed. Part 1 researched from the sources listed above; Part 2 measured from the archived NVDA speech log (1,010 utterances / 15,881 words, windowed to the browser-focused segment) and from two new live accessibility-tree probes (`build/a11yverify/post15_7/`). Fourteen findings, four of them High, plus four items checked and confirmed correct so a later pass does not re-open them. Seven decision points recorded for Brennen, and one spec contradiction flagged (UI_INTERFACE_CORE §4.1); no code, wording or structure changed. Suite bar unmoved: ruff clean, 140 pytest, 2 vitest, 122 e2e. |
