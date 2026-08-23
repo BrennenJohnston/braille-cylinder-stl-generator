@@ -3617,26 +3617,26 @@
                                     <label class="grade-label" style="font-size: 1.2em; font-weight: 700;">Braille Dimensions</label>
                                     <div>
                                         <label for="grid_columns" id="grid_columns_label">Number of Braille Cells (Characters):</label>
-                                        <input type="number" id="grid_columns" name="grid_columns" value="13" style="width: 110px;" autocomplete="off">
+                                        <input type="number" id="grid_columns" name="grid_columns" value="13" min="1" max="20" style="width: 110px;" autocomplete="off">
                                         <div id="grid_columns_note" class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
                                             This counts braille cells for your text only. The indicator letter and alignment triangle take their own space at the end of the row and are never part of this count — with them present, 13 text cells is the most that fits. Recommended value: 13.
                                         </div>
                                     </div>
                                     <div style="margin-top: 6px;">
                                         <label for="grid_rows">Number of Braille Lines:</label>
-                                        <input type="number" id="grid_rows" name="grid_rows" value="4" style="width: 110px;" autocomplete="off">
+                                        <input type="number" id="grid_rows" name="grid_rows" value="4" min="1" max="200" style="width: 110px;" autocomplete="off">
                                     </div>
                                     <div style="margin-top: 6px;">
                                         <label for="cell_spacing">Braille Cell Spacing:</label>
-                                        <input type="number" id="cell_spacing" name="cell_spacing" value="6.5" step="0.1" style="width: 110px;" autocomplete="off">
+                                        <input type="number" id="cell_spacing" name="cell_spacing" value="6.5" step="0.1" min="2" max="15" style="width: 110px;" autocomplete="off">
                                     </div>
                                     <div style="margin-top: 6px;">
                                         <label for="line_spacing">Braille Line Spacing:</label>
-                                        <input type="number" id="line_spacing" name="line_spacing" value="10.0" step="0.1" style="width: 110px;" autocomplete="off">
+                                        <input type="number" id="line_spacing" name="line_spacing" value="10.0" step="0.1" min="5" max="25" style="width: 110px;" autocomplete="off">
                                     </div>
                                     <div style="margin-top: 6px;">
                                         <label for="dot_spacing">Braille Dot Spacing:</label>
-                                        <input type="number" id="dot_spacing" name="dot_spacing" value="2.5" step="0.1" style="width: 110px;" autocomplete="off">
+                                        <input type="number" id="dot_spacing" name="dot_spacing" value="2.5" step="0.1" min="1" max="5" style="width: 110px;" autocomplete="off">
                                     </div>
                                 </div>
 
@@ -3644,11 +3644,11 @@
                                     <label class="grade-label" style="font-size: 1.2em; font-weight: 700;">Braille Line Positioning on the Cylinder Surface</label>
                                     <div>
                                         <label for="braille_y_adjust">Y Adjust:</label>
-                                        <input type="number" id="braille_y_adjust" name="braille_y_adjust" value="0.0" step="0.1" style="width: 110px;" autocomplete="off">
+                                        <input type="number" id="braille_y_adjust" name="braille_y_adjust" value="0.0" step="0.1" min="-10" max="10" style="width: 110px;" autocomplete="off">
                                     </div>
                                     <div style="margin-top: 6px;">
                                         <label for="braille_x_adjust">X Adjust:</label>
-                                        <input type="number" id="braille_x_adjust" name="braille_x_adjust" value="0.0" step="0.1" style="width: 110px;" autocomplete="off">
+                                        <input type="number" id="braille_x_adjust" name="braille_x_adjust" value="0.0" step="0.1" min="-10" max="10" style="width: 110px;" autocomplete="off">
                                     </div>
                                 </div>
                             </div>
@@ -3690,15 +3690,15 @@
                                     <label class="grade-label" style="font-size: 1.2em; font-weight: 700;">Embossing Braille Dot Dimensions (Cone Shape)</label>
                                     <div>
                                         <label for="emboss_dot_base_diameter">Dot diameter:</label>
-                                        <input type="number" id="emboss_dot_base_diameter" name="emboss_dot_base_diameter" value="1.8" step="0.1" style="width: 110px;" autocomplete="off">
+                                        <input type="number" id="emboss_dot_base_diameter" name="emboss_dot_base_diameter" value="1.8" step="0.1" min="0.5" max="3" style="width: 110px;" autocomplete="off">
                                     </div>
                                     <div style="margin-top: 6px;">
                                         <label for="emboss_dot_height">Dot height:</label>
-                                        <input type="number" id="emboss_dot_height" name="emboss_dot_height" value="1.0" step="0.1" style="width: 110px;" autocomplete="off">
+                                        <input type="number" id="emboss_dot_height" name="emboss_dot_height" value="1.0" step="0.1" min="0.3" max="2" style="width: 110px;" autocomplete="off">
                                     </div>
                                     <div style="margin-top: 6px;">
                                         <label for="emboss_dot_flat_hat">Flat hat diameter:</label>
-                                        <input type="number" id="emboss_dot_flat_hat" name="emboss_dot_flat_hat" value="0.4" step="0.1" style="width: 110px;" autocomplete="off">
+                                        <input type="number" id="emboss_dot_flat_hat" name="emboss_dot_flat_hat" value="0.4" step="0.1" min="0.1" max="2" style="width: 110px;" autocomplete="off">
                                     </div>
                                 </div>
 
@@ -3801,11 +3801,11 @@
                                      the schema defaults; the cylinder has no visible plate. -->
                                 <div hidden>
                                     <label for="card_width">Plate Width:</label>
-                                    <input type="number" id="card_width" name="card_width" value="90" step="0.1" autocomplete="off" tabindex="-1">
+                                    <input type="number" id="card_width" name="card_width" value="90" step="0.1" min="50" max="200" autocomplete="off" tabindex="-1">
                                     <label for="card_height">Plate Height:</label>
-                                    <input type="number" id="card_height" name="card_height" value="52" step="0.1" autocomplete="off" tabindex="-1">
+                                    <input type="number" id="card_height" name="card_height" value="52" step="0.1" min="30" max="150" autocomplete="off" tabindex="-1">
                                     <label for="card_thickness">Plate Thickness:</label>
-                                    <input type="number" id="card_thickness" name="card_thickness" value="2.0" step="0.1" autocomplete="off" tabindex="-1">
+                                    <input type="number" id="card_thickness" name="card_thickness" value="2.0" step="0.1" min="1" max="10" autocomplete="off" tabindex="-1">
                                 </div>
                             </div>
                         </div>
