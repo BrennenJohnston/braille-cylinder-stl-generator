@@ -218,31 +218,42 @@ test.describe('Form column layout', () => {
     }
   });
 
-  test('keeps the skip link fully off screen at every app font size', async ({ page }) => {
+  test('keeps both skip links fully off screen at every app font size', async ({ page }) => {
     await openApp(page);
 
     // The link was hidden by a hardcoded top: -40px, which cannot cover an
     // element whose height scales with the font size - it left 19 px of itself
     // sitting over the header at 200%. transform: translateY(-100%) is always
     // exactly one link-height, so this has to hold at every step of the scale.
-    const link = page.locator('.skip-link');
+    //
+    // There are TWO since item G - "Skip to main content" and "Skip to braille
+    // text entry" - hidden by the same rule and landing on the same spot, which
+    // only works while neither leaks. Every assertion below is the one this test
+    // has always made; it just makes each of them twice.
+    const links = page.locator('.skip-link');
+    await expect(links).toHaveCount(2);
 
-    for (const fontSize of ['100%', '125%', '150%', '175%', '200%']) {
-      await page.evaluate((size) => { document.documentElement.style.fontSize = size; }, fontSize);
-      const box = await link.boundingBox();
-      expect(box, `skip link at ${fontSize} has no box`).not.toBeNull();
-      expect.soft(box!.y + box!.height, `skip link visible height at ${fontSize}`).toBeLessThanOrEqual(1);
+    for (let i = 0; i < 2; i++) {
+      const link = links.nth(i);
+      const name = (await link.textContent())?.trim();
+
+      for (const fontSize of ['100%', '125%', '150%', '175%', '200%']) {
+        await page.evaluate((size) => { document.documentElement.style.fontSize = size; }, fontSize);
+        const box = await link.boundingBox();
+        expect(box, `"${name}" at ${fontSize} has no box`).not.toBeNull();
+        expect.soft(box!.y + box!.height, `"${name}" visible height at ${fontSize}`).toBeLessThanOrEqual(1);
+      }
+
+      // ...and it must still come fully on screen when focused, at the largest size.
+      // Polled rather than read once: the reveal is a 0.3s transform transition, so
+      // an immediate read catches the link mid-slide and not where it lands.
+      await link.focus();
+      await expect(link).toBeFocused();
+      await expect.poll(
+        async () => (await link.boundingBox())!.y,
+        { message: `"${name}" never slid fully on screen when focused` },
+      ).toBeGreaterThanOrEqual(-1);
     }
-
-    // ...and it must still come fully on screen when focused, at the largest size.
-    // Polled rather than read once: the reveal is a 0.3s transform transition, so
-    // an immediate read catches the link mid-slide and not where it lands.
-    await link.focus();
-    await expect(link).toBeFocused();
-    await expect.poll(
-      async () => (await link.boundingBox())!.y,
-      { message: 'skip link never slid fully on screen when focused' },
-    ).toBeGreaterThanOrEqual(-1);
   });
 
   test('lets the user set their own braille cell count without it being overwritten', async ({ page }) => {

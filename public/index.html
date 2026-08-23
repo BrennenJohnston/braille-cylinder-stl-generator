@@ -720,9 +720,14 @@
             height: 100vh; /* Lock to viewport — no outer scrollbar */
             font-family: 'Inter', system-ui, Arial, sans-serif;
             margin: 0;
+            /* Column, not the default row. The <header role="banner"> added
+               for audit F-E is a SIBLING of <main> - a header nested inside
+               main is not a banner landmark - and in a row it would sit
+               BESIDE the app instead of above it. */
             display: flex;
+            flex-direction: column;
             align-items: stretch;
-            justify-content: center;
+            justify-content: flex-start;
             padding: 0;
             /* iOS Safe Area Support */
             padding-top: env(safe-area-inset-top);
@@ -756,9 +761,18 @@
             background: var(--bg-primary);
             border-radius: 0;
             box-shadow: none;
-            padding: 1em 1.5em;
+            /* Top padding moved up into .site-header, which now carries the
+               top bar; 0.75em here reproduces the flex gap that used to sit
+               between the title row and the content area. */
+            padding: 0.75em 1.5em 1em;
             width: 100%;
-            height: 100vh; /* Lock to viewport */
+            /* Was height: 100vh. The banner above now takes its own share of
+               the viewport, so main takes what is LEFT rather than a second
+               full screen. min-height: 0 keeps the inner scroll panes able to
+               shrink - without it a flex item refuses to go below its content
+               and the whole layout overflows. */
+            flex: 1 1 auto;
+            min-height: 0;
             margin: 0;
             overflow: hidden; /* No scroll — panels handle their own */
             box-sizing: border-box;
@@ -767,12 +781,20 @@
         /* Mobile layout optimization */
         @media (max-width: 768px) {
             .main-layout {
-                padding: 1em;
+                /* No top padding here: on mobile .title-section carries a
+                   margin-bottom of its own, and that margin now lives in
+                   the banner. Adding the desktop 0.75em on top of it
+                   pushed the whole phone layout down by 8px. */
+                padding: 0 1em 1em;
                 border-radius: 0;
                 gap: 0.75em;
                 box-shadow: none;
                 height: auto; /* Allow natural scrolling on mobile */
-                min-height: 100vh;
+                /* Was min-height: 100vh. With the banner stacked above it,
+                   that made every phone page exactly one banner taller than
+                   the screen. */
+                min-height: 0;
+                flex: 1 0 auto;
                 /* Must stay visible on both axes: any scroll container here
                    becomes the sticky .action-footer's scrollport, and since this
                    element never scrolls the footer would never stick. The page
@@ -782,11 +804,34 @@
         }
 
         @media (max-width: 480px) {
+            .site-header {
+                padding: 0.75em 0.75em 0;
+            }
+
             .main-layout {
-                padding: 0.75em;
+                padding: 0 0.75em 0.75em;
                 border-radius: 0;
                 gap: 0.5em;
             }
+        }
+
+        /* The page's banner landmark: the compact top bar, lifted whole out
+           of <main> and given no other change. It holds the product name and
+           the utility chrome - font size, theme, source link, help - none of
+           which does the app's job, which is why <main> is better off without
+           them (audit criterion C3) and why the skip link can now skip past
+           them (F-E). The padding is the top and side padding .main-layout
+           used to give this row, so the bar lands on the same pixels. */
+        .site-header {
+            /* .main-layout paints this token, and this row used to be
+               inside it. Without the same background the banner would
+               show the <html> gradient instead and seam against the app
+               below it in whichever theme the two differ. */
+            background: var(--bg-primary);
+            flex: 0 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 1em 1.5em 0;
         }
 
         /* Title Section - Compact top bar */
@@ -2366,6 +2411,10 @@
 
         /* Mobile title section optimization */
         @media (max-width: 768px) {
+            .site-header {
+                padding: 1em 1em 0;
+            }
+
             .title-section {
                 flex-direction: column;
                 align-items: center;
@@ -3054,8 +3103,23 @@
     </style>
 </head>
 <body>
-    <!-- Skip Navigation Link for Keyboard Users -->
+    <!-- Skip Navigation Links for Keyboard Users.
+         TWO of them, because "main content" and "the thing you came to do"
+         are not the same place here: main opens with the 3D preview's five
+         display controls, so the first link lands a keyboard user on the
+         Brightness stepper with six stops still to go (audit F-F). The second
+         link is the answer Brennen chose over reordering the columns - it adds
+         nothing visible and moves no control, and three keystrokes now reach
+         the text entry. Both are hidden by their own height and only one can
+         ever be focused, so they share the same landing spot without
+         colliding.
+         The second one targets the SECTION HEADING and not #auto-text:
+         that textarea lives in #auto-input-container, which Manual
+         Placement hides, and a fragment link to a display:none element
+         moves nothing at all. The heading is present in both placement
+         modes, so the link cannot go dead. -->
     <a href="#main-content" class="skip-link" tabindex="0">Skip to main content</a>
+    <a href="#front-entry-heading" class="skip-link" tabindex="0">Skip to braille text entry</a>
 
     <!-- Announcement channel for the warning boxes further down. Each of those
          is hidden between messages, and a hidden element is not in the
@@ -3068,75 +3132,84 @@
 
 
 
-    <main class="main-layout" id="main-content">
-        <!-- Title Section at the top -->
-        <div class="title-section">
-            <h1 id="main-heading">
-                <span class="title-line-1">Custom Braille</span>
-                <span class="title-line-2">STL Generator</span>
-            </h1>
+    <header class="site-header" role="banner">
+    <!-- Title Section at the top -->
+    <div class="title-section">
+        <h1 id="main-heading">
+            <span class="title-line-1">Custom Braille</span>
+            <span class="title-line-2">STL Generator</span>
+        </h1>
 
-            <!-- Accessibility Controls in top right -->
-            <div class="accessibility-controls-top" role="group" aria-label="Accessibility controls">
-                <!-- Font Size Controls -->
-                <div class="font-size-controls" role="group" aria-label="Font size adjustment">
-                    <button id="font-decrease" class="font-size-btn" aria-label="Decrease font size" title="Decrease font size">
-                        <span aria-hidden="true">−</span>
-                        <span class="sr-only">Decrease font size</span>
-                    </button>
-                    <span class="font-size-display" role="status" aria-live="polite" aria-atomic="true">
-                        <span id="current-font-size">100</span>%
-                    </span>
-                    <button id="font-increase" class="font-size-btn" aria-label="Increase font size" title="Increase font size">
-                        <span aria-hidden="true">+</span>
-                        <span class="sr-only">Increase font size</span>
-                    </button>
-                    <button id="font-reset" class="font-size-btn reset-btn" aria-label="Reset font size to default" title="Reset font size to default">
-                        <span aria-hidden="true">⟲</span>
-                        <span class="sr-only">Reset font size</span>
-                    </button>
-                </div>
-
-                <!-- Theme Toggle Section -->
-                <div class="theme-toggle-section" role="group" aria-labelledby="theme-label">
-                    <div id="theme-label" class="theme-label-box">
-                        <span class="theme-label-text">Change Theme to →</span>
-                    </div>
-                    <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle theme" title="Toggle between light, dark, and high contrast themes">
-                        <span class="theme-icon" aria-hidden="true">⚡</span>
-                        <span class="theme-text">High Contrast</span>
-                    </button>
-                </div>
-
-                <!-- GitHub Link Button -->
-                <a href="https://github.com/BrennenJohnston/braille-cylinder-stl-generator"
-                   class="btn btn-sm github-link"
-                   target="_blank"
-                   rel="noopener noreferrer"
-                   aria-label="View source code on GitHub (opens in new tab)"
-                   title="View on GitHub">
-                    <svg class="github-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                    </svg>
-                    <span class="github-label">GitHub</span>
-                </a>
-
-                <!-- Help Button -->
-                <button type="button"
-                        id="helpModalBtn"
-                        class="btn btn-sm btn-help"
-                        aria-label="Open help guide"
-                        title="Help & Guide">
-                    <svg class="btn-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="11" x2="12" y2="16"></line>
-                        <circle cx="12" cy="7.5" r="1" fill="currentColor" stroke="none"></circle>
-                    </svg>
-                    <span class="btn-text">Help</span>
+        <!-- Accessibility Controls in top right -->
+        <div class="accessibility-controls-top" role="group" aria-label="Accessibility controls">
+            <!-- Font Size Controls -->
+            <div class="font-size-controls" role="group" aria-label="Font size adjustment">
+                <button id="font-decrease" class="font-size-btn" aria-label="Decrease font size" title="Decrease font size">
+                    <span aria-hidden="true">−</span>
+                    <span class="sr-only">Decrease font size</span>
+                </button>
+                <span class="font-size-display" role="status" aria-live="polite" aria-atomic="true">
+                    <span id="current-font-size">100</span>%
+                </span>
+                <button id="font-increase" class="font-size-btn" aria-label="Increase font size" title="Increase font size">
+                    <span aria-hidden="true">+</span>
+                    <span class="sr-only">Increase font size</span>
+                </button>
+                <button id="font-reset" class="font-size-btn reset-btn" aria-label="Reset font size to default" title="Reset font size to default">
+                    <span aria-hidden="true">⟲</span>
+                    <span class="sr-only">Reset font size</span>
                 </button>
             </div>
-        </div>
 
+            <!-- Theme Toggle Section -->
+            <div class="theme-toggle-section" role="group" aria-labelledby="theme-label">
+                <div id="theme-label" class="theme-label-box">
+                    <span class="theme-label-text">Change Theme to →</span>
+                </div>
+                <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle theme" title="Toggle between light, dark, and high contrast themes">
+                    <span class="theme-icon" aria-hidden="true">⚡</span>
+                    <span class="theme-text">High Contrast</span>
+                </button>
+            </div>
+
+            <!-- GitHub Link Button -->
+            <a href="https://github.com/BrennenJohnston/braille-cylinder-stl-generator"
+               class="btn btn-sm github-link"
+               target="_blank"
+               rel="noopener noreferrer"
+               aria-label="View source code on GitHub (opens in new tab)"
+               title="View on GitHub">
+                <svg class="github-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+                <span class="github-label">GitHub</span>
+            </a>
+
+            <!-- Help Button -->
+            <button type="button"
+                    id="helpModalBtn"
+                    class="btn btn-sm btn-help"
+                    aria-label="Open help guide"
+                    title="Help & Guide">
+                <svg class="btn-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="11" x2="12" y2="16"></line>
+                    <circle cx="12" cy="7.5" r="1" fill="currentColor" stroke="none"></circle>
+                </svg>
+                <span class="btn-text">Help</span>
+            </button>
+        </div>
+    </div>
+    </header>
+
+    <!-- tabindex="-1" is what makes the skip link above actually move
+         FOCUS. Without it a fragment link to a non-focusable element only
+         shifts the sequential-navigation start point: Tab carries on from
+         here, but document.activeElement stays on <body>, so a screen
+         reader in focus mode is told nothing and Safari moves nothing at
+         all. Measured on this page before it was added. -1 keeps it out of
+         the Tab ring. -->
+    <main class="main-layout" id="main-content" tabindex="-1">
         <!-- Main Content Area - Two Column Layout -->
         <div class="content-area">
             <!-- Left Column - STL Preview Section (45% width) -->
@@ -3236,7 +3309,7 @@
                                  the HEADING "Front of Card — …" while the double-sided beta
                                  is on and restores this exact text when it is off; the
                                  legend id is what the doubleSided e2e spec reads. -->
-                            <legend class="grade-label" id="front-entry-legend"><h2 class="legend-heading" id="front-entry-heading">Enter Text for Braille Translation</h2></legend>
+                            <legend class="grade-label" id="front-entry-legend"><h2 class="legend-heading" id="front-entry-heading" tabindex="-1">Enter Text for Braille Translation</h2></legend>
                             <div class="grade-note" style="margin-bottom: 0.8em; font-size: 0.85em;">
                                 <strong>Note:</strong> Contracted braille combines letters into single cells, so the character limit is only confirmed <em>after translation</em> — the program will warn you automatically if it's too long.
                             </div>
