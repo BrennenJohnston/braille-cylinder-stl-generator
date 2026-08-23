@@ -260,7 +260,7 @@ but narrow.
 | **F-J** | Low | C7 | **The capitalisation note duplicates the radio it points at.** Focusing the "Disabled" radio speaks the note and then the radio's own description 20 ms later — two ways of saying the same thing, back to back. | Log 13:30:50.693 / 13:37:10.260. |
 | **F-K** | Low | C7 | **Four screen-reader-only descriptions restate their own labels.** Each manual-placement row has `<span class="sr-only">Select translation language for line N</span>` attached to a select already labelled "Line N Translation". Invisible to any sighted review; audible on every pass. | `public/index.html:5422–5424`. Log 13:20:35–13:20:37. |
 | **F-L** | Low | C3 | **The Generate button is outside the form it drives.** `</form>` closes at `:3879`; the button is at `:3884`. NVDA announces "out of form" immediately before the app's primary action. | Source `:3879, 3884`. Log 13:13:17.845. |
-| **F-M** | Medium | C8 | **13 of the 33 numeric dials expose no minimum or maximum.** They are native `input type="number"` with no `min`/`max` attribute, so nothing maps to `aria-valuemin`/`aria-valuemax` and a screen-reader user is told the current value with no sense of the allowed range — on exactly the tactile parameters that have documented safe ranges (`dot_spacing`, `cell_spacing`, `line_spacing`, `emboss_dot_base_diameter`, `braille_x_adjust`, `braille_y_adjust`, `grid_rows`, `grid_columns` among them). **This is an announcement gap, not a safety hole:** the ranges do exist and are enforced in `settings.schema.json` and server-side validation — they are simply not on the control. | Probe over `public/index.html`: 33 `input type=number`, 13 with `min` or `max` absent. |
+| **F-M** | Medium | C8 | **13 of the 33 numeric dials expose no minimum or maximum.** They are native `input type="number"` with no `min`/`max` attribute, so nothing maps to `aria-valuemin`/`aria-valuemax` and a screen-reader user is told the current value with no sense of the allowed range — on exactly the tactile parameters that have documented safe ranges (`dot_spacing`, `cell_spacing`, `line_spacing`, `emboss_dot_base_diameter`, `braille_x_adjust`, `braille_y_adjust`, `grid_rows`, `grid_columns` among them). **This is an announcement gap, not a safety hole:** the ranges do exist and are enforced server-side — they are simply not on the control. **Correction, 2026-08-22 (v1.2):** the source is `app/validation.py`, **not** `settings.schema.json`. Checked field by field after this audit was first written: only 7 of the 13 appear in the schema under a matching name at all, and **none of those 7 carries a `maximum`** — just a `minimum` of 0 or 1, which is a not-negative guard rather than a range. All thirteen do have real (min, max) pairs in `app/validation.py`. That is a schema-vs-code drift in its own right and is flagged, not fixed, in §2.5. | Probe over `public/index.html`: 33 `input type=number`, 13 with `min` or `max` absent. |
 | **F-N** | Low | C7 | **Card Thickness announces two group names for one set of radios.** A `<legend>Card Thickness</legend>` wraps a `role="radiogroup" aria-label="Select card thickness preset"`, so the user hears "Card Thickness grouping" and then "Select card thickness preset grouping required" before the first option. The other radio groups nest an *unlabelled* `role="radiogroup"` inside their fieldset, which NVDA does not announce separately — so this is a one-off, not the house pattern. | Source `:3431–3432`. Log 13:11:59.315–13:11:59.334 vs 13:12:53.971 (single group). |
 
 ## 2.3 Checked and found correct — do not "fix" these
@@ -331,20 +331,38 @@ rule goes into `ADA_ACCESSIBILITY_VALIDATION_SOP.md` as a check, at the 15-word 
 and 25-word ceiling stated here, so future work is measured against a number rather
 than re-arguing each paragraph. `axprobe.cjs` re-measures it in one command.
 
-**D8 — Dial ranges (F-M). ANSWERED: add from the schema, check side-effects first.**
-Copy `min`/`max` **verbatim from `settings.schema.json` — never chosen here**, since
-several are tactile parameters governed by accessibility rule 11. Before committing,
+**D8 — Dial ranges (F-M). ANSWERED: add from the schema, check side-effects first
+— but the named source turned out not to hold the data.** The principle he set
+stands and is not in doubt: the numbers are **copied from a source, never chosen by
+an assistant**, since several are tactile parameters governed by accessibility rule
+11. **What changed is only WHERE they come from.** `settings.schema.json` was checked
+field by field after this answer was given and cannot supply them — 6 of the 13
+fields are absent from it under any matching name, and none of the other 7 carries a
+`maximum`. `app/validation.py` has all thirteen with real ranges. **Because
+project-facts rule 7 makes the schema the single source of truth, switching sources
+is not an assistant's call**: `POST15_7E_DIAL_RANGES_PROMPT.txt` opens by putting
+that question back to Brennen before any edit. Before committing,
 confirm that adding them changes no existing behaviour: browser-level constraint
 validation would begin marking out-of-range entry invalid, where today only the server
 rejects it. That check gets reported before the change ships.
 
 ## 2.5 Spec contradiction — flagged, not fixed
 
-One finding contradicts a shipped specification. Per the project rule, the code is
-authoritative and the mismatch is reported rather than silently corrected on either
+Two findings contradict a shipped specification. Per the project rule, the code is
+authoritative and each mismatch is reported rather than silently corrected on either
 side.
 
-**`UI_INTERFACE_CORE_SPECIFICATIONS.md` §4.1 (line 1550)** states:
+**Contradiction 2 — `settings.schema.json` vs `app/validation.py` (F-M, D8).** The
+schema is the project's declared single source of truth for settings and validation
+(project-facts rules 7 and 8), yet `app/validation.py` enforces minimum/maximum
+ranges for all 13 bare dials that the schema does not state — 6 of the fields are
+absent from the schema entirely under those names, and not one of the remaining 7
+carries a `maximum`. The code is authoritative and the ranges it enforces are real;
+what is wrong is the claim that the schema is complete. Flagged only — closing it
+means either adding the maxima to the schema or amending rules 7/8, and both are
+Brennen's call.
+
+**Contradiction 1 — `UI_INTERFACE_CORE_SPECIFICATIONS.md` §4.1 (line 1550)** states:
 
 > "A skip link is provided for keyboard users to bypass the header and jump directly
 > to the main content"
@@ -427,5 +445,6 @@ Old -> new: ruff clean -> clean; 140 -> 140 pytest; 2 -> 2 vitest; 122 -> 122 e2
 
 | Version | Date | Changes |
 |---|---|---|
+| 1.2 | 2026-08-22 | **A correction, found while writing the follow-up prompt files.** D8's approved instruction — copy `min`/`max` verbatim from `settings.schema.json` — **cannot be carried out as written**, and neither could F-M's claim that the ranges are enforced there. Checked field by field: 6 of the 13 fields are absent from the schema under any matching name, and none of the other 7 carries a `maximum` (only a `minimum` of 0 or 1). All thirteen ranges do exist in `app/validation.py`. F-M and D8 corrected in place, and a **second spec contradiction** added to §2.5 — the schema is the declared single source of truth yet is the incomplete one. Switching sources is not an assistant's call, so `POST15_7E` opens by putting it back to Brennen. Brennen's *principle* (numbers copied, never chosen) is unchanged; only the source is in question. **Also recorded:** the seven follow-up prompt files `POST15_7A`–`POST15_7G` were written into the planning folder, one per item in §2.6. No measurement or finding severity changed. |
 | 1.1 | 2026-08-22 | **All eight decision points answered by Brennen the same day** — he chose the recommended option in every case. §2.4 rewritten from open questions into recorded answers, with the reasoning for the two deliberate *non*-changes preserved: F-I's keystroke stacking is left alone as two individually correct messages (only F-J's duplication is fixed), and 3D-preview keyboard controls are set aside as a separate feature rather than folded into D4's one-line fix. §2.6 promoted from "suggested order" to the approved implementation sequence. **Still nothing implemented**, and every wording change returns as a draft first. No finding, measurement or count changed. |
 | 1.0 | 2026-08-22 | Created for POST-15 item 7 (FD-20d), in a fresh session after POST15_6 closed. Part 1 researched from the sources listed above; Part 2 measured from the archived NVDA speech log (1,010 utterances / 15,881 words, windowed to the browser-focused segment) and from two new live accessibility-tree probes (`build/a11yverify/post15_7/`). Fourteen findings, four of them High, plus four items checked and confirmed correct so a later pass does not re-open them. Seven decision points recorded for Brennen, and one spec contradiction flagged (UI_INTERFACE_CORE §4.1); no code, wording or structure changed. Suite bar unmoved: ruff clean, 140 pytest, 2 vitest, 122 e2e. |
