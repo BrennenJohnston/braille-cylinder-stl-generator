@@ -429,13 +429,18 @@ The master language selection dropdown controls:
                 <option value="en-us-g2.ctb">English (EBAE), United States — contracted (grade 2)</option>
                 <option value="en-us-g1.ctb">English (EBAE), United States — uncontracted (grade 1)</option>
             </select>
-            <div id="language-help" class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
+            <!-- The id sits on the LAST SENTENCE, not the div: everything before it is
+                 reference material that the combobox itself already announces or that the
+                 help guide carries, so it stays visible but is not spoken on every visit
+                 (ADA SOP Step 6.8; audit F-D). -->
+            <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
                 Default: English (UEB), United States — contracted (grade 2). The BANA
                 <em>Guidelines for Brailling Business Cards</em> (March 2024) says to follow
                 <em>The Rules of Unified English Braille</em>, and every worked example in that
                 fact sheet is contracted UEB. Contractions also pack more of a name, phone
-                number, or e-mail address into the 13–14 cells a card row allows. Switch to
-                uncontracted (grade 1) only if your reader has asked for it.
+                number, or e-mail address into the 13–14 cells a card row allows. <span
+                id="language-help">Switch to uncontracted (grade 1) only if your reader has
+                asked for it.</span>
             </div>
         </div>
     </fieldset>
@@ -603,7 +608,7 @@ The **Capitalized Letters** toggle allows users to control whether capital lette
 In braille, capital letters require additional indicator cells (e.g., dot-6 prefix in UEB). The toggle allows users to choose between:
 
 - **Enabled (default):** Preserve exact capitalization — what the user typed is what gets translated
-- **Disabled:** Convert text to lowercase before translation, saving one braille cell per capital letter (two per fully-capitalized word) — an option for power users short on space
+- **Disabled:** Convert text to lowercase before translation, saving one braille cell per capital letter (two per fully-capitalized word) — an option for power users short on space. **This sentence is delivered as VISIBLE text only** (the `.grade-note` under the radios). The Disabled radio carried an `sr-only` description saying the same thing, which was spoken 20 ms after the live `#caps-warning` said it again; it was removed 2026-08-22 (audit F-J, decision D6). Nothing left the page — the visible note is unchanged
 
 **Important:** The user's input text remains unchanged in the UI. The lowercase conversion happens only at translation time when the setting is disabled.
 
@@ -624,11 +629,12 @@ The toggle lives in the **Translation Options** submenu of Expert Mode (`#expert
         Enabled <span style="font-weight: normal; opacity: 0.85;">(default)</span>
     </label>
     <label style="display: inline-flex; align-items: center; gap: 0.4em;">
-        <input type="radio" name="capitalize_letters" value="disabled" id="capitalize_disabled" aria-describedby="caps-disabled-desc">
+        <!-- Disabled is labelled, NOT described. Its sr-only description duplicated
+             both the live #caps-warning and the visible .grade-note below (audit F-J). -->
+        <input type="radio" name="capitalize_letters" value="disabled" id="capitalize_disabled">
         Disabled
     </label>
     <span id="caps-enabled-desc" class="sr-only">Preserve capital letters in braille translation, using capital indicator cells</span>
-    <span id="caps-disabled-desc" class="sr-only">Convert text to lowercase before translation to save space on braille cells: one cell per capital letter, two per fully capitalized word</span>
     <div class="grade-note" style="margin: 0; font-size: 0.85em; flex-basis: 100%;">
         Disabling capitalization saves one braille cell per capital letter (two per fully-capitalized word) — an option for power users short on space.
     </div>
@@ -897,7 +903,7 @@ Inside the "Enter Text for Braille Translation" fieldset, directly below the tex
 | Textarea | `braille-unicode` | 4 rows, `lang="und-Brai"`, `aria-describedby="braille-unicode-help braille-unicode-status"` |
 | Translate to Text ↑ | `translate-to-text-btn` | Under the braille box: back-translates the braille into the English inputs |
 | Visible status | `braille-unicode-status` | Current state in plain words |
-| Help text | `braille-unicode-help` | Allowed range, how the field is used |
+| Help text | `braille-unicode-help` | A `<span>` around the FIRST SENTENCE only — the allowed range. The rest of the paragraph (how the field is used) stays visible in the same div, unwired: the textarea's description is this span **plus** `#braille-unicode-status`, so its budget is the 25-word ceiling minus a live status of 8–12 words (ADA SOP Step 6.8; audit F-C) |
 | Live region | `braille-unicode-live` | `class="sr-only" role="status" aria-live="polite"` |
 
 ### State Machine
@@ -1453,9 +1459,12 @@ function applyPersistedSettings() {
 ### ARIA Attributes
 
 ```html
-<!-- Master language select -->
+<!-- Master language select: described by ONE SENTENCE, not the whole note.
+     #language-help is a <span> around the last sentence; the BANA rationale
+     before it stays visible in the same div, unwired (audit F-D). -->
 <select id="language-table" aria-describedby="language-help">
-<div id="language-help" class="grade-note">Default: English (UEB)...</div>
+<div class="grade-note">Default: English (UEB)... <span id="language-help">Switch to
+uncontracted (grade 1) only if your reader has asked for it.</span></div>
 
 <!-- Per-line language selects: labelled, NOT described. The description
      that used to sit here only repeated the label (audit F-K). -->
@@ -1892,8 +1901,9 @@ None required. All implementations match the specification exactly.
 
 ---
 
-*Document Version: 1.5*
-*Last Updated: 2026-08-22 - The four per-line language selects no longer carry a screen-reader description. `aria-describedby="line{N}-lang-help"` and the `#line{N}-lang-help` spans are gone from the generated row: the description said "Select translation language for line N" to a select already labelled "Line N Translation", so it repeated its own label on every pass and, being sr-only, could never be caught by sighted review (POST15_7 audit F-K; commit 23575ab). Measured on the live accessibility tree in MANUAL placement mode - the rows are display:none in the default auto mode - descriptions on those selects 4 -> 0, spans in the DOM 4 -> 0, and the selects keep their names "Line 1-4 Translation". The sibling `#line{N}-help` ("Maximum 50 characters for line N") is deliberately UNCHANGED: it carries the limit, which the label does not. Both HTML samples in this document updated - they would otherwise have taught the removed markup.*
+*Document Version: 1.6*
+*Last Updated: 2026-08-22 - Two descriptions stop being spoken in full, and no word of either changed. (1) The language combobox is described by its LAST SENTENCE only - `id="language-help"` moved onto a `<span>` around "Switch to uncontracted (grade 1) only if your reader has asked for it." (13 w), and the BANA rationale before it stays in the same div, visible and unwired. Its dropped opening, "Default: English (UEB), United States - contracted (grade 2)", is exactly what the combobox announces as its selected option, so keeping it wired restated the label. Measured **71 -> 13 words**; it had been spoken 18 times in a 34-minute NVDA session (audit F-D, decision D2 step 2). (2) The **Disabled** capitals radio no longer carries `aria-describedby`, and the orphan `#caps-disabled-desc` span is gone with it: its text duplicated BOTH the live `#caps-warning` and the VISIBLE `.grade-note` beneath the radios, which is unchanged, so nothing left the page (audit F-J, decision D6). `#caps-enabled-desc` is deliberately still wired. The braille-field element table now records that `#braille-unicode-help` is a span around its first sentence, and that this textarea's budget is the ceiling minus `#braille-unicode-status`. Every HTML sample here updated - they would otherwise teach the old markup. Keepers approved by Brennen as drafts before the edit (FD-25). Pattern: `UI_INTERFACE_CORE_SPECIFICATIONS.md` 4.13.*
+*Previous: 1.5, 2026-08-22 - The four per-line language selects no longer carry a screen-reader description (audit F-K; commit 23575ab); descriptions on those selects 4 -> 0, spans in the DOM 4 -> 0, and the sibling `#line{N}-help` deliberately unchanged.*
 *Previous: 1.4, 2026-08-17 — Back of Card text reaches parity with the front: Section 8 now records BANA auto-wrap via the shared `banaAutoWrap()` (newlines = forced row breaks, wire shape unchanged), the three fail-closed blocking paths, and the live `#ds-back-overflow-warning` status region*
 *Previous: 1.3, 2026-08-16 — Double-sided (interpoint) beta: Section 8 documents the toggle-gated `back_lines` wire field, the flat `settings` fields, and the both-plates-carry-front-lines rule; Section 11 adds the two new `braille_prefs_*` keys*
 *Previous: 1.2, 2026-07-30 — Capitalized Letters and Number Signs moved to the Expert Mode Translation Options submenu; the Braille (Unicode) field gained a Translate to Text button and now sits directly under the matching text box*

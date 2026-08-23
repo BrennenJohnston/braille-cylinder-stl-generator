@@ -1911,6 +1911,9 @@ Accessibility requirements:
   repetition is gone. The textarea keeps
   `aria-describedby="braille-unicode-help braille-unicode-status"` — it is the one control
   the paragraph is really about ("one description, one host").
+- **Since 2026-08-22 the textarea is described by ONE SENTENCE of that paragraph, not
+  all four** — `id="braille-unicode-help"` moved onto a `<span>` around "Accepts braille
+  characters only (U+2800–U+28FF)." See §4.13 for the pattern and the arithmetic.
 - Progress and outcome are announced through the existing `#braille-unicode-live`
   (`role="status" aria-live="polite"`) region, and shown visually in
   `#braille-unicode-status`. Errors set the highlighted variant of the status text rather
@@ -2408,6 +2411,57 @@ edited any dial and reloaded — meets a form that refuses to generate before to
 anything. Pre-existing since the original commit (verified against `95b735a^`), now
 *visible* rather than silent. Changing either the value or the step is a
 public-parameter decision, so it is reported and not fixed.
+
+---
+
+### 4.13 Long Notes Are Split, Not Deleted: the Sentence-Span Pattern
+
+**The rule.** `aria-describedby` gets one short sentence — target 15 words, hard ceiling
+25 (ADA SOP Step 6.8). A note longer than that is **not shortened and not moved**. The
+`id` is placed on a `<span>` around the ONE sentence that belongs on the control, and the
+rest of the note stays exactly where it is: same `.grade-note` div, same order, same
+words, still visible, just no longer forced into speech on every visit.
+
+**Why a `<span>` and not a second `<div>`.** The span is inline, so the note still renders
+as one flowing paragraph. Splitting into two block elements would insert a line break and
+change the layout; this changes nothing on screen. **No pixel moves and no word changes**
+— which is also what lets this be done to strings that carry a sign-off.
+
+**Applied 2026-08-22** (audit F-C / F-D, decision D2; every keeper approved by Brennen as a
+draft before the edit, FD-25):
+
+| Host | Note | Spoken before | Spoken after | Sentence kept |
+|---|---|---|---|---|
+| `#braille-unicode` (textarea) | `#braille-unicode-help` | 72 w | **5 w** | "Accepts braille characters only (U+2800–U+28FF)." |
+| `#double_sided_enabled` (checkbox) | `#double-sided-note` | 96 w | **17 w** | "This is a beta for testing — proofread both sides and check every braille surface before use." |
+| `#language-table` (combobox) | `#language-help` | 71 w | **13 w** | "Switch to uncontracted (grade 1) only if your reader has asked for it." |
+
+Total description words in one full read of the default page: **430 → 226**, measured on
+the live accessibility tree.
+
+**A trap the probe alone will not show you.** `#braille-unicode` carries **two**
+describedby targets — `aria-describedby="braille-unicode-help braille-unicode-status"` —
+and the computed description is the two joined. `#braille-unicode-status` is a live status
+that reads "Empty — the text above will be translated" (8 w) on load and grows to 12 w
+after an auto-clear. **The budget on that control is therefore 25 minus a moving number**,
+which is why the 5-word first sentence is the keeper and the 20-word "used exactly as
+written" sentence is not: it would have measured 28 w in the default state. Totals across
+all four field states are 13 / 16 / 11 / 17 w. Step 6.8's probe measures the default state
+only, so **when a host has sibling describedby targets, add them in by hand**.
+
+**Choosing which sentence stays.** It is the one the user needs *at that control*, that the
+accessible name does not already carry. `#language-help`'s opening — "Default: English
+(UEB), United States — contracted (grade 2)" — is exactly what the combobox announces as
+its selected option, so keeping it wired would have restated the label (Step 6.8.1
+clause 4). It stays on screen.
+
+**What this is not.** It is not a licence to delete. Nothing above was removed from the
+page or reworded, the 2026-08-16 double-sided sign-off is intact word for word, and taking
+a sentence off the page altogether remains a separate change needing Brennen's sign-off
+(Step 6.8.2, accessibility rule 12).
+
+**Still over the ceiling, reported and deliberately left** (his call, FD-25d): Tactile seam
+arrow 43 w, 3D preview 38 w, Visual markers 26 w.
 
 ---
 
@@ -3052,6 +3106,7 @@ Low vision users benefit from enhanced depth perception:
 STL Generator"` → **`"Custom Braille STL Generator"`**. The font size moved onto the h1 so the line box matches the text (box height identical before and after: 29 px at 1440, 20 px at 320) and the two per-breakpoint rules that set both spans collapsed into the h1 rule. `id="main-heading"` untouched. **D5 as written called for a single text node; that was not followed, with Brennen's agreement** — the title renders on one line at every tested width and font size, so there was no "two-line look" to move into CSS, and a single text node would have flattened the two-tone (CSS cannot colour half a text node). Both renderings were shown to him and he chose to keep the spans. All three themes re-checked; SOP reflow 0 failures of 6. (3) **Card Thickness announces one group, not two** (`63d5778`, F-N) — see CARD_THICKNESS_PRESET_SPECIFICATIONS v1.10; named grouping nodes on the page **16 → 15**. (4) **Four per-line language selects lost a description that only repeated their label** (`23575ab`, F-K) — see BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS v1.5; 4 → 0, measured in manual placement mode, where those rows are the only place they exist. Validated: ruff clean, **140 pytest / 2 vitest / 122 e2e** (chromium+firefox), every count identical before and after; W3C Nu 0 errors, 0 warnings. **All four are measured on the accessibility tree, not yet confirmed by ear** — the re-listen is the last step of the audit's item G. |
 | 1.20 | 2026-08-22 | **Eight attribute edits that remove roughly a fifth of everything a screen reader says — no wording and no visual change.** The first of the follow-on items from the POST15_7 audit (FD-21, decisions D1-icons and D2 step 1); both were Brennen's approved options. Section 4.5: the six `.expert-submenu-icon` chevrons gained `aria-hidden="true"`, so the decorative `▼` stops being folded into the toggle's accessible name — NVDA had been saying "Shape Selection▼ button collapsed", 17 times for that one button in a measured 34-minute session, while `#expert-toggle-icon` one line away was already marked correctly (audit F-B). Measured on the live AX tree: **5 of 5 exposed accordion names leaked a triangle before, 0 after** (the sixth, Tactile Indicator Dimensions, is hidden unless Row Indicator Style is *Tactile seam arrow*, so it has no AX node in the default state; all six spans carry the attribute). The glyph swap uses `icon.textContent = …`, which replaces only the text node — `aria-hidden` was verified to survive open and close, ▼ → ▲ → ▼, so no JS change was needed. Section 4.7: `aria-describedby="braille-unicode-help"` **removed from `#translate-to-braille-btn` and `#translate-to-text-btn`**. That 72-word paragraph was wired to three controls at once and accounted for 59 exposures, 4,913 words and **30.9% of all speech** (audit F-C); it is unchanged, still visible directly under the field, and still described by `#braille-unicode`, which is the control it is actually about. Measured on the live AX tree: hosts **3 → 1**, nodes carrying a description **20 → 18**, and total description words reachable in one full read of the default page **574 → 430** — a drop of exactly 144, the predicted 72 × 2. **No text was reworded** — shortening the three long paragraphs is D2 step 2 and returns to Brennen as a draft first. Validated: ruff clean, **140 pytest / 2 vitest / 122 e2e** (chromium+firefox), every count unchanged before and after. The speech reduction is measured by accessibility-tree probe, **not yet confirmed by ear**. |
 | 1.22 | 2026-08-22 | **The page gets a heading map: 1 visible heading → 6 on load, 11 with Expert Mode open, 12 with the beta on — and not one pixel moved.** New Section 4.11 records the outline, the level choice and both load-bearing consequences; §4.5's submenu paragraph updated to match. Audit finding F-A, decision D1. **Part 1:** the six `.expert-submenu-toggle` buttons are each now the sole child of an `<h3>`, per the WAI-ARIA APG Accordion pattern and GOV.UK. That broke `initExpertSubmenus()`, which found its panel with `toggle.nextElementSibling` — now `null` — so the handler resolves `aria-controls`, which all six already carried. **Part 2:** Enter Text, Double-Sided Card, Row Indicator Style, Card Thickness and Select Plate each gained an `<h2>` **inside** the existing `<legend>`, keeping the fieldset grouping intact; `updateDoubleSidedUI()` now writes to `#front-entry-heading`, because assigning `legend.textContent` would have deleted the heading. **Levels: h2 for the five sections (one step below the h1), h3 for the six accordions (one deeper again, and only reachable inside Expert Mode); no level is skipped in any state.** Recorded, not hidden: the Expert Mode button itself carries no heading, so a strict outline nests the h3s under *Select Plate to Generate*. Validated: **W3C Nu 0 errors / 0 warnings on the source file AND the rendered DOM** (this is what proves heading-in-legend is legal), Lighthouse accessibility **100/100 desktop and mobile, 0 failing audits**, reflow **0 failures of 6**, 8 accordion toggles with **0 `aria-expanded`/`aria-controls` defects** and the toggle still flipping, tab ring **unchanged at 32**, description budget **unchanged at 430 words / 18 nodes**, every `role=group` name unchanged, header screenshots **byte-identical**. Suite unchanged: ruff clean, **140 pytest / 2 vitest / 122 e2e**. **The outline is proven by probe; that it helps is not proven until it is heard under NVDA.** |
+| 1.24 | 2026-08-22 | **The three longest spoken descriptions drop from 239 words to 35, and not one word of them was rewritten.** New **Section 4.13** records the sentence-span pattern; §4.7 gains a pointer to it. Audit F-C / F-D, decision D2 step 2, each keeper approved by Brennen as a draft before the edit (FD-25). Applied to a **pure sentence split**: the `id` moved onto a `<span>` around ONE sentence that was already in the paragraph, and every other sentence stayed in the same div, in the same order, visible. **Not one word was rewritten, nothing was deleted from the page, and no pixel moved** (the span is inline, so the note still renders as one flowing paragraph) — which is what let this be applied to a signed-off string. Measured on the live accessibility tree: `#braille-unicode-help` **72 → 5 w**, `#double-sided-note` **96 → 17 w** (the beta warning lifted whole, so the 2026-08-16 sign-off is intact word for word), `#language-help` **71 → 13 w**; total description words in one full read of the default page **430 → 226**. §4.13 also records a trap the Step 6.8 probe cannot show on its own: `#braille-unicode` has **two** describedby targets, so its budget is 25 minus a live status worth 8–12 words — that ruled out the 20-word "used exactly as written" sentence, which would have measured 28 w. Also here: the **Disabled** capitals radio lost its `sr-only` description, which duplicated both the live `#caps-warning` and the visible `.grade-note` beneath it (audit F-J, decision D6). Deliberately NOT done: relocating anything to the help guide (Step 6.8.2 makes that a separate change), and the three descriptions still over the ceiling — Tactile seam arrow 43 w, 3D preview 38 w, Visual markers 26 w — which Brennen chose to leave and log (FD-25d). Suite unmoved before and after: ruff clean, **140 pytest / 2 vitest / 134 e2e** (chromium+firefox). Measured by probe; **not yet heard under NVDA**. |
 | 1.23 | 2026-08-22 | **The Generate button could die in silence; it no longer can.** Added Section 4.12. `#action-btn` generates through `form.requestSubmit()`, which runs native constraint validation first, so any `:invalid` control aborted generation — and when that control was not reachable the browser could not focus it, logged `not focusable` to the console and produced **no message at all**. Not an edge case: **all 33 numeric dials carry `min`/`max` and none is rendered on a fresh load**, so that was the only state a default load could be in. A capture-phase `invalid` listener now reveals the control through its own accordion toggle (keeping `aria-expanded` truthful), focuses it, and states the problem through `#error-message`, which §4.10's mirror already relays to `#a11y-status` — no new live region, and one message however many controls failed. The **visible-dial path is deliberately unchanged**. Saved values are now validated on restore: an unusable one is refused, the field falls back to its shipped default, and the discard is announced — refused and reported, never clamped (accessibility rule 11) and never silent. Wording approved by Brennen; a `step` mismatch gets its own sentence because 2.55 is *inside* `dot_spacing`'s 1–5 range and still refused. Regression cover: `tests/e2e/constraintValidation.spec.ts`, e2e 122 → 134. One defect found and left open by decision — `cylinder_diameter_mm` ships at 30.75 with `min="10" step="0.1"`, so the shipped default is itself invalid whenever the saved preset is `custom`; pre-existing, and a public-parameter call. |
 
 ---

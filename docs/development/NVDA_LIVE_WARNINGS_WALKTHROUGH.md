@@ -191,6 +191,18 @@ behaviour returning, and it is the single most likely regression on this page.
 **Expected:** the note disappears; NVDA says **nothing new** about capitals (it
 will of course announce the radio button you just changed).
 
+**Changed 2026-08-22 (item F, finding F-J) - one utterance fewer here.** The
+**Disabled** radio no longer carries an `aria-describedby` description of its own.
+Before this change, selecting it produced two utterances 20 ms apart that said the
+same thing: the note quoted above, then "Convert text to lowercase before
+translation to save space on braille cells: one cell per capital letter, two per
+fully capitalized word". You should now hear the note, plus the radio's own name
+and state, and nothing else. **The note's wording and its once-per-episode gate are
+unchanged** - only the duplicate was removed, and the same sentence is still on
+screen as visible text beneath the radios.
+
+**Fail if:** you hear the "Convert text to lowercase..." sentence at all.
+
 ---
 
 ## Part 4 — One warning does not swallow another
@@ -304,6 +316,7 @@ Anything NVDA said that I did not expect at all:
 
 | Version | Date | Changes |
 |---|---|---|
+| 1.5 | 2026-08-22 | **Part 3 gains the F-J change** (item F, D6): the **Disabled** capitals radio no longer carries its own `aria-describedby` description, so selecting it now speaks one utterance fewer. Its sr-only text duplicated both the note this walkthrough already quotes AND the visible `.grade-note` beneath the radios, which is unchanged and still on screen. **No quoted sentence in this document changed** - the caps note's wording and its once-per-episode gate are untouched - so every existing step, count and fail condition still stands; Step 9 simply gained a new fail condition for the duplicate returning. Nothing else in the app was changed by that item that this walkthrough covers. |
 | 1.0 | 2026-08-21 | Created with the accessibility hygiene bundle, when `#auto-overflow-warning`, `#cylinder-overflow-warning` and `#caps-warning` were wired to `#a11y-status`. Expected wording is the boxes' own on-screen text — no new strings were authored. Counts come from measured runs: 1 announcement per episode for all three, against 11 per 11 keystrokes for the capitalization note before its gate was added. |
 | 1.4 | 2026-08-22 | **The FD-20(c) wording landed** (same closeout, approved by Brennen): the seam-fit warning now counts text cells only — Part 5's expected opening updated to "This layout does not fit around the cylinder: …". No counts, gates, or steps changed. |
 | 1.3 | 2026-08-22 | **Both fixes from the first run landed the same day** (approved by Brennen, FD-20 in `00_PROJECT_MEMORY.md`). (1) The load-time preset restore no longer shows or announces its confirmation — Part 0 rewritten from an open question into a regression check, keeping the deliberate-click control as the fix's positive proof. (2) `checkPhysicalFit()` gained the 250 ms debounce and hidden→shown gate its three siblings had — new **Part 5** (steps 12–13) listens for it, because the dial race (POST15_4) means no automated test can. Both fixes verified by probe on Chromium and Firefox: typing 9-9-9-9 into the dial now announces once (was three); the load-time `#a11y-status` write is gone. Run estimate 12 → 14 minutes; results template gained rows 12–13. |
