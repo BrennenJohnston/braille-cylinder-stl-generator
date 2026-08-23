@@ -308,6 +308,7 @@ Anything NVDA said that I did not expect at all:
 ## Related documents
 
 - [NVDA Double-Sided Walkthrough](./NVDA_DOUBLE_SIDED_WALKTHROUGH.md) — the beta flow's own pass; setup and conventions are shared
+- [NVDA Page Structure Walkthrough](./NVDA_PAGE_STRUCTURE_WALKTHROUGH.md) — headings, landmarks, the two skip links and a timed keyboard generate flow; the closing pass for the POST15_7 programme
 - [ADA Accessibility Validation SOP](./ADA_ACCESSIBILITY_VALIDATION_SOP.md) — section 6.5 is the requirement this satisfies
 - [UI Interface Core Specifications](../specifications/UI_INTERFACE_CORE_SPECIFICATIONS.md) — §4.10 is the rule these three now follow
 - [Interpoint Double-Sided Specifications](../specifications/INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md) — §7.6 documents `#a11y-status` and `announceStatus()`
