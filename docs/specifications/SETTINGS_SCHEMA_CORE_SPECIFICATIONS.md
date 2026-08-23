@@ -281,6 +281,97 @@ See: `STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md`.
 
 ---
 
+### 3.8 What This Schema Actually Does at Runtime — and the Flat/Nested Name Split
+
+**This file is not loaded by any code path. It is a document.** Established by
+measurement 2026-08-23 (POST15_7 item I), because the whole risk assessment for
+editing it turns on the answer:
+
+- `jsonschema` is **not** in `requirements.txt` or `requirements-dev.txt`.
+- **No application code opens `settings.schema.json`** — `app/`, `backend.py` and
+  `wsgi.py` were all grepped.
+- The **only** reader anywhere in the repo is
+  `tests/test_smoke.py::test_schema_and_models_agree_on_indicator_fields`, and it
+  asserts on **defaults and the `indicator_mode` enum only — never on `minimum` or
+  `maximum`**.
+
+Runtime enforcement lives entirely in `app/validation.py` (`allowed_settings`, plus
+`validate_double_sided_settings()`). **Consequence for anyone editing this schema:
+adding or correcting a `minimum`/`maximum` here changes nothing at runtime and cannot
+by itself fix or break a request.** It also means the reverse — a wrong number here is
+invisible to every automated check in the repo, which is how an inclusive
+`minimum: 0` on three tactile spacing parameters survived (see §3.3).
+
+#### The two spellings are deliberate
+
+A field has a **nested schema name** with a unit suffix here (`card.plate_thickness_mm`)
+and a **flat runtime name** on the wire and in `app/validation.py` / `app/models.py`
+(`card_thickness`). Confirmed deliberate by Brennen 2026-08-23 (FD-26b). Nothing is
+renamed; both spellings stay.
+
+**Confirmed pairs** — stated in a spec or an item prompt, not derived:
+
+| Flat runtime name | Nested schema name |
+|---|---|
+| `card_width` | `card.plate_width_mm` |
+| `card_height` | `card.plate_height_mm` |
+| `card_thickness` | `card.plate_thickness_mm` |
+| `emboss_dot_base_diameter` | `dots.cone.diameter_mm` |
+| `emboss_dot_height` | `dots.cone.height_mm` |
+| `emboss_dot_flat_hat` | `dots.cone.flat_hat_diameter_mm` |
+
+**UNCONFIRMED candidates — do not rely on these.** Recovered only by matching default
+values, which is **ambiguous**: `hemi_counter_dot_base_diameter` and
+`cone_counter_dot_base_diameter` both default to 1.6, so defaults alone cannot tell
+them apart. Listed so the next reader starts here rather than re-deriving, and flagged
+because parameter names are public API needing Brennen's sign-off (project-facts core
+rule 6):
+
+| Flat runtime name (candidate) | Nested schema name |
+|---|---|
+| `rounded_dot_base_diameter` | `dots.rounded.base_diameter_mm` |
+| `rounded_dot_base_height` | `dots.rounded.base_height_mm` |
+| `rounded_dot_dome_diameter` | `dots.rounded.dome_diameter_mm` |
+| `rounded_dot_dome_height` | `dots.rounded.dome_height_mm` |
+| `bowl_counter_dot_base_diameter` | `dots.bowl.base_diameter_mm` |
+| `counter_dot_depth` | `dots.bowl.depth_mm` |
+| `cone_counter_dot_base_diameter` | `dots.recess_cone.base_diameter_mm` |
+| `cone_counter_dot_height` | `dots.recess_cone.height_mm` |
+| `cone_counter_dot_flat_hat` | `dots.recess_cone.flat_hat_diameter_mm` |
+
+**Eleven enforced fields have no schema entry at all**, under any spelling:
+`rounded_dot_diameter`, `rounded_dot_height`, `rounded_dot_cylinder_height`,
+`use_rounded_dots`, `use_bowl_recess`, `indicator_shapes`, `hemisphere_subdivisions`,
+`cone_segments`, `counter_plate_dot_size_offset`, `counter_dot_base_diameter`,
+`hemi_counter_dot_base_diameter`. Two of those are represented differently rather than
+missing — `use_rounded_dots` by the `dots.combined_shape` enum and `use_bowl_recess` by
+`dots.recess_shape`. Adding the rest would be **new public API surface**, not
+documentation of what exists, so item I left them alone.
+
+#### Coverage, measured 2026-08-23
+
+`app/validation.py` enforces **39** numeric ranges. Against this schema:
+
+| | Before item I | After item I |
+|---|---|---|
+| Fully agree (`minimum` **and** `maximum`) | 5 | **18** |
+| Present but no `maximum` | 23 | **10** |
+| No schema field at all | 11 | 11 |
+
+The 13 corrected are the ones whose schema home is confirmed or same-name. **The
+remaining gap is real and this spec does not claim otherwise** — see §2.5 of the
+POST15_7 audit.
+
+#### One disagreement deliberately left alone
+
+`dots.recess_shape` declares `"enum": [1, 2, "1", "2"]` (bowl, cone) while
+`app/validation.py` enforces `recess_shape` as `0..2`, where **0 = hemisphere**. The two
+disagree about which shapes exist — a different kind of defect from a missing maximum,
+and adding `minimum`/`maximum` beside a contradicting `enum` would make this file
+self-contradictory. Reported, not fixed (FD-26).
+
+---
+
 ## 4. Normalization Rules (Determinism & Caching)
 
 Applied before cache-key generation and geometry building:
@@ -502,3 +593,4 @@ Before completing any task involving settings:
 - 2026-08-16 — Recorded the double-sided (interpoint) beta FIELDS added to `settings.schema.json`: the grouped `double_sided` object (`enabled` default false; `interpoint_offset_x_mm` / `interpoint_offset_y_mm` default 1.25, range 1.15–1.35; six `ds_*` footprint fields — dot base Ø1.2 / base height 0.4 / dome Ø0.8 / dome height 0.4, bowl Ø1.3 × 0.5 deep) plus `text.back_lines` (same braille-only pattern as `text.lines`). CardSettings stores them FLAT with the `_mm` dropped (the toggle as int 0/1 `double_sided_enabled`), the repo's existing grouped-to-flat convention. Full parameter catalog, naming bridge, and behavior: INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md.
 - 2026-08-21 — Section 5's same-surface-gap gate now measures the recess's PRINTED mouth (`interpoint.printed_bowl_mouth_mm`) rather than its nominal diameter, because the worker cuts the bowl as a hemisphere; the two soft warnings deliberately stay on the nominal figure. Reference values gain their printed column, and the single-sided 1.5 + 1.8 case is restated as −0.042 mm printed against the 0.118 mm nominal it used to quote. No schema field, default, or range changed — `ds_bowl_depth_mm` is still 0.0–5.0, though its 5.0 maximum can no longer be combined with a small mouth and pass the gate. Rationale and the measured per-package offset bands: INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md v1.6 §3, §5.
 - 2026-08-20 — Documented the six `double_sided.ds_*` defaults as the 0.3 mm-stock package (Option B, the absent-field fallback); the UI now sends the package for the selected card-stock preset (0.4 → the Q2 print-matrix winner: base_height 0.5, dome 1.0 × 0.5, bowl 1.4), source of truth `interpoint.DS_FOOTPRINTS_BY_PRESET`, smoke-guarded against public/index.html's copy. Section 5 reference values gain the Q2 gap (0.468 mm — a soft warning that now shows at the shipped defaults with the beta on, accepted by design). Schema descriptions updated in the same commit.
+- 2026-08-23 — **The schema starts stating the ranges it already claims to own, and says plainly that it is inert at runtime.** New §3.8 records three things measured this day (POST15_7 item I; audit §2.5 Contradiction 2, **partially** closed): (1) **nothing loads this file** — `jsonschema` is not a dependency, no application code opens it, and the only reader in the repo is one smoke test that checks defaults and the `indicator_mode` enum, never `minimum`/`maximum`; (2) the flat/nested name split is **deliberate** (FD-26b), with the 6 confirmed pairs tabulated and 9 further candidates listed as **unconfirmed**, recoverable only by matching defaults — a method that is ambiguous, since `hemi_counter_dot_base_diameter` and `cone_counter_dot_base_diameter` share the default 1.6; (3) coverage against `app/validation.py`'s 39 enforced ranges went **5 → 18 fully agreeing**, missing-`maximum` **23 → 10**, with 11 fields still having no schema entry at all. Thirteen fields gained `maximum` and, where it disagreed, a corrected `minimum`, **copied verbatim from `app/validation.py` — nothing invented, nothing widened, no enforced limit retuned**; every minimum change is a tightening toward what was already enforced. **The finding worth remembering:** `dot_spacing_mm`, `cell_spacing_mm` and `line_spacing_mm` carried an inclusive `minimum: 0`, so the declared single source of truth stated zero dot spacing was legal on three tactile parameters. Brennen picked `app/validation.py` as the correct side (FD-26c) — an assistant may not (accessibility rule 11). `dots.recess_shape`'s enum-vs-range conflict is reported and deliberately not fixed. Documentation only; suite unmoved before and after: ruff clean, 140 pytest, 2 vitest, 134 e2e.

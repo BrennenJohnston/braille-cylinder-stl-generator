@@ -39,13 +39,13 @@
       "description": "Braille spacing and layout parameters",
       "additionalProperties": false,
       "properties": {
-        "grid_columns": { "type": "integer", "minimum": 1, "default": 15, "description": "TOTAL grid columns per row, including reserved marker columns. The UI dial counts text cells only and adds the markers before sending: visual mode with indicator letters reserves 2 columns (default 13 text + 2 = 15), letters off reserves 1 (13 text + 1 = 14), tactile reserves 0 (default 14 text). The seam gap left over, pi x cylinder_diameter_mm - (total - 1) x cell_spacing_mm, must still clear one cell's dot footprint (dot_spacing + dot base diameter) in visual mode, or the tactile indicator plus its 5 mm clear zone in tactile mode." },
-        "grid_rows": { "type": "integer", "minimum": 1, "default": 4, "description": "Number of braille rows on the plate" },
-        "dot_spacing_mm": { "type": "number", "minimum": 0, "default": 2.5 },
-        "cell_spacing_mm": { "type": "number", "minimum": 0, "default": 6.5 },
-        "line_spacing_mm": { "type": "number", "minimum": 0, "default": 10.0 },
-        "braille_x_adjust_mm": { "type": "number", "default": 0 },
-        "braille_y_adjust_mm": { "type": "number", "default": 0 }
+        "grid_columns": { "type": "integer", "minimum": 1, "maximum": 20, "default": 15, "description": "TOTAL grid columns per row, including reserved marker columns. The UI dial counts text cells only and adds the markers before sending: visual mode with indicator letters reserves 2 columns (default 13 text + 2 = 15), letters off reserves 1 (13 text + 1 = 14), tactile reserves 0 (default 14 text). The seam gap left over, pi x cylinder_diameter_mm - (total - 1) x cell_spacing_mm, must still clear one cell's dot footprint (dot_spacing + dot base diameter) in visual mode, or the tactile indicator plus its 5 mm clear zone in tactile mode." },
+        "grid_rows": { "type": "integer", "minimum": 1, "maximum": 200, "default": 4, "description": "Number of braille rows on the plate" },
+        "dot_spacing_mm": { "type": "number", "minimum": 1, "maximum": 5, "default": 2.5, "description": "Centre-to-centre distance between dots within one cell. TACTILE: the minimum was 0 here until 2026-08-23, which documented merged dots as legal; app/validation.py has always enforced 1-5." },
+        "cell_spacing_mm": { "type": "number", "minimum": 2, "maximum": 15, "default": 6.5 },
+        "line_spacing_mm": { "type": "number", "minimum": 5, "maximum": 25, "default": 10.0 },
+        "braille_x_adjust_mm": { "type": "number", "minimum": -10, "maximum": 10, "default": 0 },
+        "braille_y_adjust_mm": { "type": "number", "minimum": -10, "maximum": 10, "default": 0 }
       }
     },
 
@@ -54,9 +54,9 @@
       "description": "Card (flat plate) surface dimensions",
       "additionalProperties": false,
       "properties": {
-        "plate_width_mm": { "type": "number", "exclusiveMinimum": 0, "default": 90 },
-        "plate_height_mm": { "type": "number", "exclusiveMinimum": 0, "default": 52 },
-        "plate_thickness_mm": { "type": "number", "exclusiveMinimum": 0, "default": 2.0 }
+        "plate_width_mm": { "type": "number", "minimum": 50, "maximum": 200, "default": 90, "description": "Runtime name: card_width" },
+        "plate_height_mm": { "type": "number", "minimum": 30, "maximum": 150, "default": 52, "description": "Runtime name: card_height" },
+        "plate_thickness_mm": { "type": "number", "minimum": 1, "maximum": 10, "default": 2.0, "description": "Runtime name: card_thickness" }
       }
     },
 
@@ -108,9 +108,9 @@
           "description": "Emboss plate cone (frustum) parameters",
           "additionalProperties": false,
           "properties": {
-            "diameter_mm": { "type": "number", "exclusiveMinimum": 0, "default": 1.8 },
-            "height_mm": { "type": "number", "minimum": 0, "default": 1.0 },
-            "flat_hat_diameter_mm": { "type": "number", "minimum": 0, "default": 0.4 }
+            "diameter_mm": { "type": "number", "minimum": 0.5, "maximum": 3, "default": 1.8 },
+            "height_mm": { "type": "number", "minimum": 0.3, "maximum": 2, "default": 1.0 },
+            "flat_hat_diameter_mm": { "type": "number", "minimum": 0.1, "maximum": 2, "default": 0.4 }
           }
         },
 
