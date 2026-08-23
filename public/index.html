@@ -801,27 +801,31 @@
             gap: 0.5rem;
         }
 
+        /* Not a flex container. Flex blockifies its children, and NVDA's
+           browse-mode buffer breaks a line at every block boundary - so the
+           product's own name was read "Custom BrailleSTL Generator", with no
+           space, on first contact (audit F-H / D5). Inline spans are joined by
+           the ordinary word space in the source instead. The font size lives
+           here so the line box matches the text and the two spans cannot drift
+           apart; they only carry the weight and colour that make the two-tone. */
         .title-section h1 {
             margin: 0;
-            display: flex;
-            flex-direction: row;
-            align-items: baseline;
-            gap: 0.4em;
+            display: block;
+            font-size: 19.6pt;
             line-height: 1.1;
             white-space: nowrap;
         }
 
         .title-line-1 {
-            font-size: 19.6pt;
+            display: inline;
             font-weight: 700;
             color: var(--text-primary); /* Default theme color */
         }
 
         .title-line-2 {
-            font-size: 19.6pt;
+            display: inline;
             font-weight: 600;
             color: var(--text-secondary); /* Default theme color */
-            margin: 0;
         }
 
         /* High contrast mode - bright violet title */
@@ -2362,16 +2366,9 @@
 
             .title-section h1 {
                 text-align: center;
+                font-size: 16pt;
                 white-space: normal; /* Allow multi-line title on small screens */
                 word-break: break-word;
-            }
-
-            .title-line-1 {
-                font-size: 16pt;
-            }
-
-            .title-line-2 {
-                font-size: 16pt;
             }
 
             .accessibility-controls-top {
@@ -2430,11 +2427,7 @@
         }
 
         @media (max-width: 480px) {
-            .title-line-1 {
-                font-size: 13.6pt;
-            }
-
-            .title-line-2 {
+            .title-section h1 {
                 font-size: 13.6pt;
             }
         }
