@@ -2525,6 +2525,16 @@
             font-size: 1.05em !important;
         }
 
+        /* A section legend that also carries a real heading. The heading is
+           semantics only - it inherits the legend's own type so nothing moves. */
+        .legend-heading {
+            margin: 0;
+            font-size: inherit;
+            font-weight: inherit;
+            line-height: inherit;
+            color: inherit;
+        }
+
         .expert-toggle-btn #expert-toggle-text {
             font-size: 1.05em !important;
             font-weight: 600 !important;
@@ -3222,10 +3232,11 @@
                     <!-- Text Input Section moved into form (separate scrollable pane) -->
                     <div class="line-input-group">
                         <fieldset class="line-input-fieldset">
-                            <!-- The id is load-bearing: updateDoubleSidedUI() relabels this
-                                 legend "Front of Card — …" while the double-sided beta is on
-                                 and restores this exact text when it is off. -->
-                            <legend class="grade-label" id="front-entry-legend">Enter Text for Braille Translation</legend>
+                            <!-- Both ids are load-bearing. updateDoubleSidedUI() relabels
+                                 the HEADING "Front of Card — …" while the double-sided beta
+                                 is on and restores this exact text when it is off; the
+                                 legend id is what the doubleSided e2e spec reads. -->
+                            <legend class="grade-label" id="front-entry-legend"><h2 class="legend-heading" id="front-entry-heading">Enter Text for Braille Translation</h2></legend>
                             <div class="grade-note" style="margin-bottom: 0.8em; font-size: 0.85em;">
                                 <strong>Note:</strong> Contracted braille combines letters into single cells, so the character limit is only confirmed <em>after translation</em> — the program will warn you automatically if it's too long.
                             </div>
@@ -3302,7 +3313,7 @@
                     <div class="grade-selection" id="double-sided-selection">
                         <fieldset>
                             <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
-                            <legend class="grade-label">Double-Sided Card (BETA — for testing)</legend>
+                            <legend class="grade-label"><h2 class="legend-heading">Double-Sided Card (BETA — for testing)</h2></legend>
                             <label class="radio-option ds-toggle-option" for="double_sided_enabled">
                                 <input type="checkbox" id="double_sided_enabled"
                                        aria-expanded="false" aria-controls="double-sided-section"
@@ -3380,7 +3391,7 @@
                     <!-- Row Indicator Style (cylinder only) -->
                     <div class="grade-selection" id="indicator-mode-selection">
                         <fieldset>
-                            <legend class="grade-label">Row Indicator Style</legend>
+                            <legend class="grade-label"><h2 class="legend-heading">Row Indicator Style</h2></legend>
                             <div class="radio-group" role="radiogroup" aria-required="true">
                                 <label class="radio-option">
                                     <input type="radio" name="indicator_mode" value="visual" checked aria-describedby="indicator-mode-visual-desc">
@@ -3433,7 +3444,7 @@
                                  thicker stock motivates directly. The sr-only descriptions had
                                  said "layer height" since the feature first shipped, which is
                                  what made the visible label look like the wrong one. -->
-                            <legend class="grade-label">Card Thickness</legend>
+                            <legend class="grade-label"><h2 class="legend-heading">Card Thickness</h2></legend>
                             <!-- No aria-label here on purpose: the <legend> above is this
                                  group's only name. Labelling the radiogroup as well made
                                  NVDA announce two groups for one set of radios, which no
@@ -3464,7 +3475,7 @@
                     <!-- Plate Type Selection moved here -->
                     <div class="grade-selection">
                         <fieldset>
-                            <legend class="grade-label">Select Plate to Generate</legend>
+                            <legend class="grade-label"><h2 class="legend-heading">Select Plate to Generate</h2></legend>
                             <div class="radio-group" role="radiogroup" aria-required="true">
                                 <label class="radio-option">
                                     <input type="radio" name="plate_type" value="positive" checked aria-describedby="emboss-plate-desc">
@@ -6537,10 +6548,12 @@
             if (generateBothBtn) generateBothBtn.style.display = on ? '' : 'none';
             if (!on) clearPairResults();
 
-            const frontLegend = document.getElementById('front-entry-legend');
-            if (frontLegend) {
+            // The heading inside the legend, not the legend itself: writing
+            // textContent on the legend would delete the heading element.
+            const frontLegendHeading = document.getElementById('front-entry-heading');
+            if (frontLegendHeading) {
                 /* On-state relabel wording signed off by Brennen (2026-08-16); reword only with his sign-off. */
-                frontLegend.textContent = on
+                frontLegendHeading.textContent = on
                     ? 'Front of Card — Enter Text for Braille Translation'
                     : 'Enter Text for Braille Translation';
             }
