@@ -1,10 +1,12 @@
 # Screen-Reader UX Research and Flow Audit
 
-**Status:** research and audit only — **nothing in this document has been
-implemented.** All eight decision points were put to Brennen on 2026-08-22 and **all
-eight are answered** (§2.4); he chose the recommended option in every case. §2.6 is
-therefore now an approved plan rather than a proposal, and the fixes are follow-on
-work items. Every wording change still returns to him as a draft before it ships
+**Status:** research and audit — **the fixes are now under way.** All eight decision
+points were put to Brennen on 2026-08-22 and **all eight are answered** (§2.4); he
+chose the recommended option in every case, so §2.6 is an approved plan rather than a
+proposal. As of 2026-08-22, follow-up items **A, B and C have landed** (each recorded
+in place in §2.2 and in the Document History below) and **item D has adopted the §1.5
+verbosity rule and the §1.6 flow criteria into the ADA SOP**; items E, F and G are
+still open. Every wording change still returns to Brennen as a draft before it ships
 (accessibility rule 12).
 
 **Why this exists.** The first real NVDA run of the app (2026-08-22, recorded in
@@ -149,7 +151,17 @@ Two published comparison points, both application-scale rather than component-sc
 
 Neither ships 96-word descriptions on a checkbox.
 
-## 1.5 The verbosity rule (proposed)
+## 1.5 The verbosity rule (ADOPTED 2026-08-22)
+
+**Status: adopted, and it now lives somewhere it will actually be run.** Brennen
+approved the rule as written (FD-21, D7) and item D copied it into
+[ADA Accessibility Validation SOP](./ADA_ACCESSIBILITY_VALIDATION_SOP.md) **Step
+6.8**, where it is a required check after any change to `aria-describedby`,
+`aria-label` or `sr-only` text — including on the quick-validation path. The numbers
+did not change: **15-word target, 25-word hard ceiling.** The §1.6 criteria below went
+into the same SOP as **Section 12**, a periodic review rather than a per-commit gate.
+**If the SOP and this section ever disagree, the SOP is the one that governs** — this
+document is the record of how the rule was derived, not the copy anyone runs.
 
 Derived from GOV.UK's hard limit, the APG's supplement-don't-duplicate principle, and
 what the log shows NVDA actually does with this page. **The 86-word BANA paragraph
@@ -192,7 +204,9 @@ versus forced into speech on every pass.
 
 ## 1.6 Flow criteria — the checklist this app should meet
 
-Ten criteria, each one checkable. Part 2 walks the app against them.
+Ten criteria, each one checkable. Part 2 walks the app against them. **Adopted
+2026-08-22 as Section 12 of the ADA SOP** — a periodic review aid, explicitly not a
+gate on every commit.
 
 | # | Criterion | Source |
 |---|---|---|
@@ -462,7 +476,7 @@ Old -> new: ruff clean -> clean; 140 -> 140 pytest; 2 -> 2 vitest; 122 -> 122 e2
 
 - [NVDA Live Warnings Walkthrough](./NVDA_LIVE_WARNINGS_WALKTHROUGH.md) — the run that produced the evidence for this audit
 - [NVDA Double-Sided Walkthrough](./NVDA_DOUBLE_SIDED_WALKTHROUGH.md) — the beta flow's own listening pass
-- [ADA Accessibility Validation SOP](./ADA_ACCESSIBILITY_VALIDATION_SOP.md) — where the §1.5 verbosity rule would live if adopted (D7)
+- [ADA Accessibility Validation SOP](./ADA_ACCESSIBILITY_VALIDATION_SOP.md) — where the §1.5 verbosity rule now lives (Step 6.8) and the §1.6 flow criteria now live (Section 12), adopted 2026-08-22 under D7
 - [UI Interface Core Specifications](../specifications/UI_INTERFACE_CORE_SPECIFICATIONS.md) — §4.10 governs the live-region behaviour confirmed correct in §2.3
 
 ## Sources
@@ -480,6 +494,7 @@ Old -> new: ruff clean -> clean; 140 -> 140 pytest; 2 -> 2 vitest; 122 -> 122 e2
 
 | Version | Date | Changes |
 |---|---|---|
+| 1.6 | 2026-08-22 | **The rule leaves this document and becomes a procedure (item D, D7).** §1.5 and §1.6 were adopted into `ADA_ACCESSIBILITY_VALIDATION_SOP.md` v1.2 — the six-clause verbosity rule as **Step 6.8**, a required check after any change to `aria-describedby`, `aria-label` or `sr-only` text including on the quick path, and the C1–C10 flow criteria as **Section 12**, explicitly a periodic review aid rather than a per-commit gate. **The numbers are unchanged: 15-word target, 25-word hard ceiling.** Documentation only; no application code, no wording, no measurement in this document changed. §1.5's heading and §1.6's lead now say adopted rather than proposed and name the SOP sections; the Related Documents line that read "where the rule would live if adopted" now says where it lives. **§1.5 also states that the SOP governs if the two ever disagree** — this document is the derivation, not the copy anyone runs. The SOP's Step 6.8 is runnable and was run to write it: `axprobe.cjs` against a live `python backend.py`, giving the worked FAIL (96 / 80 / 71 words) and the worked PASS (13 words) it now documents, `TOTAL` **430**, unchanged from item A's figure. A minimal rebuild listing is in SOP §6.8.4 because `build/` is gitignored, and it was verified the same day to reproduce this document's instrument 2 exactly. **One stale line corrected while here:** the Status header still read "nothing in this document has been implemented", which items A, B and C had already falsified; it now names what has landed and what is still open. Suite unmoved: ruff clean, 140 pytest, 2 vitest, 122 e2e |
 | 1.5 | 2026-08-22 | **F-A closed — the finding this audit called the highest-value change in it.** F-A struck through and fixed in place (with criterion **C2** closed alongside it, since the six accordion headers are what C2 measures); §2.1's headline heading count, §2.4's D1 answer and §2.6's step 4 all annotated with what landed. Two commits, item C: six `<h3>` wrappers round the accordion buttons (APG/GOV.UK), then `<h2>`s inside the five major section legends. **Visible headings 1 → 6 on load, 11 with Expert Mode open, 12 with the double-sided beta on as well; no skipped level in any state.** Levels chosen h2/h3 and the reasoning recorded in UI_INTERFACE_CORE v1.22 §4.11, along with the one thing left open — the Expert Mode disclosure button still carries no heading, so a strict outline nests the h3s under *Select Plate to Generate*. Validated: W3C Nu **0 errors / 0 warnings on source AND rendered DOM**, Lighthouse **100/100 desktop and mobile**, reflow **0 of 6**, tab ring **unchanged at 32**, description budget **unchanged at 430 words / 18 nodes**, every `role=group` name unchanged, header screenshots **byte-identical**, suite **140 pytest / 2 vitest / 122 e2e** unchanged. **Still unheard: nobody has run NVDA against this.** |
 | 1.4 | 2026-08-22 | **Four more findings closed — the small self-contained batch (item B), four separate commits, no user-visible sentence and no pixel changed.** F-K, F-N, F-G and F-H struck through and marked fixed in place; F-F's count re-measured because F-G moved it; §2.6 step 3 and the D4/D5 answers annotated. **F-K** (`23575ab`): `aria-describedby` dropped from the four `line_lang_N` selects and the orphan `line{N}-lang-help` spans deleted — descriptions on those selects **4 → 0**, spans in the DOM **4 → 0**, `#line{N}-help` untouched. **F-N** (`63d5778`): the redundant `aria-label` off the Card Thickness radiogroup — named grouping nodes **16 → 15**, and the group now matches its two siblings. **F-G / D4** (`847ea09`): `tabindex="0"` off `#viewer` — **tab ring 33 → 32**, a ring diff showing exactly one removal. **F-H / D5** (`8b8f532`): the h1 stops being a flex container and its spans go inline — `innerText` **`"Custom Braille\nSTL Generator"` → `"Custom Braille STL Generator"`**. **Two premises in this document were checked against the live page before editing, and one was wrong.** F-N's was right, and is now recorded with the measurement that proves it. F-H's was wrong about the *look*: the title does not wrap onto two lines at any tested width or font size, so D5's "get the two-line look from CSS" had nothing to move, and its single text node would have flattened the two-tone that CSS cannot reproduce on half a text node. Brennen was shown both renderings and chose the span-preserving route. A third premise needed a correction of scope rather than fact: F-K's four rows are `display:none` in the default auto placement mode, so they only reach a screen reader in Manual — which is where the original NVDA log caught them, and why the default-state description budget stays at **430 words**. Evidence: `axprobe.cjs`, `axprobe2.cjs` and a new `axprobe4.cjs` (grouping nodes, per-line descriptions, ring membership), plus before/after title screenshots at 1440 px and 320 px × 100% and 200%. Suite unchanged before and after: ruff clean, 140 pytest, 2 vitest, 122 e2e. W3C Nu: 0 errors, 0 warnings. **Still measured by probe, not by ear** — the re-listen remains item G's closing step. |
 | 1.3 | 2026-08-22 | **First fixes land — the two free wins (item A).** F-B's glyph leak and F-C are struck through and marked fixed in place, in the POST15_4 pattern; neither is deleted, and the parts of each that remain open are named where they stand. Six `.expert-submenu-icon` spans gained `aria-hidden="true"` and both Translate buttons lost `aria-describedby`. Re-measured with the same instrument that produced the original numbers, plus a third probe (`axprobe3.cjs`) written for this item because `axprobe.cjs` prints names only for nodes that carry a description and the accordion toggles carry none: **accordion names leaking a triangle 5 → 0**, **`#braille-unicode-help` hosts 3 → 1**, **description words in one full read 574 → 430**, a drop of exactly the predicted 144. §2.1 and §2.6 annotated with the new figures. **Two things deliberately NOT done:** no paragraph was reworded (D2 step 2, item F), and the six toggles are still bare buttons rather than headings (D1, item C) — so F-B is only half closed. Two spec documents updated alongside: `UI_INTERFACE_CORE_SPECIFICATIONS.md` v1.20 (§4.5 and §4.7, the latter having documented the exact wiring that was removed) and `SURFACE_DIMENSIONS_SPECIFICATIONS.md` v1.3, whose HTML sample would otherwise have taught the pre-fix chevron markup to the next submenu. Suite unchanged before and after: ruff clean, 140 pytest, 2 vitest, 122 e2e. **Measured by probe, not yet confirmed by ear** — the re-listen is item G's closing step. |
