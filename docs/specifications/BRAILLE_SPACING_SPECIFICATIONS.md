@@ -649,6 +649,33 @@ Verification: When plates face each other:
 
 ---
 
+## 12. UI-Level Constraints
+
+The seven spacing controls in `public/index.html` declare their allowed range as
+HTML `min`/`max`. The numbers are copied from `app/validation.py`, which enforces
+them server-side; the attributes announce the range, they do not define it.
+
+| Parameter | Min | Max | Validation |
+|-----------|-----|-----|------------|
+| `grid_columns` | 1 | 20 | HTML `min`/`max` |
+| `grid_rows` | 1 | 200 | HTML `min`/`max` |
+| `cell_spacing` | 2 | 15 | HTML `min`/`max` |
+| `line_spacing` | 5 | 25 | HTML `min`/`max` |
+| `dot_spacing` | 1 | 5 | HTML `min`/`max` |
+| `braille_x_adjust` | -10 | 10 | HTML `min`/`max` |
+| `braille_y_adjust` | -10 | 10 | HTML `min`/`max` |
+
+Two things about `grid_columns` are worth stating, because the dial and the wire
+field are not the same number. The dial counts TEXT cells only; the request adds
+`getReservedMarkerColumns()` on top, so a dial reading 20 sends 22 and the server
+rejects it. The `max` here is the documented ceiling for the *parameter*, and is
+therefore slightly generous for what the *dial* can actually get through. Separately,
+`settings.schema.json` states a `minimum` for these fields but no `maximum` for any
+of them — that gap is recorded in the POST15_7 audit §2.5 and tracked as its own
+item, not resolved here.
+
+---
+
 ## Version History
 
 | Date | Version | Changes |
@@ -658,6 +685,7 @@ Verification: When plates face each other:
 | 2024-12-06 | 1.2 | Added triangle rotate_180 inversion fix to correct swapped triangle orientations |
 | 2026-07-31 | 1.3 | Updated the documented `grid_columns` default to 15 (13 text + 2 marker columns) |
 | 2026-08-16 | 1.4 | Noted the double-sided (interpoint) beta exception in Section 6: with the toggle on, the counter plate carries 1:1 paired recesses instead of the universal all-position grid. Spacing values unchanged. |
+| 2026-08-22 | 1.5 | Added Section 12, UI-Level Constraints: the seven spacing dials now declare `min`/`max` in `public/index.html`, copied verbatim from `app/validation.py`. No spacing value, default or enforced limit changed — the ranges were always enforced, they were simply never announced, so `aria-valuemin`/`aria-valuemax` had nothing to map to and Chrome reported the synthesised pair "0 to 0" instead. Closes part of POST15_7 audit finding F-M (decision D8). The section also records the `grid_columns` dial-vs-wire difference and the `settings.schema.json` missing-`maximum` gap, both flagged rather than fixed. |
 
 ---
 
