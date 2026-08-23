@@ -238,7 +238,10 @@ The Card Thickness preset selector (field name `card_thickness_preset`) appears 
 <div class="grade-selection">
     <fieldset>
         <legend class="grade-label">Card Thickness</legend>
-        <div class="radio-group thickness-toggle" role="radiogroup" aria-required="true" aria-label="Select card thickness preset">
+        <!-- No aria-label: the <legend> above is this group's only name.
+             Naming both made NVDA announce two groups for one set of
+             radios (audit F-N, fixed 2026-08-22). -->
+        <div class="radio-group thickness-toggle" role="radiogroup" aria-required="true">
             <label class="radio-option">
                 <input type="radio" name="card_thickness_preset" value="0.4" checked aria-describedby="thickness-04-desc">
                 <span class="radio-text">0.4mm</span>
@@ -803,10 +806,11 @@ The preset system is designed to **never fail visibly**:
 | 2026-08-20 | 1.7 | The preset radio now also selects the double-sided beta's fixed footprint package (no new dials): 0.3 → Option B, 0.4 → the Q2 print-matrix winner, sent on the wire only when the beta is on. New Section 5 subsection "Double-Sided Footprints Follow the Preset"; source of truth `interpoint.DS_FOOTPRINTS_BY_PRESET`, smoke-guarded against the UI copy. Also corrected four stale "optimized for 0.3mm layer" code comments in the 0.3 preset to "card stock" (leftovers of the naming confusion fixed in v1.6). |
 | 2026-08-21 | 1.8 | **Documentation only — no behavior change.** Removed the three remaining `templates/index.html` references (that folder is empty and deprecated): the Source Priority entry (list renumbered 1–3), the stale line-number pair on `applyThicknessPreset()` (now cited by function name, since line numbers in `public/index.html` have moved twice this month), and the Section 10 checklist row asserting the two HTML files matched. The Section 2 line already calling the copy deprecated is unchanged. Part of the templates/ reference sweep (Phase 07b). |
 | 2026-08-22 | 1.9 | **The load-time restore is now silent.** `applyThicknessPreset()` gained a third parameter `showNotice` (default `true`) and `restoreThicknessPreset()` passes `false`: values are still applied on load exactly as before, but the confirmation message is no longer shown or announced then. Found by the first NVDA listening run (POST15_6): the mirrored announcement was spoken on every focused load or reload, before the user had done anything. Clicking a preset is unchanged — notice shown and announced once. Verified by probe on Chromium and Firefox (the load-time `#a11y-status` write is gone). Approved by Brennen 2026-08-22 (FD-20). |
+| 2026-08-22 | 1.10 | **One group name for the radios instead of two — an attribute removal, no wording and no visual change.** The `role="radiogroup"` div carried `aria-label="Select card thickness preset"` while the `<legend>` above it already said "Card Thickness", so NVDA announced "Card Thickness grouping" and then "Select card thickness preset grouping required" before the first option (POST15_7 audit F-N; commit `63d5778`). The `aria-label` is gone; `role="radiogroup"` and `aria-required="true"` stay. **Verified on the live accessibility tree before editing that this was a one-off and not the house pattern:** both sibling groups — Select Plate to Generate and Row Indicator Style — expose an unnamed `role="radiogroup"` inside their named fieldset, and this one now matches them. Named grouping nodes on the page **16 → 15**. **This supersedes the second half of the v1.6 row**, which recorded the `aria-label` as "Select card thickness preset"; that row is left as written, since it is history. The visible legend, the three sr-only option descriptions and every preset value are untouched. Section 4's HTML sample updated. |
 
 ---
 
-**Document Version**: 1.4
+**Document Version**: 1.10
 **Created**: 2025-12-07
 **Purpose**: Specification for Card Thickness Preset System (frontend convenience feature)
 **Status**: ✅ Complete

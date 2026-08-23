@@ -312,12 +312,12 @@ function createDynamicLineInputs(numLines) {
         lineDiv.innerHTML = `
             <div class="line-translation-row">
                 <label for="line_lang_${i}" class="line-label">Line ${i} Translation</label>
+                <!-- No aria-describedby: the label above already says
+                     "Line N Translation", and a description that only
+                     repeats its own label is spoken on every pass for
+                     nothing (audit F-K, fixed 2026-08-22). -->
                 <select id="line_lang_${i}" name="line_lang_${i}"
-                    class="language-select line-language-select"
-                    aria-describedby="line${i}-lang-help"></select>
-                <span id="line${i}-lang-help" class="sr-only">
-                    Select translation language for line ${i}
-                </span>
+                    class="language-select line-language-select"></select>
             </div>
             <div class="line-text-row">
                 <label for="line${i}" class="line-label">Line ${i}</label>
@@ -1457,11 +1457,11 @@ function applyPersistedSettings() {
 <select id="language-table" aria-describedby="language-help">
 <div id="language-help" class="grade-note">Default: English (UEB)...</div>
 
-<!-- Per-line language selects -->
-<select id="line_lang_1" aria-describedby="line1-lang-help">
-<span id="line1-lang-help" class="sr-only">Select translation language for line 1</span>
+<!-- Per-line language selects: labelled, NOT described. The description
+     that used to sit here only repeated the label (audit F-K). -->
+<select id="line_lang_1">
 
-<!-- Text inputs -->
+<!-- Text inputs: described, because the description adds the limit -->
 <input id="line1" aria-describedby="line1-help">
 <span id="line1-help" class="sr-only">Maximum 50 characters for line 1</span>
 ```
@@ -1892,8 +1892,9 @@ None required. All implementations match the specification exactly.
 
 ---
 
-*Document Version: 1.4*
-*Last Updated: 2026-08-17 — Back of Card text reaches parity with the front: Section 8 now records BANA auto-wrap via the shared `banaAutoWrap()` (newlines = forced row breaks, wire shape unchanged), the three fail-closed blocking paths, and the live `#ds-back-overflow-warning` status region*
+*Document Version: 1.5*
+*Last Updated: 2026-08-22 - The four per-line language selects no longer carry a screen-reader description. `aria-describedby="line{N}-lang-help"` and the `#line{N}-lang-help` spans are gone from the generated row: the description said "Select translation language for line N" to a select already labelled "Line N Translation", so it repeated its own label on every pass and, being sr-only, could never be caught by sighted review (POST15_7 audit F-K; commit 23575ab). Measured on the live accessibility tree in MANUAL placement mode - the rows are display:none in the default auto mode - descriptions on those selects 4 -> 0, spans in the DOM 4 -> 0, and the selects keep their names "Line 1-4 Translation". The sibling `#line{N}-help` ("Maximum 50 characters for line N") is deliberately UNCHANGED: it carries the limit, which the label does not. Both HTML samples in this document updated - they would otherwise have taught the removed markup.*
+*Previous: 1.4, 2026-08-17 — Back of Card text reaches parity with the front: Section 8 now records BANA auto-wrap via the shared `banaAutoWrap()` (newlines = forced row breaks, wire shape unchanged), the three fail-closed blocking paths, and the live `#ds-back-overflow-warning` status region*
 *Previous: 1.3, 2026-08-16 — Double-sided (interpoint) beta: Section 8 documents the toggle-gated `back_lines` wire field, the flat `settings` fields, and the both-plates-carry-front-lines rule; Section 11 adds the two new `braille_prefs_*` keys*
 *Previous: 1.2, 2026-07-30 — Capitalized Letters and Number Signs moved to the Expert Mode Translation Options submenu; the Braille (Unicode) field gained a Translate to Text button and now sits directly under the matching text box*
 *Verification Completed: 2024-12-06*
