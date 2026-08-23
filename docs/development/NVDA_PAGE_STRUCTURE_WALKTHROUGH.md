@@ -243,6 +243,23 @@ description still *useful*, or did shortening it take something you needed? The
 other three sentences are still on screen underneath the field, unchanged —
 check that you can find them there.
 
+**Two open questions to answer while you are on these four stops.**
+
+1. **The arrow glyphs.** Both Translate buttons end in an arrow — "Translate to
+   Braille ↓", "Translate to Text ↑" — and those arrows *are* part of the visible
+   text, so they are deliberately **not** hidden from the accessible name
+   (hiding them would put the spoken name out of step with the printed label,
+   WCAG 2.5.3). **Write down exactly what NVDA says.** If it reads "down arrow"
+   and that is noise to you, say so — it becomes a finding worth a decision. If
+   it is silent or helpful, that closes the question. The same applies to "Help
+   me choose what to include →" and the banner's "Change Theme to →".
+2. **The three font-size buttons in the banner.** Tab to **Decrease font size**.
+   **Expected, and this is a known defect:** you hear the name and then the same
+   words again as a description — *"Decrease font size, button, Decrease font
+   size."* All three font buttons do it. That is finding **F-P**, found by the
+   Section 12 review on 2026-08-23 and deliberately **not** fixed inside item G.
+   Confirm you hear it, and say how much it grates — that sets its priority.
+
 **Known and deliberate, not a finding:** three descriptions are still over the
 25-word ceiling — Tactile seam arrow (43 w), the 3D preview (38 w), Visual
 markers (26 w). Brennen decided to leave them (FD-25d). Say if any of them
@@ -301,6 +318,8 @@ Part | What I heard | Count | Expected | Pass/Fail
   5  words on Translate to Braille |  | name+role only |
   5  words on Braille (Unicode)    |  | ~13            |
   5  words on Translate to Text    |  | name+role only |
+  5  arrows: what NVDA said for "Translate to Braille down-arrow" |  | (open question) |
+  5  font-size button said its name twice? |  | YES - F-P, known |
   6  full flow minutes    |      | (no target) |
   6  "out of form" before Generate? |  | NO      |
 
