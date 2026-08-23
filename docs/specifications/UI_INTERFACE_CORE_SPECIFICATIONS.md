@@ -2322,6 +2322,92 @@ every measured box are byte-identical before and after (accordion headers 672 ×
    sibling**, so the handler resolves `aria-controls` instead — an attribute all six
    already carried. Without this change every accordion silently stops opening.
 
+### 4.12 A Constraint Failure Must Always Reach the User
+
+Added 2026-08-22 (audit finding F-O). Found by measurement while checking something
+else, not by any automated tool — the 122-test e2e suite was green through the whole
+defect.
+
+**Why this section exists.** `#action-btn` generates through `form.requestSubmit()`,
+which is *native* submission: it fires a real submit event **and runs interactive
+constraint validation first**. Any `:invalid` control therefore aborts generation
+before the app's own submit handler runs. `requestSubmit()` is deliberate and must not
+be swapped for a synthetic event — Firefox processes the form's default action and
+navigates away — so constraint validation is permanently armed on this form.
+
+**Two paths, and only one of them was ever handled by the browser:**
+
+| The offending control is | The browser does | Result |
+|---|---|---|
+| On screen | Focuses it and states the problem | Correct. **Leave it alone.** |
+| Not reachable | Cannot focus it; logs `An invalid form control … is not focusable` | **Nothing at all** — no error, no message, a dead button |
+
+The second row was not an edge case. **All 33 numeric dials carry `min`/`max`, and not
+one of them is rendered on a fresh load** — every one sits inside collapsed Expert Mode
+or a hidden block. On a default load, "not reachable" was the *only* state possible.
+
+**The rules.**
+
+1. **Never add `novalidate` to `#braille-form`.** It was built and measured during the
+   preceding item: it does restore generation and keeps all 29 announced ranges, but it
+   strips native validation from the controls that have it, including the correct
+   focus-and-announce behaviour in row 1. Rejected by Brennen deliberately.
+2. **The visible path stays untouched.** The handler checks `document.activeElement`
+   after the browser's own focus step; if the browser reached one of the invalid
+   controls, it returns without adding anything. A second message on top of the
+   browser's is the announcement stacking finding F-I warns about.
+3. **Reveal through the toggle, never by writing `display`.** The accordion toggle owns
+   `aria-expanded`, the chevron and the active class; a second copy of that logic drifts.
+   `revealHiddenControl()` clicks each container's real `[aria-controls]` button, and the
+   two toggles skip their usual "focus the first field" step while it does (otherwise
+   their 100 ms timer pulls focus off the dial being reported).
+4. **One message, however many controls failed.** `invalid` fires once per invalid field
+   — three bad dials measured as three events — and does **not** bubble, so the listener
+   is registered in the **capture** phase on the form. The flush names only the control
+   focus is sent to.
+5. **Announce through `#error-message`, not a new region.** `mirrorErrorMessage()`
+   already relays that box to `#a11y-status`, so the message is visible and spoken with
+   no second live region (see §4.10).
+
+**The wording is approved text (Brennen, 2026-08-22) — do not reword it without asking.**
+Both sentences sit inside the 25-word ceiling of ADA SOP Step 6.8.
+
+| Cause | Message |
+|---|---|
+| Out of range | `Braille Dot Spacing is 99. Enter a value between 1 and 5 to generate.` |
+| Off-step | `Braille Dot Spacing is 2.55. The nearest values it accepts are 2.5 and 2.6.` |
+
+A `step` mismatch is a real trap, not a theoretical one: **2.55 is inside
+`dot_spacing`'s 1–5 range and still refused**, and the range now announced on the dial
+actively invites a user to type it. The range sentence would be wrong there, hence two.
+
+**Saved values are validated on restore.** A dial's value is persisted to
+`localStorage` exactly as typed, so a value the form cannot accept was stored as
+happily as one it can — and restoring it unchecked re-armed the trap on **every**
+subsequent load. `applySavedValue()` refuses such a value and leaves the field at its
+shipped `defaultValue`, which is exactly what a first-ever load shows.
+
+- **Refused, never clamped.** Clamping would choose a tactile dimension on the user's
+  behalf, which accessibility rule 11 forbids.
+- **Reported, never silent.** The discard is announced and shown:
+  `Braille Dot Spacing 99 was out of range; reset to 2.5.` This is the one load-time
+  announcement that survives FD-20's silencing of the preset notice, because unlike
+  that notice it is rare and reports something the user cannot otherwise discover.
+- **Read `el.validity.valid`, never `checkValidity()`.** The latter *fires* an `invalid`
+  event, which during load would trip the submit-time handler and open Expert Mode at a
+  user who has done nothing.
+
+**Regression tests:** `tests/e2e/constraintValidation.spec.ts` — six tests, four of
+which fail if the fix is reverted and two of which are controls that pass either way.
+
+**Known open defect in this area.** `cylinder_diameter_mm` ships at `value="30.75"`
+with `min="10" step="0.1"`. The step base is the `min`, so **30.75 is not a valid step
+and the shipped default is itself invalid**. A normal load hides it because the 0.4
+preset writes 30.8 over the dial; a user whose saved preset is `custom` — anyone who has
+edited any dial and reloaded — meets a form that refuses to generate before touching
+anything. Pre-existing since the original commit (verified against `95b735a^`), now
+*visible* rather than silent. Changing either the value or the step is a
+public-parameter decision, so it is reported and not fixed.
 
 ---
 
@@ -2966,6 +3052,7 @@ Low vision users benefit from enhanced depth perception:
 STL Generator"` → **`"Custom Braille STL Generator"`**. The font size moved onto the h1 so the line box matches the text (box height identical before and after: 29 px at 1440, 20 px at 320) and the two per-breakpoint rules that set both spans collapsed into the h1 rule. `id="main-heading"` untouched. **D5 as written called for a single text node; that was not followed, with Brennen's agreement** — the title renders on one line at every tested width and font size, so there was no "two-line look" to move into CSS, and a single text node would have flattened the two-tone (CSS cannot colour half a text node). Both renderings were shown to him and he chose to keep the spans. All three themes re-checked; SOP reflow 0 failures of 6. (3) **Card Thickness announces one group, not two** (`63d5778`, F-N) — see CARD_THICKNESS_PRESET_SPECIFICATIONS v1.10; named grouping nodes on the page **16 → 15**. (4) **Four per-line language selects lost a description that only repeated their label** (`23575ab`, F-K) — see BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS v1.5; 4 → 0, measured in manual placement mode, where those rows are the only place they exist. Validated: ruff clean, **140 pytest / 2 vitest / 122 e2e** (chromium+firefox), every count identical before and after; W3C Nu 0 errors, 0 warnings. **All four are measured on the accessibility tree, not yet confirmed by ear** — the re-listen is the last step of the audit's item G. |
 | 1.20 | 2026-08-22 | **Eight attribute edits that remove roughly a fifth of everything a screen reader says — no wording and no visual change.** The first of the follow-on items from the POST15_7 audit (FD-21, decisions D1-icons and D2 step 1); both were Brennen's approved options. Section 4.5: the six `.expert-submenu-icon` chevrons gained `aria-hidden="true"`, so the decorative `▼` stops being folded into the toggle's accessible name — NVDA had been saying "Shape Selection▼ button collapsed", 17 times for that one button in a measured 34-minute session, while `#expert-toggle-icon` one line away was already marked correctly (audit F-B). Measured on the live AX tree: **5 of 5 exposed accordion names leaked a triangle before, 0 after** (the sixth, Tactile Indicator Dimensions, is hidden unless Row Indicator Style is *Tactile seam arrow*, so it has no AX node in the default state; all six spans carry the attribute). The glyph swap uses `icon.textContent = …`, which replaces only the text node — `aria-hidden` was verified to survive open and close, ▼ → ▲ → ▼, so no JS change was needed. Section 4.7: `aria-describedby="braille-unicode-help"` **removed from `#translate-to-braille-btn` and `#translate-to-text-btn`**. That 72-word paragraph was wired to three controls at once and accounted for 59 exposures, 4,913 words and **30.9% of all speech** (audit F-C); it is unchanged, still visible directly under the field, and still described by `#braille-unicode`, which is the control it is actually about. Measured on the live AX tree: hosts **3 → 1**, nodes carrying a description **20 → 18**, and total description words reachable in one full read of the default page **574 → 430** — a drop of exactly 144, the predicted 72 × 2. **No text was reworded** — shortening the three long paragraphs is D2 step 2 and returns to Brennen as a draft first. Validated: ruff clean, **140 pytest / 2 vitest / 122 e2e** (chromium+firefox), every count unchanged before and after. The speech reduction is measured by accessibility-tree probe, **not yet confirmed by ear**. |
 | 1.22 | 2026-08-22 | **The page gets a heading map: 1 visible heading → 6 on load, 11 with Expert Mode open, 12 with the beta on — and not one pixel moved.** New Section 4.11 records the outline, the level choice and both load-bearing consequences; §4.5's submenu paragraph updated to match. Audit finding F-A, decision D1. **Part 1:** the six `.expert-submenu-toggle` buttons are each now the sole child of an `<h3>`, per the WAI-ARIA APG Accordion pattern and GOV.UK. That broke `initExpertSubmenus()`, which found its panel with `toggle.nextElementSibling` — now `null` — so the handler resolves `aria-controls`, which all six already carried. **Part 2:** Enter Text, Double-Sided Card, Row Indicator Style, Card Thickness and Select Plate each gained an `<h2>` **inside** the existing `<legend>`, keeping the fieldset grouping intact; `updateDoubleSidedUI()` now writes to `#front-entry-heading`, because assigning `legend.textContent` would have deleted the heading. **Levels: h2 for the five sections (one step below the h1), h3 for the six accordions (one deeper again, and only reachable inside Expert Mode); no level is skipped in any state.** Recorded, not hidden: the Expert Mode button itself carries no heading, so a strict outline nests the h3s under *Select Plate to Generate*. Validated: **W3C Nu 0 errors / 0 warnings on the source file AND the rendered DOM** (this is what proves heading-in-legend is legal), Lighthouse accessibility **100/100 desktop and mobile, 0 failing audits**, reflow **0 failures of 6**, 8 accordion toggles with **0 `aria-expanded`/`aria-controls` defects** and the toggle still flipping, tab ring **unchanged at 32**, description budget **unchanged at 430 words / 18 nodes**, every `role=group` name unchanged, header screenshots **byte-identical**. Suite unchanged: ruff clean, **140 pytest / 2 vitest / 122 e2e**. **The outline is proven by probe; that it helps is not proven until it is heard under NVDA.** |
+| 1.23 | 2026-08-22 | **The Generate button could die in silence; it no longer can.** Added Section 4.12. `#action-btn` generates through `form.requestSubmit()`, which runs native constraint validation first, so any `:invalid` control aborted generation — and when that control was not reachable the browser could not focus it, logged `not focusable` to the console and produced **no message at all**. Not an edge case: **all 33 numeric dials carry `min`/`max` and none is rendered on a fresh load**, so that was the only state a default load could be in. A capture-phase `invalid` listener now reveals the control through its own accordion toggle (keeping `aria-expanded` truthful), focuses it, and states the problem through `#error-message`, which §4.10's mirror already relays to `#a11y-status` — no new live region, and one message however many controls failed. The **visible-dial path is deliberately unchanged**. Saved values are now validated on restore: an unusable one is refused, the field falls back to its shipped default, and the discard is announced — refused and reported, never clamped (accessibility rule 11) and never silent. Wording approved by Brennen; a `step` mismatch gets its own sentence because 2.55 is *inside* `dot_spacing`'s 1–5 range and still refused. Regression cover: `tests/e2e/constraintValidation.spec.ts`, e2e 122 → 134. One defect found and left open by decision — `cylinder_diameter_mm` ships at 30.75 with `min="10" step="0.1"`, so the shipped default is itself invalid whenever the saved preset is `custom`; pre-existing, and a public-parameter call. |
 
 ---
 

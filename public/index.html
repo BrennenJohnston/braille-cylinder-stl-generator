@@ -5142,6 +5142,128 @@
             });
         });
 
+        // Set while a control is being revealed programmatically, and read by the
+        // two accordion toggles below. Opening a section normally moves focus to
+        // its first field, which is right for someone who pressed the toggle and
+        // wrong here: we are opening the section only to reach one specific dial,
+        // and that dial is where focus has to land.
+        let revealingInvalidControl = false;
+
+        // Open every collapsed container between `el` and the page, so the browser
+        // can focus it. Each container is opened through its own toggle button
+        // rather than by writing display directly, which is what keeps
+        // aria-expanded, the chevron and the active class truthful - the toggle
+        // owns that state, and a second copy of the logic here would drift.
+        function revealHiddenControl(el) {
+            revealingInvalidControl = true;
+            try {
+                for (let node = el; node && node !== document.body; node = node.parentElement) {
+                    // display:none does not inherit, so this matches only the
+                    // containers that are themselves collapsed, not their contents.
+                    if (getComputedStyle(node).display !== 'none') continue;
+                    const toggle = node.id && document.querySelector(`[aria-controls="${node.id}"]`);
+                    if (toggle) toggle.click();
+                    // Only ever undoes an inline display:none. A section hidden by
+                    // the hidden attribute or a stylesheet is hidden for a reason
+                    // that is not this function's to overrule.
+                    else if (node.style.display === 'none') node.style.display = '';
+                }
+            } finally {
+                revealingInvalidControl = false;
+            }
+        }
+
+        // The control's visible label, which is what the user is looking for on
+        // screen. Falls back to the accessible name and finally the field name, so
+        // a control added later without a label still produces a usable sentence.
+        function controlLabel(el) {
+            const label = el.id && document.querySelector(`label[for="${CSS.escape(el.id)}"]`);
+            const text = (label ? label.textContent : el.getAttribute('aria-label') || el.name || el.id) || '';
+            return text.replace(/\s+/g, ' ').replace(/\s*:\s*$/, '').trim();
+        }
+
+        // WORDING IS APPROVED TEXT - Brennen, 2026-08-22 (POST15_7H). Two cases,
+        // because a value can be refused for two different reasons and the range
+        // sentence is actively wrong for the second: 2.55 IS between 1 and 5, it
+        // just is not a step of 0.1. Both stay inside the 25-word ceiling of ADA
+        // SOP Step 6.8. Do not reword either without asking.
+        function describeConstraint(el) {
+            const name = controlLabel(el);
+            const min = el.getAttribute('min');
+            const max = el.getAttribute('max');
+            if (el.validity.stepMismatch) {
+                const step = Number(el.getAttribute('step'));
+                const value = Number(el.value);
+                const origin = Number(min);
+                // Only when min is present: HTML puts the step base at min, and
+                // falls back to the value attribute - not to zero - when there is
+                // no min, so guessing here would name the wrong pair. Every dial
+                // in this form has a min; anything that does not gets the
+                // browser's own sentence below, which is always right.
+                if (min !== null && Number.isFinite(origin)
+                    && Number.isFinite(step) && step > 0 && Number.isFinite(value)) {
+                    const steps = Math.floor((value - origin) / step);
+                    const round = (n) => Number(n.toFixed(10));
+                    const low = round(origin + steps * step);
+                    const high = round(low + step);
+                    return `${name} is ${el.value}. The nearest values it accepts are ${low} and ${high}.`;
+                }
+            }
+            if (min !== null && max !== null) {
+                return `${name} is ${el.value}. Enter a value between ${min} and ${max} to generate.`;
+            }
+            // No pair to quote: the browser's own sentence names whichever single
+            // bound was crossed, and is localised.
+            return `${name} is ${el.value}. ${el.validationMessage}`;
+        }
+
+        // THE SILENTLY DEAD GENERATE BUTTON (audit finding F-O).
+        //
+        // #action-btn generates through form.requestSubmit(), which is native
+        // submission and so runs interactive constraint validation first. Any
+        // :invalid control therefore aborts generation before the submit handler
+        // ever runs. When that control is on screen the browser focuses it and
+        // states the problem, which is the correct behaviour and is left exactly
+        // as it is. When it is NOT on screen the browser cannot focus it, writes
+        // "An invalid form control ... is not focusable" to a console no user
+        // reads, and abandons the press with no error, no message and no visible
+        // change - a dead button.
+        //
+        // That is not an edge case: all 33 numeric dials live inside Expert Mode
+        // or a hidden block, so on a default page load NONE of them is reachable.
+        // A bad value also persists to localStorage, so before the restore guard
+        // below was added the trap came back on every single load.
+        //
+        // `invalid` does not bubble, hence the capture phase on the form. It fires
+        // once per invalid control, synchronously, before the browser's own
+        // focus-and-report step - so the flush below runs a task later, by which
+        // time document.activeElement says whether the browser handled it.
+        let invalidControls = [];
+        let invalidFlushTimer = null;
+        form.addEventListener('invalid', (event) => {
+            if (!(event.target instanceof HTMLElement)) return;
+            invalidControls.push(event.target);
+            if (invalidFlushTimer) return;
+            invalidFlushTimer = setTimeout(() => {
+                invalidFlushTimer = null;
+                const controls = invalidControls;
+                invalidControls = [];
+                // The browser reached one of them: it is focused and its message
+                // is shown. Adding a second message here would only stack.
+                if (controls.includes(document.activeElement)) return;
+                const target = controls[0];
+                if (!target) return;
+                revealHiddenControl(target);
+                target.focus();
+                // One message, however many controls failed - the user is being
+                // sent to one of them, and a list would be read out before they
+                // could act on any of it.
+                errorText.textContent = describeConstraint(target);
+                errorDiv.style.display = 'flex';
+                errorDiv.className = 'error-message';
+            }, 0);
+        }, true);
+
         // The braille cell dial auto-fills with the recommended capacity for the
         // current plate type and indicator style, but stops overwriting as soon as
         // the user types their own value - otherwise the field appears locked.
@@ -6823,6 +6945,32 @@
         function readPersisted(key) {
             try { return localStorage.getItem(key); } catch (e) { return null; }
         }
+
+        // A dial's value is persisted exactly as typed, so localStorage holds a
+        // value the form cannot accept just as happily as one it can. Restoring
+        // it unchecked is what made the Generate button dead on EVERY subsequent
+        // load rather than only the one where the value was typed (audit finding
+        // F-O): the field is inside collapsed Expert Mode, so the browser cannot
+        // focus it to complain, and the press did nothing at all.
+        //
+        // An unacceptable saved value is therefore refused and the field left at
+        // the value it ships with - exactly what a first-ever load would show.
+        // Refused and reported, never clamped and never silently dropped: a clamp
+        // would choose a tactile dimension on the user's behalf (accessibility
+        // rule 11), and a silent fallback is the bug family the project has been
+        // burned by before.
+        const refusedSavedValues = [];
+        function applySavedValue(el, saved) {
+            if (!el.willValidate) { el.value = saved; return; }
+            el.value = saved;
+            // validity is read directly rather than through checkValidity(),
+            // which fires an `invalid` event - during load that would trip the
+            // submit-time handler and open Expert Mode at the user.
+            if (el.validity.valid) return;
+            const offStep = el.validity.stepMismatch;
+            el.value = el.defaultValue;
+            refusedSavedValues.push({ el, saved, offStep });
+        }
         function clearAllPersistence() {
             const keys = [
                 'braille_prefs_language_table',
@@ -7019,7 +7167,7 @@
                 const v = readPersisted(key);
                 if (v !== null && v !== undefined) {
                     const el = document.getElementById(id);
-                    if (el) el.value = v;
+                    if (el) applySavedValue(el, v);
                 }
             });
             // Restore recess shape selection from saved value only.
@@ -7037,7 +7185,7 @@
             updateGridColumnsForPlateType(true);
             if (savedCols !== null && savedCols !== undefined) {
                 const gridColsEl = document.getElementById('grid_columns');
-                if (gridColsEl) gridColsEl.value = savedCols;
+                if (gridColsEl) applySavedValue(gridColsEl, savedCols);
             }
             // Recreate dynamic line inputs in case grid_rows changed
             const numLines = parseInt(document.getElementById('grid_rows').value) || 4;
@@ -7525,6 +7673,34 @@
                 log.debug('Error restoring thickness preset:', e);
             }
         })();
+
+        // Report anything applySavedValue() refused. Deferred by a task so it runs
+        // after the whole load path, including the preset restore just above,
+        // which may set a field again - so the value quoted as "reset to" is the
+        // one actually on screen and not one that was overwritten a line later.
+        //
+        // This DOES announce during load, which the preset's own notice was
+        // deliberately stripped of (FD-20, POST15_6). The difference is that the
+        // preset notice fired on every load and reported nothing the user needed,
+        // whereas this fires only when a saved value of theirs has been discarded
+        // - which they cannot otherwise find out, and which changes the geometry
+        // the next Generate will produce.
+        //
+        // WORDING IS APPROVED TEXT - Brennen, 2026-08-22 (POST15_7H). Two reasons,
+        // two sentences; several refusals repeat the approved sentence rather than
+        // inventing a summary. Do not reword without asking.
+        setTimeout(() => {
+            if (!refusedSavedValues.length) return;
+            const sentences = refusedSavedValues.map(({ el, saved, offStep }) => {
+                const name = controlLabel(el);
+                const reason = offStep ? 'was not an accepted value' : 'was out of range';
+                return `${name} ${saved} ${reason}; reset to ${el.value}.`;
+            });
+            refusedSavedValues.forEach(({ el, saved }) => log.debug('Refused saved value', el.id, saved));
+            errorText.textContent = sentences.join(' ');
+            errorDiv.style.display = 'flex';
+            errorDiv.className = 'error-message';
+        }, 0);
         // ======================================================================
         // End Card Thickness Preset System
         // ======================================================================
@@ -7541,7 +7717,9 @@
             expertToggleBtn.setAttribute('aria-expanded', String(!isVisible));
 
             // Optional: Focus management when opening
-            if (!isVisible) {
+            // Skipped when revealHiddenControl() opened this: that path is on its
+            // way to one specific invalid dial, and this would take focus off it.
+            if (!isVisible && !revealingInvalidControl) {
                 const firstFocusable = expertSettings.querySelector(
                     'input, select, button, textarea, [tabindex]:not([tabindex="-1"])'
                 );
@@ -7576,8 +7754,12 @@
                         content.style.display = 'none';
                     } else {
                         content.style.display = 'block';
-                        // Move focus to first input when opening
-                        const firstFocusable = content.querySelector('input, select, button, textarea, [tabindex]:not([tabindex="-1"])');
+                        // Move focus to first input when opening - skipped when
+                        // revealHiddenControl() opened this panel, which is headed
+                        // for one specific invalid dial further down it.
+                        const firstFocusable = revealingInvalidControl
+                            ? null
+                            : content.querySelector('input, select, button, textarea, [tabindex]:not([tabindex="-1"])');
                         if (firstFocusable) {
                             setTimeout(() => firstFocusable.focus(), 100);
                         }
