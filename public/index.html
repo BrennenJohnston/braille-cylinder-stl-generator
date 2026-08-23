@@ -720,8 +720,8 @@
             height: 100vh; /* Lock to viewport — no outer scrollbar */
             font-family: 'Inter', system-ui, Arial, sans-serif;
             margin: 0;
-            /* Column, not the default row. The <header role="banner"> added
-               for audit F-E is a SIBLING of <main> - a header nested inside
+            /* Column, not the default row. The <header> banner added for
+               audit F-E is a SIBLING of <main> - a header nested inside
                main is not a banner landmark - and in a row it would sit
                BESIDE the app instead of above it. */
             display: flex;
@@ -3144,7 +3144,11 @@
 
 
 
-    <header class="site-header" role="banner">
+    <!-- No role="banner": a top-level <header> IS the banner landmark,
+         the W3C Nu validator warns that the role is unnecessary, and the
+         ADA SOP gate is 0 errors AND 0 warnings. Verified in the computed
+         AX tree that the landmark is still there without it. -->
+    <header class="site-header">
     <!-- Title Section at the top -->
     <div class="title-section">
         <h1 id="main-heading">
