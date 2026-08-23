@@ -3328,8 +3328,11 @@
                                 <span class="radio-text">Emboss both sides of the card (interpoint)</span>
                             </label>
                             <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
-                            <div id="double-sided-note" class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
-                                Embosses both sides of the card in one pass: <strong>Cylinder A</strong> (the embossing plate) carries the front's raised dots plus recesses for the back, and <strong>Cylinder B</strong> (the counter plate) carries the back's raised dots plus recesses for the front, offset diagonally by 1.25 mm so the two sides never collide. Turning this on shows the Back of Card section below and locks the Row Indicator Style to the tactile seam arrow. Generate each cylinder with the same settings. This is a beta for testing — proofread both sides and check every braille surface before use.
+                            <!-- ADA SOP Step 6.8: the id sits on the BETA WARNING sentence, not the div.
+                                 Every word of the 2026-08-16 signed-off note is still here and still
+                                 visible; only the describedby wiring narrowed (audit F-D). -->
+                            <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
+                                Embosses both sides of the card in one pass: <strong>Cylinder A</strong> (the embossing plate) carries the front's raised dots plus recesses for the back, and <strong>Cylinder B</strong> (the counter plate) carries the back's raised dots plus recesses for the front, offset diagonally by 1.25 mm so the two sides never collide. Turning this on shows the Back of Card section below and locks the Row Indicator Style to the tactile seam arrow. Generate each cylinder with the same settings. <span id="double-sided-note">This is a beta for testing — proofread both sides and check every braille surface before use.</span>
                             </div>
                         </fieldset>
                         <div id="double-sided-section" style="display: none;">
