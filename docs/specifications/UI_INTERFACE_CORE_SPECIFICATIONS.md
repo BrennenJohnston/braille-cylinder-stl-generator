@@ -105,6 +105,7 @@ def index_explicit():
    - 4.8 [Double-Sided Card Beta: Disclosure Checkbox and Locked Radio Option](#48-double-sided-card-beta-disclosure-checkbox-and-locked-radio-option)
    - 4.9 [Button Contrast Tokens and the 44 px Action Button](#49-button-contrast-tokens-and-the-44-px-action-button)
    - 4.10 [Live Regions Must Already Be in the Accessibility Tree](#410-live-regions-must-already-be-in-the-accessibility-tree)
+   - 4.11 [Heading Outline](#411-heading-outline)
 5. [Scrollbar Customization](#5-scrollbar-customization)
    - 5.1 [Form Scroll Area Scrollbar](#51-form-scroll-area-scrollbar)
    - 5.2 [Global Page Scrollbar](#52-global-page-scrollbar)
@@ -1767,7 +1768,11 @@ When `aria-expanded` changes, screen readers automatically announce the new stat
 
 All six submenus use the identical `.expert-submenu-toggle` markup and are wired by one
 handler (`initExpertSubmenus()`), which sets `aria-expanded`, toggles `.active`, flips the
-`▼`/`▲` icon, and moves focus into the panel on open. A new submenu needs only the markup:
+`▼`/`▲` icon, and moves focus into the panel on open. Since 2026-08-22 each button is
+**wrapped in `<h3 class="expert-submenu-heading">` as its sole child**, which the APG
+Accordion pattern requires — see §4.11 — and the handler therefore resolves its panel
+through `aria-controls` rather than `toggle.nextElementSibling`, which is now `null`.
+A new submenu needs the heading wrapper plus the markup:
 
 | Order | Submenu | `aria-controls` | Notes |
 |-------|---------|-----------------|-------|
@@ -2230,6 +2235,93 @@ channel when its condition clears. Listening steps for all three are in
 its whole life and the file is offered by a separate `#download-stl-btn` (see STL
 Export and Download Specifications §8, v1.8). This paragraph had not been updated to
 match; corrected 2026-08-21.
+
+### 4.11 Heading Outline
+
+Headings are the primary way screen-reader users navigate a long page: **71.6% of
+respondents to WebAIM's Screen Reader User Survey #10 look for headings first**, against
+3.7% who reach for landmarks. Until 2026-08-22 this page carried **exactly one visible
+heading**, the `<h1>`. Every section below it was a `<fieldset>`/`<legend>` or a bare
+button, and the 40+ well-structured headings in the app all live inside the help modal,
+which is `class="modal hidden"` and out of the accessibility tree until it is opened. So
+the one method seven users in ten try first found nothing (audit finding F-A).
+
+#### The outline
+
+| Level | Heading | Where it lives | Visible when |
+|-------|---------|----------------|--------------|
+| h1 | Custom Braille STL Generator | `.title-section` | always |
+| h2 | Enter Text for Braille Translation | `legend#front-entry-legend` | always |
+| h2 | Double-Sided Card (BETA — for testing) | beta toggle fieldset | always |
+| h2 | Row Indicator Style | `#indicator-mode-selection` | always |
+| h2 | Card Thickness | thickness fieldset | always |
+| h2 | Select Plate to Generate | plate-type fieldset | always |
+| h2 | Braille Translation Preview: | `#braille-preview` | Expert Mode open **and** Preview pressed |
+| h3 | Shape Selection | `.expert-submenu` | Expert Mode open |
+| h3 | Braille Spacing | `.expert-submenu` | Expert Mode open |
+| h3 | Braille Dot Adjustments | `.expert-submenu` | Expert Mode open |
+| h3 | Surface Dimensions | `.expert-submenu` | Expert Mode open |
+| h3 | Tactile Indicator Dimensions | `#tactile-indicator-submenu` | Expert Mode open **and** Row Indicator Style set to tactile |
+| h3 | Translation Options | `.expert-submenu` | Expert Mode open |
+
+Counts measured from the live document (`build/a11yverify/post15_7c/headings.cjs`, which
+filters on `offsetParent !== null` so hidden headings are never counted):
+**6 on load, 11 with Expert Mode open, 12 with the double-sided beta on as well** — the
+beta locks Row Indicator Style to tactile, which reveals the sixth accordion. **No level
+is skipped in any of the three states.**
+
+#### Level choice
+
+The five section headings are **h2**: they are the form's own top-level sections, one
+step below the page title, and h2 keeps the step from the `<h1>` at exactly one. The six
+accordion headers are **h3** because they are one level deeper again — they exist only
+inside Expert Mode, and the level is what tells a listener "this is inside the thing I
+just opened" rather than another basic section. This is also what the WAI-ARIA APG and
+the GOV.UK Design System accordion do.
+
+**Known limit, recorded rather than hidden:** the Expert Mode disclosure button itself
+carries no heading, so a strict outline algorithm nests the six h3s under *Select Plate
+to Generate*, the last h2 before them. Nothing is skipped and heading navigation is
+unaffected; wrapping that button too would need a decision about its label, which
+changes between "Show Expert Mode" and "Hide Expert Mode". Left for the page-structure
+pass. The pre-existing `h2` on the preview panel sits inside Expert Mode too and so
+has the same shape of oddity when it is showing; it is left as it is, being outside
+this change, and the `h3` *Front of Card* / *Back of Card* headings the preview injects
+for the double-sided beta nest under it correctly.
+
+#### Heading inside `<legend>` — why it is allowed, and why not a `<div>`
+
+```html
+<legend class="grade-label"><h2 class="legend-heading">Card Thickness</h2></legend>
+```
+
+The HTML content model for `<legend>` is *phrasing content, optionally intermixed with
+heading content*, so this is valid — **confirmed against the W3C Nu validator, 0 errors
+and 0 warnings on both `public/index.html` and the rendered DOM**, not assumed from the
+spec text. Converting the fieldsets to plain `<div>`s to make headings easier would have
+been simpler and is **forbidden**: the `<fieldset>`/`<legend>` grouping is what gives each
+radio set its single announced name, and removing it would trade one accessibility
+feature for another. Verified from the AX tree: every `role=group` name is unchanged by
+the addition, because the name is computed from the legend's whole subtree.
+
+The headings are **semantics only**. `.legend-heading` and `.expert-submenu-heading` both
+set `margin: 0` and inherit `font-size`, `font-weight`, `line-height` and `color`, so the
+browser's own h2/h3 defaults never reach the page. Proof: the header screenshots and
+every measured box are byte-identical before and after (accordion headers 672 × 38 px at
+12.92 px / 600; section legends 19 px tall at 14.28 px / 600).
+
+#### Two load-bearing consequences
+
+1. `updateDoubleSidedUI()` relabels the first section *"Front of Card — …"* while the
+   beta is on. It used to assign `legend.textContent`, which would now **delete the
+   heading element**; it writes to `#front-entry-heading` instead. `id="front-entry-legend"`
+   stays on the legend — `tests/e2e/doubleSided.spec.ts` reads it — and the off-state text
+   is byte-identical, verified by toggling the beta on and off under probe.
+2. `initExpertSubmenus()` used to find each panel with `toggle.nextElementSibling`. The
+   button is now the heading's only child (an APG requirement) and has **no next
+   sibling**, so the handler resolves `aria-controls` instead — an attribute all six
+   already carried. Without this change every accordion silently stops opening.
+
 
 ---
 
@@ -2873,6 +2965,7 @@ Low vision users benefit from enhanced depth perception:
 | 1.21 | 2026-08-22 | **Four small accessibility repairs, four commits, no user-visible sentence and no pixel changed — the batch after the two free wins.** (1) **The 3D preview left the tab ring** (`847ea09`, audit F-G / FD-21 D4): `#viewer` was a `tabindex="0"` div with `role="img"` and no `keydown` listener anywhere in the file, so tabbing into it produced ~65 words ending in "requires mouse or touch" and nothing to do. `tabindex` removed; `role="img"`, the `aria-label` and `aria-describedby="viewer-instructions"` all kept, so browse mode is unchanged. Checked first that nothing depended on it: no test references `#viewer` focus, no script focuses it, and `#viewer:focus-within, #viewer:active` still applies on pointer use. Measured: **real tab ring on load 33 → 32**, with a diff of the two rings showing exactly one removal. That also moves §4.x's reading of audit F-F — **14 of 32** stops now precede Placement Mode, not 15 of 33. Keyboard controls for the preview stay a deferred feature. (2) **The `<h1>` is no longer read "Custom BrailleSTL Generator"** (`8b8f532`, F-H / D5): `.title-section h1` was `display: flex`, which blockifies its children, so both title spans computed to `display: block` and NVDA's browse-mode buffer broke a line between them. Chrome's computed name was always right, and so was the `<form aria-labelledby="main-heading">` that borrows it — only the buffer was wrong, which is why no `aria-label` was added. The h1 is now a block box with `display: inline` spans; `innerText` `"Custom Braille
 STL Generator"` → **`"Custom Braille STL Generator"`**. The font size moved onto the h1 so the line box matches the text (box height identical before and after: 29 px at 1440, 20 px at 320) and the two per-breakpoint rules that set both spans collapsed into the h1 rule. `id="main-heading"` untouched. **D5 as written called for a single text node; that was not followed, with Brennen's agreement** — the title renders on one line at every tested width and font size, so there was no "two-line look" to move into CSS, and a single text node would have flattened the two-tone (CSS cannot colour half a text node). Both renderings were shown to him and he chose to keep the spans. All three themes re-checked; SOP reflow 0 failures of 6. (3) **Card Thickness announces one group, not two** (`63d5778`, F-N) — see CARD_THICKNESS_PRESET_SPECIFICATIONS v1.10; named grouping nodes on the page **16 → 15**. (4) **Four per-line language selects lost a description that only repeated their label** (`23575ab`, F-K) — see BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS v1.5; 4 → 0, measured in manual placement mode, where those rows are the only place they exist. Validated: ruff clean, **140 pytest / 2 vitest / 122 e2e** (chromium+firefox), every count identical before and after; W3C Nu 0 errors, 0 warnings. **All four are measured on the accessibility tree, not yet confirmed by ear** — the re-listen is the last step of the audit's item G. |
 | 1.20 | 2026-08-22 | **Eight attribute edits that remove roughly a fifth of everything a screen reader says — no wording and no visual change.** The first of the follow-on items from the POST15_7 audit (FD-21, decisions D1-icons and D2 step 1); both were Brennen's approved options. Section 4.5: the six `.expert-submenu-icon` chevrons gained `aria-hidden="true"`, so the decorative `▼` stops being folded into the toggle's accessible name — NVDA had been saying "Shape Selection▼ button collapsed", 17 times for that one button in a measured 34-minute session, while `#expert-toggle-icon` one line away was already marked correctly (audit F-B). Measured on the live AX tree: **5 of 5 exposed accordion names leaked a triangle before, 0 after** (the sixth, Tactile Indicator Dimensions, is hidden unless Row Indicator Style is *Tactile seam arrow*, so it has no AX node in the default state; all six spans carry the attribute). The glyph swap uses `icon.textContent = …`, which replaces only the text node — `aria-hidden` was verified to survive open and close, ▼ → ▲ → ▼, so no JS change was needed. Section 4.7: `aria-describedby="braille-unicode-help"` **removed from `#translate-to-braille-btn` and `#translate-to-text-btn`**. That 72-word paragraph was wired to three controls at once and accounted for 59 exposures, 4,913 words and **30.9% of all speech** (audit F-C); it is unchanged, still visible directly under the field, and still described by `#braille-unicode`, which is the control it is actually about. Measured on the live AX tree: hosts **3 → 1**, nodes carrying a description **20 → 18**, and total description words reachable in one full read of the default page **574 → 430** — a drop of exactly 144, the predicted 72 × 2. **No text was reworded** — shortening the three long paragraphs is D2 step 2 and returns to Brennen as a draft first. Validated: ruff clean, **140 pytest / 2 vitest / 122 e2e** (chromium+firefox), every count unchanged before and after. The speech reduction is measured by accessibility-tree probe, **not yet confirmed by ear**. |
+| 1.22 | 2026-08-22 | **The page gets a heading map: 1 visible heading → 6 on load, 11 with Expert Mode open, 12 with the beta on — and not one pixel moved.** New Section 4.11 records the outline, the level choice and both load-bearing consequences; §4.5's submenu paragraph updated to match. Audit finding F-A, decision D1. **Part 1:** the six `.expert-submenu-toggle` buttons are each now the sole child of an `<h3>`, per the WAI-ARIA APG Accordion pattern and GOV.UK. That broke `initExpertSubmenus()`, which found its panel with `toggle.nextElementSibling` — now `null` — so the handler resolves `aria-controls`, which all six already carried. **Part 2:** Enter Text, Double-Sided Card, Row Indicator Style, Card Thickness and Select Plate each gained an `<h2>` **inside** the existing `<legend>`, keeping the fieldset grouping intact; `updateDoubleSidedUI()` now writes to `#front-entry-heading`, because assigning `legend.textContent` would have deleted the heading. **Levels: h2 for the five sections (one step below the h1), h3 for the six accordions (one deeper again, and only reachable inside Expert Mode); no level is skipped in any state.** Recorded, not hidden: the Expert Mode button itself carries no heading, so a strict outline nests the h3s under *Select Plate to Generate*. Validated: **W3C Nu 0 errors / 0 warnings on the source file AND the rendered DOM** (this is what proves heading-in-legend is legal), Lighthouse accessibility **100/100 desktop and mobile, 0 failing audits**, reflow **0 failures of 6**, 8 accordion toggles with **0 `aria-expanded`/`aria-controls` defects** and the toggle still flipping, tab ring **unchanged at 32**, description budget **unchanged at 430 words / 18 nodes**, every `role=group` name unchanged, header screenshots **byte-identical**. Suite unchanged: ruff clean, **140 pytest / 2 vitest / 122 e2e**. **The outline is proven by probe; that it helps is not proven until it is heard under NVDA.** |
 
 ---
 

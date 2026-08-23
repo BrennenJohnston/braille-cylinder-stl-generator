@@ -89,11 +89,17 @@ The submenu contains **two grouped sections**:
 ```html
 <!-- Submenu: Surface Dimensions -->
 <div class="expert-submenu">
-    <button type="button" class="expert-submenu-toggle" aria-expanded="false">
-        <span class="expert-submenu-title">Surface Dimensions</span>
-        <span class="expert-submenu-icon" aria-hidden="true">▼</span>
-    </button>
-    <div class="expert-submenu-content" style="display: none;">
+    <!-- The heading wrapper is required: the WAI-ARIA APG Accordion pattern
+         says each header button is the sole child of an element with role
+         heading. See UI_INTERFACE_CORE_SPECIFICATIONS.md §4.11. -->
+    <h3 class="expert-submenu-heading">
+        <button type="button" class="expert-submenu-toggle" aria-expanded="false"
+                aria-controls="expert-panel-dimensions">
+            <span class="expert-submenu-title">Surface Dimensions</span>
+            <span class="expert-submenu-icon" aria-hidden="true">▼</span>
+        </button>
+    </h3>
+    <div id="expert-panel-dimensions" class="expert-submenu-content" style="display: none;">
         <!-- Cylinder Dimensions group -->
         <!-- Plate Dimensions group -->
     </div>
@@ -1315,9 +1321,10 @@ first_row_center_y = height - space_above - dot_spacing
 
 ---
 
-*Document Version: 1.3*
+*Document Version: 1.4*
 *Last Updated: 2026-08-22*
 *Revision Notes: Added detailed debug logging information and troubleshooting checklist for cylinder dot positioning (Section 10.7)*
 *Revision Notes (1.2, 2026-08-21): Documentation only — the Source Files Referenced line named `templates/index.html`, an empty deprecated folder; it now names `public/index.html`. Part of the templates/ reference sweep (Phase 07b).*
 *Revision Notes (1.3, 2026-08-22): Documentation only — the HTML Implementation sample in Section 1 showed the accordion chevron as a bare `<span class="expert-submenu-icon">`, which is no longer what ships. All six live chevrons gained `aria-hidden="true"` so the decorative `▼` stops being read as part of the toggle's accessible name (POST15_7 audit finding F-B; UI_INTERFACE_CORE_SPECIFICATIONS.md v1.20 §4.5). The sample is updated to match so it is not copied into a new submenu without the attribute. No dimension, formula or measurement changed.*
+*Revision Notes (1.4, 2026-08-22): Documentation only — the same Section 1 sample still showed the accordion button as a bare `<button>`. Every one of the six is now the sole child of an `<h3 class="expert-submenu-heading">`, which the WAI-ARIA APG Accordion pattern requires and which gives the page a heading outline (audit finding F-A, decision D1). The `aria-controls` attribute and the panel `id`, always present in the real markup, are shown too: the click handler now resolves the panel through `aria-controls`, because the button no longer has a next sibling. Outline and rationale in UI_INTERFACE_CORE_SPECIFICATIONS.md v1.22 §4.11.*
 *Source Files Referenced: backend.py, wsgi.py, app/models.py, geometry_spec.py, static/workers/csg-worker.js, public/index.html*

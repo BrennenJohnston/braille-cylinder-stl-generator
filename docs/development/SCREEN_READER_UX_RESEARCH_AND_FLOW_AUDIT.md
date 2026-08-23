@@ -221,7 +221,7 @@ and 12).
 | Measurement | Value |
 |---|---|
 | Words spoken in the 34-minute session (browser-focused window) | **15,881** |
-| Visible headings in the live page | **1** (the `<h1>`) |
+| Visible headings in the live page | **1** (the `<h1>`) → **6** on load after item C, 2026-08-22 (11 with Expert Mode open) |
 | Tab stops on load | **33** |
 | Tab stops before the first control that does the app's actual job | **15** |
 | Focusable controls the skip link skips | **0** |
@@ -248,7 +248,7 @@ but narrow.
 
 | # | Sev | Criterion | Finding | Evidence |
 |---|---|---|---|---|
-| **F-A** | High | C1 | **The live page has exactly one heading.** Everything below the `<h1>` is `<fieldset>`/`<legend>` or bare buttons. The 40+ well-structured headings in the app all sit inside the help modal, which is `class="modal hidden"` and out of the tree until opened. So the method 71.6% of users reach for first finds nothing. | Probe: `TOTAL VISIBLE HEADINGS: 1`. Log: "heading level 1" spoken twice in 34 min, both on page load. |
+| **F-A** | High | C1 | ~~**The live page has exactly one heading.** Everything below the `<h1>` is `<fieldset>`/`<legend>` or bare buttons. The 40+ well-structured headings in the app all sit inside the help modal, which is `class="modal hidden"` and out of the tree until opened. So the method 71.6% of users reach for first finds nothing.~~ **FIXED 2026-08-22** (item C, D1, UI_INTERFACE_CORE v1.22 §4.11), in two commits. Part 1: the six accordion buttons are each now the sole child of an `<h3>`, per APG and GOV.UK — which also closes **C2**. Part 2: Enter Text, Double-Sided Card, Row Indicator Style, Card Thickness and Select Plate each gained an `<h2>` **inside** the existing `<legend>`, so the fieldset grouping is untouched. **Visible headings 1 → 6 on load, 11 with Expert Mode open, 12 with the beta on too; no skipped level in any state.** W3C Nu 0 errors / 0 warnings proves heading-in-legend is legal. Not yet heard under NVDA. | Probe: `TOTAL VISIBLE HEADINGS: 1` → **6**. Log: "heading level 1" spoken twice in 34 min, both on page load. |
 | **F-B** | High | C2, C10 | ~~**Six accordion headers are bare buttons, and each leaks its `▼` glyph into its own name.** NVDA says "Shape Selection▼ button collapsed". The Expert Mode toggle one line away *does* have `aria-hidden="true"` on its icon, so this is an inconsistency, not a house style.~~ **GLYPH LEAK FIXED 2026-08-22** (item A, UI_INTERFACE_CORE v1.20 §4.5): all six `.expert-submenu-icon` spans gained `aria-hidden="true"`; probe re-run shows **5 of 5 exposed accordion names leaked a triangle before, 0 after**, and the attribute survives the ▼→▲→▼ swap. **The "bare buttons" half of this finding is still OPEN** — wrapping the six toggles in `<h3>` is D1 and belongs to item C. | `public/index.html:3516, 3589, 3637, 3727, 3789, 3830` (no `aria-hidden`) vs `:3493` (has it). Log: "Shape Selection▼" ×17, "Braille Spacing▼" ×15, "Translation Options▲" ×12. |
 | **F-C** | High | C6, C5 | ~~**One 72-word paragraph is wired to three separate controls and accounts for 31% of all speech.** `#braille-unicode-help` describes the braille textarea *and* both Translate buttons. It is already visible on screen directly under the field — so the text is not the problem; forcing it into speech three times per pass is.~~ **FIXED 2026-08-22** (item A, D2 step 1, UI_INTERFACE_CORE v1.20 §4.7): `aria-describedby` dropped from `#translate-to-braille-btn` and `#translate-to-text-btn`; the textarea keeps it. Probe re-run: hosts **3 → 1**, total description words in one full read **574 → 430** (−144, the predicted 72 × 2). The paragraph is unchanged and still visible under the field. **Shortening it is D2 step 2 and remains OPEN** (item F). | Probe: `72 w × 2 hosts` + `80 w × 1 host`. Log: 59 exposures, 4,913 words. Hosts at `public/index.html:3264` (Translate to Braille), `:3273` (the textarea) and `:3278` (Translate to Text); the paragraph itself is `:3282`. |
 | **F-D** | High | C6 | **The two other long descriptions are far over any defensible limit** — 96 words on the double-sided checkbox, 72 on the language combo. Both are reference material (how interpoint works; BANA business-card guidelines) that belongs in the help guide, which already has a section for each. | Probe + log, table in §2.1. |
@@ -294,6 +294,18 @@ Expert Mode accordion buttons in `<h3>` per APG and GOV.UK, **and** promote the 
 fieldset legends — Enter Text, Double-Sided Card, Card Thickness, Row Indicator Style,
 Select Plate — to real headings. Styled to inherit, so nothing needs to look different.
 This is the change that turns the page from one heading into a navigable map.
+— **D1: LANDED IN FULL 2026-08-22, item C**, two commits, exactly as answered — six
+`<h3>` accordion wrappers and five `<h2>`s promoted from the section legends. Visible
+headings **1 → 6** on load, **11** with Expert Mode open, **12** with the beta on as
+well; **no skipped level in any state**. The `<h2>` goes *inside* the `<legend>`, which
+keeps the fieldset grouping — W3C Nu returns **0 errors / 0 warnings** on both the
+source file and the rendered DOM, so the technique is proved, not assumed. Two things
+would have broken silently and did not: `initExpertSubmenus()` found its panel with
+`toggle.nextElementSibling` (now `null` — it reads `aria-controls`), and
+`updateDoubleSidedUI()` assigned `legend.textContent`, which would have deleted the new
+heading (it writes to `#front-entry-heading`). Nothing moved on screen: header
+screenshots byte-identical. **The outline is proven by probe; that it helps is not
+proven until Brennen presses H in NVDA — item G's closing step.**
 
 **D2 — The three long descriptions (F-C, F-D). ANSWERED: unwire the extras, then
 shorten.** Two steps, in order. (1) Drop `aria-describedby` from the two Translate
@@ -394,8 +406,9 @@ link really does.
 ## 2.6 Approved implementation order
 
 All eight decisions are answered, so this is the agreed sequence — cheapest and safest
-first, each step independently shippable. **Steps 1 and 2 are DONE (2026-08-22, item A);
-steps 3–8 have not been started.**
+first, each step independently shippable. **Steps 1 and 2 are DONE (2026-08-22, item A),
+step 3 (item B) and step 4 (item C) are DONE the same day; steps 5–8 have not been
+started.**
 
 1. ~~**F-B icons** — six `aria-hidden="true"` attributes; no visible change, no wording
    change, immediately removes a glyph from six accessible names.~~ **DONE 2026-08-22.**
@@ -407,7 +420,10 @@ steps 3–8 have not been started.**
    **DONE 2026-08-22** (item B), four separate commits. Tab ring 33 → 32; named
    groups 16 → 15; the four duplicate line descriptions gone; the h1 reads as one
    name. No user-visible sentence and no pixel changed.
-4. **F-A / D1 headings** — the big win; needs D1 answered first.
+4. ~~**F-A / D1 headings** — the big win; needs D1 answered first.~~ **DONE 2026-08-22**
+   (item C), two commits. Visible headings 1 → 6 on load, 11 with Expert Mode open; no
+   skipped level in any state; W3C Nu 0 errors / 0 warnings; no pixel changed. This also
+   closes criterion **C2** (accordion headers wrapped in headings).
 5. **F-M** dial ranges — needs D8, and the numbers come from the schema.
 6. **F-D** wording moves — needs D2 answered; touches signed-off text.
 7. **F-E / F-F** structure — needs D3; largest blast radius.
@@ -464,6 +480,7 @@ Old -> new: ruff clean -> clean; 140 -> 140 pytest; 2 -> 2 vitest; 122 -> 122 e2
 
 | Version | Date | Changes |
 |---|---|---|
+| 1.5 | 2026-08-22 | **F-A closed — the finding this audit called the highest-value change in it.** F-A struck through and fixed in place (with criterion **C2** closed alongside it, since the six accordion headers are what C2 measures); §2.1's headline heading count, §2.4's D1 answer and §2.6's step 4 all annotated with what landed. Two commits, item C: six `<h3>` wrappers round the accordion buttons (APG/GOV.UK), then `<h2>`s inside the five major section legends. **Visible headings 1 → 6 on load, 11 with Expert Mode open, 12 with the double-sided beta on as well; no skipped level in any state.** Levels chosen h2/h3 and the reasoning recorded in UI_INTERFACE_CORE v1.22 §4.11, along with the one thing left open — the Expert Mode disclosure button still carries no heading, so a strict outline nests the h3s under *Select Plate to Generate*. Validated: W3C Nu **0 errors / 0 warnings on source AND rendered DOM**, Lighthouse **100/100 desktop and mobile**, reflow **0 of 6**, tab ring **unchanged at 32**, description budget **unchanged at 430 words / 18 nodes**, every `role=group` name unchanged, header screenshots **byte-identical**, suite **140 pytest / 2 vitest / 122 e2e** unchanged. **Still unheard: nobody has run NVDA against this.** |
 | 1.4 | 2026-08-22 | **Four more findings closed — the small self-contained batch (item B), four separate commits, no user-visible sentence and no pixel changed.** F-K, F-N, F-G and F-H struck through and marked fixed in place; F-F's count re-measured because F-G moved it; §2.6 step 3 and the D4/D5 answers annotated. **F-K** (`23575ab`): `aria-describedby` dropped from the four `line_lang_N` selects and the orphan `line{N}-lang-help` spans deleted — descriptions on those selects **4 → 0**, spans in the DOM **4 → 0**, `#line{N}-help` untouched. **F-N** (`63d5778`): the redundant `aria-label` off the Card Thickness radiogroup — named grouping nodes **16 → 15**, and the group now matches its two siblings. **F-G / D4** (`847ea09`): `tabindex="0"` off `#viewer` — **tab ring 33 → 32**, a ring diff showing exactly one removal. **F-H / D5** (`8b8f532`): the h1 stops being a flex container and its spans go inline — `innerText` **`"Custom Braille\nSTL Generator"` → `"Custom Braille STL Generator"`**. **Two premises in this document were checked against the live page before editing, and one was wrong.** F-N's was right, and is now recorded with the measurement that proves it. F-H's was wrong about the *look*: the title does not wrap onto two lines at any tested width or font size, so D5's "get the two-line look from CSS" had nothing to move, and its single text node would have flattened the two-tone that CSS cannot reproduce on half a text node. Brennen was shown both renderings and chose the span-preserving route. A third premise needed a correction of scope rather than fact: F-K's four rows are `display:none` in the default auto placement mode, so they only reach a screen reader in Manual — which is where the original NVDA log caught them, and why the default-state description budget stays at **430 words**. Evidence: `axprobe.cjs`, `axprobe2.cjs` and a new `axprobe4.cjs` (grouping nodes, per-line descriptions, ring membership), plus before/after title screenshots at 1440 px and 320 px × 100% and 200%. Suite unchanged before and after: ruff clean, 140 pytest, 2 vitest, 122 e2e. W3C Nu: 0 errors, 0 warnings. **Still measured by probe, not by ear** — the re-listen remains item G's closing step. |
 | 1.3 | 2026-08-22 | **First fixes land — the two free wins (item A).** F-B's glyph leak and F-C are struck through and marked fixed in place, in the POST15_4 pattern; neither is deleted, and the parts of each that remain open are named where they stand. Six `.expert-submenu-icon` spans gained `aria-hidden="true"` and both Translate buttons lost `aria-describedby`. Re-measured with the same instrument that produced the original numbers, plus a third probe (`axprobe3.cjs`) written for this item because `axprobe.cjs` prints names only for nodes that carry a description and the accordion toggles carry none: **accordion names leaking a triangle 5 → 0**, **`#braille-unicode-help` hosts 3 → 1**, **description words in one full read 574 → 430**, a drop of exactly the predicted 144. §2.1 and §2.6 annotated with the new figures. **Two things deliberately NOT done:** no paragraph was reworded (D2 step 2, item F), and the six toggles are still bare buttons rather than headings (D1, item C) — so F-B is only half closed. Two spec documents updated alongside: `UI_INTERFACE_CORE_SPECIFICATIONS.md` v1.20 (§4.5 and §4.7, the latter having documented the exact wiring that was removed) and `SURFACE_DIMENSIONS_SPECIFICATIONS.md` v1.3, whose HTML sample would otherwise have taught the pre-fix chevron markup to the next submenu. Suite unchanged before and after: ruff clean, 140 pytest, 2 vitest, 122 e2e. **Measured by probe, not yet confirmed by ear** — the re-listen is item G's closing step. |
 | 1.2 | 2026-08-22 | **A correction, found while writing the follow-up prompt files.** D8's approved instruction — copy `min`/`max` verbatim from `settings.schema.json` — **cannot be carried out as written**, and neither could F-M's claim that the ranges are enforced there. Checked field by field: 6 of the 13 fields are absent from the schema under any matching name, and none of the other 7 carries a `maximum` (only a `minimum` of 0 or 1). All thirteen ranges do exist in `app/validation.py`. F-M and D8 corrected in place, and a **second spec contradiction** added to §2.5 — the schema is the declared single source of truth yet is the incomplete one. Switching sources is not an assistant's call, so `POST15_7E` opens by putting it back to Brennen. Brennen's *principle* (numbers copied, never chosen) is unchanged; only the source is in question. **Also recorded:** the seven follow-up prompt files `POST15_7A`–`POST15_7G` were written into the planning folder, one per item in §2.6. No measurement or finding severity changed. |
