@@ -9971,13 +9971,16 @@
                 // Switch to requested tab
                 switchHelpTab(`tab-${initialTab}`);
 
-                // Focus first tab or close button
+                // Focus the selected tab. WebKit does not reliably take this
+                // focus() on a panel revealed in the same frame: measured
+                // 2026-08-23, focus stayed on <body> and Tab then walked the
+                // page behind an aria-modal dialog. Check the result rather
+                // than assume it, and fall back to the close button.
                 const firstTab = document.getElementById(`tab-${initialTab}`);
-                if (firstTab) {
-                    setTimeout(() => firstTab.focus(), 50);
-                } else if (closeBtn) {
-                    closeBtn.focus();
-                }
+                setTimeout(() => {
+                    if (firstTab) firstTab.focus();
+                    if (!modal.contains(document.activeElement) && closeBtn) closeBtn.focus();
+                }, 50);
             }
 
             // Close modal
@@ -9987,10 +9990,15 @@
                 modal.classList.add('hidden');
                 document.body.style.overflow = '';
 
-                // Restore focus to trigger element
-                if (previouslyFocusedElement) {
-                    previouslyFocusedElement.focus();
-                }
+                // Restore focus to the trigger. WebKit does not focus a
+                // <button> on click, so previouslyFocusedElement can be
+                // <body>, whose focus() is a no-op - that stranded focus on
+                // the now-hidden dialog and restarted Tab at the top of the
+                // document.
+                const restoreTo = (previouslyFocusedElement && previouslyFocusedElement !== document.body)
+                    ? previouslyFocusedElement
+                    : openBtn;
+                if (restoreTo) restoreTo.focus();
             }
 
             // Tab switching
@@ -10015,11 +10023,26 @@
             function trapFocus(event) {
                 if (!modal || modal.classList.contains('hidden')) return;
 
-                const focusableElements = modal.querySelectorAll(
+                // Six of the seven help panels carry `hidden` at any moment and the
+                // unselected tabs carry tabindex="-1", so a raw querySelectorAll ends on
+                // an element that can never hold focus: the wrap below then never fires
+                // and Tab walks out of an aria-modal dialog into the page behind it.
+                const focusableElements = Array.from(modal.querySelectorAll(
                     'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-                );
+                )).filter((el) => !el.disabled && el.tabIndex >= 0 && el.getClientRects().length > 0);
+                if (focusableElements.length === 0) return;
                 const firstElement = focusableElements[0];
                 const lastElement = focusableElements[focusableElements.length - 1];
+
+                // Recover focus that is outside an open dialog at all - not just
+                // at its two edges. The open path above can be defeated (WebKit),
+                // and without this the trap silently does nothing because <body>
+                // is neither the first nor the last element.
+                if (event.key === "Tab" && !modal.contains(document.activeElement)) {
+                    event.preventDefault();
+                    firstElement.focus();
+                    return;
+                }
 
                 if (event.key === 'Tab') {
                     if (event.shiftKey) {
