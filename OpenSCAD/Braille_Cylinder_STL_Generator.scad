@@ -564,22 +564,41 @@ DS_BOWL_R     = ((DS_BOWL_DIA / 2) * (DS_BOWL_DIA / 2) + DS_BOWL_DEPTH * DS_BOWL
 // Printability thresholds for the material left between a raised dot and a
 // neighbouring recess on the same surface (Bambu X1C, 0.4 mm nozzle: Arachne
 // widens anything from 0.1 to 0.34 mm up to 0.34 mm, and drops anything below
-// 0.1 mm entirely).
-DS_GAP_RELIABLE = 0.50;   // comfortably printable, mm
+// 0.1 mm entirely). Those Arachne figures justify the FLOOR. They have never
+// justified the reliable line.
+//
+// DS_GAP_RELIABLE is PROVISIONAL at 0.45 (Brennen, 2026-08-23), lowered from
+// 0.50 to match the web app. 0.50 had no stated basis in either generator or in
+// any spec, and it put the shipped 0.4 package (0.4678 mm nominal) permanently
+// in warning in the WEB app - a standing warning an NVDA walkthrough found, and
+// the kind that teaches a user to ignore warnings. It is NOT a measured value:
+// the two data points that exist (0.4953 and 0.4278 mm printed) BOTH PASSED,
+// and two passing samples cannot locate a failure boundary - they prove only
+// that it lies below 0.4278. A print test that walks the gap down until the
+// ridge visibly fails is what should set this number.
+DS_GAP_RELIABLE = 0.45;   // provisional, unmeasured - see above, mm
 DS_GAP_FLOOR    = 0.34;   // hard minimum, enforced by the guard below, mm
 
 // The crowding line the PHYSICAL "DOTS TOO CLOSE" text (past the sync marker)
-// fires at. The 0.3 package was validated ABOVE the reliable line, so falling
-// below it there is a real regression. The 0.4 package sits below the reliable
-// line BY DESIGN (0.468 nominal; printed ridge 0.428, measured clean
-// 2026-08-20), so for it the physical warning would only apply below the
-// floor - where the guard assert already stops the render first. In effect the
-// 0.4 package never renders the text; the self-check echoes still report the
-// gap. This threshold split was RATIFIED by Brennen 2026-08-20, together with
-// the decision that the assert - and only the assert - measures the printed
-// ridge instead of the nominal one. The warning stays on the nominal figure so
-// it keeps reporting the same number as the web app's checkDoubleSidedGap.
-DS_GAP_ACCEPTED = ds_use_03_package ? DS_GAP_RELIABLE : DS_GAP_FLOOR;
+// fires at. ONE line for both packages, since 2026-08-23.
+//
+// It used to be `ds_use_03_package ? DS_GAP_RELIABLE : DS_GAP_FLOOR` - ratified
+// by Brennen 2026-08-20 - because the 0.4 package sat below a 0.50 mm reliable
+// line by design, so pointing the warning at that line would have nagged about
+// the default package on every render. The split retired the text for the 0.4
+// package entirely. With the reliable line re-decided at 0.45 the 0.4 package
+// (0.4678 nominal) clears it honestly, so the workaround has nothing left to
+// work around, and Brennen chose on 2026-08-23 to drop it so this generator and
+// the web app warn at the same number instead of two.
+//
+// BEHAVIOUR CHANGE for existing users of the 0.4 package: the text can now
+// appear in the 0.34-0.45 mm nominal band, where it was previously silent. That
+// band is reachable by moving interpoint_offset_x/y_mm away from 1.25.
+//
+// The assert - and only the assert - measures the printed ridge (FD-11b,
+// 2026-08-20); that is unchanged. The warning stays on the nominal figure so it
+// keeps reporting the same number as the web app's checkDoubleSidedGap.
+DS_GAP_ACCEPTED = DS_GAP_RELIABLE;
 
 // Axial step between the front rows and the back rows: back rows sit 1.25 mm
 // higher than front rows. Same number as the interpoint_offset_y_mm default, and
@@ -840,10 +859,10 @@ ds_same_surface_gap = ds_on
                               interpoint_offset_x_mm, interpoint_offset_y_mm)
     : 0;
 // Below DS_GAP_FLOOR the guard in the DOUBLE-SIDED MATH section has already
-// stopped the render. DS_GAP_ACCEPTED is the reliable line for the 0.3 package
-// but only the floor for the 0.4 package, whose marginal gap is design-accepted
-// (see the DOUBLE-SIDED MATH section) - so with the 0.4 package this text is
-// effectively retired: below the floor the assert fires first.
+// stopped the render, so this text only ever speaks in the band between the
+// floor and DS_GAP_ACCEPTED. Since 2026-08-23 that is the same line for both
+// packages (see the DOUBLE-SIDED MATH section); before then the 0.4 package
+// used the floor instead, which retired this text for it entirely.
 ds_dots_too_close = ds_on && (ds_same_surface_gap < DS_GAP_ACCEPTED);
 
 // Map render quality to segment counts (support both UI and test system)
