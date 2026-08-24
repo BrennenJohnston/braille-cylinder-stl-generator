@@ -895,6 +895,31 @@ There is no silent reconciliation between the English inputs and the field, and 
 
 ### UI Structure
 
+**`lang="und-Brai"` on `#braille-unicode` — KEEP. Decided by Brennen 2026-08-23 after
+investigation, and recorded because the reasoning is not obvious from the attribute.**
+
+NVDA announces **"und (not supported)"** on every visit to this field — measured at **17
+utterances in a 30-minute walkthrough** on 2026-08-23, and 19 in the 2026-08-22 run. It
+looks like pure noise and it was raised as a finding. It is kept anyway, on three
+findings:
+
+1. **The tag is correct.** `und` = undetermined language, `Brai` = Braille script, which
+   is exactly what the field holds. It is used the same way on the three inline `<code>`
+   samples and three `<pre>` blocks in the help modal — seven uses in all.
+2. **Nothing in the code reads it.** It is a semantic declaration only; no script, worker,
+   test or style depends on it, so removing it would be free of side effects here.
+3. **The announcement is NVDA's *automatic language switching*, a user-configurable
+   setting.** The cost falls on speech users who can switch it off. The risk of removing
+   it falls on **braille-display** users — a `lang` with a script subtag can affect how a
+   screen reader routes content to a display, and this app's users are disproportionately
+   braille readers. That risk is untested and was not worth taking to silence something
+   the user can already silence.
+
+**If this is ever revisited, the measurement that settles it is a braille display**, not a
+speech test: does a display render this field's Unicode braille identically with and
+without the tag?
+
+
 Inside the "Enter Text for Braille Translation" fieldset, directly below the text entry area. The two boxes share one visual treatment (the braille box differs only in glyph size) with one translate button under each, so the pair reads as a single two-way control:
 
 | Element | ID | Role |
@@ -1901,8 +1926,9 @@ None required. All implementations match the specification exactly.
 
 ---
 
-*Document Version: 1.6*
-*Last Updated: 2026-08-22 - Two descriptions stop being spoken in full, and no word of either changed. (1) The language combobox is described by its LAST SENTENCE only - `id="language-help"` moved onto a `<span>` around "Switch to uncontracted (grade 1) only if your reader has asked for it." (13 w), and the BANA rationale before it stays in the same div, visible and unwired. Its dropped opening, "Default: English (UEB), United States - contracted (grade 2)", is exactly what the combobox announces as its selected option, so keeping it wired restated the label. Measured **71 -> 13 words**; it had been spoken 18 times in a 34-minute NVDA session (audit F-D, decision D2 step 2). (2) The **Disabled** capitals radio no longer carries `aria-describedby`, and the orphan `#caps-disabled-desc` span is gone with it: its text duplicated BOTH the live `#caps-warning` and the VISIBLE `.grade-note` beneath the radios, which is unchanged, so nothing left the page (audit F-J, decision D6). `#caps-enabled-desc` is deliberately still wired. The braille-field element table now records that `#braille-unicode-help` is a span around its first sentence, and that this textarea's budget is the ceiling minus `#braille-unicode-status`. Every HTML sample here updated - they would otherwise teach the old markup. Keepers approved by Brennen as drafts before the edit (FD-25). Pattern: `UI_INTERFACE_CORE_SPECIFICATIONS.md` 4.13.*
+*Document Version: 1.7*
+*Last Updated: 2026-08-23 - `lang="und-Brai"` on the braille field investigated and KEPT (new note in Section 8 UI Structure). NVDA says "und (not supported)" on every visit - 17 times in a 30-minute walkthrough - and it is kept anyway: the tag is correct, nothing in the code reads it, the announcement is a user-configurable NVDA setting, and removing it would trade a switchable annoyance for an untested risk to braille-display users. Brennen decided after the investigation; the note records that a braille display, not a speech test, is what would settle it. No markup changed.*
+*Previous: 1.6, 2026-08-22 - Two descriptions stop being spoken in full, and no word of either changed. (1) The language combobox is described by its LAST SENTENCE only - `id="language-help"` moved onto a `<span>` around "Switch to uncontracted (grade 1) only if your reader has asked for it." (13 w), and the BANA rationale before it stays in the same div, visible and unwired. Its dropped opening, "Default: English (UEB), United States - contracted (grade 2)", is exactly what the combobox announces as its selected option, so keeping it wired restated the label. Measured **71 -> 13 words**; it had been spoken 18 times in a 34-minute NVDA session (audit F-D, decision D2 step 2). (2) The **Disabled** capitals radio no longer carries `aria-describedby`, and the orphan `#caps-disabled-desc` span is gone with it: its text duplicated BOTH the live `#caps-warning` and the VISIBLE `.grade-note` beneath the radios, which is unchanged, so nothing left the page (audit F-J, decision D6). `#caps-enabled-desc` is deliberately still wired. The braille-field element table now records that `#braille-unicode-help` is a span around its first sentence, and that this textarea's budget is the ceiling minus `#braille-unicode-status`. Every HTML sample here updated - they would otherwise teach the old markup. Keepers approved by Brennen as drafts before the edit (FD-25). Pattern: `UI_INTERFACE_CORE_SPECIFICATIONS.md` 4.13.*
 *Previous: 1.5, 2026-08-22 - The four per-line language selects no longer carry a screen-reader description (audit F-K; commit 23575ab); descriptions on those selects 4 -> 0, spans in the DOM 4 -> 0, and the sibling `#line{N}-help` deliberately unchanged.*
 *Previous: 1.4, 2026-08-17 — Back of Card text reaches parity with the front: Section 8 now records BANA auto-wrap via the shared `banaAutoWrap()` (newlines = forced row breaks, wire shape unchanged), the three fail-closed blocking paths, and the live `#ds-back-overflow-warning` status region*
 *Previous: 1.3, 2026-08-16 — Double-sided (interpoint) beta: Section 8 documents the toggle-gated `back_lines` wire field, the flat `settings` fields, and the both-plates-carry-front-lines rule; Section 11 adds the two new `braille_prefs_*` keys*
