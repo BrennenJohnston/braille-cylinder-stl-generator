@@ -5100,6 +5100,50 @@
         // a control of its own. The old behaviour changed this button's
         // accessible name underneath a user whose focus was on it, announced
         // nothing, and left them pressing what they thought was Generate.
+        /**
+         * Warnings that were still on screen when the user pressed Generate.
+         *
+         * The live warning boxes are advisory, and nothing in the generate path
+         * had ever consulted them. An NVDA run on 2026-08-23 heard "Your text
+         * needs 5 rows but the plate has 4", generated anyway, and was told
+         * "Both cylinders are ready" with no qualification - then downloaded
+         * both files. Brennen chose announce, not block.
+         *
+         * `ds-gap-warning` is deliberately absent: the shipped 0.4 preset trips
+         * it permanently by design, so naming it here would append a caveat to
+         * every double-sided run and teach the user to ignore the sentence. It
+         * joins the list when its threshold is recalibrated.
+         *
+         * `caps-warning` and `indicator-mode-lock-note` are absent too: neither
+         * reports a problem with what is about to be printed.
+         */
+        const OUTSTANDING_WARNING_LABELS = [
+            ['auto-overflow-warning', 'your text does not fit the plate'],
+            ['cylinder-overflow-warning', 'your text does not fit the plate'],
+            ['ds-back-overflow-warning', 'your text does not fit the plate'],
+            ['tactile-gap-warning', 'the seam wall may be too thin'],
+        ];
+
+        /* User-facing wording signed off by Brennen (2026-08-23); reword only
+           with his sign-off. Appended to the completion messages, which are
+           themselves signed off and stay byte-identical. */
+        function outstandingWarningSuffix() {
+            const shown = [];
+            for (const [id, label] of OUTSTANDING_WARNING_LABELS) {
+                const box = document.getElementById(id);
+                // Three boxes share one label, so a plate overflowing on both
+                // sides must not say the same sentence twice.
+                if (box && box.getClientRects().length > 0 && !shown.includes(label)) {
+                    shown.push(label);
+                }
+            }
+            if (shown.length === 0) return '';
+            const list = shown.length === 1
+                ? shown[0]
+                : `${shown.slice(0, -1).join(', ')}, and ${shown[shown.length - 1]}`;
+            return ` ${shown.length === 1 ? 'Warning' : 'Warnings'} still showing: ${list}.`;
+        }
+
         function setToDownloadState() {
             actionBtn.textContent = 'Generate STL';
             actionBtn.className = 'generate-state';
@@ -5117,7 +5161,8 @@
             /* User-facing wording signed off by Brennen (2026-08-18); reword
                only with his sign-off. */
             announceStatus('stl-ready',
-                'Your STL file is ready. Use the Download STL button to save it.');
+                'Your STL file is ready. Use the Download STL button to save it.'
+                + outstandingWarningSuffix());
         }
 
         function hideDownloadButton() {
@@ -9150,6 +9195,11 @@
             if (!doubleSidedOn) return;
 
             pairRunInFlight = true;
+            // Read the warnings BEFORE the run, not at the end: it switches
+            // plate type and column count while it works and restores them in
+            // its `finally`, so a box read at completion may have recomputed
+            // against settings the user never chose.
+            const warningsAtStart = outstandingWarningSuffix();
             clearPairResults();
             // Disabling a focused button drops focus to the page body, which
             // strands a keyboard user at the top of the document; focus goes
@@ -9216,7 +9266,8 @@
                    only with his sign-off. It replaces the 2026-08-17 line "If your
                    browser blocked a download, use the buttons below", which
                    described the old automatic download and stopped being true. */
-                setPairStatus('Both cylinders are ready. Use the Download Cylinder A and Download Cylinder B buttons below to save them.');
+                setPairStatus('Both cylinders are ready. Use the Download Cylinder A and Download Cylinder B buttons below to save them.'
+                    + warningsAtStart);
             } finally {
                 selectPlateType(userPlate);
                 restoreColumns();
