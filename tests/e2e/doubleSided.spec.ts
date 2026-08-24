@@ -508,15 +508,19 @@ test.describe('Double-Sided Card beta', () => {
     const warning = page.locator('#ds-gap-warning');
     const message = page.locator('#ds-gap-message');
     // The default 0.4 preset carries the Q2 package (dot 1.2 + bowl 1.4):
-    // nominal gap 0.468 mm, below the 0.50 mm reliable line BY DESIGN (the
-    // printed 0.428 mm ridge was measured printing clean on 2026-08-20), so
-    // the warning is visible at the shipped defaults whenever the beta is on.
-    await expect(warning).toBeVisible();
-    await expect(message).toContainText('0.468 mm');
-    await expect(message).toContainText('may come out thin or merged');
+    // nominal gap 0.468 mm. Until 2026-08-23 that sat below a 0.50 mm reliable
+    // line, so the SHIPPED DEFAULT warned "may come out thin or merged" on every
+    // double-sided run - about a package whose printed 0.428 mm ridge was
+    // measured embossing clean on 2026-08-20. Brennen's NVDA walkthrough found
+    // it as a standing warning, which is how a user learns to ignore warnings.
+    // The line is a provisional 0.45 now and the default is quiet. This
+    // assertion is the change: it read toBeVisible() with '0.468 mm' before.
+    await expect(warning).toBeHidden();
 
     // The 0.3 preset switches to Option B (dot 1.2 + bowl 1.3): gap 0.518 mm,
-    // above the reliable line - quiet.
+    // also clear of the line - still quiet. Both shipped packages are silent
+    // now, which is the point: the box speaks about configurations the user
+    // chose, not about the defaults they were handed.
     await page.locator('input[name="card_thickness_preset"][value="0.3"]').check();
     await expect(warning).toBeHidden();
 

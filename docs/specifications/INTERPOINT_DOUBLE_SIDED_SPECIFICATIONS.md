@@ -202,8 +202,25 @@ machine-side limit from the same tests: die heights above 1.0 mm scrape the embo
 cylinder-holder housing (§10), so both packages sit at or below 1.0 mm.
 
 Thresholds (constants in `app/geometry/interpoint.py`): `SAME_SURFACE_GAP_RELIABLE_MM`
-= 0.50, `SAME_SURFACE_GAP_FLOOR_MM` = 0.34 (Bambu X1C Arachne wall generator: paths from
-0.1 to 0.34 mm are force-widened to 0.34 mm; below 0.1 mm they are dropped).
+= **0.45 (PROVISIONAL)**, `SAME_SURFACE_GAP_FLOOR_MM` = 0.34 (Bambu X1C Arachne wall
+generator: paths from 0.1 to 0.34 mm are force-widened to 0.34 mm; below 0.1 mm they are
+dropped).
+
+**The Arachne figures justify the FLOOR only.** The reliable line was 0.50 mm from
+2026-08-16 to 2026-08-23 with no stated basis anywhere in the code or these specs, while
+the shipped 0.4 preset sits at 0.4678 mm nominal — missing it by 0.0322 mm, less than can
+be measured on the part. The DEFAULT configuration therefore warned *"the ridge may come
+out thin or merged"* on every double-sided run, about a package §10 records as embossing
+clean. Brennen's NVDA walkthrough on 2026-08-23 found it as a standing warning — the kind
+that teaches a user to ignore warnings — and he lowered the line to 0.45 to stop it.
+
+**0.45 is not a measured value and must not be quoted as one.** The two data points that
+exist (0.4953 and 0.4278 mm printed) BOTH PASSED, and two passing samples cannot locate a
+failure boundary — they prove only that it lies below 0.4278. A print test that walks the
+gap down until the ridge visibly fails is what should set this number. Two consequences
+are recorded rather than left to be rediscovered: at 0.45 the 0.4 package clears on the
+NOMINAL figure (0.4678) while its PRINTED ridge (0.4278) does not, and the package that
+demonstrates the FD-11b nominal/printed split moves from 0.3 to 0.4.
 
 ### 3.1 `back_lines` — one field, three spellings
 
@@ -300,8 +317,10 @@ printed-mouth switch was signed off **2026-08-21**. Reword only with his sign-of
    0.040 mm on the 0.4 one, and that band is exactly where this gate used to pass a ridge
    the printer cannot hold. Switching the two soft warnings as well would have forced
    `SAME_SURFACE_GAP_RELIABLE_MM` to be re-decided, because at the 0.50 mm line the
-   printed figure makes the **0.3 package warn about itself** (0.4953 mm) despite its
-   embossing clean on 0.3 mm stock. Leaving them nominal also keeps the browser, the
+   printed figure made the **0.3 package warn about itself** (0.4953 mm) despite its
+   embossing clean on 0.3 mm stock. That re-decision happened on 2026-08-23 (§3, the
+   provisional 0.45): at the new line 0.3 clears on both figures and the **0.4 package**
+   is the one the split now protects. Leaving them nominal also keeps the browser, the
    generator and the OpenSCAD port quoting one number. A test asserts the split at the
    source in both directions, so consolidating onto one formula fails the suite.
 
@@ -858,6 +877,7 @@ and separated**. Full record: the research folder's `00_PROJECT_MEMORY.md`, FD-8
 | 2026-08-20 | 1.5 | **Footprints keyed to the card-stock preset** (research memory FD-8/FD-9): 0.3 preset → Option B (unchanged, still the schema/models defaults), 0.4 preset → the Q2 print-matrix winner (dot Ø1.2 × 1.0 mm tall, dome Ø1.0; bowl Ø1.4 nominal → printed Ø1.48 × 0.74). §3 rationale rewritten with both packages and nominal-vs-printed gap figures (Q2: 0.468 nominal / 0.428 printed, measured printing clean); §6.1 wire shape (footprints now numbers from `DS_FOOTPRINTS[preset]`); §6.4 bowl convention now authoritative and used by the regenerated goldens; §7.3 new reference numbers — the 0.4 preset shows the warning at defaults by design; §7.5 keying; §7.6 documents `announceDsGap` (the persistent warning announces only on change, fixing it talking over the back-overflow announcement); §8 anchors updated (16 e2e tests; goldens regenerated 2026-08-20 with the worker bowl convention, still Option B footprints); Overview/§9/§10 corrected — the 2026-08 physical pass was 0.3 mm stock only — and §10 gains the 2026-08-20 print-matrix record, the Q2 decision, and the 1.0 mm die-height housing ceiling. Wire payloads change only with the beta ON; toggle-off stays byte-identical. |
 | 2026-08-18 | 1.4 | **Section 7 corrected against the code** (web repo Phase 07 closeout, after Phase 05d/05e changed the announcement mechanism): §7.1, §7.2 and §7.3 no longer claim `role="status"`/`aria-live` on `#ds-back-overflow-warning`, `#indicator-mode-lock-note` and `#ds-gap-warning` — those attributes were removed from the markup because a box hidden between messages can never fire them. New §7.6 documents what replaced them: the always-present `#a11y-status` region, `announceStatus(source, message)` and its source scoping, the lock note's one-task deferral, and the overflow warning's hidden-to-shown gate. Also refreshed stale cross-reference versions: STL_EXPORT_AND_DOWNLOAD is at v1.8 and UI_INTERFACE_CORE at v1.16, not the v1.5 and v1.10 cited. Documentation only — no code, wire shape, or geometry changed by this edit. |
 | 2026-08-17 | 1.3 | **Placeholder corrected** (web repo Phase 04 closeout): `#back-text`'s placeholder said "Each line becomes one braille row", which stopped being true when v1.2 added BANA auto-wrap. Replaced with "Type the text for the back of the card here. It wraps across the rows automatically.", **signed off by Brennen on 2026-08-17**; §7.1 updated. This closes the last carried-over wording item from Phase 02. No code behaviour, wire shape, or geometry changed. |
+| 2026-08-23 | 1.7 | **`SAME_SURFACE_GAP_RELIABLE_MM` lowered 0.50 → 0.45, PROVISIONAL** (§3, §5). Found by Brennen's NVDA page-structure walkthrough: the shipped 0.4 preset (0.4678 mm nominal) sat permanently below the 0.50 mm line, so every double-sided run warned about a package §10 records as embossing clean — a standing warning that trains users to ignore warnings. Investigation found 0.50 had **no stated basis** anywhere; the Arachne figures beside it justify only the 0.34 floor. 0.45 is explicitly not a measured value: both available data points (0.4953 and 0.4278 mm printed) passed, and two passing samples cannot locate a failure boundary. A print test that walks the gap to visible failure should set the final number. Consequences recorded: the 0.4 package now clears on the nominal figure but not the printed one, and it replaces 0.3 as the demonstrator of the FD-11b split. Mirrored in public/index.html; the OpenSCAD port still carries 0.50 and must be updated in its own repo. No dot, bowl or offset dimension changed. |
 | 2026-08-17 | 1.2 | **Back of Card text reached parity with the front** (web repo Phase 02): the generate handler now runs the shared `banaAutoWrap()` over `#back-text` instead of translating one row per newline, and a live `#ds-back-overflow-warning` status region warns while the user types. §7.4 rewritten (wrapping rule, live-warning wording, three fail-closed blocking paths); the 2026-08-16 per-line "exceeds C available braille cells" error retired; the Back of Card help note replaced. All six new user-facing strings — the help note, the three blocking errors, and the two live-warning sentences — were **signed off by Brennen on 2026-08-17**. Wire shape, persistence keys, the toggle-off payload, and all geometry are unchanged. |
 | 2026-08-17 | 1.1 | Recorded the **physical validation** (new §10): two Bambu Lab X1C (0.4 mm nozzle) print rounds of Cylinder A/B pairs embossed real card stock legibly on both faces with the Option B footprints. Consequences written through the document — Option B is permanent (Option A is history, not a fallback switch); `BACK_GRID_DIRECTION = +1` is confirmed by physical handling and the "unverifiable sign" caveat in §2.3/§9 is closed (flip procedure retained as history); the status line in the Overview now says the BETA label waits on broader user testing, not on the embossing test. No code, geometry, or golden fixture changed. |
 | 2026-08-16 | 1.0 | Initial specification, written at Phase 10 of the interpoint initiative after the implementation (Phases 01–09) was complete and verified. Documents the as-built feature: schema/runtime naming, the four validation gates, the wire shape, the worker partition, the fixed Option B footprints, all signed-off user-facing strings verbatim, and the regression anchors. Citations: US Patent 5,527,117 (Roy, Impact Devices, 1996); NLS Specification 800, October 2014, §3.1/§3.2.4; Duxbury Systems, "Louis Braille and the Braille System"; Bambu Lab Wiki, "Introduction to wall generator". |

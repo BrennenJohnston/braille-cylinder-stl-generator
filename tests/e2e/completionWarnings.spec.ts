@@ -26,12 +26,16 @@ import { test, expect, type Page } from '@playwright/test';
  *   2. A run with an outstanding warning names it, in both the single-cylinder
  *      and the pair flow.
  *   3. `ds-gap-warning` is NEVER named, and this is deliberate rather than an
- *      oversight. The shipped 0.4 preset trips it permanently by design
- *      (project-facts 6b: nominal gap 0.468, and the package was measured clean
- *      in print on 2026-08-20), so naming it would append a caveat to every
- *      single double-sided run - which is precisely how a warning becomes noise.
- *      It joins the list when its threshold is recalibrated, and this test is
- *      what makes that a decision rather than a drift.
+ *      oversight. When this file was written the shipped 0.4 preset tripped it
+ *      permanently (nominal 0.4678 mm against a 0.50 mm reliable line) about a
+ *      package recorded embossing clean, so naming it would have appended a
+ *      caveat to every single double-sided run - which is how a warning becomes
+ *      noise. The line is a provisional 0.45 as of 2026-08-23 and the default is
+ *      quiet, so that reason has gone; the exclusion stays anyway, because
+ *      Brennen's condition for adding it was a threshold that "fires only when
+ *      something is actually wrong", and a provisional unmeasured number does
+ *      not meet that bar. It joins the list when a print test sets the line from
+ *      a measured failure. This test is what makes that a decision, not a drift.
  *
  * KNOWN LOCAL FLAKE, measured rather than assumed (2026-08-23). Every test here
  * drives a real STL build through two WASM workers, so under the ten parallel
@@ -232,9 +236,13 @@ test.describe('Completion messages name outstanding warnings (F-R)', () => {
     expect(rows.split('\n').length).toBe(4);
 
     await expect(page.locator('#auto-overflow-warning')).toBeVisible();
-    // The permanent one, present by design on the 0.4 preset. Asserted so this
-    // test proves the exclusion below is real rather than vacuous.
-    await expect(page.locator('#ds-gap-warning')).toBeVisible();
+    // The crowding warning used to be permanently up here: the 0.4 preset sits
+    // at 0.4678 mm nominal against what was a 0.50 mm reliable line, so every
+    // double-sided run carried a printability caveat about a package recorded
+    // embossing clean. That line is a provisional 0.45 since 2026-08-23, so the
+    // default is quiet - which is the whole point of the change, and is pinned
+    // here rather than left to be noticed.
+    await expect(page.locator('#ds-gap-warning')).not.toBeVisible();
 
     await generateBoth(page, setUp);
 

@@ -351,17 +351,39 @@ def test_non_positive_bowl_depth_is_rejected_in_double_sided_mode():
 
 def test_the_soft_warning_stays_on_the_nominal_figure():
     """
-    Behavioural half of the guard: the 0.3 package must not warn about itself.
+    Behavioural half of the guard: a shipped package must not warn about itself.
 
-    Its printed ridge is 0.4953 mm, just under the 0.50 mm reliable line, so a
-    warning switched to the printed figure would flag the package Brennen
-    recorded embossing clean on 0.3 mm stock (FD-1). That is the reason FD-11b
-    moved the assert alone.
+    A warning switched to the printed figure would flag a package Brennen
+    recorded embossing clean, which is why FD-11b moved the assert alone and
+    left both soft warnings on the nominal figure.
+
+    WHICH package demonstrates that depends on the reliable line, so this test
+    names it rather than assuming. At 0.50 mm it was the 0.3 package (printed
+    0.4953 mm). Lowering the line to a provisional 0.45 on 2026-08-23 put 0.3
+    clear on both figures and made the **0.4** package the demonstrator
+    (nominal 0.4678 clears, printed 0.4278 does not). The contract is unchanged;
+    only the example moved, and the guard below fails loudly if a future
+    threshold leaves no package demonstrating it at all - which would make this
+    test vacuous rather than wrong.
     """
     from app.geometry_spec import _double_sided_crowding_warnings
     from app.models import CardSettings
 
-    footprints = ip.DS_FOOTPRINTS_BY_PRESET['0.3']
+    demonstrators = [
+        preset for preset, fp in ip.DS_FOOTPRINTS_BY_PRESET.items()
+        if ip.same_surface_min_gap(
+            fp['ds_dot_base_diameter'],
+            ip.printed_bowl_mouth_mm(fp['ds_bowl_base_diameter'], fp['ds_bowl_depth']),
+            cols=14, rows=4) < ip.SAME_SURFACE_GAP_RELIABLE_MM
+        <= ip.same_surface_min_gap(
+            fp['ds_dot_base_diameter'], fp['ds_bowl_base_diameter'], cols=14, rows=4)
+    ]
+    assert demonstrators, (
+        'No shipped package now has printed < SAME_SURFACE_GAP_RELIABLE_MM <= nominal, '
+        'so the nominal/printed split of FD-11b no longer changes any outcome and this '
+        'test proves nothing. Re-decide the split, do not delete the test.')
+
+    footprints = ip.DS_FOOTPRINTS_BY_PRESET[demonstrators[0]]
     settings = CardSettings(
         double_sided_enabled=1,
         indicator_mode='tactile',

@@ -6360,9 +6360,15 @@
         // of material between a raised dot and the nearest back-side recess on
         // the SAME cylinder surface. Mirrors app/geometry/interpoint.py
         // (SAME_SURFACE_GAP_RELIABLE_MM / SAME_SURFACE_GAP_FLOOR_MM): below
-        // 0.50 mm the ridge prints unreliably; below 0.34 mm a 0.4 mm nozzle
+        // 0.45 mm the ridge prints unreliably; below 0.34 mm a 0.4 mm nozzle
         // cannot lay it down at all and the backend rejects the request.
-        const DS_SAME_SURFACE_GAP_RELIABLE_MM = 0.50;
+        //
+        // The 0.45 line is PROVISIONAL and unmeasured (Brennen, 2026-08-23).
+        // It was 0.50, which had no stated basis and put the shipped 0.4
+        // preset (0.4678 nominal) permanently in warning. Do not treat it as
+        // a printability claim, and do not edit it here: the source of truth
+        // is app/geometry/interpoint.py and the full reasoning lives there.
+        const DS_SAME_SURFACE_GAP_RELIABLE_MM = 0.45;
         const DS_SAME_SURFACE_GAP_FLOOR_MM = 0.34;
 
         // Smallest centre-to-centre distance between a front-grid dot position

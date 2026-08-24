@@ -125,8 +125,30 @@ DS_FOOTPRINTS_BY_PRESET = {
 
 # Printability thresholds for the material left between a dot and a neighbouring
 # recess on the same surface (Bambu X1C, 0.4 mm nozzle: Arachne widens anything
-# from 0.1 to 0.34 mm up to 0.34 mm, and drops below 0.1 mm).
-SAME_SURFACE_GAP_RELIABLE_MM = 0.50
+# from 0.1 to 0.34 mm up to 0.34 mm, and drops below 0.1 mm). Those Arachne
+# figures justify the FLOOR. They have never justified the reliable line.
+#
+# PROVISIONAL, and knowingly so (Brennen, 2026-08-23). The reliable line was
+# 0.50 mm with no stated basis anywhere in the code or the specs, while the
+# shipped 0.4 preset sits at 0.4678 mm nominal - missing it by 0.0322 mm, which
+# is below what you can measure on the part. So the DEFAULT configuration
+# warned "the ridge may come out thin or merged" on every double-sided run,
+# about a package recorded embossing clean on 2026-08-20. An NVDA walkthrough
+# found it as a standing warning, which is how a user learns to ignore warnings.
+#
+# 0.45 stops that. It is NOT a measured value. The two data points that exist
+# (0.4953 and 0.4278 mm printed) BOTH PASSED, and two passing samples cannot
+# locate a failure boundary - they only prove it lies somewhere below 0.4278.
+# Deriving a threshold from them would repeat the mistake 0.50 already made.
+# What should set this number is a print test that walks the gap down until the
+# ridge visibly fails. Until that exists, 0.45 removes a false alarm and makes
+# no printability claim.
+#
+# Known consequence, recorded rather than discovered later: at 0.45 the 0.4
+# package clears on the NOMINAL figure (0.4678) while its PRINTED ridge (0.4278)
+# does not. It also swaps which package demonstrates the nominal/printed split
+# of FD-11b - that was the 0.3 package at 0.50, and is the 0.4 package here.
+SAME_SURFACE_GAP_RELIABLE_MM = 0.45
 SAME_SURFACE_GAP_FLOOR_MM = 0.34
 
 # -----------------------------------------------------------------------------

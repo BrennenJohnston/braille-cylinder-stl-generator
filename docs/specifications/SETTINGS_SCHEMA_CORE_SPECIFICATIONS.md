@@ -416,7 +416,8 @@ the `minimum`/`maximum` values in settings.schema.json are documentation only:
   decimals. **Since 2026-08-21 the rejection measures the recess's PRINTED mouth**,
   `interpoint.printed_bowl_mouth_mm(bowl_diameter, bowl_depth)` — the worker cuts the
   bowl as a hemisphere, so it comes out wider than nominal. The marginal band
-  0.34–0.50 mm (`SAME_SURFACE_GAP_RELIABLE_MM`) is NOT rejected, and both soft
+  0.34–0.45 mm (`SAME_SURFACE_GAP_RELIABLE_MM`, lowered from 0.50 and **provisional**
+  since 2026-08-23 — see INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §3) is NOT rejected, and both soft
   channels deliberately keep measuring the NOMINAL diameter: geometry_spec returns
   the warning in the spec's `warnings` array, and the UI recomputes the same gap live
   (`checkDoubleSidedGap()` in public/index.html, status region `#ds-gap-warning`).
