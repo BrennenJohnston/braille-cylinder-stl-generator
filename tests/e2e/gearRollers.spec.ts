@@ -23,6 +23,7 @@
  */
 
 import { expect, test, type Page } from '@playwright/test';
+import fs from 'node:fs';
 
 // Signed strings. The UI must quote them exactly; rewording is Brennen's call.
 const CUTOUT_NOTE = 'The polygonal cutout is not used while integrated gears are on.';
@@ -366,5 +367,32 @@ test.describe('Gear-integrated one-piece rollers (BETA)', () => {
     expect(bBody.plate_type).toBe('negative');
     expect((aBody.settings as Record<string, unknown>).gear_rollers_enabled).toBe(1);
     expect((bBody.settings as Record<string, unknown>).gear_rollers_enabled).toBe(1);
+  });
+
+  test('the combined download carries the Geared pair name and every triangle', async ({ page }) => {
+    test.setTimeout(300_000);
+    await openApp(page);
+    await page.locator('#auto-text').fill('abc');
+    await setGearToggle(page, true);
+    await generateBoth(page);
+
+    const triangleCount = async (buttonId: string) => {
+      const downloadPromise = page.waitForEvent('download');
+      await page.locator(`#${buttonId}`).click();
+      const download = await downloadPromise;
+      const buf = fs.readFileSync((await download.path())!);
+      const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+      const triangles = view.getUint32(80, true);
+      expect(buf.byteLength).toBe(84 + triangles * 50);
+      return { name: download.suggestedFilename(), triangles };
+    };
+
+    const a = await triangleCount('download-cylinder-a-btn');
+    const b = await triangleCount('download-cylinder-b-btn');
+    const pair = await triangleCount('download-pair-btn');
+
+    // DRAFT name pin - revisited at the sign-off gate.
+    expect(pair.name).toBe('Cylinder_Pair_Geared_0.4_abc.stl');
+    expect(pair.triangles).toBe(a.triangles + b.triangles);
   });
 });
