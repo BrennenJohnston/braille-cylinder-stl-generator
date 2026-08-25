@@ -51,6 +51,23 @@ The companion script `_extract_bana_text.py` (prefixed with `_` because it is in
 
 ---
 
+### `derive_gear_assets.py`
+**Purpose**: Derive the vendored gear assets for the gear-integrated one-piece rollers (BETA) from Brennen’s four placed gear sample STLs.
+
+**Usage**:
+```bash
+python scripts/derive_gear_assets.py
+```
+
+**What it does**:
+- Reads the four sample STLs (`--source` points at the sample folder), applies the canonical sample→program transforms, exact-merges vertices, and writes `static/assets/gears/gears_a.bin`, `gears_b.bin` and `gears_manifest.json`
+- Self-checks every asset before writing: 24 teeth per gear, tip radius 16.109 mm, z bands, two watertight bodies per asset
+- Re-running is byte-idempotent (same inputs → same bytes)
+
+**When to use**: Only when the reference gear samples change. This is the ONLY route that may regenerate those assets — never hand-edit them.
+
+---
+
 ### `git_push.ps1`
 **Purpose**: Automated git stage, commit, and push workflow
 
@@ -101,4 +118,4 @@ When adding utility scripts:
 
 ---
 
-*Last updated: January 2026*
+*Last updated: August 2026*
