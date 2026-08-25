@@ -769,7 +769,7 @@ def test_payload_fallback_literals_match_the_shipped_defaults():
 
     # field name -> the value the app should fall back to, and where that is set
     expected = {
-        'counter_dot_depth': ('0.8', "settings.schema.json dots.bowl.depth_mm and app/models.py"),
+        'counter_dot_depth': ('0.8', 'settings.schema.json dots.bowl.depth_mm and app/models.py'),
         'tactile_indicator_length': ('10.0', 'the 2026-07-30 tactile defaults'),
         'tactile_indicator_raise': ('0.5', 'the 2026-07-30 tactile defaults'),
     }
@@ -779,6 +779,6 @@ def test_payload_fallback_literals_match_the_shipped_defaults():
         match = re.search(pattern, html)
         assert match, f'payload fallback for {field} not found in public/index.html'
         assert match.group(1) == want, (
-            f"Emptying the {field} box would send {match.group(1)}, but the shipped default is "
+            f'Emptying the {field} box would send {match.group(1)}, but the shipped default is '
             f'{want} ({source}). A fallback literal must never be a second, drifting copy of a default.'
         )

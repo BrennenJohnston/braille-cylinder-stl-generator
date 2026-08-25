@@ -258,9 +258,9 @@ def test_both_shipped_packages_pass_at_the_default_offsets(preset, printed_mouth
     footprints = ip.DS_FOOTPRINTS_BY_PRESET[preset]
     mouth = ip.printed_bowl_mouth_mm(footprints['ds_bowl_base_diameter'], footprints['ds_bowl_depth'])
     assert mouth == pytest.approx(printed_mouth, abs=0.001)
-    assert ip.same_surface_min_gap(
-        footprints['ds_dot_base_diameter'], mouth, 1.25, 1.25, 14, 4
-    ) == pytest.approx(printed_gap, abs=0.001)
+    assert ip.same_surface_min_gap(footprints['ds_dot_base_diameter'], mouth, 1.25, 1.25, 14, 4) == pytest.approx(
+        printed_gap, abs=0.001
+    )
     assert validate_settings(_package(preset, interpoint_offset_x=1.25, interpoint_offset_y=1.25)) is True
 
 
@@ -370,18 +370,22 @@ def test_the_soft_warning_stays_on_the_nominal_figure():
     from app.models import CardSettings
 
     demonstrators = [
-        preset for preset, fp in ip.DS_FOOTPRINTS_BY_PRESET.items()
+        preset
+        for preset, fp in ip.DS_FOOTPRINTS_BY_PRESET.items()
         if ip.same_surface_min_gap(
             fp['ds_dot_base_diameter'],
             ip.printed_bowl_mouth_mm(fp['ds_bowl_base_diameter'], fp['ds_bowl_depth']),
-            cols=14, rows=4) < ip.SAME_SURFACE_GAP_RELIABLE_MM
-        <= ip.same_surface_min_gap(
-            fp['ds_dot_base_diameter'], fp['ds_bowl_base_diameter'], cols=14, rows=4)
+            cols=14,
+            rows=4,
+        )
+        < ip.SAME_SURFACE_GAP_RELIABLE_MM
+        <= ip.same_surface_min_gap(fp['ds_dot_base_diameter'], fp['ds_bowl_base_diameter'], cols=14, rows=4)
     ]
     assert demonstrators, (
         'No shipped package now has printed < SAME_SURFACE_GAP_RELIABLE_MM <= nominal, '
         'so the nominal/printed split of FD-11b no longer changes any outcome and this '
-        'test proves nothing. Re-decide the split, do not delete the test.')
+        'test proves nothing. Re-decide the split, do not delete the test.'
+    )
 
     footprints = ip.DS_FOOTPRINTS_BY_PRESET[demonstrators[0]]
     settings = CardSettings(
