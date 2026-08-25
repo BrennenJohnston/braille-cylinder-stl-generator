@@ -4465,7 +4465,7 @@
         // dropping the tessellation seams of a curved surface.
         const STL_EDGE_THRESHOLD_ANGLE = 22;
 
-        let edgesOverlay = null;
+        let edgesOverlays = [];
         let edgesVisible = true;
 
         function getStlMaterialSettings(theme) {
@@ -4680,19 +4680,19 @@
                 // Add ambient light
                 scene.add(new THREE.AmbientLight(new THREE.Color(stlAmbientLight), stlAmbientIntensity));
 
-                // Update mesh color and material properties if mesh exists
-                if (mesh && mesh.material) {
+                // Update color and material properties on every body mesh
+                forEachBodyMesh(bodyMesh => {
                     const materialSettings = getStlMaterialSettings(currentTheme);
-                    mesh.material.color = new THREE.Color(stlMeshColor);
-                    mesh.material.specular = new THREE.Color(materialSettings.specular);
-                    mesh.material.shininess = materialSettings.shininess;
-                    mesh.material.needsUpdate = true;
-                }
+                    bodyMesh.material.color = new THREE.Color(stlMeshColor);
+                    bodyMesh.material.specular = new THREE.Color(materialSettings.specular);
+                    bodyMesh.material.shininess = materialSettings.shininess;
+                    bodyMesh.material.needsUpdate = true;
+                });
 
-                // Recolour the feature-edge overlay for the new theme
-                if (edgesOverlay && edgesOverlay.material) {
-                    edgesOverlay.material.color = new THREE.Color(stlEdgeColor);
-                    edgesOverlay.material.needsUpdate = true;
+                // Recolour the feature-edge overlays for the new theme
+                for (const overlay of edgesOverlays) {
+                    overlay.material.color = new THREE.Color(stlEdgeColor);
+                    overlay.material.needsUpdate = true;
                 }
 
                 // Store original light intensities for brightness/contrast adjustments
@@ -4839,8 +4839,8 @@
                 }
             });
 
-            // Update mesh material properties for contrast
-            if (mesh && mesh.material) {
+            // Update material properties for contrast on every body mesh
+            forEachBodyMesh(bodyMesh => {
                 const currentTheme = document.documentElement.getAttribute('data-theme');
                 const materialSettings = getStlMaterialSettings(currentTheme);
 
@@ -4849,12 +4849,12 @@
                 const specularBrightness = Math.min(255, Math.floor(
                     baseSpecularChannel * contrastSettings.specularIntensity
                 ));
-                mesh.material.specular = new THREE.Color(
+                bodyMesh.material.specular = new THREE.Color(
                     specularBrightness << 16 | specularBrightness << 8 | specularBrightness
                 );
-                mesh.material.shininess = materialSettings.shininess + contrastSettings.shininessOffset;
-                mesh.material.needsUpdate = true;
-            }
+                bodyMesh.material.shininess = materialSettings.shininess + contrastSettings.shininessOffset;
+                bodyMesh.material.needsUpdate = true;
+            });
 
             // Force re-render
             if (renderer && scene && camera) {
@@ -4986,27 +4986,44 @@
         // shapes legible without relying on the shading. Not persisted, matching
         // how the theme is handled: every load starts from the default.
 
+        // The preview holds ONE group with one or two body meshes inside (a
+        // pair run shows both cylinders). Anything that used to touch
+        // `mesh.material` or `mesh.geometry` goes through this instead.
+        function forEachBodyMesh(fn) {
+            if (!mesh) return;
+            if (mesh.isGroup) {
+                mesh.children.forEach(child => { if (child.isMesh) fn(child); });
+            } else if (mesh.isMesh) {
+                fn(mesh);
+            }
+        }
+
         function disposeEdgesOverlay() {
-            if (!edgesOverlay) return;
-            if (edgesOverlay.parent) edgesOverlay.parent.remove(edgesOverlay);
-            edgesOverlay.geometry.dispose();
-            edgesOverlay.material.dispose();
-            edgesOverlay = null;
+            for (const overlay of edgesOverlays) {
+                if (overlay.parent) overlay.parent.remove(overlay);
+                overlay.geometry.dispose();
+                overlay.material.dispose();
+            }
+            edgesOverlays = [];
         }
 
         // EdgesGeometry walks every triangle, so this is skipped entirely while
         // the overlay is switched off rather than built and hidden.
         function refreshEdgesOverlay() {
             disposeEdgesOverlay();
-            if (!edgesVisible || !mesh || !mesh.geometry) return;
+            if (!edgesVisible || !mesh) return;
 
             const edgeColor = getStlThemeColor('--stl-edge-color', '#020617');
-            edgesOverlay = new THREE.LineSegments(
-                new THREE.EdgesGeometry(mesh.geometry, STL_EDGE_THRESHOLD_ANGLE),
-                new THREE.LineBasicMaterial({ color: new THREE.Color(edgeColor) })
-            );
-            // Parented to the mesh so it inherits every camera-fitting transform
-            mesh.add(edgesOverlay);
+            forEachBodyMesh(bodyMesh => {
+                const overlay = new THREE.LineSegments(
+                    new THREE.EdgesGeometry(bodyMesh.geometry, STL_EDGE_THRESHOLD_ANGLE),
+                    new THREE.LineBasicMaterial({ color: new THREE.Color(edgeColor) })
+                );
+                // Parented to its body so it inherits every transform,
+                // including the pair's side-by-side offsets
+                bodyMesh.add(overlay);
+                edgesOverlays.push(overlay);
+            });
         }
 
         function updateEdgesToggle() {
@@ -8563,17 +8580,22 @@
                 // Re-initialize scene
                 reinitialize3DScene();
 
-                // Reload last STL if available
-                if (lastGeneratedSTLUrl) {
-                    const loader = new STLLoader();
-                    loader.load(lastGeneratedSTLUrl, (geometry) => {
-                        if (mesh) scene.remove(mesh);
-                        const theme = document.documentElement.getAttribute('data-theme');
-                        const meshColor = getStlThemeColor('--stl-mesh-color', '#5580b3');
-                        mesh = new THREE.Mesh(geometry, createStlMaterial(theme, meshColor));
-                        scene.add(mesh);
-                        refreshEdgesOverlay();
-                    });
+                // Rebuild the last preview: the pair from its retained blobs
+                // (Cylinder A's object URL is long revoked), else the single
+                // STL. Routing through presentPreviewGeometries also centres
+                // and reframes - this path used to skip centring, so restored
+                // views now match loadSTL exactly (deliberate alignment,
+                // flagged for review at the sign-off gate).
+                if (lastPreviewWasPair && pairFiles.positive && pairFiles.negative) {
+                    Promise.all([
+                        pairFiles.positive.blob.arrayBuffer(),
+                        pairFiles.negative.blob.arrayBuffer(),
+                    ]).then(([bufA, bufB]) => {
+                        const loader = new STLLoader();
+                        presentPreviewGeometries([loader.parse(bufA), loader.parse(bufB)], pairXOffsetMm());
+                    }).catch((error) => log.error('Pair preview restore failed:', error));
+                } else if (lastGeneratedSTLUrl) {
+                    loadSTL(lastGeneratedSTLUrl);
                 }
             }, false);
 
@@ -9513,6 +9535,18 @@
                             { type: 'application/octet-stream' }),
                         filename: await buildPairStlFilename(isGearRollersOn()),
                     };
+
+                    // Show the pair the way the combined file prints: A left,
+                    // B right, centres the same distance apart. Parsed from
+                    // the retained buffers - Cylinder A's object URL was
+                    // revoked the moment B generated. A preview failure must
+                    // not take the finished downloads with it.
+                    try {
+                        const loader = new STLLoader();
+                        presentPreviewGeometries([loader.parse(bufA), loader.parse(bufB)], pairXOffsetMm());
+                    } catch (previewError) {
+                        log.error('Pair preview could not be shown; downloads are unaffected:', previewError);
+                    }
                 } catch (error) {
                     log.error('Combined pair STL could not be built; Cylinder A and B stay downloadable:', error);
                     pairFiles.combined = null;
@@ -9560,111 +9594,155 @@
         document.getElementById('download-cylinder-b-btn')?.addEventListener('click', () => downloadPairFile(pairFiles.negative));
 
 
-        function loadSTL(url) {
+        // Two bodies side by side need roughly twice the viewing distance of
+        // one; tuned by eye at review (decision B7, sign-off gate).
+        const PAIR_CAMERA_PULLBACK = 2;
+        // Whether the current preview shows the pair, so the WebGL-restore
+        // path can rebuild the same view.
+        let lastPreviewWasPair = false;
+        // Monotonic claim on the preview. loadSTL fetches asynchronously, so
+        // during Generate Both, Cylinder B's single-view callback can land
+        // AFTER the pair presentation and silently replace it - the guard
+        // makes the newest claim win regardless of callback order.
+        let previewSeq = 0;
+
+        // One body or two: every preview is a THREE.Group of centred body
+        // meshes. Two bodies sit at +/-spacingMm/2 - per-body centring plus
+        // symmetric offsets keeps the pair centred at the origin with exact
+        // centre-to-centre spacing, no group-level bounding-box work.
+        // The separation runs along world Y: the cylinder camera sits on the
+        // -X axis, so X is its depth axis - an X offset (the axis the combined
+        // FILE uses) would stack one body behind the other on screen.
+        function presentPreviewGeometries(geometries, spacingMm = 0) {
+            previewSeq++;
             init3D();
             // Preview disabled (init3D bailed out because WebGL is unavailable).
-            // The STL blob already exists at lastGeneratedSTLUrl, and the caller
-            // runs setToDownloadState() immediately after this returns, so the
-            // user can still download. We just skip the rotating 3D preview.
+            // The STL blob already exists, and generation flows run
+            // setToDownloadState() regardless, so the user can still download.
             if (!renderer || !scene || !camera) {
                 return;
             }
-            const loader = new STLLoader();
-            loader.load(url, function (geometry) {
-                if (mesh) scene.remove(mesh);
+            if (mesh) scene.remove(mesh);
+            disposeEdgesOverlay();
 
-                // Center the geometry first
+            const isPair = geometries.length === 2;
+            lastPreviewWasPair = isPair;
+
+            // Get theme-appropriate mesh color with proper fallback
+            const meshColor = getStlThemeColor('--stl-mesh-color', '#5580b3');
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+
+            // Center each geometry and measure the largest body for the
+            // cylinder-vs-card check below
+            let width = 0, height = 0, depth = 0;
+            const group = new THREE.Group();
+            geometries.forEach((geometry, index) => {
                 geometry.center();
-
-                // Compute bounding box after centering to detect object type
                 geometry.computeBoundingBox();
                 const bbox = geometry.boundingBox;
-                const width = bbox.max.x - bbox.min.x;
-                const height = bbox.max.y - bbox.min.y;
-                const depth = bbox.max.z - bbox.min.z;
+                width = Math.max(width, bbox.max.x - bbox.min.x);
+                height = Math.max(height, bbox.max.y - bbox.min.y);
+                depth = Math.max(depth, bbox.max.z - bbox.min.z);
 
-                // Check if this is a cylinder
-                const shapeType = document.querySelector('input[name="shape_type"]:checked')?.value;
-                const isCylinder = shapeType === 'cylinder' || height > Math.max(width, depth) * 1.5;
-
-                // Get theme-appropriate mesh color with proper fallback
-                const meshColor = getStlThemeColor('--stl-mesh-color', '#5580b3');
-                const currentTheme = document.documentElement.getAttribute('data-theme');
-
-                mesh = new THREE.Mesh(geometry, createStlMaterial(currentTheme, meshColor));
-                mesh.rotation.x = 0;
-                scene.add(mesh);
-
-                // Rebuild the edge outlines against the new geometry (no-op when off)
-                refreshEdgesOverlay();
-
-                // Adjust camera position based on object type using CAMERA_SETTINGS
-                if (isCylinder) {
-                    // For cylinders: use CAMERA_SETTINGS.CYLINDER configuration
-                    // The cylinder's axis is along the Z-direction, centered at origin
-                    const cylCam = CAMERA_SETTINGS.CYLINDER;
-
-                    // Ensure camera up vector is correct for upright viewing BEFORE lookAt
-                    camera.up.set(cylCam.up.x, cylCam.up.y, cylCam.up.z);
-
-                    // Position camera using CAMERA_SETTINGS (views indicator shapes side)
-                    camera.position.set(cylCam.position.x, cylCam.position.y, cylCam.position.z);
-                    controls.target.set(cylCam.target.x, cylCam.target.y, cylCam.target.z);
-                    camera.lookAt(cylCam.target.x, cylCam.target.y, cylCam.target.z);
-
-                    // Recreate controls so internal up-vector transform matches camera.up
-                    if (controls) {
-                        detachOnDemandRenderListener();
-                        controls.dispose();
-                    }
-                    controls = new OrbitControls(camera, renderer.domElement);
-                    controls.target.set(cylCam.target.x, cylCam.target.y, cylCam.target.z);
-                    // Reapply standard control settings
-                    {   const isMobile = window.innerWidth <= 768;
-                        controls.enableDamping = animationEnabled;
-                        controls.dampingFactor = 0.05;
-                        controls.rotateSpeed = isMobile ? 0.5 : 1.0;
-                        controls.zoomSpeed = isMobile ? 0.8 : 1.2;
-                        controls.panSpeed = isMobile ? 0.5 : 0.8;
-                        controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
-                    }
-                    // Panning orthogonal to world up for Z-up scenes
-                    controls.screenSpacePanning = false;
-                    if (!animationEnabled) attachOnDemandRenderListener();
-
-                    camera.updateProjectionMatrix();
-                } else {
-                    // For cards: use CAMERA_SETTINGS.CARD configuration
-                    const cardCam = CAMERA_SETTINGS.CARD;
-
-                    camera.position.set(cardCam.position.x, cardCam.position.y, cardCam.position.z);
-                    camera.up.set(cardCam.up.x, cardCam.up.y, cardCam.up.z);
-                    camera.lookAt(cardCam.target.x, cardCam.target.y, cardCam.target.z);
-                    // Recreate controls to ensure correct up-vector mapping when switching back to Y-up
-                    if (controls) {
-                        detachOnDemandRenderListener();
-                        controls.dispose();
-                    }
-                    controls = new OrbitControls(camera, renderer.domElement);
-                    controls.target.set(cardCam.target.x, cardCam.target.y, cardCam.target.z);
-                    {   const isMobile = window.innerWidth <= 768;
-                        controls.enableDamping = animationEnabled;
-                        controls.dampingFactor = 0.05;
-                        controls.rotateSpeed = isMobile ? 0.5 : 1.0;
-                        controls.zoomSpeed = isMobile ? 0.8 : 1.2;
-                        controls.panSpeed = isMobile ? 0.5 : 0.8;
-                        controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
-                    }
-                    controls.screenSpacePanning = true;
-                    if (!animationEnabled) attachOnDemandRenderListener();
-                    camera.updateProjectionMatrix();
+                const bodyMesh = new THREE.Mesh(geometry, createStlMaterial(currentTheme, meshColor));
+                if (isPair) {
+                    // Cylinder A on screen-left, B on screen-right, matching the
+                    // download-button order. Screen-right for this camera is -Y.
+                    bodyMesh.position.y = (index === 0 ? 1 : -1) * spacingMm / 2;
                 }
+                group.add(bodyMesh);
+            });
 
-                // Force controls to update with new camera settings
-                controls.update();
-                controls.saveState(); // Save the new camera state as default
+            // Check if this is a cylinder (pairs are cylinders-only anyway)
+            const shapeType = document.querySelector('input[name="shape_type"]:checked')?.value;
+            const isCylinder = shapeType === 'cylinder' || height > Math.max(width, depth) * 1.5;
 
-                animate();
+            mesh = group;
+            mesh.rotation.x = 0;
+            scene.add(mesh);
+
+            // Rebuild the edge outlines against the new geometry (no-op when off)
+            refreshEdgesOverlay();
+
+            const pullback = isPair ? PAIR_CAMERA_PULLBACK : 1;
+
+            // Adjust camera position based on object type using CAMERA_SETTINGS
+            if (isCylinder) {
+                // For cylinders: use CAMERA_SETTINGS.CYLINDER configuration
+                // The cylinder's axis is along the Z-direction, centered at origin
+                const cylCam = CAMERA_SETTINGS.CYLINDER;
+
+                // Ensure camera up vector is correct for upright viewing BEFORE lookAt
+                camera.up.set(cylCam.up.x, cylCam.up.y, cylCam.up.z);
+
+                // Position camera using CAMERA_SETTINGS (views indicator shapes side)
+                camera.position.set(cylCam.position.x * pullback, cylCam.position.y * pullback, cylCam.position.z * pullback);
+                controls.target.set(cylCam.target.x, cylCam.target.y, cylCam.target.z);
+                camera.lookAt(cylCam.target.x, cylCam.target.y, cylCam.target.z);
+
+                // Recreate controls so internal up-vector transform matches camera.up
+                if (controls) {
+                    detachOnDemandRenderListener();
+                    controls.dispose();
+                }
+                controls = new OrbitControls(camera, renderer.domElement);
+                controls.target.set(cylCam.target.x, cylCam.target.y, cylCam.target.z);
+                // Reapply standard control settings
+                {   const isMobile = window.innerWidth <= 768;
+                    controls.enableDamping = animationEnabled;
+                    controls.dampingFactor = 0.05;
+                    controls.rotateSpeed = isMobile ? 0.5 : 1.0;
+                    controls.zoomSpeed = isMobile ? 0.8 : 1.2;
+                    controls.panSpeed = isMobile ? 0.5 : 0.8;
+                    controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+                }
+                // Panning orthogonal to world up for Z-up scenes
+                controls.screenSpacePanning = false;
+                if (!animationEnabled) attachOnDemandRenderListener();
+
+                camera.updateProjectionMatrix();
+            } else {
+                // For cards: use CAMERA_SETTINGS.CARD configuration
+                const cardCam = CAMERA_SETTINGS.CARD;
+
+                camera.position.set(cardCam.position.x, cardCam.position.y, cardCam.position.z);
+                camera.up.set(cardCam.up.x, cardCam.up.y, cardCam.up.z);
+                camera.lookAt(cardCam.target.x, cardCam.target.y, cardCam.target.z);
+                // Recreate controls to ensure correct up-vector mapping when switching back to Y-up
+                if (controls) {
+                    detachOnDemandRenderListener();
+                    controls.dispose();
+                }
+                controls = new OrbitControls(camera, renderer.domElement);
+                controls.target.set(cardCam.target.x, cardCam.target.y, cardCam.target.z);
+                {   const isMobile = window.innerWidth <= 768;
+                    controls.enableDamping = animationEnabled;
+                    controls.dampingFactor = 0.05;
+                    controls.rotateSpeed = isMobile ? 0.5 : 1.0;
+                    controls.zoomSpeed = isMobile ? 0.8 : 1.2;
+                    controls.panSpeed = isMobile ? 0.5 : 0.8;
+                    controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+                }
+                controls.screenSpacePanning = true;
+                if (!animationEnabled) attachOnDemandRenderListener();
+                camera.updateProjectionMatrix();
+            }
+
+            // Force controls to update with new camera settings
+            controls.update();
+            controls.saveState(); // Save the new camera state as default
+
+            animate();
+        }
+
+        function loadSTL(url) {
+            const seq = ++previewSeq;
+            const loader = new STLLoader();
+            loader.load(url, function (geometry) {
+                // A newer presentation (the pair view, or a later single) has
+                // claimed the preview while this fetch was in flight.
+                if (seq !== previewSeq) return;
+                presentPreviewGeometries([geometry]);
             }, undefined, function (error) {
                 errorText.textContent = 'Failed to load STL: ' + error;
                 errorDiv.style.display = 'flex';
