@@ -13,7 +13,7 @@ import math
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, NamedTuple
 
-from app.geometry import interpoint
+from app.geometry import gears, interpoint
 
 if TYPE_CHECKING:
     pass
@@ -440,8 +440,9 @@ def extract_cylinder_geometry_spec(
     if cylinder_params is None:
         cylinder_params = {}
 
-    diameter = float(cylinder_params.get('diameter', cylinder_params.get('diameter_mm', 30.75)))
-    height = float(cylinder_params.get('height', cylinder_params.get('height_mm', settings.card_height)))
+    # One reader for both spellings of each key, shared with app/validation.py's
+    # gear gate so the two can never disagree about what an absent field means.
+    diameter, height = gears.cylinder_dimensions(cylinder_params, settings.card_height)
     thickness = float(cylinder_params.get('wall_thickness', cylinder_params.get('thickness', 2.0)))
     polygonal_cutout_radius = float(cylinder_params.get('polygonal_cutout_radius_mm', 0))
     polygonal_cutout_sides = int(cylinder_params.get('polygonal_cutout_sides', 12) or 12)
@@ -479,6 +480,21 @@ def extract_cylinder_geometry_spec(
             tactile_on = True
         double_sided_warnings.extend(_double_sided_crowding_warnings(settings, tactile_on))
 
+    # Gear-integrated one-piece rollers BETA. Read once, exactly as the
+    # double-sided flag above is: with the toggle off every gear line below is
+    # skipped and the function runs as it did before the feature existed.
+    gear_rollers = int(getattr(settings, 'gear_rollers_enabled', 0)) == 1
+    gear_warnings: list[str] = []
+    if gear_rollers and not gears.matches_reference_roller(diameter, height):
+        # Unreachable from the request route - app/validation.py rejects this
+        # outright - but direct callers (tests, the golden fixture generator)
+        # bypass validation, and a gear spec for the wrong barrel silently
+        # produces loose or swallowed gears. Same defense-in-depth as the
+        # double-sided indicator_mode branch above.
+        warning = gears.reference_roller_message(diameter, height)
+        gear_warnings.append(warning)
+        logger.warning(warning)
+
     # Calculate grid layout parameters (needed for polygon alignment).
     # settings.grid_columns is the TOTAL column count: in visual mode the frontend
     # has already added the marker columns, in tactile mode it adds none.
@@ -503,7 +519,16 @@ def extract_cylinder_geometry_spec(
 
     # Compute polygon cutout points if specified, with rotation applied
     polygon_points = []
-    if polygonal_cutout_radius > 0:
+    if gear_rollers and polygonal_cutout_radius > 0:
+        # Decision D-2: the barrel is forced solid while gear mode is on. A
+        # one-piece roller has no through-path along its axis anyway - the gear
+        # bores are blind pockets - so keeping the cutout would seal a cavity
+        # nothing can reach or drain. Wording (S3) signed off by Brennen
+        # 2026-08-24; reword only with his sign-off.
+        warning = 'The polygonal cutout is not used while integrated gears are on.'
+        gear_warnings.append(warning)
+        logger.warning(warning)
+    elif polygonal_cutout_radius > 0:
         circumscribed_radius = polygonal_cutout_radius / math.cos(math.pi / polygonal_cutout_sides)
         for i in range(polygonal_cutout_sides):
             base_angle = 2 * math.pi * i / polygonal_cutout_sides
@@ -533,6 +558,18 @@ def extract_cylinder_geometry_spec(
         'warnings': [],
     }
     spec['warnings'].extend(double_sided_warnings)
+    spec['warnings'].extend(gear_warnings)
+
+    if gear_rollers:
+        # The vendored asset already sits in the worker's frame (Phase 01 baked
+        # the sample-to-program transform in), so the worker applies no
+        # placement and no theta negation to it - see
+        # static/assets/gears/gears_manifest.json. A missing plate_type raises
+        # rather than guessing a side.
+        spec['gears'] = {
+            'asset': gears.GEAR_ASSET_BY_PLATE[plate_type],
+            'weld_rings': gears.weld_rings(height),
+        }
 
     # Counts recesses declined for having no depth, so the omission is reported
     # once per request rather than silently or once per dot.
@@ -610,7 +647,9 @@ def extract_cylinder_geometry_spec(
                 # The recess the emboss plate's raised arrow nests into. It sits at
                 # 180°, the fixed point of this plate's angle-negating mirror, so it
                 # needs no mirroring of its own.
-                spec['markers'].append(_create_tactile_indicator_spec(y_local, radius, settings, is_recess=True))
+                spec['markers'].append(
+                    _create_tactile_indicator_spec(y_local, radius, settings, is_recess=True, gear_rollers=gear_rollers)
+                )
 
             # Add markers (same column positions as embossing, but mirrored direction)
             # Triangle marker at column 0 (first position, same as embossing).
@@ -709,7 +748,11 @@ def extract_cylinder_geometry_spec(
             if tactile_on:
                 # Raised alignment arrow in the seam gap, apex toward the cylinder
                 # top so a blind user can feel which end is up.
-                spec['markers'].append(_create_tactile_indicator_spec(y_local, radius, settings, is_recess=False))
+                spec['markers'].append(
+                    _create_tactile_indicator_spec(
+                        y_local, radius, settings, is_recess=False, gear_rollers=gear_rollers
+                    )
+                )
 
             # Indicators (visual mode only — tactile has no marker columns):
             # - Triangle at column 0 (first position) - ALWAYS created (no user toggle)
@@ -980,7 +1023,9 @@ def _double_sided_crowding_warnings(settings: Any, tactile_on: bool) -> list[str
     return [warning]
 
 
-def _create_tactile_indicator_spec(y_local: float, radius: float, settings: Any, is_recess: bool) -> dict[str, Any]:
+def _create_tactile_indicator_spec(
+    y_local: float, radius: float, settings: Any, is_recess: bool, gear_rollers: bool
+) -> dict[str, Any]:
     """
     Create one tactile row indicator spec at the seam-gap centre (180°).
 
@@ -999,6 +1044,9 @@ def _create_tactile_indicator_spec(y_local: float, radius: float, settings: Any,
         is_recess: True for the counter plate's recess (subtracted, grown by the
             clearance and extra depth), False for the emboss plate's raised arrow
             (unioned).
+        gear_rollers: True when the gear beta is on, which grows the RAISED
+            arrow's outline by GEAR_ARROW_WELD_MM (D-8a). Recess arrows are
+            unaffected - their clearance growth already overlaps.
     """
     theta = TACTILE_SEAM_THETA
     width = float(getattr(settings, 'tactile_indicator_width', 4.0))
@@ -1018,7 +1066,12 @@ def _create_tactile_indicator_spec(y_local: float, radius: float, settings: Any,
         extra_depth = 0.0
         inner_radius = radius - TACTILE_BASE_EMBED
         outer_radius = radius + raise_mm
-        outline_delta = 0.0
+        # Decision D-8a: gear mode promises a watertight one-piece roller, and
+        # a 10 mm arrow on 10 mm line spacing touches its neighbour exactly -
+        # a tangency float32 STL rounding turns into a pinch edge. 5 um makes
+        # it a real overlap. Off, the outline is untouched, so today's exports
+        # keep the exact tangency they ship with.
+        outline_delta = gears.GEAR_ARROW_WELD_MM if gear_rollers else 0.0
 
     return {
         'type': 'cylinder_tactile_arrow',

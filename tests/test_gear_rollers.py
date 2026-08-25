@@ -82,9 +82,7 @@ INTERFACE_BAND_MM = 0.1
 
 # The reference samples live outside the repo; the deep comparison skips when
 # the folder is absent (CI), and runs on Brennen's machine.
-SAMPLES_DIR = Path(
-    r'C:\Users\WATAP\Documents\Research\Braille Embosser\New Developement_2026_08_24\Roller Samples'
-)
+SAMPLES_DIR = Path(r'C:\Users\WATAP\Documents\Research\Braille Embosser\New Developement_2026_08_24\Roller Samples')
 # Sample assembly frame -> program frame (audit section 10.2), the same
 # constants scripts/derive_gear_assets.py baked into the assets.
 SAMPLE_ROLLERS = {
@@ -126,17 +124,13 @@ def load_gear_asset(asset_name):
 
     path = ASSETS_DIR / f'{asset_name}.bin'
     if not path.is_file():
-        raise FileNotFoundError(
-            f'vendored gear asset missing: {path}. Regenerate with scripts/derive_gear_assets.py'
-        )
+        raise FileNotFoundError(f'vendored gear asset missing: {path}. Regenerate with scripts/derive_gear_assets.py')
     data = path.read_bytes()
     if data[:6] != GEAR_MAGIC:
         raise ValueError(f'{path.name}: bad magic {data[:6]!r}, expected {GEAR_MAGIC!r}')
     vert_count, tri_count = struct.unpack_from('<II', data, 6)
     vertices = np.frombuffer(data, dtype='<f4', count=3 * vert_count, offset=GEAR_HEADER_BYTES)
-    faces = np.frombuffer(
-        data, dtype='<u4', count=3 * tri_count, offset=GEAR_HEADER_BYTES + 12 * vert_count
-    )
+    faces = np.frombuffer(data, dtype='<u4', count=3 * tri_count, offset=GEAR_HEADER_BYTES + 12 * vert_count)
     return trimesh.Trimesh(
         vertices=vertices.reshape(-1, 3).astype(np.float64),
         faces=faces.reshape(-1, 3).astype(np.int64),
@@ -226,8 +220,9 @@ def outside_interface_band(points):
     return np.abs(np.abs(points[:, 2]) - BARREL_HEIGHT_MM / 2.0) > INTERFACE_BAND_MM
 
 
-@pytest.fixture(scope='module', autouse=True)
-def _geometry_stack():
+@pytest.fixture(scope='module')
+def geometry_stack():
+    """trimesh + manifold3d are dev-only extras; the spec tests below need neither."""
     pytest.importorskip('trimesh')
     pytest.importorskip('manifold3d')
 
@@ -258,7 +253,7 @@ def test_vendored_asset_is_the_bytes_its_manifest_records(asset_name):
 
 
 @pytest.mark.parametrize('asset_name', ASSET_NAMES)
-def test_one_piece_roller_is_a_single_watertight_body(asset_name):
+def test_one_piece_roller_is_a_single_watertight_body(geometry_stack, asset_name):
     """Audit 11.1 - the whole point of the feature: one solid, not three shells."""
     roller = one_piece_roller(asset_name)
     assert len(roller.split(only_watertight=False)) == 1
@@ -267,7 +262,7 @@ def test_one_piece_roller_is_a_single_watertight_body(asset_name):
 
 
 @pytest.mark.parametrize('asset_name', ASSET_NAMES)
-def test_one_piece_roller_survives_the_float32_stl_round_trip(asset_name):
+def test_one_piece_roller_survives_the_float32_stl_round_trip(geometry_stack, asset_name):
     """
     STL stores float32. Exact tangencies collapse into non-manifold pinch edges
     when coordinates round, which is the failure the weld rings exist to avoid;
@@ -284,7 +279,7 @@ def test_one_piece_roller_survives_the_float32_stl_round_trip(asset_name):
 
 
 @pytest.mark.parametrize('asset_name', ASSET_NAMES)
-def test_one_piece_roller_envelope(asset_name):
+def test_one_piece_roller_envelope(geometry_stack, asset_name):
     """Audit 11.2 - the 72.000 mm roller: gears reach z +/-36, nothing exceeds the tips."""
     roller = one_piece_roller(asset_name)
     low, high = roller.bounds
@@ -299,7 +294,7 @@ def test_one_piece_roller_envelope(asset_name):
 
 
 @pytest.mark.parametrize('asset_name', ASSET_NAMES)
-def test_barrel_radius_survives_the_union(asset_name):
+def test_barrel_radius_survives_the_union(geometry_stack, asset_name):
     """
     Audit 11.3. A tessellated cylinder carries vertices ONLY on its two rim
     rings, and those rims are now buried at the gear interfaces - so measure a
@@ -322,7 +317,7 @@ def test_barrel_radius_survives_the_union(asset_name):
 
 
 @pytest.mark.parametrize('asset_name', ASSET_NAMES)
-def test_union_preserves_the_vendored_gear_surface(asset_name):
+def test_union_preserves_the_vendored_gear_surface(geometry_stack, asset_name):
     """
     Audit 11.4 - the union must fuse the gears in without deforming them. Every
     sampled point on the vendored asset has to land on the roller's surface,
@@ -344,7 +339,7 @@ def test_union_preserves_the_vendored_gear_surface(asset_name):
 
 
 @pytest.mark.parametrize('asset_name', ASSET_NAMES)
-def test_tooth_count_and_phase_survive_the_union(asset_name):
+def test_tooth_count_and_phase_survive_the_union(geometry_stack, asset_name):
     """Audit 11.5 - 24 teeth at both ends, clocked exactly as the asset is."""
     roller = one_piece_roller(asset_name)
     asset = load_gear_asset(asset_name)
@@ -364,7 +359,7 @@ def test_tooth_count_and_phase_survive_the_union(asset_name):
 
 
 @pytest.mark.parametrize('asset_name', ASSET_NAMES)
-def test_union_volume_is_the_parts_plus_at_most_the_two_rings(asset_name):
+def test_union_volume_is_the_parts_plus_at_most_the_two_rings(geometry_stack, asset_name):
     """
     Audit 11.6. The barrel and the gears only touch - they do not overlap - so
     the fused volume is their sum, plus whatever of the weld rings was not
@@ -379,7 +374,7 @@ def test_union_volume_is_the_parts_plus_at_most_the_two_rings(asset_name):
 
 
 @pytest.mark.parametrize('asset_name', ASSET_NAMES)
-def test_weld_rings_are_invisible_from_outside(asset_name):
+def test_weld_rings_are_invisible_from_outside(geometry_stack, asset_name):
     """
     Decision D-3 promised the rings change no external dimension. Prove it: the
     roller built without them has the same bounds and the same volume, so the
@@ -396,7 +391,7 @@ def test_weld_rings_are_invisible_from_outside(asset_name):
 
 @pytest.mark.skipif(not SAMPLES_DIR.is_dir(), reason='reference roller samples are not on this machine')
 @pytest.mark.parametrize('asset_name', ASSET_NAMES)
-def test_one_piece_roller_matches_the_original_roller_samples(asset_name):
+def test_one_piece_roller_matches_the_original_roller_samples(geometry_stack, asset_name):
     """
     The deep check: does the roller we assemble actually match the roller
     Brennen exported? This is the ONLY test that can catch a wrong transform.
@@ -439,3 +434,161 @@ def test_one_piece_roller_matches_the_original_roller_samples(asset_name):
 
     assert barrel_zone.sum() > 1000
     assert np.max(distances[barrel_zone]) <= SAMPLE_BARREL_TOL_MM
+
+
+# ---------------------------------------------------------------------------
+# The geometry spec side: what app/geometry_spec.py emits for gear mode.
+#
+# These need no mesh library - they read the spec dict the worker will act on.
+# ---------------------------------------------------------------------------
+
+REFERENCE_CYLINDER_PARAMS = {'diameter': 30.8, 'height': 52.0, 'wall_thickness': 2.0, 'seam_offset_deg': 355.0}
+GEAR_ARROW_WELD_MM = 0.005  # D-8a
+CUTOUT_WARNING = 'The polygonal cutout is not used while integrated gears are on.'  # S3
+
+
+def build_spec(plate_type='positive', gears_on=True, tactile=True, cutout=False, back_lines=None, **overrides):
+    from app.geometry_spec import extract_cylinder_geometry_spec
+    from app.models import CardSettings
+    from app.utils import braille_to_dots
+
+    settings_data = {'grid_columns': 14 if tactile else 15, 'grid_rows': 4}
+    if tactile:
+        settings_data['indicator_mode'] = 'tactile'
+    if gears_on:
+        settings_data['gear_rollers_enabled'] = 1
+    if back_lines is not None:
+        settings_data.update(
+            {
+                'double_sided_enabled': 1,
+                'indicator_mode': 'tactile',
+                'interpoint_offset_x': 1.25,
+                'interpoint_offset_y': 1.25,
+                'ds_dot_base_diameter': 1.2,
+                'ds_dot_base_height': 0.4,
+                'ds_dot_dome_diameter': 0.8,
+                'ds_dot_dome_height': 0.4,
+                'ds_bowl_base_diameter': 1.3,
+                'ds_bowl_depth': 0.5,
+            }
+        )
+    settings_data.update(overrides.pop('settings', {}))
+
+    cylinder_params = dict(REFERENCE_CYLINDER_PARAMS, **overrides)
+    if cutout:
+        cylinder_params['polygonal_cutout_radius_mm'] = 13.0
+        cylinder_params['polygonal_cutout_sides'] = 12
+
+    return extract_cylinder_geometry_spec(
+        ['⠁⠃⠉', '', '', ''],
+        'g1',
+        CardSettings(**settings_data),
+        cylinder_params,
+        None,
+        plate_type,
+        braille_to_dots_func=braille_to_dots,
+        back_lines=back_lines,
+    )
+
+
+def test_no_gears_block_when_the_flag_is_off():
+    for plate_type in ('positive', 'negative'):
+        assert 'gears' not in build_spec(plate_type, gears_on=False)
+
+
+@pytest.mark.parametrize('plate_type,expected_asset', [('positive', 'gears_a'), ('negative', 'gears_b')])
+def test_each_plate_gets_its_own_gear_set(plate_type, expected_asset):
+    """Cylinder A takes the A gears, Cylinder B the B ones - B's teeth are
+    clocked to mesh with A's, so swapping them would stop the pair meshing."""
+    assert build_spec(plate_type)['gears']['asset'] == expected_asset
+
+
+def test_weld_rings_sit_at_the_two_gear_interfaces():
+    rings = build_spec()['gears']['weld_rings']
+    assert [ring['z_center'] for ring in rings] == [-26.0, 26.0]
+    for ring in rings:
+        assert (ring['r_in'], ring['r_out'], ring['height']) == (8.0, 13.0, 0.1)
+
+
+def test_ring_z_follows_the_cylinder_height_rather_than_a_hardcoded_26():
+    """
+    The request route can only ever send 52.0 (validation rejects anything
+    else), but the ring z is computed from height/2 so a future height change
+    moves the rings with the barrel instead of stranding them.
+    """
+    from app.geometry import gears as gears_module
+
+    assert [ring['z_center'] for ring in gears_module.weld_rings(60.0)] == [-30.0, 30.0]
+
+
+def test_gear_mode_forces_the_barrel_solid_and_says_so():
+    """D-2: the cutout is dropped while gears are on, with the signed S3 note."""
+    with_cutout = build_spec(cutout=True)
+    assert with_cutout['cylinder']['polygon_points'] == []
+    assert CUTOUT_WARNING in with_cutout['warnings']
+
+
+def test_no_cutout_warning_when_the_user_never_asked_for_one():
+    assert CUTOUT_WARNING not in build_spec(cutout=False)['warnings']
+
+
+def test_the_cutout_still_works_with_gears_off():
+    """Toggle-off behavior is untouched: the 12-gon is still cut."""
+    spec = build_spec(gears_on=False, cutout=True)
+    assert len(spec['cylinder']['polygon_points']) == 12
+    assert CUTOUT_WARNING not in spec['warnings']
+
+
+def test_raised_arrows_get_the_gear_mode_weld_and_recesses_do_not():
+    """
+    D-8a. A 10 mm arrow on 10 mm line spacing touches its neighbour exactly,
+    and float32 STL rounding turns that tangency into a pinch edge - which
+    would break the watertight one-piece roller. 5 um makes it a real overlap.
+    """
+    raised = build_spec('positive')['markers']
+    assert raised and all(marker['outline_delta'] == GEAR_ARROW_WELD_MM for marker in raised)
+    assert all(marker['is_recess'] is False for marker in raised)
+
+    recessed = build_spec('negative')['markers']
+    assert recessed and all(marker['is_recess'] is True for marker in recessed)
+    # The recess keeps its own 0.2 mm clearance growth, unchanged by gear mode.
+    assert all(marker['outline_delta'] == 0.2 for marker in recessed)
+
+
+def test_arrow_outlines_are_untouched_with_gears_off():
+    assert all(marker['outline_delta'] == 0.0 for marker in build_spec('positive', gears_on=False)['markers'])
+    assert all(marker['outline_delta'] == 0.2 for marker in build_spec('negative', gears_on=False)['markers'])
+
+
+def test_gears_and_double_sided_coexist():
+    """
+    Both betas at once: every raised dot on A still meets exactly one recess on
+    B, and both plates carry their own gear block. The pairing is a mirror -
+    a dot at A's theta meets its recess at B's -theta - so this reuses
+    interpoint.pairing_map, the same check the double-sided golden test makes.
+    """
+    from app.geometry import interpoint
+
+    back_lines = ['⠙⠑⠋', '', '', '']
+    plate_a = build_spec('positive', back_lines=back_lines)
+    plate_b = build_spec('negative', back_lines=back_lines)
+
+    assert plate_a['gears']['asset'] == 'gears_a'
+    assert plate_b['gears']['asset'] == 'gears_b'
+    assert plate_a['dots'] and plate_b['dots']
+
+    for (dot_on_a, expected), dot_on_b in zip(interpoint.pairing_map(plate_a['dots']), plate_b['dots'], strict=True):
+        assert dot_on_b['theta'] == expected['theta']
+        assert dot_on_b['y'] == expected['y']
+        assert dot_on_b['is_recess'] is not dot_on_a['is_recess']
+
+
+def test_a_wrong_sized_cylinder_warns_when_validation_is_bypassed():
+    """
+    Direct callers - tests, the golden fixture generator - never go through
+    app/validation.py, and a gear spec for the wrong barrel silently produces
+    loose or swallowed gears. The spec says so instead.
+    """
+    spec = build_spec(height=45.0)
+    assert any('matched to the reference roller' in warning for warning in spec['warnings'])
+    assert build_spec()['warnings'] == []

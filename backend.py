@@ -523,7 +523,7 @@ def geometry_spec():
         if shape_type not in ['card', 'cylinder']:
             return jsonify({'error': 'Invalid shape_type. Must be "card" or "cylinder"'}), 400
 
-        validate_gear_rollers_settings(settings_data, shape_type)
+        validate_gear_rollers_settings(settings_data, shape_type, cylinder_params)
 
         settings = CardSettings(**settings_data)
 

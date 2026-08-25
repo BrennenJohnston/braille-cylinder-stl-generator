@@ -39,17 +39,13 @@ import trimesh
 
 MAGIC = b'BCGR1\x00'
 
-DEFAULT_SOURCE = Path(
-    r'C:\Users\WATAP\Documents\Research\Braille Embosser\New Developement_2026_08_24\Gear Samples'
-)
+DEFAULT_SOURCE = Path(r'C:\Users\WATAP\Documents\Research\Braille Embosser\New Developement_2026_08_24\Gear Samples')
 DEFAULT_OUT_DIR = Path('static/assets/gears')
 
 # Bump only when the source samples change: it keeps re-runs byte-idempotent.
 DERIVED_DATE = '2026-08-24'
 
-PROVENANCE_NOTE = (
-    "Derived 1:1 from Brennen's reference STLs; regenerate only via scripts/derive_gear_assets.py"
-)
+PROVENANCE_NOTE = "Derived 1:1 from Brennen's reference STLs; regenerate only via scripts/derive_gear_assets.py"
 
 SAMPLE_FILES = {
     'a': [
@@ -111,9 +107,7 @@ class Checker:
 
     def raise_if_failed(self) -> None:
         if self.failures:
-            raise CheckFailed(
-                'self-checks failed:\n  - ' + '\n  - '.join(self.failures)
-            )
+            raise CheckFailed('self-checks failed:\n  - ' + '\n  - '.join(self.failures))
 
 
 def sha256_of(path: Path) -> str:
@@ -212,9 +206,7 @@ def check_asset(checker: Checker, asset: str, vertices: np.ndarray, faces: np.nd
         str(watertight),
     )
 
-    body_spans = sorted(
-        (round(float(body.bounds[0][2]), 6), round(float(body.bounds[1][2]), 6)) for body in bodies
-    )
+    body_spans = sorted((round(float(body.bounds[0][2]), 6), round(float(body.bounds[1][2]), 6)) for body in bodies)
     wanted_spans = sorted({EXPECTED_Z_BANDS[role] for role, _ in SAMPLE_FILES[asset]})
     spans_ok = len(body_spans) == len(wanted_spans) and all(
         abs(got[0] - want[0]) <= Z_BAND_TOL_MM and abs(got[1] - want[1]) <= Z_BAND_TOL_MM
@@ -311,15 +303,15 @@ def derive(source: Path, out_dir: Path) -> dict:
             '(cylinder spans z -26..+26, gears -36..-26 and +26..+36). Millimeters, Z-up.'
         ),
         'format': {
-            'magic': "BCGR1\\x00",
+            'magic': 'BCGR1\\x00',
             'byte_order': 'little-endian',
             'layout': 'magic[6] + uint32 vertCount + uint32 triCount + float32[3*vertCount] + uint32[3*triCount]',
             'header_bytes': 14,
         },
         'transform': {
             'source': '01_SAMPLE_GEOMETRY_AUDIT.md section 10.2',
-            'a': "p_programA = Rz(180) * (p_sample - (-16.0000, 0.0000, 0)) - (0, 0, 26.0000)",
-            'b': "p_programB = (p_sample - (+16.0473, -0.0079, 0)) - (0, 0, 26.0000)",
+            'a': 'p_programA = Rz(180) * (p_sample - (-16.0000, 0.0000, 0)) - (0, 0, 26.0000)',
+            'b': 'p_programB = (p_sample - (+16.0473, -0.0079, 0)) - (0, 0, 26.0000)',
             'constants': {
                 'a_axis_x_mm': TRANSFORM['a']['axis_x_mm'],
                 'a_axis_y_mm': TRANSFORM['a']['axis_y_mm'],
