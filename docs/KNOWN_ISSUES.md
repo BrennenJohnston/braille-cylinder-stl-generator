@@ -90,10 +90,50 @@ a worker-backed button without waiting for readiness can fail locally while pass
 The suite's helpers wait for readiness and rethrow anything that is not the documented
 not-ready message; a bare press is the bug, not the browser.
 
-The OpenSCAD version does not have this feature yet. Porting it is in progress.
+The OpenSCAD version has this feature: the double-sided port shipped in the OpenSCAD
+generator v2.6 and was refined in v2.7 (2026-08-23).
 
 Full technical detail: `docs/specifications/INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md`.
 Step-by-step instructions: `docs/guides/CYLINDER_GUIDE.md`.
+
+## Gear-integrated one-piece rollers (BETA) — status
+
+A generated cylinder can ship as ONE solid part with its top and bottom drive gears
+already attached, instead of a bare barrel that separately printed gears are pushed
+onto. Meshing the two rollers' gears is also what holds the paired cylinders
+rotationally synchronised — the assembly risk the double-sided work recorded as about
+±1.0°. That budget note still stands: the gears hold phase to roughly their backlash,
+measured at 0.65 mm of flank clearance on the reference set.
+
+**Cylinders only, and off by default.** With the toggle off nothing changes: the
+request body, the geometry and the filenames are byte-identical to a build without the
+feature. With it on the download gains a `Geared_` segment
+(`Embossing_Cylinder_Geared_0.4_name.stl`).
+
+**The gears are not adjustable, and the cylinder size is fixed while they are on.**
+They are a 1:1 replica of the reference set — 24 teeth, tip diameter 32.2187 mm,
+10 mm thick, sitting at z −10..0 and 52..62 around the barrel for a 72 mm roller, with
+the pair meshing at an axis distance of 32.0473 mm. Because that geometry is fixed, a
+gear-mode request for anything other than a 30.8 mm × 52.0 mm cylinder is REFUSED: a
+shorter barrel would export as loose pieces and a taller one would swallow the teeth.
+The app says so live before you press Generate.
+
+**The barrel prints solid while gears are on.** The polygonal cutout is dropped, and
+the app says so when you had one set. A one-piece roller has no through-path along its
+axis anyway — the gear bores are blind pockets — so keeping the cutout would seal a
+cavity nothing can reach or drain.
+
+**Known limitation, inherited not introduced.** On the EMBOSSING plate the exported
+file is one watertight roller plus one small separate body per raised braille dot —
+the dome of each dot. That is a long-standing tangency issue in the dot geometry,
+present with gears off too, and it is tracked separately. The counter plate exports as
+exactly one body.
+
+**OpenSCAD:** the desktop build gets integrated gears; the MakerWorld single-file
+variant does not, because it cannot import external asset files and embedding two
+30,000-triangle meshes as text would risk the Customizer's limits.
+
+Full technical detail: `docs/specifications/GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md`.
 
 ## Flat business card plates are parked
 
