@@ -3504,6 +3504,18 @@
                               <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
                                   <span id="gear-rollers-note">Adds the top and bottom drive gears to each generated cylinder as one solid piece, matched to the roller assembly.</span> The barrel prints solid while this is on.
                               </div>
+                              <!-- S9, DRAFT - pending Brennen sign-off (wording AND the
+                                   always-visible choice). Always shown, not gated on the
+                                   toggle: the warning must be read BEFORE someone decides
+                                   to turn gears on for a version 1 embosser. -->
+                              <div id="gear-hardware-note" class="grade-note inline-warning"
+                                   style="margin-top: 0.6em;">
+                                  <strong>Important:</strong> <span id="gear-hardware-message">Integrated gears fit only version 2 of the braille embosser hardware. They do not fit version 1 — do not use geared cylinders with a version 1 embosser body.</span>
+                                  <!-- Link to the version 2 build files goes here once
+                                       Brennen publishes them - keep the span so the note
+                                       text does not move when the link lands. -->
+                                  <span id="gear-hardware-link-slot"></span>
+                              </div>
                               <!-- S3, signed off by Brennen (2026-08-24). Shown only when a
                                    polygonal cutout is set AND the toggle is on. Announced
                                    through #a11y-status - see that region's note. -->

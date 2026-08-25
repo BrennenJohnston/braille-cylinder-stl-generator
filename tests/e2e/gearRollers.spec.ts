@@ -186,6 +186,21 @@ test.describe('Gear-integrated one-piece rollers (BETA)', () => {
     await expect(toggle).not.toBeChecked();
   });
 
+  // Loose on purpose: the S9 wording is DRAFT until Brennen's sign-off, so
+  // this pins only the facts the note must state, not the sentence.
+  test('the hardware note warns about version 1 before the toggle is touched', async ({ page }) => {
+    await openApp(page);
+
+    const note = page.locator('#gear-hardware-note');
+    await expect(note).toBeVisible();
+    await expect(note).toContainText('version 2');
+    await expect(note).toContainText('version 1');
+
+    // Visible with the toggle OFF - the warning has to be readable before
+    // anyone decides to turn gears on for the wrong embosser body.
+    await expect(page.locator('#gear_rollers_enabled')).not.toBeChecked();
+  });
+
   test('the cutout note appears only when a cutout is set AND the toggle is on', async ({ page }) => {
     await openApp(page);
     const note = page.locator('#gear-cutout-note');
