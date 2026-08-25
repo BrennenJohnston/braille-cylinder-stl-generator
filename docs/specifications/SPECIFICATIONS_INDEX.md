@@ -6,8 +6,8 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 
 > **v2.0.0 Architecture (2026-01-05):** This project uses a **100% client-side STL generation** architecture. Server-side STL generation was removed. The caching system (Redis + Vercel Blob) was also removed. See [CODEBASE_AUDIT_AND_RENOVATION_PLAN.md](../development/CODEBASE_AUDIT_AND_RENOVATION_PLAN.md) for migration details.
 
-**Last Updated:** 2026-08-16
-**Total Specification Documents:** 14
+**Last Updated:** 2026-08-24
+**Total Specification Documents:** 15
 
 ---
 
@@ -214,6 +214,24 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 - 1:1 paired recesses replacing the universal counter grid
 - `#double_sided_enabled` disclosure toggle and the tactile lock
 
+#### [GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md](./GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md)
+**Status:** ✅ Complete (Created 2026-08-24)
+**Covers:**
+- Integrated gear rollers (BETA): a cylinder generated as ONE solid with its top and bottom drive gears attached
+- The vendored 1:1 gear assets, their packed binary format, and the provenance contract (`gears_manifest.json` sha256s)
+- The canonical sample→program transforms (Rz(180°) for A, identity for B) and the orientation-key evidence
+- Gear metrology: 24 teeth, tip r 16.1093702290795, root r 13.6613702290795, 10 mm thick, blind bores, axis distance 32.0473 mm
+- The two hard gates: cylinders only (S6) and the reference roller only (S7, 30.8 × 52.0 mm)
+- Why the barrel must be forced SOLID, and why an empty `polygon_points` does not do it
+- D-8a's 5 µm raised-arrow weld, and what the hidden weld rings do and do not contribute
+- Acceptance tolerances, the three levels of toggle-off byte-identity, and the MakerWorld deferral
+
+**Key Components:**
+- `app/geometry/gears.py` constants and the reference-roller check
+- `validate_gear_rollers_settings()` in `app/validation.py`
+- `static/assets/gears/gears_{a,b}.bin`, regenerated only by `scripts/derive_gear_assets.py`
+- `#gear_rollers_enabled` toggle with its live cutout and size notes
+
 ---
 
 ### 4. Generation & Export
@@ -335,6 +353,7 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 | **Dot Geometry** | BRAILLE_DOT_ADJUSTMENTS_SPECIFICATIONS, BRAILLE_DOT_SHAPE_SPECIFICATIONS | BRAILLE_SPACING_SPECIFICATIONS |
 | **Indicators** | RECESS_INDICATOR_SPECIFICATIONS | — |
 | **Double-sided beta** | INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS | BRAILLE_TEXT_INPUT (§8), UI_INTERFACE (§4.8), STL_EXPORT (§7) |
+| **Integrated gear rollers beta** | GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS | SURFACE_DIMENSIONS (§1), RECESS_INDICATOR (§3), STL_EXPORT (§7) |
 | **Generation** | STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS | CLIENT_SIDE_CSG_DOCUMENTATION |
 | **Caching (archived)** | CACHING_SYSTEM_CORE_SPECIFICATIONS | — |
 | **Settings Schema** | SETTINGS_SCHEMA_CORE_SPECIFICATIONS | — |
@@ -659,6 +678,7 @@ Section Reference: SURFACE_DIMENSIONS_SPECIFICATIONS.md (Section 2.1)
 
 **Request schema?** → SETTINGS_SCHEMA_CORE_SPECIFICATIONS
 **Double-sided beta, interpoint offset, paired recesses?** → INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS
+**Integrated gears, one-piece rollers, the reference roller size?** → GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS
 
 ---
 

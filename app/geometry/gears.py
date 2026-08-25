@@ -96,6 +96,20 @@ def matches_reference_roller(diameter: float, height: float) -> bool:
     )
 
 
+def _format_mm(value: float) -> str:
+    """
+    Render a millimetre value the way a person writes it: 52, not 52.0.
+
+    The signed S7 sentence says "30.8 mm x 52 mm", and Python's default float
+    formatting would say "52.0 mm" - the same words, a different number. The
+    UI writes the signed form, so the server has to as well, or a user who
+    reads the live warning and then triggers the error sees two spellings of
+    one message.
+    """
+    text = f'{value:.3f}'.rstrip('0').rstrip('.')
+    return text if text else '0'
+
+
 def reference_roller_message(diameter: float, height: float) -> str:
     """
     The S7 sentence, signed off by Brennen 2026-08-24 - reword only with his
@@ -104,8 +118,8 @@ def reference_roller_message(diameter: float, height: float) -> str:
     """
     return (
         f'Integrated gears are matched to the reference roller and only fit a '
-        f'{GEAR_BARREL_DIAMETER_MM} mm x {GEAR_BARREL_HEIGHT_MM} mm cylinder. '
-        f'Received {diameter} mm x {height} mm.'
+        f'{_format_mm(GEAR_BARREL_DIAMETER_MM)} mm x {_format_mm(GEAR_BARREL_HEIGHT_MM)} mm cylinder. '
+        f'Received {_format_mm(diameter)} mm x {_format_mm(height)} mm.'
     )
 
 

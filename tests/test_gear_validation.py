@@ -137,11 +137,31 @@ def test_a_cylinder_that_is_not_the_reference_roller_is_rejected(diameter, heigh
     message = str(excinfo.value)
     assert 'matched to the reference roller' in message
     # The message has to say what was received, or the user cannot tell which
-    # of the two dimensions is wrong.
-    assert str(diameter) in message
-    assert str(height) in message
+    # of the two dimensions is wrong - and it has to say it the way the SIGNED
+    # sentence does, "52 mm" rather than Python's "52.0 mm". %g is an
+    # independent formatter, so this is a real check and not a restatement of
+    # the production one.
+    assert f'{diameter:g}' in message
+    assert f'{height:g}' in message
     assert excinfo.value.details['diameter_mm'] == diameter
     assert excinfo.value.details['height_mm'] == height
+
+
+def test_the_error_spells_numbers_the_way_the_signed_sentence_does():
+    """
+    The UI shows this same warning live, written by JavaScript, which renders
+    52.0 as "52". If the server said "52.0 mm" a user would meet two spellings
+    of one signed sentence.
+    """
+    params = {**REFERENCE_CYLINDER, 'height': 45.0}
+    with pytest.raises(ValidationError) as excinfo:
+        validate_gear_rollers_settings({'gear_rollers_enabled': 1}, 'cylinder', params)
+
+    message = str(excinfo.value)
+    assert 'only fit a 30.8 mm x 52 mm cylinder' in message
+    assert 'Received 30.8 mm x 45 mm.' in message
+    assert '52.0' not in message
+    assert '45.0' not in message
 
 
 def test_the_reference_roller_itself_passes():

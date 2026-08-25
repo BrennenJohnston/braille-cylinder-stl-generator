@@ -81,6 +81,37 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      "Cylinder B" = negative plate, downloads Cylinder_A_/Cylinder_B_*.stl.
      Never rename single-sided labels/filenames (training videos use them).
 
+6c. Gear-integrated one-piece rollers BETA — cylinders only, toggle default
+   OFF, and toggle-off must stay byte-identical (proved at three levels: the
+   geometry spec, the worker STL, and the request body).
+   - Flat name gear_rollers_enabled (schema gear_rollers.enabled), int 0/1.
+   - The gears are VENDORED 1:1 replica data at static/assets/gears/
+     gears_{a,b}.bin — NEVER hand-edit them, and regenerate ONLY via
+     scripts/derive_gear_assets.py (the manifest's sha256s are pinned by a
+     test). 24 teeth, tip r 16.1093702290795, 10 mm thick, gears at z -36..-26
+     and +26..+36 in the browser frame. app/geometry/gears.py owns every gear
+     constant, the way app/geometry/interpoint.py owns the DS ones — both
+     app/validation.py and app/geometry_spec.py read it, so it is the ONE place
+     these numbers live.
+   - The cylinder size is FIXED while gears are on: 30.8 x 52.0 mm, +/- 0.001,
+     or the request is REJECTED (S7). The gears are baked at fixed z and do not
+     move with the barrel — a 51 mm barrel exports as THREE loose bodies and
+     still reports watertight, and a 62 mm one swallows the teeth. Never
+     "relax" this to a warning.
+   - THE BARREL MUST BE SOLID while gears are on, and emitting
+     polygon_points: [] does NOT achieve that — with no polygon the worker
+     hollows by wall thickness, which seals an undrainable cavity. The shell
+     builder takes an explicit `solid` argument.
+   - Weld rings r 8.0-13.0 x 0.1 mm at z +/-height/2 (computed, never
+     hardcoded); raised tactile arrows grow by 0.005 mm in gear mode only
+     (D-8a). CSG order is unchanged: gears join the RAISED stage, recesses
+     still cut last.
+   - Naming: a `Geared_` segment is inserted ONLY when gears are on
+     (Embossing_Cylinder_Geared_{preset}_{name}.stl). Toggle-off names never
+     change — training videos use them.
+   - There is NO card shape in the UI (one radio, value="cylinder"), so do not
+     add UI branches for one; the cylinders-only rule lives in the API.
+
 ## Settings changes — order of operations
 7. settings.schema.json is the single source of truth. When adding or changing
    any parameter/default: update settings.schema.json FIRST, then
@@ -134,6 +165,7 @@ Specs live in docs/specifications/.
 | Dot-dimension UI controls, defaults, validation | BRAILLE_DOT_ADJUSTMENTS_SPECIFICATIONS.md |
 | Row markers, seam arrow, indicator_mode | RECESS_INDICATOR_SPECIFICATIONS.md |
 | Double-sided beta, interpoint offset, paired recesses | INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md |
+| Integrated gears, one-piece rollers, gear assets | GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md |
 | Settings JSON schema, field validation | SETTINGS_SCHEMA_CORE_SPECIFICATIONS.md |
 | STL generation pipeline, workers, download button | STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md |
 | Text input, placement modes, BANA wrap, languages | BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md |
