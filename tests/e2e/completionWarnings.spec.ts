@@ -52,8 +52,12 @@ import { test, expect, type Page } from '@playwright/test';
 
 /** The signed-off sentences. Neither may change; the suffix is appended after them. */
 const SINGLE_READY = 'Your STL file is ready. Use the Download STL button to save it.';
-const PAIR_READY = 'Both cylinders are ready. Use the Download Cylinder A and '
-  + 'Download Cylinder B buttons below to save them.';
+// Signed off by Brennen 2026-08-25, replacing his 2026-08-18 sentence when the
+// combined download became the primary offer.
+const PAIR_READY = 'Both cylinders are ready. Use the Download Combined STL '
+  + 'button below to save one file with both cylinders spaced for printing on '
+  + 'one plate, or use the Download Cylinder A and Download Cylinder B buttons '
+  + 'to save them separately.';
 
 /** Long enough to overflow the default 13-cell row and 4-row plate several times over. */
 const OVERFLOWING = "This a test of Front Side 1 I'll keep going until an error . noa";

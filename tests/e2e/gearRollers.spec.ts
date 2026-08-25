@@ -186,8 +186,9 @@ test.describe('Gear-integrated one-piece rollers (BETA)', () => {
     await expect(toggle).not.toBeChecked();
   });
 
-  // Loose on purpose: the S9 wording is DRAFT until Brennen's sign-off, so
-  // this pins only the facts the note must state, not the sentence.
+  // Loose on purpose: this pins only the facts the note must state, not the
+  // sentence, so a future signed rewording cannot break it. The S9 wording
+  // was signed off by Brennen 2026-08-25.
   test('the hardware note warns about version 1 before the toggle is touched', async ({ page }) => {
     await openApp(page);
 
@@ -406,7 +407,7 @@ test.describe('Gear-integrated one-piece rollers (BETA)', () => {
     const b = await triangleCount('download-cylinder-b-btn');
     const pair = await triangleCount('download-pair-btn');
 
-    // DRAFT name pin - revisited at the sign-off gate.
+    // Name signed off by Brennen (2026-08-25); change only with his sign-off.
     expect(pair.name).toBe('Cylinder_Pair_Geared_0.4_abc.stl');
     expect(pair.triangles).toBe(a.triangles + b.triangles);
   });

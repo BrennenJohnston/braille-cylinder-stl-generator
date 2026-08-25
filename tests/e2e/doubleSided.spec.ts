@@ -856,7 +856,7 @@ test.describe('Double-Sided Card beta', () => {
     const b = await readStl('download-cylinder-b-btn');
     const pair = await readStl('download-pair-btn');
 
-    // DRAFT name pin - revisited at the sign-off gate.
+    // Name signed off by Brennen (2026-08-25); change only with his sign-off.
     expect(pair.name).toBe('Cylinder_Pair_0.4_abc.stl');
     // Pure concatenation: every triangle of A and of B, nothing else.
     expect(pair.triangles).toBe(a.triangles + b.triangles);
