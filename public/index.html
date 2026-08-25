@@ -5091,7 +5091,7 @@
         const pairStatus = document.getElementById('pair-status');
         const pairDownloads = document.getElementById('pair-downloads');
         let pairRunInFlight = false;
-        const pairFiles = { positive: null, negative: null };
+        const pairFiles = { positive: null, negative: null, combined: null };
 
         const previewBrailleBtn = document.getElementById('preview-braille-btn');
         const errorDiv = document.getElementById('error-message');
@@ -5293,6 +5293,15 @@
             // the gears are actually there.
             const geared_segment = geared ? 'Geared_' : '';
             return `${prefix}_${geared_segment}${getThicknessPresetSegment()}_${await deriveStlNameSegment()}.stl`;
+        }
+
+        // The combined pair file: both cylinders in ONE binary STL, spaced
+        // for printing together. A new name beside the A/B names, never a
+        // rename of them. Prefix chosen by Brennen 2026-08-25; DRAFT pending
+        // his final sign-off.
+        async function buildPairStlFilename(geared = false) {
+            const geared_segment = geared ? 'Geared_' : '';
+            return `Cylinder_Pair_${geared_segment}${getThicknessPresetSegment()}_${await deriveStlNameSegment()}.stl`;
         }
 
         // Add event handler for the action button
@@ -9322,8 +9331,65 @@
         function clearPairResults() {
             pairFiles.positive = null;
             pairFiles.negative = null;
+            pairFiles.combined = null;
             if (pairDownloads) pairDownloads.style.display = 'none';
             setPairStatus('');
+        }
+
+        // Surface-to-surface gap between the two bodies in the combined pair
+        // STL (mm). Centers sit one cylinder diameter plus this gap apart, so
+        // the BARREL surfaces are exactly this far apart - Brennen chose the
+        // barrel-based measure on 2026-08-25. With gears on, the gear tips
+        // (dia 32.2187 mm) overhang the 30.8 mm barrel, leaving 8.58 mm tip
+        // to tip - accepted, documented in the gear spec.
+        const PAIR_SURFACE_GAP_MM = 10;
+
+        // Center-to-center X offset for the combined file, from the live
+        // diameter dial (gear mode locks it to 30.8). No fallback literal on
+        // purpose: an unreadable dial fails the combine loudly - A and B stay
+        // downloadable - rather than shipping a spacing nobody asked for.
+        function pairXOffsetMm() {
+            const diameter = parseFloat(document.getElementById('cylinder_diameter_mm')?.value);
+            if (!Number.isFinite(diameter) || diameter <= 0) {
+                throw new Error('Cannot space the combined pair: the cylinder diameter dial is unreadable');
+            }
+            return diameter + PAIR_SURFACE_GAP_MM;
+        }
+
+        // Merge two binary STLs into one two-body file, body B shifted +X.
+        // Binary STL: 80-byte header, uint32 triangle count at byte 80, then
+        // 50-byte records (normal, v0, v1, v2 as 3 floats each, uint16
+        // attribute). Records are NOT 4-byte aligned - the 50-byte stride
+        // breaks alignment from the second record on - so every float goes
+        // through DataView, never a Float32Array view.
+        function combineBinaryStl(bufA, bufB, xOffsetMm) {
+            const views = [new DataView(bufA), new DataView(bufB)];
+            const counts = views.map((view, i) => {
+                const n = view.getUint32(80, true);
+                if (view.byteLength !== 84 + n * 50) {
+                    throw new Error(`STL ${i === 0 ? 'A' : 'B'} is not a plain binary STL: `
+                        + `${view.byteLength} bytes for ${n} triangles`);
+                }
+                return n;
+            });
+
+            const out = new ArrayBuffer(84 + (counts[0] + counts[1]) * 50);
+            const outBytes = new Uint8Array(out);
+            const outView = new DataView(out);
+            outBytes.set(new Uint8Array(bufA, 0, 80), 0);
+            outView.setUint32(80, counts[0] + counts[1], true);
+            outBytes.set(new Uint8Array(bufA, 84), 84);
+            outBytes.set(new Uint8Array(bufB, 84), 84 + counts[0] * 50);
+
+            // Body B's three vertex X floats get the shift; the normals
+            // (record offset 0) are direction-only and stay put.
+            for (let i = 0; i < counts[1]; i++) {
+                const base = 84 + (counts[0] + i) * 50;
+                for (const off of [12, 24, 36]) {
+                    outView.setFloat32(base + off, outView.getFloat32(base + off, true) + xOffsetMm, true);
+                }
+            }
+            return out;
         }
 
         function downloadPairFile(file) {
@@ -9427,6 +9493,24 @@
                         return;
                     }
                     pairFiles[step.plate] = { blob: lastGeneratedBlob, filename: lastGeneratedFilename };
+                }
+
+                // The combined file is built NOW rather than on click, so a
+                // corrupt buffer surfaces here - where A and B stay usable -
+                // instead of as a dead button press later.
+                try {
+                    const [bufA, bufB] = await Promise.all([
+                        pairFiles.positive.blob.arrayBuffer(),
+                        pairFiles.negative.blob.arrayBuffer(),
+                    ]);
+                    pairFiles.combined = {
+                        blob: new Blob([combineBinaryStl(bufA, bufB, pairXOffsetMm())],
+                            { type: 'application/octet-stream' }),
+                        filename: await buildPairStlFilename(isGearRollersOn()),
+                    };
+                } catch (error) {
+                    log.error('Combined pair STL could not be built; Cylinder A and B stay downloadable:', error);
+                    pairFiles.combined = null;
                 }
 
                 // Nothing downloads on its own. Two programmatic downloads from
