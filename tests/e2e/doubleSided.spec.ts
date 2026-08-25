@@ -21,6 +21,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
+import fs from 'node:fs';
 
 // ---------------------------------------------------------------------------
 // Pre-feature payload snapshots
@@ -796,8 +797,11 @@ test.describe('Double-Sided Card beta', () => {
     // ended in "Download blocked" with neither cylinder saved.
     expect(unattendedDownloads).toEqual([]);
 
-    // Each file comes from its own deliberate press.
+    // Each file comes from its own deliberate press. The combined file is
+    // the primary offer, so its button leads the row.
     await expect(page.locator('#pair-downloads')).toBeVisible();
+    await expect(page.locator('#pair-downloads button').first()).toHaveId('download-pair-btn');
+    await expect(page.locator('#download-pair-btn')).toBeVisible();
     expect(await pairDownloadName(page, 'a')).toBe('Cylinder_A_0.4_abc.stl');
     expect(await pairDownloadName(page, 'b')).toBe('Cylinder_B_0.4_abc.stl');
 
@@ -816,6 +820,51 @@ test.describe('Double-Sided Card beta', () => {
 
     // The user's own plate selection survives the run.
     await expect(page.locator('input[name="plate_type"][value="negative"]')).toBeChecked();
+  });
+
+  test('the combined STL is one file holding both bodies, spaced apart', async ({ page }) => {
+    test.setTimeout(300_000);
+    await openApp(page);
+    await enableBeta(page, 'abc', 'def');
+    await generateBoth(page);
+
+    // Download through the real buttons and read the bytes: binary STL is an
+    // 80-byte header, a uint32 triangle count, then 50-byte records with the
+    // three vertices at record offsets +12/+24/+36 (X first, little-endian).
+    const readStl = async (buttonId: string) => {
+      const downloadPromise = page.waitForEvent('download');
+      await page.locator(`#${buttonId}`).click();
+      const download = await downloadPromise;
+      const buf = fs.readFileSync((await download.path())!);
+      const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+      const triangles = view.getUint32(80, true);
+      expect(buf.byteLength).toBe(84 + triangles * 50);
+      let maxX = -Infinity;
+      let minX = Infinity;
+      for (let i = 0; i < triangles; i++) {
+        const base = 84 + i * 50;
+        for (const off of [12, 24, 36]) {
+          const x = view.getFloat32(base + off, true);
+          if (x > maxX) maxX = x;
+          if (x < minX) minX = x;
+        }
+      }
+      return { name: download.suggestedFilename(), triangles, maxX, minX };
+    };
+
+    const a = await readStl('download-cylinder-a-btn');
+    const b = await readStl('download-cylinder-b-btn');
+    const pair = await readStl('download-pair-btn');
+
+    // DRAFT name pin - revisited at the sign-off gate.
+    expect(pair.name).toBe('Cylinder_Pair_0.4_abc.stl');
+    // Pure concatenation: every triangle of A and of B, nothing else.
+    expect(pair.triangles).toBe(a.triangles + b.triangles);
+    // Cylinder B rides +X by one barrel diameter plus the 10 mm gap
+    // (30.8 + 10 = 40.8), so the pair's rightmost vertex is B's plus that -
+    // and body A is byte-untouched, so the left extent is exactly A's.
+    expect(pair.maxX).toBeCloseTo(b.maxX + 40.8, 3);
+    expect(pair.minX).toBe(a.minX);
   });
 
   test('the generate button keeps its identity and the download is a separate control', async ({ page }) => {

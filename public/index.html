@@ -4099,6 +4099,11 @@
                          change is not announced. #pair-status:empty hides it. -->
                     <div id="pair-status" class="pair-status" role="status" aria-live="polite"></div>
                     <div id="pair-downloads" class="pair-downloads" style="display: none;">
+                        <!-- First on purpose: one file with both cylinders spaced
+                             for a single print plate is the primary offer, the
+                             per-cylinder files the fallback. Label DRAFT -
+                             pending Brennen sign-off (2026-08-25). -->
+                        <button type="button" id="download-pair-btn">Download Combined STL (Cylinders A and B)</button>
                         <!-- User-facing wording signed off by Brennen (2026-08-17); reword only with his sign-off. -->
                         <button type="button" id="download-cylinder-a-btn">Download Cylinder A</button>
                         <button type="button" id="download-cylinder-b-btn">Download Cylinder B</button>
@@ -9523,6 +9528,10 @@
                 // was itself never announced, because the Save As dialog the
                 // automatic download opened had taken focus away from the page.
                 // One button press per file never trips any of that.
+                // The combined button offers itself only when the combine
+                // succeeded; a failed combine leaves A and B alone on the row.
+                const pairBtn = document.getElementById('download-pair-btn');
+                if (pairBtn) pairBtn.style.display = pairFiles.combined ? '' : 'none';
                 if (pairDownloads) pairDownloads.style.display = 'flex';
                 /* User-facing wording signed off by Brennen (2026-08-18); reword
                    only with his sign-off. It replaces the 2026-08-17 line "If your
@@ -9546,6 +9555,7 @@
         }
 
         generateBothBtn?.addEventListener('click', runGenerateBothCylinders);
+        document.getElementById('download-pair-btn')?.addEventListener('click', () => downloadPairFile(pairFiles.combined));
         document.getElementById('download-cylinder-a-btn')?.addEventListener('click', () => downloadPairFile(pairFiles.positive));
         document.getElementById('download-cylinder-b-btn')?.addEventListener('click', () => downloadPairFile(pairFiles.negative));
 
