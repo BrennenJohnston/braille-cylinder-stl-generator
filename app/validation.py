@@ -446,6 +446,61 @@ def validate_double_sided_settings(settings_data: dict) -> bool:
     return True
 
 
+def validate_gear_rollers_settings(settings_data: dict, shape_type: str) -> bool:
+    """
+    Hard gate for the gear-integrated one-piece rollers beta.
+
+    One gate only, and it is skipped entirely when gear_rollers.enabled is off,
+    so every request that does not ask for gears is validated exactly as it was
+    before the beta existed. The gate: gears are cylinders-only. There is
+    nothing else to range-check, because the gear geometry has no dials - it is
+    vendored 1:1 sample data (static/assets/gears/), not a set of parameters.
+
+    Deliberately NOT a gate here: forcing the barrel solid. Decision D-2 makes
+    that a behavior in app/geometry_spec.py (the polygonal cutout is dropped and
+    a warning is added), not a rejection - a user who saved a cutout radius
+    should not be blocked from trying the beta.
+
+    This function needs shape_type, which validate_settings does not receive, so
+    the /geometry_spec route calls it separately rather than changing that
+    function's signature (it has other callers).
+
+    User-facing message wording (S6) signed off by Brennen 2026-08-24; reword
+    only with his sign-off.
+
+    Args:
+        settings_data: Settings dictionary from the request (flat CardSettings
+            key spelling).
+        shape_type: 'card' or 'cylinder', as the request asked for.
+
+    Returns:
+        True if valid (or the beta is off)
+
+    Raises:
+        ValidationError: If a gear-mode request asks for anything but a cylinder
+    """
+    enabled_raw = settings_data.get('gear_rollers_enabled', 0)
+    if enabled_raw is None or enabled_raw == '':
+        return True
+    try:
+        enabled = int(float(enabled_raw))
+    except (TypeError, ValueError) as e:
+        raise ValidationError(
+            "Setting 'gear_rollers.enabled' must be 0 or 1",
+            {'key': 'gear_rollers_enabled', 'value': enabled_raw},
+        ) from e
+    if enabled != 1:
+        return True
+
+    if str(shape_type).strip().lower() != 'cylinder':
+        raise ValidationError(
+            'Integrated gears are only available for cylinders.',
+            {'key': 'gear_rollers_enabled', 'shape_type': shape_type, 'required': 'cylinder'},
+        )
+
+    return True
+
+
 def validate_shape_type(shape_type: str) -> str:
     """
     Validate and normalize shape_type parameter.

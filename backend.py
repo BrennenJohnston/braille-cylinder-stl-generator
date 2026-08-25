@@ -18,6 +18,7 @@ from app.utils import braille_to_dots, get_logger
 # Import validation from app.validation
 from app.validation import (
     validate_braille_lines,
+    validate_gear_rollers_settings,
     validate_line_lengths,
     validate_lines,
     validate_original_lines,
@@ -521,6 +522,8 @@ def geometry_spec():
         # Validate shape_type
         if shape_type not in ['card', 'cylinder']:
             return jsonify({'error': 'Invalid shape_type. Must be "card" or "cylinder"'}), 400
+
+        validate_gear_rollers_settings(settings_data, shape_type)
 
         settings = CardSettings(**settings_data)
 
