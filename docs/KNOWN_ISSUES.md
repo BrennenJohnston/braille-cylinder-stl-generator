@@ -133,6 +133,9 @@ exactly one body.
 variant does not, because it cannot import external asset files and embedding two
 30,000-triangle meshes as text would risk the Customizer's limits.
 
+Wording in this section signed off by Brennen 2026-08-25; reword only with his
+sign-off.
+
 Full technical detail: `docs/specifications/GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md`.
 
 ## Flat business card plates are parked
