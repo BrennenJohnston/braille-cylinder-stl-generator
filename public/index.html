@@ -3473,6 +3473,54 @@
                           </div>
                       </div>
 
+                      <!-- Gear-Integrated Rollers (BETA): the cylinder ships with its
+                           top and bottom drive gears as one solid piece. The checkbox id is
+                           load-bearing: the generate handler reads
+                           #gear_rollers_enabled.checked, persistence stores
+                           braille_prefs_gear_rollers_enabled, and updateGearRollersUI()
+                           finds the toggle, #gear-cutout-note and #gear-size-warning by id.
+                           No card branch here on purpose: Output Shape offers only Cylinder,
+                           so a card can never be selected in this UI. The API keeps its own
+                           cylinders-only gate for direct callers. -->
+                      <div class="grade-selection" id="gear-rollers-selection">
+                          <fieldset>
+                              <!-- Legend heading follows the double-sided beta's template
+                                   word for word. FLAGGED FOR BRENNEN as a new string (S8):
+                                   every other word in this section is already signed. -->
+                              <legend class="grade-label"><h2 class="legend-heading">Integrated Gears (BETA — for testing)</h2></legend>
+                              <!-- S1, signed off by Brennen (2026-08-24); reword only with his sign-off. -->
+                              <label class="radio-option ds-toggle-option" for="gear_rollers_enabled">
+                                  <input type="checkbox" id="gear_rollers_enabled"
+                                         aria-describedby="gear-rollers-note">
+                                  <span class="radio-text">Generate with integrated gears (BETA — for testing)</span>
+                              </label>
+                              <!-- S2, signed off by Brennen (2026-08-24); reword only with his
+                                   sign-off. ADA SOP Step 6.8: the whole note is 28 words, over
+                                   the 25-word ceiling, so the describedby id sits on the FIRST
+                                   SENTENCE only (20 words) - the same pure sentence split the
+                                   A-I programme's item F used. Not one word was rewritten and
+                                   nothing left the page; the second sentence is still read by
+                                   anyone moving through the content. -->
+                              <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
+                                  <span id="gear-rollers-note">Adds the top and bottom drive gears to each generated cylinder as one solid piece, matched to the roller assembly.</span> The barrel prints solid while this is on.
+                              </div>
+                              <!-- S3, signed off by Brennen (2026-08-24). Shown only when a
+                                   polygonal cutout is set AND the toggle is on. Announced
+                                   through #a11y-status - see that region's note. -->
+                              <div id="gear-cutout-note" class="grade-note inline-warning"
+                                   style="margin-top: 0.6em; display: none;">
+                                  <strong>Note:</strong> <span id="gear-cutout-message"></span>
+                              </div>
+                              <!-- S7, signed off by Brennen (2026-08-24). The gears only fit
+                                   the reference roller, and the request is REJECTED otherwise,
+                                   so say it here rather than letting the user meet a 400. -->
+                              <div id="gear-size-warning" class="grade-note inline-warning"
+                                   style="margin-top: 0.6em; display: none;">
+                                  <strong>Warning:</strong> <span id="gear-size-message"></span>
+                              </div>
+                          </fieldset>
+                      </div>
+
                       <!-- Language Selection -->
                       <div class="grade-selection">
                           <fieldset>
@@ -5027,6 +5075,9 @@
         const downloadStlBtn = document.getElementById('download-stl-btn');
         let lastGeneratedSTLUrl = null;
         let lastGeneratedFilename = null;
+        // Whether the file just generated carries gears, so the ready
+        // announcement can say so (S5).
+        let lastGenerationUsedGears = false;
         // The blob itself, not just its URL: the next generation revokes the
         // previous URL, so a Generate Both run would lose Cylinder A the moment
         // Cylinder B started. Holding the blob lets the pair outlive both runs.
@@ -5158,10 +5209,13 @@
             // later. The pair run reports its own progress through #pair-status.
             if (pairRunInFlight) return;
             if (downloadStlBtn) downloadStlBtn.style.display = '';
-            /* User-facing wording signed off by Brennen (2026-08-18); reword
-               only with his sign-off. */
+            /* User-facing wording signed off by Brennen (2026-08-18); the gear
+               sentence is S5, signed 2026-08-24. Reword either only with his
+               sign-off. One announcement, not two: announceStatus writes a
+               single region, so a second call would overwrite the first. */
             announceStatus('stl-ready',
-                'Your STL file is ready. Use the Download STL button to save it.'
+                (lastGenerationUsedGears ? 'Cylinder generated with integrated gears. ' : '')
+                + 'Your STL file is ready. Use the Download STL button to save it.'
                 + outstandingWarningSuffix());
         }
 
@@ -5229,11 +5283,15 @@
             return 'untitled';
         }
 
-        async function buildStlFilename(plateType, doubleSided = false) {
+        async function buildStlFilename(plateType, doubleSided = false, geared = false) {
             const prefix = doubleSided
                 ? (plateType === 'positive' ? 'Cylinder_A' : 'Cylinder_B')
                 : (plateType === 'positive' ? 'Embossing_Cylinder' : 'Counter_Cylinder');
-            return `${prefix}_${getThicknessPresetSegment()}_${await deriveStlNameSegment()}.stl`;
+            // Decision D-5. Toggle-off names are byte-identical to today's -
+            // training videos show them - so the segment is inserted only when
+            // the gears are actually there.
+            const geared_segment = geared ? 'Geared_' : '';
+            return `${prefix}_${geared_segment}${getThicknessPresetSegment()}_${await deriveStlNameSegment()}.stl`;
         }
 
         // Add event handler for the action button
@@ -6882,6 +6940,75 @@
             resetToGenerateState();
         });
 
+        // ---------------------------------------------------------------------
+        // Gear-integrated one-piece rollers (BETA)
+        // ---------------------------------------------------------------------
+        // The reference roller the vendored gears were measured against. The
+        // server rejects anything else while gears are on (app/geometry/gears.py
+        // owns these numbers), so the UI says so live rather than letting a
+        // generate turn into a 400. The live dials default to exactly these.
+        const GEAR_BARREL_DIAMETER_MM = 30.8;
+        const GEAR_BARREL_HEIGHT_MM = 52.0;
+        const GEAR_BARREL_TOLERANCE_MM = 0.001;
+
+        function isGearRollersOn() {
+            return !!document.getElementById('gear_rollers_enabled')?.checked;
+        }
+
+        function updateGearRollersUI() {
+            const on = isGearRollersOn();
+
+            // D-2: the polygonal cutout is dropped while gears are on. Say so
+            // only when the user actually had one, so the note means something.
+            const cutoutNote = document.getElementById('gear-cutout-note');
+            const cutoutMessage = document.getElementById('gear-cutout-message');
+            const cutoutRadius = parseFloat(document.getElementById('cylinder_polygonal_cutout_radius_mm')?.value);
+            let cutoutText = '';
+            if (cutoutNote && cutoutMessage) {
+                /* S3, signed off by Brennen (2026-08-24); reword only with his sign-off. */
+                cutoutText = (on && cutoutRadius > 0)
+                    ? 'The polygonal cutout is not used while integrated gears are on.'
+                    : '';
+                cutoutNote.style.display = cutoutText ? 'block' : 'none';
+                cutoutMessage.textContent = cutoutText;
+            }
+
+            // S7: the size gate. Reuses the server's exact signed sentence, so
+            // the warning a user reads here and the error they would get from
+            // the server are the same words.
+            let sizeText = '';
+            const sizeWarning = document.getElementById('gear-size-warning');
+            const sizeMessage = document.getElementById('gear-size-message');
+            const diameter = parseFloat(document.getElementById('cylinder_diameter_mm')?.value);
+            const height = parseFloat(document.getElementById('cylinder_height_mm')?.value);
+            if (sizeWarning && sizeMessage) {
+                const offSize = on
+                    && Number.isFinite(diameter)
+                    && Number.isFinite(height)
+                    && (Math.abs(diameter - GEAR_BARREL_DIAMETER_MM) > GEAR_BARREL_TOLERANCE_MM
+                        || Math.abs(height - GEAR_BARREL_HEIGHT_MM) > GEAR_BARREL_TOLERANCE_MM);
+                /* S7, signed off by Brennen (2026-08-24); reword only with his sign-off. */
+                sizeText = offSize
+                    ? `Integrated gears are matched to the reference roller and only fit a `
+                      + `${GEAR_BARREL_DIAMETER_MM} mm x ${GEAR_BARREL_HEIGHT_MM} mm cylinder. `
+                      + `Received ${diameter} mm x ${height} mm.`
+                    : '';
+                sizeWarning.style.display = sizeText ? 'block' : 'none';
+                sizeMessage.textContent = sizeText;
+            }
+
+            // ONE action, ONE announcement (ADA SOP Section 12, C9). Both notes
+            // can apply at once - an off-size cylinder that also has a cutout -
+            // and announceStatus writes a single region, so announcing them
+            // separately would let the second silently replace the first.
+            announceStatus('gear-rollers', [cutoutText, sizeText].filter(Boolean).join(' '));
+        }
+
+        document.getElementById('gear_rollers_enabled')?.addEventListener('change', () => {
+            updateGearRollersUI();
+            resetToGenerateState();
+        });
+
         // Live overflow warning for auto mode. Runs the exact same banaAutoWrap
         // simulation generation uses (same capitalization and number-sign
         // transforms), so what it predicts is what generation will do. Reports
@@ -7078,6 +7205,7 @@
         function refreshLiveWarnings() {
             checkPhysicalFit();
             checkDoubleSidedGap();
+            updateGearRollersUI();
             updateCapsWarning();
             updateBrailleFieldStatus();
             computeBackOverflow();
@@ -7184,7 +7312,8 @@
                 'braille_prefs_cylinder_polygonal_cutout_sides',
                 'braille_prefs_seam_offset_deg',
                 'braille_prefs_double_sided_enabled',
-                'braille_prefs_back_text'
+                'braille_prefs_back_text',
+                'braille_prefs_gear_rollers_enabled'
             ];
             keys.forEach(k => { try { localStorage.removeItem(k); } catch (e) { log.debug('Could not clear saved setting', k, e); } });
         }
@@ -7284,6 +7413,11 @@
             const dsToggleEl = document.getElementById('double_sided_enabled');
             if (dsToggleEl && (savedDoubleSided === '1' || savedDoubleSided === '0')) {
                 dsToggleEl.checked = savedDoubleSided === '1';
+            }
+            const savedGearRollers = readPersisted('braille_prefs_gear_rollers_enabled');
+            const gearToggleEl = document.getElementById('gear_rollers_enabled');
+            if (gearToggleEl && (savedGearRollers === '1' || savedGearRollers === '0')) {
+                gearToggleEl.checked = savedGearRollers === '1';
             }
             const savedBackText = readPersisted('braille_prefs_back_text');
             const backTextEl = document.getElementById('back-text');
@@ -7460,6 +7594,10 @@
             if (dsToggle) {
                 dsToggle.addEventListener('change', () => persistValue('braille_prefs_double_sided_enabled', dsToggle.checked ? '1' : '0'));
             }
+            const gearToggle = document.getElementById('gear_rollers_enabled');
+            if (gearToggle) {
+                gearToggle.addEventListener('change', () => persistValue('braille_prefs_gear_rollers_enabled', gearToggle.checked ? '1' : '0'));
+            }
             const backText = document.getElementById('back-text');
             if (backText) {
                 backText.addEventListener('input', () => persistValue('braille_prefs_back_text', backText.value));
@@ -7530,7 +7668,10 @@
                 if (dsToggleReset) dsToggleReset.checked = false;
                 const backTextReset = document.getElementById('back-text');
                 if (backTextReset) backTextReset.value = '';
+                const gearToggleReset = document.getElementById('gear_rollers_enabled');
+                if (gearToggleReset) gearToggleReset.checked = false;
                 try { updateDoubleSidedUI(); } catch (e) { log.error('Double-sided UI failed to refresh after reset to defaults:', e); }
+                try { updateGearRollersUI(); } catch (e) { log.error('Gear roller UI failed to refresh after reset to defaults:', e); }
                 updateShapeSettings();
                 clearGridColumnsDirty();
                 updateGridColumnsForPlateType();
@@ -8879,6 +9020,8 @@
                 tactile_recess_extra_depth: document.getElementById('tactile_recess_extra_depth')?.value || '0.2'
             };
 
+            const gearRollersOn = isGearRollersOn();
+
             // Double-sided beta settings ride inside `settings` under the FLAT
             // CardSettings names (the grouped `_mm` schema spellings would be
             // silently ignored by the backend). The flag is 0/1 like
@@ -8901,6 +9044,13 @@
                 settings.ds_dot_dome_height = dsFootprints.ds_dot_dome_height;
                 settings.ds_bowl_base_diameter = dsFootprints.ds_bowl_base_diameter;
                 settings.ds_bowl_depth = dsFootprints.ds_bowl_depth;
+            }
+
+            // Gear beta: one flat flag, and NOTHING is added when it is off, so a
+            // toggle-off request body stays byte-identical to a pre-beta one. The
+            // gear geometry has no dials to send: it is vendored 1:1 sample data.
+            if (gearRollersOn) {
+                settings.gear_rollers_enabled = 1;
             }
 
             // Debug: Log the settings being sent
@@ -9081,11 +9231,12 @@
                 if (lastSTLUrl) URL.revokeObjectURL(lastSTLUrl);
                 lastSTLUrl = URL.createObjectURL(blob);
 
-                const filename = await buildStlFilename(plateType, doubleSidedOn);
+                const filename = await buildStlFilename(plateType, doubleSidedOn, isGearRollersOn());
 
                 // Store the generated STL URL and filename for download
                 lastGeneratedSTLUrl = lastSTLUrl;
                 lastGeneratedFilename = filename;
+                lastGenerationUsedGears = isGearRollersOn();
                 lastGeneratedBlob = blob;
                 loadSTL(lastSTLUrl);
 
