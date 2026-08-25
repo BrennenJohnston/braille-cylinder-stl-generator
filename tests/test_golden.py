@@ -20,6 +20,7 @@ from app.geometry import interpoint
 from app.geometry_spec import extract_cylinder_geometry_spec
 from app.models import CardSettings
 from app.utils import braille_to_dots
+from tests.test_gear_rollers import load_gear_asset, tooth_band_phase
 
 
 @pytest.fixture(scope='module')
@@ -324,7 +325,14 @@ def _ds_tactile_arrow_mesh(marker):
 
     width = marker['width']
     length = marker['length']
-    delta = marker['outline_delta'] + (0.0 if marker['is_recess'] else _DS_ARROW_WELD_MM)
+    # Gear mode puts the same 5 um weld in the SPEC (decision D-8a), so adding
+    # the renderer's own would double it. When the spec already grew a raised
+    # arrow, its value is the whole story.
+    spec_delta = marker['outline_delta']
+    if marker['is_recess'] or spec_delta:
+        delta = spec_delta
+    else:
+        delta = spec_delta + _DS_ARROW_WELD_MM
     span = marker['prism_span']
     outline = _offset_polygon_miter(
         [(-width / 2.0, -length / 2.0), (width / 2.0, -length / 2.0), (0.0, length / 2.0)], delta
@@ -367,8 +375,27 @@ def _build_ds_cylinder_mesh(spec):
     if cylinder['polygon_points']:
         raise ValueError('ds golden renderer models a solid shell; drop the polygonal cutout from the fixture params')
 
+    # A SOLID shell, which is also what gear mode needs. csg-worker-manifold.js
+    # hollows the barrel by wall thickness unless the spec carries gears, in
+    # which case it builds a solid one too (decision D-2) - so in gear mode this
+    # renderer and the worker agree by construction rather than by luck. For
+    # NON-gear specs they do not: this has always modelled a solid barrel where
+    # the worker makes a tube. That predates the gear beta and is left alone.
     shell = trimesh.creation.cylinder(radius=radius, height=height, sections=_DS_SHELL_SECTIONS)
     raised = [shell]
+
+    # Gear-integrated one-piece rollers (BETA): the vendored gear pair plus its
+    # two hidden weld rings, unioned in with the other raised features so the
+    # recess-last order is untouched.
+    gears_block = spec.get('gears')
+    if gears_block:
+        raised.append(load_gear_asset(gears_block['asset']))
+        for ring in gears_block['weld_rings']:
+            band = trimesh.creation.annulus(
+                r_min=ring['r_in'], r_max=ring['r_out'], height=ring['height'], sections=_DS_SHELL_SECTIONS
+            )
+            band.apply_translation([0.0, 0.0, ring['z_center']])
+            raised.append(band)
     cutters = []
     for marker in spec['markers']:
         if marker['type'] != 'cylinder_tactile_arrow':
@@ -383,6 +410,9 @@ def _build_ds_cylinder_mesh(spec):
 
     solid = trimesh.boolean.union(raised, engine='manifold')
     solid = trimesh.boolean.difference([solid, trimesh.boolean.union(cutters, engine='manifold')], engine='manifold')
+    # Fixture convention: reseat so the barrel's base sits at z = 0. In gear
+    # mode that puts the gears at z -10..0 and 52..62 - the sample assembly's
+    # own frame - so a geared fixture spans z -10..62, not 0..52.
     solid.apply_translation([0.0, 0.0, height / 2.0])
     return _stabilize_for_stl(solid)
 
@@ -595,5 +625,269 @@ def test_ds_golden_fixture_matches_regenerated_geometry(fixtures_dir, plate_type
     assert not fixture_mesh.contains(np.array(outside_points)).any()
 
 
+# ---------------------------------------------------------------------------
+# Gear-integrated one-piece rollers (BETA) golden pair
+#
+# Same inputs as the double-sided pair, with gears on, so one fixture covers
+# both betas at once. Two deliberate differences from the DS pair:
+#
+#   * the cylinder is 30.8 mm, not 30.75. The vendored gears were measured
+#     against a 15.400 mm radius barrel, and app/validation.py hard-rejects
+#     anything else while gears are on (decision S7, signed 2026-08-24). At
+#     30.75 app/geometry_spec.py emits a warning, and a spec carrying warnings
+#     cannot be turned into a fixture at all.
+#   * the roller spans z -10..62, not 0..52: the gears sit outside the barrel
+#     at both ends, which is what makes it a 72 mm one-piece part.
+# ---------------------------------------------------------------------------
+
+GEAR_FIXTURE_SETTINGS = {**DS_FIXTURE_SETTINGS, 'gear_rollers_enabled': 1}
+GEAR_FIXTURE_CYLINDER_PARAMS = {**DS_FIXTURE_CYLINDER_PARAMS, 'diameter': 30.8}
+GEAR_FIXTURE_NAMES = {'positive': 'gear_rollerA_golden', 'negative': 'gear_rollerB_golden'}
+GEAR_FIXTURE_ASSETS = {'positive': 'gears_a', 'negative': 'gears_b'}
+
+_GEAR_TOOTH_COUNT = 24
+_GEAR_TIP_RADIUS_MM = 16.1093702290795
+# The roller in the fixture frame: barrel 0..52 with a 10 mm gear at each end.
+_GEAR_FIXTURE_Z_MIN = -10.0
+_GEAR_FIXTURE_Z_MAX = 62.0
+
+
+def _gear_fixture_spec(plate_type):
+    """Geometry spec for one side of the gear-mode golden pair."""
+    settings = CardSettings(**GEAR_FIXTURE_SETTINGS)
+    return extract_cylinder_geometry_spec(
+        DS_FIXTURE_FRONT_LINES,
+        'g1',
+        settings,
+        GEAR_FIXTURE_CYLINDER_PARAMS,
+        None,
+        plate_type,
+        braille_to_dots_func=braille_to_dots,
+        back_lines=DS_FIXTURE_BACK_LINES,
+    )
+
+
+def generate_gear_golden_fixtures():
+    """
+    Regenerate the gear-mode golden STL pair and its metadata.
+
+    Run manually (python -m tests.test_golden from the repo root) - never from
+    the test suite, and only when a geometry change is intended. Existing
+    fixtures, single-sided and double-sided alike, are not touched.
+    """
+    import importlib.metadata
+
+    fixtures_dir = Path(__file__).parent / 'fixtures'
+    for plate_type, fixture_name in GEAR_FIXTURE_NAMES.items():
+        spec = _gear_fixture_spec(plate_type)
+        if spec['warnings']:
+            raise ValueError(f'fixture spec for {fixture_name} has warnings: {spec["warnings"]}')
+        mesh = _build_ds_cylinder_mesh(spec)
+        (fixtures_dir / f'{fixture_name}.stl').write_bytes(mesh.export(file_type='stl'))
+
+        metadata = {
+            'description': (
+                f'Gear-integrated one-piece roller BETA golden: {"Cylinder A" if plate_type == "positive" else "Cylinder B"} '
+                f'({plate_type}), barrel plus its top and bottom gears as one part'
+            ),
+            'fixture_name': fixture_name,
+            'plate_type': plate_type,
+            'generation': {
+                'note': (
+                    'Rendered by tests/test_golden.py generate_gear_golden_fixtures() from '
+                    'extract_cylinder_geometry_spec called directly with back_lines= and '
+                    'gear_rollers_enabled=1, so this pair covers the gear beta ON TOP of the '
+                    'double-sided one. Z-up, theta as emitted, base of the barrel reseated to '
+                    'z=0 - which puts the gears at z -10..0 and 52..62. The gear geometry is '
+                    'the vendored asset from static/assets/gears/, unmodified: the sample-to-'
+                    'program transform is already baked into those bytes.'
+                ),
+                'cylinder_diameter_note': (
+                    'ds_cylinder*_golden uses 30.75 mm; this pair uses 30.8 mm because the '
+                    'vendored gears were measured against a 15.400 mm radius barrel and gear '
+                    'mode rejects any other size (S7, signed 2026-08-24).'
+                ),
+                'gear_asset': GEAR_FIXTURE_ASSETS[plate_type],
+                'front_lines': DS_FIXTURE_FRONT_LINES,
+                'back_lines': DS_FIXTURE_BACK_LINES,
+                'settings': GEAR_FIXTURE_SETTINGS,
+                'cylinder_params': GEAR_FIXTURE_CYLINDER_PARAMS,
+                'generated': '2026-08-24',
+                'trimesh_version': importlib.metadata.version('trimesh'),
+                'manifold3d_version': importlib.metadata.version('manifold3d'),
+            },
+            'expected_properties': {
+                'face_count': len(mesh.faces),
+                'vertex_count': len(mesh.vertices),
+                'is_watertight': bool(mesh.is_watertight),
+                'bbox_min': mesh.bounds[0].tolist(),
+                'bbox_max': mesh.bounds[1].tolist(),
+                'volume': float(mesh.volume),
+                'surface_area': float(mesh.area),
+            },
+        }
+        (fixtures_dir / f'{fixture_name}.json').write_text(json.dumps(metadata, indent=2) + '\n', encoding='utf-8')
+        print(
+            f'{fixture_name}: {len(mesh.faces)} faces, volume {mesh.volume:.3f} mm^3, '
+            f'watertight {mesh.is_watertight}, z {mesh.bounds[0][2]:.3f}..{mesh.bounds[1][2]:.3f}'
+        )
+
+
+@pytest.mark.parametrize('plate_type', ['positive', 'negative'])
+def test_gear_golden_fixture_metadata_records_the_module_inputs(fixtures_dir, plate_type):
+    """Fixture metadata and the inputs the test regenerates from cannot drift apart."""
+    metadata = load_fixture_metadata(fixtures_dir, GEAR_FIXTURE_NAMES[plate_type])
+    generation = metadata['generation']
+    assert generation['front_lines'] == DS_FIXTURE_FRONT_LINES
+    assert generation['back_lines'] == DS_FIXTURE_BACK_LINES
+    assert generation['settings'] == GEAR_FIXTURE_SETTINGS
+    assert generation['cylinder_params'] == GEAR_FIXTURE_CYLINDER_PARAMS
+    assert generation['gear_asset'] == GEAR_FIXTURE_ASSETS[plate_type]
+    # The two betas' fixtures MUST differ here, and the reason is recorded.
+    assert generation['cylinder_params']['diameter'] == 30.8
+    assert DS_FIXTURE_CYLINDER_PARAMS['diameter'] == 30.75
+
+
+@pytest.mark.parametrize('plate_type', ['positive', 'negative'])
+def test_gear_golden_fixture_matches_regenerated_geometry(fixtures_dir, plate_type):
+    """The committed roller must match a fresh render of today's gear-mode spec."""
+    trimesh = pytest.importorskip('trimesh')
+    pytest.importorskip('manifold3d')
+    pytest.importorskip('shapely')
+
+    fixture_name = GEAR_FIXTURE_NAMES[plate_type]
+    fixture_mesh = trimesh.load(str(fixtures_dir / f'{fixture_name}.stl'), file_type='stl', force='mesh')
+
+    spec = _gear_fixture_spec(plate_type)
+    rebuilt = _build_ds_cylinder_mesh(spec)
+    rebuilt = trimesh.load(io.BytesIO(rebuilt.export(file_type='stl')), file_type='stl', force='mesh')
+
+    assert fixture_mesh.is_watertight
+    assert rebuilt.is_watertight
+    assert fixture_mesh.volume == pytest.approx(rebuilt.volume, abs=0.02)
+    assert fixture_mesh.area == pytest.approx(rebuilt.area, abs=0.2)
+    assert fixture_mesh.bounds == pytest.approx(rebuilt.bounds, abs=1e-3)
+
+
+@pytest.mark.parametrize('plate_type', ['positive', 'negative'])
+def test_gear_golden_fixture_is_a_one_piece_roller(fixtures_dir, plate_type):
+    """
+    The shape of the thing: 72 mm tall, gears at both ends, 24 teeth on each.
+
+    Body counting is deliberately not a bare "== 1". On the EMBOSS plate the
+    raised dot domes come out as separate small bodies - the recorded second
+    tangency inside every rounded dot, which predates this beta and is present
+    with gears off too. So: exactly one body is the roller, and every other
+    body must look like one of those domes.
+    """
+    trimesh = pytest.importorskip('trimesh')
+    import numpy as np
+
+    mesh = trimesh.load(str(fixtures_dir / f'{GEAR_FIXTURE_NAMES[plate_type]}.stl'), file_type='stl', force='mesh')
+    mesh.merge_vertices()
+
+    bodies = mesh.split(only_watertight=False)
+    # A negative volume is an enclosed void - what a hollow barrel plus the
+    # weld rings produced before gear mode forced the shell solid.
+    assert all(body.volume > 0 for body in bodies)
+
+    rollers = [body for body in bodies if body.bounds[1][2] - body.bounds[0][2] > 70.0]
+    assert len(rollers) == 1
+    roller = rollers[0]
+
+    assert roller.bounds[0][2] == pytest.approx(_GEAR_FIXTURE_Z_MIN, abs=1e-3)
+    assert roller.bounds[1][2] == pytest.approx(_GEAR_FIXTURE_Z_MAX, abs=1e-3)
+
+    for body in bodies:
+        if body is roller:
+            continue
+        assert body.volume < 1.0
+        assert np.hypot(body.vertices[:, 0], body.vertices[:, 1]).min() >= GEAR_FIXTURE_CYLINDER_PARAMS['diameter'] / 2
+
+    # Both gear bands, in the fixture frame (barrel 0..52).
+    for z_low, z_high in ((-9.0, -1.0), (53.0, 61.0)):
+        count, _ = tooth_band_phase(roller.vertices, z_low, z_high)
+        assert count == _GEAR_TOOTH_COUNT
+
+
+@pytest.mark.parametrize('plate_type', ['positive', 'negative'])
+def test_gear_golden_fixture_has_material_where_a_tooth_is(fixtures_dir, plate_type):
+    """
+    Containment probes on the gears themselves: solid inside a tooth, air just
+    beyond the tips. Catches a gear that landed but at the wrong radius.
+    """
+    trimesh = pytest.importorskip('trimesh')
+    import numpy as np
+
+    mesh = trimesh.load(str(fixtures_dir / f'{GEAR_FIXTURE_NAMES[plate_type]}.stl'), file_type='stl', force='mesh')
+    spec = _gear_fixture_spec(plate_type)
+
+    # Sample the fixture's own tooth angles rather than assuming a phase: take
+    # the tip band of the top gear and probe along one measured tooth centre.
+    top = mesh.vertices[(mesh.vertices[:, 2] > 55.0) & (mesh.vertices[:, 2] < 59.0)]
+    radial = np.hypot(top[:, 0], top[:, 1])
+    tips = top[radial > _GEAR_TIP_RADIUS_MM - 0.05]
+    assert len(tips) > 0
+    theta = math.atan2(tips[0][1], tips[0][0])
+
+    inside = []
+    outside = []
+    for z in (-5.0, 57.0):  # one probe per gear
+        inside.append((0.75 * _GEAR_TIP_RADIUS_MM * math.cos(theta), 0.75 * _GEAR_TIP_RADIUS_MM * math.sin(theta), z))
+        outside.append(
+            ((_GEAR_TIP_RADIUS_MM + 0.5) * math.cos(theta), (_GEAR_TIP_RADIUS_MM + 0.5) * math.sin(theta), z)
+        )
+
+    assert mesh.contains(np.array(inside)).all()
+    assert not mesh.contains(np.array(outside)).any()
+    assert spec['gears']['asset'] == GEAR_FIXTURE_ASSETS[plate_type]
+
+
+@pytest.mark.parametrize(
+    'fixture_name',
+    ['card_positive_small', 'card_counter_small', 'cylinder_positive_small', 'cylinder_counter_small'],
+)
+def test_golden_specs_ignore_an_absent_or_off_gear_flag(client, fixtures_dir, fixture_name):
+    """
+    Beta isolation, the same proof the double-sided toggle gets: gears at 0 must
+    be indistinguishable from gears not existing, for every pre-beta payload.
+    """
+    metadata = load_fixture_metadata(fixtures_dir, fixture_name)
+    payload = metadata['request_payload']
+
+    baseline = client.post('/geometry_spec', json=payload, headers={'Content-Type': 'application/json'})
+    assert baseline.status_code == 200, baseline.data
+
+    off_payload = copy.deepcopy(payload)
+    off_payload.setdefault('settings', {})['gear_rollers_enabled'] = 0
+    toggled_off = client.post('/geometry_spec', json=off_payload, headers={'Content-Type': 'application/json'})
+    assert toggled_off.status_code == 200, toggled_off.data
+
+    assert toggled_off.get_json() == baseline.get_json()
+
+
+def test_a_double_sided_request_is_unchanged_by_an_off_gear_flag(client):
+    """The gear flag at 0 must not disturb the other beta either."""
+    payload = {
+        'shape_type': 'cylinder',
+        'plate_type': 'positive',
+        'lines': DS_FIXTURE_FRONT_LINES,
+        'back_lines': DS_FIXTURE_BACK_LINES,
+        'settings': dict(DS_FIXTURE_SETTINGS),
+        'cylinder_params': dict(DS_FIXTURE_CYLINDER_PARAMS),
+    }
+
+    baseline = client.post('/geometry_spec', json=payload, headers={'Content-Type': 'application/json'})
+    assert baseline.status_code == 200, baseline.data
+
+    off_payload = copy.deepcopy(payload)
+    off_payload['settings']['gear_rollers_enabled'] = 0
+    toggled_off = client.post('/geometry_spec', json=off_payload, headers={'Content-Type': 'application/json'})
+    assert toggled_off.status_code == 200, toggled_off.data
+
+    assert toggled_off.get_json() == baseline.get_json()
+
+
 if __name__ == '__main__':
     generate_ds_golden_fixtures()
+    generate_gear_golden_fixtures()
