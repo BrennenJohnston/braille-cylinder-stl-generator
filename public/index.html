@@ -4087,8 +4087,9 @@
                          WCAG 2.5.3 Label in Name, the visible "Download STL" not
                          being contained in the spoken name. -->
                     <button type="button" id="download-stl-btn" style="display: none;">Download STL</button>
-                    <!-- Double-sided beta only: updateDoubleSidedUI() reveals these
-                         three and hides them again the moment the beta is off. The
+                    <!-- Pair mode only (either beta - double-sided or gear
+                         rollers): updatePairModeUI() reveals these three and
+                         hides them again the moment the last beta is off. The
                          visible text is each button's accessible name, so no
                          aria-label competes with it. -->
                     <!-- User-facing wording signed off by Brennen (2026-08-17); reword only with his sign-off. -->
@@ -6863,9 +6864,10 @@
         // to the tactile seam arrow — the backend hard-rejects double-sided
         // requests with any other style, so this lock is what keeps that error
         // unreachable from the UI.
-        // The A/B names belong to the double-sided flow only, so the off-state
+        // The A/B names belong to the pair flow — either beta, double-sided or
+        // gear rollers, produces a Cylinder A / Cylinder B pair. The off-state
         // text is captured from the markup rather than retyped here - turning
-        // the beta off puts back exactly what shipped, character for character.
+        // the last beta off puts back exactly what shipped, character for character.
         /* On-state relabel wording signed off by Brennen (2026-08-17); reword only with his sign-off. */
         const plateRadioLabels = [
             { value: 'positive', onText: 'Cylinder A — Embossing Plate' },
@@ -6885,11 +6887,7 @@
             if (section) section.style.display = on ? '' : 'none';
             toggle.setAttribute('aria-expanded', String(on));
 
-            plateRadioLabels.forEach(entry => {
-                entry.el.textContent = on ? entry.onText : entry.original;
-            });
-            if (generateBothBtn) generateBothBtn.style.display = on ? '' : 'none';
-            if (!on) clearPairResults();
+            updatePairModeUI();
 
             // The heading inside the legend, not the legend itself: writing
             // textContent on the legend would delete the heading element.
@@ -6955,6 +6953,27 @@
             return !!document.getElementById('gear_rollers_enabled')?.checked;
         }
 
+        // Either beta produces a Cylinder A / Cylinder B pair: double-sided
+        // pairs the recesses, gear rollers pairs the gear sets (gears_a meshes
+        // with gears_b). The pair controls and the A/B radio names follow the
+        // two toggles together through this one predicate.
+        function isPairModeOn() {
+            return !!document.getElementById('double_sided_enabled')?.checked || isGearRollersOn();
+        }
+
+        // Deliberately silent: both beta toggles call this from their own
+        // update functions, each of which already makes its single
+        // announcement (ADA SOP Section 12, C9) - a second voice here would
+        // replace it in the shared status region.
+        function updatePairModeUI() {
+            const on = isPairModeOn();
+            plateRadioLabels.forEach(entry => {
+                entry.el.textContent = on ? entry.onText : entry.original;
+            });
+            if (generateBothBtn) generateBothBtn.style.display = on ? '' : 'none';
+            if (!on) clearPairResults();
+        }
+
         function updateGearRollersUI() {
             const on = isGearRollersOn();
 
@@ -7002,6 +7021,8 @@
             // and announceStatus writes a single region, so announcing them
             // separately would let the second silently replace the first.
             announceStatus('gear-rollers', [cutoutText, sizeText].filter(Boolean).join(' '));
+
+            updatePairModeUI();
         }
 
         document.getElementById('gear_rollers_enabled')?.addEventListener('change', () => {
@@ -9347,9 +9368,9 @@
 
         async function runGenerateBothCylinders() {
             if (pairRunInFlight) return;
-            const doubleSidedOn = !!document.getElementById('double_sided_enabled')?.checked
+            const pairModeOn = isPairModeOn()
                 && (document.querySelector('input[name="shape_type"]:checked')?.value || 'cylinder') === 'cylinder';
-            if (!doubleSidedOn) return;
+            if (!pairModeOn) return;
 
             pairRunInFlight = true;
             // Read the warnings BEFORE the run, not at the end: it switches

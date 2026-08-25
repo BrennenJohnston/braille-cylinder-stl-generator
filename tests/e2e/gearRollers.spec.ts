@@ -117,6 +117,50 @@ async function setGearToggle(page: Page, on: boolean) {
   }
 }
 
+/** The plate radios' visible label text, in [positive, negative] order. */
+function plateLabels(page: Page) {
+  return page.evaluate(() =>
+    ['positive', 'negative'].map(
+      (value) =>
+        document
+          .querySelector(`input[name="plate_type"][value="${value}"]`)
+          ?.closest('label')
+          ?.querySelector('.radio-text')?.textContent ?? '',
+    ),
+  );
+}
+
+/** Click one of the pair download buttons and return the offered filename. */
+async function pairDownloadName(page: Page, which: 'a' | 'b'): Promise<string> {
+  const downloadPromise = page.waitForEvent('download');
+  await page.locator(`#download-cylinder-${which}-btn`).click();
+  const download = await downloadPromise;
+  return download.suggestedFilename();
+}
+
+/**
+ * Press Generate Both and wait for the pair to finish. The first press can land
+ * before liblouis or the Manifold worker is ready, which aborts the run and
+ * says so in #pair-status — pressing again once they are up is exactly what
+ * that message tells the user to do. Anything that is NOT that transient
+ * failure is rethrown rather than retried.
+ */
+async function generateBoth(page: Page) {
+  const status = page.locator('#pair-status');
+  for (let attempt = 0; attempt < 8; attempt++) {
+    await page.locator('#generate-both-btn').click();
+    try {
+      await expect(status).toContainText('Both cylinders are ready', { timeout: 120_000 });
+      return;
+    } catch (error) {
+      const text = (await status.textContent()) ?? '';
+      if (!/could not be generated/.test(text)) throw error;
+    }
+    await page.waitForTimeout(1500);
+  }
+  throw new Error('Generate Both never reported a finished pair');
+}
+
 test.describe('Gear-integrated one-piece rollers (BETA)', () => {
   // Same rationale as the other generation specs: the Manifold worker plus a
   // 30,000-triangle gear asset makes a real run slow, and Firefox slower.
@@ -270,5 +314,57 @@ test.describe('Gear-integrated one-piece rollers (BETA)', () => {
     await page.locator('#reset-defaults-btn').click();
     await expect(page.locator('#gear_rollers_enabled')).not.toBeChecked();
     await expect(page.locator('#gear-cutout-note')).toBeHidden();
+  });
+
+  test('gear mode alone reveals Generate Both and the Cylinder A/B names', async ({ page }) => {
+    await openApp(page);
+
+    const generateBothBtn = page.locator('#generate-both-btn');
+    await expect(generateBothBtn).toBeHidden();
+    const original = await plateLabels(page);
+    expect(original).toEqual(['Embossing Plate', 'Universal Counter Plate']);
+
+    // A geared roller only works as a meshed A/B pair, so the pair controls
+    // follow this toggle exactly as they follow the double-sided one.
+    await setGearToggle(page, true);
+    await expect(generateBothBtn).toBeVisible();
+    expect(await plateLabels(page)).toEqual([
+      'Cylinder A — Embossing Plate',
+      'Cylinder B — Universal Counter Plate',
+    ]);
+
+    // Byte-identical on the way back: the training videos show these names.
+    await setGearToggle(page, false);
+    await expect(generateBothBtn).toBeHidden();
+    expect(await plateLabels(page)).toEqual(original);
+  });
+
+  test('Generate Both with gears only keeps the single-sided Geared names and pairs the gear sets', async ({ page }) => {
+    test.setTimeout(300_000);
+    await openApp(page);
+    const state = watchGeometrySpecRequests(page);
+    const unattendedDownloads: string[] = [];
+    page.on('download', (download) => unattendedDownloads.push(download.suggestedFilename()));
+
+    await page.locator('#auto-text').fill('abc');
+    await setGearToggle(page, true);
+    await generateBoth(page);
+
+    // Same rule as the double-sided pair: nothing downloads by itself.
+    expect(unattendedDownloads).toEqual([]);
+
+    // Double-sided is OFF, so the single-sided filenames stand — the pair
+    // buttons hand out the same files two solo generates would have produced.
+    await expect(page.locator('#pair-downloads')).toBeVisible();
+    expect(await pairDownloadName(page, 'a')).toBe('Embossing_Cylinder_Geared_0.4_abc.stl');
+    expect(await pairDownloadName(page, 'b')).toBe('Counter_Cylinder_Geared_0.4_abc.stl');
+
+    // The run asked for both plates with gears on — which is what makes the
+    // backend hand Cylinder A the gears_a asset and Cylinder B gears_b.
+    const [aBody, bBody] = state.bodies.slice(-2) as Array<Record<string, unknown>>;
+    expect(aBody.plate_type).toBe('positive');
+    expect(bBody.plate_type).toBe('negative');
+    expect((aBody.settings as Record<string, unknown>).gear_rollers_enabled).toBe(1);
+    expect((bBody.settings as Record<string, unknown>).gear_rollers_enabled).toBe(1);
   });
 });
