@@ -1966,10 +1966,19 @@
 
         .pair-downloads button {
             flex: 1 1 11em;
+            /* Labels wrap rather than clip - the global button nowrap cut the
+               combined button's signed label off mid-word (found 2026-08-25). */
+            white-space: normal;
             background: var(--btn-success-bg);
             color: #fff;
             border: 2px solid var(--btn-success-border);
             box-shadow: 0 2px 8px var(--shadow-light);
+        }
+
+        /* The primary offer takes the whole first row, so its long signed
+           label renders on one line at the default width. */
+        #download-pair-btn {
+            flex-basis: 100%;
         }
 
         .pair-downloads button:hover {
