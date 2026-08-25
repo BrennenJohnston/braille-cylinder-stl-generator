@@ -715,6 +715,17 @@ STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md §8.
   direct payload; footprint dials stay deliberately absent — the interpoint budget
   leaves no safe adjustment room (§3).
 
+### 7.7 Pair mode is shared with the gears beta (2026-08-25)
+
+The Generate Both flow, the Cylinder A/B radio relabel, and the pair download row are no
+longer exclusive to this beta: they follow `isPairModeOn()` — Double-Sided OR Integrated
+Gears (a gear set only works meshed with its counterpart, so a gears-only user needs the
+pair too). What stays double-sided-only: the back text, the tactile lock, the paired 1:1
+recesses, and the `Cylinder_A_`/`Cylinder_B_` FILENAMES — a gears-only pair run keeps the
+frozen `Embossing_Cylinder_Geared_*`/`Counter_Cylinder_Geared_*` names. A pair run now
+also builds a combined two-body file, offered first as `Cylinder_Pair_[Geared_]…` — full
+mechanics in STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md §6/§15.
+
 ---
 
 ## 8. Regression Anchors
@@ -761,7 +772,10 @@ and double-sided Cylinder A): at the default 10 mm arrow length on 10 mm line sp
 every such export carries exactly 3 pre-existing non-manifold pinch edges at theta 180°
 (the arrow tip-to-base tangency, welded by STL float32 rounding). Measured identically on
 pre-beta output — product behavior, not a regression. B plates (recess outlines grown
-0.2 mm) are watertight.
+0.2 mm) are watertight. **The combined `Cylinder_Pair_*` file (2026-08-25) is doubly
+exempt**: it inherits Cylinder A's pinch edges AND deliberately contains two separate
+bodies — assert its triangle count (`nA + nB`) and B's X shift instead, the way
+`tests/e2e/doubleSided.spec.ts` does.
 
 ---
 
@@ -867,6 +881,7 @@ and separated**. Full record: the research folder's `00_PROJECT_MEMORY.md`, FD-8
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-08-25 | 1.12 | **Pair mode is shared with the Integrated Gears beta** (new §7.7). Generate Both, the Cylinder A/B radio relabel (reuse confirmed by Brennen 2026-08-25), and the pair download row now follow `isPairModeOn()` — either beta. Double-sided keeps exclusively: back text, tactile lock, paired recesses, and the `Cylinder_A_`/`Cylinder_B_` filenames (gears-only runs keep the frozen Geared single-sided names). Pair runs also build a combined two-body `Cylinder_Pair_[Geared_]` file, offered first (mechanics in STL_EXPORT §6/§15); §8's is_watertight prohibition extends to it — it inherits Cylinder A's 3 pinch edges and contains two bodies by design. Wire shape, footprints, thresholds, geometry, and the toggle-off payload untouched. |
 | 2026-08-21 | 1.8 | **Section 7.6 corrected and extended** (post-initiative accessibility hygiene bundle). The bullet claiming "an unchanged string is not a mutation, which keeps the per-keystroke recomputes from chattering" was **wrong and contradicted the `announceDsGap` bullet in the same list**: `announceStatus()` assigns `textContent` unconditionally, and assigning an identical string still replaces the text node. Disproved by measurement - `#caps-warning`, whose text never changes, announced **11 times over 11 keystrokes** when wired without a gate. The bullet now states that writing does not deduplicate and that frequent callers must gate themselves. Also records the three non-beta sources that joined the channel the same day (`auto-overflow-warning`, `cylinder-overflow-warning`, `caps-warning`), bringing the wired total to **nine**. Documentation and one UI file only - no beta behaviour, wire shape, footprint, threshold, or geometry changed, and the toggle-off payload is untouched. |
 | 2026-08-21 | 1.8 | **A 0 mm `ds_bowl_depth` is now REJECTED in double-sided mode** (§5 gate 4; the §9 gap is struck as closed). The gap recorded at v1.6/v1.7 turned out to understate the problem: `csg-worker-manifold.js`'s 0.8 mm substitution was reachable from the shipped *single-sided* Bowl Recess Dot Depth dial too, and the card counter plate raised `ZeroDivisionError` -> HTTP 500 on the same input. `app/geometry_spec.py` now declines to emit a depthless bowl on all three paths, so 0 mm single-sided means what it says — a flat counter plate, reported through `spec['warnings']` and the log — while double-sided 0 mm fails with a message naming the nip. The gate's nominal-diameter fallback and its `measured_on_the_print` branch are gone; `dsPrintedBowlMouth()`'s matching fallback is left in place but is now doubly unreachable. Two tests were rewritten from the old contract to the new one; `test_footprint_boundaries_are_accepted` moves `ds_bowl_depth` from 0.0 to the hemisphere 0.25 mm, the value that minimises the printed mouth for a 0.5 mm bowl. **No threshold, range, footprint, geometry, or golden fixture changed** — schema range stays 0.0–5.0 and both shipped depths (0.5 double-sided, 0.8 single-sided) are byte-identical. |
 | 2026-08-22 | 1.11 | **§7.1: the BETA note is now spoken as one sentence instead of ninety-six words — and the 2026-08-16 sign-off is untouched.** `id="double-sided-note"` moved onto a `<span>` around the fourth sentence, the beta warning, lifted whole and not reworded; the other three sentences stay in the same `.grade-note` div, in the same order, **visible**. The span is inline, so the note still renders as one paragraph and no pixel moved. Description on `#double_sided_enabled` measured **96 → 17 words** on the live accessibility tree — it was the longest on the page, 13% of all speech in a 34-minute NVDA session (audit F-D, decision D2 step 2). Brennen chose this sentence over the 21-word "Turning this on shows the Back of Card section below and locks the Row Indicator Style to the tactile seam arrow", as a draft, before the edit (FD-25b). **No geometry, threshold, footprint, default, wire field, or user-facing word changed**, and the toggle-off payload is untouched. Pattern documented once in `UI_INTERFACE_CORE_SPECIFICATIONS.md` §4.13. |

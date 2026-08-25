@@ -260,6 +260,13 @@ tracked separately. Tests assert around it deliberately: exactly one body spans 
 (under 1 mm³, watertight, entirely outside the barrel radius). A bare "one body" assertion
 would be a test this generator cannot pass.
 
+**The combined pair file is exempt from every one-body claim** (2026-08-25): a pair run
+merges Cylinder A and Cylinder B into one `Cylinder_Pair_Geared_*` STL that deliberately
+holds TWO full-span geared rollers 40.8 mm apart (centres; barrel surfaces 10 mm — the
+gear tips ⌀32.2187 overhang, leaving an accepted 8.58 mm tip-to-tip gap, Brennen's
+barrel-based spacing decision 2026-08-25). Assert `nPair = nA + nB` and B's X shift, never
+body count or watertightness. Mechanics in STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md §6.
+
 ---
 
 ## 8. User Interface (`public/index.html`)
@@ -268,11 +275,12 @@ A fieldset modelled on the double-sided beta's, placed after it:
 
 | Element | Id | String |
 |---|---|---|
-| Legend heading | — | S8 *"Integrated Gears (BETA — for testing)"* — **UNSIGNED, awaiting Brennen** |
+| Legend heading | — | S8 *"Integrated Gears (BETA — for testing)"* — signed off 2026-08-25 (the code comment is authoritative; this table said UNSIGNED until then) |
 | Toggle | `gear_rollers_enabled` | S1 *"Generate with integrated gears (BETA — for testing)"* |
 | Description | `gear-rollers-note` | S2, first sentence only (see below) |
 | Cutout note | `gear-cutout-note` / `-message` | S3 |
 | Size warning | `gear-size-warning` / `-message` | S7, the same sentence the server would return |
+| Hardware note | `gear-hardware-note` / `-message` | S9 *"Integrated gears fit only version 2 of the braille embosser hardware. They do not fit version 1 — do not use geared cylinders with a version 1 embosser body."* — signed off (wording AND always-visible) 2026-08-25. ALWAYS visible, even with the toggle off, so it is read before anyone decides to enable gears; `#gear-hardware-link-slot` sits empty for the version 2 build-files link once published. Pinned loosely (contains "version 2"/"version 1") by `tests/e2e/gearRollers.spec.ts` |
 
 **There is no card branch, on purpose.** Output Shape offers exactly one radio,
 `value="cylinder"` — flat card plates have been parked since December 2025 — so a card
@@ -305,6 +313,15 @@ Filenames gain a `Geared_` segment (decision D-5), and only then:
 
 Toggle-off names are byte-identical to today's, because public training videos show them.
 Persistence uses `braille_prefs_gear_rollers_enabled`, and Reset to defaults clears it.
+
+**Pair mode (2026-08-25).** This toggle alone now reveals Generate Both Cylinders and
+relabels the plate radios to Cylinder A / Cylinder B (`isPairModeOn()` — reuse of the
+signed labels confirmed by Brennen; a gear set only works meshed with its counterpart, so
+the pair is the useful output). The FILENAMES table above is unchanged by that: a
+gears-only pair run downloads the single-sided `Embossing_Cylinder_Geared_*` /
+`Counter_Cylinder_Geared_*` names, plus the combined `Cylinder_Pair_Geared_{preset}_{name}.stl`
+offered first (§7's two-body exemption applies). Both request bodies of the pair run carry
+`gear_rollers_enabled: 1`, one per plate type — pinned by `tests/e2e/gearRollers.spec.ts`.
 
 ---
 
@@ -365,4 +382,5 @@ changes, the 2026-08-23 re-vendor precedent (commit `4cc2914`) applies.
 
 | Date | Change |
 |---|---|
+| 2026-08-25 | **Pair mode, the combined file, and the S9 hardware note.** §8.1 records that the gears toggle alone now reveals Generate Both + the Cylinder A/B radio relabel (`isPairModeOn()`, label reuse confirmed by Brennen) while the download names stay the frozen Geared single-sided ones; §7 adds the combined `Cylinder_Pair_Geared_*` exemption from every one-body claim (two full-span rollers, 40.8 mm centres / 8.58 mm accepted tip gap — the barrel-based spacing decision); §8's string table gains S9, the always-visible version-1-vs-2 hardware warning (signed, with `#gear-hardware-link-slot` reserved for the v2 files link), and corrects S8 to signed per the authoritative code comment. |
 | 2026-08-24 | Created. Documents the gear beta as merged: vendored assets and their format, the canonical transforms, the S6/S7 gates, the union and its solid-barrel requirement, D-8a, the UI, and the acceptance tolerances. Records that S8 (the legend heading) is unsigned, that the emboss plate's loose dot domes predate this beta, and that the weld rings measure 0.000000 mm³. |

@@ -710,6 +710,37 @@ if (isCylinder) {
 }
 ```
 
+### Combined Pair File (Two-Body Concatenation)
+
+**Source:** `combineBinaryStl(bufA, bufB, xOffsetMm)` in `public/index.html`
+(added 2026-08-25 for the pair flow, §15).
+
+After a pair run finishes, the two retained plate buffers are merged into ONE
+binary STL client-side — no worker or server involvement:
+
+1. Both inputs are validated against `byteLength === 84 + count * 50`; a
+   mismatch throws (the combined file is then simply not offered — Cylinder A
+   and B stay downloadable).
+2. Output = 80-byte header + uint32 sum of both counts at byte 80 + every
+   triangle record of A, then every record of B.
+3. Cylinder B's records get `xOffsetMm` added to the X float of each of the
+   three vertices (record offsets +12, +24, +36); normals are untouched
+   (translation does not change facet orientation).
+4. `xOffsetMm` comes from `pairXOffsetMm()`: the live `#cylinder_diameter_mm`
+   dial + `PAIR_SURFACE_GAP_MM` (10) = 40.8 mm at the default 30.8 barrel —
+   centre-to-centre, so the barrel surfaces sit exactly 10 mm apart. Brennen
+   chose the barrel-based measure 2026-08-25; with gears on, the tips
+   (⌀32.2187) overhang, leaving an accepted 8.58 mm tip-to-tip gap. The dial
+   being unreadable throws rather than falling back to a literal (the silent
+   fallback-literal bug family).
+
+**Alignment note:** the 50-byte record stride means vertex floats are NOT
+4-byte aligned relative to the buffer, so a `Float32Array` view cannot be laid
+over the records — every read/write goes through `DataView`. The merged file
+deliberately contains TWO full bodies; do not run single-body or watertightness
+assertions against it (Cylinder A's raised-arrow pinch edges carry over — see
+the interpoint spec §7).
+
 ---
 
 ## 7. File Naming Conventions
@@ -730,7 +761,10 @@ can be matched to the counter plate it was designed against without opening eith
 When the Double-Sided Card beta is on (cylinder shape only), the pair is named with the
 beta's Cylinder A / Cylinder B vocabulary instead. The single-sided prefixes are frozen:
 public training videos reference them, so the A/B naming applies to the double-sided flow
-only.
+only. A pair run with ONLY the gear rollers beta on (2026-08-25, `isPairModeOn()`)
+therefore keeps the single-sided `Embossing_Cylinder_Geared_*` / `Counter_Cylinder_Geared_*`
+names — the plate radios relabel to Cylinder A / Cylinder B in that mode, the filenames do
+not (both pinned by `tests/e2e/gearRollers.spec.ts`).
 
 ### Components
 
@@ -779,6 +813,25 @@ async function buildStlFilename(plateType, doubleSided = false) {
 shape cylinder), so a card generated with the checkbox stuck on can never pick up an A/B
 name.
 
+> **KNOWN DRIFT (flagged 2026-08-25, code is authoritative):** the signature above is the
+> pre-gears two-argument form. The shipped `buildStlFilename(plateType, doubleSided, geared)`
+> takes a third argument that inserts the `Geared_` segment. This section has not been
+> rewritten pending Brennen's direction on the drift.
+
+### Combined Pair Filename
+
+**Source:** `buildPairStlFilename(geared)` in `public/index.html` — a separate function
+beside `buildStlFilename`, never a rename of the A/B names. Format signed off by Brennen
+2026-08-25:
+
+```
+Cylinder_Pair_{preset}_{name}.stl           // pair run, gears off
+Cylinder_Pair_Geared_{preset}_{name}.stl    // pair run, gears on
+```
+
+`{preset}` and `{name}` reuse `getThicknessPresetSegment()` and `deriveStlNameSegment()`,
+so the combined file sorts beside the A and B files it contains.
+
 ### Examples
 
 | Plate | Preset | Input | Filename |
@@ -791,6 +844,8 @@ name.
 | Counter | 0.4 | nothing entered | `Counter_Cylinder_0.4_untitled.stl` |
 | Cylinder A (double-sided) | 0.4 | front "abc", back "def" | `Cylinder_A_0.4_abc.stl` |
 | Cylinder B (double-sided) | 0.4 | front "abc", back "def" | `Cylinder_B_0.4_abc.stl` (named from the front text, keeping the pair together) |
+| Combined pair | 0.4 | front "abc", back "def" | `Cylinder_Pair_0.4_abc.stl` (both bodies in one file) |
+| Combined pair, gears on | 0.4 | "abc" | `Cylinder_Pair_Geared_0.4_abc.stl` |
 
 ---
 
@@ -810,6 +865,10 @@ name.
 | `#action-btn` | **Error** | "Generate STL" | `generate-state` | Yes | Retry |
 | `#download-stl-btn` | **Hidden** | — | — | — | Not in the tab order |
 | `#download-stl-btn` | **Offered** | "Download STL" | — | Yes | Download the built file |
+
+Pair mode adds three more download buttons (`#download-pair-btn`,
+`#download-cylinder-a-btn`, `#download-cylinder-b-btn`) with their own show/hide rules —
+documented with the rest of the pair flow in Section 15.
 
 `#action-btn` never carries `data-state="download"` any more. The `download-state`
 class survives only on the historical `#action-btn.download-state` rules; the new
@@ -1350,10 +1409,13 @@ async function test_geometry_consistency() {
 
 ---
 
-## 15. Paired Generation — Generate Both Cylinders (Double-Sided Beta)
+## 15. Paired Generation — Generate Both Cylinders (Pair Mode)
 
-Added 2026-08-17. Applies **only** while the Double-Sided Card beta is on (checkbox
-checked AND shape `cylinder`). With the beta off, nothing in this section exists on the
+Added 2026-08-17 for the Double-Sided Card beta; widened 2026-08-25 to **pair mode**:
+the flow applies while `isPairModeOn()` is true — the Double-Sided checkbox OR the
+Integrated Gears toggle (either beta, shape `cylinder`). A gear set only works meshed
+with its counterpart (gears_a with gears_b), so a gears-only user needs the pair exactly
+as a double-sided user does. With both betas off, nothing in this section exists on the
 page and the single-plate flow of Sections 7 and 8 is unchanged.
 
 ### Why it exists
@@ -1368,15 +1430,19 @@ nothing editable between the runs.
 
 | Element | Id | Shown | Notes |
 |---|---|---|---|
-| Generate Both Cylinders (A and B) | `#generate-both-btn` | Beta on only | `<button type="button">` in the pinned `.action-footer`, min 44 × 44 px, named by its visible text |
+| Generate Both Cylinders (A and B) | `#generate-both-btn` | Pair mode only | `<button type="button">` in the pinned `.action-footer`, min 44 × 44 px, named by its visible text |
 | Pair status line | `#pair-status` | While a run is in flight and after it ends | `role="status" aria-live="polite"`, visible text — sighted and screen-reader users get the same progress |
+| Download Combined STL (Cylinders A and B) | `#download-pair-btn` | After a successful combine | FIRST inside `#pair-downloads` (the one-plate print is the primary offer); label signed off 2026-08-25; hidden when the combine failed, leaving A and B alone on the row |
 | Download Cylinder A / B | `#download-cylinder-a-btn`, `#download-cylinder-b-btn` | After both cylinders are built | Inside `#pair-downloads`; each saves its own file on click |
 
-While the beta is on, the plate radios are relabelled **Cylinder A — Embossing Plate** and
-**Cylinder B — Universal Counter Plate**. The radio `value`s (`positive` / `negative`) and
-the `aria-describedby` descriptions are untouched, and the off-state label text is captured
-from the markup at load, so turning the beta off restores the single-sided labels character
-for character.
+While pair mode is on, the plate radios are relabelled **Cylinder A — Embossing Plate** and
+**Cylinder B — Universal Counter Plate** (reuse in gears-only mode confirmed by Brennen
+2026-08-25). The radio `value`s (`positive` / `negative`) and the `aria-describedby`
+descriptions are untouched, and the off-state label text is captured from the markup at
+load, so turning both betas off restores the single-sided labels character for character.
+`updatePairModeUI()` owns the relabel, the button visibility, and clearing stale pair
+results; it is deliberately silent — each beta's own update function makes the single
+announcement.
 
 ### Run sequence
 
@@ -1388,10 +1454,18 @@ for character.
    announce `Generating Cylinder A (1 of 2)...`.
 4. Run `runGenerateForCurrentPlate()` to completion and keep the resulting blob.
 5. Repeat steps 2–4 for **negative** with `Generating Cylinder B (2 of 2)...`.
-6. Reveal both download controls and announce
-   `Both cylinders are ready. Use the Download Cylinder A and Download Cylinder B buttons below to save them.`
+6. **Eagerly combine** the two retained blobs into the pair file (§6, *Combined Pair
+   File*) — at completion rather than on click, so a corrupt buffer surfaces here, where
+   A and B stay usable, instead of as a dead button press later. A combine failure is
+   logged, leaves `pairFiles.combined` null, and hides `#download-pair-btn`. On success
+   the pair is also presented in the 3D preview: two centred bodies, A screen-left,
+   B screen-right, centres `pairXOffsetMm()` apart.
+7. Reveal the download controls and announce
+   `Both cylinders are ready. Use the Download Combined STL button below to save one file with both cylinders spaced for printing on one plate, or use the Download Cylinder A and Download Cylinder B buttons to save them separately.`
+   (signed off 2026-08-25, replacing the 2026-08-18 sentence; pinned as `PAIR_READY` in
+   `tests/e2e/completionWarnings.spec.ts` — the sentence and the pin change in one commit).
    **Nothing downloads on its own** — see *Downloads* below.
-7. In a `finally` block: restore the user's plate selection and cell dial, unlock the
+8. In a `finally` block: restore the user's plate selection and cell dial, unlock the
    controls, reset the action button, and return focus to Generate Both if the run was
    started from the keyboard.
 
@@ -1428,9 +1502,13 @@ existing `#error-message` overlay, unchanged.
 ### Downloads
 
 **Nothing downloads automatically. Each file is saved by pressing its own button** —
-`Download Cylinder A` and `Download Cylinder B` — which appear when the run finishes.
-Names follow Section 7 exactly: `Cylinder_A_{preset}_{name}.stl` and
-`Cylinder_B_{preset}_{name}.stl`.
+`Download Combined STL (Cylinders A and B)` first, then `Download Cylinder A` and
+`Download Cylinder B` — which appear when the run finishes. One gesture still saves one
+file, so the combined button complies with the no-auto-download rationale unchanged.
+Names follow Section 7 exactly: `Cylinder_Pair_{preset}_{name}.stl` (with `Geared_`
+inserted when gears are on), `Cylinder_A_{preset}_{name}.stl` and
+`Cylinder_B_{preset}_{name}.stl` — in a gears-only pair run the A/B buttons save the
+frozen single-sided `Embossing_Cylinder_Geared_*` / `Counter_Cylinder_Geared_*` names.
 
 **Why, changed 2026-08-18.** The original design started both downloads itself and kept
 the buttons as a fallback. Two programmatic downloads from a single user gesture is
@@ -1542,6 +1620,7 @@ idle. After a pair run the action button always reads "Generate STL".
 | 1.7 | 2026-08-18 | **Paired download is no longer automatic (accessibility).** An NVDA run hit Chrome's "wants to: Download multiple files" prompt, which the page cannot relabel - it names no file, gives no reason, and Tab cycles Close/Allow/Block indefinitely - and the run ended in "Download blocked" with neither cylinder saved. The status line meant to rescue that case was never announced either, because the Save As dialog from the first automatic download had already taken focus off the page. Both automatic `downloadPairFile()` calls removed; each cylinder is now saved by pressing its own button, so one gesture never produces more than one download. The 2026-08-17 measurement that found this safe was taken without a screen reader running. Section 15 step 6 and the Downloads subsection rewritten; completion wording replaced, **signed off by Brennen 2026-08-18**. Verified: 0 automatic downloads, both buttons shown, focus retained on Generate Both, one file per button press |
 | 1.8 | 2026-08-18 | **Generate and Download split into two controls (accessibility).** Section 8 rewritten. `#action-btn` no longer renames itself into a download control while the user's focus sits on it; a separate `#download-stl-btn` appears beside it, matching the pair buttons. Also fixed in the same pass: (a) progress messages had never displayed for ANYONE - the `#error-message` box was emptied between runs but never declassed, and `restoreThicknessPreset()` leaves an `error-message` class on every page load, which the "is a blocking error showing?" guard read as real, so `runGenerateForCurrentPlate()` now clears the class too; (b) nothing in the single-plate flow could announce at all (WCAG 4.1.3) - the box is now mirrored to `#a11y-status` by one MutationObserver covering all ~20 call sites, and its `role="alert"`/`aria-live` removed to prevent double-speak; (c) the old visible "Download STL" vs spoken "Download generated STL file" failed WCAG 2.5.3 Label in Name. New completion announcement and the new button name both **signed off by Brennen 2026-08-18**. Verified: action button never leaves data-state=generate, validation/progress/completion all spoken, one file per press, form edits retract the download, 310x44px, contrast 7.25/8.35/15.18:1 |
 | 1.5 | 2026-08-16 | **DOUBLE-SIDED NAMING (Phase 09):** When the Double-Sided Card beta is on, downloads are named `Cylinder_A_{preset}_{name}` (positive) / `Cylinder_B_{preset}_{name}` (negative); both take `{name}` from the front text. Single-sided names unchanged. Updated Section 7; covered by tests/e2e/doubleSided.spec.ts. |
+| 2.0 | 2026-08-25 | **PAIR MODE + COMBINED DOWNLOAD.** Section 15 widened from the double-sided beta to `isPairModeOn()` (either beta — gears-only users need the meshed pair too); §6 gains the *Combined Pair File* subsection (client-side two-body concatenation, DataView-only access, barrel-based 40.8 mm centre offset chosen by Brennen, throw-don't-fallback dial read); §7 gains the `Cylinder_Pair_[Geared_]` name (signed 2026-08-25), the gears-only frozen-names rule, and a **KNOWN DRIFT flag** on the 2-arg `buildStlFilename` listing (code is 3-arg with `geared`; kept pending Brennen's direction); §15 run sequence gains the eager combine + two-body preview step and the new signed completion sentence (PAIR_READY pin updated in the same commit); §8 cross-references the three pair download buttons. The combined file contains TWO bodies by design — never assert watertightness on it. |
 | 1.9 | 2026-08-21 | **Documentation only — no behavior change.** Removed the last `templates/index.html` citations (that folder is empty and deprecated). The Source Priority list now names one frontend file; the two `// From templates/index.html - NO FALLBACK` code comments now name `public/index.html`; and Section 4's Worker Initialization source now points at the CSG worker setup inside the `window` `load` handler, flagging the `initCSGWorker()` snippet as illustrative because no function of that name exists in the real code. Part of the templates/ reference sweep (Phase 07b). |
 
 ---
