@@ -187,6 +187,15 @@
         "ds_bowl_base_diameter_mm": { "type": "number", "minimum": 0.5, "maximum": 5.0, "default": 1.3, "description": "Double-sided mode only: diameter of the paired bowl recess that receives the opposing cylinder's dot (mm)." },
         "ds_bowl_depth_mm": { "type": "number", "minimum": 0.0, "maximum": 5.0, "default": 0.5, "description": "Double-sided mode only: depth of the paired bowl recess (mm). The dot dips (dot height - surface gap) into it at the nip, so depths below the dip make the two cylinders intersect." }
       }
+    },
+
+    "gear_rollers": {
+      "type": "object",
+      "description": "BETA: gear-integrated one-piece rollers. When enabled, a generated cylinder ships as ONE watertight solid with its top and bottom drive gears already attached, instead of a barrel that separate printed gears are pushed onto. The gears are a 1:1 replication of Brennen's reference set, vendored as static/assets/gears/gears_a.bin (positive plate) and gears_b.bin (negative plate) and regenerated only by scripts/derive_gear_assets.py: 24 teeth, tip radius 16.1093702290795 mm (diameter 32.2187), 10.000 mm thick, sitting at z -10..0 and 52..62 around the 52.000 mm barrel for a 72.000 mm roller. Meshing the pair is what holds the two cylinders rotationally synchronised. See GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": false, "description": "BETA feature toggle, default false. false preserves today's behavior exactly - no geometry, warnings, or output files change. true adds the integrated top and bottom gears to generated CYLINDERS as one solid piece (cards reject it), forces the barrel solid (no polygonal cutout), and uses the vendored 1:1 gear assets in static/assets/gears/." }
+      }
     }
   },
 

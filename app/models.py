@@ -257,6 +257,12 @@ class CardSettings:
             'ds_dot_dome_height': 0.4,
             'ds_bowl_base_diameter': 1.3,
             'ds_bowl_depth': 0.5,
+            # Gear-integrated one-piece rollers BETA. Flat runtime name for the
+            # settings.schema.json "gear_rollers" object; 0 = off, which leaves
+            # every existing code path exactly as it is today. Cylinders only.
+            # The gear geometry itself has no dials: it is vendored 1:1 sample
+            # data (static/assets/gears/), so there is nothing else to default.
+            'gear_rollers_enabled': 0,
         }
 
         # Set attributes from kwargs or defaults, while being tolerant of "empty" inputs
@@ -287,6 +293,8 @@ class CardSettings:
         # The loop above already floated it and raises on junk, so a bad value
         # surfaces there rather than being quietly read as "off".
         self.double_sided_enabled = int(self.double_sided_enabled)
+        # Gear beta toggle, normalized the same way and for the same reason.
+        self.gear_rollers_enabled = int(self.gear_rollers_enabled)
         # Normalize boolean-like toggles stored as numbers
         try:
             self.use_rounded_dots = int(float(kwargs.get('use_rounded_dots', self.use_rounded_dots)))
