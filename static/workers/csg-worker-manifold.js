@@ -132,6 +132,111 @@ function raisedDotBaseEmbed(cylRadius) {
 }
 
 /**
+ * Gear-integrated one-piece rollers (BETA): the vendored gear assets.
+ *
+ * The bytes under /static/assets/gears/ are a 1:1 replication of the reference
+ * gears and are ALREADY IN THIS WORKER'S FRAME - scripts/derive_gear_assets.py
+ * baked the sample-to-program transform into them (provenance in
+ * static/assets/gears/gears_manifest.json). So nothing here places, rotates or
+ * scales the asset, and the spec-frame theta negation that dots and markers get
+ * does NOT apply to it: a gear is not a spec-frame feature.
+ *
+ * Format, little-endian: magic "BCGR1\0", uint32 vertCount, uint32 triCount,
+ * float32[3*vertCount], uint32[3*triCount]. The header is 14 bytes, which is
+ * NOT a multiple of 4, so the typed arrays are built from COPIED slices - a
+ * Float32Array view at byteOffset 14 throws RangeError in every browser.
+ */
+const GEAR_ASSET_MAGIC = 'BCGR1\0';
+const GEAR_ASSET_HEADER_BYTES = 14;
+const gearAssetCache = new Map();
+
+async function loadGearAsset(assetName) {
+    if (gearAssetCache.has(assetName)) {
+        return gearAssetCache.get(assetName);
+    }
+    if (assetName !== 'gears_a' && assetName !== 'gears_b') {
+        throw new Error(`Gear asset name not recognized: ${assetName}`);
+    }
+
+    // Same-origin static fetch, exactly how manifold.wasm itself ships - no CSP
+    // change. Every failure below throws: a cylinder that asked for gears must
+    // never quietly come out without them.
+    const url = `/static/assets/gears/${assetName}.bin`;
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch gear asset ${url}: HTTP ${response.status} ${response.statusText}`);
+    }
+
+    const buffer = await response.arrayBuffer();
+    if (buffer.byteLength < GEAR_ASSET_HEADER_BYTES) {
+        throw new Error(`Gear asset ${url} is truncated: ${buffer.byteLength} bytes`);
+    }
+
+    const magic = String.fromCharCode(...new Uint8Array(buffer, 0, GEAR_ASSET_MAGIC.length));
+    if (magic !== GEAR_ASSET_MAGIC) {
+        throw new Error(`Gear asset ${url} has bad magic ${JSON.stringify(magic)}`);
+    }
+
+    const header = new DataView(buffer, 6, 8);
+    const vertCount = header.getUint32(0, true);
+    const triCount = header.getUint32(4, true);
+    const vertBytes = 12 * vertCount;
+    const triBytes = 12 * triCount;
+    const expectedBytes = GEAR_ASSET_HEADER_BYTES + vertBytes + triBytes;
+    if (buffer.byteLength !== expectedBytes) {
+        throw new Error(
+            `Gear asset ${url} size mismatch: header declares ${vertCount} vertices and ${triCount} triangles ` +
+            `(${expectedBytes} bytes) but the file is ${buffer.byteLength} bytes`
+        );
+    }
+
+    const asset = {
+        vertProperties: new Float32Array(buffer.slice(GEAR_ASSET_HEADER_BYTES, GEAR_ASSET_HEADER_BYTES + vertBytes)),
+        triVerts: new Uint32Array(buffer.slice(GEAR_ASSET_HEADER_BYTES + vertBytes)),
+    };
+    gearAssetCache.set(assetName, asset);
+    console.log(`Manifold CSG Worker: Loaded gear asset ${assetName} - ${vertCount} vertices, ${triCount} triangles`);
+    return asset;
+}
+
+/**
+ * Build the gear pair as one Manifold (two disjoint bodies, top and bottom).
+ *
+ * The cached arrays are COPIED into the Mesh because merge() works in place:
+ * without the copy the second generation of a session would read a mesh the
+ * first one had already rewritten.
+ */
+function createGearManifold(asset) {
+    const mesh = new Mesh({
+        numProp: 3,
+        vertProperties: asset.vertProperties.slice(),
+        triVerts: asset.triVerts.slice(),
+    });
+    mesh.merge();
+    return Manifold.ofMesh(mesh);
+}
+
+/**
+ * One hidden weld ring at a gear/barrel interface.
+ *
+ * The gear meets the barrel on an exactly coincident face, which this project's
+ * printability rules forbid and float32 STL rounding can turn into a pinch
+ * edge. The ring is entirely buried - it changes no external surface and, being
+ * inside both solids already, adds no measurable volume.
+ */
+function createWeldRingManifold(ring) {
+    const outer = createManifoldCylinder(ring.height, ring.r_out, CYLINDER_SHELL_SEGMENTS);
+    // Taller than the ring so the bore is cut cleanly through, never coplanar.
+    const inner = createManifoldCylinder(ring.height + 0.2, ring.r_in, CYLINDER_SHELL_SEGMENTS);
+    const annulus = outer.subtract(inner);
+    outer.delete();
+    inner.delete();
+    const placed = annulus.translate([0, 0, ring.z_center]);
+    annulus.delete();
+    return placed;
+}
+
+/**
  * Create a cylinder using Manifold primitives
  * Manifold.cylinder(height, radiusLow, radiusHigh, circularSegments)
  * Creates a cylinder along the Z-axis, centered at origin
@@ -1358,7 +1463,7 @@ function createCylinderTactileArrowManifold(spec) {
 /**
  * Create cylinder shell with polygonal cutout using Manifold
  */
-function createCylinderShellManifold(spec) {
+function createCylinderShellManifold(spec, solid = false) {
     const { radius, height, thickness, polygon_points } = spec;
 
     const validRadius = (radius > 0) ? radius : 30;
@@ -1368,6 +1473,19 @@ function createCylinderShellManifold(spec) {
     try {
         // Create outer cylinder
         const outer = createManifoldCylinder(validHeight, validRadius, CYLINDER_SHELL_SEGMENTS);
+
+        // Decision D-2, gear mode only: a one-piece roller is SOLID, like the
+        // reference part. An empty polygon_points list does not say that on its
+        // own - without a polygon this function falls through to hollowing by
+        // wall thickness, which on a geared cylinder leaves a 13.4 mm bore with
+        // the weld rings floating inside it and the cavity sealed at both ends
+        // by their bores. Measured in Chromium before this branch existed: a
+        // -29253 mm3 enclosed void in both plates. Nothing can reach or drain
+        // such a cavity, which is the exact failure D-2 exists to prevent.
+        if (solid) {
+            console.log('Manifold CSG Worker: Created solid cylinder shell (gear mode)');
+            return outer;
+        }
 
         // Check for polygon cutout
         const validPoints = (polygon_points && polygon_points.length >= 3)
@@ -1448,8 +1566,8 @@ function batchUnionManifold(manifolds) {
  * Process geometry spec using Manifold primitives
  * This is the main entry point for geometry generation
  */
-function processGeometrySpec(spec) {
-    const { shape_type, plate_type, plate, dots, markers, cylinder } = spec;
+function processGeometrySpec(spec, gearAsset = null) {
+    const { shape_type, plate_type, plate, dots, markers, cylinder, gears } = spec;
     const isNegative = plate_type === 'negative';
     const isCylinder = shape_type === 'cylinder';
 
@@ -1462,7 +1580,7 @@ function processGeometrySpec(spec) {
         let base;
 
         if (isCylinder && cylinder) {
-            base = createCylinderShellManifold(cylinder);
+            base = createCylinderShellManifold(cylinder, Boolean(gears));
             console.log('Manifold CSG Worker: Created cylinder shell');
         } else {
             // Card plate - simple box
@@ -1621,6 +1739,29 @@ function processGeometrySpec(spec) {
 
         // Perform CSG operations
         let result = base;
+
+        // Gear-integrated one-piece rollers (BETA). Unioned right after the
+        // base, inside the RAISED stage and well before any recess is cut, so
+        // the existing CSG order is untouched. Nothing is transformed here: the
+        // asset arrives already in this frame (see loadGearAsset above).
+        if (gears) {
+            if (!gearAsset) {
+                throw new Error('Geometry spec asks for gears but no gear asset was loaded');
+            }
+            const gearParts = [createGearManifold(gearAsset)];
+            for (const ring of gears.weld_rings || []) {
+                gearParts.push(createWeldRingManifold(ring));
+            }
+            const unionedGears = batchUnionManifold(gearParts);
+            if (!unionedGears) {
+                throw new Error('Gear union produced no geometry');
+            }
+            const withGears = result.add(unionedGears);
+            result.delete();
+            unionedGears.delete();
+            result = withGears;
+            console.log(`Manifold CSG Worker: Added gear set ${gears.asset} with ${gears.weld_rings?.length || 0} weld rings`);
+        }
 
         // Process raised dots (union)
         if (raisedDotManifolds.length > 0) {
@@ -1952,8 +2093,17 @@ self.onmessage = async function(event) {
             console.log('Manifold CSG Worker: Dots count:', spec.dots?.length || 0);
             console.log('Manifold CSG Worker: Markers count:', spec.markers?.length || 0);
 
+            // Gear assets are fetched here rather than inside
+            // processGeometrySpec so that function stays synchronous. Cached in
+            // worker scope, so this is one fetch per asset per worker lifetime.
+            let gearAsset = null;
+            if (spec.gears) {
+                console.log('Manifold CSG Worker: Gear mode - loading asset', spec.gears.asset);
+                gearAsset = await loadGearAsset(spec.gears.asset);
+            }
+
             // Process geometry using Manifold
-            const manifold = processGeometrySpec(spec);
+            const manifold = processGeometrySpec(spec, gearAsset);
 
             // Get mesh statistics
             const mesh = manifold.getMesh();
