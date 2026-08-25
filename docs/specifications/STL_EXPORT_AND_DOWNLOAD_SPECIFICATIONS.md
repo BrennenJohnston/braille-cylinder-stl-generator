@@ -801,22 +801,23 @@ function sanitizeFilenameWord(word) {
         .replace(/^_+|_+$/g, '');      // Trim leading/trailing underscores
 }
 
-async function buildStlFilename(plateType, doubleSided = false) {
+async function buildStlFilename(plateType, doubleSided = false, geared = false) {
     const prefix = doubleSided
         ? (plateType === 'positive' ? 'Cylinder_A' : 'Cylinder_B')
         : (plateType === 'positive' ? 'Embossing_Cylinder' : 'Counter_Cylinder');
-    return `${prefix}_${getThicknessPresetSegment()}_${await deriveStlNameSegment()}.stl`;
+    // Decision D-5. Toggle-off names are byte-identical to today's -
+    // training videos show them - so the segment is inserted only when
+    // the gears are actually there.
+    const geared_segment = geared ? 'Geared_' : '';
+    return `${prefix}_${geared_segment}${getThicknessPresetSegment()}_${await deriveStlNameSegment()}.stl`;
 }
 ```
 
 `doubleSided` receives the generate handler's `doubleSidedOn` flag (toggle checked AND
 shape cylinder), so a card generated with the checkbox stuck on can never pick up an A/B
-name.
-
-> **KNOWN DRIFT (flagged 2026-08-25, code is authoritative):** the signature above is the
-> pre-gears two-argument form. The shipped `buildStlFilename(plateType, doubleSided, geared)`
-> takes a third argument that inserts the `Geared_` segment. This section has not been
-> rewritten pending Brennen's direction on the drift.
+name. `geared` receives `isGearRollersOn()` and inserts the `Geared_` segment (decision
+D-5, gears beta 2026-08-24); with the toggle off the segment is absent and every name is
+byte-identical to the pre-gears output.
 
 ### Combined Pair Filename
 
@@ -1620,6 +1621,7 @@ idle. After a pair run the action button always reads "Generate STL".
 | 1.7 | 2026-08-18 | **Paired download is no longer automatic (accessibility).** An NVDA run hit Chrome's "wants to: Download multiple files" prompt, which the page cannot relabel - it names no file, gives no reason, and Tab cycles Close/Allow/Block indefinitely - and the run ended in "Download blocked" with neither cylinder saved. The status line meant to rescue that case was never announced either, because the Save As dialog from the first automatic download had already taken focus off the page. Both automatic `downloadPairFile()` calls removed; each cylinder is now saved by pressing its own button, so one gesture never produces more than one download. The 2026-08-17 measurement that found this safe was taken without a screen reader running. Section 15 step 6 and the Downloads subsection rewritten; completion wording replaced, **signed off by Brennen 2026-08-18**. Verified: 0 automatic downloads, both buttons shown, focus retained on Generate Both, one file per button press |
 | 1.8 | 2026-08-18 | **Generate and Download split into two controls (accessibility).** Section 8 rewritten. `#action-btn` no longer renames itself into a download control while the user's focus sits on it; a separate `#download-stl-btn` appears beside it, matching the pair buttons. Also fixed in the same pass: (a) progress messages had never displayed for ANYONE - the `#error-message` box was emptied between runs but never declassed, and `restoreThicknessPreset()` leaves an `error-message` class on every page load, which the "is a blocking error showing?" guard read as real, so `runGenerateForCurrentPlate()` now clears the class too; (b) nothing in the single-plate flow could announce at all (WCAG 4.1.3) - the box is now mirrored to `#a11y-status` by one MutationObserver covering all ~20 call sites, and its `role="alert"`/`aria-live` removed to prevent double-speak; (c) the old visible "Download STL" vs spoken "Download generated STL file" failed WCAG 2.5.3 Label in Name. New completion announcement and the new button name both **signed off by Brennen 2026-08-18**. Verified: action button never leaves data-state=generate, validation/progress/completion all spoken, one file per press, form edits retract the download, 310x44px, contrast 7.25/8.35/15.18:1 |
 | 1.5 | 2026-08-16 | **DOUBLE-SIDED NAMING (Phase 09):** When the Double-Sided Card beta is on, downloads are named `Cylinder_A_{preset}_{name}` (positive) / `Cylinder_B_{preset}_{name}` (negative); both take `{name}` from the front text. Single-sided names unchanged. Updated Section 7; covered by tests/e2e/doubleSided.spec.ts. |
+| 2.1 | 2026-08-25 | **§7 listing synced to the shipped 3-argument `buildStlFilename`** on Brennen's direction, resolving the KNOWN DRIFT flag v2.0 raised the same day: the listing now shows the `geared` parameter and the D-5 `Geared_` segment rule; the flag note is removed. Documentation only — no code changed. |
 | 2.0 | 2026-08-25 | **PAIR MODE + COMBINED DOWNLOAD.** Section 15 widened from the double-sided beta to `isPairModeOn()` (either beta — gears-only users need the meshed pair too); §6 gains the *Combined Pair File* subsection (client-side two-body concatenation, DataView-only access, barrel-based 40.8 mm centre offset chosen by Brennen, throw-don't-fallback dial read); §7 gains the `Cylinder_Pair_[Geared_]` name (signed 2026-08-25), the gears-only frozen-names rule, and a **KNOWN DRIFT flag** on the 2-arg `buildStlFilename` listing (code is 3-arg with `geared`; kept pending Brennen's direction); §15 run sequence gains the eager combine + two-body preview step and the new signed completion sentence (PAIR_READY pin updated in the same commit); §8 cross-references the three pair download buttons. The combined file contains TWO bodies by design — never assert watertightness on it. |
 | 1.9 | 2026-08-21 | **Documentation only — no behavior change.** Removed the last `templates/index.html` citations (that folder is empty and deprecated). The Source Priority list now names one frontend file; the two `// From templates/index.html - NO FALLBACK` code comments now name `public/index.html`; and Section 4's Worker Initialization source now points at the CSG worker setup inside the `window` `load` handler, flagging the `initCSGWorker()` snippet as illustrative because no function of that name exists in the real code. Part of the templates/ reference sweep (Phase 07b). |
 
