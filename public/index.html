@@ -9863,8 +9863,15 @@
         let manifoldRequestId = 0;
         let pendingManifoldRequests = new Map();
 
-        // Function to send message to worker and get response
-        function sendWorkerMessage(type, data = {}) {
+        // Function to send message to worker and get response.
+        // timeoutMs is per-message because the budgets genuinely differ: a
+        // translate call answers in milliseconds on a warm worker, but 'init'
+        // has to compile and start the liblouis WASM, which on a loaded machine
+        // or a slow device can take far longer than a translate ever would.
+        // Init timing out is not recoverable either - the catch below nulls the
+        // worker and disables translation for the whole page with no retry - so
+        // it gets the generous budget and everything else keeps the short one.
+        function sendWorkerMessage(type, data = {}, timeoutMs = 10000) {
             return new Promise((resolve, reject) => {
                 if (!liblouisWorker) {
                     reject(new Error('Worker not initialized'));
@@ -9876,13 +9883,12 @@
 
                 liblouisWorker.postMessage({ id, type, data });
 
-                // Timeout after 10 seconds
                 setTimeout(() => {
                     if (pendingWorkerMessages.has(id)) {
                         pendingWorkerMessages.delete(id);
                         reject(new Error('Worker message timeout'));
                     }
-                }, 10000);
+                }, timeoutMs);
             });
         }
 
@@ -9973,8 +9979,10 @@
                     log.error('Worker error:', error);
                 };
 
-                // Initialize liblouis in the worker
-                const initResult = await sendWorkerMessage('init');
+                // Initialize liblouis in the worker. 30 s, not the default 10:
+                // starting the WASM is the slowest thing the worker ever does,
+                // and a timeout here is terminal for translation.
+                const initResult = await sendWorkerMessage('init', {}, 30000);
                 if (initResult.success) {
                     liblouisReady = true;
                     log.debug('Liblouis web worker initialized successfully');

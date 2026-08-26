@@ -90,6 +90,14 @@ a worker-backed button without waiting for readiness can fail locally while pass
 The suite's helpers wait for readiness and rethrow anything that is not the documented
 not-ready message; a bare press is the bug, not the browser.
 
+Worker startup itself used to be the other half of this. Every message to the liblouis
+worker shared one 10-second timeout, including `init` — and an `init` that times out is
+terminal, because the catch around it nulls the worker and disables translation for the
+rest of the page with no retry. Under enough parallel workers, WASM startup crossed 10
+seconds and whole spec files failed with `Worker message timeout`. `init` now gets 30
+seconds and every other message keeps the 10-second budget, so the page survives a slow
+start instead of giving up on it.
+
 The OpenSCAD version has this feature: the double-sided port shipped in the OpenSCAD
 generator v2.6 and was refined in v2.7 (2026-08-23).
 
