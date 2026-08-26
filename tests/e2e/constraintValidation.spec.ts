@@ -218,15 +218,12 @@ test.describe('an unusable saved value must not be restored', () => {
       try {
         localStorage.setItem(k, v);
         localStorage.setItem('braille_prefs_thickness_preset', 'custom');
-        // NOT tidiness - without this the tests below cannot isolate what they
-        // are testing. `cylinder_diameter_mm` SHIPS at 30.75 with min="10" and
-        // step="0.1", which puts the step base at 10, so 30.75 is not a valid
-        // step and the control is invalid from the shipped default alone. A
-        // normal load hides it because the 0.4 preset overwrites the dial with
-        // 30.8; with the preset standing aside, it is exposed. Pre-existing and
-        // reported separately - changing either attribute is a public-parameter
-        // decision, not a test's to make. Remove this line once that is settled.
-        localStorage.setItem('braille_prefs_cylinder_diameter_mm', '30.8');
+        // A third seed used to sit here, pinning cylinder_diameter_mm to 30.8:
+        // the dial shipped at 30.75 against step="0.1" counted from min="10",
+        // so it was invalid from its own default and, with the preset standing
+        // aside as it does here, poisoned every test in this file. The step is
+        // 0.05 now and 30.75 is valid, so the seed is gone - if these tests
+        // start failing on the diameter again, that attribute is what moved.
       } catch { /* private mode */ }
     }, [key, value]);
   }

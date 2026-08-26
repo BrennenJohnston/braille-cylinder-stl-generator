@@ -3936,7 +3936,14 @@
                                       <label class="grade-label" style="font-size: 1.2em; font-weight: 700;">Cylinder Dimensions</label>
                                       <div>
                                           <label for="cylinder_diameter_mm">Cylinder Diameter (mm):</label>
-                                          <input type="number" id="cylinder_diameter_mm" name="cylinder_diameter_mm" value="30.75" step="0.1" min="10" max="200" style="width: 110px;" autocomplete="off">
+                                          <!-- step 0.05, not 0.1: the step base is min="10", so a 0.1
+                                               step makes the shipped 30.75 default itself invalid and
+                                               the form refuses to submit until the dial is touched. The
+                                               0.4 preset normally overwrites it with 30.8 on load, which
+                                               is what hid this; anyone whose saved preset is Custom met
+                                               the dead form. 0.05 keeps 30.75 valid and leaves the
+                                               default - the schema and backend value - alone. -->
+                                          <input type="number" id="cylinder_diameter_mm" name="cylinder_diameter_mm" value="30.75" step="0.05" min="10" max="200" style="width: 110px;" autocomplete="off">
                                       </div>
                                       <div style="margin-top: 6px;">
                                           <label for="cylinder_height_mm">Cylinder Height (mm):</label>
