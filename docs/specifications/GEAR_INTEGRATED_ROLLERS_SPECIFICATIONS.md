@@ -372,9 +372,25 @@ on the manifest hash test.
 ## 10. OpenSCAD
 
 The desktop build gets integrated gears. The MakerWorld single-file variant does not
-(decision D-4): it cannot `import()` external asset files, and embedding two
-30,000-triangle meshes as `polyhedron()` text would risk the Customizer's limits. If that
-changes, the 2026-08-23 re-vendor precedent (commit `4cc2914`) applies.
+(decision D-4). **The reason was tested in the real product on 2026-08-25, and it is
+simpler than the one originally reasoned here:** MakerWorld's Parametric Model Maker —
+by then v1.1.0, redesigned 2025-10-27 — offers no way to upload a mesh at all. Its
+editor has no asset panel, exposes no file input, and its native picker refuses STL
+selection outright and accepts one file at a time. So the Customizer-limit question this
+section used to cite never arises; the file simply cannot be delivered.
+
+Two findings from the same session are worth keeping:
+
+- **Our `.scad` is MakerWorld-valid.** Loading a probe file built its customizer group,
+  dropdown and description text correctly from the `// [A, B]` annotation. Nothing about
+  how this project writes parameters is the obstacle.
+- **A single-file gear delivery is solved except for the upload.** Because `gears_a` and
+  `gears_b` are genuinely different meshes (30,412 vs 30,152 triangles — not one rotated
+  onto the other), one combined file with set B parked +100 mm in X, cropped per plate by
+  `intersection()` with a box that touches no geometry, reproduces set A exactly and set
+  B within 3.8 nm of float32 park-and-return noise (2.89 MB, ~0.2 s per crop, verified
+  locally). If MakerWorld ever ships asset uploads, that is the design to reach for, and
+  the 2026-08-23 re-vendor precedent (commit `4cc2914`) applies.
 
 ---
 
@@ -382,5 +398,6 @@ changes, the 2026-08-23 re-vendor precedent (commit `4cc2914`) applies.
 
 | Date | Change |
 |---|---|
+| 2026-08-25 | **§10 rewritten from a tested result.** The MakerWorld exclusion (D-4) was justified here by reasoning about Customizer limits; probing the real product showed the blocker is one step earlier — PMM v1.1.0 accepts no mesh upload at all (no asset panel, no file input, picker refuses STLs, one file at a time). Records the two salvageable findings: our customizer syntax parses correctly there, and the combined-file crop delivery is proven locally (set A exact, set B within 3.8 nm) should uploads ever appear. |
 | 2026-08-25 | **Pair mode, the combined file, and the S9 hardware note.** §8.1 records that the gears toggle alone now reveals Generate Both + the Cylinder A/B radio relabel (`isPairModeOn()`, label reuse confirmed by Brennen) while the download names stay the frozen Geared single-sided ones; §7 adds the combined `Cylinder_Pair_Geared_*` exemption from every one-body claim (two full-span rollers, 40.8 mm centres / 8.58 mm accepted tip gap — the barrel-based spacing decision); §8's string table gains S9, the always-visible version-1-vs-2 hardware warning (signed, with `#gear-hardware-link-slot` reserved for the v2 files link), and corrects S8 to signed per the authoritative code comment. |
-| 2026-08-24 | Created. Documents the gear beta as merged: vendored assets and their format, the canonical transforms, the S6/S7 gates, the union and its solid-barrel requirement, D-8a, the UI, and the acceptance tolerances. Records that S8 (the legend heading) is unsigned, that the emboss plate's loose dot domes predate this beta, and that the weld rings measure 0.000000 mm³. |
+| 2026-08-24 | Created. Documents the gear beta as merged: vendored assets and their format, the canonical transforms, the S6/S7 gates, the union and its solid-barrel requirement, D-8a, the UI, and the acceptance tolerances. Records that the emboss plate's loose dot domes predate this beta, and that the weld rings measure 0.000000 mm³. (This row also claimed S8 was unsigned; that was corrected on 2026-08-25 — see the row above and §8 — and the claim is struck here so the two do not contradict each other.) |
