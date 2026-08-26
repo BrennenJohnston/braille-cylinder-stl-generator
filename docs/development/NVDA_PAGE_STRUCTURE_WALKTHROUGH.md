@@ -254,11 +254,15 @@ check that you can find them there.
    it is silent or helpful, that closes the question. The same applies to "Help
    me choose what to include →" and the banner's "Change Theme to →".
 2. **The three font-size buttons in the banner.** Tab to **Decrease font size**.
-   **Expected, and this is a known defect:** you hear the name and then the same
-   words again as a description — *"Decrease font size, button, Decrease font
-   size."* All three font buttons do it. That is finding **F-P**, found by the
-   Section 12 review on 2026-08-23 and deliberately **not** fixed inside item G.
-   Confirm you hear it, and say how much it grates — that sets its priority.
+   **Expected: the name once, and nothing after it** — *"Decrease font size,
+   button."* If you hear the words a second time as a description, that is a
+   regression worth reporting. This was finding **F-P** and it is **fixed**
+   (`255f725`, 2026-08-23): the redundant `title` came off all three buttons.
+   Worth knowing while you listen — your own 1,799-utterance run showed NVDA
+   never spoke the duplicate anyway, because it suppresses a description
+   identical to the name; the attribute went because JAWS and VoiceOver are not
+   obliged to do the same. The accepted cost is that hovering these three
+   buttons with a mouse no longer shows a tooltip.
 
 **Known and deliberate, not a finding:** three descriptions are still over the
 25-word ceiling — Tactile seam arrow (43 w), the 3D preview (38 w), Visual
@@ -319,7 +323,7 @@ Part | What I heard | Count | Expected | Pass/Fail
   5  words on Braille (Unicode)    |  | ~13            |
   5  words on Translate to Text    |  | name+role only |
   5  arrows: what NVDA said for "Translate to Braille down-arrow" |  | (open question) |
-  5  font-size button said its name twice? |  | YES - F-P, known |
+  5  font-size button said its name twice? |  | NO - F-P is fixed |
   6  full flow minutes    |      | (no target) |
   6  "out of form" before Generate? |  | NO      |
 
