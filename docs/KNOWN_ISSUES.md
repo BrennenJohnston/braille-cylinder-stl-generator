@@ -138,11 +138,14 @@ present with gears off too, and it is tracked separately. The counter plate expo
 exactly one body.
 
 **OpenSCAD:** the desktop build gets integrated gears; the MakerWorld single-file
-variant does not, because it cannot import external asset files and embedding two
-30,000-triangle meshes as text would risk the Customizer's limits.
+variant does not. Tested in the real product 2026-08-25: MakerWorld's customizer
+has no way to accept a mesh file at all, so there is no packaging of the gears
+that could reach it. Use the desktop build or this web app for geared cylinders.
 
 Wording in this section signed off by Brennen 2026-08-25; reword only with his
-sign-off.
+sign-off. The MakerWorld paragraph was re-signed the same day, when a probe of
+the real customizer replaced the reasoning about mesh size with the tested
+reason.
 
 Full technical detail: `docs/specifications/GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md`.
 
