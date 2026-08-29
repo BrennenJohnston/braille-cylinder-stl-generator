@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from app.geometry import interpoint
+from app.geometry import interpoint, version2
 from app.geometry_spec import extract_cylinder_geometry_spec
 from app.models import CardSettings
 from app.utils import braille_to_dots
@@ -358,7 +358,7 @@ def _ds_tactile_arrow_mesh(marker):
     return trimesh.boolean.intersection([prism, band], engine='manifold')
 
 
-def _build_ds_cylinder_mesh(spec):
+def _build_ds_cylinder_mesh(spec, shell=None):
     """
     Render a double-sided cylinder spec to a watertight mesh.
 
@@ -366,6 +366,10 @@ def _build_ds_cylinder_mesh(spec):
     instead of silently degrading — a golden must fail loudly. Raised features
     union in before recesses cut, matching the worker's ordering, so a recess
     can never be filled back in.
+
+    `shell` lets Embosser Version 2 hand in its own barrel, already keyed and
+    countersunk. Left None this builds the plain solid barrel it always has, so
+    the double-sided and gear pairs regenerate byte-identical.
     """
     import trimesh
 
@@ -381,7 +385,8 @@ def _build_ds_cylinder_mesh(spec):
     # renderer and the worker agree by construction rather than by luck. For
     # NON-gear specs they do not: this has always modelled a solid barrel where
     # the worker makes a tube. That predates the gear beta and is left alone.
-    shell = trimesh.creation.cylinder(radius=radius, height=height, sections=_DS_SHELL_SECTIONS)
+    if shell is None:
+        shell = trimesh.creation.cylinder(radius=radius, height=height, sections=_DS_SHELL_SECTIONS)
     raised = [shell]
 
     # Gear-integrated one-piece rollers (BETA): the vendored gear pair plus its
@@ -409,7 +414,15 @@ def _build_ds_cylinder_mesh(spec):
             raised.extend(_ds_rounded_dot_meshes(dot))
 
     solid = trimesh.boolean.union(raised, engine='manifold')
-    solid = trimesh.boolean.difference([solid, trimesh.boolean.union(cutters, engine='manifold')], engine='manifold')
+    # A single-sided EMBOSS plate cuts nothing: its dots and its tactile arrows
+    # are all raised. Both beta pairs are double-sided, which always leaves
+    # recesses on both plates, so this was unreachable until Version 2 - and
+    # trimesh's manifold union returns None for an empty list rather than
+    # raising, which surfaces two frames later as an AttributeError.
+    if cutters:
+        solid = trimesh.boolean.difference(
+            [solid, trimesh.boolean.union(cutters, engine='manifold')], engine='manifold'
+        )
     # Fixture convention: reseat so the barrel's base sits at z = 0. In gear
     # mode that puts the gears at z -10..0 and 52..62 - the sample assembly's
     # own frame - so a geared fixture spans z -10..62, not 0..52.
@@ -843,6 +856,264 @@ def test_gear_golden_fixture_has_material_where_a_tooth_is(fixtures_dir, plate_t
     assert spec['gears']['asset'] == GEAR_FIXTURE_ASSETS[plate_type]
 
 
+# ---------------------------------------------------------------------------
+# Embosser Version 2 (keyed gear pegs) PROTOTYPE golden pair
+#
+# The same braille and the same tactile arrows as the two beta pairs, so the
+# only thing these fixtures add is the keyed cutout itself. Three deliberate
+# differences from the double-sided pair:
+#
+#   * the cylinder is 30.1 mm, not 30.75. That is Version 2's preset barrel
+#     (D-V4). At any other size app/geometry_spec.py emits the S-V5 size note,
+#     and a spec carrying warnings cannot be turned into a fixture at all - so
+#     a Version 2 fixture can only ever exist at the preset size, as intended.
+#   * the double-sided flag is dropped and no back_lines are passed: this is a
+#     plain single-sided Version 2 cylinder. The interpoint dial values stay in
+#     the settings, inert, so the two families' inputs remain comparable.
+#   * the barrel comes from tests/test_version2_keyed.build_v2_cylinder - the
+#     very builder the acceptance harness measures - so the golden pair and
+#     that harness cannot drift apart.
+#   * the grid is 3 columns wide, not 14. Turning the double-sided flag off
+#     brings back the UNIVERSAL COUNTER GRID, which puts a bowl at every dot
+#     position on Cylinder B: at 14 columns that is 336 bowls and a 13.01 MB
+#     fixture - larger than all nine existing fixtures put together, added
+#     again to git history at every regeneration. Three columns is the width
+#     the fixture's own braille line actually uses, gives 72 bowls and 2.88 MB,
+#     and costs nothing this pair is here to prove: the counter grid is
+#     Version 1 geometry, already pinned by cylinder_counter_small.stl, while
+#     the keyed cutout, the four countersinks and the nub are unaffected by
+#     how many bowls sit beside them. Brennen's call, 2026-08-28.
+# ---------------------------------------------------------------------------
+
+V2_FIXTURE_SETTINGS = {
+    **{key: value for key, value in DS_FIXTURE_SETTINGS.items() if key != 'double_sided_enabled'},
+    'grid_columns': 3,
+    'embosser_version': 2,
+    'v2_key_clearance_mm': version2.V2_KEY_CLEARANCE_DEFAULT_MM,
+}
+V2_FIXTURE_CYLINDER_PARAMS = {**DS_FIXTURE_CYLINDER_PARAMS, 'diameter': version2.V2_BARREL_DIAMETER_MM}
+V2_FIXTURE_NAMES = {'positive': 'v2_cylinderA_golden', 'negative': 'v2_cylinderB_golden'}
+
+# The barrel in the fixture frame (base reseated to z = 0). Cylinder A carries
+# the nub on top of that, so it reaches z 55.
+_V2_FIXTURE_Z_MIN = 0.0
+_V2_FIXTURE_Z_MAX = 52.0
+
+
+def _v2_fixture_spec(plate_type):
+    """Geometry spec for one side of the Version 2 golden pair."""
+    settings = CardSettings(**V2_FIXTURE_SETTINGS)
+    return extract_cylinder_geometry_spec(
+        DS_FIXTURE_FRONT_LINES,
+        'g1',
+        settings,
+        V2_FIXTURE_CYLINDER_PARAMS,
+        None,
+        plate_type,
+        braille_to_dots_func=braille_to_dots,
+    )
+
+
+def _build_v2_cylinder_mesh(spec):
+    """
+    Render a Version 2 keyed cylinder spec to a watertight mesh.
+
+    Only the BARREL differs from the double-sided renderer: it arrives already
+    solid, cut through by both keys, countersunk at all four mouths, and
+    carrying Cylinder A's nub. Dots, markers, the union-raised-then-subtract-
+    recesses order and the fixture reseat are _build_ds_cylinder_mesh's, reused
+    rather than copied so the two families cannot drift.
+
+    build_v2_cylinder is imported here rather than at module scope because it
+    pulls in manifold3d and trimesh at import time, and this file is collected
+    on machines that have neither - every renderer test importorskips them.
+    """
+    from tests.test_version2_keyed import build_v2_cylinder
+
+    cylinder = spec['cylinder']
+    if cylinder['polygon_points']:
+        raise ValueError('a Version 2 barrel is solid; drop the polygonal cutout from the fixture params')
+    if not spec.get('keyed_cutouts'):
+        raise ValueError('this spec carries no keyed_cutouts - is embosser_version 2 set in the fixture settings?')
+
+    shell = build_v2_cylinder(spec['keyed_cutouts'], cylinder['radius'], cylinder['height'], spec['plate_type'])
+    return _build_ds_cylinder_mesh(spec, shell=shell)
+
+
+def generate_v2_golden_fixtures():
+    """
+    Regenerate the Embosser Version 2 golden STL pair and its metadata.
+
+    Run manually (python -m tests.test_golden from the repo root) - never from
+    the test suite, and only when a geometry change is intended. Existing
+    fixtures - single-sided, double-sided and gear alike - are not touched.
+    """
+    import importlib.metadata
+
+    fixtures_dir = Path(__file__).parent / 'fixtures'
+    for plate_type, fixture_name in V2_FIXTURE_NAMES.items():
+        spec = _v2_fixture_spec(plate_type)
+        if spec['warnings']:
+            raise ValueError(f'fixture spec for {fixture_name} has warnings: {spec["warnings"]}')
+        mesh = _build_v2_cylinder_mesh(spec)
+        (fixtures_dir / f'{fixture_name}.stl').write_bytes(mesh.export(file_type='stl'))
+
+        metadata = {
+            'description': (
+                f'Embosser Version 2 (keyed gear pegs) PROTOTYPE golden: '
+                f'{"Cylinder A" if plate_type == "positive" else "Cylinder B"} ({plate_type}), '
+                f'barrel with its keyed through-cutout, four countersunk mouths'
+                f'{" and the key nub" if plate_type == "positive" else ""}'
+            ),
+            'fixture_name': fixture_name,
+            'plate_type': plate_type,
+            'generation': {
+                'note': (
+                    'Rendered by tests/test_golden.py generate_v2_golden_fixtures() from '
+                    'extract_cylinder_geometry_spec called directly with embosser_version=2 and no '
+                    'back_lines, so this pair is a SINGLE-SIDED Version 2 cylinder. The barrel comes '
+                    'from tests/test_version2_keyed.build_v2_cylinder, the same builder the acceptance '
+                    'harness measures. Z-up, theta as emitted, base of the barrel reseated to z=0 - '
+                    'which puts Cylinder A nub at z 52..55 and leaves Cylinder B at z 0..52.'
+                ),
+                'cylinder_diameter_note': (
+                    'ds_cylinder*_golden uses 30.75 mm and gear_roller*_golden 30.8 mm; this pair uses '
+                    '30.1 mm because that is the Version 2 preset barrel (D-V4). Any other size makes '
+                    'app/geometry_spec.py emit the S-V5 size note, and a spec carrying warnings is '
+                    'refused by the generator above - so these fixtures exist only at the preset size.'
+                ),
+                'grid_columns_note': (
+                    'ds_cylinder*_golden and gear_roller*_golden use 14 columns; this pair uses 3, the '
+                    'width its own braille line occupies. Single-sided mode restores the universal '
+                    'counter grid, so 14 columns would put 336 bowls on Cylinder B and make the fixture '
+                    '13.01 MB against 2.88 MB here. The counter grid is Version 1 geometry pinned by '
+                    'cylinder_counter_small.stl; nothing this pair exists to prove depends on it.'
+                ),
+                'key_profiles': {
+                    'bottom': version2.KEY_PROFILES_BY_PLATE[plate_type][0],
+                    'top': version2.KEY_PROFILES_BY_PLATE[plate_type][1],
+                },
+                'front_lines': DS_FIXTURE_FRONT_LINES,
+                'settings': V2_FIXTURE_SETTINGS,
+                'cylinder_params': V2_FIXTURE_CYLINDER_PARAMS,
+                'generated': '2026-08-28',
+                'trimesh_version': importlib.metadata.version('trimesh'),
+                'manifold3d_version': importlib.metadata.version('manifold3d'),
+            },
+            'expected_properties': {
+                'face_count': len(mesh.faces),
+                'vertex_count': len(mesh.vertices),
+                'is_watertight': bool(mesh.is_watertight),
+                'bbox_min': mesh.bounds[0].tolist(),
+                'bbox_max': mesh.bounds[1].tolist(),
+                'volume': float(mesh.volume),
+                'surface_area': float(mesh.area),
+            },
+        }
+        (fixtures_dir / f'{fixture_name}.json').write_text(json.dumps(metadata, indent=2) + '\n', encoding='utf-8')
+        print(
+            f'{fixture_name}: {len(mesh.faces)} faces, volume {mesh.volume:.3f} mm^3, '
+            f'watertight {mesh.is_watertight}, z {mesh.bounds[0][2]:.3f}..{mesh.bounds[1][2]:.3f}'
+        )
+
+
+@pytest.mark.parametrize('plate_type', ['positive', 'negative'])
+def test_v2_golden_fixture_metadata_records_the_module_inputs(fixtures_dir, plate_type):
+    """Fixture metadata and the inputs the test regenerates from cannot drift apart."""
+    metadata = load_fixture_metadata(fixtures_dir, V2_FIXTURE_NAMES[plate_type])
+    generation = metadata['generation']
+    assert generation['front_lines'] == DS_FIXTURE_FRONT_LINES
+    assert generation['settings'] == V2_FIXTURE_SETTINGS
+    assert generation['cylinder_params'] == V2_FIXTURE_CYLINDER_PARAMS
+    # Single-sided by construction: no back braille went into these.
+    assert 'back_lines' not in generation
+    assert 'double_sided_enabled' not in generation['settings']
+    # All three fixture families must differ here, and each reason is recorded.
+    assert generation['cylinder_params']['diameter'] == 30.1
+    assert DS_FIXTURE_CYLINDER_PARAMS['diameter'] == 30.75
+    assert GEAR_FIXTURE_CYLINDER_PARAMS['diameter'] == 30.8
+    # The narrower grid is deliberate and its reason is recorded beside it:
+    # single-sided mode restores the universal counter grid on Cylinder B.
+    assert generation['settings']['grid_columns'] == 3
+    assert DS_FIXTURE_SETTINGS['grid_columns'] == 14
+    # The two keys this plate owns, named so a swapped pair is visible here too.
+    assert (generation['key_profiles']['bottom'], generation['key_profiles']['top']) == version2.KEY_PROFILES_BY_PLATE[
+        plate_type
+    ]
+
+
+@pytest.mark.parametrize('plate_type', ['positive', 'negative'])
+def test_v2_golden_fixture_matches_regenerated_geometry(fixtures_dir, plate_type):
+    """The committed cylinder must match a fresh render of today's Version 2 spec."""
+    trimesh = pytest.importorskip('trimesh')
+    pytest.importorskip('manifold3d')
+    pytest.importorskip('shapely')
+
+    fixture_name = V2_FIXTURE_NAMES[plate_type]
+    fixture_mesh = trimesh.load(str(fixtures_dir / f'{fixture_name}.stl'), file_type='stl', force='mesh')
+
+    spec = _v2_fixture_spec(plate_type)
+    assert spec['warnings'] == []
+    rebuilt = _build_v2_cylinder_mesh(spec)
+    rebuilt = trimesh.load(io.BytesIO(rebuilt.export(file_type='stl')), file_type='stl', force='mesh')
+
+    assert fixture_mesh.is_watertight
+    assert rebuilt.is_watertight
+    assert fixture_mesh.volume == pytest.approx(rebuilt.volume, abs=0.02)
+    assert fixture_mesh.area == pytest.approx(rebuilt.area, abs=0.2)
+    assert fixture_mesh.bounds == pytest.approx(rebuilt.bounds, abs=1e-3)
+
+
+@pytest.mark.parametrize('plate_type', ['positive', 'negative'])
+def test_v2_golden_fixture_is_a_keyed_cylinder(fixtures_dir, plate_type):
+    """
+    The shape of the thing: a barrel with a hole right through it, the nub on
+    Cylinder A only, and a 15.050 mm rim.
+
+    Body counting is deliberately not a bare "== 1", for the same reason the
+    gear fixture gives: on the EMBOSS plate the raised dot domes come out as
+    separate small bodies (the recorded second tangency inside every rounded
+    dot, which predates all three betas).
+    """
+    trimesh = pytest.importorskip('trimesh')
+    import numpy as np
+
+    mesh = trimesh.load(str(fixtures_dir / f'{V2_FIXTURE_NAMES[plate_type]}.stl'), file_type='stl', force='mesh')
+    mesh.merge_vertices()
+
+    bodies = mesh.split(only_watertight=False)
+    # A negative volume would be an enclosed void - exactly what a barrel
+    # hollowed by wall thickness under a keyed cutout would leave.
+    assert all(body.volume > 0 for body in bodies)
+
+    barrels = [body for body in bodies if body.bounds[1][2] - body.bounds[0][2] > 50.0]
+    assert len(barrels) == 1
+    barrel = barrels[0]
+
+    expected_top = _V2_FIXTURE_Z_MAX + (version2.V2_NUB['height'] if plate_type == 'positive' else 0.0)
+    assert barrel.bounds[0][2] == pytest.approx(_V2_FIXTURE_Z_MIN, abs=1e-3)
+    assert barrel.bounds[1][2] == pytest.approx(expected_top, abs=1e-3)
+
+    # The rim: the 64-gon barrel puts its vertices ON the radius.
+    radius = version2.V2_BARREL_DIAMETER_MM / 2.0
+    for face_z in (_V2_FIXTURE_Z_MIN, _V2_FIXTURE_Z_MAX):
+        rim = barrel.vertices[np.isclose(barrel.vertices[:, 2], face_z, atol=1e-3)]
+        assert len(rim) > 0
+        assert np.hypot(rim[:, 0], rim[:, 1]).max() == pytest.approx(radius, abs=2e-3)
+
+    # A through-hole, not two blind pockets: the axis is air the whole way.
+    axis = [[0.0, 0.0, float(z)] for z in range(1, int(_V2_FIXTURE_Z_MAX))]
+    assert not mesh.contains(np.array(axis)).any()
+
+    # The nub rides on Cylinder A alone; nothing at all stands above B.
+    above = mesh.vertices[mesh.vertices[:, 2] > _V2_FIXTURE_Z_MAX + 1e-3]
+    if plate_type == 'positive':
+        assert len(above) > 0
+        assert np.hypot(above[:, 0], above[:, 1]).max() == pytest.approx(version2.V2_NUB['apex_radius'], abs=0.35)
+    else:
+        assert len(above) == 0
+
+
 @pytest.mark.parametrize(
     'fixture_name',
     ['card_positive_small', 'card_counter_small', 'cylinder_positive_small', 'cylinder_counter_small'],
@@ -888,6 +1159,54 @@ def test_a_double_sided_request_is_unchanged_by_an_off_gear_flag(client):
     assert toggled_off.get_json() == baseline.get_json()
 
 
+@pytest.mark.parametrize(
+    'fixture_name',
+    ['card_positive_small', 'card_counter_small', 'cylinder_positive_small', 'cylinder_counter_small'],
+)
+def test_golden_specs_ignore_an_absent_or_version_1_embosser_version(client, fixtures_dir, fixture_name):
+    """
+    Version 2 isolation, the proof both betas already get: embosser_version 1
+    must be indistinguishable from the field not existing, for every pre-beta
+    payload. A card payload is in here on purpose - Version 1 must stay
+    untouched on the shape Version 2 refuses outright.
+    """
+    metadata = load_fixture_metadata(fixtures_dir, fixture_name)
+    payload = metadata['request_payload']
+
+    baseline = client.post('/geometry_spec', json=payload, headers={'Content-Type': 'application/json'})
+    assert baseline.status_code == 200, baseline.data
+
+    off_payload = copy.deepcopy(payload)
+    off_payload.setdefault('settings', {})['embosser_version'] = 1
+    toggled_off = client.post('/geometry_spec', json=off_payload, headers={'Content-Type': 'application/json'})
+    assert toggled_off.status_code == 200, toggled_off.data
+
+    assert toggled_off.get_json() == baseline.get_json()
+
+
+def test_a_double_sided_request_is_unchanged_by_a_version_1_embosser_version(client):
+    """Version 1 must not disturb the other two betas either."""
+    payload = {
+        'shape_type': 'cylinder',
+        'plate_type': 'positive',
+        'lines': DS_FIXTURE_FRONT_LINES,
+        'back_lines': DS_FIXTURE_BACK_LINES,
+        'settings': dict(DS_FIXTURE_SETTINGS),
+        'cylinder_params': dict(DS_FIXTURE_CYLINDER_PARAMS),
+    }
+
+    baseline = client.post('/geometry_spec', json=payload, headers={'Content-Type': 'application/json'})
+    assert baseline.status_code == 200, baseline.data
+
+    off_payload = copy.deepcopy(payload)
+    off_payload['settings']['embosser_version'] = 1
+    toggled_off = client.post('/geometry_spec', json=off_payload, headers={'Content-Type': 'application/json'})
+    assert toggled_off.status_code == 200, toggled_off.data
+
+    assert toggled_off.get_json() == baseline.get_json()
+
+
 if __name__ == '__main__':
     generate_ds_golden_fixtures()
     generate_gear_golden_fixtures()
+    generate_v2_golden_fixtures()
