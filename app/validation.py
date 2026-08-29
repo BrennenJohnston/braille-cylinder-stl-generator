@@ -7,7 +7,7 @@ ensuring security, correctness, and helpful error messages.
 
 from typing import Any
 
-from app.geometry import gears, interpoint
+from app.geometry import gears, interpoint, version2
 from app.utils import get_logger
 
 # Configure logging
@@ -442,6 +442,130 @@ def validate_double_sided_settings(settings_data: dict) -> bool:
             f'Double-sided same-surface gap {nominal_gap:.3f} mm is below the reliable '
             f'{interpoint.SAME_SURFACE_GAP_RELIABLE_MM:.2f} mm; accepting — geometry_spec returns the soft warning.'
         )
+
+    return True
+
+
+def validate_embosser_version_settings(settings_data: dict, shape_type: str, cylinder_params: dict) -> bool:
+    """
+    Hard gates for the Embosser Version 2 keyed gear-peg prototype.
+
+    Every gate is skipped when embosser_version is absent, 1, '1', 1.0 or '',
+    so a request that does not ask for Version 2 is validated exactly as it was
+    before the prototype existed.
+
+    Gate 1: Version 2 is cylinders-only (S-V6). Its whole subject is a shaped
+    cutout in the ends of a barrel; a card has no such end.
+
+    Gate 2: the key clearance must be inside the dial's range. Out of range it
+    would either weld the gear into the cylinder or throw away the margin that
+    stops a peg entering the wrong hole, and nothing downstream re-checks it.
+
+    Gate 3: integrated gears and Version 2 are different hardware and cannot be
+    combined (S-V7). The gears BETA builds the Version 1 one-piece roller.
+
+    Deliberately NOT a gate: the cylinder size. D-V15 makes 30.1 x 52 a soft
+    preset - Brennen is "attempting the 30.1 change ... updated if testing
+    returns errors" - so an off-size Version 2 cylinder is accepted and
+    app/geometry_spec.py adds a warning instead. That is the opposite of the
+    gear gate, where the size IS a rejection because the vendored gears cannot
+    move with the barrel.
+
+    This runs BEFORE validate_gear_rollers_settings rather than after it. With
+    both switched on, the gear gate would otherwise answer first and complain
+    about the cylinder being 30.1 mm instead of 30.8 - true, but it would send
+    the user off resizing a cylinder when the real problem is that they asked
+    for two different machines at once. Ordering changes nothing for Version 1
+    requests: this function returns immediately for them.
+
+    User-facing wording S-V6 and S-V7 is DRAFT - Brennen deferred every Version
+    2 string to its phase gate on 2026-08-28. FLAGGED FOR BRENNEN: do not treat
+    these sentences as settled until he signs them.
+
+    Args:
+        settings_data: Settings dictionary from the request (flat CardSettings
+            key spelling).
+        shape_type: 'card' or 'cylinder', as the request asked for.
+        cylinder_params: The request's cylinder_params dict. Accepted so both
+            beta gates are called the same way at the one call site, and
+            deliberately NOT read: the size is a warning here, not a gate.
+
+    Returns:
+        True if valid (or Version 2 is off)
+
+    Raises:
+        ValidationError: If Version 2 is asked for on anything but a cylinder,
+            with a clearance outside 0.0-0.5 mm, or together with the gears
+            beta; or if the version itself is neither 1 nor 2.
+    """
+    raw = settings_data.get('embosser_version', 1)
+    if raw is None or raw == '':
+        return True
+    try:
+        number = float(raw)
+    except (TypeError, ValueError) as e:
+        raise ValidationError(
+            "Setting 'embosser_version' must be 1 or 2",
+            {'key': 'embosser_version', 'value': raw},
+        ) from e
+    # A version is an enum, not a toggle, so a fractional value is refused
+    # rather than truncated. The gear beta's int(float(...)) would read 2.5 as
+    # "Version 2" and build a prototype cylinder for a request nobody could
+    # have meant - the same silent-fallback shape this project keeps finding.
+    if not number.is_integer():
+        raise ValidationError(
+            "Setting 'embosser_version' must be 1 or 2",
+            {'key': 'embosser_version', 'value': raw},
+        )
+    version = int(number)
+    if version == 1:
+        return True
+    if version != 2:
+        raise ValidationError(
+            "Setting 'embosser_version' must be 1 or 2",
+            {'key': 'embosser_version', 'value': raw},
+        )
+
+    if str(shape_type).strip().lower() != 'cylinder':
+        raise ValidationError(
+            'Version 2 is only available for cylinders.',
+            {'key': 'embosser_version', 'shape_type': shape_type, 'required': 'cylinder'},
+        )
+
+    clearance = _double_sided_number(
+        settings_data,
+        'v2_key_clearance_mm',
+        'version_2.key_clearance_mm',
+        version2.V2_KEY_CLEARANCE_DEFAULT_MM,
+    )
+    if not version2.V2_KEY_CLEARANCE_MIN_MM <= clearance <= version2.V2_KEY_CLEARANCE_MAX_MM:
+        raise ValidationError(
+            f"Setting 'version_2.key_clearance_mm' must be between "
+            f'{version2.V2_KEY_CLEARANCE_MIN_MM} and {version2.V2_KEY_CLEARANCE_MAX_MM} mm',
+            {
+                'key': 'v2_key_clearance_mm',
+                'value': clearance,
+                'minimum': version2.V2_KEY_CLEARANCE_MIN_MM,
+                'maximum': version2.V2_KEY_CLEARANCE_MAX_MM,
+            },
+        )
+
+    # Read exactly the way the gear gate reads its own flag, so the two can
+    # never disagree about what "gears are on" means.
+    gears_raw = settings_data.get('gear_rollers_enabled', 0)
+    if gears_raw is not None and gears_raw != '':
+        try:
+            gears_enabled = int(float(gears_raw))
+        except (TypeError, ValueError) as e:
+            raise ValidationError(
+                "Setting 'gear_rollers.enabled' must be 0 or 1",
+                {'key': 'gear_rollers_enabled', 'value': gears_raw},
+            ) from e
+        if gears_enabled == 1:
+            raise ValidationError(
+                'Integrated gears are not available in Version 2.',
+                {'key': 'gear_rollers_enabled', 'embosser_version': version},
+            )
 
     return True
 
