@@ -194,8 +194,10 @@ test.describe('Gear-integrated one-piece rollers (BETA)', () => {
 
     const note = page.locator('#gear-hardware-note');
     await expect(note).toBeVisible();
-    await expect(note).toContainText('version 2');
-    await expect(note).toContainText('version 1');
+    // S9' (re-signed 2026-08-28): the note names the housing the geared
+    // rollers DO fit, and rules out both embosser bodies by name.
+    await expect(note).toContainText('one-piece geared-roller housing');
+    await expect(note).toContainText('Version 1 or Version 2 embosser bodies');
 
     // Visible with the toggle OFF - the warning has to be readable before
     // anyone decides to turn gears on for the wrong embosser body.

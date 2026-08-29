@@ -280,7 +280,7 @@ A fieldset modelled on the double-sided beta's, placed after it:
 | Description | `gear-rollers-note` | S2, first sentence only (see below) |
 | Cutout note | `gear-cutout-note` / `-message` | S3 |
 | Size warning | `gear-size-warning` / `-message` | S7, the same sentence the server would return |
-| Hardware note | `gear-hardware-note` / `-message` | S9 *"Integrated gears fit only version 2 of the braille embosser hardware. They do not fit version 1 — do not use geared cylinders with a version 1 embosser body."* — signed off (wording AND always-visible) 2026-08-25. ALWAYS visible, even with the toggle off, so it is read before anyone decides to enable gears; `#gear-hardware-link-slot` sits empty for the version 2 build-files link once published. Pinned loosely (contains "version 2"/"version 1") by `tests/e2e/gearRollers.spec.ts` |
+| Hardware note | `gear-hardware-note` / `-message` | S9′ *"Integrated gears fit only the one-piece geared-roller housing. They do not fit the Version 1 or Version 2 embosser bodies."* — signed off (wording AND always-visible) 2026-08-25, RE-SIGNED 2026-08-28: “version 2” now names the keyed-peg embosser, which these gears do not fit either. ALWAYS visible, even with the toggle off, so it is read before anyone decides to enable gears; `#gear-hardware-link-slot` sits empty for the version 2 build-files link once published. Pinned loosely (contains "version 2"/"version 1") by `tests/e2e/gearRollers.spec.ts` |
 
 **There is no card branch, on purpose.** Output Shape offers exactly one radio,
 `value="cylinder"` — flat card plates have been parked since December 2025 — so a card
