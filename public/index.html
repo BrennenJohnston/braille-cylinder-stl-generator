@@ -1524,6 +1524,19 @@
                 margin-bottom: 0.8em;
             }
         }
+        /* Embosser version selector, in the site header. LAYOUT ONLY: it
+           reuses .grade-selection and .radio-option, so every colour comes
+           from a design token, the 44px hit target and the :focus-visible
+           ring are the app's own, and nothing here can drift from them. */
+        .embosser-version {
+            margin: 0.5em auto 0;
+            max-width: 40em;
+        }
+        .embosser-version .radio-group-inline {
+            display: flex;
+            gap: 1.5em;
+            flex-wrap: wrap;
+        }
         .radio-group {
             display: flex;
             flex-direction: column;
@@ -3225,6 +3238,58 @@
             </button>
         </div>
     </div>
+
+    <!-- Embosser version selector (D-V13). Native fieldset + legend +
+         radios, so the group's accessible name, the roving-arrow keyboard
+         behaviour and the checked state all come from the platform: the
+         only ARIA here is aria-describedby, which has no native equivalent.
+         Version 1 is checked IN THE MARKUP, so a user who never touches
+         this gets exactly the app that shipped before Version 2 existed.
+         The ids are load-bearing: updateEmbosserVersionUI() finds the
+         radios by name="embosser_version", the prototype notice by
+         #v2-prototype-note and the size warning by #v2-size-warning;
+         persistence stores braille_prefs_embosser_version.
+         It sits OUTSIDE <form id="braille-form">, like the rest of the
+         header - the radios are read by id, never submitted. -->
+    <div class="grade-selection embosser-version" id="embosser-version-selection">
+        <fieldset aria-describedby="embosser-version-note">
+            <!-- S-V1, signed off by Brennen (2026-08-28); reword only with
+                 his sign-off. -->
+            <legend class="grade-label">Embosser version</legend>
+            <div class="radio-group-inline">
+                <!-- S-V2, signed off by Brennen (2026-08-28). -->
+                <label class="radio-option" for="embosser_version_1">
+                    <input type="radio" name="embosser_version" id="embosser_version_1" value="1" checked>
+                    <span class="radio-text">Version 1</span>
+                </label>
+                <label class="radio-option" for="embosser_version_2">
+                    <input type="radio" name="embosser_version" id="embosser_version_2" value="2">
+                    <span class="radio-text">Version 2 (prototype)</span>
+                </label>
+            </div>
+            <!-- S-V3, signed off by Brennen (2026-08-28). 17 words, under
+                 the ADA SOP Step 6.8 ceiling of 25. -->
+            <div class="grade-note" id="embosser-version-note" style="margin-top: 6px; font-size: 0.85em;">Choose Version 2 only if you are building the Version 2 embosser, which uses keyed gear pegs. Version 1 stays supported.</div>
+            <!-- S-V4, signed off by Brennen (2026-08-28) WITH the R14
+                 sentence added; reword only with his sign-off. 31 words,
+                 DELIBERATELY over the Step 6.8 ceiling of 25 - he chose the
+                 stronger warning knowing the cost, and it is allowed because
+                 this notice is VISIBLE rather than describedby-only. Recorded
+                 as a finding at the Phase 08 accessibility check; do not trim
+                 or split it. `hidden` rather than display:none so the
+                 accessibility tree and the CSS agree with one attribute. -->
+            <div id="v2-prototype-note" class="grade-note inline-warning" style="margin-top: 0.6em;" hidden>
+                <strong>Prototype:</strong> Version 2 is a work-in-progress prototype. Its cylinder size, cutouts and fit may change as testing continues. It fits only gears with R14 pegs; earlier pegs do not enter the holes.
+            </div>
+            <!-- S-V5, signed off by Brennen (2026-08-28). The server emits
+                 this exact sentence into spec.warnings, so the words a user
+                 reads here and the words the spec carries are the same. -->
+            <div id="v2-size-warning" class="grade-note inline-warning"
+                 style="margin-top: 0.6em; display: none;">
+                <strong>Warning:</strong> <span id="v2-size-message"></span>
+            </div>
+        </fieldset>
+    </div>
     </header>
 
     <!-- tabindex="-1" is what makes the skip link above actually move
@@ -3949,21 +4014,21 @@
                                           <label for="cylinder_height_mm">Cylinder Height (mm):</label>
                                           <input type="number" id="cylinder_height_mm" name="cylinder_height_mm" value="52" step="0.1" min="10" max="200" style="width: 110px;" autocomplete="off">
                                       </div>
-                                      <div style="margin-top: 6px;">
+                                      <div style="margin-top: 6px;" id="cylinder-cutout-radius-row">
                                           <label for="cylinder_polygonal_cutout_radius_mm">Polygonal Cutout Circumscribed Radius (mm):</label>
                                           <input type="number" id="cylinder_polygonal_cutout_radius_mm" name="cylinder_polygonal_cutout_radius_mm" value="13" step="0.1" min="0" max="50" style="width: 110px;" autocomplete="off">
                                           <div class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
                                               Creates a polygonal cutout along the cylinder's length. Set to 0 for no cutout.
                                           </div>
                                       </div>
-                                      <div style="margin-top: 6px;">
+                                      <div style="margin-top: 6px;" id="cylinder-cutout-sides-row">
                                           <label for="cylinder_polygonal_cutout_sides">Polygonal Cutout Points:</label>
                                           <input type="number" id="cylinder_polygonal_cutout_sides" name="cylinder_polygonal_cutout_sides" value="12" step="1" min="3" max="60" style="width: 110px;" autocomplete="off">
                                           <div class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
                                               Lower values create simpler shapes (e.g., 6); higher values approximate a circle.
                                           </div>
                                       </div>
-                                      <div style="margin-top: 6px;">
+                                      <div style="margin-top: 6px;" id="cylinder-seam-offset-row">
                                           <label for="seam_offset_deg">Seam Offset (degrees):</label>
                                           <input type="number" id="seam_offset_deg" name="seam_offset_deg" value="355" step="1" min="0" max="360" style="width: 110px;" autocomplete="off">
                                           <div class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
@@ -3978,6 +4043,29 @@
                                            style="margin-top: 10px; color: var(--warning-text); display: none;">
                                           <strong>Warning:</strong> <span id="cylinder-overflow-message"></span>
                                       </div>
+                                  </div>
+
+                                  <!-- Embosser Version 2 keyed cutouts. Hidden in Version 1,
+                                       revealed by updateEmbosserVersionUI(). The dial is
+                                       bounded AT THE SOURCE (min/max/step here, not in the
+                                       read): an out-of-range value makes the input :invalid
+                                       and the request assembly refuses it rather than
+                                       silently substituting a default. 0.15 / 0.01 = 15, a
+                                       whole number of steps, so the shipped default is
+                                       valid against its own step - the trap that once made
+                                       the Generate button die silently. -->
+                                  <div class="grade-selection" id="v2-keyed-cutouts-selection" hidden>
+                                      <fieldset>
+                                          <legend class="grade-label" style="font-size: 1.2em; font-weight: 700;">Version 2 Keyed Cutouts</legend>
+                                          <div>
+                                              <!-- S-V9, signed off by Brennen (2026-08-28);
+                                                   reword only with his sign-off. The help text
+                                                   is 16 words, under the Step 6.8 ceiling. -->
+                                              <label for="v2_key_clearance_mm">Key clearance (mm):</label>
+                                              <input type="number" id="v2_key_clearance_mm" name="v2_key_clearance_mm" value="0.15" step="0.01" min="0" max="0.5" style="width: 110px;" autocomplete="off" aria-describedby="v2-key-clearance-note">
+                                              <div class="grade-note" id="v2-key-clearance-note" style="margin-top: 4px; font-size: 0.85em;">Extra room around each gear peg, per side. 0.15 mm suits most printers; raise it if pegs bind.</div>
+                                          </div>
+                                      </fieldset>
                                   </div>
 
                                   <!-- Flat-plate dimensions. The backend schema still requires
@@ -5136,6 +5224,7 @@
         // Whether the file just generated carries gears, so the ready
         // announcement can say so (S5).
         let lastGenerationUsedGears = false;
+        let lastGenerationUsedV2 = false;
         // The blob itself, not just its URL: the next generation revokes the
         // previous URL, so a Generate Both run would lose Cylinder A the moment
         // Cylinder B started. Holding the blob lets the pair outlive both runs.
@@ -5271,8 +5360,13 @@
                sentence is S5, signed 2026-08-24. Reword either only with his
                sign-off. One announcement, not two: announceStatus writes a
                single region, so a second call would overwrite the first. */
+            /* S-V8, signed off by Brennen (2026-08-28). Gears and Version 2
+               cannot both be on - the API refuses the pair - so at most one
+               prefix can ever appear, and it rides in the ready message
+               rather than as a second write to the one live region. */
             announceStatus('stl-ready',
                 (lastGenerationUsedGears ? 'Cylinder generated with integrated gears. ' : '')
+                + (lastGenerationUsedV2 ? 'Cylinder generated for the Version 2 embosser (prototype). ' : '')
                 + 'Your STL file is ready. Use the Download STL button to save it.'
                 + outstandingWarningSuffix());
         }
@@ -5341,7 +5435,7 @@
             return 'untitled';
         }
 
-        async function buildStlFilename(plateType, doubleSided = false, geared = false) {
+        async function buildStlFilename(plateType, doubleSided = false, geared = false, v2 = false) {
             const prefix = doubleSided
                 ? (plateType === 'positive' ? 'Cylinder_A' : 'Cylinder_B')
                 : (plateType === 'positive' ? 'Embossing_Cylinder' : 'Counter_Cylinder');
@@ -5349,16 +5443,21 @@
             // training videos show them - so the segment is inserted only when
             // the gears are actually there.
             const geared_segment = geared ? 'Geared_' : '';
-            return `${prefix}_${geared_segment}${getThicknessPresetSegment()}_${await deriveStlNameSegment()}.stl`;
+            // Decision D-V12, the same rule for Version 2: a `V2_` segment,
+            // inserted only when Version 2 is actually selected, so every
+            // Version 1 name is byte-identical to the one that shipped.
+            const v2_segment = v2 ? 'V2_' : '';
+            return `${prefix}_${geared_segment}${v2_segment}${getThicknessPresetSegment()}_${await deriveStlNameSegment()}.stl`;
         }
 
         // The combined pair file: both cylinders in ONE binary STL, spaced
         // for printing together. A new name beside the A/B names, never a
         // rename of them. Full format signed off by Brennen (2026-08-25);
         // change only with his sign-off.
-        async function buildPairStlFilename(geared = false) {
+        async function buildPairStlFilename(geared = false, v2 = false) {
             const geared_segment = geared ? 'Geared_' : '';
-            return `Cylinder_Pair_${geared_segment}${getThicknessPresetSegment()}_${await deriveStlNameSegment()}.stl`;
+            const v2_segment = v2 ? 'V2_' : '';
+            return `Cylinder_Pair_${geared_segment}${v2_segment}${getThicknessPresetSegment()}_${await deriveStlNameSegment()}.stl`;
         }
 
         // Add event handler for the action button
@@ -5600,6 +5699,22 @@
                     ? 'This counts braille cells for your text only. The indicator square and alignment triangle take their own space at the end of the row and are never part of this count — with them present, 13 text cells is the most that fits.'
                     : 'This counts braille cells for your text only. With indicator letters off, just the alignment triangle takes its own space at the end of the row — 14 text cells is the most that fits.';
                 recommended = indicatorOn ? '13' : '14';
+            }
+
+            // Embosser Version 2's barrel is 30.1 mm, 2.2 mm smaller around than
+            // Version 1's 30.8, and in VISUAL mode that is exactly one braille
+            // cell: at 13 text cells (plus 2 marker columns) the seam gap is
+            // 3.6 mm where a cell's dots need 4.0 mm, so the recommendation
+            // above would have named a layout checkPhysicalFit() warns against
+            // on the very same screen. TACTILE mode is untouched - it needs
+            // 9.0 mm and still gets 10.1 mm at 14 cells. Version 1 never enters
+            // this branch. Signed off by Brennen 2026-08-28.
+            if (isVersion2() && !tactile) {
+                recommended = String(parseInt(recommended, 10) - 1);
+                explanation = explanation.replace(
+                    /(13|14) text cells is the most that fits\./,
+                    `${recommended} text cells is the most that fits on the Version 2 cylinder.`
+                );
             }
 
             if (!preserveValue && !gridColumnsDirty) {
@@ -7024,8 +7139,14 @@
         // with gears_b). The pair controls and the A/B radio names follow the
         // two toggles together through this one predicate. Reusing the signed
         // A/B radio labels in gears-only mode confirmed by Brennen (2026-08-25).
+        // Version 2 joins them (D-V10): A and B are a matched, differently
+        // keyed pair, so the pair IS the useful output - the same reasoning
+        // that put the gears-only flow into pair mode on 2026-08-25. It
+        // reuses the signed Cylinder A / Cylinder B labels; no new strings.
         function isPairModeOn() {
-            return !!document.getElementById('double_sided_enabled')?.checked || isGearRollersOn();
+            return !!document.getElementById('double_sided_enabled')?.checked
+                || isGearRollersOn()
+                || isVersion2();
         }
 
         // Deliberately silent: both beta toggles call this from their own
@@ -7096,6 +7217,170 @@
             updateGearRollersUI();
             resetToGenerateState();
         });
+
+        // ---------------------------------------------------------------------
+        // Embosser Version 2 (keyed gear pegs) PROTOTYPE
+        // ---------------------------------------------------------------------
+        // A Version 2 cylinder is keyed at both ends instead of bored through,
+        // so its barrel is a fixed size and the polygonal-cutout and seam-offset
+        // dials have nothing left to act on. Every number here MIRRORS
+        // app/geometry/version2.py - a smoke test diffs them - and the size
+        // sentence is the server's own, word for word, so a user never meets two
+        // spellings of one limit.
+        const V2_BARREL_DIAMETER_MM = 30.1;
+        const V2_BARREL_HEIGHT_MM = 52.0;
+        const V2_SIZE_TOLERANCE_MM = 0.001;
+        const V2_PRESET_OVERRIDES = {
+            cylinder_diameter_mm: 30.1,
+            cylinder_height_mm: 52,
+            seam_offset_deg: 0
+        };
+        // Every dial Version 2 overrides or hides, so turning it off gives back
+        // exactly what the user had rather than a preset's idea of it.
+        const V2_SNAPSHOT_IDS = [
+            'cylinder_diameter_mm',
+            'cylinder_height_mm',
+            'seam_offset_deg',
+            'cylinder_polygonal_cutout_radius_mm',
+            'cylinder_polygonal_cutout_sides'
+        ];
+        let version1DialSnapshot = null;
+
+        function isVersion2() {
+            return document.querySelector('input[name="embosser_version"]:checked')?.value === '2';
+        }
+
+        // The set-and-persist path applyThicknessPreset uses, so a Version 2
+        // override survives a reload exactly the way a preset value does.
+        function setAndPersistDial(inputId, value) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            input.value = String(value);
+            persistValue(`braille_prefs_${inputId}`, String(value));
+        }
+
+        /* S-V10, signed off by Brennen (2026-08-28); reword only with his sign-off. */
+        function embosserVersionAnnouncement() {
+            return isVersion2()
+                ? 'Version 2 selected: keyed gear-peg cutouts, 30.1 mm cylinder.'
+                : 'Version 1 selected.';
+        }
+
+        // S-V5, live. The size is a WARNING and never a rejection (D-V15):
+        // Brennen is still testing whether 30.1 is the right barrel. Numbers
+        // render as "52 mm", not "52.0 mm" - JS number-to-string already drops
+        // the trailing zero, which is what the server's _format_mm does too.
+        function updateVersion2SizeWarning() {
+            const warning = document.getElementById('v2-size-warning');
+            const message = document.getElementById('v2-size-message');
+            if (!warning || !message) return;
+
+            const diameter = parseFloat(document.getElementById('cylinder_diameter_mm')?.value);
+            const height = parseFloat(document.getElementById('cylinder_height_mm')?.value);
+            const offSize = isVersion2()
+                && Number.isFinite(diameter)
+                && Number.isFinite(height)
+                && (Math.abs(diameter - V2_BARREL_DIAMETER_MM) > V2_SIZE_TOLERANCE_MM
+                    || Math.abs(height - V2_BARREL_HEIGHT_MM) > V2_SIZE_TOLERANCE_MM);
+            /* S-V5, signed off by Brennen (2026-08-28); reword only with his sign-off. */
+            const text = offSize
+                ? `The Version 2 embosser expects a ${V2_BARREL_DIAMETER_MM} mm x ${V2_BARREL_HEIGHT_MM} mm cylinder. `
+                  + `Received ${diameter} mm x ${height} mm.`
+                : '';
+            warning.style.display = text ? 'block' : 'none';
+            message.textContent = text;
+            announceStatus('v2-size', text);
+        }
+
+        // Deliberately silent, like updatePairModeUI: the change listener makes
+        // the one announcement (ADA SOP Section 12, C9), and the load-time
+        // restore must make none at all - an announcement there spoke over page
+        // load in the first NVDA listening run (2026-08-22, POST15_6).
+        function updateEmbosserVersionUI() {
+            const on = isVersion2();
+
+            // Snapshot ONCE, on the way in. Taking it again on a later call
+            // would capture Version 2's own overrides and lose the user's
+            // Version 1 dials for good.
+            if (on && version1DialSnapshot === null) {
+                version1DialSnapshot = {};
+                V2_SNAPSHOT_IDS.forEach(id => {
+                    const input = document.getElementById(id);
+                    if (input) version1DialSnapshot[id] = input.value;
+                });
+            }
+
+            if (on) {
+                // Applied ON TOP of the Card Thickness preset, which has already
+                // run by the time this is first called. The presets themselves
+                // are untouched: turning Version 2 off restores the snapshot,
+                // not a preset default.
+                Object.entries(V2_PRESET_OVERRIDES).forEach(([id, value]) => setAndPersistDial(id, value));
+            } else if (version1DialSnapshot) {
+                Object.entries(version1DialSnapshot).forEach(([id, value]) => setAndPersistDial(id, value));
+                version1DialSnapshot = null;
+            }
+
+            // The barrel just changed size, so the text-cell recommendation has
+            // to follow it - exactly as applyThicknessPreset does after a preset.
+            // Without this, Version 2's smaller 30.1 mm barrel kept Version 1's
+            // 13-cell count and the page opened on a seam-collision warning the
+            // user had done nothing to cause. A version change supersedes a
+            // hand-typed cell count for the same reason a preset does.
+            try { clearGridColumnsDirty(); } catch (e) { log.error('Could not clear the hand-typed cell-count flag:', e); }
+            try { updateGridColumnsForPlateType(); } catch (e) { log.error('Cell-count recommendation failed to refresh after the version change:', e); }
+
+            // The polygonal cutout and the seam offset are inert in Version 2:
+            // the keyed cutout IS the hole, and the keys do not turn with the
+            // seam. Hidden rather than disabled, so the panel does not read as a
+            // row of dead controls.
+            ['cylinder-cutout-radius-row', 'cylinder-cutout-sides-row', 'cylinder-seam-offset-row']
+                .forEach(id => {
+                    const row = document.getElementById(id);
+                    if (row) row.hidden = on;
+                });
+
+            const keyedFieldset = document.getElementById('v2-keyed-cutouts-selection');
+            if (keyedFieldset) keyedFieldset.hidden = !on;
+            const prototypeNote = document.getElementById('v2-prototype-note');
+            if (prototypeNote) prototypeNote.hidden = !on;
+
+            // The gears BETA is Version 1 only (D-V6) and the API returns a 400
+            // for the combination, so the toggle is hidden AND unchecked: a
+            // hidden checkbox that stayed on would still be read at generate
+            // time and turn into an error the user cannot see the cause of.
+            const gearSelection = document.getElementById('gear-rollers-selection');
+            if (gearSelection) gearSelection.hidden = on;
+            const gearToggle = document.getElementById('gear_rollers_enabled');
+            if (on && gearToggle?.checked) {
+                gearToggle.checked = false;
+                persistValue('braille_prefs_gear_rollers_enabled', '0');
+                updateGearRollersUI();
+            }
+
+            updatePairModeUI();
+        }
+
+        document.querySelectorAll('input[name="embosser_version"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                updateEmbosserVersionUI();
+                persistValue('braille_prefs_embosser_version', isVersion2() ? '2' : '1');
+                resetToGenerateState();
+                refreshLiveWarnings();
+                // Announced AFTER the refresh, so the selector's own message is
+                // the one left in the single live region rather than a warning
+                // the refresh happened to write on its way through.
+                announceStatus('embosser-version', embosserVersionAnnouncement());
+            });
+        });
+
+        const v2ClearanceInput = document.getElementById('v2_key_clearance_mm');
+        if (v2ClearanceInput) {
+            v2ClearanceInput.addEventListener('input', () => {
+                persistValue('braille_prefs_v2_key_clearance_mm', v2ClearanceInput.value);
+                resetToGenerateState();
+            });
+        }
 
         // Live overflow warning for auto mode. Runs the exact same banaAutoWrap
         // simulation generation uses (same capitalization and number-sign
@@ -7294,6 +7579,10 @@
             checkPhysicalFit();
             checkDoubleSidedGap();
             updateGearRollersUI();
+            // After the gear warning, so that when both could speak the
+            // Version 2 sentence is the one left in the live region - in
+            // Version 2 the gear toggle is off, so its own call writes ''.
+            updateVersion2SizeWarning();
             updateCapsWarning();
             updateBrailleFieldStatus();
             computeBackOverflow();
@@ -7401,7 +7690,9 @@
                 'braille_prefs_seam_offset_deg',
                 'braille_prefs_double_sided_enabled',
                 'braille_prefs_back_text',
-                'braille_prefs_gear_rollers_enabled'
+                'braille_prefs_gear_rollers_enabled',
+                'braille_prefs_embosser_version',
+                'braille_prefs_v2_key_clearance_mm'
             ];
             keys.forEach(k => { try { localStorage.removeItem(k); } catch (e) { log.debug('Could not clear saved setting', k, e); } });
         }
@@ -7758,6 +8049,15 @@
                 if (backTextReset) backTextReset.value = '';
                 const gearToggleReset = document.getElementById('gear_rollers_enabled');
                 if (gearToggleReset) gearToggleReset.checked = false;
+                // Embosser version back to 1. The radio sweep above already
+                // did that (Version 1 is defaultChecked) and the input sweep
+                // put the clearance dial back to 0.15, so all that is left is
+                // to DROP the snapshot: without this, updateEmbosserVersionUI
+                // would see Version 1 selected, restore the remembered
+                // Version 2-era dials, and undo the reset it was called to
+                // finish.
+                version1DialSnapshot = null;
+                try { updateEmbosserVersionUI(); } catch (e) { log.error('Embosser version UI failed to refresh after reset to defaults:', e); }
                 try { updateDoubleSidedUI(); } catch (e) { log.error('Double-sided UI failed to refresh after reset to defaults:', e); }
                 try { updateGearRollersUI(); } catch (e) { log.error('Gear roller UI failed to refresh after reset to defaults:', e); }
                 updateShapeSettings();
@@ -7887,7 +8187,19 @@
             const preset = THICKNESS_PRESETS[presetKey];
             if (!preset) return false;
 
+            // Embosser Version 2 forces its own barrel on top of whichever card
+            // stock is selected (D-V4), so cylinder_diameter_mm, cylinder_height_mm
+            // and seam_offset_deg no longer match ANY preset. Without this skip the
+            // detection below flipped the radio to Custom the moment the user
+            // touched any dial - silently renaming their downloads from
+            // ..._V2_0.4_... to ..._V2_Custom_... and persisting a card stock they
+            // never chose. Card stock and barrel size are independent settings.
+            // In Version 1 the skip list is empty and this behaves exactly as it
+            // always has.
+            const skipInVersion2 = isVersion2() ? Object.keys(V2_PRESET_OVERRIDES) : [];
+
             for (const [inputId, expectedValue] of Object.entries(preset)) {
+                if (skipInVersion2.includes(inputId)) continue;
                 const input = document.getElementById(inputId);
                 if (input) {
                     // Compare as numbers to handle floating point formatting differences
@@ -8063,6 +8375,36 @@
                 log.debug('Applied thickness preset on load:', presetToApply);
             } catch (e) {
                 log.debug('Error restoring thickness preset:', e);
+            }
+        })();
+
+        // Embosser version and its clearance dial are restored HERE, after the
+        // Card Thickness preset IIFE above - NOT inside applyPersistedSettings,
+        // which runs before it. The preset rewrites cylinder_diameter_mm on
+        // every single load, so a Version 2 restore that ran earlier would be
+        // silently overwritten with the preset's 30.8 and the user would meet a
+        // size warning about a selection they never changed.
+        (function restoreEmbosserVersion() {
+            try {
+                const savedClearance = readPersisted('braille_prefs_v2_key_clearance_mm');
+                const clearanceInput = document.getElementById('v2_key_clearance_mm');
+                if (clearanceInput && savedClearance) {
+                    clearanceInput.value = savedClearance;
+                }
+                // Only the two legal spellings are honoured; anything else in
+                // storage leaves Version 1 checked, which is the markup default.
+                const savedVersion = readPersisted('braille_prefs_embosser_version');
+                if (savedVersion === '2') {
+                    const version2Radio = document.getElementById('embosser_version_2');
+                    if (version2Radio) version2Radio.checked = true;
+                }
+                // Restored state fires no change event, so the visibility, the
+                // preset overrides and the live warnings are all seeded by hand.
+                // Silently: a load restore is not a user action.
+                updateEmbosserVersionUI();
+                refreshLiveWarnings();
+            } catch (e) {
+                log.error('Embosser version failed to restore; the page is showing Version 1:', e);
             }
         })();
 
@@ -9146,6 +9488,22 @@
                 settings.gear_rollers_enabled = 1;
             }
 
+            // Embosser Version 2 (keyed gear pegs) PROTOTYPE: two flat fields,
+            // and NOTHING is added while Version 1 is selected, so a Version 1
+            // request body stays byte-identical to a pre-prototype one.
+            // The clearance is read from the BOUNDED dial with no fallback
+            // literal: an empty or unparseable value raises here rather than
+            // quietly shipping geometry at a clearance nobody asked for.
+            if (isVersion2()) {
+                const clearanceInput = document.getElementById('v2_key_clearance_mm');
+                const clearance = parseFloat(clearanceInput?.value);
+                if (!Number.isFinite(clearance)) {
+                    throw new Error('Key clearance (mm) is empty or not a number. Enter a value between 0 and 0.5.');
+                }
+                settings.embosser_version = 2;
+                settings.v2_key_clearance_mm = clearance;
+            }
+
             // Debug: Log the settings being sent
             log.debug('Expert Mode Settings:', settings);
             log.debug('Settings object keys:', Object.keys(settings));
@@ -9324,12 +9682,13 @@
                 if (lastSTLUrl) URL.revokeObjectURL(lastSTLUrl);
                 lastSTLUrl = URL.createObjectURL(blob);
 
-                const filename = await buildStlFilename(plateType, doubleSidedOn, isGearRollersOn());
+                const filename = await buildStlFilename(plateType, doubleSidedOn, isGearRollersOn(), isVersion2());
 
                 // Store the generated STL URL and filename for download
                 lastGeneratedSTLUrl = lastSTLUrl;
                 lastGeneratedFilename = filename;
                 lastGenerationUsedGears = isGearRollersOn();
+                lastGenerationUsedV2 = isVersion2();
                 lastGeneratedBlob = blob;
                 loadSTL(lastSTLUrl);
 
@@ -9569,7 +9928,7 @@
                     pairFiles.combined = {
                         blob: new Blob([combineBinaryStl(bufA, bufB, pairXOffsetMm())],
                             { type: 'application/octet-stream' }),
-                        filename: await buildPairStlFilename(isGearRollersOn()),
+                        filename: await buildPairStlFilename(isGearRollersOn(), isVersion2()),
                     };
 
                     // Show the pair the way the combined file prints: A left,

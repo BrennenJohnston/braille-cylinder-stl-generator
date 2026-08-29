@@ -685,6 +685,56 @@ def test_ui_ds_footprints_match_interpoint_packages():
     assert ui_packages == interpoint.DS_FOOTPRINTS_BY_PRESET
 
 
+def test_ui_version2_numbers_match_the_geometry_module():
+    """
+    public/index.html mirrors four Version 2 numbers that app/geometry/version2.py
+    owns: the preset barrel it forces on the dials, and the clearance dial's
+    bounds and default. Cross-file default drift is this project's #1 historical
+    bug source, so the two copies are diffed here rather than trusted.
+
+    The dial's attributes are checked as text, not as floats only, because the
+    step has to divide the default exactly: 0.15 / 0.01 = 15. A default that is
+    invalid against its own step makes the input :invalid and kills the Generate
+    button silently - a trap this repo has already been bitten by once.
+    """
+    import re
+    from pathlib import Path
+
+    from app.geometry import version2
+
+    html = (Path(__file__).resolve().parents[1] / 'public' / 'index.html').read_text(encoding='utf-8')
+
+    match = re.search(r'const V2_PRESET_OVERRIDES = \{(.*?)\};', html, re.DOTALL)
+    assert match, 'V2_PRESET_OVERRIDES block not found in public/index.html'
+    overrides = {name: float(value) for name, value in re.findall(r'(\w+): ([0-9.]+)', match.group(1))}
+    assert overrides == {
+        'cylinder_diameter_mm': version2.V2_BARREL_DIAMETER_MM,
+        'cylinder_height_mm': version2.V2_BARREL_HEIGHT_MM,
+        'seam_offset_deg': 0.0,
+    }
+
+    dial = re.search(r'<input type="number" id="v2_key_clearance_mm"[^>]*>', html)
+    assert dial, 'the v2_key_clearance_mm dial was not found in public/index.html'
+    attrs = dict(re.findall(r'(value|step|min|max)="([^"]+)"', dial.group(0)))
+    assert float(attrs['value']) == version2.V2_KEY_CLEARANCE_DEFAULT_MM
+    assert float(attrs['min']) == version2.V2_KEY_CLEARANCE_MIN_MM
+    assert float(attrs['max']) == version2.V2_KEY_CLEARANCE_MAX_MM
+    # The default must be a whole number of steps above the minimum.
+    steps = (float(attrs['value']) - float(attrs['min'])) / float(attrs['step'])
+    assert abs(steps - round(steps)) < 1e-9, f'{attrs["value"]} is not a whole number of {attrs["step"]} steps'
+
+    # The live UI constants must also agree with the module, since the size
+    # warning is compared against them before any request is sent.
+    for js_name, expected in (
+        ('V2_BARREL_DIAMETER_MM', version2.V2_BARREL_DIAMETER_MM),
+        ('V2_BARREL_HEIGHT_MM', version2.V2_BARREL_HEIGHT_MM),
+        ('V2_SIZE_TOLERANCE_MM', version2.V2_SIZE_TOLERANCE_MM),
+    ):
+        found = re.search(rf'const {js_name} = ([0-9.]+);', html)
+        assert found, f'{js_name} not found in public/index.html'
+        assert float(found.group(1)) == expected, f'{js_name} disagrees with version2.py'
+
+
 def test_zero_recess_depth_cuts_no_cylinder_bowls(client):
     """
     Bowl Recess Dot Depth 0 mm means NO recess, not the shipped default.
