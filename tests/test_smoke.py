@@ -552,6 +552,33 @@ def test_schema_and_models_agree_on_indicator_fields():
         )
 
 
+def test_schema_and_models_agree_on_embosser_version_fields():
+    """
+    The Version 2 fields, guarded the same way.
+
+    settings.schema.json is loaded by nothing at runtime, so a wrong number in
+    it fails no other check - this test is the only thing that notices. The
+    clearance is compared against app/geometry/version2.py too, because that
+    module is where the value actually lives.
+    """
+    import json
+    from pathlib import Path
+
+    from app.geometry import version2
+
+    schema_path = Path(__file__).resolve().parents[1] / 'settings.schema.json'
+    properties = json.loads(schema_path.read_text(encoding='utf-8'))['properties']
+    settings = CardSettings()
+
+    assert properties['embosser_version']['enum'] == [1, 2]
+    assert properties['embosser_version']['default'] == settings.embosser_version == 1
+
+    clearance = properties['version_2']['properties']['key_clearance_mm']
+    assert clearance['default'] == settings.v2_key_clearance_mm == version2.V2_KEY_CLEARANCE_DEFAULT_MM
+    assert clearance['minimum'] == version2.V2_KEY_CLEARANCE_MIN_MM
+    assert clearance['maximum'] == version2.V2_KEY_CLEARANCE_MAX_MM
+
+
 # =============================================================================
 # PR-8: braille_to_dots() Strict Mode Tests (Defense-in-Depth)
 # =============================================================================

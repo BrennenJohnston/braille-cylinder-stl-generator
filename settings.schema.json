@@ -12,6 +12,7 @@
     "shape_type": { "type": "string", "enum": ["card", "cylinder"], "default": "card" },
     "plate_type": { "type": "string", "enum": ["positive", "negative"], "default": "positive" },
     "placement_mode": { "type": "string", "enum": ["auto", "manual"], "default": "manual" },
+    "embosser_version": { "type": "integer", "enum": [1, 2], "default": 1, "description": "Which embosser hardware this cylinder is for. 1 is the machine the app has always generated for and stays the default - absent, 1, \"1\", 1.0 or \"\" all leave every existing code path exactly as it is. 2 is the keyed gear-peg PROTOTYPE: each cylinder end carries a shaped through-cutout so a drive gear physically cannot be seated in the wrong place. CYLINDERS ONLY, and it may change while testing continues. Integrated gears are rejected with version 2. See EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS.md." },
 
     "text": {
       "type": "object",
@@ -195,6 +196,15 @@
       "additionalProperties": false,
       "properties": {
         "enabled": { "type": "boolean", "default": false, "description": "BETA feature toggle, default false. false preserves today's behavior exactly - no geometry, warnings, or output files change. true adds the integrated top and bottom gears to generated CYLINDERS as one solid piece (cards reject it), forces the barrel solid (no polygonal cutout), and uses the vendored 1:1 gear assets in static/assets/gears/." }
+      }
+    },
+
+    "version_2": {
+      "type": "object",
+      "description": "PROTOTYPE: the dials that exist only for embosser_version 2. Its cylinder is a solid barrel with one keyed through-cutout: the bottom gear's peg profile extruded from the bottom face to the mid-plane, the top gear's from the mid-plane to the top face, each mouth countersunk 2.0 mm at 45 degrees to clear the peg's root flare, and a 3.0 mm triangular nub on Cylinder A's top face that fixes the handle gear's orientation. The four keys are family R14 - rounded rectangles 14x14, 18x10, 16x12 and 20x8 with a 0.5 mm corner radius, sized so no peg enters any hole but its own. Every number lives in app/geometry/version2.py. See EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS.md.",
+      "additionalProperties": false,
+      "properties": {
+        "key_clearance_mm": { "type": "number", "minimum": 0.0, "maximum": 0.5, "default": 0.15, "description": "Extra room around each gear peg, per side (mm). Every cutout grows by this and the nub shrinks by it, so one number means one thing: how loose the keys are. 0.15 suits most printers. Raising it eats the error-proofing margin at 2x the rate - 0.85 mm of margin at 0.15, 0.50 mm at the 0.5 maximum - so the keys stay mutually exclusive across the whole range, but only just at the top." }
       }
     }
   },

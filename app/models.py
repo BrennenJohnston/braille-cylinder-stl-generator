@@ -8,6 +8,7 @@ replacing magic numbers and untyped dictionaries with explicit, validated struct
 from dataclasses import dataclass, field
 from enum import Enum, StrEnum
 
+from app.geometry import version2
 from app.utils import get_logger
 
 # Configure logging for this module
@@ -263,6 +264,15 @@ class CardSettings:
             # The gear geometry itself has no dials: it is vendored 1:1 sample
             # data (static/assets/gears/), so there is nothing else to default.
             'gear_rollers_enabled': 0,
+            # Embosser Version 2 (keyed gear pegs) PROTOTYPE. Flat runtime name
+            # for the settings.schema.json "embosser_version" field; 1 = today's
+            # hardware, which leaves every existing code path exactly as it is.
+            # Cylinders only, and integrated gears are rejected alongside it.
+            'embosser_version': 1,
+            # Version 2 print clearance per side. Read from the module that owns
+            # every Version 2 number rather than retyped, so the schema, the
+            # validator, the spec and the UI can never disagree about it.
+            'v2_key_clearance_mm': version2.V2_KEY_CLEARANCE_DEFAULT_MM,
         }
 
         # Set attributes from kwargs or defaults, while being tolerant of "empty" inputs
@@ -295,6 +305,11 @@ class CardSettings:
         self.double_sided_enabled = int(self.double_sided_enabled)
         # Gear beta toggle, normalized the same way and for the same reason.
         self.gear_rollers_enabled = int(self.gear_rollers_enabled)
+        # Embosser hardware version. An enum, not a measurement, so it is cast
+        # back to int after the loop above floats it; the clearance beside it
+        # stays a float. Validation of the allowed values is app/validation.py's
+        # job - this only fixes the type.
+        self.embosser_version = int(self.embosser_version)
         # Normalize boolean-like toggles stored as numbers
         try:
             self.use_rounded_dots = int(float(kwargs.get('use_rounded_dots', self.use_rounded_dots)))
