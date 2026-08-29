@@ -478,9 +478,10 @@ def validate_embosser_version_settings(settings_data: dict, shape_type: str, cyl
     for two different machines at once. Ordering changes nothing for Version 1
     requests: this function returns immediately for them.
 
-    User-facing wording S-V6 and S-V7 is DRAFT - Brennen deferred every Version
-    2 string to its phase gate on 2026-08-28. FLAGGED FOR BRENNEN: do not treat
-    these sentences as settled until he signs them.
+    User-facing wording S-V6 and S-V7 was SIGNED EXACTLY AS DRAFTED by Brennen
+    on 2026-08-28 at the Phase 05 gate. A longer pair that also named the remedy
+    ("Turn integrated gears off, or switch back to Version 1") was offered and
+    declined: these stay terse and factual, like the gear-beta messages.
 
     Args:
         settings_data: Settings dictionary from the request (flat CardSettings

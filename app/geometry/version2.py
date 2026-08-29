@@ -398,9 +398,10 @@ def matches_v2_barrel(diameter: float, height: float) -> bool:
 
 def v2_size_message(diameter: float, height: float) -> str:
     """
-    The S-V5 size note. DRAFT - Brennen deferred every Version 2 string to its
-    phase gate on 2026-08-28, so this wording is not signed off yet; it ships
-    flagged and is reviewed at the Phase 05 and Phase 08 gates.
+    The S-V5 size note. SIGNED EXACTLY AS DRAFTED by Brennen on 2026-08-28 at
+    the Phase 05 gate; a longer variant that also named the remedy was offered
+    and declined, so the sentence stays terse and factual. Changing it now is a
+    string decision, not a refactor.
 
     Rendered through the gears module's _format_mm so the number reads "52 mm",
     not "52.0 mm": the UI writes this same sentence, and two spellings of one

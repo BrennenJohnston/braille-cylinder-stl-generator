@@ -506,7 +506,7 @@ def extract_cylinder_geometry_spec(
         # Brennen is still testing whether 30.1 is right - so this is a warning
         # even on the request route, unlike the gear size above, which is a
         # rejection because the vendored gears cannot move with the barrel.
-        # Wording S-V5 is DRAFT. FLAGGED FOR BRENNEN.
+        # Wording S-V5 signed as drafted, 2026-08-28.
         warning = version2.v2_size_message(diameter, height)
         v2_warnings.append(warning)
         logger.warning(warning)
@@ -549,8 +549,8 @@ def extract_cylinder_geometry_spec(
         # a polygonal one running the length of the axis would break into it.
         # Mirrors the gear rule above, and like it the barrel is forced solid
         # rather than the request refused, so a saved cutout radius cannot lock
-        # a user out of the prototype. Wording S-V14 is DRAFT, new in this
-        # phase. FLAGGED FOR BRENNEN.
+        # a user out of the prototype. Wording S-V14 was new in Phase 05 and
+        # was signed as drafted at that gate, 2026-08-28.
         warning = 'The polygonal cutout is not used in Version 2.'
         v2_warnings.append(warning)
         logger.warning(warning)
