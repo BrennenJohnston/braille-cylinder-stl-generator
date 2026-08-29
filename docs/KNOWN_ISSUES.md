@@ -149,6 +149,64 @@ reason.
 
 Full technical detail: `docs/specifications/GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md`.
 
+## Embosser Version 2 (prototype) — status
+
+Version 2 is a new embosser design. Its drive gears are separate prints again, but
+each of the four gears carries a differently shaped peg, and each end of each cylinder
+gets a matching keyed hole — so a gear cannot be seated in the wrong place. Choosing
+Version 2 in the header changes what the generator cuts into the cylinder ends.
+
+**It is a work-in-progress prototype.** The cylinder size, the cutout shapes and the
+fit may all change as testing continues. Nothing here is final.
+
+**Version 1 is the default and is untouched.** Leave the selector alone and you get
+exactly the app that shipped before Version 2 existed: the same request, the same
+geometry, the same filenames. That is checked rather than assumed — the exported STL
+bytes and the request body are compared before and after every change.
+
+**Cylinders only.** Version 2 has no meaning for a flat plate, and the API refuses the
+combination.
+
+**The gears must be re-cut.** The holes are family **R14** — four rounded rectangles,
+14 × 14 mm at Cylinder A's top (the nub end), 18 × 10 at A's bottom, 16 × 12 at B's
+top and 20 × 8 at B's bottom, each with a 0.5 mm corner radius. **None of the earlier
+v7 pegs fits**: the six-scallop star, the hexagon and both 15 × 15 mm squares are
+retired, and no one of them will enter an R14 hole. A cylinder printed today pairs
+only with gears cut to `GEAR_PEG_SPEC_R14`, which are not published yet.
+
+**The keys themselves are error-proof by design.** Each peg enters its own hole and no
+other, in either rotation, at every clearance the dial allows — the fit matrix is the
+identity at 0.00, 0.15, 0.30 and 0.50 mm. The tightest wrong-pair margin is 0.85 mm at
+the default clearance and still 0.50 mm at the maximum.
+
+**Size is a soft preset, not a rule.** Version 2 sets the cylinder to 30.1 × 52 mm and
+says so live if you change it, but it never refuses the request — 30.1 is a number
+still under test.
+
+**One dial: key clearance.** 0.15 mm per side by default, adjustable 0 to 0.5 mm in
+Expert Mode. Raise it if the pegs bind; the holes grow outward, so a larger clearance
+eats into the error-proofing margins above.
+
+**One fewer braille cell in visual mode.** A 30.1 mm barrel is 2.2 mm smaller around
+than Version 1's 30.8 mm, which in visual mode is exactly one cell: the recommendation
+becomes 12 text cells with indicator letters on and 13 with them off. Tactile mode is
+unchanged at 14.
+
+**Integrated gears are Version 1 only.** That beta builds the one-piece geared roller,
+which is a different part; the app hides its toggle in Version 2 and the API refuses
+the combination.
+
+**OpenSCAD and MakerWorld.** A separate, self-contained Version 2 OpenSCAD file is
+planned; it is not published yet, and neither is a MakerWorld listing for it. Use this
+web app for Version 2 cylinders in the meantime.
+
+Wording in this section is DRAFT (S-V13) and FLAGGED FOR BRENNEN — it is not signed
+off, and no part of it should be quoted elsewhere until it is.
+
+Full technical detail: `docs/specifications/EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS.md`
+(written in Phase 10).
+
+
 ## Flat business card plates are parked
 
 Flat card generation is disabled in the UI (since December 2025) and will not be
