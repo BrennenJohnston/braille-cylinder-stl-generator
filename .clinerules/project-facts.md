@@ -112,6 +112,41 @@ translation, Three.js preview. Working branch: develop — never commit to main.
    - There is NO card shape in the UI (one radio, value="cylinder"), so do not
      add UI branches for one; the cylinders-only rule lives in the API.
 
+6d. Embosser Version 2 keyed cutouts PROTOTYPE - cylinders only, selector
+   default Version 1, and Version 1 must stay byte-identical (proved at FIVE
+   levels: settings, geometry spec, HTTP, golden fixtures, and a real-browser
+   `fc /b` of both the request body and the exported STL).
+   - Flat names `embosser_version` (int enum 1|2, schema `embosser_version`)
+     and `v2_key_clearance_mm` (schema `version_2.key_clearance_mm`). The
+     version is parsed as an EXACT integer - 2.5 is refused, not rounded.
+   - app/geometry/version2.py is the ONE place every Version 2 number lives,
+     the way gears.py owns the gear ones. Never retype a number from it.
+   - Family R14, the only family: four rounded rectangles, corner r 0.500,
+     A top 14x14 (the nub end), A bottom 18x10, B top 16x12, B bottom 20x8,
+     LONG dimension on 90/270 so a flat always faces the arrow column. The v7
+     star, hexagon and 15x15 squares are RETIRED. Grow a key with
+     grown_key_outline (sides +2c, corner radius +c) - never by mitering an
+     already-rounded outline.
+   - Barrel 30.1 x 52.0, tolerance 0.001, but SOFT: off-size warns (S-V5) and
+     is ACCEPTED. Unlike the gear gate, never a rejection.
+   - Clearance 0.15 default, range 0.0-0.5; applied OUTWARD to the holes and
+     INWARD to the nub by the same c.
+   - Two halves meet at the mid-plane as ONE through-hole (overlap 0.01), and
+     ONE 2.0 x 45 degree rule covers all four mouths. A chamfer hull's slabs
+     sit FAR-EDGE-OUT or the taper overshoots. The nub is THREE unioned parts,
+     never one hull - a single hull bulges the body 0.2 mm and jams gear A1.
+   - The nub is POSITIVE PLATE ONLY, apex on the 180-degree arrow column.
+     seam_offset never turns the keys.
+   - The barrel is SOLID while Version 2 is on; the keyed hole is the bore.
+   - Gears BETA is Version 1 ONLY - the UI hides and unchecks the toggle and
+     the API refuses the combination.
+   - Naming: a `V2_` segment is inserted ONLY when Version 2 is on
+     (Embossing_Cylinder_V2_{preset}_{name}.stl). Version 1 names never change.
+   - Version 2 VISUAL mode recommends one braille cell fewer (12 letters on,
+     13 letters off); TACTILE is unchanged at 14.
+   - THE GEAR PEGS MUST BE RE-CUT to GEAR_PEG_SPEC_R14 - no v7 peg enters an
+     R14 hole - so the v7 sample STLs can validate only the barrel and the nub.
+
 ## Settings changes — order of operations
 7. settings.schema.json is the single source of truth. When adding or changing
    any parameter/default: update settings.schema.json FIRST, then
@@ -166,6 +201,7 @@ Specs live in docs/specifications/.
 | Row markers, seam arrow, indicator_mode | RECESS_INDICATOR_SPECIFICATIONS.md |
 | Double-sided beta, interpoint offset, paired recesses | INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md |
 | Integrated gears, one-piece rollers, gear assets | GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md |
+| Embosser Version 2, keyed gear pegs, key clearance | EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS.md |
 | Settings JSON schema, field validation | SETTINGS_SCHEMA_CORE_SPECIFICATIONS.md |
 | STL generation pipeline, workers, download button | STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md |
 | Text input, placement modes, BANA wrap, languages | BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md |

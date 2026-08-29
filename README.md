@@ -56,6 +56,13 @@ Build files, print profiles, and documentation for the device are on
 [MakerWorld](https://makerworld.com/en/models/2881581-custom-braille-card-embosser-hand-operated),
 and [Thingiverse](https://www.thingiverse.com/thing:7365273).
 
+**Embosser Version 2 is a prototype.** A selector at the top of the page switches
+the generator to Version 2, whose cylinders are keyed at both ends so a drive gear
+cannot be seated in the wrong place. Its build files are not published yet, and the
+gears it needs must be cut to the new peg spec — earlier pegs do not fit. Version 1
+stays the default and is fully supported; see
+[KNOWN_ISSUES.md](./docs/KNOWN_ISSUES.md).
+
 You can also use the cylinders on their own as tactile labels for jars, bottles,
 and containers.
 

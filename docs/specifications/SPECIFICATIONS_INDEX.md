@@ -6,8 +6,8 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 
 > **v2.0.0 Architecture (2026-01-05):** This project uses a **100% client-side STL generation** architecture. Server-side STL generation was removed. The caching system (Redis + Vercel Blob) was also removed. See [CODEBASE_AUDIT_AND_RENOVATION_PLAN.md](../development/CODEBASE_AUDIT_AND_RENOVATION_PLAN.md) for migration details.
 
-**Last Updated:** 2026-08-24
-**Total Specification Documents:** 15
+**Last Updated:** 2026-08-28
+**Total Specification Documents:** 16
 
 ---
 
@@ -234,6 +234,28 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 
 ---
 
+#### [EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS.md](./EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS.md)
+**Status:** 🧪 Prototype (Created 2026-08-28)
+**Covers:**
+- Embosser Version 2 (PROTOTYPE): a keyed through-cutout at each end of the cylinder, so a gear cannot be seated in the wrong place
+- Family R14 - four rounded-rectangle keys (14x14, 18x10, 16x12, 20x8 mm, corner r 0.5) with the long dimension on 90/270 so a flat faces the arrow column
+- The 15-degree phase-safety rule that admits rectangles and rules out pentagons and heptagons
+- Two halves meeting at the mid-plane as ONE through-hole, and the one 2.0 x 45-degree mouth rule at all four ends
+- Why a chamfer hull's slabs must sit far-edge-out, and why the nub is three unioned parts and never one hull
+- The key nub on Cylinder A only, apex on the 180-degree arrow column, shrinking with the clearance dial
+- The clearance dial (0.15 default, 0-0.5), applied outward to the holes and inward to the nub
+- The soft 30.1 x 52 mm preset - a live warning, never a rejection - and the wire contract it emits
+- The fit matrix: why the v7 pegs failed it, and that the gears MUST be re-cut to R14 before a printed cylinder pairs with anything
+- Version 1 byte-identity proved at five levels, and the one-fewer-braille-cell change in Version 2 visual mode
+
+**Key Components:**
+- `app/geometry/version2.py` - the one place every Version 2 number lives
+- `validate_embosser_version_settings()` in `app/validation.py`
+- `keyed_cutouts` in `app/geometry_spec.py`, cut by `cutKeyedCutoutsManifold()` in the Manifold worker
+- The `#embosser-version-selection` header selector and the `#v2_key_clearance_mm` dial
+
+---
+
 ### 4. Generation & Export
 
 #### [STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md](./STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md)
@@ -354,6 +376,7 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 | **Indicators** | RECESS_INDICATOR_SPECIFICATIONS | — |
 | **Double-sided beta** | INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS | BRAILLE_TEXT_INPUT (§8), UI_INTERFACE (§4.8), STL_EXPORT (§7) |
 | **Integrated gear rollers beta** | GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS | SURFACE_DIMENSIONS (§1), RECESS_INDICATOR (§3), STL_EXPORT (§7) |
+| **Embosser Version 2 prototype** | EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS | RECESS_INDICATOR (§3, v3.5), SETTINGS_SCHEMA, STL_EXPORT (§7) |
 | **Generation** | STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS | CLIENT_SIDE_CSG_DOCUMENTATION |
 | **Caching (archived)** | CACHING_SYSTEM_CORE_SPECIFICATIONS | — |
 | **Settings Schema** | SETTINGS_SCHEMA_CORE_SPECIFICATIONS | — |
@@ -679,6 +702,7 @@ Section Reference: SURFACE_DIMENSIONS_SPECIFICATIONS.md (Section 2.1)
 **Request schema?** → SETTINGS_SCHEMA_CORE_SPECIFICATIONS
 **Double-sided beta, interpoint offset, paired recesses?** → INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS
 **Integrated gears, one-piece rollers, the reference roller size?** → GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS
+**Embosser Version 2, keyed gear pegs, the key clearance dial?** → EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS
 
 ---
 
