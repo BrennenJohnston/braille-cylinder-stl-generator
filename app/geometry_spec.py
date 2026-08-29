@@ -13,7 +13,7 @@ import math
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, NamedTuple
 
-from app.geometry import gears, interpoint
+from app.geometry import gears, interpoint, version2
 
 if TYPE_CHECKING:
     pass
@@ -495,6 +495,22 @@ def extract_cylinder_geometry_spec(
         gear_warnings.append(warning)
         logger.warning(warning)
 
+    # Embosser Version 2 (keyed gear pegs) PROTOTYPE. Read once, exactly as the
+    # two betas above are: with Version 1 selected - absent, 1, '1', 1.0 or '' -
+    # every Version 2 line below is skipped and the function emits precisely the
+    # spec it emitted before the prototype existed, new keys included.
+    embosser_v2 = int(getattr(settings, 'embosser_version', 1)) == 2
+    v2_warnings: list[str] = []
+    if embosser_v2 and not version2.matches_v2_barrel(diameter, height):
+        # D-V15: the Version 2 size is a soft preset, not a requirement -
+        # Brennen is still testing whether 30.1 is right - so this is a warning
+        # even on the request route, unlike the gear size above, which is a
+        # rejection because the vendored gears cannot move with the barrel.
+        # Wording S-V5 is DRAFT. FLAGGED FOR BRENNEN.
+        warning = version2.v2_size_message(diameter, height)
+        v2_warnings.append(warning)
+        logger.warning(warning)
+
     # Calculate grid layout parameters (needed for polygon alignment).
     # settings.grid_columns is the TOTAL column count: in visual mode the frontend
     # has already added the marker columns, in tactile mode it adds none.
@@ -528,6 +544,16 @@ def extract_cylinder_geometry_spec(
         warning = 'The polygonal cutout is not used while integrated gears are on.'
         gear_warnings.append(warning)
         logger.warning(warning)
+    elif embosser_v2 and polygonal_cutout_radius > 0:
+        # The Version 2 barrel is solid: its keyed cutout is the only hole, and
+        # a polygonal one running the length of the axis would break into it.
+        # Mirrors the gear rule above, and like it the barrel is forced solid
+        # rather than the request refused, so a saved cutout radius cannot lock
+        # a user out of the prototype. Wording S-V14 is DRAFT, new in this
+        # phase. FLAGGED FOR BRENNEN.
+        warning = 'The polygonal cutout is not used in Version 2.'
+        v2_warnings.append(warning)
+        logger.warning(warning)
     elif polygonal_cutout_radius > 0:
         circumscribed_radius = polygonal_cutout_radius / math.cos(math.pi / polygonal_cutout_sides)
         for i in range(polygonal_cutout_sides):
@@ -559,6 +585,22 @@ def extract_cylinder_geometry_spec(
     }
     spec['warnings'].extend(double_sided_warnings)
     spec['warnings'].extend(gear_warnings)
+    spec['warnings'].extend(v2_warnings)
+
+    if embosser_v2:
+        # 'solid' is emitted ONLY here, so a Version 1 spec carries no new key
+        # at all. It has to be explicit: an empty polygon_points list does NOT
+        # mean "solid" to the worker, which hollows the barrel by wall thickness
+        # unless it is told otherwise - the lesson decision D-2 recorded when
+        # gear mode sealed an undrainable cavity.
+        spec['cylinder']['solid'] = True
+        # Every number in the block comes from app/geometry/version2.py, and the
+        # z ranges are computed from THIS cylinder's height rather than the
+        # preset's, so an off-size barrel still gets a hole that meets in the
+        # middle. A missing plate_type raises there rather than guessing a side,
+        # exactly as the gear asset lookup does.
+        v2_clearance = float(getattr(settings, 'v2_key_clearance_mm', version2.V2_KEY_CLEARANCE_DEFAULT_MM))
+        spec['keyed_cutouts'] = version2.keyed_cutout_block(plate_type, height, v2_clearance)
 
     if gear_rollers:
         # The vendored asset already sits in the worker's frame (Phase 01 baked
@@ -604,6 +646,9 @@ def extract_cylinder_geometry_spec(
 
     # Note: seam_offset only affects polygon cutout rotation (computed above)
     # Braille content positioning uses fixed angles (not affected by seam_offset)
+    # The Version 2 keys are not rotated by it either. They are tied to the
+    # tactile arrow column - gear A1's notch drops onto the nub in exactly one
+    # orientation - so turning them with the seam would break the pairing.
 
     def apply_seam(angle: float) -> float:
         """Convert planar angle to cylinder theta (for embossing plate).
