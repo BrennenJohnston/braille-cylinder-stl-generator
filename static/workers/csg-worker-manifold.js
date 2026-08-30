@@ -1596,6 +1596,10 @@ function createNubManifold(nub) {
  * overshoots its own end of the barrel by KEYED_SLAB_MM's worth of overlap that
  * the spec builds into z_from/z_to, so no two solids ever share an exact plane.
  * They meet at the centre as ONE through-hole (D-V2).
+ *
+ * The anti-rotation socket is cut here too, for the same reason the halves are:
+ * it is material removed from the barrel, and the stages after this one only
+ * union things on.
  */
 function cutKeyedCutoutsManifold(barrel, keyed, height) {
     const halves = keyed.halves || [];
@@ -1621,6 +1625,23 @@ function cutKeyedCutoutsManifold(barrel, keyed, height) {
         const cut = result.subtract(chamfer);
         result.delete();
         chamfer.delete();
+        result = cut;
+    }
+
+    // The anti-rotation socket: a plain prism sunk into the BOTTOM face, with no
+    // chamfer and no flare, because the gear's pin carries its own 0.5 mm
+    // lead-in. Both plates have carried one since 2026-08-29 - a triangle on
+    // Cylinder A, a square on B - and the spec decides which, so the worker
+    // never guesses a side. Mirrors socket_block() in app/geometry/version2.py.
+    if (keyed.socket) {
+        const span = keyed.socket.z_to - keyed.socket.z_from;
+        if (!(span > 0)) {
+            throw new Error(`Version 2 socket: z_to (${keyed.socket.z_to}) is not above z_from (${keyed.socket.z_from})`);
+        }
+        const socket = keyedPrismManifold(keyed.socket.profile, keyed.socket.z_from, span, 'socket');
+        const cut = result.subtract(socket);
+        result.delete();
+        socket.delete();
         result = cut;
     }
 
@@ -1949,9 +1970,14 @@ function processGeometrySpec(spec, gearAsset = null) {
         // Embosser Version 2: the key nub is the only thing Version 2 ADDS to the
         // barrel, so it joins the RAISED stage right after the base - before raised
         // dots and markers, and well before any recess is cut, exactly as the gear
-        // set does above. The keyed HOLE was already cut inside
-        // createCylinderShellManifold. Positive plate only: Cylinder B has no nub,
-        // and the spec omits the block rather than letting the worker guess a side.
+        // set does above. The keyed HOLE and the anti-rotation SOCKET were both
+        // already cut inside createCylinderShellManifold.
+        //
+        // BOTH plates carry a nub since 2026-08-29. It was Cylinder A only while
+        // gear A1 was the only gear with a notch; every gear has an anti-rotation
+        // feature now. The two shapes differ - a triangle on A, a square on B -
+        // and the spec carries whichever this plate needs, so the worker still
+        // never guesses a side.
         if (keyedCutouts && keyedCutouts.nub) {
             const nub = createNubManifold(keyedCutouts.nub);
             const withNub = result.add(nub);
