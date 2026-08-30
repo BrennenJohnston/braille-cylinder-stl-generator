@@ -183,6 +183,14 @@ V2_NUB = {
 # These are printed hardware and are not ours to adjust. The A triangle is NOT
 # rebuilt from them - it derives from V2_NUB by an inset, so the shape has one
 # source - but the fit tests measure against them.
+#
+# Measured off gear v7.2 (2026-08-30). Against v7.1 only the two NOTCH depths
+# moved, 3.0 -> 3.15: the nub is 3.0 tall, so at 3.0 the notch had ZERO axial
+# clearance while its three siblings each had 0.15, and which surface took the
+# load was decided by print tolerance. Both PINS are still 3.0, and every
+# radius and half-width below is unchanged from v7.1. Nothing reads 'depth' -
+# it is recorded measurement, and the generator emits the same bytes either
+# way - but a stale number here is how the next wrong derivation starts.
 V2_GEAR_ANTIROT = {
     'a1_notch': {
         'gear': 'A1',
@@ -193,7 +201,7 @@ V2_GEAR_ANTIROT = {
         'inner_radius': 9.9091,
         'outer_radius': 13.8525,
         'half_width': 2.2768,
-        'depth': 3.0,
+        'depth': 3.15,
     },
     'a2_pin': {
         'gear': 'A2',
@@ -215,7 +223,7 @@ V2_GEAR_ANTIROT = {
         'inner_radius': 9.8000,
         'outer_radius': 13.1000,
         'half_width': 1.6500,
-        'depth': 3.0,
+        'depth': 3.15,
     },
     'b2_pin': {
         'gear': 'B2',

@@ -488,6 +488,41 @@ def test_the_flared_nub_still_enters_the_notch():
 
 
 @pytest.mark.parametrize('plate_type', ['positive', 'negative'])
+def test_each_nub_clears_the_notch_floor_axially(plate_type):
+    """
+    Fit (d), the axis nobody named until gear v7.2.
+
+    The lateral fit was argued over for two print rounds and carries a signed
+    0.15 mm per face. The AXIAL fit was never stated at all: the nub was 3.0
+    tall into a notch measured at 3.0 deep, so at nominal the nub tip reached
+    the ceiling at the very instant the gear face reached the cylinder face,
+    and print tolerance decided which one took the load. Its three siblings
+    each had 0.15 - the sockets are deliberately cut one clearance deeper than
+    the pin is tall - which is what made the gap invisible: the constant is
+    named for the anti-rotation clearance, so nobody asked which axes it
+    reached.
+
+    Brennen deepened both notches to 3.15 in gear v7.2. Nothing in the
+    generator reads that depth, so this is the only thing standing between the
+    two numbers and a silent regression.
+    """
+    notch = v2.V2_GEAR_ANTIROT[v2.ANTIROT_BY_PLATE[plate_type]['nub']]
+    assert notch['kind'] == 'notch'
+    assert notch['depth'] - v2.V2_NUB['height'] == pytest.approx(v2.V2_ANTIROT_CLEARANCE_MM, abs=0.001)
+    # The hard requirement behind the tolerance: the nub must not bottom out.
+    assert v2.V2_NUB['height'] < notch['depth']
+
+
+@pytest.mark.parametrize('plate_type', ['positive', 'negative'])
+def test_each_socket_clears_its_gear_pin_axially(plate_type):
+    """Fit (d) for the other end - the rule the notches now match."""
+    pin = v2.V2_GEAR_ANTIROT[v2.ANTIROT_BY_PLATE[plate_type]['socket']]
+    assert pin['kind'] == 'pin'
+    assert v2.V2_SOCKET_DEPTH_MM - pin['depth'] == pytest.approx(v2.V2_ANTIROT_CLEARANCE_MM, abs=0.001)
+    assert pin['depth'] < v2.V2_SOCKET_DEPTH_MM
+
+
+@pytest.mark.parametrize('plate_type', ['positive', 'negative'])
 def test_each_socket_clears_its_gear_pin_and_leaves_barrel_wall(plate_type):
     """Fit (c): 0.15 mm round the pin, and >= 1.2 mm of wall behind it."""
     pin = v2.V2_GEAR_ANTIROT[v2.ANTIROT_BY_PLATE[plate_type]['socket']]
