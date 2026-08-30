@@ -694,3 +694,93 @@ def test_an_unknown_countersink_kind_raises():
     block['countersinks'][0]['kind'] = 'scale'
     with pytest.raises(ValueError, match='unknown countersink kind'):
         build_v2_cylinder(block, FIXTURE_RADIUS_MM, FIXTURE_HEIGHT_MM, 'negative')
+
+
+# --- Anti-rotation acceptance, measured on the built mesh ---------------------
+#
+# The wire contract is checked in tests/test_version2_profiles.py. These read the
+# SOLID instead, because a feature can carry perfect numbers on the wire and
+# still be swallowed by the keyed hole, overshoot into the barrel, or come out
+# on the wrong face.
+
+ANTIROT_NUB_AREA_MM2 = {'positive': 7.0461, 'negative': 9.0000}
+ANTIROT_SOCKET_AREA_MM2 = {'positive': 11.0980, 'negative': 10.8707}
+
+
+def _antirot_centre(plate_type, which):
+    profile = v2.antirot_nub_profile(plate_type) if which == 'nub' else v2.antirot_socket_profile(plate_type)
+    points = np.array(profile)
+    return points.mean(axis=0)
+
+
+@pytest.mark.parametrize('plate_type', PLATES)
+def test_each_nub_stands_the_signed_area_above_its_top_face(plate_type):
+    """Both nubs, sectioned through the body rather than the flare or chamfer."""
+    mesh = _cylinder(plate_type, 0.110)
+    section = _loops(mesh, FIXTURE_HEIGHT_MM / 2.0 + v2.V2_NUB['height'] / 2.0)
+    assert len(section) == 1, 'only the nub stands above the top face'
+    assert _polygon_area(section[0]) == pytest.approx(ANTIROT_NUB_AREA_MM2[plate_type], abs=0.1)
+
+
+@pytest.mark.parametrize('plate_type', PLATES)
+def test_each_socket_is_a_blind_pocket_of_the_signed_depth(plate_type):
+    """
+    Depth read off the SOLID by probing up the socket's centre line: air for
+    V2_SOCKET_DEPTH_MM, then material. A socket that overshot into the barrel,
+    or that the keyed hole had swallowed, would still have carried the right
+    numbers on the wire.
+    """
+    mesh = _cylinder(plate_type, 0.110)
+    centre = _antirot_centre(plate_type, 'socket')
+    floor = -FIXTURE_HEIGHT_MM / 2.0
+    heights = np.arange(floor + 0.02, floor + v2.V2_SOCKET_DEPTH_MM + 2.0, 0.01)
+    probes = np.column_stack([np.full(heights.size, centre[0]), np.full(heights.size, centre[1]), heights])
+    inside = mesh.contains(probes)
+    assert not inside[0], 'the socket does not open onto the bottom face'
+    assert inside[-1], 'the socket has no floor - it runs into the barrel'
+    depth = heights[int(np.argmax(inside))] - floor
+    assert depth == pytest.approx(v2.V2_SOCKET_DEPTH_MM, abs=0.02)
+
+
+@pytest.mark.parametrize('plate_type', PLATES)
+def test_each_socket_cuts_the_signed_area_and_stays_clear_of_the_keyed_hole(plate_type):
+    """
+    The socket is its own pocket, not a lobe of the keyed hole: at mid-depth the
+    bottom face carries the rim, the keyed hole AND a separate socket loop.
+    """
+    mesh = _cylinder(plate_type, 0.110)
+    z = -FIXTURE_HEIGHT_MM / 2.0 + v2.V2_SOCKET_DEPTH_MM / 2.0
+    pockets = _pockets(mesh, z)
+    assert len(pockets) == 2, f'expected the keyed hole and the socket at z={z}, found {len(pockets)}'
+
+    centre = _antirot_centre(plate_type, 'socket')
+    socket = min(pockets, key=lambda loop: math.hypot(loop[:, 0].mean() - centre[0], loop[:, 1].mean() - centre[1]))
+    assert _polygon_area(socket) == pytest.approx(ANTIROT_SOCKET_AREA_MM2[plate_type], abs=0.1)
+
+
+@pytest.mark.parametrize('plate_type', PLATES)
+def test_both_antirotation_features_sit_on_the_arrow_column(plate_type):
+    """
+    Orientation is the whole point of the feature: a nub or socket a few degrees
+    off cannot be pressed onto its gear at all. Measured as the centroid's angle,
+    which works for the triangle and the square alike.
+    """
+    for which in ('nub', 'socket'):
+        centre = _antirot_centre(plate_type, which)
+        angle = math.degrees(math.atan2(centre[1], centre[0])) % 360.0
+        assert angle == pytest.approx(v2.V2_ARROW_COLUMN_DEG, abs=0.05), f'{plate_type} {which} is off column'
+
+
+@pytest.mark.parametrize('plate_type', PLATES)
+def test_the_barrel_survives_both_features_as_one_watertight_body(plate_type):
+    """
+    Body count and watertightness together: the nub must be FUSED to the barrel
+    rather than a second body resting on it, and the socket must not have opened
+    an enclosed void. _stabilize_for_float32 already refuses a non-watertight
+    mesh, so reaching this assertion is half the proof.
+    """
+    mesh = _cylinder(plate_type, 0.110)
+    assert mesh.is_watertight
+    assert mesh.volume > 0
+    bodies = mesh.split(only_watertight=False)
+    assert len(bodies) == 1, f'the cylinder came apart into {len(bodies)} bodies'

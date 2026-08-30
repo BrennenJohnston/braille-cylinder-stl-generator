@@ -252,3 +252,32 @@ def test_the_seam_offset_does_not_turn_the_keys():
     """
     turned = dict(V2_CYLINDER, seam_offset_deg=90.0)
     assert v2_spec(cylinder=turned)['keyed_cutouts'] == v2_spec()['keyed_cutouts']
+
+
+def test_the_tactile_arrow_recess_clears_the_anti_rotation_socket():
+    """
+    Both features sit on the 180 degree arrow column, and from FIVE rows up they
+    share an axial band: the lowest arrow reaches z -23.00 where the socket
+    still reaches -22.85.
+
+    It is safe, but only because of which plate gets which. The plate that
+    RECESSES its arrows is Cylinder B, whose socket is the short square reaching
+    r 13.20 - so 1.35 mm of wall. The far-reaching triangle socket, r 13.9975,
+    belongs to Cylinder A, whose arrows stand PROUD and cut nothing into the
+    barrel at all. Swap either half of that pairing and the wall is 0.55 mm,
+    under the 1.2 mm FDM minimum, in a place no dial would warn about.
+
+    Asserted as the invariant rather than as the two numbers, so it keeps
+    holding whatever the row count and whichever socket profile moves.
+    """
+    for plate_type in ('positive', 'negative'):
+        spec = v2_spec(plate_type, settings={'grid_rows': 5})
+        arrows = [m for m in spec['markers'] if m['type'] == 'cylinder_tactile_arrow']
+        assert arrows, 'the tactile arrows are what this test is about'
+        recessed = [arrow for arrow in arrows if arrow['is_recess']]
+        if not recessed:
+            continue
+        floor = min(arrow['inner_radius'] for arrow in recessed)
+        reach = max(-point[0] for point in version2.antirot_socket_profile(plate_type))
+        wall = floor - reach
+        assert wall >= 1.2, f'{plate_type}: only {wall:.4f} mm between the arrow recess and the socket'
