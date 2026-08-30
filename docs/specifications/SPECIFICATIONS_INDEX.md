@@ -242,11 +242,11 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 - The 15-degree phase-safety rule that admits rectangles and rules out pentagons and heptagons
 - Two halves meeting at the mid-plane as ONE through-hole, and the one 2.0 x 45-degree mouth rule at all four ends
 - Why a chamfer hull's slabs must sit far-edge-out, and why the nub is three unioned parts and never one hull
-- The key nub on Cylinder A only, apex on the 180-degree arrow column, shrinking with the clearance dial
-- The clearance dial (0.15 default, 0-0.5), applied outward to the holes and inward to the nub
-- The soft 30.1 x 52 mm preset - a live warning, never a rejection - and the wire contract it emits
-- The fit matrix: why the v7 pegs failed it, and that the gears MUST be re-cut to R14 before a printed cylinder pairs with anything
-- Version 1 byte-identity proved at five levels, and the one-fewer-braille-cell change in Version 2 visual mode
+- The key nub on Cylinder A only, apex on the 180-degree arrow column, inset by a FIXED 0.15 mm the clearance dial cannot reach
+- The clearance dial (0.075 default, 0-0.5, step 0.005), applied outward to the four holes ONLY
+- The soft 30.5 x 52 mm preset - a live warning, never a rejection - and the wire contract it emits
+- The fit matrix: why the v7 pegs failed it, and the measured R14 pegs cut to replace them
+- Version 1 byte-identity proved at five levels, and why the one-fewer-braille-cell rule was retired at the 30.5 mm barrel
 
 **Key Components:**
 - `app/geometry/version2.py` - the one place every Version 2 number lives

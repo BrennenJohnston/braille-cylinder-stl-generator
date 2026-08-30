@@ -23,9 +23,9 @@ owns the gear constants.
 **Scope:** cylinders only, single-sided and double-sided flows, pair mode included
 
 > **This is a work-in-progress prototype.** The cylinder size, the cutout shapes and
-> the fit may all change as testing continues. In particular the 30.1 mm barrel is a
-> number still under test, and **the gear pegs must be re-cut to family R14** before a
-> cylinder printed from this generator pairs with anything — see §11.
+> the fit may all change as testing continues — the barrel has moved once already, from
+> 30.1 mm to **30.5 mm**, after the first print test on 2026-08-29. The gear pegs have
+> now been cut to family R14 and measured; §11 records what that print found.
 
 ---
 
@@ -48,12 +48,18 @@ block, and every filename is exactly what the public training videos show.
 
 ### 1.1 The size is a soft preset
 
-Version 2 sets the cylinder to **30.1 × 52.0 mm** (`V2_BARREL_DIAMETER_MM`,
+Version 2 sets the cylinder to **30.5 × 52.0 mm** (`V2_BARREL_DIAMETER_MM`,
 `V2_BARREL_HEIGHT_MM`) with a tolerance of **0.001 mm** (`V2_SIZE_TOLERANCE_MM`). Off
 that size the app shows S-V5 live and the spec carries the same sentence in
 `warnings` — but the request is **accepted**. This is deliberately unlike the gear
-BETA's hard size gate: the vendored gears cannot move with the barrel, whereas 30.1 is
-a number Brennen is still testing.
+BETA's hard size gate: the vendored gears cannot move with the barrel, whereas the
+Version 2 barrel is still being found by printing.
+
+It has moved once. The prototype shipped at 30.1 mm; the first printed pair embossed
+with noticeably less pressure than Version 1, so on 2026-08-29 Brennen moved it to
+**30.5 mm** — half way back toward Version 1's 30.8 — so the next print changes one
+variable by one known amount. That this preset is soft rather than a gate is what made
+the change a one-line edit instead of a negotiation with a validator.
 
 Because the golden-fixture generator refuses any spec carrying warnings, Version 2
 fixtures can only ever exist at the preset size. That is intended.
@@ -66,12 +72,12 @@ All four keys are **rounded rectangles** with a corner radius of **0.500 mm**
 (`V2_KEY_CORNER_RADIUS_MM`), tessellated at **96 segments** per full circle
 (`V2_ARC_SEGMENTS`). `V2_KEY_PROFILES` owns the dimensions:
 
-| Key | Length × width (mm) | Where it sits | Section area at c = 0.15 (mm²) |
+| Key | Length × width (mm) | Where it sits | Section area at c = 0.075 (mm²) |
 |---|---|---|---|
-| `a1_square_14` | 14.0 × 14.0 | Cylinder A, **top** (the nub end) | 204.13 |
-| `a2_rect_18x10` | 18.0 × 10.0 | Cylinder A, bottom | 188.13 |
-| `b1_rect_16x12` | 16.0 × 12.0 | Cylinder B, **top** | 200.13 |
-| `b2_rect_20x8` | 20.0 × 8.0 | Cylinder B, bottom | 168.13 |
+| `a1_square_14` | 14.0 × 14.0 | Cylinder A, **top** (the nub end) | 199.94 |
+| `a2_rect_18x10` | 18.0 × 10.0 | Cylinder A, bottom | 183.94 |
+| `b1_rect_16x12` | 16.0 × 12.0 | Cylinder B, **top** | 195.94 |
+| `b2_rect_20x8` | 20.0 × 8.0 | Cylinder B, bottom | 163.94 |
 
 `KEY_PROFILES_BY_PLATE` maps plate type to `(bottom, top)`:
 `positive → ('a2_rect_18x10', 'a1_square_14')`, `negative → ('b2_rect_20x8',
@@ -179,23 +185,34 @@ r 9.754087 mm (`test_the_a_top_mouth_clears_the_nub`).
 ## 5. The Clearance
 
 One dial, `version_2.key_clearance_mm` (schema) / `v2_key_clearance_mm` (runtime):
-default **0.15 mm**, range **0.0–0.5 mm** (`V2_KEY_CLEARANCE_DEFAULT_MM`, `_MIN_MM`,
+default **0.075 mm**, range **0.0–0.5 mm** (`V2_KEY_CLEARANCE_DEFAULT_MM`, `_MIN_MM`,
 `_MAX_MM`). It is applied as an **outward** growth of each hole profile — the hole gets
 bigger, the peg does not change.
 
-**It also shrinks the nub, inward, by the same amount** (D-V11). Gear A1's notch is a
-fixed negative in Brennen's gear, so shrinking the nub by the same `c` the holes grew
-by leaves `c` of clearance perpendicular to each of its faces. Note that a miter inset
+**It governs the four holes and nothing else.** The default was 0.15 mm until
+2026-08-29, when the first printed pair came back with all four peg holes too loose.
+The pegs measure exactly nominal (§11), so a hole is its peg plus 2c: halving c halves
+the slack across a hole, from 0.30 mm to 0.15 mm.
+
+**The nub does NOT follow the dial** (D-V11, revised 2026-08-29). It is inset by
+`V2_NUB_CLEARANCE_MM`, a fixed **0.15 mm**. The dial used to shrink the nub by the same
+`c` the holes grew by — one number, opposite directions — but gear A1's notch is a fixed
+negative that is *already cut*, and it measures 3.943 × 4.553 mm: the nub at exactly
+c = 0.15, to under half a micron. Under the old rule, tightening the holes would have
+**grown** the nub into that notch by roughly 0.11 mm per face and stopped A1 seating.
+Raise `V2_NUB_CLEARANCE_MM` only alongside a matching gear A1. Note that a miter inset
 moves every *face* in by `c`, which on this triangle costs the base half-width
 `√3 · c` = 1.732 c — the inradius is what drops by exactly `c`.
 
-Raising the clearance eats into the error-proofing margins of §11: 0.850 mm at the
+Raising the clearance eats into the error-proofing margins of §11: 0.925 mm at the
 default, 0.500 mm at the maximum.
 
-The dial is bounded **at the source** (`min="0" max="0.5" step="0.01"` on the input),
-and 0.15 / 0.01 = 15 — a whole number of steps, so the shipped default is valid against
-its own step. A default that is invalid against its step makes the input `:invalid` and
-kills the Generate button silently; this repo has been bitten by that before.
+The dial is bounded **at the source** (`min="0" max="0.5" step="0.005"` on the input),
+and 0.075 / 0.005 = 15 — a whole number of steps, so the shipped default is valid
+against its own step. **The step moved from 0.01 with the default**, and had to:
+0.075 is not a multiple of 0.01, and a default that is invalid against its step makes
+the input `:invalid` and kills the Generate button silently. This repo has been bitten
+by that before, which is why `tests/test_smoke.py` divides one by the other.
 
 ---
 
@@ -206,7 +223,7 @@ adds `spec['keyed_cutouts']`:
 
 ```jsonc
 {
-  "clearance_mm": 0.15,
+  "clearance_mm": 0.075,
   "halves": [
     { "end": "bottom", "profile": [ {"x": …, "y": …}, … 100 points ],
       "z_from": -26.01, "z_to": 0.01 },
@@ -282,7 +299,7 @@ native equivalent.
 | Hidden rows | `cylinder-cutout-radius-row`, `cylinder-cutout-sides-row`, `cylinder-seam-offset-row` | inert in Version 2 |
 
 **Selecting Version 2** snapshots five cylinder dials, applies `V2_PRESET_OVERRIDES`
-(`cylinder_diameter_mm` 30.1, `cylinder_height_mm` 52, `seam_offset_deg` 0) on top of
+(`cylinder_diameter_mm` 30.5, `cylinder_height_mm` 52, `seam_offset_deg` 0) on top of
 the Card Thickness preset, hides the three inert rows, hides **and unchecks** the gears
 toggle, reveals the clearance dial and the prototype notice, joins pair mode, and
 announces S-V10 once. **Selecting Version 1** restores the snapshot exactly.
@@ -297,16 +314,24 @@ list is empty.
 because a hidden checkbox that stayed on would still be read at generate time and turn
 into a 400 the user cannot see the cause of.
 
-### 8.1 One fewer braille cell in visual mode
+### 8.1 One fewer braille cell in visual mode — RETIRED 2026-08-29
 
-A 30.1 mm barrel is 2.2 mm smaller around than Version 1's 30.8 mm, which in **visual**
-mode is exactly one braille cell. With 13 text cells plus 2 marker columns the seam gap
-is 3.6 mm where a cell's dots need 4.0 mm, so the old recommendation named a layout the
-seam-fit check warns against on the same screen. In Version 2 visual mode therefore
-recommends **12** text cells with indicator letters on and **13** with them off.
-**Tactile mode is unchanged at 14** — it needs 9.0 mm and still gets 10.1 mm. Version 1
-recommendations are untouched. Held in `updateGridColumnsForPlateType()`, gated on
-`isVersion2()`; see RECESS_INDICATOR_SPECIFICATIONS.md v3.5.
+Version 2 recommended one cell fewer in visual mode for one day. At the prototype's
+30.1 mm barrel, 13 text cells plus 2 marker columns left a seam gap of 3.6 mm where a
+cell's dots need 4.0, so the recommendation named a layout the seam-fit check warned
+against on the very same screen; dropping to 12 and 13 removed the contradiction.
+
+**The 30.5 mm barrel ends it.** The same 15 columns now leave **4.8 mm**
+(π × 30.5 − 14 × 6.5 = 4.82), clear by 0.8 mm, and still clear against the widest 2.0 mm
+dot any preset offers, which asks 4.5 mm. Recommending one cell fewer than fits is its
+own defect, so the special case was removed rather than left standing. Version 2 now
+recommends exactly what Version 1 does, in both modes.
+
+The invariant that outlived the barrel change — and the one `tests/e2e/version2.spec.ts`
+now pins — is not a count: **the recommended layout must never trip the seam-fit
+warning.** Restore the drop in `updateGridColumnsForPlateType()`, gated on
+`isVersion2() && !tactile`, if the barrel ever falls below **30.24 mm**, the diameter at
+which π·d − 91 falls under 4.0. See RECESS_INDICATOR_SPECIFICATIONS.md v3.6.
 
 ### 8.2 Request, filenames, persistence
 
@@ -324,7 +349,7 @@ Persistence stores `braille_prefs_embosser_version` (`'1'` or `'2'` only) and
 `braille_prefs_v2_key_clearance_mm`. Both are restored **after** the Card Thickness
 preset IIFE, not inside `applyPersistedSettings()`, because the preset rewrites
 `cylinder_diameter_mm` on every load and an earlier restore would be silently
-overwritten. Reset to defaults returns Version 1 and 0.15 mm, and **drops the
+overwritten. Reset to defaults returns Version 1 and 0.075 mm, and **drops the
 snapshot** — otherwise the restore would undo the reset it was called to finish.
 
 Version 2 reveals **Generate Both Cylinders** and reuses the signed Cylinder A /
@@ -410,15 +435,30 @@ wrong-pair protrusion is pinned in
 | Clearance (mm) | Smallest wrong-pair margin (mm) |
 |---|---|
 | 0.00 | 1.000 |
-| 0.15 (default) | 0.850 |
+| 0.075 (default) | 0.925 |
+| 0.15 | 0.850 |
 | 0.30 | 0.700 |
 | 0.50 (maximum) | 0.500 |
 
-**The gear pegs must be re-cut to R14.** The v7 six-scallop star, the hexagon and both
-15 × 15 mm squares are retired, and **none of them will enter an R14 hole**. A cylinder
-printed from this generator today therefore pairs only with gears cut to
-`GEAR_PEG_SPEC_R14`, which are not published yet. Until they exist, the v7 sample STLs
-can validate only the barrel and the nub — never the key pockets.
+**The gear pegs were re-cut to R14, and they now exist.** The v7 six-scallop star, the
+hexagon and both 15 × 15 mm squares are retired, and none of them enters an R14 hole.
+Brennen cut and printed the four replacements on 2026-08-29 (their files still carry
+`v7` in the name — that is the gear body's version, not the peg's). Measured off those
+STLs, every peg is exactly nominal:
+
+| Gear | Measured peg (mm) | Profile | Corner radius (mm) |
+|---|---|---|---|
+| A1 | 14.000 × 14.000 | `a1_square_14` | 0.500 |
+| A2 | 10.000 × 18.000 | `a2_rect_18x10` | **2.000** |
+| B1 | 12.000 × 16.000 | `b1_rect_16x12` | 0.500 |
+| B2 | 8.000 × 20.000 | `b2_rect_20x8` | 0.500 |
+
+A2 carries a 2.000 mm corner radius where the other three carry 0.500. **It breaks
+nothing:** a larger corner radius removes material, so the peg still sits strictly
+inside a hole whose corners are 0.500 + c, and mutual exclusion is decided by the
+rectangle sides, never the corners. It costs a little corner bearing area. Reported
+rather than "fixed" — the pegs are Brennen's hardware, and this specification records
+what was measured, not what would be tidier.
 
 ---
 
@@ -454,4 +494,5 @@ it.
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-08-29 | 1.1 | **First print test, and what it moved.** Barrel **30.1 → 30.5 mm**: the 30.1 pair embossed with noticeably less pressure than Version 1, and 30.5 is half way back to Version 1's 30.8. Key clearance **0.15 → 0.075 mm**, with the input step 0.01 → 0.005 because 0.075 is not a whole number of 0.01 steps: all four peg holes printed too loose, and the pegs measure exactly nominal. **The nub is decoupled from the dial** and pinned at `V2_NUB_CLEARANCE_MM` = 0.15 — gear A1's notch is already cut to that size, so under the old shared-dial rule tightening the holes would have grown the nub into it. §8.1's one-fewer-braille-cell rule is **retired**: at 30.5 mm the seam gap is 4.8 mm against the 4.0 needed. §11 gains the measured R14 pegs. The Version 2 golden pair was regenerated; the double-sided and gear pairs re-ran byte-identical. |
 | 2026-08-28 | 1.0 | Initial specification. Family R14 keyed cutouts, the 45° mouths, the key nub, the clearance dial, the wire contract, the worker's CSG order, the user interface, the acceptance anchors, the fit matrix and the re-cut requirement, and the OpenSCAD packaging. Every number read back out of the merged code. |

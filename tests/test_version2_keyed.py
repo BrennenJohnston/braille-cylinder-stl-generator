@@ -49,7 +49,7 @@ SHELL_SECTIONS = 64
 SLAB_MM = 0.01
 
 PLATES = ('positive', 'negative')
-CLEARANCES = (0.0, 0.15, 0.5)
+CLEARANCES = (0.0, 0.075, 0.5)
 FIXTURE_HEIGHT_MM = 52.0
 FIXTURE_RADIUS_MM = 15.05
 
@@ -283,7 +283,7 @@ def test_the_cylinder_is_one_watertight_body(plate_type):
     because this builder carries no braille dots and therefore none of the
     loose domes the gear specification exempts.
     """
-    mesh = _cylinder(plate_type, 0.15)
+    mesh = _cylinder(plate_type, 0.075)
     assert mesh.is_watertight
     assert mesh.body_count == 1
     assert mesh.volume > 0
@@ -291,7 +291,7 @@ def test_the_cylinder_is_one_watertight_body(plate_type):
 
 @pytest.mark.parametrize('plate_type', PLATES)
 def test_bounds(plate_type):
-    mesh = _cylinder(plate_type, 0.15)
+    mesh = _cylinder(plate_type, 0.075)
     expected_top = FIXTURE_HEIGHT_MM / 2.0 + (v2.V2_NUB['height'] if plate_type == 'positive' else 0.0)
     assert mesh.bounds[0] == pytest.approx([-15.05, -15.05, -26.0], abs=0.001)
     assert mesh.bounds[1] == pytest.approx([15.05, 15.05, expected_top], abs=0.001)
@@ -300,7 +300,7 @@ def test_bounds(plate_type):
 @pytest.mark.parametrize('plate_type', PLATES)
 def test_rim_radius(plate_type):
     """The barrel is untouched between the two mouths."""
-    mesh = _cylinder(plate_type, 0.15)
+    mesh = _cylinder(plate_type, 0.075)
     for z in (-20.0, 0.0, 20.0):
         rim = max(_loops(mesh, z), key=lambda loop: np.hypot(loop[:, 0], loop[:, 1]).max())
         radii = np.hypot(rim[:, 0], rim[:, 1])
@@ -326,7 +326,7 @@ def test_a_flat_faces_the_arrow_column(plate_type, z):
     The 180 degree ray must meet a flat wall, not a corner: that flat is what
     gear A1's notch keys against and what keeps the mouth clear of the nub.
     """
-    clearance = 0.15
+    clearance = 0.075
     mesh = _cylinder(plate_type, clearance)
     measured = _hole_loop(mesh, z)
     half_width = v2.V2_KEY_PROFILES[_key_at(plate_type, z)]['width'] / 2.0 + clearance
@@ -342,7 +342,7 @@ def test_a_flat_faces_the_arrow_column(plate_type, z):
 
 @pytest.mark.parametrize('plate_type', PLATES)
 def test_the_hole_goes_all_the_way_through(plate_type):
-    mesh = _cylinder(plate_type, 0.15)
+    mesh = _cylinder(plate_type, 0.075)
     axis = [[0.0, 0.0, float(z)] for z in range(-25, 26)]
     assert not mesh.contains(axis).any()
 
@@ -350,7 +350,7 @@ def test_the_hole_goes_all_the_way_through(plate_type):
 @pytest.mark.parametrize('plate_type', PLATES)
 @pytest.mark.parametrize('depth', (0.1, 1.0, 1.9))
 def test_countersink_is_one_45_degree_rule_at_every_mouth(plate_type, depth):
-    clearance = 0.15
+    clearance = 0.075
     mesh = _cylinder(plate_type, clearance)
     half_height = FIXTURE_HEIGHT_MM / 2.0
     for sign in (-1.0, 1.0):
@@ -384,10 +384,19 @@ def test_the_nub_is_on_cylinder_a_only(clearance):
 
 
 def test_the_uncleared_nub_matches_the_audit_area():
-    """11.144 mm2 is the number 01_V7_SAMPLE_AUDIT.md section 6 measured."""
-    block = v2.keyed_cutout_block('positive', FIXTURE_HEIGHT_MM, 0.0)
-    profile = np.array([(point['x'], point['y']) for point in block['nub']['profile']])
-    assert _polygon_area(profile) == pytest.approx(11.144, abs=0.01)
+    """
+    11.144 mm2 is the number 01_V7_SAMPLE_AUDIT.md section 6 measured.
+
+    Taken from the raw triangle rather than from a keyed_cutout_block: since
+    2026-08-29 the emitted nub is always inset by V2_NUB_CLEARANCE_MM, so no
+    clearance argument produces an uncleared one any more. The audit pin is
+    about Brennen's CAD, which has not changed.
+    """
+    half_width = v2.V2_NUB['side'] / 2.0
+    outline = v2.nub_triangle(
+        v2.V2_NUB['base_radius'], v2.V2_NUB['apex_radius'], half_width, v2.V2_ARROW_COLUMN_DEG
+    )
+    assert _polygon_area(np.array(outline)) == pytest.approx(11.144, abs=0.01)
 
 
 @pytest.mark.parametrize('clearance', CLEARANCES)
@@ -529,7 +538,7 @@ def _mutate(block, kind):
         broken['halves'][0]['profile'] = [{'x': float(x), 'y': float(y)} for x, y in turned]
     elif kind == 'clearance_inward':
         name = v2.KEY_PROFILES_BY_PLATE['negative'][0]
-        shrunk = v2.grown_key_outline(name, -0.15)
+        shrunk = v2.grown_key_outline(name, -0.075)
         broken['halves'][0]['profile'] = [{'x': x, 'y': y} for x, y in shrunk]
     elif kind == 'shallow_countersink':
         broken['countersinks'][0]['depth'] = 1.0
@@ -542,46 +551,50 @@ def _mutate(block, kind):
 
 
 def test_swapped_halves_are_caught():
-    block = _mutate(v2.keyed_cutout_block('negative', FIXTURE_HEIGHT_MM, 0.15), 'swapped_halves')
+    block = _mutate(v2.keyed_cutout_block('negative', FIXTURE_HEIGHT_MM, 0.075), 'swapped_halves')
     mesh = build_v2_cylinder(block, FIXTURE_RADIUS_MM, FIXTURE_HEIGHT_MM, 'negative')
-    expected = v2.key_profile(v2.KEY_PROFILES_BY_PLATE['negative'][0], 0.15)
+    expected = v2.key_profile(v2.KEY_PROFILES_BY_PLATE['negative'][0], 0.075)
     assert _max_boundary_distance(_hole_loop(mesh, -20.0), expected) > 0.01
 
 
 def test_a_rotated_key_is_caught():
-    block = _mutate(v2.keyed_cutout_block('negative', FIXTURE_HEIGHT_MM, 0.15), 'rotated_key')
+    block = _mutate(v2.keyed_cutout_block('negative', FIXTURE_HEIGHT_MM, 0.075), 'rotated_key')
     mesh = build_v2_cylinder(block, FIXTURE_RADIUS_MM, FIXTURE_HEIGHT_MM, 'negative')
     measured = _hole_loop(mesh, -20.0)
     assert _arrow_column_flat(measured) is None, 'a 30 degree turn left a flat on the arrow column'
-    expected = v2.key_profile(v2.KEY_PROFILES_BY_PLATE['negative'][0], 0.15)
+    expected = v2.key_profile(v2.KEY_PROFILES_BY_PLATE['negative'][0], 0.075)
     assert _max_boundary_distance(measured, expected) > 0.01
 
 
 def test_clearance_applied_inward_is_caught():
-    block = _mutate(v2.keyed_cutout_block('negative', FIXTURE_HEIGHT_MM, 0.15), 'clearance_inward')
+    # Widths derived from the clearance rather than typed: the dial's default
+    # has moved once already (0.15 -> 0.075, 2026-08-29) and a hardcoded 2c
+    # turns a real regression into an arithmetic failure that reads like one.
+    clearance = v2.V2_KEY_CLEARANCE_DEFAULT_MM
+    block = _mutate(v2.keyed_cutout_block('negative', FIXTURE_HEIGHT_MM, clearance), 'clearance_inward')
     mesh = build_v2_cylinder(block, FIXTURE_RADIUS_MM, FIXTURE_HEIGHT_MM, 'negative')
     width, _ = _extents(_hole_loop(mesh, -20.0))
-    assert width == pytest.approx(8.0 - 0.3, abs=0.01), 'the mutation did not shrink the hole'
-    assert width < 8.0 + 0.3 - 0.01, 'a hole cut smaller than its peg went unnoticed'
+    assert width == pytest.approx(8.0 - 2 * clearance, abs=0.01), 'the mutation did not shrink the hole'
+    assert width < 8.0 + 2 * clearance - 0.01, 'a hole cut smaller than its peg went unnoticed'
 
 
 def test_a_shallow_countersink_is_caught():
-    block = _mutate(v2.keyed_cutout_block('negative', FIXTURE_HEIGHT_MM, 0.15), 'shallow_countersink')
+    block = _mutate(v2.keyed_cutout_block('negative', FIXTURE_HEIGHT_MM, 0.075), 'shallow_countersink')
     mesh = build_v2_cylinder(block, FIXTURE_RADIUS_MM, FIXTURE_HEIGHT_MM, 'negative')
     width, _ = _extents(_hole_loop(mesh, -24.1))
-    correct = 8.0 + 2 * (0.15 + 2.0 * (1.0 - 1.9 / 2.0))
+    correct = 8.0 + 2 * (0.075 + 2.0 * (1.0 - 1.9 / 2.0))
     assert abs(width - correct) > 0.02
 
 
 def test_a_blind_hole_is_caught():
-    block = _mutate(v2.keyed_cutout_block('negative', FIXTURE_HEIGHT_MM, 0.15), 'blind_hole')
+    block = _mutate(v2.keyed_cutout_block('negative', FIXTURE_HEIGHT_MM, 0.075), 'blind_hole')
     mesh = build_v2_cylinder(block, FIXTURE_RADIUS_MM, FIXTURE_HEIGHT_MM, 'negative')
     assert mesh.contains([[0.0, 0.0, 0.0]])[0], 'the through-hole check would not notice a blind hole'
 
 
 def test_the_nub_on_the_wrong_plate_is_refused():
     """The builder refuses rather than quietly printing a Cylinder B with a nub."""
-    block = v2.keyed_cutout_block('positive', FIXTURE_HEIGHT_MM, 0.15)
+    block = v2.keyed_cutout_block('positive', FIXTURE_HEIGHT_MM, 0.075)
     with pytest.raises(ValueError, match='positive plate only'):
         build_v2_cylinder(block, FIXTURE_RADIUS_MM, FIXTURE_HEIGHT_MM, 'negative')
 
@@ -594,13 +607,13 @@ def test_the_nub_on_the_wrong_plate_is_refused():
     ),
 )
 def test_a_malformed_block_raises(block):
-    block = {'clearance_mm': 0.15, 'countersinks': [], **block}
+    block = {'clearance_mm': 0.075, 'countersinks': [], **block}
     with pytest.raises(ValueError):
         build_v2_cylinder(block, FIXTURE_RADIUS_MM, FIXTURE_HEIGHT_MM, 'negative')
 
 
 def test_an_unknown_countersink_kind_raises():
-    block = v2.keyed_cutout_block('negative', FIXTURE_HEIGHT_MM, 0.15)
+    block = v2.keyed_cutout_block('negative', FIXTURE_HEIGHT_MM, 0.075)
     block['countersinks'][0]['kind'] = 'scale'
     with pytest.raises(ValueError, match='unknown countersink kind'):
         build_v2_cylinder(block, FIXTURE_RADIUS_MM, FIXTURE_HEIGHT_MM, 'negative')

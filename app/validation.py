@@ -464,16 +464,16 @@ def validate_embosser_version_settings(settings_data: dict, shape_type: str, cyl
     Gate 3: integrated gears and Version 2 are different hardware and cannot be
     combined (S-V7). The gears BETA builds the Version 1 one-piece roller.
 
-    Deliberately NOT a gate: the cylinder size. D-V15 makes 30.1 x 52 a soft
-    preset - Brennen is "attempting the 30.1 change ... updated if testing
-    returns errors" - so an off-size Version 2 cylinder is accepted and
+    Deliberately NOT a gate: the cylinder size. D-V15 makes the Version 2
+    barrel a soft preset - it is still being found by printing, and moved
+    from 30.1 to 30.5 on 2026-08-29 - so an off-size cylinder is accepted and
     app/geometry_spec.py adds a warning instead. That is the opposite of the
     gear gate, where the size IS a rejection because the vendored gears cannot
     move with the barrel.
 
     This runs BEFORE validate_gear_rollers_settings rather than after it. With
     both switched on, the gear gate would otherwise answer first and complain
-    about the cylinder being 30.1 mm instead of 30.8 - true, but it would send
+    about the cylinder being 30.5 mm instead of 30.8 - true, but it would send
     the user off resizing a cylinder when the real problem is that they asked
     for two different machines at once. Ordering changes nothing for Version 1
     requests: this function returns immediately for them.

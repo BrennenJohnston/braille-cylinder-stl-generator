@@ -30,7 +30,7 @@ LINES = ['⠁⠃⠉', '', '', '']
 BACK_LINES = ['⠙⠑⠋', '', '', '']
 
 V1_CYLINDER = {'diameter': 30.75, 'height': 52.0, 'wall_thickness': 2.0, 'seam_offset_deg': 355.0}
-V2_CYLINDER = {'diameter': 30.1, 'height': 52.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0}
+V2_CYLINDER = {'diameter': 30.5, 'height': 52.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0}
 
 DOUBLE_SIDED_SETTINGS = {
     'double_sided_enabled': 1,
@@ -56,7 +56,7 @@ VERSION_ONE_VALUES = [
 
 # S-V14, new in this phase, and S-V5. Both DRAFT.
 CUTOUT_WARNING = 'The polygonal cutout is not used in Version 2.'
-SIZE_WARNING_START = 'The Version 2 embosser expects a 30.1 mm x 52 mm cylinder.'
+SIZE_WARNING_START = 'The Version 2 embosser expects a 30.5 mm x 52 mm cylinder.'
 
 
 def build_spec(plate_type='positive', settings=None, cylinder=None, back_lines=None):
@@ -169,7 +169,7 @@ def test_the_z_ranges_follow_the_cylinder_height():
     assert block['nub']['z_to'] == pytest.approx(33.0)
 
 
-@pytest.mark.parametrize('clearance', (0.0, 0.15, 0.5))
+@pytest.mark.parametrize('clearance', (0.0, 0.075, 0.5))
 def test_the_clearance_flows_into_the_profiles(clearance):
     block = v2_spec(clearance=clearance)['keyed_cutouts']
     bottom_name = version2.KEY_PROFILES_BY_PLATE['positive'][0]

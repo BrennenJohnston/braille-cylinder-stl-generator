@@ -38,7 +38,7 @@ NO_GEARS_MESSAGE = 'Integrated gears are not available in Version 2.'
 # form field would behave differently from a missing one.
 VERSION_ONE_VALUES = [1, '1', 1.0, '', None]
 
-V2_CYLINDER = {'diameter': 30.1, 'height': 52.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0}
+V2_CYLINDER = {'diameter': 30.5, 'height': 52.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0}
 
 CARD_PAYLOAD = {
     'shape_type': 'card',
@@ -109,7 +109,7 @@ def test_an_unknown_version_is_refused_loudly(value):
     assert 'embosser_version' in str(raised.value)
 
 
-@pytest.mark.parametrize('clearance', [0.0, 0.15, 0.5])
+@pytest.mark.parametrize('clearance', [0.0, 0.075, 0.5])
 def test_a_clearance_inside_the_dial_passes(clearance):
     settings = {'embosser_version': 2, 'v2_key_clearance_mm': clearance}
     assert validate_embosser_version_settings(settings, 'cylinder', V2_CYLINDER) is True
@@ -127,7 +127,7 @@ def test_a_clearance_outside_the_dial_is_refused(clearance):
 
 def test_the_size_is_not_gated():
     """
-    D-V15: 30.1 x 52 is a soft preset, so an off-size cylinder is accepted here
+    D-V15: 30.5 x 52 is a soft preset, so an off-size cylinder is accepted here
     and only warned about in the geometry spec.
     """
     off_size = {'diameter': 30.8, 'height': 60.0, 'wall_thickness': 2.0}
@@ -169,7 +169,7 @@ def test_an_out_of_range_clearance_is_refused_by_the_route(client, clearance):
     assert 'key_clearance_mm' in response.get_json()['error']
 
 
-@pytest.mark.parametrize('clearance', [0.0, 0.15, 0.5])
+@pytest.mark.parametrize('clearance', [0.0, 0.075, 0.5])
 def test_an_in_range_clearance_is_accepted_by_the_route(client, clearance):
     payload = with_settings(CYLINDER_PAYLOAD, embosser_version=2, v2_key_clearance_mm=clearance)
     assert post_spec(client, payload).status_code == 200
@@ -179,7 +179,7 @@ def test_gears_with_version_two_name_the_real_conflict(client):
     """
     Both betas on must report the incompatibility, not the cylinder size.
 
-    The Version 2 preset is 30.1 mm and the gears demand 30.8, so whichever
+    The Version 2 preset is 30.5 mm and the gears demand 30.8, so whichever
     gate runs first decides what the user is told. Version 2 goes first, or the
     user is sent off resizing a cylinder that is exactly the size it should be.
     """

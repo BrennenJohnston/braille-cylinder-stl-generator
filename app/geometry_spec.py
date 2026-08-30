@@ -503,7 +503,8 @@ def extract_cylinder_geometry_spec(
     v2_warnings: list[str] = []
     if embosser_v2 and not version2.matches_v2_barrel(diameter, height):
         # D-V15: the Version 2 size is a soft preset, not a requirement -
-        # Brennen is still testing whether 30.1 is right - so this is a warning
+        # the barrel is still being found by printing (30.1 -> 30.5 on
+        # 2026-08-29) - so this is a warning
         # even on the request route, unlike the gear size above, which is a
         # rejection because the vendored gears cannot move with the barrel.
         # Wording S-V5 signed as drafted, 2026-08-28.

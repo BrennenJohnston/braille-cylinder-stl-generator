@@ -50,22 +50,43 @@ import math
 
 from app.geometry.gears import _format_mm
 
-# The Version 2 barrel (D-V4). A SOFT preset: Brennen is "attempting the 30.1
-# change ... updated if testing returns errors", so an off-size cylinder raises
-# a warning and is still built (D-V15), unlike the gears' hard size gate.
-V2_BARREL_DIAMETER_MM = 30.1
+# The Version 2 barrel (D-V4). A SOFT preset: an off-size cylinder raises a
+# warning and is still built (D-V15), unlike the gears' hard size gate. That
+# softness is the point - this number is still being found by printing.
+#
+# 30.5 since 2026-08-29, up from the 30.1 the prototype shipped with. Brennen
+# printed and ran a 30.1 pair and reported that the embossing pressure had
+# dropped; 30.5 is the half-way step back toward Version 1's 30.8 that he
+# asked for, so the next print moves one variable by one known amount.
+V2_BARREL_DIAMETER_MM = 30.5
 V2_BARREL_HEIGHT_MM = 52.0
 # Float slack only, matching the gears' tolerance: at 32 mm a float32 ULP is
 # 3.8e-6 mm, so 0.001 is far below any dimension a user can type.
 V2_SIZE_TOLERANCE_MM = 0.001
 
-# Print clearance per side (D-V3), an Expert-Mode dial. Every hole grows by
-# this and the nub shrinks by it, so one number means one thing: how loose the
-# keys are. The error-proofing margin shrinks by 2c, which is why the family
-# was judged at the dial's maximum as well as its default.
-V2_KEY_CLEARANCE_DEFAULT_MM = 0.15
+# Print clearance per side (D-V3), an Expert-Mode dial. Every KEY HOLE grows
+# by this: how loose the four keys are. The error-proofing margin shrinks with
+# it, which is why the family is judged at the dial's maximum as well as its
+# default.
+#
+# 0.075 since 2026-08-29, halved from 0.15. Brennen printed a pair at 0.15 and
+# reported all four peg holes too loose. His gears measure exactly nominal -
+# 14x14, 18x10, 16x12 and 20x8, corner radius 0.5 - so a hole is its peg plus
+# 2c, and halving c halves the slack across a hole from 0.30 mm to 0.15 mm.
+# The wrong-pair margin moves the right way too: 0.925 mm, against 0.850 at
+# 0.15 (tests/test_version2_profiles.py::SMALLEST_WRONG_PAIR_PROTRUSION).
+V2_KEY_CLEARANCE_DEFAULT_MM = 0.075
 V2_KEY_CLEARANCE_MIN_MM = 0.0
 V2_KEY_CLEARANCE_MAX_MM = 0.5
+
+# The nub does NOT follow that dial, and has not since 2026-08-29. It used to
+# be inset by the same c the holes grew by - one number, opposite directions -
+# but gear A1 is already cut and its notch measures 3.943 x 4.553 mm: the nub
+# at exactly c = 0.15, to under half a micron. Lowering the dial would have
+# GROWN the nub into a notch that cannot be recut without reprinting the gear,
+# so the nub keeps the size that gear was made for and the dial now governs
+# the four holes alone. Raise this only alongside a matching gear A1.
+V2_NUB_CLEARANCE_MM = 0.15
 
 # Each peg's root flares out 2.0 mm per side over its last 2.0 mm at 45
 # degrees, so every cutout mouth needs the matching countersink or the gear
@@ -299,16 +320,21 @@ def _wire_points(points: list[tuple[float, float]]) -> list[dict]:
     return [{'x': round(x, 6), 'y': round(y, 6)} for x, y in points]
 
 
-def nub_block(clearance: float) -> dict:
+def nub_block() -> dict:
     """
-    Cylinder A's key nub, inset by the clearance (D-V11).
+    Cylinder A's key nub, inset by V2_NUB_CLEARANCE_MM - NOT by the dial.
 
-    Gear A1's notch is a fixed negative in Brennen's gear, so shrinking the nub
-    by the same c the holes grew by leaves c of clearance perpendicular to each
-    of its faces. On an equilateral triangle that moves the base half-width in
-    by sqrt(3) * c, not by c - the faces are what the notch touches.
+    Gear A1's notch is a fixed negative in Brennen's gear, so the nub is inset
+    by the c that gear was cut for, which leaves that much clearance
+    perpendicular to each of its faces. On an equilateral triangle that moves
+    the base half-width in by sqrt(3) * c, not by c - the faces are what the
+    notch touches.
+
+    It takes no argument on purpose. The key-clearance dial used to reach this
+    function, and re-coupling them would drive the nub into an already-printed
+    notch the moment someone tightened the holes (D-V11, revised 2026-08-29).
     """
-    validate_clearance(clearance)
+    clearance = V2_NUB_CLEARANCE_MM
     half_width = V2_NUB['side'] / 2.0
     outline = nub_triangle(V2_NUB['base_radius'], V2_NUB['apex_radius'], half_width, V2_ARROW_COLUMN_DEG)
     profile = offset_polygon_miter(outline, -clearance)
@@ -381,7 +407,7 @@ def keyed_cutout_block(plate_type: str, height: float, clearance: float) -> dict
         ],
     }
     if plate_type == 'positive':
-        nub = nub_block(clearance)
+        nub = nub_block()
         nub['z_from'] = half_height - V2_OVERLAP_MM
         nub['z_to'] = half_height + V2_NUB['height']
         block['nub'] = nub

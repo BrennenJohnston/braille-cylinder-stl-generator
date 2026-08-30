@@ -26,13 +26,13 @@ const S_V3_NOTE =
   'Choose Version 2 only if you are building the Version 2 embosser, which uses keyed gear pegs. Version 1 stays supported.';
 const S_V4_PROTOTYPE =
   'Version 2 is a work-in-progress prototype. Its cylinder size, cutouts and fit may change as testing continues. It fits only gears with R14 pegs; earlier pegs do not enter the holes.';
-const S_V5_SIZE_START = 'The Version 2 embosser expects a 30.1 mm x 52 mm cylinder.';
+const S_V5_SIZE_START = 'The Version 2 embosser expects a 30.5 mm x 52 mm cylinder.';
 const S_V8_READY = 'Cylinder generated for the Version 2 embosser (prototype).';
-const S_V10_ON = 'Version 2 selected: keyed gear-peg cutouts, 30.1 mm cylinder.';
+const S_V10_ON = 'Version 2 selected: keyed gear-peg cutouts, 30.5 mm cylinder.';
 const S_V10_OFF = 'Version 1 selected.';
 
 // The Version 2 preset barrel (D-V4), owned by app/geometry/version2.py.
-const V2_DIAMETER = '30.1';
+const V2_DIAMETER = '30.5';
 const V2_HEIGHT = '52';
 
 // Same transient failures the other beta specs tolerate: both workers signal
@@ -174,7 +174,7 @@ test.describe('Embosser Version 2 (prototype)', () => {
     await expect(page.locator('#v2-prototype-note')).toBeVisible();
     await expect(page.locator('#v2-prototype-note')).toContainText(S_V4_PROTOTYPE);
     await expect(page.locator('#v2-keyed-cutouts-selection')).toBeVisible();
-    await expect(page.locator('#v2_key_clearance_mm')).toHaveValue('0.15');
+    await expect(page.locator('#v2_key_clearance_mm')).toHaveValue('0.075');
 
     // The gears BETA is Version 1 only (D-V6): hidden AND unchecked, because a
     // hidden checkbox that stayed on would still be read at generate time.
@@ -238,7 +238,7 @@ test.describe('Embosser Version 2 (prototype)', () => {
     const dial = page.locator('#v2_key_clearance_mm');
     expect(await dial.getAttribute('min')).toBe('0');
     expect(await dial.getAttribute('max')).toBe('0.5');
-    expect(await dial.getAttribute('step')).toBe('0.01');
+    expect(await dial.getAttribute('step')).toBe('0.005');
 
     // 0.5 is legal; 0.51 is not. The bound lives on the input, so the browser
     // itself refuses it — no hand-rolled check to drift out of step.
@@ -251,11 +251,11 @@ test.describe('Embosser Version 2 (prototype)', () => {
 
     // And the shipped default must be a whole number of steps, or the dial
     // would be :invalid on load and kill Generate silently.
-    await setDial(page, 'v2_key_clearance_mm', '0.15');
+    await setDial(page, 'v2_key_clearance_mm', '0.075');
     expect(await dial.evaluate((el: HTMLInputElement) => el.checkValidity())).toBe(true);
   });
 
-  test('the visual cell recommendation drops by one, and nothing warns on load', async ({
+  test('the recommended cell count fits the barrel, and nothing warns on load', async ({
     page,
   }) => {
     await openApp(page);
@@ -263,12 +263,16 @@ test.describe('Embosser Version 2 (prototype)', () => {
 
     await selectVersion2(page);
 
-    // A 30.1 mm barrel is 2.2 mm less circumference than 30.8 — in visual mode
-    // exactly one braille cell. Without this the page recommended a layout that
-    // checkPhysicalFit() warns against on the same screen.
-    expect(Number(await page.locator('#grid_columns').inputValue())).toBe(Number(before) - 1);
+    // The invariant that outlived the barrel change: whatever count Version 2
+    // recommends, the seam-collision check must not fire on it. At the
+    // prototype's original 30.1 mm barrel that forced the recommendation one
+    // cell BELOW Version 1's, because 15 columns left 3.6 mm where a cell's
+    // dots need 4.0. The 30.5 mm barrel (2026-08-29) leaves 4.8 mm, so the two
+    // versions now agree and the special case was removed.
+    expect(await page.locator('#grid_columns').inputValue()).toBe(before);
 
-    // And the seam-collision warning must not fire at the recommended layout.
+    // Neither the seam-collision warning nor the row-overflow one may fire.
+    await expect(page.locator('#tactile-gap-warning')).toBeHidden();
     await expect(page.locator('#cylinder-overflow-warning')).toBeHidden();
     await expect(page.locator('#a11y-status')).toHaveText(S_V10_ON);
   });
@@ -293,7 +297,7 @@ test.describe('Embosser Version 2 (prototype)', () => {
     expect(added.sort()).toEqual(['embosser_version', 'v2_key_clearance_mm']);
     expect(removed).toEqual([]);
     expect(on.embosser_version).toBe(2);
-    expect(on.v2_key_clearance_mm).toBe(0.15);
+    expect(on.v2_key_clearance_mm).toBe(0.075);
 
     // Version 2 is cylinders-only, and the gear flag must never ride along.
     expect((state.bodies[1] as { shape_type: string }).shape_type).toBe('cylinder');
@@ -363,7 +367,7 @@ test.describe('Embosser Version 2 (prototype)', () => {
 
     await page.locator('#reset-defaults-btn').click();
     await expect(page.locator('#embosser_version_1')).toBeChecked();
-    await expect(page.locator('#v2_key_clearance_mm')).toHaveValue('0.15');
+    await expect(page.locator('#v2_key_clearance_mm')).toHaveValue('0.075');
     expect(
       await page.evaluate(
         () => (document.getElementById('cylinder-seam-offset-row') as HTMLElement).hidden,

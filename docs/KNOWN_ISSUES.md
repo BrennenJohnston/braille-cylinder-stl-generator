@@ -176,9 +176,11 @@ combination.
 
 Wording in this section signed off by Brennen 2026-08-28; reword only with his
 sign-off. He chose this shorter shape deliberately: the key-clearance dial, the
-error-proofing margins, the soft 30.1 × 52 preset, the one-fewer-braille-cell change
-in visual mode, the Version-1-only integrated gears and the OpenSCAD/MakerWorld status
-all live in the specification instead.
+error-proofing margins, the soft 30.5 × 52 preset, the Version-1-only integrated gears
+and the OpenSCAD/MakerWorld status all live in the specification instead. (Only the
+numbers moved on 2026-08-29 after the first print test; the shape of this section is
+unchanged, and the one-fewer-braille-cell change it used to list was retired with the
+30.5 mm barrel.)
 
 Full technical detail: `docs/specifications/EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS.md`
 (written in Phase 10).

@@ -19,11 +19,11 @@ import pytest
 
 from app.geometry import version2 as v2
 
-CLEARANCES = (0.0, 0.15, 0.30, 0.50)
+CLEARANCES = (0.0, 0.075, 0.15, 0.30, 0.50)
 
 # audit_fit_matrix.py, family R14: the smallest distance any wrong peg sticks
 # out of a hole, per side, at each clearance.
-SMALLEST_WRONG_PAIR_PROTRUSION = {0.0: 1.000, 0.15: 0.850, 0.30: 0.700, 0.50: 0.500}
+SMALLEST_WRONG_PAIR_PROTRUSION = {0.0: 1.000, 0.075: 0.925, 0.15: 0.850, 0.30: 0.700, 0.50: 0.500}
 
 
 def _signed_area(points):
@@ -215,26 +215,36 @@ def test_the_a_top_mouth_clears_the_nub(clearance):
     assert mouth_radius < v2.V2_NUB['base_radius'], f'the mouth reaches the nub base at c={clearance}'
 
 
-@pytest.mark.parametrize('clearance', (0.0, 0.15, 0.50))
-def test_the_nub_inset_moves_every_face_in_by_c(clearance):
+@pytest.mark.parametrize('clearance', CLEARANCES)
+def test_the_nub_inset_is_fixed_and_the_dial_cannot_reach_it(clearance):
     """
-    D-V11: the dial shrinks the nub by the same c the holes grew by, because
-    gear A1's notch is a fixed negative and wants clearance on each face.
+    D-V11 as revised 2026-08-29: the nub is inset by V2_NUB_CLEARANCE_MM, and
+    the key-clearance dial does NOT move it.
+
+    Gear A1's notch is a fixed negative that is already cut - it measures
+    3.943 x 4.553 mm off the printed gear, which is the nub at exactly
+    c = 0.15 - so tightening the holes must not grow the nub into it. The old
+    behaviour, where the nub followed the dial, would have done exactly that.
 
     The inradius is what moves by exactly c. The base gets narrower by about
-    sqrt(3) * c - roughly 1.73 times as much - so "shrinks by c" is a statement
+    sqrt(3) * c - roughly 1.73 times as much - so "inset by c" is a statement
     about the faces, never about the width.
     """
+    fixed = v2.V2_NUB_CLEARANCE_MM
     half_width = v2.V2_NUB['side'] / 2.0
     outline = v2.nub_triangle(v2.V2_NUB['base_radius'], v2.V2_NUB['apex_radius'], half_width, v2.V2_ARROW_COLUMN_DEG)
-    inset = v2.offset_polygon_miter(outline, -clearance)
+    inset = v2.offset_polygon_miter(outline, -fixed)
 
     assert _signed_area(outline) > 0
-    assert _inradius(outline) - _inradius(inset) == pytest.approx(clearance, abs=1e-9)
+    assert _inradius(outline) - _inradius(inset) == pytest.approx(fixed, abs=1e-9)
 
     base_shrink = (math.dist(outline[0], outline[2]) - math.dist(inset[0], inset[2])) / 2.0
-    if clearance:
-        assert base_shrink / clearance == pytest.approx(math.sqrt(3), abs=0.001)
+    assert base_shrink / fixed == pytest.approx(math.sqrt(3), abs=0.001)
+
+    # The dial is swept by the parametrize above; the emitted nub never moves.
+    block = v2.keyed_cutout_block('positive', 52.0, clearance)
+    emitted = [(point['x'], point['y']) for point in block['nub']['profile']]
+    assert emitted == [(round(x, 6), round(y, 6)) for x, y in inset]
 
 
 def test_the_nub_points_at_the_arrow_column():
@@ -246,9 +256,9 @@ def test_the_nub_points_at_the_arrow_column():
 
 
 def test_block_matches_the_wire_contract():
-    block = v2.keyed_cutout_block('positive', 52.0, 0.15)
+    block = v2.keyed_cutout_block('positive', 52.0, 0.075)
     assert set(block) == {'clearance_mm', 'halves', 'countersinks', 'nub'}
-    assert block['clearance_mm'] == 0.15
+    assert block['clearance_mm'] == 0.075
 
     assert [half['end'] for half in block['halves']] == ['bottom', 'top']
     for half in block['halves']:
@@ -273,8 +283,8 @@ def test_block_matches_the_wire_contract():
 
 
 def test_each_plate_carries_its_own_pair_of_keys():
-    positive = v2.keyed_cutout_block('positive', 52.0, 0.15)
-    negative = v2.keyed_cutout_block('negative', 52.0, 0.15)
+    positive = v2.keyed_cutout_block('positive', 52.0, 0.075)
+    negative = v2.keyed_cutout_block('negative', 52.0, 0.075)
 
     assert 'nub' not in negative, 'only Cylinder A carries the nub'
     for block, (bottom_name, top_name) in (
@@ -282,13 +292,13 @@ def test_each_plate_carries_its_own_pair_of_keys():
         (negative, v2.KEY_PROFILES_BY_PLATE['negative']),
     ):
         for half, name in zip(block['halves'], (bottom_name, top_name)):
-            expected = v2.key_profile(name, 0.15)
+            expected = v2.key_profile(name, 0.075)
             assert len(half['profile']) == len(expected)
             assert half['profile'][0]['x'] == pytest.approx(expected[0][0], abs=1e-6)
 
 
 def test_the_block_scales_with_the_cylinder_height():
-    block = v2.keyed_cutout_block('positive', 40.0, 0.15)
+    block = v2.keyed_cutout_block('positive', 40.0, 0.075)
     assert block['halves'][0]['z_from'] == pytest.approx(-20.01)
     assert block['halves'][1]['z_to'] == pytest.approx(20.01)
     assert block['nub']['z_from'] == pytest.approx(19.99)
@@ -297,12 +307,12 @@ def test_the_block_scales_with_the_cylinder_height():
 @pytest.mark.parametrize(
     'call',
     (
-        lambda: v2.keyed_cutout_block('cylinder', 52.0, 0.15),
-        lambda: v2.keyed_cutout_block('', 52.0, 0.15),
-        lambda: v2.keyed_cutout_block('positive', 0.0, 0.15),
+        lambda: v2.keyed_cutout_block('cylinder', 52.0, 0.075),
+        lambda: v2.keyed_cutout_block('', 52.0, 0.075),
+        lambda: v2.keyed_cutout_block('positive', 0.0, 0.075),
         lambda: v2.keyed_cutout_block('positive', 52.0, 0.75),
         lambda: v2.keyed_cutout_block('positive', 52.0, -0.1),
-        lambda: v2.key_profile('a1_star', 0.15),
+        lambda: v2.key_profile('a1_star', 0.075),
         lambda: v2.rounded_rectangle(14.0, 14.0, 8.0),
         lambda: v2.rounded_rectangle(0.0, 14.0, 0.5),
     ),
@@ -313,11 +323,11 @@ def test_bad_input_raises_rather_than_guessing(call):
 
 
 def test_size_check_and_message():
-    assert v2.matches_v2_barrel(30.1, 52.0)
-    assert v2.matches_v2_barrel(30.1005, 52.0)
+    assert v2.matches_v2_barrel(30.5, 52.0)
+    assert v2.matches_v2_barrel(30.5005, 52.0)
     assert not v2.matches_v2_barrel(30.8, 52.0)
-    assert not v2.matches_v2_barrel(30.1, 51.0)
+    assert not v2.matches_v2_barrel(30.5, 51.0)
 
     message = v2.v2_size_message(30.8, 52.0)
-    assert message == ('The Version 2 embosser expects a 30.1 mm x 52 mm cylinder. Received 30.8 mm x 52 mm.')
+    assert message == ('The Version 2 embosser expects a 30.5 mm x 52 mm cylinder. Received 30.8 mm x 52 mm.')
     assert '52.0 mm' not in message

@@ -127,10 +127,19 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      star, hexagon and 15x15 squares are RETIRED. Grow a key with
      grown_key_outline (sides +2c, corner radius +c) - never by mitering an
      already-rounded outline.
-   - Barrel 30.1 x 52.0, tolerance 0.001, but SOFT: off-size warns (S-V5) and
-     is ACCEPTED. Unlike the gear gate, never a rejection.
-   - Clearance 0.15 default, range 0.0-0.5; applied OUTWARD to the holes and
-     INWARD to the nub by the same c.
+   - Barrel 30.5 x 52.0, tolerance 0.001, but SOFT: off-size warns (S-V5) and
+     is ACCEPTED. Unlike the gear gate, never a rejection. Was 30.1 until
+     2026-08-29; the printed 30.1 pair embossed with too little pressure, so
+     it moved half way back toward Version 1's 30.8. Still under test.
+   - Clearance 0.075 default, range 0.0-0.5, input step 0.005 (0.075 is NOT a
+     whole number of 0.01 steps, and an off-step default kills Generate).
+     Applied OUTWARD to the four holes ONLY. Was 0.15 until 2026-08-29, when
+     the printed holes came back too loose.
+   - The NUB DOES NOT FOLLOW THE DIAL. It is inset by a fixed
+     V2_NUB_CLEARANCE_MM = 0.15, because gear A1's notch is already cut to
+     exactly that (measured 3.943 x 4.553 mm off the printed gear). Under the
+     old shared-dial rule, tightening the holes GREW the nub into that notch.
+     Never re-couple them; raise the nub constant only with a new gear A1.
    - Two halves meet at the mid-plane as ONE through-hole (overlap 0.01), and
      ONE 2.0 x 45 degree rule covers all four mouths. A chamfer hull's slabs
      sit FAR-EDGE-OUT or the taper overshoots. The nub is THREE unioned parts,
@@ -142,10 +151,14 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      the API refuses the combination.
    - Naming: a `V2_` segment is inserted ONLY when Version 2 is on
      (Embossing_Cylinder_V2_{preset}_{name}.stl). Version 1 names never change.
-   - Version 2 VISUAL mode recommends one braille cell fewer (12 letters on,
-     13 letters off); TACTILE is unchanged at 14.
-   - THE GEAR PEGS MUST BE RE-CUT to GEAR_PEG_SPEC_R14 - no v7 peg enters an
-     R14 hole - so the v7 sample STLs can validate only the barrel and the nub.
+   - Version 2 recommends the SAME cell counts as Version 1. The one-fewer
+     rule was retired 2026-08-29 with the 30.5 barrel (seam gap 4.8 mm against
+     the 4.0 needed). Restore it only below a 30.24 mm barrel.
+   - The R14 gear pegs EXIST as of 2026-08-29 and measure exactly nominal
+     (14x14, 18x10, 16x12, 20x8). Their STLs are still named "v7" - that is
+     the gear body's version, not the peg's. A2's peg corner radius is 2.000
+     where the others are 0.500: harmless (a bigger radius removes material),
+     reported not fixed. No v7 PEG ever enters an R14 hole.
 
 ## Settings changes — order of operations
 7. settings.schema.json is the single source of truth. When adding or changing

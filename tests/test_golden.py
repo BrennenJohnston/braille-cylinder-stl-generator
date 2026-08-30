@@ -863,7 +863,7 @@ def test_gear_golden_fixture_has_material_where_a_tooth_is(fixtures_dir, plate_t
 # only thing these fixtures add is the keyed cutout itself. Three deliberate
 # differences from the double-sided pair:
 #
-#   * the cylinder is 30.1 mm, not 30.75. That is Version 2's preset barrel
+#   * the cylinder is 30.5 mm, not 30.75. That is Version 2's preset barrel
 #     (D-V4). At any other size app/geometry_spec.py emits the S-V5 size note,
 #     and a spec carrying warnings cannot be turned into a fixture at all - so
 #     a Version 2 fixture can only ever exist at the preset size, as intended.
@@ -978,7 +978,7 @@ def generate_v2_golden_fixtures():
                 ),
                 'cylinder_diameter_note': (
                     'ds_cylinder*_golden uses 30.75 mm and gear_roller*_golden 30.8 mm; this pair uses '
-                    '30.1 mm because that is the Version 2 preset barrel (D-V4). Any other size makes '
+                    '30.5 mm because that is the Version 2 preset barrel (D-V4). Any other size makes '
                     'app/geometry_spec.py emit the S-V5 size note, and a spec carrying warnings is '
                     'refused by the generator above - so these fixtures exist only at the preset size.'
                 ),
@@ -1029,7 +1029,7 @@ def test_v2_golden_fixture_metadata_records_the_module_inputs(fixtures_dir, plat
     assert 'back_lines' not in generation
     assert 'double_sided_enabled' not in generation['settings']
     # All three fixture families must differ here, and each reason is recorded.
-    assert generation['cylinder_params']['diameter'] == 30.1
+    assert generation['cylinder_params']['diameter'] == 30.5
     assert DS_FIXTURE_CYLINDER_PARAMS['diameter'] == 30.75
     assert GEAR_FIXTURE_CYLINDER_PARAMS['diameter'] == 30.8
     # The narrower grid is deliberate and its reason is recorded beside it:
