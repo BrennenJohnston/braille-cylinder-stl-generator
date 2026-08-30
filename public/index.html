@@ -4053,7 +4053,7 @@
                                        bounded AT THE SOURCE (min/max/step here, not in the
                                        read): an out-of-range value makes the input :invalid
                                        and the request assembly refuses it rather than
-                                       silently substituting a default. 0.075 / 0.005 = 15, a
+                                       silently substituting a default. 0.110 / 0.005 = 22, a
                                        whole number of steps, so the shipped default is
                                        valid against its own step - the trap that once made
                                        the Generate button die silently. -->
@@ -4065,8 +4065,8 @@
                                                    reword only with his sign-off. The help text
                                                    is 16 words, under the Step 6.8 ceiling. -->
                                               <label for="v2_key_clearance_mm">Key clearance (mm):</label>
-                                              <input type="number" id="v2_key_clearance_mm" name="v2_key_clearance_mm" value="0.075" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off" aria-describedby="v2-key-clearance-note">
-                                              <div class="grade-note" id="v2-key-clearance-note" style="margin-top: 4px; font-size: 0.85em;">Extra room around each gear peg, per side. 0.075 mm suits most printers; raise it if pegs bind.</div>
+                                              <input type="number" id="v2_key_clearance_mm" name="v2_key_clearance_mm" value="0.110" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off" aria-describedby="v2-key-clearance-note">
+                                              <div class="grade-note" id="v2-key-clearance-note" style="margin-top: 4px; font-size: 0.85em;">Extra room around each gear peg, per side. 0.110 mm suits most printers; raise it if pegs bind.</div>
                                           </div>
                                       </fieldset>
                                   </div>
@@ -8051,7 +8051,7 @@
                 if (gearToggleReset) gearToggleReset.checked = false;
                 // Embosser version back to 1. The radio sweep above already
                 // did that (Version 1 is defaultChecked) and the input sweep
-                // put the clearance dial back to 0.075, so all that is left is
+                // put the clearance dial back to 0.110, so all that is left is
                 // to DROP the snapshot: without this, updateEmbosserVersionUI
                 // would see Version 1 selected, restore the remembered
                 // Version 2-era dials, and undo the reset it was called to

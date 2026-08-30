@@ -19,11 +19,18 @@ import pytest
 
 from app.geometry import version2 as v2
 
-CLEARANCES = (0.0, 0.075, 0.15, 0.30, 0.50)
+CLEARANCES = (0.0, 0.075, 0.110, 0.15, 0.30, 0.50)
 
 # audit_fit_matrix.py, family R14: the smallest distance any wrong peg sticks
 # out of a hole, per side, at each clearance.
-SMALLEST_WRONG_PAIR_PROTRUSION = {0.0: 1.000, 0.075: 0.925, 0.15: 0.850, 0.30: 0.700, 0.50: 0.500}
+SMALLEST_WRONG_PAIR_PROTRUSION = {
+    0.0: 1.000,
+    0.075: 0.925,
+    0.110: 0.890,
+    0.15: 0.850,
+    0.30: 0.700,
+    0.50: 0.500,
+}
 
 
 def _signed_area(points):

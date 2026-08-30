@@ -69,13 +69,18 @@ V2_SIZE_TOLERANCE_MM = 0.001
 # it, which is why the family is judged at the dial's maximum as well as its
 # default.
 #
-# 0.075 since 2026-08-29, halved from 0.15. Brennen printed a pair at 0.15 and
-# reported all four peg holes too loose. His gears measure exactly nominal -
-# 14x14, 18x10, 16x12 and 20x8, corner radius 0.5 - so a hole is its peg plus
-# 2c, and halving c halves the slack across a hole from 0.30 mm to 0.15 mm.
-# The wrong-pair margin moves the right way too: 0.925 mm, against 0.850 at
-# 0.15 (tests/test_version2_profiles.py::SMALLEST_WRONG_PAIR_PROTRUSION).
-V2_KEY_CLEARANCE_DEFAULT_MM = 0.075
+# 0.110 since 2026-08-29, after two printed rounds bracketed it: all four peg
+# holes were too loose at 0.15 and too tight at 0.075, so the value lands
+# between them (D-R3-1). 0.110 and not the exact midpoint 0.1125, because the
+# dial's step is 0.005 and a default that is not a whole number of steps above
+# the minimum renders the input :invalid and disables Generate with no message
+# anyone can see. 0.110 / 0.005 = 22.
+#
+# His gears measure exactly nominal - 14x14, 18x10, 16x12 and 20x8, corner
+# radius 0.5 - so a hole is its peg plus 2c and the wrong-pair margin is
+# 1.000 - c: 0.890 mm here, against 0.925 at 0.075 and 0.850 at 0.15
+# (tests/test_version2_profiles.py::SMALLEST_WRONG_PAIR_PROTRUSION).
+V2_KEY_CLEARANCE_DEFAULT_MM = 0.110
 V2_KEY_CLEARANCE_MIN_MM = 0.0
 V2_KEY_CLEARANCE_MAX_MM = 0.5
 

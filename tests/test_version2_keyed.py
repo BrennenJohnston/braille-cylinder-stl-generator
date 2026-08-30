@@ -49,7 +49,7 @@ SHELL_SECTIONS = 64
 SLAB_MM = 0.01
 
 PLATES = ('positive', 'negative')
-CLEARANCES = (0.0, 0.075, 0.5)
+CLEARANCES = (0.0, 0.110, 0.5)
 FIXTURE_HEIGHT_MM = 52.0
 FIXTURE_RADIUS_MM = 15.05
 
@@ -538,7 +538,7 @@ def _mutate(block, kind):
         broken['halves'][0]['profile'] = [{'x': float(x), 'y': float(y)} for x, y in turned]
     elif kind == 'clearance_inward':
         name = v2.KEY_PROFILES_BY_PLATE['negative'][0]
-        shrunk = v2.grown_key_outline(name, -0.075)
+        shrunk = v2.grown_key_outline(name, -v2.V2_KEY_CLEARANCE_DEFAULT_MM)
         broken['halves'][0]['profile'] = [{'x': x, 'y': y} for x, y in shrunk]
     elif kind == 'shallow_countersink':
         broken['countersinks'][0]['depth'] = 1.0

@@ -174,7 +174,7 @@ test.describe('Embosser Version 2 (prototype)', () => {
     await expect(page.locator('#v2-prototype-note')).toBeVisible();
     await expect(page.locator('#v2-prototype-note')).toContainText(S_V4_PROTOTYPE);
     await expect(page.locator('#v2-keyed-cutouts-selection')).toBeVisible();
-    await expect(page.locator('#v2_key_clearance_mm')).toHaveValue('0.075');
+    await expect(page.locator('#v2_key_clearance_mm')).toHaveValue('0.110');
 
     // The gears BETA is Version 1 only (D-V6): hidden AND unchecked, because a
     // hidden checkbox that stayed on would still be read at generate time.
@@ -251,7 +251,7 @@ test.describe('Embosser Version 2 (prototype)', () => {
 
     // And the shipped default must be a whole number of steps, or the dial
     // would be :invalid on load and kill Generate silently.
-    await setDial(page, 'v2_key_clearance_mm', '0.075');
+    await setDial(page, 'v2_key_clearance_mm', '0.110');
     expect(await dial.evaluate((el: HTMLInputElement) => el.checkValidity())).toBe(true);
   });
 
@@ -297,7 +297,7 @@ test.describe('Embosser Version 2 (prototype)', () => {
     expect(added.sort()).toEqual(['embosser_version', 'v2_key_clearance_mm']);
     expect(removed).toEqual([]);
     expect(on.embosser_version).toBe(2);
-    expect(on.v2_key_clearance_mm).toBe(0.075);
+    expect(on.v2_key_clearance_mm).toBe(0.110);
 
     // Version 2 is cylinders-only, and the gear flag must never ride along.
     expect((state.bodies[1] as { shape_type: string }).shape_type).toBe('cylinder');
@@ -367,7 +367,7 @@ test.describe('Embosser Version 2 (prototype)', () => {
 
     await page.locator('#reset-defaults-btn').click();
     await expect(page.locator('#embosser_version_1')).toBeChecked();
-    await expect(page.locator('#v2_key_clearance_mm')).toHaveValue('0.075');
+    await expect(page.locator('#v2_key_clearance_mm')).toHaveValue('0.110');
     expect(
       await page.evaluate(
         () => (document.getElementById('cylinder-seam-offset-row') as HTMLElement).hidden,

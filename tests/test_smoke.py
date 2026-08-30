@@ -693,7 +693,7 @@ def test_ui_version2_numbers_match_the_geometry_module():
     bug source, so the two copies are diffed here rather than trusted.
 
     The dial's attributes are checked as text, not as floats only, because the
-    step has to divide the default exactly: 0.075 / 0.005 = 15. A default that is
+    step has to divide the default exactly: 0.110 / 0.005 = 22. A default that is
     invalid against its own step makes the input :invalid and kills the Generate
     button silently - a trap this repo has already been bitten by once.
     """
