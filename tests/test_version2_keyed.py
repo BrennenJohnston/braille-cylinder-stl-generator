@@ -441,9 +441,7 @@ def test_the_uncleared_nub_matches_the_audit_area():
     about Brennen's CAD, which has not changed.
     """
     half_width = v2.V2_NUB['side'] / 2.0
-    outline = v2.nub_triangle(
-        v2.V2_NUB['base_radius'], v2.V2_NUB['apex_radius'], half_width, v2.V2_ARROW_COLUMN_DEG
-    )
+    outline = v2.nub_triangle(v2.V2_NUB['base_radius'], v2.V2_NUB['apex_radius'], half_width, v2.V2_ARROW_COLUMN_DEG)
     assert _polygon_area(np.array(outline)) == pytest.approx(11.144, abs=0.01)
 
 
