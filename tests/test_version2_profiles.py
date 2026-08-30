@@ -262,9 +262,10 @@ def test_the_nub_points_at_the_arrow_column():
     assert math.degrees(math.atan2(apex[1], apex[0])) % 360 == pytest.approx(v2.V2_ARROW_COLUMN_DEG, abs=1e-9)
 
 
-def test_block_matches_the_wire_contract():
-    block = v2.keyed_cutout_block('positive', 52.0, 0.075)
-    assert set(block) == {'clearance_mm', 'halves', 'countersinks', 'nub'}
+@pytest.mark.parametrize('plate_type', ('positive', 'negative'))
+def test_block_matches_the_wire_contract(plate_type):
+    block = v2.keyed_cutout_block(plate_type, 52.0, 0.075)
+    assert set(block) == {'clearance_mm', 'halves', 'countersinks', 'nub', 'socket'}
     assert block['clearance_mm'] == 0.075
 
     assert [half['end'] for half in block['halves']] == ['bottom', 'top']
@@ -282,18 +283,34 @@ def test_block_matches_the_wire_contract():
         assert sink['kind'] == 'hull', 'the R14 family left one countersink rule; no scaled mouth survives'
         assert sink['depth'] == v2.V2_COUNTERSINK_DEPTH_MM
 
+    # The overlap sits on the FACE side of each feature only: a nub overlaps
+    # into the barrel and stops flush at its free top, a socket overlaps out
+    # through the bottom face and stops at its blind floor. An overlap at the
+    # far end would either bury the nub's chamfer or punch the socket through.
     nub = block['nub']
     assert set(nub) == {'profile', 'top_chamfer', 'base_flare', 'z_from', 'z_to'}
-    assert nub['z_from'] == pytest.approx(25.99)
-    assert nub['z_to'] == pytest.approx(29.0)
+    assert nub['z_from'] == pytest.approx(26.0 - v2.V2_OVERLAP_MM)
+    assert nub['z_to'] == pytest.approx(26.0 + v2.V2_NUB['height'])
     assert set(nub['top_chamfer']) == {'depth', 'profile'}
+    assert nub['base_flare']['depth'] == pytest.approx(v2.V2_NUB['base_flare'])
+
+    socket = block['socket']
+    assert set(socket) == {'profile', 'z_from', 'z_to'}, 'a socket is a plain prism: no chamfer, no flare'
+    assert socket['z_from'] == pytest.approx(-26.0 - v2.V2_OVERLAP_MM)
+    assert socket['z_to'] == pytest.approx(-26.0 + v2.V2_SOCKET_DEPTH_MM)
+    assert all(set(point) == {'x', 'y'} for point in socket['profile'])
 
 
 def test_each_plate_carries_its_own_pair_of_keys():
     positive = v2.keyed_cutout_block('positive', 52.0, 0.075)
     negative = v2.keyed_cutout_block('negative', 52.0, 0.075)
 
-    assert 'nub' not in negative, 'only Cylinder A carries the nub'
+    # Both plates carry a nub and a socket, and the two plates' shapes differ -
+    # a triangle on A, a square on B. Emitting the same shape for both would
+    # silently print a pair that cannot tell its own ends apart.
+    for feature in ('nub', 'socket'):
+        assert feature in positive and feature in negative
+        assert positive[feature]['profile'] != negative[feature]['profile']
     for block, (bottom_name, top_name) in (
         (positive, v2.KEY_PROFILES_BY_PLATE['positive']),
         (negative, v2.KEY_PROFILES_BY_PLATE['negative']),
@@ -309,6 +326,9 @@ def test_the_block_scales_with_the_cylinder_height():
     assert block['halves'][0]['z_from'] == pytest.approx(-20.01)
     assert block['halves'][1]['z_to'] == pytest.approx(20.01)
     assert block['nub']['z_from'] == pytest.approx(19.99)
+    assert block['nub']['z_to'] == pytest.approx(20.0 + v2.V2_NUB['height'])
+    assert block['socket']['z_from'] == pytest.approx(-20.01)
+    assert block['socket']['z_to'] == pytest.approx(-20.0 + v2.V2_SOCKET_DEPTH_MM)
 
 
 @pytest.mark.parametrize(
@@ -523,14 +543,26 @@ def test_the_socket_cap_is_a_guard_rail_that_trims_nothing_today():
         assert wall >= 1.2
 
 
-def test_the_nub_block_and_the_antirot_nub_stay_one_shape():
-    """
-    One shape, one source. Phase 03 folds nub_block onto antirot_nub_profile;
-    until then the two constructions must not drift apart.
-    """
-    emitted = [(point['x'], point['y']) for point in v2.nub_block()['profile']]
-    expected = [(round(x, 6), round(y, 6)) for x, y in v2.antirot_nub_profile('positive')]
+@pytest.mark.parametrize('plate_type', ('positive', 'negative'))
+def test_the_nub_block_and_the_antirot_nub_stay_one_shape(plate_type):
+    """One shape, one source: nub_block only wires antirot_nub_profile up."""
+    emitted = [(point['x'], point['y']) for point in v2.nub_block(plate_type)['profile']]
+    expected = [(round(x, 6), round(y, 6)) for x, y in v2.antirot_nub_profile(plate_type)]
     assert emitted == expected
+
+
+def test_nub_block_takes_a_plate_and_never_a_clearance():
+    """
+    D-V11 forbids ONE thing: the key-clearance dial reaching the nub. A plate
+    selector carries no clearance, so it is safe; an argument the dial can reach
+    is not. Pinned by signature so a future refactor cannot quietly re-couple
+    them.
+    """
+    import inspect
+
+    names = list(inspect.signature(v2.nub_block).parameters)
+    assert names == ['plate_type']
+    assert 'clearance' not in names
 
 
 @pytest.mark.parametrize(

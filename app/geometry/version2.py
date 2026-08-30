@@ -649,24 +649,23 @@ def _wire_points(points: list[tuple[float, float]]) -> list[dict]:
     return [{'x': round(x, 6), 'y': round(y, 6)} for x, y in points]
 
 
-def nub_block() -> dict:
+def nub_block(plate_type: str) -> dict:
     """
-    Cylinder A's key nub, inset by V2_NUB_CLEARANCE_MM - NOT by the dial.
+    One plate's anti-rotation nub, standing proud of its TOP face.
 
-    Gear A1's notch is a fixed negative in Brennen's gear, so the nub is inset
-    by the c that gear was cut for, which leaves that much clearance
-    perpendicular to each of its faces. On an equilateral triangle that moves
-    the base half-width in by sqrt(3) * c, not by c - the faces are what the
-    notch touches.
+    Both cylinders carry one since 2026-08-29: Cylinder A's is the triangle that
+    mates with gear A1's notch, Cylinder B's the square that mates with B1's.
+    Each is inset from its gear's notch by V2_ANTIROT_CLEARANCE_MM measured
+    PERPENDICULAR to every face, which on the triangle moves the base half-width
+    in by sqrt(3) * c rather than by c - the faces are what the notch touches.
 
-    It takes no argument on purpose. The key-clearance dial used to reach this
-    function, and re-coupling them would drive the nub into an already-printed
-    notch the moment someone tightened the holes (D-V11, revised 2026-08-29).
+    It takes a plate selector, and never a CLEARANCE. That is the thing D-V11
+    forbids: the key-clearance dial used to reach this function, and re-coupling
+    them would drive the nub into an already-printed notch the moment someone
+    tightened the holes. A plate selector carries no clearance, so it is safe;
+    an argument named clearance, or any argument the dial can reach, is not.
     """
-    clearance = V2_NUB_CLEARANCE_MM
-    half_width = V2_NUB['side'] / 2.0
-    outline = nub_triangle(V2_NUB['base_radius'], V2_NUB['apex_radius'], half_width, V2_ARROW_COLUMN_DEG)
-    profile = offset_polygon_miter(outline, -clearance)
+    profile = antirot_nub_profile(plate_type)
     return {
         'profile': _wire_points(profile),
         'top_chamfer': {
@@ -680,6 +679,26 @@ def nub_block() -> dict:
     }
 
 
+def socket_block(plate_type: str, height: float) -> dict:
+    """
+    One plate's anti-rotation socket, sunk into its BOTTOM face.
+
+    A plain prism - no chamfer, no flare, one profile - because the gear pin
+    carries its own 0.5 mm lead-in and needs no mouth relief from us. It is cut
+    V2_SOCKET_DEPTH_MM deep, one clearance more than the pin is tall, so the pin
+    cannot bottom out before the two faces meet, and it overlaps the bottom face
+    by V2_OVERLAP_MM so no two solids share an exact plane.
+    """
+    if height <= 0:
+        raise ValueError(f'Version 2 cylinder height must be positive, got {height}')
+    half_height = height / 2.0
+    return {
+        'profile': _wire_points(antirot_socket_profile(plate_type)),
+        'z_from': -half_height - V2_OVERLAP_MM,
+        'z_to': -half_height + V2_SOCKET_DEPTH_MM,
+    }
+
+
 def keyed_cutout_block(plate_type: str, height: float, clearance: float) -> dict:
     """
     Everything the worker needs to cut one cylinder's keyed through-hole.
@@ -687,9 +706,13 @@ def keyed_cutout_block(plate_type: str, height: float, clearance: float) -> dict
     The two halves meet at the centre as a single through-hole (D-V2): the
     bottom key is extruded from the bottom face to the mid-plane and the top
     key from the mid-plane to the top face, each overlapping its face so no two
-    solids share an exact plane. The nub rides on the positive plate only -
-    Cylinder B has no nub, and guessing a side would silently print the wrong
-    pair.
+    solids share an exact plane.
+
+    BOTH plates carry a nub and a socket since 2026-08-29. The nub was positive
+    plate only while gear A1 was the only gear with a notch; every gear has an
+    anti-rotation feature now, so that invariant is retired. The two plates'
+    features are still different shapes, and the plate selector is what picks
+    them - guessing a side would silently print the wrong pair.
     """
     if plate_type not in KEY_PROFILES_BY_PLATE:
         raise ValueError(f'unknown plate type {plate_type!r}; known: {sorted(KEY_PROFILES_BY_PLATE)}')
@@ -735,11 +758,11 @@ def keyed_cutout_block(plate_type: str, height: float, clearance: float) -> dict
             },
         ],
     }
-    if plate_type == 'positive':
-        nub = nub_block()
-        nub['z_from'] = half_height - V2_OVERLAP_MM
-        nub['z_to'] = half_height + V2_NUB['height']
-        block['nub'] = nub
+    nub = nub_block(plate_type)
+    nub['z_from'] = half_height - V2_OVERLAP_MM
+    nub['z_to'] = half_height + V2_NUB['height']
+    block['nub'] = nub
+    block['socket'] = socket_block(plate_type, height)
     return block
 
 

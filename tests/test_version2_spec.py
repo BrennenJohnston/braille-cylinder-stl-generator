@@ -4,8 +4,9 @@ What app/geometry_spec.py emits for Embosser Version 2.
 Two halves, and the second matters as much as the first:
 
   1. Version 2 adds `cylinder.solid` and a `keyed_cutouts` block carrying the
-     two key halves, the four mouth countersinks and - on Cylinder A only - the
-     key nub, with every number and z range derived from the request rather
+     two key halves, the four mouth countersinks and - on BOTH plates since
+     2026-08-29 - an anti-rotation nub above the top face and socket in the
+     bottom one, with every number and z range derived from the request rather
      than from the preset.
   2. Version 1 is untouched. With the field absent, 1, '1', 1.0 or '' the spec
      is deep-equal to the one produced with no field at all, across every spec
@@ -152,9 +153,17 @@ def test_each_plate_gets_its_own_pair_of_keys(plate_type):
     assert [sink['kind'] for sink in block['countersinks']] == ['hull', 'hull']
 
 
-def test_the_nub_is_on_cylinder_a_only():
-    assert 'nub' in v2_spec('positive')['keyed_cutouts']
-    assert 'nub' not in v2_spec('negative')['keyed_cutouts']
+def test_both_plates_carry_a_nub_and_a_socket():
+    """
+    The "nub on Cylinder A only" invariant retired on 2026-08-29, when every
+    gear gained an anti-rotation feature. Both plates now carry both, and the
+    two plates' shapes must differ or the pair cannot tell its ends apart.
+    """
+    positive = v2_spec('positive')['keyed_cutouts']
+    negative = v2_spec('negative')['keyed_cutouts']
+    for feature in ('nub', 'socket'):
+        assert feature in positive and feature in negative
+        assert positive[feature]['profile'] != negative[feature]['profile']
 
 
 def test_the_z_ranges_follow_the_cylinder_height():
@@ -167,6 +176,8 @@ def test_the_z_ranges_follow_the_cylinder_height():
     assert block['halves'][1]['z_to'] == pytest.approx(30.01)
     assert block['nub']['z_from'] == pytest.approx(29.99)
     assert block['nub']['z_to'] == pytest.approx(33.0)
+    assert block['socket']['z_from'] == pytest.approx(-30.01)
+    assert block['socket']['z_to'] == pytest.approx(-30.0 + version2.V2_SOCKET_DEPTH_MM)
 
 
 @pytest.mark.parametrize('clearance', (0.0, 0.075, 0.5))

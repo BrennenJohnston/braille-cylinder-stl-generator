@@ -1090,7 +1090,9 @@ def test_v2_golden_fixture_is_a_keyed_cylinder(fixtures_dir, plate_type):
     assert len(barrels) == 1
     barrel = barrels[0]
 
-    expected_top = _V2_FIXTURE_Z_MAX + (version2.V2_NUB['height'] if plate_type == 'positive' else 0.0)
+    # Both plates carry an anti-rotation nub since 2026-08-29, so both reach the
+    # same height; only the SHAPE differs, triangle on A and square on B.
+    expected_top = _V2_FIXTURE_Z_MAX + version2.V2_NUB['height']
     assert barrel.bounds[0][2] == pytest.approx(_V2_FIXTURE_Z_MIN, abs=1e-3)
     assert barrel.bounds[1][2] == pytest.approx(expected_top, abs=1e-3)
 
@@ -1105,18 +1107,23 @@ def test_v2_golden_fixture_is_a_keyed_cylinder(fixtures_dir, plate_type):
     axis = [[0.0, 0.0, float(z)] for z in range(1, int(_V2_FIXTURE_Z_MAX))]
     assert not mesh.contains(np.array(axis)).any()
 
-    # The nub rides on Cylinder A alone; nothing at all stands above B.
+    # Each plate stands its own nub above the top face - the "Cylinder A alone"
+    # rule retired on 2026-08-29 when every gear gained an anti-rotation feature.
     above = mesh.vertices[mesh.vertices[:, 2] > _V2_FIXTURE_Z_MAX + 1e-3]
-    if plate_type == 'positive':
-        assert len(above) > 0
-        # Measured against the profile the module actually emits, not against
-        # the nominal apex with slop: the nub is inset by V2_NUB_CLEARANCE_MM,
-        # which moved from 0.15 to 0.30 on 2026-08-29, and a tolerance wide
-        # enough to swallow that is wide enough to miss a real regression.
-        nub_apex = max(np.hypot(x, y) for x, y in version2.antirot_nub_profile('positive'))
-        assert np.hypot(above[:, 0], above[:, 1]).max() == pytest.approx(nub_apex, abs=2e-3)
-    else:
-        assert len(above) == 0
+    assert len(above) > 0
+    # Measured against the profile the module actually emits, not against the
+    # nominal apex with slop: the nub is inset by V2_NUB_CLEARANCE_MM, which
+    # moved from 0.15 to 0.30 on 2026-08-29, and a tolerance wide enough to
+    # swallow that is wide enough to miss a real regression.
+    nub_apex = max(np.hypot(x, y) for x, y in version2.antirot_nub_profile(plate_type))
+    assert np.hypot(above[:, 0], above[:, 1]).max() == pytest.approx(nub_apex, abs=2e-3)
+
+    # The socket is a blind pocket in the BOTTOM face, not a second through-hole:
+    # material is still there above it.
+    socket_top = _V2_FIXTURE_Z_MIN + version2.V2_SOCKET_DEPTH_MM
+    centre = np.array(version2.antirot_socket_profile(plate_type)).mean(axis=0)
+    assert not mesh.contains(np.array([[centre[0], centre[1], _V2_FIXTURE_Z_MIN + 1.0]]))[0]
+    assert mesh.contains(np.array([[centre[0], centre[1], socket_top + 1.0]]))[0]
 
 
 @pytest.mark.parametrize(

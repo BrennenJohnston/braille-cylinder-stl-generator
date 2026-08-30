@@ -51,7 +51,14 @@ SLAB_MM = 0.01
 PLATES = ('positive', 'negative')
 CLEARANCES = (0.0, 0.110, 0.5)
 FIXTURE_HEIGHT_MM = 52.0
-FIXTURE_RADIUS_MM = 15.05
+# The barrel this harness builds, from the module rather than a literal: the
+# wall a socket leaves is measured against it, so a stale copy would prove the
+# wrong part safe. It read 15.05 until 2026-08-30 - the retired 30.1 mm barrel -
+# while the module had said 15.25 since print round 1.
+FIXTURE_RADIUS_MM = v2.V2_BARREL_DIAMETER_MM / 2.0
+# The v7 sample cylinders really ARE 30.1 mm parts. They still rule the barrel's
+# shape, so they keep their own radius rather than following the preset.
+SAMPLE_RADIUS_MM = 15.05
 
 # Sections taken in the straight part of each half, clear of both countersinks.
 POCKET_PROBE_Z = (-20.0, -8.0, 8.0, 20.0)
@@ -164,15 +171,25 @@ def _stabilize_for_float32(mesh):
 def build_v2_cylinder(block, radius, height, plate_type):
     """
     The reference Version 2 cylinder: a solid barrel, both key halves cut
-    through, all four mouths countersunk, and the nub added on Cylinder A.
+    through, all four mouths countersunk, the anti-rotation socket sunk into the
+    bottom face and the anti-rotation nub standing on the top one.
+
+    BOTH plates carry a nub and a socket since 2026-08-29 - the "nub on Cylinder
+    A only" rule retired when every gear gained an anti-rotation feature - so a
+    block missing either is a bug, not a plate difference.
+
+    CSG ORDER IS THE WORKER'S: everything subtractive happens while this is
+    still a bare barrel (halves, countersinks, socket), and only then is the nub
+    unioned on. A socket cut after the nub would be cutting a different solid.
 
     Booleans go straight to Manifold, matching the worker. Phase 07 imports
     this so the golden fixtures and this harness can never drift apart.
     """
     if plate_type not in v2.KEY_PROFILES_BY_PLATE:
         raise ValueError(f'unknown plate type {plate_type!r}')
-    if ('nub' in block) != (plate_type == 'positive'):
-        raise ValueError(f'the nub belongs to the positive plate only; block for {plate_type!r} disagrees')
+    for feature in ('nub', 'socket'):
+        if feature not in block:
+            raise ValueError(f'every Version 2 plate carries a {feature}; block for {plate_type!r} has none')
 
     solid = Manifold.cylinder(height, radius, radius, SHELL_SECTIONS, True)
     for half in block['halves']:
@@ -182,8 +199,12 @@ def build_v2_cylinder(block, radius, height, plate_type):
         solid -= _prism(half['profile'], half['z_from'], span)
     for sink in block['countersinks']:
         solid -= _countersink(sink, height)
-    if 'nub' in block:
-        solid += _nub_manifold(block['nub'])
+    socket = block['socket']
+    socket_span = socket['z_to'] - socket['z_from']
+    if socket_span <= 0:
+        raise ValueError('the socket has z_to <= z_from')
+    solid -= _prism(socket['profile'], socket['z_from'], socket_span)
+    solid += _nub_manifold(block['nub'])
 
     raw = solid.to_mesh()
     mesh = trimesh.Trimesh(
@@ -208,11 +229,25 @@ def _loops(mesh, z):
     return [np.asarray(loop)[:, :2] for loop in section.discrete]
 
 
-def _hole_loop(mesh, z):
-    """The pocket outline: the inner loop, the one that is not the barrel rim."""
+def _pockets(mesh, z):
+    """Every loop at this height except the barrel rim."""
     loops = _loops(mesh, z)
-    assert len(loops) == 2, f'expected a rim and a pocket at z={z}, found {len(loops)} loops'
-    return min(loops, key=lambda loop: np.hypot(loop[:, 0], loop[:, 1]).max())
+    assert len(loops) >= 2, f'expected a rim and at least one pocket at z={z}, found {len(loops)} loops'
+    rim = max(loops, key=lambda loop: np.hypot(loop[:, 0], loop[:, 1]).max())
+    return [loop for loop in loops if loop is not rim]
+
+
+def _hole_loop(mesh, z):
+    """
+    The KEYED hole's outline.
+
+    "The loop that is not the rim" stopped identifying it on 2026-08-29: a
+    section near the bottom face now meets three loops, because the
+    anti-rotation socket opens onto that face too. The keyed hole is the only
+    pocket centred on the axis - the socket sits out at r ~ 11.5 on the arrow
+    column - so centre distance is what tells them apart.
+    """
+    return min(_pockets(mesh, z), key=lambda loop: math.hypot(loop[:, 0].mean(), loop[:, 1].mean()))
 
 
 def _polygon_area(points):
@@ -291,10 +326,12 @@ def test_the_cylinder_is_one_watertight_body(plate_type):
 
 @pytest.mark.parametrize('plate_type', PLATES)
 def test_bounds(plate_type):
-    mesh = _cylinder(plate_type, 0.075)
-    expected_top = FIXTURE_HEIGHT_MM / 2.0 + (v2.V2_NUB['height'] if plate_type == 'positive' else 0.0)
-    assert mesh.bounds[0] == pytest.approx([-15.05, -15.05, -26.0], abs=0.001)
-    assert mesh.bounds[1] == pytest.approx([15.05, 15.05, expected_top], abs=0.001)
+    mesh = _cylinder(plate_type, 0.110)
+    # Both plates carry a nub since 2026-08-29, so both reach the same height.
+    expected_top = FIXTURE_HEIGHT_MM / 2.0 + v2.V2_NUB['height']
+    radius = FIXTURE_RADIUS_MM
+    assert mesh.bounds[0] == pytest.approx([-radius, -radius, -FIXTURE_HEIGHT_MM / 2.0], abs=0.001)
+    assert mesh.bounds[1] == pytest.approx([radius, radius, expected_top], abs=0.001)
 
 
 @pytest.mark.parametrize('plate_type', PLATES)
@@ -364,23 +401,34 @@ def test_countersink_is_one_45_degree_rule_at_every_mouth(plate_type, depth):
 
 
 @pytest.mark.parametrize('clearance', CLEARANCES)
-def test_the_nub_is_on_cylinder_a_only(clearance):
-    positive = _cylinder('positive', clearance)
-    negative = _cylinder('negative', clearance)
-    assert negative.bounds[1][2] == pytest.approx(FIXTURE_HEIGHT_MM / 2.0, abs=0.001)
-    assert positive.bounds[1][2] == pytest.approx(FIXTURE_HEIGHT_MM / 2.0 + v2.V2_NUB['height'], abs=0.001)
+def test_both_plates_stand_their_nub_on_the_arrow_column(clearance):
+    """
+    Both cylinders carry a nub since 2026-08-29 - a triangle on A, a square on
+    B - and each sits centred on the arrow column.
 
-    block = v2.keyed_cutout_block('positive', FIXTURE_HEIGHT_MM, clearance)
-    expected = np.array([(point['x'], point['y']) for point in block['nub']['profile']])
-    section = _loops(positive, 27.5)
-    assert len(section) == 1, 'only the nub stands above the top face'
-    assert _polygon_area(section[0]) == pytest.approx(_polygon_area(expected), abs=0.05)
-    assert _max_boundary_distance(section[0], expected) <= 0.01
+    Reach along the column rather than the widest POINT: a square's widest point
+    is a corner sitting 6.6 degrees off the column, so the apex test the
+    triangle alone allowed does not generalise to both shapes.
+    """
+    angle = math.radians(v2.V2_ARROW_COLUMN_DEG)
+    ux, uy = math.cos(angle), math.sin(angle)
 
-    apex = max(section[0], key=lambda point: math.hypot(*point))
-    expected_apex = max(math.hypot(*point) for point in expected)
-    assert math.hypot(*apex) == pytest.approx(expected_apex, abs=0.01)
-    assert math.degrees(math.atan2(apex[1], apex[0])) % 360.0 == pytest.approx(v2.V2_ARROW_COLUMN_DEG, abs=0.05)
+    for plate_type in ('positive', 'negative'):
+        mesh = _cylinder(plate_type, clearance)
+        assert mesh.bounds[1][2] == pytest.approx(FIXTURE_HEIGHT_MM / 2.0 + v2.V2_NUB['height'], abs=0.001)
+
+        block = v2.keyed_cutout_block(plate_type, FIXTURE_HEIGHT_MM, clearance)
+        expected = np.array([(point['x'], point['y']) for point in block['nub']['profile']])
+        section = _loops(mesh, FIXTURE_HEIGHT_MM / 2.0 + 1.5)
+        assert len(section) == 1, 'only the nub stands above the top face'
+        assert _polygon_area(section[0]) == pytest.approx(_polygon_area(expected), abs=0.05)
+        assert _max_boundary_distance(section[0], expected) <= 0.01
+
+        reach = max(x * ux + y * uy for x, y in section[0])
+        assert reach == pytest.approx(max(x * ux + y * uy for x, y in expected), abs=0.01)
+        # Symmetric about the column: equal tangential extent either side.
+        tangential = [-x * uy + y * ux for x, y in section[0]]
+        assert max(tangential) == pytest.approx(-min(tangential), abs=0.01)
 
 
 def test_the_uncleared_nub_matches_the_audit_area():
@@ -402,30 +450,48 @@ def test_the_uncleared_nub_matches_the_audit_area():
 @pytest.mark.parametrize('clearance', CLEARANCES)
 def test_minimum_wall(clearance):
     """
-    The barrel is thinnest where a flared mouth reaches farthest out. Computed
-    from the profiles, then confirmed with a containment probe in the material
-    that should be left standing there.
+    The barrel is thinnest where a flared mouth or an anti-rotation socket
+    reaches farthest out. Computed from the profiles, then confirmed with a
+    containment probe in the material that should be left standing there.
+
+    The socket joined this survey on 2026-08-29 and is the BINDING case: on
+    Cylinder A it leaves 1.2525 mm, less than any mouth at any clearance, and
+    unlike the mouths it does not shrink when the dial is turned down. That is
+    the wall V2_SOCKET_MAX_RADIUS_MM exists to guarantee (D-R3-3).
     """
     thinnest = None
     for plate_type in PLATES:
         block = v2.keyed_cutout_block(plate_type, FIXTURE_HEIGHT_MM, clearance)
-        for sink in block['countersinks']:
-            reach = max(math.hypot(point['x'], point['y']) for point in sink['face_profile'])
+        features = [
+            (
+                max(math.hypot(point['x'], point['y']) for point in sink['face_profile']),
+                sink['end'],
+                f'{sink["end"]} mouth',
+            )
+            for sink in block['countersinks']
+        ]
+        features.append(
+            (max(math.hypot(point['x'], point['y']) for point in block['socket']['profile']), 'bottom', 'socket')
+        )
+        for reach, end, what in features:
             wall = FIXTURE_RADIUS_MM - reach
-            assert wall >= 1.2, f'{plate_type} {sink["end"]} mouth leaves only {wall:.3f} mm of wall'
+            assert wall >= 1.2, f'{plate_type} {what} leaves only {wall:.3f} mm of wall'
             if thinnest is None or wall < thinnest[0]:
-                thinnest = (wall, plate_type, sink['end'], reach)
+                thinnest = (wall, plate_type, end, reach)
 
     wall, plate_type, end, reach = thinnest
     mesh = _cylinder(plate_type, clearance)
     z = (-1.0 if end == 'bottom' else 1.0) * (FIXTURE_HEIGHT_MM / 2.0 - 0.1)
-    corner = max(
-        _hole_loop(mesh, z),
-        key=lambda point: math.hypot(*point),
+    # A keyed mouth and a socket both open onto the bottom face, so take the
+    # pocket whose reach is the one just measured rather than assuming one.
+    pocket = min(
+        _pockets(mesh, z),
+        key=lambda loop: abs(np.hypot(loop[:, 0], loop[:, 1]).max() - reach),
     )
+    corner = max(pocket, key=lambda point: math.hypot(*point))
     direction = corner / math.hypot(*corner)
     probe = direction * (reach + wall / 2.0)
-    assert mesh.contains([[probe[0], probe[1], z]])[0], 'the wall behind the widest mouth corner is missing'
+    assert mesh.contains([[probe[0], probe[1], z]])[0], 'the wall behind the thinnest feature is missing'
 
 
 @pytest.mark.parametrize('clearance', CLEARANCES)
@@ -476,7 +542,7 @@ def test_sample_barrel_matches(plate_type):
 
     barrel = vertices[(vertices[:, 2] > 10.0) & (vertices[:, 2] < 40.0)]
     radii = np.hypot(barrel[:, 0] - axis_x, barrel[:, 1] - axis_y)
-    assert radii.max() == pytest.approx(FIXTURE_RADIUS_MM, abs=SAMPLE_RIM_TOL_MM)
+    assert radii.max() == pytest.approx(SAMPLE_RADIUS_MM, abs=SAMPLE_RIM_TOL_MM)
     assert vertices[:, 2].min() == pytest.approx(0.0, abs=0.001)
 
 
@@ -592,10 +658,21 @@ def test_a_blind_hole_is_caught():
     assert mesh.contains([[0.0, 0.0, 0.0]])[0], 'the through-hole check would not notice a blind hole'
 
 
-def test_the_nub_on_the_wrong_plate_is_refused():
-    """The builder refuses rather than quietly printing a Cylinder B with a nub."""
-    block = v2.keyed_cutout_block('positive', FIXTURE_HEIGHT_MM, 0.075)
-    with pytest.raises(ValueError, match='positive plate only'):
+@pytest.mark.parametrize('feature', ('nub', 'socket'))
+def test_a_block_missing_an_antirotation_feature_is_refused(feature):
+    """
+    The builder refuses rather than quietly printing a cylinder that cannot key
+    to its gear.
+
+    This replaces the old "the nub belongs to the positive plate only" guard,
+    which retired on 2026-08-29 when every gear gained an anti-rotation feature.
+    Both plates must now carry both, so a missing one is a bug rather than a
+    plate difference - and a silently nub-less Cylinder B would be a part that
+    looks right and cannot hold its gear.
+    """
+    block = v2.keyed_cutout_block('negative', FIXTURE_HEIGHT_MM, 0.110)
+    del block[feature]
+    with pytest.raises(ValueError, match=f'carries a {feature}'):
         build_v2_cylinder(block, FIXTURE_RADIUS_MM, FIXTURE_HEIGHT_MM, 'negative')
 
 
