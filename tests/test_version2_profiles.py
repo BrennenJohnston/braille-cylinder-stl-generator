@@ -494,8 +494,14 @@ def test_each_socket_clears_its_gear_pin_and_leaves_barrel_wall(plate_type):
     inner, outer, half_width = _radial_extent(v2.antirot_socket_profile(plate_type))
     assert pin['inner_radius'] - inner == pytest.approx(v2.V2_ANTIROT_CLEARANCE_MM, abs=GEAR_CAD_ROUNDING_MM)
     assert half_width - pin['half_width'] == pytest.approx(v2.V2_ANTIROT_CLEARANCE_MM, abs=GEAR_CAD_ROUNDING_MM)
-    # Measured from the barrel the module owns, never from a literal 15.25.
-    wall = v2.V2_BARREL_DIAMETER_MM / 2.0 - outer
+    # Measured from the barrel the module owns, never from a literal 15.25, and
+    # to the socket's furthest point from the AXIS rather than its reach along
+    # the column. Those differ on the square: its corner arc sits at r 13.2859
+    # where the column reach is 13.2000, so the column figure overstates
+    # Cylinder B's wall by 0.086 mm. On the triangle the apex is on the column
+    # and the two agree.
+    furthest = max(math.hypot(x, y) for x, y in v2.antirot_socket_profile(plate_type))
+    wall = v2.V2_BARREL_DIAMETER_MM / 2.0 - furthest
     assert wall >= 1.2, f'{plate_type} socket leaves only {wall:.4f} mm of wall'
 
 

@@ -218,8 +218,11 @@ construction, and the second rebuilds a rounded rectangle rather than offsetting
 
 Sockets are cut **V2_SOCKET_DEPTH_MM = 3.15 mm** deep — the pin's 3.0 plus one
 clearance, so the pin cannot bottom out before the two faces meet — and carry no mouth
-chamfer, because the gear's pin has its own 0.5 mm lead-in. Walls behind them: A
-**1.2525 mm**, B **2.0500 mm**, both ≥ 1.2.
+chamfer, because the gear's pin has its own 0.5 mm lead-in. Walls behind them, measured
+to each socket's furthest point from the **axis**: A **1.2525 mm**, B **1.9641 mm**, both
+≥ 1.2. For the square those differ from the reach along the column — its corner arc sits
+at r 13.2859 where the column reach is 13.2000 — and the smaller figure is the real wall.
+On the triangle the apex is on the column and the two agree.
 
 `V2_SOCKET_MAX_RADIUS_MM = 14.00` caps Cylinder A's socket. **It trims exactly 0.0000 mm
 today** and starts to bite above c = 0.1525; it exists so the wall guarantee survives
