@@ -449,16 +449,16 @@ STLs, every peg is exactly nominal:
 | Gear | Measured peg (mm) | Profile | Corner radius (mm) |
 |---|---|---|---|
 | A1 | 14.000 × 14.000 | `a1_square_14` | 0.500 |
-| A2 | 10.000 × 18.000 | `a2_rect_18x10` | **2.000** |
+| A2 | 10.000 × 18.000 | `a2_rect_18x10` | 0.500 |
 | B1 | 12.000 × 16.000 | `b1_rect_16x12` | 0.500 |
 | B2 | 8.000 × 20.000 | `b2_rect_20x8` | 0.500 |
 
-A2 carries a 2.000 mm corner radius where the other three carry 0.500. **It breaks
-nothing:** a larger corner radius removes material, so the peg still sits strictly
-inside a hole whose corners are 0.500 + c, and mutual exclusion is decided by the
-rectangle sides, never the corners. It costs a little corner bearing area. Reported
-rather than "fixed" — the pegs are Brennen's hardware, and this specification records
-what was measured, not what would be tidier.
+All four match `V2_KEY_PROFILES` and `V2_KEY_CORNER_RADIUS_MM` exactly. A2 was first
+cut with a **2.000 mm** corner radius and re-cut to 0.500 the same day, on Brennen's
+own catch. It would have fitted either way — a larger corner radius removes material,
+so the peg still sits strictly inside a hole whose corners are 0.500 + c, and mutual
+exclusion is decided by the rectangle sides, never the corners — but it now carries the
+same corner bearing area as the other three.
 
 ---
 

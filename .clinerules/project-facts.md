@@ -155,10 +155,9 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      rule was retired 2026-08-29 with the 30.5 barrel (seam gap 4.8 mm against
      the 4.0 needed). Restore it only below a 30.24 mm barrel.
    - The R14 gear pegs EXIST as of 2026-08-29 and measure exactly nominal
-     (14x14, 18x10, 16x12, 20x8). Their STLs are still named "v7" - that is
-     the gear body's version, not the peg's. A2's peg corner radius is 2.000
-     where the others are 0.500: harmless (a bigger radius removes material),
-     reported not fixed. No v7 PEG ever enters an R14 hole.
+     (14x14, 18x10, 16x12, 20x8, every corner r 0.500). Their STLs are still
+     named "v7" - that is the gear body's version, not the peg's. No v7 PEG
+     ever enters an R14 hole.
 
 ## Settings changes — order of operations
 7. settings.schema.json is the single source of truth. When adding or changing
