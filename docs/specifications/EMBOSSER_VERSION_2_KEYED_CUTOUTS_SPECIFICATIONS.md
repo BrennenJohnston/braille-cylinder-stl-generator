@@ -72,12 +72,12 @@ All four keys are **rounded rectangles** with a corner radius of **0.500 mm**
 (`V2_KEY_CORNER_RADIUS_MM`), tessellated at **96 segments** per full circle
 (`V2_ARC_SEGMENTS`). `V2_KEY_PROFILES` owns the dimensions:
 
-| Key | Length × width (mm) | Where it sits | Section area at c = 0.075 (mm²) |
+| Key | Length × width (mm) | Where it sits | Section area at c = 0.110 (mm²) |
 |---|---|---|---|
-| `a1_square_14` | 14.0 × 14.0 | Cylinder A, **top** (the nub end) | 199.94 |
-| `a2_rect_18x10` | 18.0 × 10.0 | Cylinder A, bottom | 183.94 |
-| `b1_rect_16x12` | 16.0 × 12.0 | Cylinder B, **top** | 195.94 |
-| `b2_rect_20x8` | 20.0 × 8.0 | Cylinder B, bottom | 163.94 |
+| `a1_square_14` | 14.0 × 14.0 | Cylinder A, **top** (the nub end) | 201.889 |
+| `a2_rect_18x10` | 18.0 × 10.0 | Cylinder A, bottom | 185.889 |
+| `b1_rect_16x12` | 16.0 × 12.0 | Cylinder B, **top** | 197.889 |
+| `b2_rect_20x8` | 20.0 × 8.0 | Cylinder B, bottom | 165.889 |
 
 `KEY_PROFILES_BY_PLATE` maps plate type to `(bottom, top)`:
 `positive → ('a2_rect_18x10', 'a1_square_14')`, `negative → ('b2_rect_20x8',
@@ -160,7 +160,7 @@ The thinnest barrel wall under a mouth is **2.276 mm**, well over the 1.2 mm min
 
 Cylinder A's top face carries a triangular key nub that mates with gear A1's underside
 notch. `V2_NUB` owns it: side **5.073158 mm**, base at r **9.754087 mm**, apex at r
-**14.147487 mm**, **3.0 mm** tall, with a **0.5 mm** top chamfer and a **0.5 mm** base
+**14.147487 mm**, **3.0 mm** tall, with a **0.5 mm** top chamfer and a **0.10 mm** base
 flare. It is reproduced from Brennen's CAD as measured — including the fact that it is
 **not exactly equilateral** (the flanks are 5.073086 against a 5.073158 base, 72 nm
 apart, from six-decimal rounding). Any inradius arithmetic must use the real perimeter,
@@ -173,29 +173,94 @@ straight from the flare to the chamfer and bulges the body outward by 0.2 mm —
 exact negative, so that bulge would have jammed the one gear that carries the handle
 torque. The correct build is `hull(flare, body) + body + hull(body, chamfer)`.
 
-The nub rides on the **positive plate only**. Cylinder B has none, and the builder
+**Both plates carry a nub since 2026-08-29** (D-R3-2). It rode on the positive plate
+only while gear A1 was the only gear with a notch; every gear has an anti-rotation
+feature now. The two shapes differ and the plate selector picks them — the builder
 raises rather than letting a caller guess a side.
+
+**The base flare was 0.5 mm until 2026-08-29, and could not fit** (D-R3-4). Probing
+gear A1's notch by containment on a 10 µm grid showed its tangential half-width
+**constant from the mating face to full depth** — the notch has no mouth relief at all.
+A 0.5 mm flare therefore stood **0.49 mm proud per side** at the barrel face, so gear A1
+cannot have been seating flush on either printed pair. Nobody reported it, because the
+main profile fitted perfectly and the gear went on; it just stood off. At 0.10 mm the
+flared nub still clears the notch wall by **0.05 mm** on every face.
 
 The A-top mouth clears the nub at every clearance the dial allows: the mouth reaches
 r 9.15 mm at the default and r 9.50 mm at the maximum, against the nub base at
 r 9.754087 mm (`test_the_a_top_mouth_clears_the_nub`).
+
+### 4.4 The anti-rotation features
+
+Print round 2 (2026-08-29) added an anti-rotation feature to **every** gear, not only
+A1. The top gears carry **notches** and the bottom gears carry solid **pins**, so each
+cylinder stands a **nub** above its top face and sinks a **socket** into its bottom one.
+All four sit on the arrow column and are 3.0 mm deep. `V2_GEAR_ANTIROT` records the four
+gear features as measured; `ANTIROT_BY_PLATE` maps plate to feature.
+
+The A triangle is **not** rebuilt from those measurements — it derives from `V2_NUB` by
+an inset, so the shape has exactly one source. B's square is known only from the gear.
+
+| Where | Kind | Construction | Inner r | Outer r | Half-width | Area (mm²) |
+|---|---|---|---|---|---|---|
+| A top | nub (union) | nominal triangle, **mitre** inset 0.30 | 10.054087 | 13.547487 | 2.016964 | 7.0461 |
+| A bottom | socket (subtract) | the pin, **parallel curve** +0.15, arcs r 0.15, capped at r 14.00 | 9.754087 | 13.997487 | 2.426771 | 11.0980 |
+| B top | nub (union) | 3.000 × 3.000, **sharp** corners | 9.9500 | 12.9500 | 1.5000 | 9.0000 |
+| B bottom | socket (subtract) | 3.300 × 3.300, **parallel curve** +0.15, arcs r 0.15 | 9.9000 | 13.2000 | 1.6500 | 10.8707 |
+
+**Nubs are mitred, sockets are parallel curves**, the same split the keys already use.
+A socket is an internal corner in a vertically printed barrel and must be filleted; a
+mitred socket corner would also sit 0.212 mm from the pin's corner instead of 0.150, and
+would move Cylinder A's wall from **1.2525 mm** to 1.1025 — under the 1.2 mm minimum.
+`parallel_curve()` is a third construction beside `offset_polygon_miter()` and
+`grown_key_outline()`, because neither of those can do it: the first is a mitre by
+construction, and the second rebuilds a rounded rectangle rather than offsetting a ring.
+
+Sockets are cut **V2_SOCKET_DEPTH_MM = 3.15 mm** deep — the pin's 3.0 plus one
+clearance, so the pin cannot bottom out before the two faces meet — and carry no mouth
+chamfer, because the gear's pin has its own 0.5 mm lead-in. Walls behind them: A
+**1.2525 mm**, B **2.0500 mm**, both ≥ 1.2.
+
+`V2_SOCKET_MAX_RADIUS_MM = 14.00` caps Cylinder A's socket. **It trims exactly 0.0000 mm
+today** and starts to bite above c = 0.1525; it exists so the wall guarantee survives
+anyone raising the clearance or switching a socket to a mitre. It is a guard rail, not
+dead code — do not remove it on the grounds that it does nothing.
+
+**One interaction worth knowing.** Both the sockets and the tactile row arrows sit on
+the 180° column, and from **five rows up** their axial bands overlap — the lowest arrow
+reaches z −23.00 where the socket still reaches −22.85. It is safe, but only because of
+which plate gets which: the plate that *recesses* its arrows is Cylinder B, whose socket
+is the short square at r 13.20, leaving **1.35 mm**; the far-reaching triangle socket at
+r 13.9975 is on Cylinder A, whose arrows stand *proud* and cut nothing into the barrel.
+Swap either half of that pairing and the wall is 0.55 mm. Pinned by
+`test_the_tactile_arrow_recess_clears_the_anti_rotation_socket`.
 
 ---
 
 ## 5. The Clearance
 
 One dial, `version_2.key_clearance_mm` (schema) / `v2_key_clearance_mm` (runtime):
-default **0.075 mm**, range **0.0–0.5 mm** (`V2_KEY_CLEARANCE_DEFAULT_MM`, `_MIN_MM`,
+default **0.110 mm**, range **0.0–0.5 mm** (`V2_KEY_CLEARANCE_DEFAULT_MM`, `_MIN_MM`,
 `_MAX_MM`). It is applied as an **outward** growth of each hole profile — the hole gets
 bigger, the peg does not change.
 
-**It governs the four holes and nothing else.** The default was 0.15 mm until
-2026-08-29, when the first printed pair came back with all four peg holes too loose.
-The pegs measure exactly nominal (§11), so a hole is its peg plus 2c: halving c halves
-the slack across a hole, from 0.30 mm to 0.15 mm.
+**It governs the four holes and nothing else.** Two printed rounds bracketed it, both
+on 2026-08-29: at **0.15** all four peg holes were too loose, at **0.075** they were too
+tight, so the value lands between them at **0.110** (D-R3-1). The pegs measure exactly
+nominal (§11), so a hole is its peg plus 2c.
+
+Not the exact midpoint 0.1125: the dial's step is 0.005, and a default that is not a
+whole number of steps above the minimum renders the input `:invalid` and disables
+Generate with no message anyone can see. 0.110 / 0.005 = 22.
 
 **The nub does NOT follow the dial** (D-V11, revised 2026-08-29). It is inset by
-`V2_NUB_CLEARANCE_MM`, a fixed **0.15 mm**. The dial used to shrink the nub by the same
+`V2_NUB_CLEARANCE_MM` = **0.30 mm**, which is **derived**, never retyped, as
+`V2_GEAR_TRIANGLE_INSET_MM + V2_ANTIROT_CLEARANCE_MM` (D-R3-5) — the notch is already
+inset from nominal by the first, so standing the nub off by one more of the second is
+what leaves 0.15 mm perpendicular to each face. It was a hard 0.15 until 2026-08-29, and
+at that value the nub was **line-to-line** in the notch: 5 µm of *interference* on the
+base face, which no print reported. If a printed pair comes back rattling, the one-line
+reversal is to hard-code 0.15 again. The dial used to shrink the nub by the same
 `c` the holes grew by — one number, opposite directions — but gear A1's notch is a fixed
 negative that is *already cut*, and it measures 3.943 × 4.553 mm: the nub at exactly
 c = 0.15, to under half a micron. Under the old rule, tightening the holes would have
@@ -204,12 +269,12 @@ Raise `V2_NUB_CLEARANCE_MM` only alongside a matching gear A1. Note that a miter
 moves every *face* in by `c`, which on this triangle costs the base half-width
 `√3 · c` = 1.732 c — the inradius is what drops by exactly `c`.
 
-Raising the clearance eats into the error-proofing margins of §11: 0.925 mm at the
+Raising the clearance eats into the error-proofing margins of §11: 0.890 mm at the
 default, 0.500 mm at the maximum.
 
 The dial is bounded **at the source** (`min="0" max="0.5" step="0.005"` on the input),
-and 0.075 / 0.005 = 15 — a whole number of steps, so the shipped default is valid
-against its own step. **The step moved from 0.01 with the default**, and had to:
+and 0.110 / 0.005 = 22 — a whole number of steps, so the shipped default is valid
+against its own step. **The step moved from 0.01 on 2026-08-29**, and had to:
 0.075 is not a multiple of 0.01, and a default that is invalid against its step makes
 the input `:invalid` and kills the Generate button silently. This repo has been bitten
 by that before, which is why `tests/test_smoke.py` divides one by the other.
@@ -223,7 +288,7 @@ adds `spec['keyed_cutouts']`:
 
 ```jsonc
 {
-  "clearance_mm": 0.075,
+  "clearance_mm": 0.110,
   "halves": [
     { "end": "bottom", "profile": [ {"x": …, "y": …}, … 100 points ],
       "z_from": -26.01, "z_to": 0.01 },
@@ -236,11 +301,15 @@ adds `spec['keyed_cutouts']`:
       "inner_profile": [ … 100 points ] }, // the hole profile itself
     { "end": "top",    "kind": "hull", "depth": 2.0, "face_profile": […], "inner_profile": […] }
   ],
-  "nub": {                                  // POSITIVE PLATE ONLY
-    "profile":      [ … 3 points ],
-    "top_chamfer":  { "depth": 0.5, "profile": [ … 3 points ] },
-    "base_flare":   { "depth": 0.5, "profile": [ … 3 points ] },
+  "nub": {                                  // BOTH plates since 2026-08-29
+    "profile":      [ … 3 points on A, 4 on B ],
+    "top_chamfer":  { "depth": 0.5,  "profile": [ … ] },
+    "base_flare":   { "depth": 0.10, "profile": [ … ] },
     "z_from": 25.99, "z_to": 29.0
+  },
+  "socket": {                               // BOTH plates; a plain prism
+    "profile": [ … ],                       // no chamfer, no flare
+    "z_from": -26.01, "z_to": -22.85
   }
 }
 ```
@@ -349,7 +418,7 @@ Persistence stores `braille_prefs_embosser_version` (`'1'` or `'2'` only) and
 `braille_prefs_v2_key_clearance_mm`. Both are restored **after** the Card Thickness
 preset IIFE, not inside `applyPersistedSettings()`, because the preset rewrites
 `cylinder_diameter_mm` on every load and an earlier restore would be silently
-overwritten. Reset to defaults returns Version 1 and 0.075 mm, and **drops the
+overwritten. Reset to defaults returns Version 1 and 0.110 mm, and **drops the
 snapshot** — otherwise the restore would undo the reset it was called to finish.
 
 Version 2 reveals **Generate Both Cylinders** and reuses the signed Cylinder A /
@@ -435,7 +504,8 @@ wrong-pair protrusion is pinned in
 | Clearance (mm) | Smallest wrong-pair margin (mm) |
 |---|---|
 | 0.00 | 1.000 |
-| 0.075 (default) | 0.925 |
+| 0.075 | 0.925 |
+| 0.110 (default) | 0.890 |
 | 0.15 | 0.850 |
 | 0.30 | 0.700 |
 | 0.50 (maximum) | 0.500 |
@@ -494,5 +564,6 @@ it.
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-08-30 | 1.2 | **Second print test, and the anti-rotation keys.** Key clearance **0.075 → 0.110 mm**: the holes were too loose at 0.15 and too tight at 0.075, so the value lands between them; 0.110 and not the midpoint 0.1125, because the step is 0.005 and an off-step default kills Generate silently. Every gear gained an anti-rotation feature, so **both plates now carry a nub above the top face and a socket in the bottom one** (new §4.4) and the “positive plate only” rule is retired. The nub's base flare drops **0.5 → 0.10 mm**: gear A1's notch has no mouth relief, so the old flare stood 0.49 mm proud per side and A1 cannot have been seating flush on either printed pair. `V2_NUB_CLEARANCE_MM` **0.15 → 0.30**, now derived from its two parts rather than retyped. §11's margin table gains the 0.110 → 0.890 row. Both Version 2 goldens were regenerated; every other fixture is byte-identical. |
 | 2026-08-29 | 1.1 | **First print test, and what it moved.** Barrel **30.1 → 30.5 mm**: the 30.1 pair embossed with noticeably less pressure than Version 1, and 30.5 is half way back to Version 1's 30.8. Key clearance **0.15 → 0.075 mm**, with the input step 0.01 → 0.005 because 0.075 is not a whole number of 0.01 steps: all four peg holes printed too loose, and the pegs measure exactly nominal. **The nub is decoupled from the dial** and pinned at `V2_NUB_CLEARANCE_MM` = 0.15 — gear A1's notch is already cut to that size, so under the old shared-dial rule tightening the holes would have grown the nub into it. §8.1's one-fewer-braille-cell rule is **retired**: at 30.5 mm the seam gap is 4.8 mm against the 4.0 needed. §11 gains the measured R14 pegs. The Version 2 golden pair was regenerated; the double-sided and gear pairs re-ran byte-identical. |
 | 2026-08-28 | 1.0 | Initial specification. Family R14 keyed cutouts, the 45° mouths, the key nub, the clearance dial, the wire contract, the worker's CSG order, the user interface, the acceptance anchors, the fit matrix and the re-cut requirement, and the OpenSCAD packaging. Every number read back out of the merged code. |

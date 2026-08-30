@@ -131,21 +131,35 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      is ACCEPTED. Unlike the gear gate, never a rejection. Was 30.1 until
      2026-08-29; the printed 30.1 pair embossed with too little pressure, so
      it moved half way back toward Version 1's 30.8. Still under test.
-   - Clearance 0.075 default, range 0.0-0.5, input step 0.005 (0.075 is NOT a
-     whole number of 0.01 steps, and an off-step default kills Generate).
-     Applied OUTWARD to the four holes ONLY. Was 0.15 until 2026-08-29, when
-     the printed holes came back too loose.
-   - The NUB DOES NOT FOLLOW THE DIAL. It is inset by a fixed
-     V2_NUB_CLEARANCE_MM = 0.15, because gear A1's notch is already cut to
-     exactly that (measured 3.943 x 4.553 mm off the printed gear). Under the
-     old shared-dial rule, tightening the holes GREW the nub into that notch.
-     Never re-couple them; raise the nub constant only with a new gear A1.
+   - Clearance 0.110 default, range 0.0-0.5, input step 0.005. Applied OUTWARD
+     to the four holes ONLY. TWO printed rounds bracketed it on 2026-08-29:
+     too loose at 0.15, too tight at 0.075. NOT the midpoint 0.1125 - an
+     off-step default renders the input :invalid and kills Generate silently;
+     0.110 / 0.005 = 22. Wrong-pair margin is 1.000 - c, so 0.890 here.
+   - The NUB DOES NOT FOLLOW THE DIAL, because gear A1's notch is already cut.
+     Under the old shared-dial rule, tightening the holes GREW the nub into
+     that notch. Never re-couple them. V2_NUB_CLEARANCE_MM is 0.30 since
+     2026-08-29 and is DERIVED, never retyped, as V2_GEAR_TRIANGLE_INSET_MM
+     (0.15, measured off the gear) + V2_ANTIROT_CLEARANCE_MM (0.15, the signed
+     fit). At the old hard 0.15 the nub was line-to-line in the notch - 5 um of
+     INTERFERENCE on the base face. Base flare is 0.10, not 0.5: the notch has
+     NO mouth relief (half-width constant to full depth), so a 0.5 flare stood
+     0.49 mm proud per side and A1 never seated flush across two printed
+     rounds.
    - Two halves meet at the mid-plane as ONE through-hole (overlap 0.01), and
      ONE 2.0 x 45 degree rule covers all four mouths. A chamfer hull's slabs
      sit FAR-EDGE-OUT or the taper overshoots. The nub is THREE unioned parts,
      never one hull - a single hull bulges the body 0.2 mm and jams gear A1.
-   - The nub is POSITIVE PLATE ONLY, apex on the 180-degree arrow column.
-     seam_offset never turns the keys.
+   - BOTH plates carry an anti-rotation NUB above the top face and a SOCKET in
+     the bottom one, all four on the 180-degree arrow column (2026-08-29; the
+     "positive plate only" rule is RETIRED - every gear has a feature now).
+     A gets the triangle, B a square. Nubs are MITRED, sockets are PARALLEL
+     CURVES with a corner arc of radius c - backwards puts a sharp internal
+     corner in a vertically printed barrel and drops A's wall 1.2525 -> 1.1025,
+     under the 1.2 minimum. Socket depth 3.15 (pin + one clearance), no mouth
+     chamfer. V2_SOCKET_MAX_RADIUS_MM 14.00 trims 0.0000 today and bites above
+     c = 0.1525 - a guard rail, NOT dead code. seam_offset never turns any of
+     them.
    - The barrel is SOLID while Version 2 is on; the keyed hole is the bore.
    - Gears BETA is Version 1 ONLY - the UI hides and unchecks the toggle and
      the API refuses the combination.

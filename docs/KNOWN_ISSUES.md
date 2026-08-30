@@ -206,13 +206,17 @@ Where card work continues instead:
 
 ## Resolved (historical)
 
-These issues existed in v1.x and were resolved by removing the systems entirely in v2.0.0:
+These issues are fixed. The first three existed in v1.x and were resolved by removing the systems entirely in v2.0.0:
 
 1. **Vercel Blob storage caching** — Blob caching for counter plate STLs didn't work reliably. Resolved by removing Blob storage and moving to client-side generation.
 
 2. **Upstash Redis inactivity failures** — Free tier archives databases after 14 days of inactivity, causing all requests to fail. Resolved by removing Redis entirely.
 
 3. **Server-side STL generation on Vercel** — manifold3d requires native binaries not available in Vercel's Python runtime. Resolved by moving all generation to client-side (three-bvh-csg for cards, Manifold WASM for cylinders).
+
+And one from the Embosser Version 2 prototype:
+
+4. **The Version 2 key nub's base flare could not enter gear A1's notch** (found and fixed 2026-08-30). The nub flared 0.5 mm outward over its last 0.5 mm at the barrel face, making it 0.49 mm wider per side there than its own body. Probing the printed gear's notch by containment on a 10 µm grid showed the notch's tangential half-width **constant from the mating face to full depth** — it has no mouth relief at all — so gear A1 cannot have been seating flush on either of the two pairs printed before that date. It went unreported because the main profile fitted perfectly: the gear went on, it just stood proud. Found by measuring the counterpart, not by a test or a print report. The flare is now 0.10 mm, leaving 0.05 mm of clearance on every face.
 
 ## Reporting issues
 
