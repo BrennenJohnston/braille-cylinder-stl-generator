@@ -338,3 +338,214 @@ def test_size_check_and_message():
     message = v2.v2_size_message(30.8, 52.0)
     assert message == ('The Version 2 embosser expects a 30.5 mm x 52 mm cylinder. Received 30.8 mm x 52 mm.')
     assert '52.0 mm' not in message
+
+
+# --- Anti-rotation features (D-R3-2 .. D-R3-5) -------------------------------
+#
+# Every gear now carries an anti-rotation feature, so the cylinder needs a nub
+# at each TOP face and a socket in each BOTTOM face. The targets below are the
+# signed table in 03_IMPLEMENTATION_PLAN_R3.md; the module derives all four from
+# V2_NUB or from a MEASURED gear feature, so nothing here is a second copy of a
+# number the module owns - it is the expected RESULT of those derivations.
+#
+# (inner radius, outer radius, half-width, area), all on the arrow column.
+ANTIROT_TARGETS = {
+    ('positive', 'nub'): (10.054087, 13.547487, 2.016964, 7.0461),
+    ('positive', 'socket'): (9.754087, 13.997487, 2.426771, 11.0980),
+    ('negative', 'nub'): (9.9500, 12.9500, 1.5000, 9.0000),
+    ('negative', 'socket'): (9.9000, 13.2000, 1.6500, 10.8707),
+}
+
+# Gear A1's notch is cut 5 um wide of our nominal - CAD rounding, recorded in
+# 01_GEAR_V71_AUDIT.md section 3, not a design difference. Fit assertions carry
+# it rather than pretending the two agree exactly.
+GEAR_CAD_ROUNDING_MM = 0.006
+
+
+def _radial_extent(points):
+    """(inner radius, outer radius, half-width) measured on the arrow column."""
+    angle = math.radians(v2.V2_ARROW_COLUMN_DEG)
+    ux, uy = math.cos(angle), math.sin(angle)
+    vx, vy = -uy, ux
+    radial = [x * ux + y * uy for x, y in points]
+    tangential = [x * vx + y * vy for x, y in points]
+    return min(radial), max(radial), max(abs(t) for t in tangential)
+
+
+def _antirot_profile(plate_type, which):
+    if which == 'nub':
+        return v2.antirot_nub_profile(plate_type)
+    return v2.antirot_socket_profile(plate_type)
+
+
+def _gear_pin_polygon(plate_type):
+    """The gear pin this plate's socket must swallow, as a polygon."""
+    if plate_type == 'positive':
+        return v2.offset_polygon_miter(
+            v2.nub_triangle(
+                v2.V2_NUB['base_radius'],
+                v2.V2_NUB['apex_radius'],
+                v2.V2_NUB['side'] / 2.0,
+                v2.V2_ARROW_COLUMN_DEG,
+            ),
+            -v2.V2_GEAR_TRIANGLE_INSET_MM,
+        )
+    pin = v2.V2_GEAR_ANTIROT[v2.ANTIROT_BY_PLATE[plate_type]['socket']]
+    return v2.radial_rectangle(pin['inner_radius'], pin['outer_radius'], pin['half_width'], 0.0)
+
+
+def _perimeter(points):
+    return sum(math.dist(points[i], points[(i + 1) % len(points)]) for i in range(len(points)))
+
+
+@pytest.mark.parametrize(('plate_type', 'which'), sorted(ANTIROT_TARGETS))
+def test_antirot_profiles_match_the_signed_table(plate_type, which):
+    inner, outer, half_width, area = ANTIROT_TARGETS[(plate_type, which)]
+    points = _antirot_profile(plate_type, which)
+    measured_inner, measured_outer, measured_half = _radial_extent(points)
+    assert measured_inner == pytest.approx(inner, abs=0.001)
+    assert measured_outer == pytest.approx(outer, abs=0.001)
+    assert measured_half == pytest.approx(half_width, abs=0.001)
+    assert _signed_area(points) == pytest.approx(area, abs=0.01)
+    # CCW, like every other profile this module emits: the worker extrudes them
+    # without checking, so a reversed ring would come out inside-out.
+    assert _signed_area(points) > 0
+
+
+def test_the_derived_clearances_cannot_drift():
+    """D-R3-5: the nub stand-off is computed from its two parts, never retyped."""
+    assert v2.V2_NUB_CLEARANCE_MM == pytest.approx(v2.V2_GEAR_TRIANGLE_INSET_MM + v2.V2_ANTIROT_CLEARANCE_MM)
+    assert v2.V2_SOCKET_DEPTH_MM == pytest.approx(3.0 + v2.V2_ANTIROT_CLEARANCE_MM)
+    assert v2.V2_NUB['base_flare'] < v2.V2_ANTIROT_CLEARANCE_MM
+
+
+def test_the_a_nub_sits_in_gear_a1s_notch_with_the_signed_clearance():
+    """
+    Fit (a): 0.15 mm perpendicular to every face of a notch already printed.
+
+    The base face is perpendicular to the arrow column, so its gap is radial.
+    The two flanks stand at 60 degrees to that column, so a tangential
+    half-width difference of d is a perpendicular gap of d / sqrt(3).
+    """
+    notch = v2.V2_GEAR_ANTIROT['a1_notch']
+    inner, outer, half_width = _radial_extent(v2.antirot_nub_profile('positive'))
+    assert inner - notch['inner_radius'] == pytest.approx(v2.V2_ANTIROT_CLEARANCE_MM, abs=GEAR_CAD_ROUNDING_MM)
+    assert (notch['half_width'] - half_width) / math.sqrt(3.0) == pytest.approx(
+        v2.V2_ANTIROT_CLEARANCE_MM, abs=GEAR_CAD_ROUNDING_MM
+    )
+    assert outer < notch['outer_radius']
+
+
+def test_the_b_nub_sits_in_gear_b1s_notch_with_the_signed_clearance():
+    """Fit (a) for the square: every face is square-on, so every gap is direct."""
+    notch = v2.V2_GEAR_ANTIROT['b1_notch']
+    inner, outer, half_width = _radial_extent(v2.antirot_nub_profile('negative'))
+    assert inner - notch['inner_radius'] == pytest.approx(v2.V2_ANTIROT_CLEARANCE_MM, abs=0.001)
+    assert notch['outer_radius'] - outer == pytest.approx(v2.V2_ANTIROT_CLEARANCE_MM, abs=0.001)
+    assert notch['half_width'] - half_width == pytest.approx(v2.V2_ANTIROT_CLEARANCE_MM, abs=0.001)
+
+
+def test_the_flared_nub_still_enters_the_notch():
+    """
+    Fit (b), and the defect D-R3-4 exists to fix.
+
+    Neither notch has a mouth relief - probing containment on a 10 um grid gave
+    a half-width constant from the mating face to full depth - so the base flare
+    has to fit inside the SAME opening as the nub body. At 0.5 it did not, by
+    0.49 mm per side, and gear A1 cannot have seated flush on either printed
+    pair. At 0.10 the flare leaves 0.05 mm on every face.
+    """
+    notch = v2.V2_GEAR_ANTIROT['a1_notch']
+    flare = v2.offset_polygon_miter(v2.antirot_nub_profile('positive'), v2.V2_NUB['base_flare'])
+    inner, outer, half_width = _radial_extent(flare)
+    expected = v2.V2_ANTIROT_CLEARANCE_MM - v2.V2_NUB['base_flare']
+    assert inner - notch['inner_radius'] == pytest.approx(expected, abs=GEAR_CAD_ROUNDING_MM)
+    assert (notch['half_width'] - half_width) / math.sqrt(3.0) == pytest.approx(expected, abs=GEAR_CAD_ROUNDING_MM)
+    # The hard requirement behind the tolerance: it must not interfere at all.
+    assert inner > notch['inner_radius']
+    assert half_width < notch['half_width']
+    assert outer < notch['outer_radius']
+
+
+@pytest.mark.parametrize('plate_type', ['positive', 'negative'])
+def test_each_socket_clears_its_gear_pin_and_leaves_barrel_wall(plate_type):
+    """Fit (c): 0.15 mm round the pin, and >= 1.2 mm of wall behind it."""
+    pin = v2.V2_GEAR_ANTIROT[v2.ANTIROT_BY_PLATE[plate_type]['socket']]
+    inner, outer, half_width = _radial_extent(v2.antirot_socket_profile(plate_type))
+    assert pin['inner_radius'] - inner == pytest.approx(v2.V2_ANTIROT_CLEARANCE_MM, abs=GEAR_CAD_ROUNDING_MM)
+    assert half_width - pin['half_width'] == pytest.approx(v2.V2_ANTIROT_CLEARANCE_MM, abs=GEAR_CAD_ROUNDING_MM)
+    # Measured from the barrel the module owns, never from a literal 15.25.
+    wall = v2.V2_BARREL_DIAMETER_MM / 2.0 - outer
+    assert wall >= 1.2, f'{plate_type} socket leaves only {wall:.4f} mm of wall'
+
+
+@pytest.mark.parametrize('plate_type', ['positive', 'negative'])
+def test_sockets_are_parallel_curves_and_not_mitres(plate_type):
+    """
+    The Minkowski identity is the signature that tells the two apart.
+
+    Growing a polygon by c as a parallel curve adds exactly perimeter*c + pi*c^2
+    - each edge sweeps a rectangle, each corner an arc - while a mitre adds more
+    and leaves a sharp internal corner, which in a vertically printed barrel is
+    the stress riser. Getting this backwards also moves Cylinder A's wall from
+    1.2525 mm to 1.1025, under the 1.2 minimum.
+    """
+    pin = _gear_pin_polygon(plate_type)
+    clearance = v2.V2_ANTIROT_CLEARANCE_MM
+    expected = _signed_area(pin) + _perimeter(pin) * clearance + math.pi * clearance**2
+    assert _signed_area(v2.antirot_socket_profile(plate_type)) == pytest.approx(expected, abs=0.01)
+    # A mitre would be measurably bigger, so the check above genuinely separates
+    # them rather than passing on either construction.
+    mitred = v2.offset_polygon_miter(pin, clearance)
+    assert _signed_area(mitred) > expected + 0.01
+
+
+def test_the_socket_cap_is_a_guard_rail_that_trims_nothing_today():
+    """
+    D-R3-3. The cap removes exactly 0.0000 mm at the signed clearance, which is
+    precisely why it reads like dead code and must not be deleted: it is what
+    keeps the >= 1.2 mm wall true if the clearance is ever raised.
+    """
+    pin = _gear_pin_polygon('positive')
+
+    def apex(clearance, clipped):
+        grown = v2.parallel_curve(pin, clearance)
+        points = v2.clip_to_max_radius(grown, v2.V2_SOCKET_MAX_RADIUS_MM) if clipped else grown
+        return _radial_extent(points)[1]
+
+    for clearance in (v2.V2_ANTIROT_CLEARANCE_MM, 0.1525):
+        assert apex(clearance, True) == pytest.approx(apex(clearance, False), abs=1e-9)
+
+    for clearance in (0.16, 0.30):
+        assert apex(clearance, False) > v2.V2_SOCKET_MAX_RADIUS_MM
+        assert apex(clearance, True) == pytest.approx(v2.V2_SOCKET_MAX_RADIUS_MM, abs=1e-9)
+        wall = v2.V2_BARREL_DIAMETER_MM / 2.0 - apex(clearance, True)
+        assert wall >= 1.2
+
+
+def test_the_nub_block_and_the_antirot_nub_stay_one_shape():
+    """
+    One shape, one source. Phase 03 folds nub_block onto antirot_nub_profile;
+    until then the two constructions must not drift apart.
+    """
+    emitted = [(point['x'], point['y']) for point in v2.nub_block()['profile']]
+    expected = [(round(x, 6), round(y, 6)) for x, y in v2.antirot_nub_profile('positive')]
+    assert emitted == expected
+
+
+@pytest.mark.parametrize(
+    'call',
+    (
+        lambda: v2.antirot_nub_profile('cylinder'),
+        lambda: v2.antirot_socket_profile(''),
+        lambda: v2.radial_rectangle(13.0, 10.0, 1.5, 0.0),
+        lambda: v2.radial_rectangle(10.0, 13.0, 0.0, 0.0),
+        lambda: v2.radial_rectangle(10.0, 13.0, 1.5, 2.0),
+        lambda: v2.parallel_curve([(0.0, 0.0), (1.0, 0.0)], 0.1),
+        lambda: v2.parallel_curve([(0.0, 0.0), (1.0, 0.0), (0.0, 1.0)], -0.1),
+        lambda: v2.clip_to_max_radius([(0.0, 0.0), (1.0, 0.0), (0.0, 1.0)], 0.0),
+    ),
+)
+def test_antirot_bad_input_raises_rather_than_guessing(call):
+    with pytest.raises(ValueError):
+        call()

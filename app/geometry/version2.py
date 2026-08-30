@@ -84,14 +84,33 @@ V2_KEY_CLEARANCE_DEFAULT_MM = 0.110
 V2_KEY_CLEARANCE_MIN_MM = 0.0
 V2_KEY_CLEARANCE_MAX_MM = 0.5
 
-# The nub does NOT follow that dial, and has not since 2026-08-29. It used to
-# be inset by the same c the holes grew by - one number, opposite directions -
-# but gear A1 is already cut and its notch measures 3.943 x 4.553 mm: the nub
-# at exactly c = 0.15, to under half a micron. Lowering the dial would have
-# GROWN the nub into a notch that cannot be recut without reprinting the gear,
-# so the nub keeps the size that gear was made for and the dial now governs
-# the four holes alone. Raise this only alongside a matching gear A1.
-V2_NUB_CLEARANCE_MM = 0.15
+# Clearance per face on EVERY anti-rotation feature (D-R3-2): between a nub and
+# its gear notch, and between a socket and its gear pin. A fixed constant with
+# no dial, deliberately - it sets a fit against gears that are already cut, and
+# putting a dial on it would spring the same trap D-V11 records just below.
+V2_ANTIROT_CLEARANCE_MM = 0.15
+
+# How far Brennen's gear CAD insets the triangle - the notch in A1, the pin on
+# A2 - from the nominal V2_NUB outline below. MEASURED off the printed gears
+# (01_GEAR_V71_AUDIT.md section 3), not chosen here: A1's notch comes out at
+# base radius 9.9091 against this module's 9.904087, and that 5 um is the gear
+# CAD's rounding, not a design difference.
+V2_GEAR_TRIANGLE_INSET_MM = 0.15
+
+# The nub does NOT follow the key-clearance dial, and has not since 2026-08-29.
+# It used to be inset by the same c the holes grew by - one number, opposite
+# directions - but gear A1 is already cut, so lowering the dial would have
+# GROWN the nub into a notch that cannot be recut without reprinting the gear.
+# The dial governs the four holes alone (D-V11).
+#
+# DERIVED, never retyped (D-R3-5). The notch is already inset from nominal by
+# V2_GEAR_TRIANGLE_INSET_MM, so standing the nub off by one more
+# V2_ANTIROT_CLEARANCE_MM is exactly what leaves 0.15 mm perpendicular to each
+# of its faces. Until 2026-08-29 this was a hard 0.15 and the nub was
+# line-to-line in the notch - 5 um of INTERFERENCE on the base face, and no
+# print ever reported it. If a printed pair comes back rattling, the one-line
+# reversal is to hard-code 0.15 again.
+V2_NUB_CLEARANCE_MM = V2_GEAR_TRIANGLE_INSET_MM + V2_ANTIROT_CLEARANCE_MM
 
 # Each peg's root flares out 2.0 mm per side over its last 2.0 mm at 45
 # degrees, so every cutout mouth needs the matching countersink or the gear
@@ -147,8 +166,86 @@ V2_NUB = {
     'apex_radius': 14.147487,
     'height': 3.0,
     'top_chamfer': 0.5,
-    'base_flare': 0.5,
+    # 0.10 since 2026-08-29 (D-R3-4), down from 0.5. Probing gear A1's notch by
+    # containment on a 10 um grid showed its tangential half-width CONSTANT from
+    # the mating face to full depth - no mouth relief at all - so a 0.5 flare
+    # stood 0.49 mm proud per side at the face and A1 cannot have been seating
+    # flush on either printed pair. Found by measurement, not reported. At 0.10
+    # the flared nub still clears the notch wall by 0.05 mm on every face.
+    'base_flare': 0.10,
 }
+
+# The four anti-rotation features as MEASURED on Brennen's v7.1 gears
+# (01_GEAR_V71_AUDIT.md section 2), in the gear's own frame with +r along the
+# arrow column. Top gears carry NOTCHES, bottom gears carry PINS, so the
+# cylinder needs a nub at each top face and a socket in each bottom face.
+#
+# These are printed hardware and are not ours to adjust. The A triangle is NOT
+# rebuilt from them - it derives from V2_NUB by an inset, so the shape has one
+# source - but the fit tests measure against them.
+V2_GEAR_ANTIROT = {
+    'a1_notch': {
+        'gear': 'A1',
+        'plate': 'positive',
+        'end': 'top',
+        'kind': 'notch',
+        'shape': 'triangle',
+        'inner_radius': 9.9091,
+        'outer_radius': 13.8525,
+        'half_width': 2.2768,
+        'depth': 3.0,
+    },
+    'a2_pin': {
+        'gear': 'A2',
+        'plate': 'positive',
+        'end': 'bottom',
+        'kind': 'pin',
+        'shape': 'triangle',
+        'inner_radius': 9.9091,
+        'outer_radius': 13.8525,
+        'half_width': 2.2768,
+        'depth': 3.0,
+    },
+    'b1_notch': {
+        'gear': 'B1',
+        'plate': 'negative',
+        'end': 'top',
+        'kind': 'notch',
+        'shape': 'square',
+        'inner_radius': 9.8000,
+        'outer_radius': 13.1000,
+        'half_width': 1.6500,
+        'depth': 3.0,
+    },
+    'b2_pin': {
+        'gear': 'B2',
+        'plate': 'negative',
+        'end': 'bottom',
+        'kind': 'pin',
+        'shape': 'square',
+        'inner_radius': 10.0500,
+        'outer_radius': 13.0500,
+        'half_width': 1.5000,
+        'depth': 3.0,
+    },
+}
+
+# Which gear feature each plate's nub and socket mate with.
+ANTIROT_BY_PLATE = {
+    'positive': {'nub': 'a1_notch', 'socket': 'a2_pin'},
+    'negative': {'nub': 'b1_notch', 'socket': 'b2_pin'},
+}
+
+# A socket must leave barrel wall behind it (D-R3-3). At the signed clearance
+# the A socket's apex reaches r 13.997487 and the wall is 1.2525 mm, so this cap
+# trims exactly 0.0000 mm today. It starts to bite above c = 0.1525 and exists
+# so the 1.2 mm FDM minimum survives anyone raising the clearance or switching
+# a socket to a mitred offset. NOT dead code - a guard rail.
+V2_SOCKET_MAX_RADIUS_MM = 14.0
+
+# Socket depth: the gear pin's own 3.0 mm plus one clearance, so the pin cannot
+# bottom out before the two faces meet. Derived, so it follows the clearance.
+V2_SOCKET_DEPTH_MM = 3.0 + V2_ANTIROT_CLEARANCE_MM
 
 # Points per full circle for every arc, matching the tessellation the rest of
 # the pipeline sends over the wire as polygon_points.
@@ -280,6 +377,233 @@ def nub_triangle(
         (apex_radius * ux, apex_radius * uy),
         (base_radius * ux + half_width * vx, base_radius * uy + half_width * vy),
     ]
+
+
+def radial_rectangle(
+    inner_radius: float,
+    outer_radius: float,
+    half_width: float,
+    corner_radius: float,
+    angle_deg: float = V2_ARROW_COLUMN_DEG,
+    segments: int = V2_ARC_SEGMENTS,
+) -> list[tuple[float, float]]:
+    """
+    A rectangle lying on `angle_deg`, CCW: radial span inner..outer, tangential
+    half-width either side of that column.
+
+    This is the B pair's square feature. rounded_rectangle cannot be reused: it
+    centres its shape on the origin, and these sit out at r ~ 11.5 on the arrow
+    column. A zero corner radius gives the four sharp corners gear B1's notch
+    actually has.
+    """
+    if outer_radius <= inner_radius:
+        raise ValueError(f'radial_rectangle needs outer_radius beyond inner_radius, got {inner_radius}..{outer_radius}')
+    if half_width <= 0:
+        raise ValueError(f'radial_rectangle needs a positive half-width, got {half_width}')
+    if corner_radius < 0:
+        raise ValueError(f'radial_rectangle needs a non-negative corner radius, got {corner_radius}')
+    depth = outer_radius - inner_radius
+    if corner_radius > min(depth / 2.0, half_width):
+        raise ValueError(
+            f'corner radius {corner_radius} does not fit a {depth} x {2 * half_width} feature '
+            f'(maximum {min(depth / 2.0, half_width)})'
+        )
+
+    angle = math.radians(angle_deg)
+    ux, uy = math.cos(angle), math.sin(angle)
+    vx, vy = -uy, ux
+
+    def place(radial: float, tangential: float) -> tuple[float, float]:
+        return (radial * ux + tangential * vx, radial * uy + tangential * vy)
+
+    if corner_radius == 0:
+        # CCW in the world frame: (u, v) is right-handed, so walking the
+        # rectangle in +radial then +tangential order winds counter-clockwise.
+        corners = [
+            (inner_radius, -half_width),
+            (outer_radius, -half_width),
+            (outer_radius, half_width),
+            (inner_radius, half_width),
+        ]
+        return [place(r, t) for r, t in corners]
+
+    steps = max(1, round(segments / 4))
+    near = inner_radius + corner_radius
+    far = outer_radius - corner_radius
+    side = half_width - corner_radius
+    points: list[tuple[float, float]] = []
+    # Arc centres in the same CCW order, each sweeping 90 degrees. Angles are
+    # measured in the (radial, tangential) plane, so 0 points outward.
+    for centre_r, centre_t, start_deg in (
+        (far, -side, -90.0),
+        (far, side, 0.0),
+        (near, side, 90.0),
+        (near, -side, 180.0),
+    ):
+        for step in range(steps + 1):
+            theta = math.radians(start_deg + 90.0 * step / steps)
+            points.append(place(centre_r + corner_radius * math.cos(theta), centre_t + corner_radius * math.sin(theta)))
+    return points
+
+
+def parallel_curve(
+    points: list[tuple[float, float]],
+    delta: float,
+    segments: int = V2_ARC_SEGMENTS,
+) -> list[tuple[float, float]]:
+    """
+    Grow a closed CCW polygon outward by `delta` as an exact parallel curve.
+
+    Every edge moves out along its normal by `delta` and every convex corner
+    becomes an arc of radius `delta`, which is the Minkowski sum with a disc.
+    That is what a SOCKET needs: a mitred corner would sit delta*sqrt(2) or more
+    from the pin's corner instead of delta, and would put a sharp internal
+    corner - the stress riser - in a vertically printed barrel.
+
+    Neither existing offset can do this job. offset_polygon_miter is a mitre by
+    construction, and grown_key_outline is hard-wired to the rounded-rectangle
+    family (it rebuilds a rounded rectangle rather than offsetting any ring), so
+    this is a third construction rather than a reuse.
+    """
+    if delta < 0:
+        raise ValueError(f'parallel_curve grows outward; got delta={delta}')
+    if not delta:
+        return list(points)
+    count = len(points)
+    if count < 3:
+        raise ValueError(f'parallel_curve needs a polygon, got {count} points')
+    if segments < 4:
+        raise ValueError(f'parallel_curve needs at least 4 segments per circle, got {segments}')
+
+    normals = []
+    for index in range(count):
+        px, py = points[index]
+        qx, qy = points[(index + 1) % count]
+        dx, dy = qx - px, qy - py
+        length = math.hypot(dx, dy)
+        if length == 0:
+            raise ValueError(f'parallel_curve found a zero-length edge at index {index}')
+        # (ey, -ex) is the outward normal of an edge on a counter-clockwise ring.
+        normals.append((dy / length, -dx / length))
+
+    result: list[tuple[float, float]] = []
+    for index in range(count):
+        px, py = points[index]
+        in_nx, in_ny = normals[(index - 1) % count]
+        out_nx, out_ny = normals[index]
+        cross = in_nx * out_ny - in_ny * out_nx
+        start = math.atan2(in_ny, in_nx)
+        # One signed angle, never a difference of two atan2 calls: a collinear
+        # vertex whose cross product is a hair negative would otherwise wrap a
+        # near-zero sweep round to a full circle.
+        sweep = math.atan2(cross, in_nx * out_nx + in_ny * out_ny)
+        if cross < -1e-12:
+            # A reflex corner has no arc: the two offset edges still meet at the
+            # mitre point, so fall back to that single vertex.
+            result.append(
+                (
+                    px + (in_nx + out_nx) / (1 + in_nx * out_nx + in_ny * out_ny) * delta,
+                    py + (in_ny + out_ny) / (1 + in_nx * out_nx + in_ny * out_ny) * delta,
+                )
+            )
+            continue
+        arc_steps = max(1, math.ceil(abs(sweep) / (2 * math.pi) * segments))
+        for step in range(arc_steps + 1):
+            theta = start + sweep * step / arc_steps
+            result.append((px + delta * math.cos(theta), py + delta * math.sin(theta)))
+    return result
+
+
+def clip_to_max_radius(
+    points: list[tuple[float, float]],
+    max_radius: float,
+    angle_deg: float = V2_ARROW_COLUMN_DEG,
+) -> list[tuple[float, float]]:
+    """
+    Truncate a CCW polygon at `max_radius` measured along `angle_deg`.
+
+    One Sutherland-Hodgman half-plane clip, so a shape already inside is
+    returned with its vertices unmoved. This is D-R3-3's guard rail on the
+    socket depth into the barrel wall.
+    """
+    if max_radius <= 0:
+        raise ValueError(f'clip_to_max_radius needs a positive radius, got {max_radius}')
+    angle = math.radians(angle_deg)
+    ux, uy = math.cos(angle), math.sin(angle)
+
+    def reach(point: tuple[float, float]) -> float:
+        return point[0] * ux + point[1] * uy
+
+    count = len(points)
+    if count < 3:
+        raise ValueError(f'clip_to_max_radius needs a polygon, got {count} points')
+    if all(reach(point) <= max_radius for point in points):
+        return list(points)
+
+    clipped: list[tuple[float, float]] = []
+    for index in range(count):
+        current = points[index]
+        following = points[(index + 1) % count]
+        d_current = reach(current) - max_radius
+        d_next = reach(following) - max_radius
+        if d_current <= 0:
+            clipped.append(current)
+        if (d_current > 0) != (d_next > 0):
+            t = d_current / (d_current - d_next)
+            clipped.append((current[0] + t * (following[0] - current[0]), current[1] + t * (following[1] - current[1])))
+    return clipped
+
+
+def antirot_nub_profile(plate_type: str) -> list[tuple[float, float]]:
+    """
+    The anti-rotation NUB standing proud of this plate's TOP face, CCW.
+
+    Cylinder A's is the V2_NUB triangle inset by V2_NUB_CLEARANCE_MM - one
+    source for that shape, never rebuilt from the gear measurements. Cylinder
+    B's is gear B1's square notch shrunk by one clearance on every face, sharp
+    cornered because the notch is.
+    """
+    if plate_type not in ANTIROT_BY_PLATE:
+        raise ValueError(f'unknown plate type {plate_type!r}; known: {sorted(ANTIROT_BY_PLATE)}')
+    clearance = V2_ANTIROT_CLEARANCE_MM
+    if plate_type == 'positive':
+        outline = nub_triangle(V2_NUB['base_radius'], V2_NUB['apex_radius'], V2_NUB['side'] / 2.0, V2_ARROW_COLUMN_DEG)
+        return offset_polygon_miter(outline, -V2_NUB_CLEARANCE_MM)
+    notch = V2_GEAR_ANTIROT[ANTIROT_BY_PLATE[plate_type]['nub']]
+    return radial_rectangle(
+        notch['inner_radius'] + clearance,
+        notch['outer_radius'] - clearance,
+        notch['half_width'] - clearance,
+        0.0,
+    )
+
+
+def antirot_socket_profile(plate_type: str) -> list[tuple[float, float]]:
+    """
+    The anti-rotation SOCKET sunk into this plate's BOTTOM face, CCW.
+
+    Both are the gear pin's exact parallel curve at V2_ANTIROT_CLEARANCE_MM, so
+    every face clears by that much and every internal corner carries an arc of
+    the same radius. Cylinder A's is then truncated at V2_SOCKET_MAX_RADIUS_MM.
+    """
+    if plate_type not in ANTIROT_BY_PLATE:
+        raise ValueError(f'unknown plate type {plate_type!r}; known: {sorted(ANTIROT_BY_PLATE)}')
+    clearance = V2_ANTIROT_CLEARANCE_MM
+    if plate_type == 'positive':
+        # The pin is the nominal triangle at the inset the gear was cut with -
+        # the same outline nub_block emitted before D-R3-5 moved the nub.
+        pin = offset_polygon_miter(
+            nub_triangle(V2_NUB['base_radius'], V2_NUB['apex_radius'], V2_NUB['side'] / 2.0, V2_ARROW_COLUMN_DEG),
+            -V2_GEAR_TRIANGLE_INSET_MM,
+        )
+        return clip_to_max_radius(parallel_curve(pin, clearance), V2_SOCKET_MAX_RADIUS_MM)
+    pin = V2_GEAR_ANTIROT[ANTIROT_BY_PLATE[plate_type]['socket']]
+    return radial_rectangle(
+        pin['inner_radius'] - clearance,
+        pin['outer_radius'] + clearance,
+        pin['half_width'] + clearance,
+        clearance,
+    )
 
 
 def grown_key_outline(name: str, delta: float, segments: int = V2_ARC_SEGMENTS) -> list[tuple[float, float]]:

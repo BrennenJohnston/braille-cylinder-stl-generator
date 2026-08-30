@@ -1109,7 +1109,12 @@ def test_v2_golden_fixture_is_a_keyed_cylinder(fixtures_dir, plate_type):
     above = mesh.vertices[mesh.vertices[:, 2] > _V2_FIXTURE_Z_MAX + 1e-3]
     if plate_type == 'positive':
         assert len(above) > 0
-        assert np.hypot(above[:, 0], above[:, 1]).max() == pytest.approx(version2.V2_NUB['apex_radius'], abs=0.35)
+        # Measured against the profile the module actually emits, not against
+        # the nominal apex with slop: the nub is inset by V2_NUB_CLEARANCE_MM,
+        # which moved from 0.15 to 0.30 on 2026-08-29, and a tolerance wide
+        # enough to swallow that is wide enough to miss a real regression.
+        nub_apex = max(np.hypot(x, y) for x, y in version2.antirot_nub_profile('positive'))
+        assert np.hypot(above[:, 0], above[:, 1]).max() == pytest.approx(nub_apex, abs=2e-3)
     else:
         assert len(above) == 0
 
