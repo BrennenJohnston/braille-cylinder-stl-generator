@@ -58,10 +58,20 @@ async function openEveryDial(page: Page) {
     // selected row indicator. A panel the user cannot reach holds no target to
     // measure, so skip it rather than force it open.
     if (!(await toggle.isVisible())) continue;
-    if ((await toggle.getAttribute('aria-expanded')) !== 'true') {
+
+    // Retry the click. Read-then-click is a race: under parallel load Firefox
+    // can take the press before the accordion's handler is wired, and the
+    // panel then stays shut with no error of any kind. Re-read before each
+    // attempt so an already-open panel is never clicked closed, and settle
+    // after each one so the next read sees the result rather than the gap.
+    for (let attempt = 0; attempt < 4; attempt++) {
+      if ((await toggle.getAttribute('aria-expanded')) === 'true') break;
       await toggle.click();
+      await page.waitForTimeout(300);
     }
-    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    // Not swallowed: if four attempts never opened it, this fails loudly and
+    // names the panel.
+    await expect(toggle, `${panel} never expanded`).toHaveAttribute('aria-expanded', 'true');
   }
 }
 
