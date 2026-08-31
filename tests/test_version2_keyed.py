@@ -50,16 +50,20 @@ SLAB_MM = 0.01
 
 PLATES = ('positive', 'negative')
 CLEARANCES = (0.0, 0.110, 0.5)
-FIXTURE_HEIGHT_MM = 52.0
+# Follows the module for the same reason the radius below does: 54.0 since
+# 2026-08-31, when the barrel grew a 1 mm card shelf at each end.
+FIXTURE_HEIGHT_MM = v2.V2_BARREL_HEIGHT_MM
 # The barrel this harness builds, from the module rather than a literal: the
 # wall a socket leaves is measured against it, so a stale copy would prove the
 # wrong part safe. It read 15.05 until 2026-08-30 - the retired 30.1 mm barrel -
 # while the module had moved on; the module is at 15.4 since the barrel went to
 # 30.8 later the same day, and this follows it without being touched.
 FIXTURE_RADIUS_MM = v2.V2_BARREL_DIAMETER_MM / 2.0
-# The v7 sample cylinders really ARE 30.1 mm parts. They still rule the barrel's
-# shape, so they keep their own radius rather than following the preset.
+# The v7 sample cylinders really ARE 30.1 mm parts with the original 52 mm
+# barrel. They still rule the barrel's shape, so they keep their own radius and
+# height rather than following the preset (which grew to 54 on 2026-08-31).
 SAMPLE_RADIUS_MM = 15.05
+SAMPLE_HEIGHT_MM = 52.0
 
 # Sections taken in the straight part of each half, clear of both countersinks.
 POCKET_PROBE_Z = (-20.0, -8.0, 8.0, 20.0)
@@ -552,7 +556,7 @@ def test_sample_nub_matches():
     vertices = np.asarray(sample.vertices)
     axis_x = (vertices[:, 0].min() + vertices[:, 0].max()) / 2.0
     axis_y = (vertices[:, 1].min() + vertices[:, 1].max()) / 2.0
-    assert vertices[:, 2].max() == pytest.approx(FIXTURE_HEIGHT_MM + v2.V2_NUB['height'], abs=0.001)
+    assert vertices[:, 2].max() == pytest.approx(SAMPLE_HEIGHT_MM + v2.V2_NUB['height'], abs=0.001)
 
     section = sample.section(plane_origin=[0.0, 0.0, 53.5], plane_normal=[0.0, 0.0, 1.0])
     loops = [np.asarray(loop)[:, :2] - np.array([axis_x, axis_y]) for loop in section.discrete]

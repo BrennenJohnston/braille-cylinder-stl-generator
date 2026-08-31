@@ -189,7 +189,7 @@ def test_the_dimension_gate_is_skipped_entirely_when_gears_are_off():
 @pytest.mark.parametrize(
     'params,expected_diameter,expected_height',
     [
-        ({}, 30.75, 52.0),  # both fall back: diameter to 30.75, height to card_height
+        ({}, 30.75, 54.0),  # both fall back to the schema defaults (height decoupled from card_height 2026-08-31)
         ({'diameter_mm': 30.8, 'height_mm': 52.0}, 30.8, 52.0),  # the _mm spellings work
         ({'diameter': 30.8, 'height': 52.0}, 30.8, 52.0),
     ],

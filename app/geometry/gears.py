@@ -43,10 +43,15 @@ GEAR_BARREL_HEIGHT_MM = 52.0
 # times the representation noise and far below any dimension a user can type.
 GEAR_BARREL_TOLERANCE_MM = 0.001
 
-# Fallbacks, mirrored from app/geometry_spec.py's own cylinder_params reads so
-# validation and the spec can never disagree about what an absent field means.
+# Fallbacks for an absent cylinder_params field. cylinder_dimensions below is
+# the ONE reader both app/validation.py and app/geometry_spec.py call, so the
+# two can never disagree about what an absent field means. Height stopped
+# tracking card_height on 2026-08-31: the barrel is now 1 mm taller than the
+# 52 mm card at EACH end, so a slightly mis-rolled card keeps its edges on the
+# barrel. The gear barrel below stays 52.0 (the gears are baked at fixed z),
+# which means a default-height cylinder no longer passes the S7 gate.
 DEFAULT_CYLINDER_DIAMETER_MM = 30.75
-DEFAULT_CARD_HEIGHT_MM = 52.0
+DEFAULT_CYLINDER_HEIGHT_MM = 54.0
 
 # Which vendored asset a plate carries. Cylinder A (the embossing/positive
 # plate) takes the A gears, Cylinder B (the counter/negative plate) the B ones;
@@ -76,7 +81,7 @@ WELD_RING_HEIGHT_MM = 0.1
 GEAR_ARROW_WELD_MM = 0.005
 
 
-def cylinder_dimensions(cylinder_params: dict, card_height: float = DEFAULT_CARD_HEIGHT_MM) -> tuple[float, float]:
+def cylinder_dimensions(cylinder_params: dict) -> tuple[float, float]:
     """
     Read (diameter, height) from a request's cylinder_params.
 
@@ -84,7 +89,7 @@ def cylinder_dimensions(cylinder_params: dict, card_height: float = DEFAULT_CARD
     app/geometry_spec.py calls this so there is exactly one such reader.
     """
     diameter = float(cylinder_params.get('diameter', cylinder_params.get('diameter_mm', DEFAULT_CYLINDER_DIAMETER_MM)))
-    height = float(cylinder_params.get('height', cylinder_params.get('height_mm', card_height)))
+    height = float(cylinder_params.get('height', cylinder_params.get('height_mm', DEFAULT_CYLINDER_HEIGHT_MM)))
     return diameter, height
 
 

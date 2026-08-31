@@ -130,7 +130,7 @@ const THICKNESS_PRESETS = {
 
         // Cylinder Dimensions
         cylinder_diameter_mm: 30.8,
-        cylinder_height_mm: 52,
+        cylinder_height_mm: 54,
         cylinder_polygonal_cutout_radius_mm: 13,
         cylinder_polygonal_cutout_sides: 12,
         seam_offset_deg: 0,
@@ -180,7 +180,7 @@ const THICKNESS_PRESETS = {
 
         // Cylinder Dimensions (same as 0.4mm)
         cylinder_diameter_mm: 30.8,
-        cylinder_height_mm: 52,
+        cylinder_height_mm: 54,
         cylinder_polygonal_cutout_radius_mm: 13,
         cylinder_polygonal_cutout_sides: 12,
         seam_offset_deg: 0,
@@ -802,6 +802,7 @@ The preset system is designed to **never fail visibly**:
 | 2025-12-07 | 1.3 | Added "Custom" radio button feature. Automatically detects when parameter values deviate from presets and switches to "Custom". Added `checkPresetMatch()`, `detectCurrentPreset()`, and `updatePresetSelection()` functions. Updated HTML structure and event listener documentation. |
 | 2026-07-30 | 1.4 | Added the five tactile indicator dimensions to both presets (32 parameters total). Corrected the documented `grid_columns` values to the 11 actually shipped, dropped the stale line-number and `templates/index.html` references, and updated the Expert Mode submenu map for the Tactile Indicator Dimensions and Translation Options submenus. Presets also now feed the `{preset}` segment of STL file names. |
 | 2026-08-18 | 1.5 | **User-facing rename, no API change.** The visible legend became "Print Layer Height" (was "Card Thickness") and the radiogroup `aria-label` became "Select print layer height preset", because both presets set `card_thickness: 2.0` and nothing about card thickness varies between them. Seven strings changed in `public/index.html`; the confirmation message is now `Layer height preset "X.Xmm" applied. All parameters updated.` and the explanatory note gained "The card itself stays 2 mm thick either way." The three sr-only descriptions were already correct and are unchanged, as are `card_thickness_preset`, the localStorage key, and this filename. Approved by Brennen 2026-08-18. |
+| 2026-08-31 | 1.6 | Both presets' `cylinder_height_mm` moved 52 → 54 with the project-wide cylinder default (`card_height` stays 52): the barrel now carries a 1 mm shelf past each edge of the 52 mm card so a slightly mis-rolled card cannot ruffle over the ends. Braille rows stay centered. Every other preset value is unchanged. |
 | 2026-08-19 | 1.6 | **Corrects v1.5 and an error older than it.** The 0.3 / 0.4 numbers are the thickness of the paper CARD STOCK being embossed, not the printer's layer height, so the visible legend is back to "Card Thickness" and the radiogroup `aria-label` to "Select card thickness preset". v1.5's argument was that `card_thickness: 2.0` never varies between presets — but that field is the printed PLASTIC PLATE's thickness, not the paper. What the presets change is bowl depth (0.5 → 0.8 mm) and dot height (0.8 → 1.0 mm), both radial dimensions on an upright print that a layer height cannot motivate. The three sr-only descriptions had said "layer height" since v1.0 and were wrong all along; they now read "Preset settings optimized for embossing 0.Xmm card stock". Confirmation message is `Card thickness preset "X.Xmm" applied. All parameters updated.` Ten strings and three code comments changed in `public/index.html`. `card_thickness_preset`, the localStorage key and this filename are unchanged, as in v1.5. Approved by Brennen 2026-08-19. |
 | 2026-08-20 | 1.7 | The preset radio now also selects the double-sided beta's fixed footprint package (no new dials): 0.3 → Option B, 0.4 → the Q2 print-matrix winner, sent on the wire only when the beta is on. New Section 5 subsection "Double-Sided Footprints Follow the Preset"; source of truth `interpoint.DS_FOOTPRINTS_BY_PRESET`, smoke-guarded against the UI copy. Also corrected four stale "optimized for 0.3mm layer" code comments in the 0.3 preset to "card stock" (leftovers of the naming confusion fixed in v1.6). |
 | 2026-08-21 | 1.8 | **Documentation only — no behavior change.** Removed the three remaining `templates/index.html` references (that folder is empty and deprecated): the Source Priority entry (list renumbered 1–3), the stale line-number pair on `applyThicknessPreset()` (now cited by function name, since line numbers in `public/index.html` have moved twice this month), and the Section 10 checklist row asserting the two HTML files matched. The Section 2 line already calling the copy deprecated is unchanged. Part of the templates/ reference sweep (Phase 07b). |

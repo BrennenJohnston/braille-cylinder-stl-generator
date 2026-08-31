@@ -32,9 +32,16 @@ translation, Three.js preview. Working branch: develop — never commit to main.
 
    Layer 1 — SCHEMA/BACKEND defaults. settings.schema.json and app/models.py
    agree, and these are also the raw value= attributes in public/index.html:
-   - cylinder: ⌀30.75 mm × height 52 mm, seam offset 355° (radius 15.375 in
-     workers — watch diameter-vs-radius conversions)
-   - plate/card: 90 × 52 × 2.0 mm
+   - cylinder: ⌀30.75 mm × height 54 mm, seam offset 355° (radius 15.375 in
+     workers — watch diameter-vs-radius conversions). Height is 54 since
+     2026-08-31 — a 1 mm shelf past EACH edge of the 52 mm card so a
+     mis-rolled card cannot ruffle over the ends; rows stay centered
+     (the layout centers itself in the height). Cylinder height is DECOUPLED
+     from card height: the absent-field fallback is 54 too, owned by
+     gears.DEFAULT_CYLINDER_HEIGHT_MM, and updateShapeSettings() no longer
+     seeds the dial from card_height. Both thickness presets carry 54.
+   - plate/card: 90 × 52 × 2.0 mm — the card stays 52; do not "sync" it to
+     the barrel
    - spacing: dot 2.5 / cell 6.5 / line 10.0 mm
    - emboss dot family is ROUNDED, not cone (schema dots.combined_shape
      "rounded"; models.py use_rounded_dots 1; both index.html radios checked
@@ -97,7 +104,9 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      or the request is REJECTED (S7). The gears are baked at fixed z and do not
      move with the barrel — a 51 mm barrel exports as THREE loose bodies and
      still reports watertight, and a 62 mm one swallows the teeth. Never
-     "relax" this to a warning.
+     "relax" this to a warning. Since 2026-08-31 the DEFAULT barrel is 54 tall,
+     so gears on untouched dials warn/reject until height is dialed back to
+     52 — by design; do not "fix" either side.
    - THE BARREL MUST BE SOLID while gears are on, and emitting
      polygon_points: [] does NOT achieve that — with no polygon the worker
      hollows by wall thickness, which seals an undrainable cavity. The shell
@@ -127,13 +136,16 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      star, hexagon and 15x15 squares are RETIRED. Grow a key with
      grown_key_outline (sides +2c, corner radius +c) - never by mitering an
      already-rounded outline.
-   - Barrel 30.8 x 52.0, tolerance 0.001, but SOFT: off-size warns (S-V5) and
-     is ACCEPTED. Unlike the gear gate, never a rejection. Found by printing:
-     30.1 -> 30.5 (2026-08-29, the 30.1 pair embossed with too little pressure)
-     -> 30.8 (2026-08-30, the 30.5 double-sided pair felt loose and printed
-     shallow, uneven dots - the same symptom weaker, so the search stopped at
-     the size Version 1 has always used). Version 2 and the gears BETA now
-     share 30.8, so diameter no longer tells the two apart - the version does.
+   - Barrel 30.8 x 54.0, tolerance 0.001, but SOFT: off-size warns (S-V5) and
+     is ACCEPTED. Unlike the gear gate, never a rejection. Diameter found by
+     printing: 30.1 -> 30.5 (2026-08-29, the 30.1 pair embossed with too
+     little pressure) -> 30.8 (2026-08-30, the 30.5 double-sided pair felt
+     loose and printed shallow, uneven dots - the same symptom weaker, so the
+     search stopped at the size Version 1 has always used). Height 54 since
+     2026-08-31 (was 52), moving with the project default - the 1 mm card
+     shelf at each end; not yet print-tested at 54. Version 2 and the gears
+     BETA share ⌀30.8 but the HEIGHT now tells them apart (V2 54, gears 52) -
+     and so does the version.
    - Clearance 0.110 default, range 0.0-0.5, input step 0.005. Applied OUTWARD
      to the four holes ONLY. TWO printed rounds bracketed it on 2026-08-29:
      too loose at 0.15, too tight at 0.075. NOT the midpoint 0.1125 - an

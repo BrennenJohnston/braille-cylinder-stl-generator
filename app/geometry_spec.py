@@ -442,7 +442,7 @@ def extract_cylinder_geometry_spec(
 
     # One reader for both spellings of each key, shared with app/validation.py's
     # gear gate so the two can never disagree about what an absent field means.
-    diameter, height = gears.cylinder_dimensions(cylinder_params, settings.card_height)
+    diameter, height = gears.cylinder_dimensions(cylinder_params)
     thickness = float(cylinder_params.get('wall_thickness', cylinder_params.get('thickness', 2.0)))
     polygonal_cutout_radius = float(cylinder_params.get('polygonal_cutout_radius_mm', 0))
     polygonal_cutout_sides = int(cylinder_params.get('polygonal_cutout_sides', 12) or 12)

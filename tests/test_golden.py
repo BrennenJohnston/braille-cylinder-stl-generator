@@ -891,13 +891,20 @@ V2_FIXTURE_SETTINGS = {
     'embosser_version': 2,
     'v2_key_clearance_mm': version2.V2_KEY_CLEARANCE_DEFAULT_MM,
 }
-V2_FIXTURE_CYLINDER_PARAMS = {**DS_FIXTURE_CYLINDER_PARAMS, 'diameter': version2.V2_BARREL_DIAMETER_MM}
+V2_FIXTURE_CYLINDER_PARAMS = {
+    **DS_FIXTURE_CYLINDER_PARAMS,
+    'diameter': version2.V2_BARREL_DIAMETER_MM,
+    # The Version 2 preset barrel grew to 54 mm on 2026-08-31 (1 mm card shelf
+    # at each end); any other size makes the spec carry the S-V5 note, and the
+    # generator below refuses a spec with warnings.
+    'height': version2.V2_BARREL_HEIGHT_MM,
+}
 V2_FIXTURE_NAMES = {'positive': 'v2_cylinderA_golden', 'negative': 'v2_cylinderB_golden'}
 
 # The barrel in the fixture frame (base reseated to z = 0). Cylinder A carries
-# the nub on top of that, so it reaches z 55.
+# the nub on top of that, so it reaches z 57.
 _V2_FIXTURE_Z_MIN = 0.0
-_V2_FIXTURE_Z_MAX = 52.0
+_V2_FIXTURE_Z_MAX = version2.V2_BARREL_HEIGHT_MM
 
 
 def _v2_fixture_spec(plate_type):
@@ -974,7 +981,7 @@ def generate_v2_golden_fixtures():
                     'back_lines, so this pair is a SINGLE-SIDED Version 2 cylinder. The barrel comes '
                     'from tests/test_version2_keyed.build_v2_cylinder, the same builder the acceptance '
                     'harness measures. Z-up, theta as emitted, base of the barrel reseated to z=0 - '
-                    'which puts Cylinder A nub at z 52..55 and leaves Cylinder B at z 0..52.'
+                    'which puts Cylinder A nub at z 54..57 and leaves Cylinder B at z 0..54.'
                 ),
                 'cylinder_diameter_note': (
                     'ds_cylinder*_golden uses 30.75 mm; this pair uses 30.8 mm because that is the '

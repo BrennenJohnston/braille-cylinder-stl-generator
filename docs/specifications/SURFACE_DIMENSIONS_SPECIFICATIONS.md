@@ -63,7 +63,7 @@ The submenu contains **two grouped sections**:
 │                                                                   │
 │  ┌─ Cylinder Dimensions ─────────────────────────────────────────┐│
 │  │  • Cylinder Diameter (mm)                    [30.75]         ││
-│  │  • Cylinder Height (mm)                      [52]            ││
+│  │  • Cylinder Height (mm)                      [54]            ││
 │  │  • Polygonal Cutout Circumscribed Radius (mm) [13]           ││
 │  │      Creates a polygonal cutout along the cylinder's length. ││
 │  │      Set to 0 for no cutout.                                 ││
@@ -145,7 +145,7 @@ class CylinderParams:
     diameter_mm: float = 31.35
 
     @staticmethod
-    def from_dict(data: dict, card_height: float = 52.0) -> 'CylinderParams':
+    def from_dict(data: dict) -> 'CylinderParams':
         return CylinderParams(
             diameter_mm=float(data.get('diameter_mm', data.get('diameter', 31.35))),
             # ... other parameters
@@ -216,10 +216,16 @@ function createCylinderShell(spec) {
 | Input ID | `cylinder_height_mm` |
 | Input Name | `cylinder_height_mm` |
 | Type | `number` |
-| Default | `52` |
+| Default | `54` |
 | Step | `0.1` |
 | Min | `10` |
 | Max | `200` |
+
+**Why 54 (2026-08-31):** the business card itself stays 52 mm tall, and the
+braille rows stay centered, so the barrel carries a **1 mm shelf past each card
+edge**. A card rolled slightly off-axis rides the shelf instead of ruffling
+over the cylinder ends. Before this date the cylinder height defaulted to the
+card height (52); the two are now independent settings.
 
 #### Parameter Names Across Codebase
 
@@ -228,7 +234,7 @@ function createCylinderShell(spec) {
 | HTML/UI | `cylinder_height_mm` | Primary input name |
 | `app/models.py` | `height_mm` | In `CylinderParams` dataclass |
 | `backend.py` | `height_mm`, `height` | Both accepted |
-| `geometry_spec.py` | `height`, `height_mm` | Fallback to `settings.card_height` |
+| `geometry_spec.py` | `height`, `height_mm` | Fallback to `54` (`gears.DEFAULT_CYLINDER_HEIGHT_MM`, no longer `settings.card_height`) |
 | `csg-worker.js` | `height` | Direct usage |
 
 #### Backend Processing (app/models.py - CylinderParams)
@@ -236,12 +242,12 @@ function createCylinderShell(spec) {
 ```python
 @dataclass
 class CylinderParams:
-    height_mm: float | None = None  # If None, uses card_height from settings
+    height_mm: float = 54.0
 
     @staticmethod
-    def from_dict(data: dict, card_height: float = 52.0) -> 'CylinderParams':
+    def from_dict(data: dict) -> 'CylinderParams':
         return CylinderParams(
-            height_mm=float(data.get('height_mm', data.get('height', card_height))),
+            height_mm=float(data.get('height_mm', data.get('height', 54.0))),
             # ...
         )
 ```
@@ -311,7 +317,7 @@ class CylinderParams:
     polygonal_cutout_radius_mm: float = 13.0
 
     @staticmethod
-    def from_dict(data: dict, card_height: float = 52.0) -> 'CylinderParams':
+    def from_dict(data: dict) -> 'CylinderParams':
         return CylinderParams(
             polygonal_cutout_radius_mm=float(data.get('polygonal_cutout_radius_mm', 13.0)),
             # ...
@@ -452,7 +458,7 @@ class CylinderParams:
     seam_offset_deg: float = 355.0
 
     @staticmethod
-    def from_dict(data: dict, card_height: float = 52.0) -> 'CylinderParams':
+    def from_dict(data: dict) -> 'CylinderParams':
         return CylinderParams(
             seam_offset_deg=float(data.get('seam_offset_deg', data.get('seam_offset_degrees', 355.0))),
             # ...
@@ -998,7 +1004,7 @@ if (isCylinder) {
 | Input ID | Default Value | Step | Range |
 |----------|---------------|------|-------|
 | `cylinder_diameter_mm` | `30.75` | 0.1 | 10-200 |
-| `cylinder_height_mm` | `52` | 0.1 | 10-200 |
+| `cylinder_height_mm` | `54` | 0.1 | 10-200 |
 | `cylinder_polygonal_cutout_radius_mm` | `13` | 0.1 | 0-50 |
 | `cylinder_polygonal_cutout_sides` | `12` | 1 | 3-60 |
 | `seam_offset_deg` | `355` | 1 | 0-360 |
@@ -1037,6 +1043,14 @@ def _validate_margins(self):
 depth = float(getattr(self, 'counter_dot_depth', 0.8))
 self.counter_dot_depth = max(0.0, min(depth, self.card_thickness - self.epsilon_mm))
 ```
+
+---
+
+## 9. Document History
+
+| Date | Change |
+|------|--------|
+| 2026-08-31 | Cylinder height default 52 → 54 mm: the barrel now carries a 1 mm shelf past each edge of the 52 mm card so a slightly mis-rolled card cannot ruffle over the ends. Braille rows remain centered (the layout centers itself in the height). Cylinder height no longer falls back to `card_height` anywhere — the absent-field default is 54, owned by `app/geometry/gears.py` (`DEFAULT_CYLINDER_HEIGHT_MM`). |
 
 ### 8.3 Polygon Point Validation (csg-worker.js)
 

@@ -26,14 +26,14 @@ const S_V3_NOTE =
   'Choose Version 2 only if you are building the Version 2 embosser, which uses keyed gear pegs. Version 1 stays supported.';
 const S_V4_PROTOTYPE =
   'Version 2 is a work-in-progress prototype. Its cylinder size, cutouts and fit may change as testing continues. It fits only gears with R14 pegs; earlier pegs do not enter the holes.';
-const S_V5_SIZE_START = 'The Version 2 embosser expects a 30.8 mm x 52 mm cylinder.';
+const S_V5_SIZE_START = 'The Version 2 embosser expects a 30.8 mm x 54 mm cylinder.';
 const S_V8_READY = 'Cylinder generated for the Version 2 embosser (prototype).';
 const S_V10_ON = 'Version 2 selected: keyed gear-peg cutouts, 30.8 mm cylinder.';
 const S_V10_OFF = 'Version 1 selected.';
 
 // The Version 2 preset barrel (D-V4), owned by app/geometry/version2.py.
 const V2_DIAMETER = '30.8';
-const V2_HEIGHT = '52';
+const V2_HEIGHT = '54';
 
 // Same transient failures the other beta specs tolerate: both workers signal
 // readiness asynchronously and Firefox is slower to spin them up.

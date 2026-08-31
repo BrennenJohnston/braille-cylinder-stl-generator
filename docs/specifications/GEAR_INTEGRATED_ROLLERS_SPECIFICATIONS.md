@@ -152,6 +152,13 @@ Research record: `01_SAMPLE_GEOMETRY_AUDIT.md` in the 2026-08-24 development fol
    32 mm). Otherwise S7: *"Integrated gears are matched to the reference roller and
    only fit a 30.8 mm x 52 mm cylinder. Received X mm x Y mm."*
 
+Since 2026-08-31 the app-wide default cylinder is **30.8 × 54 mm** (a 1 mm card
+shelf at each end), so enabling gears on untouched dials now shows the S7
+warning — and a generate is rejected — until the height dial is set back to 52.
+The gears themselves cannot follow the taller barrel: they are baked at fixed z
+(see 5.1). Height is now what tells the gears BETA (52) apart from Embosser
+Version 2 (54); both still use the 30.8 diameter.
+
 ### 5.1 Why a rejection and not a warning
 
 The gears are baked at fixed heights and do NOT move with the barrel. Measured on the
@@ -398,6 +405,7 @@ Two findings from the same session are worth keeping:
 
 | Date | Change |
 |---|---|
+| 2026-08-31 | **§5 notes the default barrel outgrowing the gears.** The app-wide default cylinder is now 30.8 × 54 mm (a 1 mm card shelf at each end), while the reference roller stays 30.8 × 52.0 — the gears are baked at fixed z and cannot follow. Enabling gears on untouched dials therefore shows S7 live, and a generate is rejected, until the height dial is set back to 52; height now tells the gears BETA apart from Embosser Version 2 (54) the way diameter no longer can. No gear number, gate, or asset changed. The absent-height fallback both S7 and the spec read moved with the default (52 → 54, now `gears.DEFAULT_CYLINDER_HEIGHT_MM`, no longer the card height), so an absent-height gear request is rejected rather than quietly passed. Gear golden fixtures re-ran byte-identical. |
 | 2026-08-25 | **§10 rewritten from a tested result.** The MakerWorld exclusion (D-4) was justified here by reasoning about Customizer limits; probing the real product showed the blocker is one step earlier — PMM v1.1.0 accepts no mesh upload at all (no asset panel, no file input, picker refuses STLs, one file at a time). Records the two salvageable findings: our customizer syntax parses correctly there, and the combined-file crop delivery is proven locally (set A exact, set B within 3.8 nm) should uploads ever appear. |
 | 2026-08-25 | **Pair mode, the combined file, and the S9 hardware note.** §8.1 records that the gears toggle alone now reveals Generate Both + the Cylinder A/B radio relabel (`isPairModeOn()`, label reuse confirmed by Brennen) while the download names stay the frozen Geared single-sided ones; §7 adds the combined `Cylinder_Pair_Geared_*` exemption from every one-body claim (two full-span rollers, 40.8 mm centres / 8.58 mm accepted tip gap — the barrel-based spacing decision); §8's string table gains S9, the always-visible version-1-vs-2 hardware warning (signed, with `#gear-hardware-link-slot` reserved for the v2 files link), and corrects S8 to signed per the authoritative code comment. |
 | 2026-08-24 | Created. Documents the gear beta as merged: vendored assets and their format, the canonical transforms, the S6/S7 gates, the union and its solid-barrel requirement, D-8a, the UI, and the acceptance tolerances. Records that the emboss plate's loose dot domes predate this beta, and that the weld rings measure 0.000000 mm³. (This row also claimed S8 was unsigned; that was corrected on 2026-08-25 — see the row above and §8 — and the claim is struck here so the two do not contradict each other.) |

@@ -48,7 +48,7 @@ block, and every filename is exactly what the public training videos show.
 
 ### 1.1 The size is a soft preset
 
-Version 2 sets the cylinder to **30.8 × 52.0 mm** (`V2_BARREL_DIAMETER_MM`,
+Version 2 sets the cylinder to **30.8 × 54.0 mm** (`V2_BARREL_DIAMETER_MM`,
 `V2_BARREL_HEIGHT_MM`) with a tolerance of **0.001 mm** (`V2_SIZE_TOLERANCE_MM`). Off
 that size the app shows S-V5 live and the spec carries the same sentence in
 `warnings` — but the request is **accepted**. This is deliberately unlike the gear
@@ -309,9 +309,9 @@ adds `spec['keyed_cutouts']`:
   "clearance_mm": 0.110,
   "halves": [
     { "end": "bottom", "profile": [ {"x": …, "y": …}, … 100 points ],
-      "z_from": -26.01, "z_to": 0.01 },
+      "z_from": -27.01, "z_to": 0.01 },
     { "end": "top",    "profile": [ … 100 points ],
-      "z_from": -0.01,  "z_to": 26.01 }
+      "z_from": -0.01,  "z_to": 27.01 }
   ],
   "countersinks": [
     { "end": "bottom", "kind": "hull", "depth": 2.0,
@@ -323,11 +323,11 @@ adds `spec['keyed_cutouts']`:
     "profile":      [ … 3 points on A, 4 on B ],
     "top_chamfer":  { "depth": 0.5,  "profile": [ … ] },
     "base_flare":   { "depth": 0.10, "profile": [ … ] },
-    "z_from": 25.99, "z_to": 29.0
+    "z_from": 26.99, "z_to": 30.0
   },
   "socket": {                               // BOTH plates; a plain prism
     "profile": [ … ],                       // no chamfer, no flare
-    "z_from": -26.01, "z_to": -22.85
+    "z_from": -27.01, "z_to": -23.85
   }
 }
 ```
@@ -386,7 +386,7 @@ native equivalent.
 | Hidden rows | `cylinder-cutout-radius-row`, `cylinder-cutout-sides-row`, `cylinder-seam-offset-row` | inert in Version 2 |
 
 **Selecting Version 2** snapshots five cylinder dials, applies `V2_PRESET_OVERRIDES`
-(`cylinder_diameter_mm` 30.8, `cylinder_height_mm` 52, `seam_offset_deg` 0) on top of
+(`cylinder_diameter_mm` 30.8, `cylinder_height_mm` 54, `seam_offset_deg` 0) on top of
 the Card Thickness preset, hides the three inert rows, hides **and unchecks** the gears
 toggle, reveals the clearance dial and the prototype notice, joins pair mode, and
 announces S-V10 once. **Selecting Version 1** restores the snapshot exactly.
@@ -583,6 +583,7 @@ it.
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-08-31 | 1.4 | **The barrel grows to 30.8 × 54.0 mm** (was × 52.0, the card's own height). The extra 2 mm is a **1 mm shelf past each edge of the 52 mm card**: a card rolled slightly off-axis rides the shelf instead of ruffling over the cylinder ends. The braille layout centers itself in the height, so **no row moves**; the keyed holes are radial and the nub, sockets and countersinks all place from height/2, so every end feature follows the new faces with no other change. This matches the new project-wide cylinder default (54, also 2026-08-31) — the gears BETA stays at its baked 30.8 × 52.0, so **height now tells the two apart** where diameter stopped doing so on 2026-08-30. The Version 2 golden pair was regenerated at the new height; the double-sided and gear pairs re-ran byte-identical. Not yet print-tested at 54. |
 | 2026-08-30 | 1.3 | **Third print test: the barrel walks back to 30.8 mm.** Brennen ran a 30.5 mm DOUBLE-SIDED pair and reported the pair felt loose and the dots imprinted neither as deep nor as consistently - the same two symptoms the 30.1 pair gave, weaker. Two points on one line, so the stepping stopped and the barrel took **Version 1's long-proven 30.8 mm** rather than another half step. Both symptoms have one cause, too little interference between the pair, and diameter is the only dial that sets it. Nothing about the gear interface moves with the barrel: every key and every anti-rotation feature is at a fixed radius from the axis, so the whole R14 and anti-rotation fit is unchanged. The larger barrel RELAXES the tightest wall - Cylinder A's socket goes **1.2525 -> 1.4025 mm**, B **1.9641 -> 2.1141** - and with it, a mitred socket would no longer break the 1.2 mm minimum (1.2525), so §5 now rests the parallel-curve rule on the stress riser alone. The seam gap widens to **5.76 mm**, so §8.1's retired one-fewer-cell rule stays retired. Version 2 and the gears BETA now share 30.8, so diameter no longer distinguishes them - the version does, and two tests that had silently relied on the sizes differing were made to set their own. The Version 2 golden pair was regenerated; every other fixture is md5-identical, and Version 1 is byte-identical at the geometry-spec level. |
 | 2026-08-30 | 1.2 | **Second print test, and the anti-rotation keys.** Key clearance **0.075 → 0.110 mm**: the holes were too loose at 0.15 and too tight at 0.075, so the value lands between them; 0.110 and not the midpoint 0.1125, because the step is 0.005 and an off-step default kills Generate silently. Every gear gained an anti-rotation feature, so **both plates now carry a nub above the top face and a socket in the bottom one** (new §4.4) and the “positive plate only” rule is retired. The nub's base flare drops **0.5 → 0.10 mm**: gear A1's notch has no mouth relief, so the old flare stood 0.49 mm proud per side and A1 cannot have been seating flush on either printed pair. `V2_NUB_CLEARANCE_MM` **0.15 → 0.30**, now derived from its two parts rather than retyped. §11's margin table gains the 0.110 → 0.890 row. Both Version 2 goldens were regenerated; every other fixture is byte-identical. |
 | 2026-08-29 | 1.1 | **First print test, and what it moved.** Barrel **30.1 → 30.5 mm**: the 30.1 pair embossed with noticeably less pressure than Version 1, and 30.5 is half way back to Version 1's 30.8. Key clearance **0.15 → 0.075 mm**, with the input step 0.01 → 0.005 because 0.075 is not a whole number of 0.01 steps: all four peg holes printed too loose, and the pegs measure exactly nominal. **The nub is decoupled from the dial** and pinned at `V2_NUB_CLEARANCE_MM` = 0.15 — gear A1's notch is already cut to that size, so under the old shared-dial rule tightening the holes would have grown the nub into it. §8.1's one-fewer-braille-cell rule is **retired**: at 30.5 mm the seam gap is 4.8 mm against the 4.0 needed. §11 gains the measured R14 pegs. The Version 2 golden pair was regenerated; the double-sided and gear pairs re-ran byte-identical. |

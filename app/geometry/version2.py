@@ -68,8 +68,15 @@ from app.geometry.gears import _format_mm
 # 1.4025 mm at this barrel against 1.2525 at 30.5, over the 1.2 minimum either
 # way. Nothing about the gear interface moves with it - every key and every
 # anti-rotation feature is at a fixed radius from the axis.
+#
+# Height 54 since 2026-08-31 (was 52, the card's own height): 1 mm of extra
+# barrel past EACH card edge, so a card rolled slightly off-axis rides the
+# shelf instead of ruffling over the ends. The braille layout centres itself
+# in the height, so no row moves; the keyed holes are radial and the nubs,
+# sockets and chamfers all place from height/2, so every end feature simply
+# follows the new faces.
 V2_BARREL_DIAMETER_MM = 30.8
-V2_BARREL_HEIGHT_MM = 52.0
+V2_BARREL_HEIGHT_MM = 54.0
 # Float slack only, matching the gears' tolerance: at 32 mm a float32 ULP is
 # 3.8e-6 mm, so 0.001 is far below any dimension a user can type.
 V2_SIZE_TOLERANCE_MM = 0.001

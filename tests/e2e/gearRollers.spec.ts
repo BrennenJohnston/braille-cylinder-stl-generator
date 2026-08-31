@@ -31,7 +31,10 @@ const SIZE_WARNING_START = 'Integrated gears are matched to the reference roller
 const GEARS_READY = 'Cylinder generated with integrated gears.';
 
 // The reference roller the vendored gears were measured against. Anything else
-// is rejected by app/validation.py, so the UI warns before a generate.
+// is rejected by app/validation.py, so the UI warns before a generate. Since
+// 2026-08-31 the shipped default barrel is 54 mm tall (a 1 mm card shelf at
+// each end) while the gears stay baked to 52, so every gear-mode generate in
+// this file dials the height back to the reference first.
 const REFERENCE_DIAMETER_MM = '30.8';
 const REFERENCE_HEIGHT_MM = '52';
 
@@ -234,7 +237,18 @@ test.describe('Gear-integrated one-piece rollers (BETA)', () => {
     await openApp(page);
     const warning = page.locator('#gear-size-warning');
 
-    // At the shipped defaults the cylinder IS the reference roller.
+    // The shipped default barrel is 54 mm tall since 2026-08-31, and the gears
+    // are baked at fixed z, so the defaults themselves are off-size now: the
+    // warning is up from the first moment the toggle goes on.
+    await setGearToggle(page, true);
+    await expect(warning).toBeVisible();
+    await expect(page.locator('#gear-size-message')).toContainText(SIZE_WARNING_START);
+    await expect(page.locator('#gear-size-message')).toContainText('54');
+    await expect(page.locator('#a11y-status')).toContainText(SIZE_WARNING_START);
+
+    // At the reference size it clears.
+    await setDial(page, 'cylinder_height_mm', REFERENCE_HEIGHT_MM);
+    await setGearToggle(page, false);
     await setGearToggle(page, true);
     await expect(warning).toBeHidden();
 
@@ -245,21 +259,15 @@ test.describe('Gear-integrated one-piece rollers (BETA)', () => {
     await setGearToggle(page, false);
     await setGearToggle(page, true);
     await expect(warning).toBeVisible();
-    await expect(page.locator('#gear-size-message')).toContainText(SIZE_WARNING_START);
     await expect(page.locator('#gear-size-message')).toContainText('45');
-    await expect(page.locator('#a11y-status')).toContainText(SIZE_WARNING_START);
-
-    // Back to the reference size and it clears.
-    await setDial(page, 'cylinder_height_mm', REFERENCE_HEIGHT_MM);
-    await setGearToggle(page, false);
-    await setGearToggle(page, true);
-    await expect(warning).toBeHidden();
   });
 
   test('the request gains exactly one key, and only when the toggle is on', async ({ page }) => {
     await openApp(page);
     const state = watchGeometrySpecRequests(page);
     await page.locator('#auto-text').fill('abc');
+    // Set BEFORE the first generate so the off/on bodies differ only in the flag.
+    await setDial(page, 'cylinder_height_mm', REFERENCE_HEIGHT_MM);
 
     await generate(page, state, 1);
     const off = (state.bodies[0]?.settings ?? {}) as Record<string, unknown>;
@@ -283,6 +291,7 @@ test.describe('Gear-integrated one-piece rollers (BETA)', () => {
     await openApp(page);
     await page.locator('#auto-text').fill('abc');
     await setGearToggle(page, true);
+    await setDial(page, 'cylinder_height_mm', REFERENCE_HEIGHT_MM);
 
     const state = watchGeometrySpecRequests(page);
     await generate(page, state, 1);
@@ -312,6 +321,7 @@ test.describe('Gear-integrated one-piece rollers (BETA)', () => {
     await openApp(page);
     await page.locator('#auto-text').fill('abc');
     await setGearToggle(page, true);
+    await setDial(page, 'cylinder_height_mm', REFERENCE_HEIGHT_MM);
     await page.locator('input[name="plate_type"][value="negative"]').check();
 
     const state = watchGeometrySpecRequests(page);
@@ -367,6 +377,7 @@ test.describe('Gear-integrated one-piece rollers (BETA)', () => {
 
     await page.locator('#auto-text').fill('abc');
     await setGearToggle(page, true);
+    await setDial(page, 'cylinder_height_mm', REFERENCE_HEIGHT_MM);
     await generateBoth(page);
 
     // Same rule as the double-sided pair: nothing downloads by itself.
@@ -392,6 +403,7 @@ test.describe('Gear-integrated one-piece rollers (BETA)', () => {
     await openApp(page);
     await page.locator('#auto-text').fill('abc');
     await setGearToggle(page, true);
+    await setDial(page, 'cylinder_height_mm', REFERENCE_HEIGHT_MM);
     await generateBoth(page);
 
     const triangleCount = async (buttonId: string) => {

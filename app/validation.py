@@ -637,22 +637,8 @@ def validate_gear_rollers_settings(settings_data: dict, shape_type: str, cylinde
             {'key': 'gear_rollers_enabled', 'shape_type': shape_type, 'required': 'cylinder'},
         )
 
-    # card_height is read the way CardSettings will read it, because that is the
-    # height fallback app/geometry_spec.py uses when cylinder_params omits one.
-    card_height_raw = settings_data.get('card_height')
-    if card_height_raw is None or (isinstance(card_height_raw, str) and card_height_raw.strip() == ''):
-        card_height = gears.DEFAULT_CARD_HEIGHT_MM
-    else:
-        try:
-            card_height = float(card_height_raw)
-        except (TypeError, ValueError) as e:
-            raise ValidationError(
-                "Setting 'card.height_mm' must be a number",
-                {'key': 'card_height', 'value': card_height_raw},
-            ) from e
-
     try:
-        diameter, height = gears.cylinder_dimensions(cylinder_params or {}, card_height)
+        diameter, height = gears.cylinder_dimensions(cylinder_params or {})
     except (TypeError, ValueError) as e:
         raise ValidationError(
             'Cylinder diameter and height must be numbers when integrated gears are on.',

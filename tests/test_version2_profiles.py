@@ -350,14 +350,16 @@ def test_bad_input_raises_rather_than_guessing(call):
 
 
 def test_size_check_and_message():
-    assert v2.matches_v2_barrel(30.8, 52.0)
-    assert v2.matches_v2_barrel(30.8005, 52.0)
-    assert not v2.matches_v2_barrel(30.5, 52.0)
-    assert not v2.matches_v2_barrel(30.8, 51.0)
+    assert v2.matches_v2_barrel(30.8, 54.0)
+    assert v2.matches_v2_barrel(30.8005, 54.0)
+    assert not v2.matches_v2_barrel(30.5, 54.0)
+    # 52 is the pre-2026-08-31 height - exactly the value a regression would
+    # quietly bring back, so it stays pinned as a mismatch.
+    assert not v2.matches_v2_barrel(30.8, 52.0)
 
-    message = v2.v2_size_message(30.5, 52.0)
-    assert message == ('The Version 2 embosser expects a 30.8 mm x 52 mm cylinder. Received 30.5 mm x 52 mm.')
-    assert '52.0 mm' not in message
+    message = v2.v2_size_message(30.5, 54.0)
+    assert message == ('The Version 2 embosser expects a 30.8 mm x 54 mm cylinder. Received 30.5 mm x 54 mm.')
+    assert '54.0 mm' not in message
 
 
 # --- Anti-rotation features (D-R3-2 .. D-R3-5) -------------------------------

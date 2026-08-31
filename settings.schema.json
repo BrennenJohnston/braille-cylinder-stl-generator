@@ -67,7 +67,7 @@
       "additionalProperties": false,
       "properties": {
         "cylinder_diameter_mm": { "type": "number", "exclusiveMinimum": 0, "default": 30.75 },
-        "cylinder_height_mm": { "type": "number", "exclusiveMinimum": 0, "default": 52 },
+        "cylinder_height_mm": { "type": "number", "exclusiveMinimum": 0, "default": 54 },
         "polygon_cutout_radius_mm": { "type": "number", "minimum": 0, "default": 13 },
         "polygon_cutout_points": { "type": "integer", "minimum": 3, "default": 12 },
         "seam_offset_degrees": { "type": "number", "minimum": 0, "exclusiveMaximum": 360, "default": 355 }

@@ -38,7 +38,7 @@ NO_GEARS_MESSAGE = 'Integrated gears are not available in Version 2.'
 # form field would behave differently from a missing one.
 VERSION_ONE_VALUES = [1, '1', 1.0, '', None]
 
-V2_CYLINDER = {'diameter': 30.8, 'height': 52.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0}
+V2_CYLINDER = {'diameter': 30.8, 'height': 54.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0}
 
 CARD_PAYLOAD = {
     'shape_type': 'card',
@@ -127,7 +127,7 @@ def test_a_clearance_outside_the_dial_is_refused(clearance):
 
 def test_the_size_is_not_gated():
     """
-    D-V15: 30.8 x 52 is a soft preset, so an off-size cylinder is accepted here
+    D-V15: 30.8 x 54 is a soft preset, so an off-size cylinder is accepted here
     and only warned about in the geometry spec.
     """
     off_size = {'diameter': 30.8, 'height': 60.0, 'wall_thickness': 2.0}

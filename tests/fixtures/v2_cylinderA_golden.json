@@ -3,7 +3,7 @@
   "fixture_name": "v2_cylinderA_golden",
   "plate_type": "positive",
   "generation": {
-    "note": "Rendered by tests/test_golden.py generate_v2_golden_fixtures() from extract_cylinder_geometry_spec called directly with embosser_version=2 and no back_lines, so this pair is a SINGLE-SIDED Version 2 cylinder. The barrel comes from tests/test_version2_keyed.build_v2_cylinder, the same builder the acceptance harness measures. Z-up, theta as emitted, base of the barrel reseated to z=0 - which puts Cylinder A nub at z 52..55 and leaves Cylinder B at z 0..52.",
+    "note": "Rendered by tests/test_golden.py generate_v2_golden_fixtures() from extract_cylinder_geometry_spec called directly with embosser_version=2 and no back_lines, so this pair is a SINGLE-SIDED Version 2 cylinder. The barrel comes from tests/test_version2_keyed.build_v2_cylinder, the same builder the acceptance harness measures. Z-up, theta as emitted, base of the barrel reseated to z=0 - which puts Cylinder A nub at z 54..57 and leaves Cylinder B at z 0..54.",
     "cylinder_diameter_note": "ds_cylinder*_golden uses 30.75 mm; this pair uses 30.8 mm because that is the Version 2 preset barrel (D-V4), which walked back on 2026-08-30 to the size Version 1 has always used and so now matches gear_roller*_golden. Any other size makes app/geometry_spec.py emit the S-V5 size note, and a spec carrying warnings is refused by the generator above - so these fixtures exist only at the preset size.",
     "grid_columns_note": "ds_cylinder*_golden and gear_roller*_golden use 14 columns; this pair uses 3, the width its own braille line occupies. Single-sided mode restores the universal counter grid, so 14 columns would put 336 bowls on Cylinder B and make the fixture 13.01 MB against 2.88 MB here. The counter grid is Version 1 geometry pinned by cylinder_counter_small.stl; nothing this pair exists to prove depends on it.",
     "key_profiles": {
@@ -33,7 +33,7 @@
     },
     "cylinder_params": {
       "diameter": 30.8,
-      "height": 52.0,
+      "height": 54.0,
       "wall_thickness": 2.0,
       "seam_offset_deg": 355.0
     },
@@ -53,9 +53,9 @@
     "bbox_max": [
       16.147907257080078,
       15.399999618530273,
-      55.0
+      57.0
     ],
-    "volume": 28388.84402213243,
-    "surface_area": 9144.374359417643
+    "volume": 29488.795401220777,
+    "surface_area": 9449.482874942787
   }
 }

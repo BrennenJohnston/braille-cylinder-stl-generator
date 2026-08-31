@@ -4016,7 +4016,7 @@
                                       </div>
                                       <div style="margin-top: 6px;">
                                           <label for="cylinder_height_mm">Cylinder Height (mm):</label>
-                                          <input type="number" id="cylinder_height_mm" name="cylinder_height_mm" value="52" step="0.1" min="10" max="200" style="width: 110px;" autocomplete="off">
+                                          <input type="number" id="cylinder_height_mm" name="cylinder_height_mm" value="54" step="0.1" min="10" max="200" style="width: 110px;" autocomplete="off">
                                       </div>
                                       <div style="margin-top: 6px;" id="cylinder-cutout-radius-row">
                                           <label for="cylinder_polygonal_cutout_radius_mm">Polygonal Cutout Circumscribed Radius (mm):</label>
@@ -5868,13 +5868,10 @@
             if (hemiGroup) hemiGroup.style.display = 'none';
             if (coneGroup) coneGroup.style.display = '';
 
-            // Initialize cylinder height with current card height when cylinder is selected
+            // The cylinder height dial stands alone: since 2026-08-31 the barrel
+            // is deliberately 2 mm taller than the card (a 1 mm shelf past each
+            // card edge), so it must NOT be re-seeded from card_height here.
             if (shapeType === 'cylinder') {
-                const cardHeight = document.getElementById('card_height').value;
-                const cylinderHeightInput = document.getElementById('cylinder_height_mm');
-                if (cylinderHeightInput) {
-                    cylinderHeightInput.value = cardHeight;
-                }
                 checkCylinderOverflow();
             }
         }
@@ -7125,7 +7122,10 @@
         // The reference roller the vendored gears were measured against. The
         // server rejects anything else while gears are on (app/geometry/gears.py
         // owns these numbers), so the UI says so live rather than letting a
-        // generate turn into a 400. The live dials default to exactly these.
+        // generate turn into a 400. Since 2026-08-31 the default cylinder is
+        // 54 mm tall (a 1 mm card shelf at each end), so enabling gears at the
+        // defaults shows this warning until the height dial is set back to 52 -
+        // the gears are baked at fixed z and cannot follow the barrel.
         const GEAR_BARREL_DIAMETER_MM = 30.8;
         const GEAR_BARREL_HEIGHT_MM = 52.0;
         const GEAR_BARREL_TOLERANCE_MM = 0.001;
@@ -7228,11 +7228,11 @@
         // sentence is the server's own, word for word, so a user never meets two
         // spellings of one limit.
         const V2_BARREL_DIAMETER_MM = 30.8;
-        const V2_BARREL_HEIGHT_MM = 52.0;
+        const V2_BARREL_HEIGHT_MM = 54.0;
         const V2_SIZE_TOLERANCE_MM = 0.001;
         const V2_PRESET_OVERRIDES = {
             cylinder_diameter_mm: 30.8,
-            cylinder_height_mm: 52,
+            cylinder_height_mm: 54,
             seam_offset_deg: 0
         };
         // Every dial Version 2 overrides or hides, so turning it off gives back
@@ -8120,7 +8120,7 @@
                 cone_counter_dot_flat_hat: 1.0,
                 // Cylinder Dimensions
                 cylinder_diameter_mm: 30.8,
-                cylinder_height_mm: 52,
+                cylinder_height_mm: 54,
                 cylinder_polygonal_cutout_radius_mm: 13,
                 cylinder_polygonal_cutout_sides: 12,
                 seam_offset_deg: 0,
@@ -8163,7 +8163,7 @@
                 cone_counter_dot_flat_hat: 0.8,
                 // Cylinder Dimensions
                 cylinder_diameter_mm: 30.8,
-                cylinder_height_mm: 52,
+                cylinder_height_mm: 54,
                 cylinder_polygonal_cutout_radius_mm: 13,
                 cylinder_polygonal_cutout_sides: 12,
                 seam_offset_deg: 0,
@@ -9599,7 +9599,7 @@
             if (shapeType === 'cylinder') {
                 cylinderParams = {
                     diameter_mm: document.getElementById('cylinder_diameter_mm')?.value || '30.75',
-                    height_mm: document.getElementById('cylinder_height_mm')?.value || '52',
+                    height_mm: document.getElementById('cylinder_height_mm')?.value || '54',
                     polygonal_cutout_radius_mm: document.getElementById('cylinder_polygonal_cutout_radius_mm')?.value || '13',
                     polygonal_cutout_sides: document.getElementById('cylinder_polygonal_cutout_sides')?.value || '12',
                     seam_offset_deg: document.getElementById('seam_offset_deg')?.value || '355'
