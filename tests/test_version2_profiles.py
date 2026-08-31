@@ -350,13 +350,13 @@ def test_bad_input_raises_rather_than_guessing(call):
 
 
 def test_size_check_and_message():
-    assert v2.matches_v2_barrel(30.5, 52.0)
-    assert v2.matches_v2_barrel(30.5005, 52.0)
-    assert not v2.matches_v2_barrel(30.8, 52.0)
-    assert not v2.matches_v2_barrel(30.5, 51.0)
+    assert v2.matches_v2_barrel(30.8, 52.0)
+    assert v2.matches_v2_barrel(30.8005, 52.0)
+    assert not v2.matches_v2_barrel(30.5, 52.0)
+    assert not v2.matches_v2_barrel(30.8, 51.0)
 
-    message = v2.v2_size_message(30.8, 52.0)
-    assert message == ('The Version 2 embosser expects a 30.5 mm x 52 mm cylinder. Received 30.8 mm x 52 mm.')
+    message = v2.v2_size_message(30.5, 52.0)
+    assert message == ('The Version 2 embosser expects a 30.8 mm x 52 mm cylinder. Received 30.5 mm x 52 mm.')
     assert '52.0 mm' not in message
 
 
@@ -548,8 +548,11 @@ def test_sockets_are_parallel_curves_and_not_mitres(plate_type):
     Growing a polygon by c as a parallel curve adds exactly perimeter*c + pi*c^2
     - each edge sweeps a rectangle, each corner an arc - while a mitre adds more
     and leaves a sharp internal corner, which in a vertically printed barrel is
-    the stress riser. Getting this backwards also moves Cylinder A's wall from
-    1.2525 mm to 1.1025, under the 1.2 minimum.
+    the stress riser. Getting this backwards also costs Cylinder A 0.15 mm of wall
+    (1.4025 -> 1.2525). That USED to be the sharper argument: at the 30.5 mm
+    barrel it went 1.2525 -> 1.1025, under the 1.2 minimum. The 30.8 mm barrel
+    (2026-08-30) means a mitre no longer breaks the minimum, so the stress
+    riser is now the whole reason - do not read the extra wall as permission.
     """
     pin = _gear_pin_polygon(plate_type)
     clearance = v2.V2_ANTIROT_CLEARANCE_MM

@@ -54,7 +54,8 @@ FIXTURE_HEIGHT_MM = 52.0
 # The barrel this harness builds, from the module rather than a literal: the
 # wall a socket leaves is measured against it, so a stale copy would prove the
 # wrong part safe. It read 15.05 until 2026-08-30 - the retired 30.1 mm barrel -
-# while the module had said 15.25 since print round 1.
+# while the module had moved on; the module is at 15.4 since the barrel went to
+# 30.8 later the same day, and this follows it without being touched.
 FIXTURE_RADIUS_MM = v2.V2_BARREL_DIAMETER_MM / 2.0
 # The v7 sample cylinders really ARE 30.1 mm parts. They still rule the barrel's
 # shape, so they keep their own radius rather than following the preset.

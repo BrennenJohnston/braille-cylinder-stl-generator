@@ -23,9 +23,9 @@ owns the gear constants.
 **Scope:** cylinders only, single-sided and double-sided flows, pair mode included
 
 > **This is a work-in-progress prototype.** The cylinder size, the cutout shapes and
-> the fit may all change as testing continues — the barrel has moved once already, from
-> 30.1 mm to **30.5 mm**, after the first print test on 2026-08-29. The gear pegs have
-> now been cut to family R14 and measured; §11 records what that print found.
+> the fit may all change as testing continues — the barrel has moved twice, 30.1 mm →
+> 30.5 mm → **30.8 mm**, and has now arrived at the size Version 1 has always used. The
+> gear pegs have been cut to family R14 and measured; §11 records what that print found.
 
 ---
 
@@ -48,18 +48,30 @@ block, and every filename is exactly what the public training videos show.
 
 ### 1.1 The size is a soft preset
 
-Version 2 sets the cylinder to **30.5 × 52.0 mm** (`V2_BARREL_DIAMETER_MM`,
+Version 2 sets the cylinder to **30.8 × 52.0 mm** (`V2_BARREL_DIAMETER_MM`,
 `V2_BARREL_HEIGHT_MM`) with a tolerance of **0.001 mm** (`V2_SIZE_TOLERANCE_MM`). Off
 that size the app shows S-V5 live and the spec carries the same sentence in
 `warnings` — but the request is **accepted**. This is deliberately unlike the gear
 BETA's hard size gate: the vendored gears cannot move with the barrel, whereas the
 Version 2 barrel is still being found by printing.
 
-It has moved once. The prototype shipped at 30.1 mm; the first printed pair embossed
-with noticeably less pressure than Version 1, so on 2026-08-29 Brennen moved it to
-**30.5 mm** — half way back toward Version 1's 30.8 — so the next print changes one
-variable by one known amount. That this preset is soft rather than a gate is what made
-the change a one-line edit instead of a negotiation with a validator.
+It has moved twice, and the search is now over. The prototype shipped at 30.1 mm; the
+first printed pair embossed with noticeably less pressure than Version 1, so on
+2026-08-29 it went to **30.5 mm** — half way back toward Version 1's 30.8, so the next
+print would change one variable by one known amount. On 2026-08-30 Brennen ran a 30.5
+double-sided pair and reported the same two symptoms, weaker: the pair felt loose, and
+the dots imprinted neither as deep nor as consistently. Two points on the same line, so
+the stepping stopped and the value went to **30.8 mm**, the size Version 1 has always
+used.
+
+Both symptoms have one cause — too little interference between the pair — and the
+diameter is the only dial that sets it. The larger barrel also **relaxes** the tightest
+wall in the design rather than straining it: Cylinder A's anti-rotation socket leaves
+1.4025 mm here against 1.2525 mm at 30.5. Nothing about the gear interface moves with
+it; every key and every anti-rotation feature sits at a fixed radius from the axis.
+
+That this preset is soft rather than a gate is what made each change a one-line edit
+instead of a negotiation with a validator.
 
 Because the golden-fixture generator refuses any spec carrying warnings, Version 2
 fixtures can only ever exist at the preset size. That is intended.
@@ -211,7 +223,10 @@ an inset, so the shape has exactly one source. B's square is known only from the
 **Nubs are mitred, sockets are parallel curves**, the same split the keys already use.
 A socket is an internal corner in a vertically printed barrel and must be filleted; a
 mitred socket corner would also sit 0.212 mm from the pin's corner instead of 0.150, and
-would move Cylinder A's wall from **1.2525 mm** to 1.1025 — under the 1.2 mm minimum.
+would cost Cylinder A 0.15 mm of wall (**1.4025 → 1.2525 mm**). Until the 30.8 mm barrel
+that second figure was the sharper argument — at 30.5 the same mitre went 1.2525 → 1.1025
+and broke the 1.2 mm minimum outright. It no longer does, so **the stress riser is now
+the whole reason**; the extra wall is not permission to mitre a socket.
 `parallel_curve()` is a third construction beside `offset_polygon_miter()` and
 `grown_key_outline()`, because neither of those can do it: the first is a mitre by
 construction, and the second rebuilds a rounded rectangle rather than offsetting a ring.
@@ -219,7 +234,7 @@ construction, and the second rebuilds a rounded rectangle rather than offsetting
 Sockets are cut **V2_SOCKET_DEPTH_MM = 3.15 mm** deep — the pin's 3.0 plus one
 clearance, so the pin cannot bottom out before the two faces meet — and carry no mouth
 chamfer, because the gear's pin has its own 0.5 mm lead-in. Walls behind them, measured
-to each socket's furthest point from the **axis**: A **1.2525 mm**, B **1.9641 mm**, both
+to each socket's furthest point from the **axis**: A **1.4025 mm**, B **2.1141 mm**, both
 ≥ 1.2. For the square those differ from the reach along the column — its corner arc sits
 at r 13.2859 where the column reach is 13.2000 — and the smaller figure is the real wall.
 On the triangle the apex is on the column and the two agree.
@@ -371,7 +386,7 @@ native equivalent.
 | Hidden rows | `cylinder-cutout-radius-row`, `cylinder-cutout-sides-row`, `cylinder-seam-offset-row` | inert in Version 2 |
 
 **Selecting Version 2** snapshots five cylinder dials, applies `V2_PRESET_OVERRIDES`
-(`cylinder_diameter_mm` 30.5, `cylinder_height_mm` 52, `seam_offset_deg` 0) on top of
+(`cylinder_diameter_mm` 30.8, `cylinder_height_mm` 52, `seam_offset_deg` 0) on top of
 the Card Thickness preset, hides the three inert rows, hides **and unchecks** the gears
 toggle, reveals the clearance dial and the prototype notice, joins pair mode, and
 announces S-V10 once. **Selecting Version 1** restores the snapshot exactly.
@@ -393,8 +408,9 @@ Version 2 recommended one cell fewer in visual mode for one day. At the prototyp
 cell's dots need 4.0, so the recommendation named a layout the seam-fit check warned
 against on the very same screen; dropping to 12 and 13 removed the contradiction.
 
-**The 30.5 mm barrel ends it.** The same 15 columns now leave **4.8 mm**
-(π × 30.5 − 14 × 6.5 = 4.82), clear by 0.8 mm, and still clear against the widest 2.0 mm
+**The 30.5 mm barrel ended it, and 30.8 widens the margin.** The same 15 columns leave
+**5.76 mm** (π × 30.8 − 14 × 6.5 = 5.76; it was 4.82 at 30.5), clear by 1.76 mm, and
+still clear against the widest 2.0 mm
 dot any preset offers, which asks 4.5 mm. Recommending one cell fewer than fits is its
 own defect, so the special case was removed rather than left standing. Version 2 now
 recommends exactly what Version 1 does, in both modes.
@@ -567,6 +583,7 @@ it.
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-08-30 | 1.3 | **Third print test: the barrel walks back to 30.8 mm.** Brennen ran a 30.5 mm DOUBLE-SIDED pair and reported the pair felt loose and the dots imprinted neither as deep nor as consistently - the same two symptoms the 30.1 pair gave, weaker. Two points on one line, so the stepping stopped and the barrel took **Version 1's long-proven 30.8 mm** rather than another half step. Both symptoms have one cause, too little interference between the pair, and diameter is the only dial that sets it. Nothing about the gear interface moves with the barrel: every key and every anti-rotation feature is at a fixed radius from the axis, so the whole R14 and anti-rotation fit is unchanged. The larger barrel RELAXES the tightest wall - Cylinder A's socket goes **1.2525 -> 1.4025 mm**, B **1.9641 -> 2.1141** - and with it, a mitred socket would no longer break the 1.2 mm minimum (1.2525), so §5 now rests the parallel-curve rule on the stress riser alone. The seam gap widens to **5.76 mm**, so §8.1's retired one-fewer-cell rule stays retired. Version 2 and the gears BETA now share 30.8, so diameter no longer distinguishes them - the version does, and two tests that had silently relied on the sizes differing were made to set their own. The Version 2 golden pair was regenerated; every other fixture is md5-identical, and Version 1 is byte-identical at the geometry-spec level. |
 | 2026-08-30 | 1.2 | **Second print test, and the anti-rotation keys.** Key clearance **0.075 → 0.110 mm**: the holes were too loose at 0.15 and too tight at 0.075, so the value lands between them; 0.110 and not the midpoint 0.1125, because the step is 0.005 and an off-step default kills Generate silently. Every gear gained an anti-rotation feature, so **both plates now carry a nub above the top face and a socket in the bottom one** (new §4.4) and the “positive plate only” rule is retired. The nub's base flare drops **0.5 → 0.10 mm**: gear A1's notch has no mouth relief, so the old flare stood 0.49 mm proud per side and A1 cannot have been seating flush on either printed pair. `V2_NUB_CLEARANCE_MM` **0.15 → 0.30**, now derived from its two parts rather than retyped. §11's margin table gains the 0.110 → 0.890 row. Both Version 2 goldens were regenerated; every other fixture is byte-identical. |
 | 2026-08-29 | 1.1 | **First print test, and what it moved.** Barrel **30.1 → 30.5 mm**: the 30.1 pair embossed with noticeably less pressure than Version 1, and 30.5 is half way back to Version 1's 30.8. Key clearance **0.15 → 0.075 mm**, with the input step 0.01 → 0.005 because 0.075 is not a whole number of 0.01 steps: all four peg holes printed too loose, and the pegs measure exactly nominal. **The nub is decoupled from the dial** and pinned at `V2_NUB_CLEARANCE_MM` = 0.15 — gear A1's notch is already cut to that size, so under the old shared-dial rule tightening the holes would have grown the nub into it. §8.1's one-fewer-braille-cell rule is **retired**: at 30.5 mm the seam gap is 4.8 mm against the 4.0 needed. §11 gains the measured R14 pegs. The Version 2 golden pair was regenerated; the double-sided and gear pairs re-ran byte-identical. |
 | 2026-08-28 | 1.0 | Initial specification. Family R14 keyed cutouts, the 45° mouths, the key nub, the clearance dial, the wire contract, the worker's CSG order, the user interface, the acceptance anchors, the fit matrix and the re-cut requirement, and the OpenSCAD packaging. Every number read back out of the merged code. |

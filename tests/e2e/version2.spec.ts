@@ -26,13 +26,13 @@ const S_V3_NOTE =
   'Choose Version 2 only if you are building the Version 2 embosser, which uses keyed gear pegs. Version 1 stays supported.';
 const S_V4_PROTOTYPE =
   'Version 2 is a work-in-progress prototype. Its cylinder size, cutouts and fit may change as testing continues. It fits only gears with R14 pegs; earlier pegs do not enter the holes.';
-const S_V5_SIZE_START = 'The Version 2 embosser expects a 30.5 mm x 52 mm cylinder.';
+const S_V5_SIZE_START = 'The Version 2 embosser expects a 30.8 mm x 52 mm cylinder.';
 const S_V8_READY = 'Cylinder generated for the Version 2 embosser (prototype).';
-const S_V10_ON = 'Version 2 selected: keyed gear-peg cutouts, 30.5 mm cylinder.';
+const S_V10_ON = 'Version 2 selected: keyed gear-peg cutouts, 30.8 mm cylinder.';
 const S_V10_OFF = 'Version 1 selected.';
 
 // The Version 2 preset barrel (D-V4), owned by app/geometry/version2.py.
-const V2_DIAMETER = '30.5';
+const V2_DIAMETER = '30.8';
 const V2_HEIGHT = '52';
 
 // Same transient failures the other beta specs tolerate: both workers signal
@@ -220,7 +220,10 @@ test.describe('Embosser Version 2 (prototype)', () => {
 
     await expect(page.locator('#v2-size-warning')).toBeHidden();
 
-    await setDial(page, 'cylinder_diameter_mm', '30.8');
+    // 30.5 is the off-size value here because it is NOT the preset. It was
+    // the preset until 2026-08-30 and 30.8 was the off-size example; they
+    // swapped when the barrel walked back to Version 1's size.
+    await setDial(page, 'cylinder_diameter_mm', '30.5');
     await expect(page.locator('#v2-size-warning')).toBeVisible();
     await expect(page.locator('#v2-size-message')).toContainText(S_V5_SIZE_START);
     // D-V15: a warning, never a rejection — Generate stays available.
@@ -267,8 +270,9 @@ test.describe('Embosser Version 2 (prototype)', () => {
     // recommends, the seam-collision check must not fire on it. At the
     // prototype's original 30.1 mm barrel that forced the recommendation one
     // cell BELOW Version 1's, because 15 columns left 3.6 mm where a cell's
-    // dots need 4.0. The 30.5 mm barrel (2026-08-29) leaves 4.8 mm, so the two
-    // versions now agree and the special case was removed.
+    // dots need 4.0. The 30.5 mm barrel (2026-08-29) leaves 4.8 mm and the
+    // 30.8 mm one (2026-08-30) leaves 5.76, so the two versions agree and the
+    // special case was removed.
     expect(await page.locator('#grid_columns').inputValue()).toBe(before);
 
     // Neither the seam-collision warning nor the row-overflow one may fire.

@@ -38,7 +38,7 @@ NO_GEARS_MESSAGE = 'Integrated gears are not available in Version 2.'
 # form field would behave differently from a missing one.
 VERSION_ONE_VALUES = [1, '1', 1.0, '', None]
 
-V2_CYLINDER = {'diameter': 30.5, 'height': 52.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0}
+V2_CYLINDER = {'diameter': 30.8, 'height': 52.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0}
 
 CARD_PAYLOAD = {
     'shape_type': 'card',
@@ -127,7 +127,7 @@ def test_a_clearance_outside_the_dial_is_refused(clearance):
 
 def test_the_size_is_not_gated():
     """
-    D-V15: 30.5 x 52 is a soft preset, so an off-size cylinder is accepted here
+    D-V15: 30.8 x 52 is a soft preset, so an off-size cylinder is accepted here
     and only warned about in the geometry spec.
     """
     off_size = {'diameter': 30.8, 'height': 60.0, 'wall_thickness': 2.0}
@@ -179,9 +179,9 @@ def test_gears_with_version_two_name_the_real_conflict(client):
     """
     Both betas on must report the incompatibility, not the cylinder size.
 
-    The Version 2 preset is 30.5 mm and the gears demand 30.8, so whichever
-    gate runs first decides what the user is told. Version 2 goes first, or the
-    user is sent off resizing a cylinder that is exactly the size it should be.
+    Since 2026-08-30 both presets are 30.8, so at the preset size the two gates
+    agree about the cylinder and the ordering does not show here. It still has
+    to hold - see the off-size case below, which is where it bites.
     """
     payload = with_settings(CYLINDER_PAYLOAD, embosser_version=2, gear_rollers_enabled=1)
     response = post_spec(client, payload)
@@ -189,17 +189,44 @@ def test_gears_with_version_two_name_the_real_conflict(client):
     assert NO_GEARS_MESSAGE in response.get_json()['error']
 
 
+def test_gears_with_version_two_name_the_conflict_even_off_size(client):
+    """
+    The ordering proof, on a cylinder the gear gate really would reject.
+
+    Version 2's gate must answer first, or the user is sent off resizing a
+    cylinder when the real problem is that they asked for two different
+    machines at once. This used to be provable at the preset size, because the
+    two presets were 30.5 and 30.8; they agree now, so the case has to be built
+    rather than assumed.
+    """
+    payload = copy.deepcopy(CYLINDER_PAYLOAD)
+    payload['cylinder_params']['diameter'] = 30.5
+    response = post_spec(client, with_settings(payload, embosser_version=2, gear_rollers_enabled=1))
+    assert response.status_code == 400
+    error = response.get_json()['error']
+    assert NO_GEARS_MESSAGE in error
+    assert 'reference roller' not in error, 'the gear size gate answered first'
+
+
 def test_gears_without_version_two_still_answer_for_themselves(client):
-    """The existing gear gate is untouched: its own size message still wins."""
-    payload = with_settings(CYLINDER_PAYLOAD, gear_rollers_enabled=1)
-    response = post_spec(client, payload)
+    """
+    The existing gear gate is untouched: its own size message still wins.
+
+    The size is set explicitly rather than inherited. This test used to pass on
+    CYLINDER_PAYLOAD alone, because that carried Version 2's 30.5 preset, which
+    the gears reject. Both presets are 30.8 since 2026-08-30, so an inherited
+    size would now sail through the gate this test exists to exercise.
+    """
+    payload = copy.deepcopy(CYLINDER_PAYLOAD)
+    payload['cylinder_params']['diameter'] = 30.5
+    response = post_spec(client, with_settings(payload, gear_rollers_enabled=1))
     assert response.status_code == 400
     assert 'Integrated gears are matched to the reference roller' in response.get_json()['error']
 
 
 def test_an_off_size_version_two_cylinder_is_accepted_by_the_route(client):
     payload = copy.deepcopy(CYLINDER_PAYLOAD)
-    payload['cylinder_params']['diameter'] = 30.8
+    payload['cylinder_params']['diameter'] = 30.5
     assert post_spec(client, with_settings(payload, embosser_version=2)).status_code == 200
 
 

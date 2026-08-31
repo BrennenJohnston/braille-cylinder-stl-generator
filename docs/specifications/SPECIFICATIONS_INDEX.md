@@ -244,9 +244,9 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 - Why a chamfer hull's slabs must sit far-edge-out, and why the nub is three unioned parts and never one hull
 - Anti-rotation nubs and sockets on BOTH plates, all four on the 180-degree arrow column, at a FIXED clearance the dial cannot reach; nubs mitred, sockets parallel curves
 - The clearance dial (0.110 default, 0-0.5, step 0.005), applied outward to the four holes ONLY
-- The soft 30.5 x 52 mm preset - a live warning, never a rejection - and the wire contract it emits
+- The soft 30.8 x 52 mm preset - a live warning, never a rejection - and the wire contract it emits
 - The fit matrix: why the v7 pegs failed it, and the measured R14 pegs cut to replace them
-- Version 1 byte-identity proved at five levels, and why the one-fewer-braille-cell rule was retired at the 30.5 mm barrel
+- Version 1 byte-identity proved at five levels, and why the one-fewer-braille-cell rule was retired at the 30.5 mm barrel and stays retired at 30.8
 
 **Key Components:**
 - `app/geometry/version2.py` - the one place every Version 2 number lives

@@ -5709,8 +5709,9 @@
             // 2026-08-28. Its 30.1 mm barrel left 3.6 mm at the seam where a
             // cell's dots need 4.0, so the recommendation above named a layout
             // checkPhysicalFit() warned against on the very same screen. The
-            // 30.5 mm barrel (2026-08-29) ends that: 15 columns now leave
-            // 4.8 mm, clear by 0.8, and clear even against the widest 2.0 mm
+            // 30.5 mm barrel (2026-08-29) ended that, and 30.8 (2026-08-30)
+            // widens it further: 15 columns now leave 5.76 mm, clear by 1.76,
+            // and clear even against the widest 2.0 mm
             // dot. Recommending one cell fewer than fits is its own defect, so
             // the special case is gone rather than left in place. Restore it -
             // gated on isVersion2() && !tactile - if the barrel ever drops back
@@ -7226,11 +7227,11 @@
         // app/geometry/version2.py - a smoke test diffs them - and the size
         // sentence is the server's own, word for word, so a user never meets two
         // spellings of one limit.
-        const V2_BARREL_DIAMETER_MM = 30.5;
+        const V2_BARREL_DIAMETER_MM = 30.8;
         const V2_BARREL_HEIGHT_MM = 52.0;
         const V2_SIZE_TOLERANCE_MM = 0.001;
         const V2_PRESET_OVERRIDES = {
-            cylinder_diameter_mm: 30.5,
+            cylinder_diameter_mm: 30.8,
             cylinder_height_mm: 52,
             seam_offset_deg: 0
         };
@@ -7261,12 +7262,13 @@
         /* S-V10, signed off by Brennen (2026-08-28); reword only with his sign-off. */
         function embosserVersionAnnouncement() {
             return isVersion2()
-                ? 'Version 2 selected: keyed gear-peg cutouts, 30.5 mm cylinder.'
+                ? `Version 2 selected: keyed gear-peg cutouts, ${V2_BARREL_DIAMETER_MM} mm cylinder.`
                 : 'Version 1 selected.';
         }
 
         // S-V5, live. The size is a WARNING and never a rejection (D-V15):
-        // Brennen is still testing whether 30.5 is the right barrel. Numbers
+        // The barrel was found by printing and settled at 30.8 on 2026-08-30.
+        // Numbers
         // render as "52 mm", not "52.0 mm" - JS number-to-string already drops
         // the trailing zero, which is what the server's _format_mm does too.
         function updateVersion2SizeWarning() {
@@ -7326,7 +7328,7 @@
             // reason a preset does. This mattered most at the prototype's
             // original 30.1 mm barrel, where keeping Version 1's count opened
             // the page on a seam-collision warning the user had not caused; at
-            // 30.5 the two counts agree, and the flag still has to be cleared
+            // 30.5 and at 30.8 the two counts agree, and the flag still has to be cleared
             // so a hand-typed count does not survive the switch.
             try { clearGridColumnsDirty(); } catch (e) { log.error('Could not clear the hand-typed cell-count flag:', e); }
             try { updateGridColumnsForPlateType(); } catch (e) { log.error('Cell-count recommendation failed to refresh after the version change:', e); }

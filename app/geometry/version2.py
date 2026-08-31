@@ -54,11 +54,21 @@ from app.geometry.gears import _format_mm
 # warning and is still built (D-V15), unlike the gears' hard size gate. That
 # softness is the point - this number is still being found by printing.
 #
-# 30.5 since 2026-08-29, up from the 30.1 the prototype shipped with. Brennen
-# printed and ran a 30.1 pair and reported that the embossing pressure had
-# dropped; 30.5 is the half-way step back toward Version 1's 30.8 that he
-# asked for, so the next print moves one variable by one known amount.
-V2_BARREL_DIAMETER_MM = 30.5
+# 30.8 since 2026-08-30 - Version 1's long-proven barrel, arrived at by walking
+# back up. The prototype shipped at 30.1, which printed with noticeably too
+# little embossing pressure; 30.5 (2026-08-29) was the deliberate half-way step
+# so one variable moved by one known amount. Brennen ran a 30.5 double-sided
+# pair and reported the SAME two symptoms, weaker: the pair felt loose and the
+# dots came out shallow and uneven. Two points on the same line, so the search
+# stops and the value goes to the size that has always worked.
+#
+# Both symptoms have the one cause - too little interference between the pair -
+# and diameter is the only dial that sets it. Raising it also RELAXES the
+# tightest wall in the design: Cylinder A's anti-rotation socket leaves
+# 1.4025 mm at this barrel against 1.2525 at 30.5, over the 1.2 minimum either
+# way. Nothing about the gear interface moves with it - every key and every
+# anti-rotation feature is at a fixed radius from the axis.
+V2_BARREL_DIAMETER_MM = 30.8
 V2_BARREL_HEIGHT_MM = 52.0
 # Float slack only, matching the gears' tolerance: at 32 mm a float32 ULP is
 # 3.8e-6 mm, so 0.001 is far below any dimension a user can type.
@@ -245,8 +255,9 @@ ANTIROT_BY_PLATE = {
 }
 
 # A socket must leave barrel wall behind it (D-R3-3). At the signed clearance
-# the A socket's apex reaches r 13.997487 and the wall is 1.2525 mm, so this cap
-# trims exactly 0.0000 mm today. It starts to bite above c = 0.1525 and exists
+# the A socket's apex reaches r 13.997487 and the wall is 1.4025 mm, so this cap
+# trims exactly 0.0000 mm today. It starts to bite above c = 0.1525 - a figure
+# fixed by the pin, not by the barrel, so it did not move with it - and exists
 # so the 1.2 mm FDM minimum survives anyone raising the clearance or switching
 # a socket to a mitred offset. NOT dead code - a guard rail.
 V2_SOCKET_MAX_RADIUS_MM = 14.0

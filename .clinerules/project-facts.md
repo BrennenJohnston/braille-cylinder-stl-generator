@@ -127,10 +127,13 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      star, hexagon and 15x15 squares are RETIRED. Grow a key with
      grown_key_outline (sides +2c, corner radius +c) - never by mitering an
      already-rounded outline.
-   - Barrel 30.5 x 52.0, tolerance 0.001, but SOFT: off-size warns (S-V5) and
-     is ACCEPTED. Unlike the gear gate, never a rejection. Was 30.1 until
-     2026-08-29; the printed 30.1 pair embossed with too little pressure, so
-     it moved half way back toward Version 1's 30.8. Still under test.
+   - Barrel 30.8 x 52.0, tolerance 0.001, but SOFT: off-size warns (S-V5) and
+     is ACCEPTED. Unlike the gear gate, never a rejection. Found by printing:
+     30.1 -> 30.5 (2026-08-29, the 30.1 pair embossed with too little pressure)
+     -> 30.8 (2026-08-30, the 30.5 double-sided pair felt loose and printed
+     shallow, uneven dots - the same symptom weaker, so the search stopped at
+     the size Version 1 has always used). Version 2 and the gears BETA now
+     share 30.8, so diameter no longer tells the two apart - the version does.
    - Clearance 0.110 default, range 0.0-0.5, input step 0.005. Applied OUTWARD
      to the four holes ONLY. TWO printed rounds bracketed it on 2026-08-29:
      too loose at 0.15, too tight at 0.075. NOT the midpoint 0.1125 - an
@@ -155,8 +158,9 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      "positive plate only" rule is RETIRED - every gear has a feature now).
      A gets the triangle, B a square. Nubs are MITRED, sockets are PARALLEL
      CURVES with a corner arc of radius c - backwards puts a sharp internal
-     corner in a vertically printed barrel and drops A's wall 1.2525 -> 1.1025,
-     under the 1.2 minimum. Socket depth 3.15 (pin + one clearance), no mouth
+     corner in a vertically printed barrel - which is now the WHOLE reason. It
+     also costs A 0.15 mm of wall (1.4025 -> 1.2525), but since the 30.8 barrel
+     that no longer breaks the 1.2 minimum, so do not argue it from the wall. Socket depth 3.15 (pin + one clearance), no mouth
      chamfer. V2_SOCKET_MAX_RADIUS_MM 14.00 trims 0.0000 today and bites above
      c = 0.1525 - a guard rail, NOT dead code. seam_offset never turns any of
      them.
@@ -167,7 +171,8 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      (Embossing_Cylinder_V2_{preset}_{name}.stl). Version 1 names never change.
    - Version 2 recommends the SAME cell counts as Version 1. The one-fewer
      rule was retired 2026-08-29 with the 30.5 barrel (seam gap 4.8 mm against
-     the 4.0 needed). Restore it only below a 30.24 mm barrel.
+     the 4.0 needed) and the 30.8 barrel widens it to 5.76. Restore it only
+     below a 30.24 mm barrel.
    - The R14 gear pegs EXIST as of 2026-08-29 and measure exactly nominal
      (14x14, 18x10, 16x12, 20x8, every corner r 0.500). Their STLs are still
      named "v7" - that is the gear body's version, not the peg's. No v7 PEG

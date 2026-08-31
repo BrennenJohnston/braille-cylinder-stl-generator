@@ -31,7 +31,7 @@ LINES = ['⠁⠃⠉', '', '', '']
 BACK_LINES = ['⠙⠑⠋', '', '', '']
 
 V1_CYLINDER = {'diameter': 30.75, 'height': 52.0, 'wall_thickness': 2.0, 'seam_offset_deg': 355.0}
-V2_CYLINDER = {'diameter': 30.5, 'height': 52.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0}
+V2_CYLINDER = {'diameter': 30.8, 'height': 52.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0}
 
 DOUBLE_SIDED_SETTINGS = {
     'double_sided_enabled': 1,
@@ -57,7 +57,7 @@ VERSION_ONE_VALUES = [
 
 # S-V14, new in this phase, and S-V5. Both DRAFT.
 CUTOUT_WARNING = 'The polygonal cutout is not used in Version 2.'
-SIZE_WARNING_START = 'The Version 2 embosser expects a 30.5 mm x 52 mm cylinder.'
+SIZE_WARNING_START = 'The Version 2 embosser expects a 30.8 mm x 52 mm cylinder.'
 
 
 def build_spec(plate_type='positive', settings=None, cylinder=None, back_lines=None):
@@ -198,10 +198,10 @@ def test_the_preset_size_warns_about_nothing():
 
 
 def test_an_off_size_cylinder_warns_but_is_still_built():
-    off_size = dict(V2_CYLINDER, diameter=30.8)
+    off_size = dict(V2_CYLINDER, diameter=30.5)
     spec = v2_spec(cylinder=off_size)
     assert any(warning.startswith(SIZE_WARNING_START) for warning in spec['warnings'])
-    assert '30.8 mm x 52 mm' in ' '.join(spec['warnings'])
+    assert '30.5 mm x 52 mm' in ' '.join(spec['warnings'])
     assert spec['keyed_cutouts']['halves'], 'the cylinder is still built'
 
 
