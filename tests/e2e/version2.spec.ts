@@ -121,17 +121,33 @@ async function selectVersion2(page: Page) {
 }
 
 test.describe('Embosser Version 2 (prototype)', () => {
-  test('the selector is in the header, defaults to Version 1, and is keyboard-operable', async ({
+  test('the selector is the first selection-menu item, defaults to Version 1, and is keyboard-operable', async ({
     page,
   }) => {
     await openApp(page);
 
-    // In the banner landmark, not buried in the form.
+    // In the form's selection menu, directly under "What Does This Program
+    // Do?" — moved out of the site header on 2026-08-31 (Brennen's call).
     expect(
       await page.evaluate(
         () => !!document.querySelector('header.site-header #embosser-version-selection'),
       ),
+    ).toBe(false);
+    expect(
+      await page.evaluate(
+        () => !!document.querySelector('#braille-form #embosser-version-selection'),
+      ),
     ).toBe(true);
+    expect(
+      await page.evaluate(() => {
+        const item = document.querySelector('#embosser-version-selection');
+        return item?.previousElementSibling?.classList.contains('info-panel') ?? false;
+      }),
+    ).toBe(true);
+    // It follows the menu-item rules: a real h2 inside the legend.
+    await expect(page.locator('#embosser-version-selection h2.legend-heading')).toHaveText(
+      S_V1_LEGEND,
+    );
 
     await expect(page.locator('#embosser_version_1')).toBeChecked();
     await expect(page.locator('#embosser_version_2')).not.toBeChecked();

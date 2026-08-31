@@ -1524,19 +1524,10 @@
                 margin-bottom: 0.8em;
             }
         }
-        /* Embosser version selector, in the site header. LAYOUT ONLY: it
-           reuses .grade-selection and .radio-option, so every colour comes
-           from a design token, the 44px hit target and the :focus-visible
-           ring are the app's own, and nothing here can drift from them. */
-        .embosser-version {
-            margin: 0.5em auto 0;
-            max-width: 40em;
-        }
-        .embosser-version .radio-group-inline {
-            display: flex;
-            gap: 1.5em;
-            flex-wrap: wrap;
-        }
+        /* The embosser version selector moved from the site header into the
+           form's selection menu on 2026-08-31; it now uses the stock
+           .grade-selection / .radio-group layout like every other menu item,
+           so it needs no rules of its own. */
         .radio-group {
             display: flex;
             flex-direction: column;
@@ -2626,9 +2617,14 @@
 
         /* Auto placement textarea styling to visually align with manual inputs.
            The Braille (Unicode) box shares it so the two entry areas read as a
-           matched pair, differing only in the larger braille glyph size. */
+           matched pair, differing only in the larger braille glyph size. The
+           BACK of Card pair joined 2026-08-31: #back-text had no themed rule at
+           all, so it rendered on the browser's default white in dark mode.
+           Every colour is a token; do not replace with literals. */
         #auto-input-container textarea#auto-text,
-        textarea#braille-unicode {
+        textarea#back-text,
+        textarea#braille-unicode,
+        textarea#back-braille-unicode {
             width: 100%;
             min-height: 6.5em; /* approx 4 lines */
             line-height: 1.4;
@@ -2645,12 +2641,15 @@
             resize: vertical;
         }
         #auto-input-container textarea#auto-text:focus,
-        textarea#braille-unicode:focus {
+        textarea#back-text:focus,
+        textarea#braille-unicode:focus,
+        textarea#back-braille-unicode:focus {
             border: 1.5px solid var(--border-focus);
             outline: none;
             background: var(--bg-primary);
         }
-        textarea#braille-unicode {
+        textarea#braille-unicode,
+        textarea#back-braille-unicode {
             font-size: 1.4em;
             line-height: 1.6;
         }
@@ -3240,57 +3239,6 @@
         </div>
     </div>
 
-    <!-- Embosser version selector (D-V13). Native fieldset + legend +
-         radios, so the group's accessible name, the roving-arrow keyboard
-         behaviour and the checked state all come from the platform: the
-         only ARIA here is aria-describedby, which has no native equivalent.
-         Version 1 is checked IN THE MARKUP, so a user who never touches
-         this gets exactly the app that shipped before Version 2 existed.
-         The ids are load-bearing: updateEmbosserVersionUI() finds the
-         radios by name="embosser_version", the prototype notice by
-         #v2-prototype-note and the size warning by #v2-size-warning;
-         persistence stores braille_prefs_embosser_version.
-         It sits OUTSIDE <form id="braille-form">, like the rest of the
-         header - the radios are read by id, never submitted. -->
-    <div class="grade-selection embosser-version" id="embosser-version-selection">
-        <fieldset aria-describedby="embosser-version-note">
-            <!-- S-V1, signed off by Brennen (2026-08-28); reword only with
-                 his sign-off. -->
-            <legend class="grade-label">Embosser version</legend>
-            <div class="radio-group-inline">
-                <!-- S-V2, signed off by Brennen (2026-08-28). -->
-                <label class="radio-option" for="embosser_version_1">
-                    <input type="radio" name="embosser_version" id="embosser_version_1" value="1" checked>
-                    <span class="radio-text">Version 1</span>
-                </label>
-                <label class="radio-option" for="embosser_version_2">
-                    <input type="radio" name="embosser_version" id="embosser_version_2" value="2">
-                    <span class="radio-text">Version 2 (prototype)</span>
-                </label>
-            </div>
-            <!-- S-V3, signed off by Brennen (2026-08-28). 17 words, under
-                 the ADA SOP Step 6.8 ceiling of 25. -->
-            <div class="grade-note" id="embosser-version-note" style="margin-top: 6px; font-size: 0.85em;">Choose Version 2 only if you are building the Version 2 embosser, which uses keyed gear pegs. Version 1 stays supported.</div>
-            <!-- S-V4, signed off by Brennen (2026-08-28) WITH the R14
-                 sentence added; reword only with his sign-off. 31 words,
-                 DELIBERATELY over the Step 6.8 ceiling of 25 - he chose the
-                 stronger warning knowing the cost, and it is allowed because
-                 this notice is VISIBLE rather than describedby-only. Recorded
-                 as a finding at the Phase 08 accessibility check; do not trim
-                 or split it. `hidden` rather than display:none so the
-                 accessibility tree and the CSS agree with one attribute. -->
-            <div id="v2-prototype-note" class="grade-note inline-warning" style="margin-top: 0.6em;" hidden>
-                <strong>Prototype:</strong> Version 2 is a work-in-progress prototype. Its cylinder size, cutouts and fit may change as testing continues. It fits only gears with R14 pegs; earlier pegs do not enter the holes.
-            </div>
-            <!-- S-V5, signed off by Brennen (2026-08-28). The server emits
-                 this exact sentence into spec.warnings, so the words a user
-                 reads here and the words the spec carries are the same. -->
-            <div id="v2-size-warning" class="grade-note inline-warning"
-                 style="margin-top: 0.6em; display: none;">
-                <strong>Warning:</strong> <span id="v2-size-message"></span>
-            </div>
-        </fieldset>
-    </div>
     </header>
 
     <!-- tabindex="-1" is what makes the skip link above actually move
@@ -3397,7 +3345,64 @@
                       </p>
                   </div>
 
-
+                      <!-- Embosser version selector (D-V13). Moved out of the site
+                           header and into the form's selection menu, directly under
+                           "What Does This Program Do?", on 2026-08-31 (Brennen's
+                           call) - it is the first choice that shapes everything
+                           below it. Native fieldset + legend + radios, so the
+                           group's accessible name, the roving-arrow keyboard
+                           behaviour and the checked state all come from the
+                           platform: the only ARIA here is aria-describedby, which
+                           has no native equivalent. Version 1 is checked IN THE
+                           MARKUP, so a user who never touches this gets exactly
+                           the app that shipped before Version 2 existed. The ids
+                           are load-bearing: updateEmbosserVersionUI() finds the
+                           radios by name="embosser_version", the prototype notice
+                           by #v2-prototype-note and the size warning by
+                           #v2-size-warning; persistence stores
+                           braille_prefs_embosser_version. The radios are still
+                           read by id and never submitted - sitting inside the
+                           form changes nothing on the wire. -->
+                      <div class="grade-selection" id="embosser-version-selection">
+                          <fieldset aria-describedby="embosser-version-note">
+                              <!-- S-V1, signed off by Brennen (2026-08-28); reword only with
+                                   his sign-off. The heading is semantics only (the menu-item
+                                   rule): it inherits the legend's own type so nothing moves. -->
+                              <legend class="grade-label"><h2 class="legend-heading">Embosser version</h2></legend>
+                              <div class="radio-group">
+                                  <!-- S-V2, signed off by Brennen (2026-08-28). -->
+                                  <label class="radio-option" for="embosser_version_1">
+                                      <input type="radio" name="embosser_version" id="embosser_version_1" value="1" checked>
+                                      <span class="radio-text">Version 1</span>
+                                  </label>
+                                  <label class="radio-option" for="embosser_version_2">
+                                      <input type="radio" name="embosser_version" id="embosser_version_2" value="2">
+                                      <span class="radio-text">Version 2 (prototype)</span>
+                                  </label>
+                              </div>
+                              <!-- S-V3, signed off by Brennen (2026-08-28). 17 words, under
+                                   the ADA SOP Step 6.8 ceiling of 25. -->
+                              <div class="grade-note" id="embosser-version-note" style="margin-top: 6px; font-size: 0.85em;">Choose Version 2 only if you are building the Version 2 embosser, which uses keyed gear pegs. Version 1 stays supported.</div>
+                              <!-- S-V4, signed off by Brennen (2026-08-28) WITH the R14
+                                   sentence added; reword only with his sign-off. 31 words,
+                                   DELIBERATELY over the Step 6.8 ceiling of 25 - he chose the
+                                   stronger warning knowing the cost, and it is allowed because
+                                   this notice is VISIBLE rather than describedby-only. Recorded
+                                   as a finding at the Phase 08 accessibility check; do not trim
+                                   or split it. `hidden` rather than display:none so the
+                                   accessibility tree and the CSS agree with one attribute. -->
+                              <div id="v2-prototype-note" class="grade-note inline-warning" style="margin-top: 0.6em;" hidden>
+                                  <strong>Prototype:</strong> Version 2 is a work-in-progress prototype. Its cylinder size, cutouts and fit may change as testing continues. It fits only gears with R14 pegs; earlier pegs do not enter the holes.
+                              </div>
+                              <!-- S-V5, signed off by Brennen (2026-08-28). The server emits
+                                   this exact sentence into spec.warnings, so the words a user
+                                   reads here and the words the spec carries are the same. -->
+                              <div id="v2-size-warning" class="grade-note inline-warning"
+                                   style="margin-top: 0.6em; display: none;">
+                                  <strong>Warning:</strong> <span id="v2-size-message"></span>
+                              </div>
+                          </fieldset>
+                      </div>
 
                       <!-- Text Input Section moved into form (separate scrollable pane) -->
                       <div class="line-input-group">
@@ -3485,11 +3490,28 @@
                            #double_sided_enabled.checked and #back-text.value (one row per
                            newline), persistence stores braille_prefs_double_sided_enabled /
                            braille_prefs_back_text, and checkDoubleSidedGap() finds the
-                           toggle and #ds-gap-warning by id. -->
-                      <div class="grade-selection" id="double-sided-selection">
+                           toggle and #ds-gap-warning by id.
+                           Since 2026-08-31 the whole item is a collapsible menu (Brennen's
+                           call): the disclosure button reuses the Expert Mode submenu
+                           pattern - initExpertSubmenus() wires anything carrying
+                           .expert-submenu-toggle - and setDoubleSidedMenuOpen() opens it
+                           whenever the beta is on, so the revealed Back of Card section
+                           can never sit inside a closed menu. The button carries the
+                           section's h2; the fieldset keeps the same signed text as an
+                           sr-only legend so the group keeps its accessible name. -->
+                      <div class="expert-submenu" id="double-sided-selection">
+                          <h2 class="expert-submenu-heading">
+                              <!-- Signed heading wording (2026-08-16) reused verbatim as the button title. -->
+                              <button type="button" id="double-sided-menu-toggle" class="expert-submenu-toggle"
+                                      aria-expanded="false" aria-controls="double-sided-menu">
+                                  <span class="expert-submenu-title">Double-Sided Card (BETA — for testing)</span>
+                                  <span class="expert-submenu-icon" aria-hidden="true">▼</span>
+                              </button>
+                          </h2>
+                          <div id="double-sided-menu" class="expert-submenu-content" style="display: none;">
                           <fieldset>
                               <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
-                              <legend class="grade-label"><h2 class="legend-heading">Double-Sided Card (BETA — for testing)</h2></legend>
+                              <legend class="sr-only">Double-Sided Card (BETA — for testing)</legend>
                               <label class="radio-option ds-toggle-option" for="double_sided_enabled">
                                   <input type="checkbox" id="double_sided_enabled"
                                          aria-expanded="false" aria-controls="double-sided-section"
@@ -3535,6 +3557,36 @@
                                            style="margin-top: 0.6em;" hidden>
                                           <strong>Warning:</strong> <span id="ds-back-overflow-message"></span>
                                       </div>
+                                      <!-- Two-way translation for the back, mirroring the front entry
+                                           area 1:1 (Brennen's call, 2026-08-31). Downward half: back
+                                           text above → back braille below. The visible button and
+                                           label wording is the front's, verbatim; the "Back of Card"
+                                           group name is what tells the two apart. -->
+                                      <div class="translate-row">
+                                          <button type="button" id="back-translate-to-braille-btn" class="btn-translate">Translate to Braille ↓</button>
+                                      </div>
+                                      <!-- Editable Unicode braille field for the BACK: the authoritative
+                                           back_lines whenever non-empty, exactly as the front field is
+                                           for lines. Wired by wireBackBrailleField(); validation, the
+                                           status line and the sr-only live region all mirror the front's. -->
+                                      <div class="braille-field" style="margin-top: 1em;">
+                                          <label for="back-braille-unicode" class="line-label">Braille (Unicode) — one line per row</label>
+                                          <textarea id="back-braille-unicode" name="back_braille_unicode" rows="4" lang="und-Brai"
+                                                    autocomplete="off" spellcheck="false"
+                                                    aria-describedby="back-braille-unicode-help back-braille-unicode-status"></textarea>
+                                          <!-- Upward half: braille here → back text above -->
+                                          <div class="translate-row">
+                                              <button type="button" id="back-translate-to-text-btn" class="btn-translate">Translate to Text ↑</button>
+                                              <span id="back-braille-unicode-status" class="grade-note" style="margin: 0; font-size: 0.85em;"></span>
+                                          </div>
+                                          <!-- Same sentence-split describedby rule as the front field
+                                               (ADA SOP Step 6.8): the id sits on the FIRST sentence only,
+                                               and the ceiling here is 25 minus the live status. -->
+                                          <div class="grade-note" style="margin-top: 0.6em; font-size: 0.85em;">
+                                              <span id="back-braille-unicode-help">Accepts braille characters only (U+2800–U+28FF).</span> Press <strong>Translate to Braille</strong> to fill this field from the text above, then edit any cell you want to change — or paste braille straight in and press <strong>Translate to Text</strong> to read it back in English. <strong>Whenever this field has content it is used exactly as written</strong>, so what you read here is what gets embossed. Clear it to go back to translating the text above.
+                                          </div>
+                                          <div id="back-braille-unicode-live" class="sr-only" role="status" aria-live="polite"></div>
+                                      </div>
                                   </fieldset>
                               </div>
                               <!-- Live same-surface crowding warning (Phase 06 hook, moved here
@@ -3545,6 +3597,7 @@
                                    style="margin-top: 0.6em; display: none;">
                                   <strong>Warning:</strong> <span id="ds-gap-message"></span>
                               </div>
+                          </div>
                           </div>
                       </div>
 
@@ -6359,6 +6412,205 @@
             announceBrailleField('Braille field cleared because the text changed. Press Translate to Braille to refresh it.');
         }
 
+        // ------------------------------------------------------------------
+        // Back of Card braille field (double-sided beta)
+        // ------------------------------------------------------------------
+        // A 1:1 mirror of the front field above (Brennen's call, 2026-08-31):
+        // same validation, same status wording, same authority rule - the back
+        // field wins over the Back of Card Text whenever it has content - with
+        // its own state, so editing one side can never disturb the other. The
+        // pure helpers (isBrailleUnicodeChar, validateBrailleFieldLines,
+        // trimTrailingEmptyLines) are shared rather than copied.
+        let backBrailleFieldDirty = false;
+        let backBrailleFieldProblem = null;
+        let backBrailleFieldAutoCleared = false;
+
+        function getBackBrailleFieldValue() {
+            return document.getElementById('back-braille-unicode')?.value || '';
+        }
+
+        function getBackBrailleFieldLines() {
+            return getBackBrailleFieldValue().split('\n').map(line => line.replace(/\s+$/, ''));
+        }
+
+        function isBackBrailleFieldActive() {
+            return getBackBrailleFieldValue().trim().length > 0;
+        }
+
+        function announceBackBrailleField(message) {
+            const live = document.getElementById('back-braille-unicode-live');
+            if (live) live.textContent = message;
+        }
+
+        function setBackBrailleFieldStatus(message, highlight = false) {
+            const status = document.getElementById('back-braille-unicode-status');
+            if (!status) return;
+            status.textContent = message;
+            status.classList.toggle('inline-notice', highlight && message !== '');
+        }
+
+        function backBrailleFieldBaselineStatus() {
+            if (!isBackBrailleFieldActive()) {
+                return backBrailleFieldAutoCleared
+                    ? 'Cleared because the text changed — press Translate to Braille to refresh'
+                    : 'Empty — the text above will be translated';
+            }
+            return backBrailleFieldDirty
+                ? 'Edited — will be used as-is'
+                : 'Filled from translation — edit any cell you want to change.';
+        }
+
+        function updateBackBrailleFieldStatus() {
+            const availableRows = parseInt(document.getElementById('grid_rows')?.value) || 4;
+            const problem = isBackBrailleFieldActive()
+                ? validateBrailleFieldLines(getBackBrailleFieldLines(), getAvailableColumns(), availableRows)
+                : null;
+            setBackBrailleFieldStatus(problem || backBrailleFieldBaselineStatus(), Boolean(problem) || backBrailleFieldDirty);
+            if (problem !== backBrailleFieldProblem) {
+                backBrailleFieldProblem = problem;
+                if (problem) announceBackBrailleField(problem);
+            }
+        }
+
+        // The back has no placement mode, so its one translation path is the
+        // same banaAutoWrap pass generation itself runs for back_lines.
+        async function translateIntoBackBrailleField() {
+            const tableName = document.getElementById('language-table')?.value || DEFAULT_LANGUAGE_TABLE;
+            const rows = parseInt(document.getElementById('grid_rows').value) || 4;
+            const src = (document.getElementById('back-text')?.value || '').trim();
+            if (!src) return { error: 'Enter text in the Back of Card Text box first, then press Translate to Braille.' };
+            const wrap = await banaAutoWrap(src, getAvailableColumns(), rows, tableName);
+            if (wrap.error) {
+                return { error: (wrap.warnings && wrap.warnings.length) ? wrap.warnings.join(' ') : 'Unable to wrap text per BANA rules.' };
+            }
+            return { lines: wrap.brailleLines, warnings: wrap.warnings || [] };
+        }
+
+        // Back-translates the back braille field into the Back of Card Text box
+        // above it. The field itself is left untouched: it stays the authority
+        // for what gets embossed on the back.
+        async function fillBackTextFromBrailleField() {
+            const lines = trimTrailingEmptyLines(getBackBrailleFieldLines());
+            if (!lines.length) {
+                return { error: 'Enter or paste braille in the Braille (Unicode) field first, then press Translate to Text.' };
+            }
+            for (const line of lines) {
+                for (const ch of line) {
+                    if (ch !== ' ' && !isBrailleUnicodeChar(ch)) {
+                        return { error: `The Braille (Unicode) field contains "${ch}", which is not a braille character. ` +
+                                        'Only braille characters (U+2800–U+28FF) and spaces can be translated back to text.' };
+                    }
+                }
+            }
+            const tableName = document.getElementById('language-table')?.value || DEFAULT_LANGUAGE_TABLE;
+            const textLines = [];
+            for (const line of lines) {
+                textLines.push(line.trim() ? (await backTranslateWithLiblouis(line, tableName)).trim() : '');
+            }
+            const target = document.getElementById('back-text');
+            if (target) {
+                target.value = textLines.join('\n');
+                // A scripted write fires no input event: persist by hand, exactly
+                // as the field's own input listener would have.
+                persistValue('braille_prefs_back_text', target.value);
+            }
+            return { lines: textLines };
+        }
+
+        function wireBackBrailleField() {
+            const field = document.getElementById('back-braille-unicode');
+            const button = document.getElementById('back-translate-to-braille-btn');
+            const textButton = document.getElementById('back-translate-to-text-btn');
+            if (!field || !button) return;
+
+            field.addEventListener('input', () => {
+                const wasDirty = backBrailleFieldDirty;
+                backBrailleFieldDirty = isBackBrailleFieldActive();
+                backBrailleFieldAutoCleared = false;
+                resetToGenerateState();
+                updateBackBrailleFieldStatus();
+                // A problem announces itself; do not talk over it.
+                if (backBrailleFieldProblem) return;
+                if (!backBrailleFieldDirty) {
+                    announceBackBrailleField('Braille field cleared. The text above will be translated instead.');
+                } else if (!wasDirty) {
+                    announceBackBrailleField('Braille field edited. It will be used exactly as written.');
+                }
+            });
+
+            button.addEventListener('click', async () => {
+                const originalLabel = button.textContent;
+                button.disabled = true;
+                button.textContent = 'Translating…';
+                try {
+                    const result = await translateIntoBackBrailleField();
+                    if (result.error) {
+                        setBackBrailleFieldStatus(result.error, true);
+                        announceBackBrailleField(result.error);
+                        return;
+                    }
+                    field.value = trimTrailingEmptyLines(result.lines).join('\n');
+                    backBrailleFieldDirty = false;
+                    backBrailleFieldAutoCleared = false;
+                    const note = result.warnings.length ? ` ${result.warnings.join(' ')}` : '';
+                    setBackBrailleFieldStatus(`Filled from translation — edit any cell you want to change.${note}`);
+                    announceBackBrailleField('Braille field updated from translation.');
+                    resetToGenerateState();
+                } catch (error) {
+                    log.error('Translate to Braille (back) failed:', error);
+                    const message = `Translation failed: ${error.message || error}`;
+                    setBackBrailleFieldStatus(message, true);
+                    announceBackBrailleField(message);
+                } finally {
+                    button.disabled = false;
+                    button.textContent = originalLabel;
+                }
+            });
+
+            if (!textButton) return;
+
+            textButton.addEventListener('click', async () => {
+                const originalLabel = textButton.textContent;
+                textButton.disabled = true;
+                textButton.textContent = 'Translating…';
+                try {
+                    const result = await fillBackTextFromBrailleField();
+                    if (result.error) {
+                        setBackBrailleFieldStatus(result.error, true);
+                        announceBackBrailleField(result.error);
+                        return;
+                    }
+                    // Writing the box from script fires no input event, so the
+                    // button and the warnings are refreshed by hand here.
+                    resetToGenerateState();
+                    refreshLiveWarnings();
+                    const message = 'Text above filled from this braille. The braille here is still what gets embossed.';
+                    setBackBrailleFieldStatus(message);
+                    announceBackBrailleField(message);
+                } catch (error) {
+                    log.error('Translate to Text (back) failed:', error);
+                    const message = `Back-translation failed: ${error.message || error}`;
+                    setBackBrailleFieldStatus(message, true);
+                    announceBackBrailleField(message);
+                } finally {
+                    textButton.disabled = false;
+                    textButton.textContent = originalLabel;
+                }
+            });
+        }
+
+        // Called when the Back of Card Text changes. Same rule as the front: a
+        // pristine field only mirrors a translation, so it is cleared rather
+        // than left silently stale; a hand-edited field is never touched.
+        function onBackSourceTextChangedForBackBrailleField() {
+            if (backBrailleFieldDirty || !isBackBrailleFieldActive()) return;
+            const field = document.getElementById('back-braille-unicode');
+            if (field) field.value = '';
+            backBrailleFieldAutoCleared = true;
+            updateBackBrailleFieldStatus();
+            announceBackBrailleField('Braille field cleared because the text changed. Press Translate to Braille to refresh it.');
+        }
+
         // Update the capitalization warning visibility based on toggle state and input content
         function updateCapsWarning() {
             const capsDisabled = document.querySelector('input[name="capitalize_letters"]:checked')?.value !== 'enabled';
@@ -7056,10 +7308,33 @@
             return { ...entry, el, original: el ? el.textContent : '' };
         }).filter(entry => entry.el);
 
+        // Opens or closes the Double-Sided menu chrome without touching focus.
+        // A user's own click goes through initExpertSubmenus(), which also
+        // moves focus; this exists for the code paths that must not - the
+        // load-time restore, updateDoubleSidedUI()'s on-state guarantee, and
+        // Reset - so it writes the same four things and nothing else.
+        function setDoubleSidedMenuOpen(open) {
+            const toggleBtn = document.getElementById('double-sided-menu-toggle');
+            const menu = document.getElementById('double-sided-menu');
+            if (!toggleBtn || !menu) return;
+            menu.style.display = open ? 'block' : 'none';
+            toggleBtn.setAttribute('aria-expanded', String(open));
+            toggleBtn.classList.toggle('active', open);
+            const icon = toggleBtn.querySelector('.expert-submenu-icon');
+            if (icon) icon.textContent = open ? '▲' : '▼';
+        }
+
         function updateDoubleSidedUI() {
             const toggle = document.getElementById('double_sided_enabled');
             if (!toggle) return;
             const on = !!toggle.checked;
+
+            // The beta being on means the Back of Card section is showing, and
+            // a showing section must never sit inside a closed menu - this is
+            // what re-opens the menu on a reload with the beta persisted on.
+            // Turning the beta OFF deliberately leaves the menu open: the user
+            // is still looking at the toggle they just pressed.
+            if (on) setDoubleSidedMenuOpen(true);
 
             const section = document.getElementById('double-sided-section');
             if (section) section.style.display = on ? '' : 'none';
@@ -7588,6 +7863,7 @@
             updateVersion2SizeWarning();
             updateCapsWarning();
             updateBrailleFieldStatus();
+            updateBackBrailleFieldStatus();
             computeBackOverflow();
 
             const placementMode = document.querySelector('input[name="placement_mode"]:checked')?.value || 'manual';
@@ -7605,6 +7881,7 @@
         }
 
         wireBrailleField();
+        wireBackBrailleField();
 
         // Initialize placement UI
         updatePlacementUI();
@@ -7982,7 +8259,10 @@
             }
             const backText = document.getElementById('back-text');
             if (backText) {
-                backText.addEventListener('input', () => persistValue('braille_prefs_back_text', backText.value));
+                backText.addEventListener('input', () => {
+                    persistValue('braille_prefs_back_text', backText.value);
+                    onBackSourceTextChangedForBackBrailleField();
+                });
             }
         }
 
@@ -8050,6 +8330,13 @@
                 if (dsToggleReset) dsToggleReset.checked = false;
                 const backTextReset = document.getElementById('back-text');
                 if (backTextReset) backTextReset.value = '';
+                // The back braille field and the menu chrome reset with the
+                // beta: field empty and pristine, menu closed.
+                const backBrailleReset = document.getElementById('back-braille-unicode');
+                if (backBrailleReset) backBrailleReset.value = '';
+                backBrailleFieldDirty = false;
+                backBrailleFieldAutoCleared = false;
+                setDoubleSidedMenuOpen(false);
                 const gearToggleReset = document.getElementById('gear_rollers_enabled');
                 if (gearToggleReset) gearToggleReset.checked = false;
                 // Embosser version back to 1. The radio sweep above already
@@ -9347,6 +9634,31 @@
             let backBrailleLines = null;
             if (doubleSidedOn) {
                 const backRows = parseInt(document.getElementById('grid_rows').value) || 4;
+                // The back Braille (Unicode) field wins whenever it has content:
+                // its lines are embossed exactly as written, with no liblouis
+                // pass - the same authority rule the front field has (2026-08-31).
+                if (isBackBrailleFieldActive()) {
+                    const backFieldLines = getBackBrailleFieldLines();
+                    const backFieldError = validateBrailleFieldLines(backFieldLines, getAvailableColumns(), backRows);
+                    if (backFieldError) {
+                        errorText.textContent = `Back of card: ${backFieldError}`;
+                        errorDiv.style.display = 'flex';
+                        errorDiv.className = 'error-message';
+                        resetToGenerateState();
+                        return false;
+                    }
+                    // The wire shape (back_lines padded to grid_rows) is unchanged.
+                    backBrailleLines = [...backFieldLines];
+                    while (backBrailleLines.length < backRows) backBrailleLines.push('');
+                    // Receipt parity with the front field path (PR-10), so an
+                    // incorrect braille report can be traced here too.
+                    log.debug('Back translation receipt:', JSON.stringify({
+                        timestamp: new Date().toISOString(),
+                        source: 'back-braille-unicode-field',
+                        edited: backBrailleFieldDirty,
+                        brailleLines: backBrailleLines,
+                    }, null, 2));
+                } else {
                 const backSrc = String(document.getElementById('back-text')?.value || '').trim();
                 if (!backSrc) {
                     backBrailleLines = Array(backRows).fill('');
@@ -9397,6 +9709,7 @@
                     backBrailleLines = backWrap.brailleLines;
                 }
                 log.debug('Back lines translated:', backBrailleLines);
+                }
             }
             const settings = {
                 // The dial shows usable text cells. Add the marker columns on top:

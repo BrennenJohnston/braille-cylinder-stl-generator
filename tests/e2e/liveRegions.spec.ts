@@ -36,18 +36,21 @@
 import { test, expect, type Page } from '@playwright/test';
 
 /**
- * The one region that is allowed to announce, plus the five permanently-visible
+ * The one region that is allowed to announce, plus the six permanently-present
  * status nodes that ship in the markup. Nine sources share `#a11y-status`; none
- * of them adds a node of its own, so this number must not move.
+ * of them adds a node of its own, so this number must not move. 6 became 7 on
+ * 2026-08-31: the Back of Card braille field gained its own sr-only announcer
+ * (`#back-braille-unicode-live`), the exact mirror of the front field's - a
+ * deliberate field announcer, not a warning box growing a region.
  *
  * Read it with `settledStatusNodes()`, never a bare count: `applyTheme()` and
  * `applyFontSize()` each append a THROWAWAY `role=status` div and remove it a
  * second later, and both run at init - so for the first second after load the
- * page legitimately holds 8. Firefox reaches an immediate assertion inside that
+ * page legitimately holds 9. Firefox reaches an immediate assertion inside that
  * window and Chromium usually does not, which is exactly the kind of difference
  * that makes a suite flaky rather than useful.
  */
-const EXPOSED_STATUS_NODES = 6;
+const EXPOSED_STATUS_NODES = 7;
 
 /** The three boxes this file exists for. */
 const WARNING_BOXES = ['auto-overflow-warning', 'cylinder-overflow-warning', 'caps-warning'];

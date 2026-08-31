@@ -1849,7 +1849,9 @@ When `aria-expanded` changes, screen readers automatically announce the new stat
 
 All six submenus use the identical `.expert-submenu-toggle` markup and are wired by one
 handler (`initExpertSubmenus()`), which sets `aria-expanded`, toggles `.active`, flips the
-`▼`/`▲` icon, and moves focus into the panel on open. Since 2026-08-22 each button is
+`▼`/`▲` icon, and moves focus into the panel on open. Since 2026-08-31 the handler serves
+a seventh accordion outside Expert Mode: the Double-Sided Card menu (§4.8), whose header
+heading is an `<h2>` rather than `<h3>` because it is a top-level form section. Since 2026-08-22 each button is
 **wrapped in `<h3 class="expert-submenu-heading">` as its sole child**, which the APG
 Accordion pattern requires — see §4.11 — and the handler therefore resolves its panel
 through `aria-controls` rather than `toggle.nextElementSibling`, which is now `null`.
@@ -1981,6 +1983,14 @@ the direction the content moves on screen. Neither button changes the contract: 
 `#braille-unicode` holds content, those exact cells are what get embossed, and
 "Translate to Text" deliberately leaves the braille untouched.
 
+Since 2026-08-31 the **Back of Card entry (double-sided beta) carries the same pair** —
+`#back-translate-to-braille-btn` / `#back-translate-to-text-btn` beside the authoritative
+`#back-braille-unicode` field, announced through its own `#back-braille-unicode-live` and
+`#back-braille-unicode-status` — the exact mirror of this section at back-specific ids,
+with the "Back of Card" group name telling the two sides apart. Contract, wording and the
+accessibility requirements below apply 1:1; details in
+INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §7.1.
+
 Accessibility requirements:
 
 - Both are `<button type="button" class="btn-translate">`, and **neither carries
@@ -2004,7 +2014,19 @@ Accessibility requirements:
 
 ### 4.8 Double-Sided Card Beta: Disclosure Checkbox and Locked Radio Option
 
-The Double-Sided Card beta toggle (`#double_sided_enabled`) introduces two patterns:
+The Double-Sided Card beta toggle (`#double_sided_enabled`) introduces two patterns —
+and since 2026-08-31 the whole item sits inside a third:
+
+**Collapsible menu (2026-08-31).** The entire Double-Sided item folds away behind
+`#double-sided-menu-toggle`, an APG accordion header button that is the sole child of a
+real `<h2 class="expert-submenu-heading">` and reuses the `.expert-submenu-*` classes,
+so `initExpertSubmenus()` wires it with the same aria-expanded / `.active` / chevron /
+focus-on-open behaviour as the Expert Mode accordions. The fieldset inside keeps the
+signed heading text as an **sr-only legend**, so the checkbox's group name is unchanged.
+`setDoubleSidedMenuOpen()` (no focus, no announcement) keeps one invariant: **the beta
+being on forces the menu open** — a revealed Back of Card section never sits inside a
+closed menu, including after a reload with the beta persisted. Reset closes it; turning
+the beta off leaves it open, since the user is still looking at the toggle.
 
 **Disclosure checkbox.** The toggle is a real `<input type="checkbox">` (not a button):
 checking it changes what generation produces, so its on/off state is the semantic, and it
@@ -2335,8 +2357,10 @@ the one method seven users in ten try first found nothing (audit finding F-A).
 | Level | Heading | Where it lives | Visible when |
 |-------|---------|----------------|--------------|
 | h1 | Custom Braille STL Generator | `.title-section` | always |
+| h2 | Embosser version | `#embosser-version-selection` legend (2026-08-31, moved from the header) | always |
 | h2 | Enter Text for Braille Translation | `legend#front-entry-legend` | always |
-| h2 | Double-Sided Card (BETA — for testing) | beta toggle fieldset | always |
+| h2 | Double-Sided Card (BETA — for testing) | accordion header button `#double-sided-menu-toggle` (2026-08-31) | always |
+| h2 | Integrated Gears (BETA — for testing) | gears beta fieldset (2026-08-24; missing from this table until 2026-08-31) | always |
 | h2 | Row Indicator Style | `#indicator-mode-selection` | always |
 | h2 | Card Thickness | thickness fieldset | always |
 | h2 | Select Plate to Generate | plate-type fieldset | always |
@@ -2348,20 +2372,27 @@ the one method seven users in ten try first found nothing (audit finding F-A).
 | h3 | Tactile Indicator Dimensions | `#tactile-indicator-submenu` | Expert Mode open **and** Row Indicator Style set to tactile |
 | h3 | Translation Options | `.expert-submenu` | Expert Mode open |
 
-Counts measured from the live document (`build/a11yverify/post15_7c/headings.cjs`, which
-filters on `offsetParent !== null` so hidden headings are never counted):
-**6 on load, 11 with Expert Mode open, 12 with the double-sided beta on as well** — the
-beta locks Row Indicator Style to tactile, which reveals the sixth accordion. **No level
+Counts measured from the live document (the probe pattern of
+`build/a11yverify/post15_7c/headings.cjs`, which filters on `offsetParent !== null` so
+hidden headings are never counted). The 2026-08-22 measurement read **6 / 11 / 12**
+(load / Expert open / plus the double-sided beta, which locks the indicator tactile and
+reveals the sixth accordion); the Integrated Gears h2 then joined on 2026-08-24 without
+this section being re-measured, and the Embosser version h2 joined on 2026-08-31.
+Re-measured 2026-08-31 (`build/a11yverify/ui_pass_2026_08_31/headings.cjs`): **8 on
+load, 13 with Expert Mode open, 14 with the double-sided beta on as well.** **No level
 is skipped in any of the three states.**
 
 #### Level choice
 
-The five section headings are **h2**: they are the form's own top-level sections, one
-step below the page title, and h2 keeps the step from the `<h1>` at exactly one. The six
+The seven section headings are **h2** (five at the 2026-08-22 restructure; Integrated
+Gears joined 2026-08-24, Embosser version 2026-08-31): they are the form's own
+top-level sections, one step below the page title, and h2 keeps the step from the
+`<h1>` at exactly one. The six
 accordion headers are **h3** because they are one level deeper again — they exist only
 inside Expert Mode, and the level is what tells a listener "this is inside the thing I
 just opened" rather than another basic section. This is also what the WAI-ARIA APG and
-the GOV.UK Design System accordion do.
+the GOV.UK Design System accordion do. The Double-Sided accordion header stays **h2**
+for the same reason in reverse: it is a top-level section that happens to fold.
 
 **Known limit, recorded rather than hidden:** the Expert Mode disclosure button itself
 carries no heading, so a strict outline algorithm nests the six h3s under *Select Plate
@@ -3198,6 +3229,7 @@ STL Generator"` → **`"Custom Braille STL Generator"`**. The font size moved on
 | 1.25 | 2026-08-23 | **The page gets a banner, and §4.1's opening sentence stops being false.** POST15_7 item G, decision D3, closing audit findings F-E and F-L and §2.5 Contradiction 1; F-F **partly**. §4.1 said the skip link let users "bypass the header and jump directly to the main content" — there was no header, the chrome sat inside `<main>`, and the link bypassed **zero** controls. The chrome moved instead of the sentence being softened: a top-level `<header>` above `<main>`, so **landmarks 4 → 5**, `focusableBeforeTarget` **0 → 7**, `firstInsideTarget` **font-decrease → brightness-decrease**. `<body>` became a flex column to take the sibling at all. **The whole top bar moved, not half of it, and Brennen chose that from two built and measured versions** — leaving the `<h1>` in `<main>` costs 45px of app height on a layout locked to the viewport and pushes "Translate to Text" below the fold, while moving the bar whole is pixel-exact (808 → 808, and identical at 200% and 1024px); the `<h1>` is still the first heading either way. **A defect found while verifying and fixed here:** the skip link never moved FOCUS — a fragment link to a non-focusable element only shifts the sequential-navigation start point, so `activeElement` stayed on `<body>`; `<main>` now carries `tabindex="-1"`, as does the second link's target. **A second skip link** goes straight to the text entry (FD-27b), targeting the section heading rather than `#auto-text` because Manual Placement hides that textarea. **F-L closed** by widening `<form>` to wrap `.form-scroll` and `.action-footer` rather than moving the button — the button cannot move, the footer is pinned outside the scrolling pane and is `position:sticky` on mobile; the AX tree now puts the button under the form, both constraint probes are byte-identical before and after, and no rendered element moved. **Stated plainly: F-F's headline number did not improve** — 32 stops before and after, 14 still ahead of the task — because the added link and the removed duplicate GitHub link cancel; what changed is that three keystrokes now reach the task. Suite: ruff clean, 140 pytest, 2 vitest, 134 e2e, before and after. |
 | 1.23 | 2026-08-22 | **The Generate button could die in silence; it no longer can.** Added Section 4.12. `#action-btn` generates through `form.requestSubmit()`, which runs native constraint validation first, so any `:invalid` control aborted generation — and when that control was not reachable the browser could not focus it, logged `not focusable` to the console and produced **no message at all**. Not an edge case: **all 33 numeric dials carry `min`/`max` and none is rendered on a fresh load**, so that was the only state a default load could be in. A capture-phase `invalid` listener now reveals the control through its own accordion toggle (keeping `aria-expanded` truthful), focuses it, and states the problem through `#error-message`, which §4.10's mirror already relays to `#a11y-status` — no new live region, and one message however many controls failed. The **visible-dial path is deliberately unchanged**. Saved values are now validated on restore: an unusable one is refused, the field falls back to its shipped default, and the discard is announced — refused and reported, never clamped (accessibility rule 11) and never silent. Wording approved by Brennen; a `step` mismatch gets its own sentence because 2.55 is *inside* `dot_spacing`'s 1–5 range and still refused. Regression cover: `tests/e2e/constraintValidation.spec.ts`, e2e 122 → 134. One defect found and left open by decision — `cylinder_diameter_mm` ships at 30.75 with `min="10" step="0.1"`, so the shipped default is itself invalid whenever the saved preset is `custom`; pre-existing, and a public-parameter call. |
 | 1.24 | 2026-08-25 | **That open defect is closed: `cylinder_diameter_mm` steps by 0.05.** The dial shipped at 30.75 against `step="0.1"` counted from `min="10"`, so it was invalid from its own default and a user whose saved preset was `custom` met a form that refused to generate before they touched anything. Brennen's call was to move the **step**, not the value: 30.75 is the Layer-1 schema and backend default, so changing it would have had to move `settings.schema.json`, `app/models.py`, the UI and the specs together — the cross-file default drift this project treats as its worst bug class — while the step is presentation and 0.05 only *adds* legal positions, invalidating nothing a user could already have entered. Section 4.12's closing paragraph rewritten from "reported and not fixed" to the fix. The `constraintValidation.spec.ts` seed that pinned the dial to 30.8 purely to work around this is deleted, so those six tests now exercise the real shipped default. |
+| 1.25 | 2026-08-31 | **Main-menu organization pass (Brennen's call), three moves.** (1) The Embosser version selector left the site header for the form's selection menu, directly under "What Does This Program Do?" — the first menu item, with the menu-item `<h2 class="legend-heading">` in its legend and the stock `.radio-group` layout; every signed S-V string byte-identical; two header-only CSS rules retired. (2) The Double-Sided Card item became a collapsible menu on the Expert-submenu accordion pattern at h2 level — §4.8 gains the pattern and `initExpertSubmenus()` now serves seven accordions. §4.11 re-measured live: **8 / 13 / 14** headings (load / Expert open / beta on), no level skipped — and the re-measure surfaced that the table had been missing the Integrated Gears h2 since 2026-08-24, so the old 6/11/12 was already stale before this pass. (3) The Back of Card entry reached 1:1 parity with the front (§4.7): its own Translate pair, an authoritative `#back-braille-unicode` field with status + sr-only announcer, and both back textareas joined the front's themed textarea CSS — `#back-text` previously had no themed rule and rendered white in dark mode. Details: EMBOSSER_VERSION_2 v1.5 and INTERPOINT_DOUBLE_SIDED v1.13. |
 
 ---
 

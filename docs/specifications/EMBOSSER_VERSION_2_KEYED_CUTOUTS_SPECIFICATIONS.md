@@ -369,10 +369,15 @@ There are no silent skips.
 
 ## 8. User Interface (`public/index.html`)
 
-The selector is a native `<fieldset>` in `<header class="site-header">`, **outside**
-`<form id="braille-form">`. The group name, the arrow-key behaviour and the checked
-state all come from the platform; the only ARIA is `aria-describedby`, which has no
-native equivalent.
+The selector is a native `<fieldset>` inside `<form id="braille-form">` — the **first
+selection-menu item**, directly under the "What Does This Program Do?" panel. It moved
+there from `<header class="site-header">` on 2026-08-31 (Brennen's call): the choice
+that shapes everything below it reads as the form's first item, not as page chrome. It
+follows the menu-item rules — the legend carries a real `<h2 class="legend-heading">`,
+the radios sit in the stock `.radio-group` layout — and the radios are still read by id
+and never submitted, so nothing changes on the wire. The group name, the arrow-key
+behaviour and the checked state all come from the platform; the only ARIA is
+`aria-describedby`, which has no native equivalent.
 
 | Element | id | Carries |
 |---|---|---|
@@ -583,6 +588,7 @@ it.
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-08-31 | 1.5 | **§8: the selector leaves the site header** for the form's selection menu, directly under "What Does This Program Do?" — the first menu item, with the menu-item `<h2 class="legend-heading">` inside its legend and the stock `.radio-group` layout. Every signed string (S-V1..S-V5) is byte-identical; the radios are still read by id and never submitted, so the wire is untouched. The `version2.spec.ts` placement test now pins the in-form position (and that the header does NOT contain it); two header-only CSS rules were retired. Same-day UI pass also made the Double-Sided item a collapsible menu — see INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md v1.13. |
 | 2026-08-31 | 1.4 | **The barrel grows to 30.8 × 54.0 mm** (was × 52.0, the card's own height). The extra 2 mm is a **1 mm shelf past each edge of the 52 mm card**: a card rolled slightly off-axis rides the shelf instead of ruffling over the cylinder ends. The braille layout centers itself in the height, so **no row moves**; the keyed holes are radial and the nub, sockets and countersinks all place from height/2, so every end feature follows the new faces with no other change. This matches the new project-wide cylinder default (54, also 2026-08-31) — the gears BETA stays at its baked 30.8 × 52.0, so **height now tells the two apart** where diameter stopped doing so on 2026-08-30. The Version 2 golden pair was regenerated at the new height; the double-sided and gear pairs re-ran byte-identical. Not yet print-tested at 54. |
 | 2026-08-30 | 1.3 | **Third print test: the barrel walks back to 30.8 mm.** Brennen ran a 30.5 mm DOUBLE-SIDED pair and reported the pair felt loose and the dots imprinted neither as deep nor as consistently - the same two symptoms the 30.1 pair gave, weaker. Two points on one line, so the stepping stopped and the barrel took **Version 1's long-proven 30.8 mm** rather than another half step. Both symptoms have one cause, too little interference between the pair, and diameter is the only dial that sets it. Nothing about the gear interface moves with the barrel: every key and every anti-rotation feature is at a fixed radius from the axis, so the whole R14 and anti-rotation fit is unchanged. The larger barrel RELAXES the tightest wall - Cylinder A's socket goes **1.2525 -> 1.4025 mm**, B **1.9641 -> 2.1141** - and with it, a mitred socket would no longer break the 1.2 mm minimum (1.2525), so §5 now rests the parallel-curve rule on the stress riser alone. The seam gap widens to **5.76 mm**, so §8.1's retired one-fewer-cell rule stays retired. Version 2 and the gears BETA now share 30.8, so diameter no longer distinguishes them - the version does, and two tests that had silently relied on the sizes differing were made to set their own. The Version 2 golden pair was regenerated; every other fixture is md5-identical, and Version 1 is byte-identical at the geometry-spec level. |
 | 2026-08-30 | 1.2 | **Second print test, and the anti-rotation keys.** Key clearance **0.075 → 0.110 mm**: the holes were too loose at 0.15 and too tight at 0.075, so the value lands between them; 0.110 and not the midpoint 0.1125, because the step is 0.005 and an off-step default kills Generate silently. Every gear gained an anti-rotation feature, so **both plates now carry a nub above the top face and a socket in the bottom one** (new §4.4) and the “positive plate only” rule is retired. The nub's base flare drops **0.5 → 0.10 mm**: gear A1's notch has no mouth relief, so the old flare stood 0.49 mm proud per side and A1 cannot have been seating flush on either printed pair. `V2_NUB_CLEARANCE_MM` **0.15 → 0.30**, now derived from its two parts rather than retyped. §11's margin table gains the 0.110 → 0.890 row. Both Version 2 goldens were regenerated; every other fixture is byte-identical. |

@@ -465,9 +465,29 @@ here with the signed-off strings. **All wording below was signed off by Brennen
 
 ### 7.1 The toggle block
 
-A `.grade-selection` block directly after the front entry fieldset:
+Since 2026-08-31 the whole item is a **collapsible menu** (Brennen's call), directly
+after the front entry fieldset. It reuses the Expert Mode submenu pattern verbatim —
+`initExpertSubmenus()` wires anything carrying `.expert-submenu-toggle` — so the open
+and close behaviour, the design tokens, the `:focus-visible` ring, the ▼/▲ chevron and
+the focus-to-first-control-on-open are all the accordion's own:
 
-- Legend: **"Double-Sided Card (BETA — for testing)"**
+- `#double-sided-menu-toggle` — the disclosure button, sole child of a real `<h2
+  class="expert-submenu-heading">` (APG accordion). Title: the signed heading text
+  **"Double-Sided Card (BETA — for testing)"**, verbatim. `aria-expanded` +
+  `aria-controls="double-sided-menu"`.
+- `#double-sided-menu` — the content. Inside it the fieldset keeps the same signed text
+  as an **sr-only legend** (the group keeps its accessible name; the visible heading is
+  the button's), then the checkbox and notes exactly as before.
+- `setDoubleSidedMenuOpen(open)` — the no-focus, no-announcement writer used by the
+  load-time restore, `updateDoubleSidedUI()` and Reset. **The beta being ON forces the
+  menu open** (a revealed Back of Card section must never sit inside a closed menu),
+  which is what re-opens it on a reload with the beta persisted. Turning the beta OFF
+  leaves the menu open — the user is still looking at the toggle they just pressed;
+  Reset closes it.
+
+Inside the menu:
+
+- Legend (sr-only): **"Double-Sided Card (BETA — for testing)"**
 - `#double_sided_enabled` — a real checkbox in a 44 px `.ds-toggle-option` label, with
   `aria-expanded` (mirrors the state), `aria-controls="double-sided-section"`, and
   `aria-describedby` pointing at the explanation note. Label text: **"Emboss both sides of
@@ -504,6 +524,26 @@ Toggling ON reveals `#double-sided-section` containing the **Back of Card** fiel
   `hidden` when clear) directly after the help note. It carries **no** `role="status"` and
   **no** `aria-live` — it announces through the shared `#a11y-status` region instead. See
   §7.4 and §7.6.
+- **Two-way translation, 1:1 with the front entry area (2026-08-31, Brennen's call):**
+  `#back-translate-to-braille-btn` ("Translate to Braille ↓") under the text box, then a
+  back **Braille (Unicode)** field `#back-braille-unicode` (label "Braille (Unicode) —
+  one line per row", `lang="und-Brai"`, the front's 1.4 em glyph sizing) with
+  `#back-translate-to-text-btn` ("Translate to Text ↑") and a status span under it. The
+  visible wording is the front's, verbatim; the "Back of Card" group is what tells the
+  two apart. **Whenever the back field has content it is the authority for `back_lines`
+  — used exactly as written, validated by the same `validateBrailleFieldLines()` the
+  front uses, padded to `grid_rows` on the wire, no liblouis pass.** A generate-time
+  problem blocks with `Back of card: <the field's own message>`. Editing the Back of
+  Card Text clears a *pristine* (auto-filled) back field, never a hand-edited one; its
+  state lives in `backBrailleField*` variables, fully separate from the front's. The
+  field announces through its own sr-only region `#back-braille-unicode-live` — the
+  mirror of `#braille-unicode-live`, and the 7th permanently-present `role="status"`
+  node (liveRegions.spec.ts pins the count). Translate ↓ runs the same
+  `banaAutoWrap` pass generation uses for the back; Translate ↑ back-translates into
+  `#back-text` and persists it by hand (a scripted write fires no input event).
+- Both back textareas share the front entry area's themed CSS (tokens `--bg-input` /
+  `--text-primary` / `--border-secondary`): before 2026-08-31 `#back-text` had **no**
+  themed rule and rendered on the browser's default white in dark mode.
 
 While ON, the front legend reads **"Front of Card — Enter Text for Braille
 Translation"** and restores its exact original text ("Enter Text for Braille
@@ -881,6 +921,7 @@ and separated**. Full record: the research folder's `00_PROJECT_MEMORY.md`, FD-8
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-08-31 | 1.13 | **§7.1 and §7.1's Back of Card block: the item becomes a collapsible menu, and the back gains the front's two-way translation** (Brennen's call). The whole Double-Sided item now opens and closes like an Expert Mode submenu — `#double-sided-menu-toggle` (a real `<h2>`'s sole-child button, APG accordion, reusing `.expert-submenu-*` so tokens, focus ring and behaviour cannot drift) over `#double-sided-menu`; the fieldset keeps the signed heading text as an sr-only legend. The beta being ON forces the menu open (`setDoubleSidedMenuOpen()`), so a reload with the beta persisted lands open; Reset closes it. The Back of Card entry gains `#back-translate-to-braille-btn`, the authoritative `#back-braille-unicode` field and `#back-translate-to-text-btn` — the front's machinery mirrored with separate `backBrailleField*` state, the shared `validateBrailleFieldLines()`, its own sr-only announcer `#back-braille-unicode-live` (the page's 7th permanent `role=status` node; liveRegions.spec pins the count), and the same authority rule: **a non-empty back field IS `back_lines`, padded to `grid_rows`, no liblouis pass; a generate-time problem blocks as `Back of card: …`.** Both back textareas join the front's themed CSS — `#back-text` had no themed rule at all and rendered white in dark mode. **Every 2026-08-16/17 signed string is byte-identical**; the new visible strings are the front's, verbatim, with the group name telling the sides apart. Toggle-off payload untouched (pinned); a new e2e pins the field-wins-on-the-wire contract and the menu contract. |
 | 2026-08-25 | 1.12 | **Pair mode is shared with the Integrated Gears beta** (new §7.7). Generate Both, the Cylinder A/B radio relabel (reuse confirmed by Brennen 2026-08-25), and the pair download row now follow `isPairModeOn()` — either beta. Double-sided keeps exclusively: back text, tactile lock, paired recesses, and the `Cylinder_A_`/`Cylinder_B_` filenames (gears-only runs keep the frozen Geared single-sided names). Pair runs also build a combined two-body `Cylinder_Pair_[Geared_]` file, offered first (mechanics in STL_EXPORT §6/§15); §8's is_watertight prohibition extends to it — it inherits Cylinder A's 3 pinch edges and contains two bodies by design. Wire shape, footprints, thresholds, geometry, and the toggle-off payload untouched. |
 | 2026-08-21 | 1.8 | **Section 7.6 corrected and extended** (post-initiative accessibility hygiene bundle). The bullet claiming "an unchanged string is not a mutation, which keeps the per-keystroke recomputes from chattering" was **wrong and contradicted the `announceDsGap` bullet in the same list**: `announceStatus()` assigns `textContent` unconditionally, and assigning an identical string still replaces the text node. Disproved by measurement - `#caps-warning`, whose text never changes, announced **11 times over 11 keystrokes** when wired without a gate. The bullet now states that writing does not deduplicate and that frequent callers must gate themselves. Also records the three non-beta sources that joined the channel the same day (`auto-overflow-warning`, `cylinder-overflow-warning`, `caps-warning`), bringing the wired total to **nine**. Documentation and one UI file only - no beta behaviour, wire shape, footprint, threshold, or geometry changed, and the toggle-off payload is untouched. |
 | 2026-08-21 | 1.8 | **A 0 mm `ds_bowl_depth` is now REJECTED in double-sided mode** (§5 gate 4; the §9 gap is struck as closed). The gap recorded at v1.6/v1.7 turned out to understate the problem: `csg-worker-manifold.js`'s 0.8 mm substitution was reachable from the shipped *single-sided* Bowl Recess Dot Depth dial too, and the card counter plate raised `ZeroDivisionError` -> HTTP 500 on the same input. `app/geometry_spec.py` now declines to emit a depthless bowl on all three paths, so 0 mm single-sided means what it says — a flat counter plate, reported through `spec['warnings']` and the log — while double-sided 0 mm fails with a message naming the nip. The gate's nominal-diameter fallback and its `measured_on_the_print` branch are gone; `dsPrintedBowlMouth()`'s matching fallback is left in place but is now doubly unreachable. Two tests were rewritten from the old contract to the new one; `test_footprint_boundaries_are_accepted` moves `ds_bowl_depth` from 0.0 to the hemisphere 0.25 mm, the value that minimises the printed mouth for a 0.5 mm bowl. **No threshold, range, footprint, geometry, or golden fixture changed** — schema range stays 0.0–5.0 and both shipped depths (0.5 double-sided, 0.8 single-sided) are byte-identical. |

@@ -89,6 +89,19 @@ const MANIFOLD_MISSING = /Manifold 3D engine which failed to load|never became r
  * full-suite run on 2026-08-23 got one row instead of four for exactly this,
  * which broke the truncation premise rather than the behaviour under test.
  */
+/**
+ * The Double-Sided item is a collapsible menu since 2026-08-31, so the toggle
+ * inside is hidden until the disclosure opens it. State-aware: re-running a
+ * setUp closure must never click an already-open menu shut.
+ */
+async function openDoubleSidedMenu(page: Page) {
+  const toggle = page.locator('#double-sided-menu-toggle');
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true') {
+    await toggle.click();
+  }
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+}
+
 async function translateToBraille(page: Page) {
   const field = page.locator('#braille-unicode');
   for (let attempt = 0; attempt < 15; attempt++) {
@@ -229,6 +242,7 @@ test.describe('Completion messages name outstanding warnings (F-R)', () => {
       await page.locator('#auto-text').fill(OVERFLOWING);
       await page.waitForTimeout(900);
       await translateToBraille(page);
+      await openDoubleSidedMenu(page);
       await page.locator('#double_sided_enabled').check();
       await page.locator('#back-text').fill('def');
       await page.waitForTimeout(900);
@@ -267,6 +281,7 @@ test.describe('Completion messages name outstanding warnings (F-R)', () => {
     await openApp(page);
 
     await page.locator('#auto-text').fill(OVERFLOWING);
+    await openDoubleSidedMenu(page);
     await page.locator('#double_sided_enabled').check();
     await page.locator('#back-text').fill('def');
     await page.waitForTimeout(900);

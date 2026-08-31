@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **The Back of Card entry now matches the front, 1:1.** With the double-sided beta on, the back gains its own **Translate to Braille ↓** button, an editable **Braille (Unicode)** field, and **Translate to Text ↑** — the front's two-way translation mirrored exactly, with the same live validation, status line and screen-reader announcements. Whenever the back braille field holds content, **those exact cells are what emboss on the back** (no liblouis pass), just as the front field has always worked; a bad paste or an over-long row blocks generation with the offending line named. Editing the Back of Card Text clears an auto-filled braille field so it can never go silently stale; a hand-edited one is never touched.
+
+### Changed
+- **The Embosser version selector moved out of the page banner and into the selection menu**, directly under "What Does This Program Do?" — the first choice in the form, since it shapes everything below it. Same fieldset, same radios, same wording; it now carries the same heading structure as every other menu item. Nothing changes in the request.
+- **The Double-Sided Card item is now a collapsible menu**, opening and closing exactly like the Expert Mode sections, so it can be folded out of the way. The on/off toggle lives inside the menu, unchanged. The menu opens itself whenever the beta is on — including after a reload with the beta remembered — so the Back of Card section can never be hidden inside a closed menu.
+
+### Fixed
+- **The Back of Card boxes were white in dark mode.** The back text area had no themed styling at all, so it kept the browser's default white background against the dark page. Both back boxes now share the front entry area's theme tokens and sizing in all three themes.
+
 ### Changed
 - **The default cylinder grows to 30.8 × 54 mm (was × 52) — a 1 mm card shelf at each end.** The business card itself stays 52 mm tall and the braille rows stay centered (the layout centers itself in the barrel height), so the barrel now stands 1 mm past each card edge: a card rolled slightly off-axis rides the shelf instead of ruffling over the cylinder ends. The new height is carried everywhere the old one was — the schema and dial defaults, both card-stock presets, the Version 2 preset barrel (S-V5 now expects 30.8 × 54), and the absent-field fallback, which is decoupled from the card height for the first time (`gears.DEFAULT_CYLINDER_HEIGHT_MM`; the UI also stops seeding the cylinder dial from the card height on load). The integrated-gears BETA cannot follow — its gears are baked at fixed z — so it keeps its hard 30.8 × 52 gate, and enabling gears on untouched dials now shows the existing S7 warning until the height dial is set back to 52. The Version 2 golden pair was regenerated at the new height (not yet print-tested at 54); the double-sided and gear pairs re-ran byte-identical. A saved `cylinder_height_mm` preference still wins over the new default in Version 1, exactly as any saved dial does.
 
