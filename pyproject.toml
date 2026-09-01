@@ -18,20 +18,20 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     # Geometry processing (server-side generation)
-    "numpy==2.5.1",
-    "trimesh==4.12.2",
+    "numpy==2.5.2",
+    "trimesh==5.0.0",
     "shapely==2.1.2",
     "mapbox_earcut==2.0.0",
-    "scipy==1.18.0",        # For mesh.fix_normals()
+    "scipy==1.18.1",        # For mesh.fix_normals()
     "matplotlib==3.11.1",    # For character markers
     "manifold3d==3.5.2",    # Boolean operations
 
     # Development tools
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
-    "ruff==0.16.0",
-    "mypy==2.3.0",
-    "pre-commit==4.6.1",
+    "ruff==0.16.5",
+    "mypy==2.3.1",
+    "pre-commit==4.6.2",
 ]
 
 test = [
