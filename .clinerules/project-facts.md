@@ -147,8 +147,10 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      search stopped at the size Version 1 has always used). Height 54 since
      2026-08-31 (was 52) - the 1 mm card shelf at each end, VERSION 2's ALONE
      since the same day (the project default returned to the 52 mm Version 1
-     standard; V2_PRESET_OVERRIDES is what carries a V2 cylinder to 54); not
-     yet print-tested at 54. Version 2 and the gears BETA share ⌀30.8 but the
+     standard; V2_PRESET_OVERRIDES is what carries a V2 cylinder to 54).
+     54 print-inspected 2026-09-01: both cylinders printed from the OpenSCAD
+     V2 file passed Brennen's inspection (an embossing run at 54 is not yet
+     reported). Version 2 and the gears BETA share ⌀30.8 but the
      HEIGHT now tells them apart (V2 54, gears and the V1 default 52) - and
      so does the version. Version 2 has its own OpenSCAD companion (since
      2026-08-31 also at 30.8 x 54 with 4 text rows per face):
