@@ -61,10 +61,11 @@ class CylinderParams:
     """
 
     diameter_mm: float = 30.75  # Default matches UI
-    # 1 mm taller than the 52 mm card at EACH end (2026-08-31): a slightly
-    # mis-rolled card keeps its edges on the barrel instead of ruffling. The
-    # braille layout centres itself in the height, so rows do not move.
-    height_mm: float = 54.0
+    # 52 is the Version 1 standard barrel - the height every previously shipped
+    # V1 gear model pairs with (Brennen, 2026-08-31). Only Embosser Version 2
+    # carries the 1 mm card shelf past each end: its 30.8 x 54 barrel is forced
+    # by the V2 preset (version2.V2_BARREL_HEIGHT_MM), never by this default.
+    height_mm: float = 52.0
     wall_thickness: float = 2.0
     seam_offset_deg: float = 355.0
     polygonal_cutout_radius_mm: float = 13.0
@@ -75,7 +76,7 @@ class CylinderParams:
         """Create CylinderParams from dictionary with defaults."""
         return CylinderParams(
             diameter_mm=float(data.get('diameter_mm', data.get('diameter', 30.75))),
-            height_mm=float(data.get('height_mm', data.get('height', 54.0))),
+            height_mm=float(data.get('height_mm', data.get('height', 52.0))),
             wall_thickness=float(data.get('wall_thickness', 2.0)),
             seam_offset_deg=float(data.get('seam_offset_deg', data.get('seam_offset_degrees', 355.0))),
             polygonal_cutout_radius_mm=float(data.get('polygonal_cutout_radius_mm', 13.0)),

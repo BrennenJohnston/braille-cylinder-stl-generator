@@ -45,13 +45,15 @@ GEAR_BARREL_TOLERANCE_MM = 0.001
 
 # Fallbacks for an absent cylinder_params field. cylinder_dimensions below is
 # the ONE reader both app/validation.py and app/geometry_spec.py call, so the
-# two can never disagree about what an absent field means. Height stopped
-# tracking card_height on 2026-08-31: the barrel is now 1 mm taller than the
-# 52 mm card at EACH end, so a slightly mis-rolled card keeps its edges on the
-# barrel. The gear barrel below stays 52.0 (the gears are baked at fixed z),
-# which means a default-height cylinder no longer passes the S7 gate.
+# two can never disagree about what an absent field means. Height no longer
+# tracks card_height (decoupled 2026-08-31); it is the VERSION 1 STANDARD
+# barrel, the height every previously shipped V1 gear model pairs with, so a
+# default-height cylinder passes the S7 gate again. The 1 mm card-shelf
+# barrel (54) is Embosser Version 2 ONLY: its UI preset always sends the
+# height explicitly, and an absent-height V2 request draws the soft S-V5
+# size warning rather than silently building at 54.
 DEFAULT_CYLINDER_DIAMETER_MM = 30.75
-DEFAULT_CYLINDER_HEIGHT_MM = 54.0
+DEFAULT_CYLINDER_HEIGHT_MM = 52.0
 
 # Which vendored asset a plate carries. Cylinder A (the embossing/positive
 # plate) takes the A gears, Cylinder B (the counter/negative plate) the B ones;

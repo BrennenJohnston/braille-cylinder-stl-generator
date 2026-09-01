@@ -32,14 +32,16 @@ translation, Three.js preview. Working branch: develop — never commit to main.
 
    Layer 1 — SCHEMA/BACKEND defaults. settings.schema.json and app/models.py
    agree, and these are also the raw value= attributes in public/index.html:
-   - cylinder: ⌀30.75 mm × height 54 mm, seam offset 355° (radius 15.375 in
-     workers — watch diameter-vs-radius conversions). Height is 54 since
-     2026-08-31 — a 1 mm shelf past EACH edge of the 52 mm card so a
-     mis-rolled card cannot ruffle over the ends; rows stay centered
-     (the layout centers itself in the height). Cylinder height is DECOUPLED
-     from card height: the absent-field fallback is 54 too, owned by
+   - cylinder: ⌀30.75 mm × height 52 mm, seam offset 355° (radius 15.375 in
+     workers — watch diameter-vs-radius conversions). Height went 52 → 54 →
+     back to 52 on 2026-08-31 (Brennen's deployment verdict): 52 is the
+     VERSION 1 STANDARD barrel, the height every previously shipped V1 gear
+     model pairs with. The 1 mm card-shelf barrel (54) is Embosser Version 2
+     ONLY, applied by V2_PRESET_OVERRIDES when the selector is on Version 2 —
+     never by these defaults. Cylinder height stays DECOUPLED from card
+     height: the absent-field fallback is 52, owned by
      gears.DEFAULT_CYLINDER_HEIGHT_MM, and updateShapeSettings() no longer
-     seeds the dial from card_height. Both thickness presets carry 54.
+     seeds the dial from card_height. Both thickness presets carry 52.
    - plate/card: 90 × 52 × 2.0 mm — the card stays 52; do not "sync" it to
      the barrel
    - spacing: dot 2.5 / cell 6.5 / line 10.0 mm
@@ -104,9 +106,10 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      or the request is REJECTED (S7). The gears are baked at fixed z and do not
      move with the barrel — a 51 mm barrel exports as THREE loose bodies and
      still reports watertight, and a 62 mm one swallows the teeth. Never
-     "relax" this to a warning. Since 2026-08-31 the DEFAULT barrel is 54 tall,
-     so gears on untouched dials warn/reject until height is dialed back to
-     52 — by design; do not "fix" either side.
+     "relax" this to a warning. The default barrel returned to 52 later on
+     2026-08-31 (Brennen's deployment verdict — the one-day 54 default broke
+     gears on untouched dials), so gear mode passes S7 on defaults again; the
+     54 mm card-shelf barrel is Version 2 only.
    - THE BARREL MUST BE SOLID while gears are on, and emitting
      polygon_points: [] does NOT achieve that — with no polygon the worker
      hollows by wall thickness, which seals an undrainable cavity. The shell
@@ -142,10 +145,17 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      little pressure) -> 30.8 (2026-08-30, the 30.5 double-sided pair felt
      loose and printed shallow, uneven dots - the same symptom weaker, so the
      search stopped at the size Version 1 has always used). Height 54 since
-     2026-08-31 (was 52), moving with the project default - the 1 mm card
-     shelf at each end; not yet print-tested at 54. Version 2 and the gears
-     BETA share ⌀30.8 but the HEIGHT now tells them apart (V2 54, gears 52) -
-     and so does the version.
+     2026-08-31 (was 52) - the 1 mm card shelf at each end, VERSION 2's ALONE
+     since the same day (the project default returned to the 52 mm Version 1
+     standard; V2_PRESET_OVERRIDES is what carries a V2 cylinder to 54); not
+     yet print-tested at 54. Version 2 and the gears BETA share ⌀30.8 but the
+     HEIGHT now tells them apart (V2 54, gears and the V1 default 52) - and
+     so does the version. Version 2 has its own OpenSCAD companion (since
+     2026-08-31 also at 30.8 x 54 with 4 text rows per face):
+     Braille_Cylinder_STL_Generator_EmbosserV2.scad in the OpenSCAD repo -
+     self-contained, interpoint included, gears excluded (D-V6), NOT vendored
+     into this repo. The V1 .scad files stay 52 and untouched; the gears BETA
+     is the one feature with no Version 2 OpenSCAD counterpart.
    - Clearance 0.110 default, range 0.0-0.5, input step 0.005. Applied OUTWARD
      to the four holes ONLY. TWO printed rounds bracketed it on 2026-08-29:
      too loose at 0.15, too tight at 0.075. NOT the midpoint 0.1125 - an

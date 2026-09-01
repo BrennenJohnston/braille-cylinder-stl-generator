@@ -31,10 +31,12 @@ const SIZE_WARNING_START = 'Integrated gears are matched to the reference roller
 const GEARS_READY = 'Cylinder generated with integrated gears.';
 
 // The reference roller the vendored gears were measured against. Anything else
-// is rejected by app/validation.py, so the UI warns before a generate. Since
-// 2026-08-31 the shipped default barrel is 54 mm tall (a 1 mm card shelf at
-// each end) while the gears stay baked to 52, so every gear-mode generate in
-// this file dials the height back to the reference first.
+// is rejected by app/validation.py, so the UI warns before a generate. The
+// shipped default barrel returned to exactly this size on 2026-08-31 (52 is
+// the Version 1 standard; the 54 mm card-shelf barrel is Embosser Version 2
+// only), so gear mode works on untouched dials again. Every gear-mode
+// generate in this file still dials the size explicitly, so a future preset
+// change cannot silently shift what these tests prove.
 const REFERENCE_DIAMETER_MM = '30.8';
 const REFERENCE_HEIGHT_MM = '52';
 
@@ -237,18 +239,9 @@ test.describe('Gear-integrated one-piece rollers (BETA)', () => {
     await openApp(page);
     const warning = page.locator('#gear-size-warning');
 
-    // The shipped default barrel is 54 mm tall since 2026-08-31, and the gears
-    // are baked at fixed z, so the defaults themselves are off-size now: the
-    // warning is up from the first moment the toggle goes on.
-    await setGearToggle(page, true);
-    await expect(warning).toBeVisible();
-    await expect(page.locator('#gear-size-message')).toContainText(SIZE_WARNING_START);
-    await expect(page.locator('#gear-size-message')).toContainText('54');
-    await expect(page.locator('#a11y-status')).toContainText(SIZE_WARNING_START);
-
-    // At the reference size it clears.
-    await setDial(page, 'cylinder_height_mm', REFERENCE_HEIGHT_MM);
-    await setGearToggle(page, false);
+    // The shipped defaults ARE the reference roller again since 2026-08-31
+    // (52 is the Version 1 standard; the 54 mm card-shelf barrel is Embosser
+    // Version 2 only), so the toggle alone raises no size warning.
     await setGearToggle(page, true);
     await expect(warning).toBeHidden();
 
@@ -259,7 +252,15 @@ test.describe('Gear-integrated one-piece rollers (BETA)', () => {
     await setGearToggle(page, false);
     await setGearToggle(page, true);
     await expect(warning).toBeVisible();
+    await expect(page.locator('#gear-size-message')).toContainText(SIZE_WARNING_START);
     await expect(page.locator('#gear-size-message')).toContainText('45');
+    await expect(page.locator('#a11y-status')).toContainText(SIZE_WARNING_START);
+
+    // Back at the reference size it clears.
+    await setDial(page, 'cylinder_height_mm', REFERENCE_HEIGHT_MM);
+    await setGearToggle(page, false);
+    await setGearToggle(page, true);
+    await expect(warning).toBeHidden();
   });
 
   test('the request gains exactly one key, and only when the toggle is on', async ({ page }) => {

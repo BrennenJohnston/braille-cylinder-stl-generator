@@ -74,9 +74,9 @@ const BASELINE_SETTINGS = {
 
 const BASELINE_CYLINDER_PARAMS = {
   diameter_mm: '30.8',
-  // 54 since 2026-08-31: the barrel carries a 1 mm shelf past each edge of
-  // the 52 mm card. card_height above deliberately stays '52'.
-  height_mm: '54',
+  // 52: the Version 1 standard barrel, back on 2026-08-31 after one day at
+  // 54. The 1 mm card-shelf barrel (54) is Embosser Version 2 only.
+  height_mm: '52',
   polygonal_cutout_radius_mm: '13',
   polygonal_cutout_sides: '12',
   seam_offset_deg: '0',

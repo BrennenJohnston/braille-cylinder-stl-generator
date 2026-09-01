@@ -74,7 +74,10 @@ from app.geometry.gears import _format_mm
 # shelf instead of ruffling over the ends. The braille layout centres itself
 # in the height, so no row moves; the keyed holes are radial and the nubs,
 # sockets and chamfers all place from height/2, so every end feature simply
-# follows the new faces.
+# follows the new faces. The shelf is VERSION 2's ALONE (Brennen, same day):
+# the project-wide default barrel stays at the 52 mm Version 1 standard, and
+# it is this preset - forced onto the dials whenever Version 2 is selected -
+# that carries a V2 cylinder to 54.
 V2_BARREL_DIAMETER_MM = 30.8
 V2_BARREL_HEIGHT_MM = 54.0
 # Float slack only, matching the gears' tolerance: at 32 mm a float32 ULP is

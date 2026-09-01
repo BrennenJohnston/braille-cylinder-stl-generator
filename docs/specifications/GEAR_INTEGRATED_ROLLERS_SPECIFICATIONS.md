@@ -152,12 +152,15 @@ Research record: `01_SAMPLE_GEOMETRY_AUDIT.md` in the 2026-08-24 development fol
    32 mm). Otherwise S7: *"Integrated gears are matched to the reference roller and
    only fit a 30.8 mm x 52 mm cylinder. Received X mm x Y mm."*
 
-Since 2026-08-31 the app-wide default cylinder is **30.8 × 54 mm** (a 1 mm card
-shelf at each end), so enabling gears on untouched dials now shows the S7
-warning — and a generate is rejected — until the height dial is set back to 52.
-The gears themselves cannot follow the taller barrel: they are baked at fixed z
-(see 5.1). Height is now what tells the gears BETA (52) apart from Embosser
-Version 2 (54); both still use the 30.8 diameter.
+The default barrel spent part of 2026-08-31 at 30.8 × 54 mm (a 1 mm card
+shelf at each end), which made gears on untouched dials warn and reject.
+Brennen's deployment verdict the same day returned the default to the
+**30.8 × 52 mm Version 1 standard** — the height every previously shipped V1
+gear model pairs with — so **gear mode passes S7 on untouched dials again**.
+The 54 mm card-shelf barrel is Embosser Version 2 only (forced by its preset
+overrides). The gears themselves never moved: they are baked at fixed z (see
+5.1). Height still tells the gears BETA (52) apart from Embosser Version 2
+(54); both use the 30.8 diameter.
 
 ### 5.1 Why a rejection and not a warning
 
@@ -405,6 +408,7 @@ Two findings from the same session are worth keeping:
 
 | Date | Change |
 |---|---|
+| 2026-08-31 | **§5 updated again the same day: the default barrel returns to the 52 mm reference size** (Brennen's deployment verdict — "Version 1 is the 52 mm standard with the previously provided gear models"). Enabling gears on untouched dials passes S7 again; the absent-height fallback `gears.DEFAULT_CYLINDER_HEIGHT_MM` follows (54 → 52, still decoupled from the card height). The 1 mm card-shelf barrel (54) is Embosser Version 2 only; the Version 1 `.scad` files keep the 52 mm barrel deliberately (Version 2's own OpenSCAD companion follows the 54 — see EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS.md §12 — and the gears BETA remains the one feature with no Version 2 OpenSCAD counterpart, D-V6). No gear number, gate, asset, or signed string changed; the row below records the one-day 54 state it supersedes. |
 | 2026-08-31 | **§5 notes the default barrel outgrowing the gears.** The app-wide default cylinder is now 30.8 × 54 mm (a 1 mm card shelf at each end), while the reference roller stays 30.8 × 52.0 — the gears are baked at fixed z and cannot follow. Enabling gears on untouched dials therefore shows S7 live, and a generate is rejected, until the height dial is set back to 52; height now tells the gears BETA apart from Embosser Version 2 (54) the way diameter no longer can. No gear number, gate, or asset changed. The absent-height fallback both S7 and the spec read moved with the default (52 → 54, now `gears.DEFAULT_CYLINDER_HEIGHT_MM`, no longer the card height), so an absent-height gear request is rejected rather than quietly passed. Gear golden fixtures re-ran byte-identical. |
 | 2026-08-25 | **§10 rewritten from a tested result.** The MakerWorld exclusion (D-4) was justified here by reasoning about Customizer limits; probing the real product showed the blocker is one step earlier — PMM v1.1.0 accepts no mesh upload at all (no asset panel, no file input, picker refuses STLs, one file at a time). Records the two salvageable findings: our customizer syntax parses correctly there, and the combined-file crop delivery is proven locally (set A exact, set B within 3.8 nm) should uploads ever appear. |
 | 2026-08-25 | **Pair mode, the combined file, and the S9 hardware note.** §8.1 records that the gears toggle alone now reveals Generate Both + the Cylinder A/B radio relabel (`isPairModeOn()`, label reuse confirmed by Brennen) while the download names stay the frozen Geared single-sided ones; §7 adds the combined `Cylinder_Pair_Geared_*` exemption from every one-body claim (two full-span rollers, 40.8 mm centres / 8.58 mm accepted tip gap — the barrel-based spacing decision); §8's string table gains S9, the always-visible version-1-vs-2 hardware warning (signed, with `#gear-hardware-link-slot` reserved for the v2 files link), and corrects S8 to signed per the authoritative code comment. |

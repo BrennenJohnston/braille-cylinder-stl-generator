@@ -216,16 +216,20 @@ function createCylinderShell(spec) {
 | Input ID | `cylinder_height_mm` |
 | Input Name | `cylinder_height_mm` |
 | Type | `number` |
-| Default | `54` |
+| Default | `52` |
 | Step | `0.1` |
 | Min | `10` |
 | Max | `200` |
 
-**Why 54 (2026-08-31):** the business card itself stays 52 mm tall, and the
-braille rows stay centered, so the barrel carries a **1 mm shelf past each card
-edge**. A card rolled slightly off-axis rides the shelf instead of ruffling
-over the cylinder ends. Before this date the cylinder height defaulted to the
-card height (52); the two are now independent settings.
+**Why 52 (2026-08-31):** 52 is the **Version 1 standard barrel** — the height
+every previously shipped V1 gear model pairs with, and the size the
+integrated-gears BETA is hard-gated to (S7). The default spent part of this
+day at 54 (a 1 mm card shelf past each card edge), which broke gear mode on
+untouched dials; Brennen's deployment verdict moved the shelf to **Embosser
+Version 2 only** (its preset forces 30.8 × 54 — see
+EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS.md) and returned the default
+to 52. Cylinder height no longer defaults to the card height (also 52); the
+two remain independent settings.
 
 #### Parameter Names Across Codebase
 
@@ -234,7 +238,7 @@ card height (52); the two are now independent settings.
 | HTML/UI | `cylinder_height_mm` | Primary input name |
 | `app/models.py` | `height_mm` | In `CylinderParams` dataclass |
 | `backend.py` | `height_mm`, `height` | Both accepted |
-| `geometry_spec.py` | `height`, `height_mm` | Fallback to `54` (`gears.DEFAULT_CYLINDER_HEIGHT_MM`, no longer `settings.card_height`) |
+| `geometry_spec.py` | `height`, `height_mm` | Fallback to `52` (`gears.DEFAULT_CYLINDER_HEIGHT_MM`, no longer `settings.card_height`) |
 | `csg-worker.js` | `height` | Direct usage |
 
 #### Backend Processing (app/models.py - CylinderParams)
@@ -242,12 +246,12 @@ card height (52); the two are now independent settings.
 ```python
 @dataclass
 class CylinderParams:
-    height_mm: float = 54.0
+    height_mm: float = 52.0
 
     @staticmethod
     def from_dict(data: dict) -> 'CylinderParams':
         return CylinderParams(
-            height_mm=float(data.get('height_mm', data.get('height', 54.0))),
+            height_mm=float(data.get('height_mm', data.get('height', 52.0))),
             # ...
         )
 ```
@@ -1004,7 +1008,7 @@ if (isCylinder) {
 | Input ID | Default Value | Step | Range |
 |----------|---------------|------|-------|
 | `cylinder_diameter_mm` | `30.75` | 0.1 | 10-200 |
-| `cylinder_height_mm` | `54` | 0.1 | 10-200 |
+| `cylinder_height_mm` | `52` | 0.1 | 10-200 |
 | `cylinder_polygonal_cutout_radius_mm` | `13` | 0.1 | 0-50 |
 | `cylinder_polygonal_cutout_sides` | `12` | 1 | 3-60 |
 | `seam_offset_deg` | `355` | 1 | 0-360 |
@@ -1051,6 +1055,7 @@ self.counter_dot_depth = max(0.0, min(depth, self.card_thickness - self.epsilon_
 | Date | Change |
 |------|--------|
 | 2026-08-31 | Cylinder height default 52 → 54 mm: the barrel now carries a 1 mm shelf past each edge of the 52 mm card so a slightly mis-rolled card cannot ruffle over the ends. Braille rows remain centered (the layout centers itself in the height). Cylinder height no longer falls back to `card_height` anywhere — the absent-field default is 54, owned by `app/geometry/gears.py` (`DEFAULT_CYLINDER_HEIGHT_MM`). |
+| 2026-08-31 | **Cylinder height default returns to 52 mm — the 54 mm card-shelf barrel is Embosser Version 2 only** (Brennen's deployment verdict, same day). 52 is the Version 1 standard barrel, the height every previously shipped V1 gear model pairs with; the one-day 54 default made the integrated-gears BETA warn/reject on untouched dials. The decoupling from `card_height` stays: the absent-field fallback is 52, still owned by `gears.DEFAULT_CYLINDER_HEIGHT_MM`, and Version 2 still forces 30.8 × 54 via its preset overrides. Both card-stock presets carry 52 again. |
 
 ### 8.3 Polygon Point Validation (csg-worker.js)
 
