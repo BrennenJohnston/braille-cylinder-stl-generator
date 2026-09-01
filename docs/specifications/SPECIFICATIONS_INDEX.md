@@ -6,8 +6,8 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 
 > **v2.0.0 Architecture (2026-01-05):** This project uses a **100% client-side STL generation** architecture. Server-side STL generation was removed. The caching system (Redis + Vercel Blob) was also removed. See [CODEBASE_AUDIT_AND_RENOVATION_PLAN.md](../development/CODEBASE_AUDIT_AND_RENOVATION_PLAN.md) for migration details.
 
-**Last Updated:** 2026-02-02
-**Total Specification Documents:** 13
+**Last Updated:** 2026-08-28
+**Total Specification Documents:** 16
 
 ---
 
@@ -197,6 +197,63 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 - Column layout with indicators enabled, and with tactile mode (0 marker columns)
 - Tactile shell-band construction and the seam-gap warning
 
+#### [INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md](./INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md)
+**Status:** ✅ Complete (Created 2026-08-16)
+**Covers:**
+- Double-Sided Card (BETA): the paired Cylinder A / Cylinder B set that embosses both card faces in one pass
+- The interpoint offset standard (1.25, 1.25 mm diagonal; US Patent 5,527,117; NLS Spec 800)
+- The pairing mirror (theta → −theta, seam arrow at 180° as the fixed point) and the back-grid transform
+- Schema vs runtime parameter naming (`double_sided.*_mm` → flat `ds_*` / `interpoint_offset_*`), the three spellings of `back_lines`
+- The four validation hard gates and the 0.34 / 0.50 mm same-surface-gap thresholds
+- Wire shape, worker `is_recess` dot partition, fixed Option B footprints, all signed-off UI strings
+- Regression anchors: the ds golden fixture pair and `tests/e2e/doubleSided.spec.ts`
+
+**Key Components:**
+- `app/geometry/interpoint.py` constants and clearance functions
+- `validate_double_sided_settings()` in `app/validation.py`
+- 1:1 paired recesses replacing the universal counter grid
+- `#double_sided_enabled` disclosure toggle and the tactile lock
+
+#### [GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md](./GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md)
+**Status:** ✅ Complete (Created 2026-08-24)
+**Covers:**
+- Integrated gear rollers (BETA): a cylinder generated as ONE solid with its top and bottom drive gears attached
+- The vendored 1:1 gear assets, their packed binary format, and the provenance contract (`gears_manifest.json` sha256s)
+- The canonical sample→program transforms (Rz(180°) for A, identity for B) and the orientation-key evidence
+- Gear metrology: 24 teeth, tip r 16.1093702290795, root r 13.6613702290795, 10 mm thick, blind bores, axis distance 32.0473 mm
+- The two hard gates: cylinders only (S6) and the reference roller only (S7, 30.8 × 52.0 mm)
+- Why the barrel must be forced SOLID, and why an empty `polygon_points` does not do it
+- D-8a's 5 µm raised-arrow weld, and what the hidden weld rings do and do not contribute
+- Acceptance tolerances, the three levels of toggle-off byte-identity, and the MakerWorld deferral
+
+**Key Components:**
+- `app/geometry/gears.py` constants and the reference-roller check
+- `validate_gear_rollers_settings()` in `app/validation.py`
+- `static/assets/gears/gears_{a,b}.bin`, regenerated only by `scripts/derive_gear_assets.py`
+- `#gear_rollers_enabled` toggle with its live cutout and size notes
+
+---
+
+#### [EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS.md](./EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS.md)
+**Status:** 🧪 Prototype (Created 2026-08-28)
+**Covers:**
+- Embosser Version 2 (PROTOTYPE): a keyed through-cutout at each end of the cylinder, so a gear cannot be seated in the wrong place
+- Family R14 - four rounded-rectangle keys (14x14, 18x10, 16x12, 20x8 mm, corner r 0.5) with the long dimension on 90/270 so a flat faces the arrow column
+- The 15-degree phase-safety rule that admits rectangles and rules out pentagons and heptagons
+- Two halves meeting at the mid-plane as ONE through-hole, and the one 2.0 x 45-degree mouth rule at all four ends
+- Why a chamfer hull's slabs must sit far-edge-out, and why the nub is three unioned parts and never one hull
+- Anti-rotation nubs and sockets on BOTH plates, all four on the 180-degree arrow column, at a FIXED clearance the dial cannot reach; nubs mitred, sockets parallel curves
+- The clearance dial (0.110 default, 0-0.5, step 0.005), applied outward to the four holes ONLY
+- The soft 30.8 x 52 mm preset - a live warning, never a rejection - and the wire contract it emits
+- The fit matrix: why the v7 pegs failed it, and the measured R14 pegs cut to replace them
+- Version 1 byte-identity proved at five levels, and why the one-fewer-braille-cell rule was retired at the 30.5 mm barrel and stays retired at 30.8
+
+**Key Components:**
+- `app/geometry/version2.py` - the one place every Version 2 number lives
+- `validate_embosser_version_settings()` in `app/validation.py`
+- `keyed_cutouts` in `app/geometry_spec.py`, cut by `cutKeyedCutoutsManifold()` in the Manifold worker
+- The `#embosser-version-selection` header selector and the `#v2_key_clearance_mm` dial
+
 ---
 
 ### 4. Generation & Export
@@ -317,6 +374,9 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 | **Dimensions** | SURFACE_DIMENSIONS_SPECIFICATIONS | — |
 | **Dot Geometry** | BRAILLE_DOT_ADJUSTMENTS_SPECIFICATIONS, BRAILLE_DOT_SHAPE_SPECIFICATIONS | BRAILLE_SPACING_SPECIFICATIONS |
 | **Indicators** | RECESS_INDICATOR_SPECIFICATIONS | — |
+| **Double-sided beta** | INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS | BRAILLE_TEXT_INPUT (§8), UI_INTERFACE (§4.8), STL_EXPORT (§7) |
+| **Integrated gear rollers beta** | GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS | SURFACE_DIMENSIONS (§1), RECESS_INDICATOR (§3), STL_EXPORT (§7) |
+| **Embosser Version 2 prototype** | EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS | RECESS_INDICATOR (§3, v3.5), SETTINGS_SCHEMA, STL_EXPORT (§7) |
 | **Generation** | STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS | CLIENT_SIDE_CSG_DOCUMENTATION |
 | **Caching (archived)** | CACHING_SYSTEM_CORE_SPECIFICATIONS | — |
 | **Settings Schema** | SETTINGS_SCHEMA_CORE_SPECIFICATIONS | — |
@@ -640,6 +700,9 @@ Section Reference: SURFACE_DIMENSIONS_SPECIFICATIONS.md (Section 2.1)
 **STL preview label?** → UI_INTERFACE_CORE_SPECIFICATIONS (Section 3.7)
 
 **Request schema?** → SETTINGS_SCHEMA_CORE_SPECIFICATIONS
+**Double-sided beta, interpoint offset, paired recesses?** → INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS
+**Integrated gears, one-piece rollers, the reference roller size?** → GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS
+**Embosser Version 2, keyed gear pegs, the key clearance dial?** → EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS
 
 ---
 
@@ -678,6 +741,7 @@ Section Reference: SURFACE_DIMENSIONS_SPECIFICATIONS.md (Section 2.1)
 | 2025-12-08 | Updated UI_INTERFACE_CORE_SPECIFICATIONS.md v1.3: Added STL Preview Label (Section 3.7) and Preview Display Settings with brightness/contrast controls (Section 3.8) |
 | 2025-12-08 | **BUG FIX:** Manifold worker integration completed. Frontend now uses dual-worker architecture: csg-worker.js for cards, csg-worker-manifold.js for cylinders (guarantees manifold output). Updated Web Worker Coverage section. |
 | 2026-07-29 | Added the editable Unicode braille field (BRAILLE_TEXT_INPUT §6.3) and converted the Repeat Number Sign checkbox to a Number Signs radio group (§6.2). Ported the OpenSCAD tactile row indicator into the app: RECESS_INDICATOR_SPECIFICATIONS v3.0 §4, plus `indicators.indicator_mode` and five `indicators.tactile_*` fields in SETTINGS_SCHEMA §3.6. |
+| 2026-08-16 | Added INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md documenting the Double-Sided Card (BETA): paired Cylinder A/B generation with 1:1 recesses, the interpoint offset, validation gates, worker dot partition, and UI. Incremented total spec count to 14; related updates already in BRAILLE_TEXT_INPUT v1.3, UI_INTERFACE v1.10, STL_EXPORT v1.5, SETTINGS_SCHEMA §5, and BRAILLE_SPACING v1.4. |
 
 ---
 

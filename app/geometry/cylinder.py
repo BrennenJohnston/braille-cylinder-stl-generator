@@ -1124,7 +1124,7 @@ def generate_cylinder_counter_plate(lines, settings: CardSettings, cylinder_para
                         counter_base = settings.emboss_dot_base_diameter + settings.counter_plate_dot_size_offset
                     a = counter_base / 2.0
                     if use_bowl:
-                        h = float(getattr(settings, 'counter_dot_depth', 0.6))
+                        h = float(getattr(settings, 'counter_dot_depth', 0.8))
                         # Guard minimum
                         h = max(settings.epsilon_mm, h)
                         sphere_radius = (a * a + h * h) / (2.0 * h)
@@ -1140,7 +1140,7 @@ def generate_cylinder_counter_plate(lines, settings: CardSettings, cylinder_para
                     theta = -(dot_x / (np.pi * diameter)) * 2 * np.pi
                     overcut = max(settings.epsilon, getattr(settings, 'cylinder_counter_plate_overcut_mm', 0.05))
                     if use_bowl:
-                        h = float(getattr(settings, 'counter_dot_depth', 0.6))
+                        h = float(getattr(settings, 'counter_dot_depth', 0.8))
                         h = max(settings.epsilon_mm, h)
                         center_radius = outer_radius + (sphere_radius - h)
                     else:

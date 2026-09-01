@@ -248,9 +248,21 @@ dot_col_angle_offsets = [-dot_spacing_angle / 2, dot_spacing_angle / 2]
 
 ### Summary Table
 
+> **Exception — double-sided (interpoint) BETA.** Everything in this section
+> describes single-sided mode, which is the default and is unchanged. When
+> `double_sided.enabled` is on (runtime name `double_sided_enabled`, a 0/1 int),
+> the counter plate does **not** generate the universal grid: each cylinder
+> carries raised dots for one face of the card plus one recess per actual dot of
+> the other face, 1:1. The spacing, dot map and angular direction rules below
+> still apply as written — the back-face grid is the front grid mirrored and
+> then stepped diagonally by the interpoint offset (default 1.25 mm around the
+> cylinder, 1.25 mm along it), which moves the grid, never re-spaces it. See
+> `app/geometry/interpoint.py` for that math and
+> `extract_cylinder_geometry_spec` for where it is applied.
+
 | Aspect | Embossing Plate (Positive) | Universal Counter Plate (Negative) |
 |--------|---------------------------|-----------------------------------|
-| **Dot Generation** | Only active dots (from braille text) | ALL 6 dots for ALL cells |
+| **Dot Generation** | Only active dots (from braille text) | ALL 6 dots for ALL cells (single-sided mode only — see the exception above) |
 | **Dot Operation** | ADD (protrusions) | SUBTRACT (recesses) |
 | **Angular Direction** | `apply_seam(angle)` = `-angle` | `apply_seam_mirrored(angle)` = `+angle` |
 | **Content Flow** | Counter-clockwise (viewed from above) | Clockwise (viewed from above) |
@@ -637,6 +649,43 @@ Verification: When plates face each other:
 
 ---
 
+## 12. UI-Level Constraints
+
+The seven spacing controls in `public/index.html` declare their allowed range as
+HTML `min`/`max`. The numbers are copied from `app/validation.py`, which enforces
+them server-side; the attributes announce the range, they do not define it.
+
+| Parameter | Min | Max | Validation |
+|-----------|-----|-----|------------|
+| `grid_columns` | 1 | 20 | HTML `min`/`max` |
+| `grid_rows` | 1 | 200 | HTML `min`/`max` |
+| `cell_spacing` | 2 | 15 | HTML `min`/`max` |
+| `line_spacing` | 5 | 25 | HTML `min`/`max` |
+| `dot_spacing` | 1 | 5 | HTML `min`/`max` |
+| `braille_x_adjust` | -10 | 10 | HTML `min`/`max` |
+| `braille_y_adjust` | -10 | 10 | HTML `min`/`max` |
+
+Two things about `grid_columns` are worth stating, because the dial and the wire
+field are not the same number. The dial counts TEXT cells only; the request adds
+`getReservedMarkerColumns()` on top, so a dial reading 20 sends 22 and the server
+rejects it. The `max` here is the documented ceiling for the *parameter*, and is
+therefore slightly generous for what the *dial* can actually get through. ~~Separately,
+`settings.schema.json` states a `minimum` for these fields but no `maximum` for any
+of them — that gap is recorded in the POST15_7 audit §2.5 and tracked as its own
+item, not resolved here.~~ **CLOSED for the spacing fields 2026-08-23 (POST15_7 item
+I).** All seven now state both bounds in `settings.schema.json`, copied from
+`app/validation.py`: `grid_columns` 1–20, `grid_rows` 1–200, `dot_spacing_mm` 1–5,
+`cell_spacing_mm` 2–15, `line_spacing_mm` 5–25, `braille_x_adjust_mm` and
+`braille_y_adjust_mm` −10–10. **Three of those minimums were previously an inclusive
+`0`** — the schema documented zero dot, cell and line spacing as legal on three
+tactile-readability parameters, which accessibility rule 9 makes a bug to report
+rather than a value to propagate. Brennen chose `app/validation.py` as the correct
+side (FD-26c). **No enforced limit changed and no behaviour changed** — the schema is
+not loaded at runtime (see `SETTINGS_SCHEMA_CORE_SPECIFICATIONS.md` §3.8); this only
+makes the declared source of truth state what was already being enforced.
+
+---
+
 ## Version History
 
 | Date | Version | Changes |
@@ -645,6 +694,9 @@ Verification: When plates face each other:
 | 2024-12-06 | 1.1 | Added Manifold theta negation fix (Bug 6) to correct reverse cell order on cylinders |
 | 2024-12-06 | 1.2 | Added triangle rotate_180 inversion fix to correct swapped triangle orientations |
 | 2026-07-31 | 1.3 | Updated the documented `grid_columns` default to 15 (13 text + 2 marker columns) |
+| 2026-08-16 | 1.4 | Noted the double-sided (interpoint) beta exception in Section 6: with the toggle on, the counter plate carries 1:1 paired recesses instead of the universal all-position grid. Spacing values unchanged. |
+| 2026-08-23 | 1.6 | **`settings.schema.json` now states the ranges these dials already enforce.** The missing-`maximum` note above is struck for all seven spacing fields (POST15_7 item I; audit §2.5 Contradiction 2, partially closed). Values copied verbatim from `app/validation.py` — nothing invented, nothing widened, no enforced limit retuned. **The sharp finding:** `dot_spacing_mm`, `cell_spacing_mm` and `line_spacing_mm` carried an inclusive `minimum: 0`, so the document declared the single source of truth stated that **zero dot spacing was legal** — on three tactile parameters. Nothing shipped wrong, because the schema is inert at runtime, but the wrong number was written down. Corrected to 1 / 2 / 5 on Brennen's decision (FD-26c); an assistant may not pick a side on a tactile range (accessibility rule 11). Suite unmoved: ruff clean, 140 pytest, 2 vitest, 134 e2e. |
+| 2026-08-22 | 1.5 | Added Section 12, UI-Level Constraints: the seven spacing dials now declare `min`/`max` in `public/index.html`, copied verbatim from `app/validation.py`. No spacing value, default or enforced limit changed — the ranges were always enforced, they were simply never announced, so `aria-valuemin`/`aria-valuemax` had nothing to map to and Chrome reported the synthesised pair "0 to 0" instead. Closes part of POST15_7 audit finding F-M (decision D8). The section also records the `grid_columns` dial-vs-wire difference and the `settings.schema.json` missing-`maximum` gap, both flagged rather than fixed. |
 
 ---
 

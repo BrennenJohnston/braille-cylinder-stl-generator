@@ -35,6 +35,29 @@ async function scrollableDescendants(page: Page, selector: string) {
   }, selector);
 }
 
+/**
+ * Fill the Braille (Unicode) field and prove the text landed.
+ *
+ * Under full-suite parallelism a single fill() on this textarea does not always
+ * take - measured as an intermittent "Please enter text in at least one line"
+ * from generate(). It is NOT the app clearing the field: instrumenting the
+ * element's value setter to record every write and its stack caught a run that
+ * ended empty with ZERO writes recorded, so nothing in page script touched it.
+ * The value simply never arrived.
+ *
+ * Re-filling is therefore input reliability, not a retry of anything under
+ * test; every assertion in these specs stays strict, and a field that refuses
+ * the text fails with a named message instead of a confusing downstream one.
+ */
+async function fillBraille(page: Page, text: string) {
+  const field = page.locator('#braille-unicode');
+  for (let attempt = 0; attempt < 5; attempt++) {
+    await field.fill(text);
+    if ((await field.inputValue()) === text) return;
+  }
+  throw new Error('the Braille (Unicode) field never accepted its text after 5 fills');
+}
+
 test.describe('Form column layout', () => {
   test.describe.configure({ timeout: 120_000 });
 
@@ -133,7 +156,7 @@ test.describe('Form column layout', () => {
     // textarea's change event on the same mousedown. WebKit dispatches no click
     // at all if that handler rewrites the button, which made the primary action
     // silently do nothing on Safari.
-    await page.locator('#braille-unicode').fill('\u2801\u2803');
+    await fillBraille(page, '\u2801\u2803');
     await page.locator('#action-btn').click();
 
     expect(await submitted).toBe(true);
@@ -158,6 +181,79 @@ test.describe('Form column layout', () => {
     await edges.click();
     await expect(edges).toHaveAttribute('aria-pressed', 'true');
     await expect(edges).toHaveClass(/active/);
+  });
+
+  const toHundredthPx = (value: number) => Math.round(value * 100) / 100;
+
+  test('keeps every preview overlay control at the 44x44 px floor', async ({ page }) => {
+    await openApp(page);
+
+    // These five shared the .font-size-btn class with the header controls, and
+    // the 2026-08-18 fix was scoped to .font-size-controls - so the steppers sat
+    // at 20x22 px and #edges-toggle at 49x20 px for three more days, under the
+    // WCAG 2.5.5 floor. The floor is spelled out in px on purpose: an em-based
+    // size drops back under it as soon as the app font size is reduced, which is
+    // why 75% is checked here and not just the default.
+    const controls = ['brightness-decrease', 'brightness-increase',
+                      'contrast-decrease', 'contrast-increase', 'edges-toggle'];
+
+    for (const fontSize of ['100%', '75%']) {
+      // applyFontSize() scales the ROOT only; scaling body as well compounds and
+      // measures a layout no user can produce.
+      await page.evaluate((size) => { document.documentElement.style.fontSize = size; }, fontSize);
+
+      for (const id of controls) {
+        const box = await page.locator(`#${id}`).boundingBox();
+        expect(box, `#${id} at ${fontSize} has no box`).not.toBeNull();
+        // Firefox multiplies a px min-width by the app's own font step in
+        // floating point, so a control that IS 44 px can measure
+        // 43.99998474121094 - 1.5e-5 px under the floor, and only at 75%.
+        // Round to the nearest hundredth of a pixel: no display can resolve
+        // finer, and a control that is genuinely 43 px still rounds to 43
+        // and still fails. Do not lower the floor instead - it caught real
+        // 20x22 px buttons.
+        expect.soft(toHundredthPx(box!.width), `#${id} width at ${fontSize}`).toBeGreaterThanOrEqual(44);
+        expect.soft(toHundredthPx(box!.height), `#${id} height at ${fontSize}`).toBeGreaterThanOrEqual(44);
+      }
+    }
+  });
+
+  test('keeps both skip links fully off screen at every app font size', async ({ page }) => {
+    await openApp(page);
+
+    // The link was hidden by a hardcoded top: -40px, which cannot cover an
+    // element whose height scales with the font size - it left 19 px of itself
+    // sitting over the header at 200%. transform: translateY(-100%) is always
+    // exactly one link-height, so this has to hold at every step of the scale.
+    //
+    // There are TWO since item G - "Skip to main content" and "Skip to braille
+    // text entry" - hidden by the same rule and landing on the same spot, which
+    // only works while neither leaks. Every assertion below is the one this test
+    // has always made; it just makes each of them twice.
+    const links = page.locator('.skip-link');
+    await expect(links).toHaveCount(2);
+
+    for (let i = 0; i < 2; i++) {
+      const link = links.nth(i);
+      const name = (await link.textContent())?.trim();
+
+      for (const fontSize of ['100%', '125%', '150%', '175%', '200%']) {
+        await page.evaluate((size) => { document.documentElement.style.fontSize = size; }, fontSize);
+        const box = await link.boundingBox();
+        expect(box, `"${name}" at ${fontSize} has no box`).not.toBeNull();
+        expect.soft(box!.y + box!.height, `"${name}" visible height at ${fontSize}`).toBeLessThanOrEqual(1);
+      }
+
+      // ...and it must still come fully on screen when focused, at the largest size.
+      // Polled rather than read once: the reveal is a 0.3s transform transition, so
+      // an immediate read catches the link mid-slide and not where it lands.
+      await link.focus();
+      await expect(link).toBeFocused();
+      await expect.poll(
+        async () => (await link.boundingBox())!.y,
+        { message: `"${name}" never slid fully on screen when focused` },
+      ).toBeGreaterThanOrEqual(-1);
+    }
   });
 
   test('lets the user set their own braille cell count without it being overwritten', async ({ page }) => {

@@ -723,7 +723,7 @@ def build_counter_plate_bowl(params: CardSettings) -> trimesh.Trimesh:
         float(getattr(params, 'bowl_counter_dot_base_diameter', getattr(params, 'counter_dot_base_diameter', 1.6)))
         / 2.0
     )
-    h = float(getattr(params, 'counter_dot_depth', 0.6))
+    h = float(getattr(params, 'counter_dot_depth', 0.8))
     # Guard against zero or negative depth
     if h <= max(0.0, float(getattr(params, 'epsilon_mm', 0.001))):
         # Degenerate: fall back to hemisphere (very shallow)

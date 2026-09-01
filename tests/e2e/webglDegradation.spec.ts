@@ -114,14 +114,22 @@ test.describe('WebGL graceful degradation', () => {
     const autoText = page.locator('#auto-text');
     await autoText.fill('Hi');
 
-    // Click Generate and wait for the button to flip to the download state.
+    // Click Generate and wait for the download control to be offered.
     const generateButton = page.locator('#action-btn');
+    const downloadButton = page.locator('#download-stl-btn');
     await generateButton.click();
 
     // The fix's core assertion: setToDownloadState() runs even though
-    // init3D() bailed out, so the button switches to data-state="download".
-    await expect(generateButton).toHaveAttribute('data-state', 'download', { timeout: 45000 });
-    await expect(generateButton).toHaveText(/Download STL/i);
+    // init3D() bailed out, so the file is offered. Since 2026-08-18 that is a
+    // SEPARATE #download-stl-btn rather than #action-btn renaming itself — a
+    // control must never change identity under a screen-reader user's focus.
+    await expect(downloadButton).toBeVisible({ timeout: 45000 });
+    await expect(downloadButton).toHaveText(/Download STL/i);
+    await expect(downloadButton).toBeEnabled();
+
+    // And the generate button is still itself: same state, same name.
+    await expect(generateButton).toHaveAttribute('data-state', 'generate');
+    await expect(generateButton).toHaveAttribute('aria-label', 'Generate STL file from entered text');
     await expect(generateButton).toBeEnabled();
 
     // No uncaught page errors (the WebGL ctor failure must be swallowed by
@@ -152,14 +160,15 @@ test.describe('WebGL graceful degradation', () => {
 
     await page.locator('#auto-text').fill('Hi');
     const generateButton = page.locator('#action-btn');
+    const downloadButton = page.locator('#download-stl-btn');
     await generateButton.click();
 
-    // Wait for the download state before clicking again.
-    await expect(generateButton).toHaveAttribute('data-state', 'download', { timeout: 30000 });
+    // Wait for the separate download control to appear before clicking it.
+    await expect(downloadButton).toBeVisible({ timeout: 30000 });
 
-    // Clicking the button in download state triggers a real browser download.
+    // Clicking it triggers a real browser download — one file, one gesture.
     const downloadPromise = page.waitForEvent('download', { timeout: 15000 });
-    await generateButton.click();
+    await downloadButton.click();
     const download = await downloadPromise;
 
     // The suggested filename should be an STL file.

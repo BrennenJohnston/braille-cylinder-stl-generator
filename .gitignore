@@ -90,3 +90,6 @@ docs/guides/_bana_source/
 
 .vercel
 .env*.local
+
+# Local browser-check scratch (Playwright probes, Lighthouse JSON, page dumps, screenshots)
+.tmp_shots/

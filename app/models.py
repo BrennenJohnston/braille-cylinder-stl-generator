@@ -8,6 +8,7 @@ replacing magic numbers and untyped dictionaries with explicit, validated struct
 from dataclasses import dataclass, field
 from enum import Enum, StrEnum
 
+from app.geometry import version2
 from app.utils import get_logger
 
 # Configure logging for this module
@@ -60,18 +61,22 @@ class CylinderParams:
     """
 
     diameter_mm: float = 30.75  # Default matches UI
-    height_mm: float | None = None  # If None, uses card_height from settings
+    # 52 is the Version 1 standard barrel - the height every previously shipped
+    # V1 gear model pairs with (Brennen, 2026-08-31). Only Embosser Version 2
+    # carries the 1 mm card shelf past each end: its 30.8 x 54 barrel is forced
+    # by the V2 preset (version2.V2_BARREL_HEIGHT_MM), never by this default.
+    height_mm: float = 52.0
     wall_thickness: float = 2.0
     seam_offset_deg: float = 355.0
     polygonal_cutout_radius_mm: float = 13.0
     polygonal_cutout_sides: int = 12
 
     @staticmethod
-    def from_dict(data: dict, card_height: float = 52.0) -> 'CylinderParams':
+    def from_dict(data: dict) -> 'CylinderParams':
         """Create CylinderParams from dictionary with defaults."""
         return CylinderParams(
             diameter_mm=float(data.get('diameter_mm', data.get('diameter', 30.75))),
-            height_mm=float(data.get('height_mm', data.get('height', card_height))),
+            height_mm=float(data.get('height_mm', data.get('height', 52.0))),
             wall_thickness=float(data.get('wall_thickness', 2.0)),
             seam_offset_deg=float(data.get('seam_offset_deg', data.get('seam_offset_degrees', 355.0))),
             polygonal_cutout_radius_mm=float(data.get('polygonal_cutout_radius_mm', 13.0)),
@@ -236,6 +241,42 @@ class CardSettings:
             'tactile_indicator_raise': 0.5,
             'tactile_recess_clearance': 0.2,
             'tactile_recess_extra_depth': 0.2,
+            # Double-sided (interpoint) BETA. Flat runtime names for the
+            # settings.schema.json "double_sided" object; 0 = off, which leaves
+            # every single-sided code path exactly as it is today.
+            'double_sided_enabled': 0,
+            # Back grid shift: x around the cylinder, y along its axis.
+            # app/geometry/interpoint.py calls this same y number offset_z.
+            'interpoint_offset_x': 1.25,
+            'interpoint_offset_y': 1.25,
+            # Double-sided dots are smaller than single-sided ones because a dot
+            # and a neighbouring back-side recess share one surface: 1.2 dot in
+            # a 1.3 bowl leaves 0.518 mm of printable material between them
+            # (nominal; 0.495 as printed). These defaults are the 0.3 mm-stock
+            # package (Option B) and act as the absent-field fallback; the UI
+            # sends the package for the selected card-stock preset - see
+            # interpoint.DS_FOOTPRINTS_BY_PRESET.
+            'ds_dot_base_diameter': 1.2,
+            'ds_dot_base_height': 0.4,
+            'ds_dot_dome_diameter': 0.8,
+            'ds_dot_dome_height': 0.4,
+            'ds_bowl_base_diameter': 1.3,
+            'ds_bowl_depth': 0.5,
+            # Gear-integrated one-piece rollers BETA. Flat runtime name for the
+            # settings.schema.json "gear_rollers" object; 0 = off, which leaves
+            # every existing code path exactly as it is today. Cylinders only.
+            # The gear geometry itself has no dials: it is vendored 1:1 sample
+            # data (static/assets/gears/), so there is nothing else to default.
+            'gear_rollers_enabled': 0,
+            # Embosser Version 2 (keyed gear pegs) PROTOTYPE. Flat runtime name
+            # for the settings.schema.json "embosser_version" field; 1 = today's
+            # hardware, which leaves every existing code path exactly as it is.
+            # Cylinders only, and integrated gears are rejected alongside it.
+            'embosser_version': 1,
+            # Version 2 print clearance per side. Read from the module that owns
+            # every Version 2 number rather than retyped, so the schema, the
+            # validator, the spec and the UI can never disagree about it.
+            'v2_key_clearance_mm': version2.V2_KEY_CLEARANCE_DEFAULT_MM,
         }
 
         # Set attributes from kwargs or defaults, while being tolerant of "empty" inputs
@@ -262,6 +303,17 @@ class CardSettings:
         # Ensure attributes that represent counts are integers
         self.grid_columns = int(self.grid_columns)
         self.grid_rows = int(self.grid_rows)
+        # Double-sided beta toggle stored as 0/1 like the other toggles below.
+        # The loop above already floated it and raises on junk, so a bad value
+        # surfaces there rather than being quietly read as "off".
+        self.double_sided_enabled = int(self.double_sided_enabled)
+        # Gear beta toggle, normalized the same way and for the same reason.
+        self.gear_rollers_enabled = int(self.gear_rollers_enabled)
+        # Embosser hardware version. An enum, not a measurement, so it is cast
+        # back to int after the loop above floats it; the clearance beside it
+        # stays a float. Validation of the allowed values is app/validation.py's
+        # job - this only fixes the type.
+        self.embosser_version = int(self.embosser_version)
         # Normalize boolean-like toggles stored as numbers
         try:
             self.use_rounded_dots = int(float(kwargs.get('use_rounded_dots', self.use_rounded_dots)))
@@ -373,7 +425,7 @@ class CardSettings:
         try:
             depth = float(getattr(self, 'counter_dot_depth', 0.8))
         except Exception:
-            depth = 0.6
+            depth = 0.8
         self.counter_dot_depth = max(0.0, min(depth, self.card_thickness - self.epsilon_mm))
         self.plate_thickness = self.card_thickness
         self.epsilon = self.epsilon_mm

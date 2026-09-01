@@ -63,6 +63,29 @@ async function waitForCylinderOverflowWarning(page: Page) {
   throw new Error('The cylinder overflow warning never appeared');
 }
 
+/**
+ * Fill the Braille (Unicode) field and prove the text landed.
+ *
+ * Under full-suite parallelism a single fill() on this textarea does not always
+ * take - measured as an intermittent "Please enter text in at least one line"
+ * from generate(). It is NOT the app clearing the field: instrumenting the
+ * element's value setter to record every write and its stack caught a run that
+ * ended empty with ZERO writes recorded, so nothing in page script touched it.
+ * The value simply never arrived.
+ *
+ * Re-filling is therefore input reliability, not a retry of anything under
+ * test; every assertion in these specs stays strict, and a field that refuses
+ * the text fails with a named message instead of a confusing downstream one.
+ */
+async function fillBraille(page: Page, text: string) {
+  const field = page.locator('#braille-unicode');
+  for (let attempt = 0; attempt < 5; attempt++) {
+    await field.fill(text);
+    if ((await field.inputValue()) === text) return;
+  }
+  throw new Error('the Braille (Unicode) field never accepted its text after 5 fills');
+}
+
 test.describe('Live warning refresh', () => {
   // Same rationale as brailleField.spec.ts: WebKit on Linux CI parses this page
   // (large inline script plus vendored workers) noticeably slower.
@@ -89,7 +112,7 @@ test.describe('Live warning refresh', () => {
     await revealExpertPanel(page, 'expert-panel-spacing');
 
     const status = page.locator('#braille-unicode-status');
-    await page.locator('#braille-unicode').fill(FOURTEEN_BRAILLE_CELLS);
+    await fillBraille(page, FOURTEEN_BRAILLE_CELLS);
     await expect(status).toContainText('the maximum is 13');
 
     await page.locator('#grid_columns').fill('14');
@@ -103,7 +126,7 @@ test.describe('Live warning refresh', () => {
     // Plain letters in the braille field block generation without needing
     // liblouis or the Manifold worker, so this is the error the test can rely on.
     const field = page.locator('#braille-unicode');
-    await field.fill('hello');
+    await fillBraille(page, 'hello');
     await page.locator('#action-btn').click();
 
     const errorText = page.locator('#error-text');
@@ -112,7 +135,7 @@ test.describe('Live warning refresh', () => {
     // The complaint stops being true the moment the field changes. Asserted on
     // the text rather than the container: a browser missing WebGL keeps the
     // overlay on screen for its own capability warning, which is not stale.
-    await field.fill('\u2813\u2811\u2807\u2807\u2815');
+    await fillBraille(page, '\u2813\u2811\u2807\u2807\u2815');
     await expect(errorText).toHaveText('');
   });
 });

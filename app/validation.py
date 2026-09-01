@@ -7,6 +7,7 @@ ensuring security, correctness, and helpful error messages.
 
 from typing import Any
 
+from app.geometry import gears, interpoint, version2
 from app.utils import get_logger
 
 # Configure logging
@@ -228,6 +229,433 @@ def validate_settings(settings_data: Any) -> bool:
                 f"Setting '{key}' must be between {min_val} and {max_val}",
                 {'key': key, 'value': value, 'min': min_val, 'max': max_val},
             )
+
+    validate_double_sided_settings(settings_data)
+
+    return True
+
+
+def _double_sided_number(settings_data: dict, flat_key: str, schema_name: str, default: float) -> float:
+    """
+    Read one numeric setting the way CardSettings will: absent, None, or ''
+    fall back to the default. `schema_name` is the canonical grouped
+    settings.schema.json spelling, quoted in error messages; `flat_key` is the
+    flat CardSettings spelling the request actually carries.
+    """
+    value = settings_data.get(flat_key, default)
+    if value is None or value == '':
+        return default
+    try:
+        return float(value)
+    except (TypeError, ValueError) as e:
+        raise ValidationError(
+            f"Setting '{schema_name}' must be a number",
+            {'key': flat_key, 'value': value, 'expected_type': 'number'},
+        ) from e
+
+
+def validate_double_sided_settings(settings_data: dict) -> bool:
+    """
+    Hard gates for the double-sided (interpoint) beta.
+
+    Every check is skipped when double_sided.enabled is off, so single-sided
+    requests are validated exactly as before the beta existed. This is the
+    first RUNTIME enforcement of the double-sided ranges: the minimum/maximum
+    values in settings.schema.json are documentation only.
+
+    Four gates:
+    1. The row indicator style must be tactile (the beta has no marker columns
+       to spare and no visual side to read them on).
+    2. interpoint offsets must stay inside [INTERPOINT_OFFSET_MIN_MM,
+       INTERPOINT_OFFSET_MAX_MM] (1.15-1.35 mm).
+    3. The six ds_* footprint values must stay inside their documented
+       settings.schema.json ranges (the range literals below mirror the
+       schema, the same way the allowed_settings table above mirrors it -
+       change both in the same commit).
+    4. The same-surface gap - material between a raised dot and the nearest
+       back-side recess sharing one cylinder surface - must clear
+       SAME_SURFACE_GAP_FLOOR_MM (0.34 mm, what a 0.4 mm nozzle can lay down).
+       Measured on the recess's PRINTED mouth, not its nominal diameter
+       (Brennen, FD-11b 2026-08-20): the worker cuts the bowl as a hemisphere,
+       so it comes out wider than nominal and the nominal figure overstates the
+       ridge by 0.023 mm for the 0.3 package and 0.040 mm for the 0.4 one -
+       exactly the band where this gate used to pass a ridge the printer cannot
+       hold. The marginal band up to SAME_SURFACE_GAP_RELIABLE_MM (0.50 mm) is
+       NOT rejected here: geometry_spec.py returns it as a soft warning in the
+       spec's warnings array and the UI shows it live; this function only logs,
+       and both of those stay on the NOMINAL figure so all three generators
+       report one number.
+
+    User-facing message wording signed off by Brennen (2026-08-16), and gate
+    4's rewrite for the printed-mouth switch signed off 2026-08-21; reword
+    only with his sign-off.
+
+    Args:
+        settings_data: Settings dictionary from the request (flat CardSettings
+            key spelling).
+
+    Returns:
+        True if valid (or the beta is off)
+
+    Raises:
+        ValidationError: If a double-sided request fails a hard gate
+    """
+    enabled_raw = settings_data.get('double_sided_enabled', 0)
+    if enabled_raw is None or enabled_raw == '':
+        return True
+    try:
+        enabled = int(float(enabled_raw))
+    except (TypeError, ValueError) as e:
+        raise ValidationError(
+            "Setting 'double_sided.enabled' must be 0 or 1",
+            {'key': 'double_sided_enabled', 'value': enabled_raw},
+        ) from e
+    if enabled != 1:
+        return True
+
+    indicator_mode = str(settings_data.get('indicator_mode', 'visual')).strip().lower()
+    if indicator_mode != 'tactile':
+        raise ValidationError(
+            'Double-sided mode is a beta that requires the tactile row indicator style: '
+            "set the Row Indicator Style to 'Tactile seam arrow' (indicator_mode 'tactile') "
+            f"or turn double-sided mode off. Received indicator_mode '{indicator_mode}'.",
+            {'key': 'indicator_mode', 'value': indicator_mode, 'required': 'tactile'},
+        )
+
+    offsets: dict[str, float] = {}
+    for flat_key, schema_name, default in (
+        ('interpoint_offset_x', 'double_sided.interpoint_offset_x_mm', interpoint.INTERPOINT_OFFSET_X_MM),
+        ('interpoint_offset_y', 'double_sided.interpoint_offset_y_mm', interpoint.INTERPOINT_OFFSET_Z_MM),
+    ):
+        value = _double_sided_number(settings_data, flat_key, schema_name, default)
+        if not (interpoint.INTERPOINT_OFFSET_MIN_MM <= value <= interpoint.INTERPOINT_OFFSET_MAX_MM):
+            raise ValidationError(
+                f"Setting '{schema_name}' must be between {interpoint.INTERPOINT_OFFSET_MIN_MM} and "
+                f'{interpoint.INTERPOINT_OFFSET_MAX_MM} mm; received {value}.',
+                {
+                    'key': flat_key,
+                    'value': value,
+                    'min': interpoint.INTERPOINT_OFFSET_MIN_MM,
+                    'max': interpoint.INTERPOINT_OFFSET_MAX_MM,
+                },
+            )
+        offsets[flat_key] = value
+
+    footprints: dict[str, float] = {}
+    for flat_key, schema_name, default, min_val, max_val in (
+        ('ds_dot_base_diameter', 'double_sided.ds_dot_base_diameter_mm', interpoint.DS_DOT_BASE_DIAMETER_MM, 0.5, 3.0),
+        ('ds_dot_base_height', 'double_sided.ds_dot_base_height_mm', interpoint.DS_DOT_BASE_HEIGHT_MM, 0.0, 2.0),
+        ('ds_dot_dome_diameter', 'double_sided.ds_dot_dome_diameter_mm', interpoint.DS_DOT_DOME_DIAMETER_MM, 0.5, 3.0),
+        ('ds_dot_dome_height', 'double_sided.ds_dot_dome_height_mm', interpoint.DS_DOT_DOME_HEIGHT_MM, 0.1, 2.0),
+        ('ds_bowl_base_diameter', 'double_sided.ds_bowl_base_diameter_mm', interpoint.DS_BOWL_DIAMETER_MM, 0.5, 5.0),
+        ('ds_bowl_depth', 'double_sided.ds_bowl_depth_mm', interpoint.DS_BOWL_DEPTH_MM, 0.0, 5.0),
+    ):
+        value = _double_sided_number(settings_data, flat_key, schema_name, default)
+        if not (min_val <= value <= max_val):
+            raise ValidationError(
+                f"Setting '{schema_name}' must be between {min_val} and {max_val} mm; received {value}.",
+                {'key': flat_key, 'value': value, 'min': min_val, 'max': max_val},
+            )
+        footprints[flat_key] = value
+    dot_diameter = footprints['ds_dot_base_diameter']
+    bowl_diameter = footprints['ds_bowl_base_diameter']
+    # Grid defaults mirror app/models.py CardSettings; spacing defaults are the
+    # canonical 2.5 / 6.5 / 10.0 already mirrored in interpoint.py. The tactile
+    # lock above guarantees zero reserved marker columns, so grid_columns is the
+    # dot-lattice width as-is (matches _double_sided_crowding_warnings in
+    # app/geometry_spec.py, which computes the same gap for its soft warning).
+    grid_columns = int(_double_sided_number(settings_data, 'grid_columns', 'grid_columns', 15))
+    grid_rows = int(_double_sided_number(settings_data, 'grid_rows', 'grid_rows', 4))
+    dot_spacing = _double_sided_number(settings_data, 'dot_spacing', 'spacing.dot_spacing_mm', interpoint.DOT_PITCH_MM)
+    cell_spacing = _double_sided_number(
+        settings_data, 'cell_spacing', 'spacing.cell_spacing_mm', interpoint.CELL_PITCH_MM
+    )
+    line_spacing = _double_sided_number(
+        settings_data, 'line_spacing', 'spacing.line_spacing_mm', interpoint.LINE_PITCH_MM
+    )
+
+    def measure(recess_diameter: float) -> float:
+        return interpoint.same_surface_min_gap(
+            dot_diameter,
+            recess_diameter,
+            offsets['interpoint_offset_x'],
+            offsets['interpoint_offset_y'],
+            grid_columns,
+            grid_rows,
+            dot_spacing,
+            cell_spacing,
+            line_spacing,
+        )
+
+    bowl_depth = footprints['ds_bowl_depth']
+    # The schema lets ds_bowl_depth_mm be 0.0 because a SINGLE-sided counter
+    # plate may legitimately ask for no recesses at all. Double-sided cannot:
+    # the paired bowl is what receives the opposing cylinder's dot, so a
+    # depthless one leaves the two cylinders meeting solid on solid at the nip.
+    # Rejecting here also keeps printed_bowl_mouth_mm's own ValueError
+    # unreachable from this path.
+    if bowl_depth <= 0:
+        raise ValidationError(
+            "Setting 'double_sided.ds_bowl_depth_mm' must be greater than 0 mm in double-sided mode; "
+            "the paired recess is what receives the opposing cylinder's dot, so a depth of 0 mm would "
+            f'leave the two cylinders pressing solid against solid. Received {bowl_depth}.',
+            {'key': 'ds_bowl_depth', 'value': bowl_depth, 'min': 0.0, 'max': 5.0},
+        )
+    printed_mouth = interpoint.printed_bowl_mouth_mm(bowl_diameter, bowl_depth)
+    printed_gap = measure(printed_mouth)
+    nominal_gap = measure(bowl_diameter)
+
+    # Wording SIGNED OFF by Brennen 2026-08-21 - reword only with his sign-off.
+    # The gate moved onto the printed mouth (FD-11b), so quoting the nominal
+    # bowl diameter beside a printed ridge would no longer add up for a user
+    # checking the arithmetic; both numbers below are now printed figures.
+    if printed_gap < interpoint.SAME_SURFACE_GAP_FLOOR_MM:
+        # The nominal-only alternative this used to carry was for a zero depth,
+        # which the gate above now rejects outright; the printed wording is the
+        # only one reachable, and it is unchanged.
+        recess_clause = (
+            f'the {bowl_diameter:.2f} mm recess is cut as a hemisphere, so it prints {printed_mouth:.2f} mm across'
+        )
+        raise ValidationError(
+            f'Double-sided crowding: {recess_clause}, and beside a {dot_diameter:.2f} mm dot at the '
+            f'{offsets["interpoint_offset_x"]:.2f} / {offsets["interpoint_offset_y"]:.2f} mm interpoint offset '
+            f'that leaves {printed_gap:.3f} mm of material between them — less than the '
+            f'{interpoint.SAME_SURFACE_GAP_FLOOR_MM:.2f} mm a 0.4 mm nozzle can lay down, so the ridge between '
+            f'them would not print. Clearance is widest with both interpoint offsets at '
+            f'{interpoint.INTERPOINT_OFFSET_X_MM} mm and narrows toward either end of the range, so move them '
+            f'back toward {interpoint.INTERPOINT_OFFSET_X_MM} mm — or use a smaller double-sided dot or recess '
+            '(the 0.3 mm card stock preset pairs the same dot with a smaller recess).',
+            {
+                'gap_mm': round(printed_gap, 3),
+                'floor_mm': interpoint.SAME_SURFACE_GAP_FLOOR_MM,
+                'dot_diameter_mm': dot_diameter,
+                'bowl_diameter_mm': bowl_diameter,
+                'printed_bowl_mouth_mm': round(printed_mouth, 3),
+                'nominal_gap_mm': round(nominal_gap, 3),
+            },
+        )
+    # Nominal on purpose: this mirrors the soft warning in app/geometry_spec.py,
+    # and FD-11(b) kept both warnings on the nominal figure. See
+    # interpoint.same_surface_min_gap for why.
+    if nominal_gap < interpoint.SAME_SURFACE_GAP_RELIABLE_MM:
+        logger.warning(
+            f'Double-sided same-surface gap {nominal_gap:.3f} mm is below the reliable '
+            f'{interpoint.SAME_SURFACE_GAP_RELIABLE_MM:.2f} mm; accepting — geometry_spec returns the soft warning.'
+        )
+
+    return True
+
+
+def validate_embosser_version_settings(settings_data: dict, shape_type: str, cylinder_params: dict) -> bool:
+    """
+    Hard gates for the Embosser Version 2 keyed gear-peg prototype.
+
+    Every gate is skipped when embosser_version is absent, 1, '1', 1.0 or '',
+    so a request that does not ask for Version 2 is validated exactly as it was
+    before the prototype existed.
+
+    Gate 1: Version 2 is cylinders-only (S-V6). Its whole subject is a shaped
+    cutout in the ends of a barrel; a card has no such end.
+
+    Gate 2: the key clearance must be inside the dial's range. Out of range it
+    would either weld the gear into the cylinder or throw away the margin that
+    stops a peg entering the wrong hole, and nothing downstream re-checks it.
+
+    Gate 3: integrated gears and Version 2 are different hardware and cannot be
+    combined (S-V7). The gears BETA builds the Version 1 one-piece roller.
+
+    Deliberately NOT a gate: the cylinder size. D-V15 makes the Version 2
+    barrel a soft preset - it has been found by printing, 30.1 -> 30.5 on
+    2026-08-29 -> 30.8 on 2026-08-30 - so an off-size cylinder is accepted and
+    app/geometry_spec.py adds a warning instead. That is the opposite of the
+    gear gate, where the size IS a rejection because the vendored gears cannot
+    move with the barrel.
+
+    This runs BEFORE validate_gear_rollers_settings rather than after it. With
+    both switched on, the gear gate would otherwise answer first and complain
+    about the cylinder size - and send the user off resizing when the real
+    problem is that they asked for two different machines at once. Since
+    2026-08-30 the two presets happen to agree at 30.8, so that only bites on
+    an off-size cylinder; the ordering is what stops it mattering, and it is
+    not something to re-derive from today's numbers agreeing. Ordering changes
+    nothing for Version 1 requests: this function returns immediately.
+
+    User-facing wording S-V6 and S-V7 was SIGNED EXACTLY AS DRAFTED by Brennen
+    on 2026-08-28 at the Phase 05 gate. A longer pair that also named the remedy
+    ("Turn integrated gears off, or switch back to Version 1") was offered and
+    declined: these stay terse and factual, like the gear-beta messages.
+
+    Args:
+        settings_data: Settings dictionary from the request (flat CardSettings
+            key spelling).
+        shape_type: 'card' or 'cylinder', as the request asked for.
+        cylinder_params: The request's cylinder_params dict. Accepted so both
+            beta gates are called the same way at the one call site, and
+            deliberately NOT read: the size is a warning here, not a gate.
+
+    Returns:
+        True if valid (or Version 2 is off)
+
+    Raises:
+        ValidationError: If Version 2 is asked for on anything but a cylinder,
+            with a clearance outside 0.0-0.5 mm, or together with the gears
+            beta; or if the version itself is neither 1 nor 2.
+    """
+    raw = settings_data.get('embosser_version', 1)
+    if raw is None or raw == '':
+        return True
+    try:
+        number = float(raw)
+    except (TypeError, ValueError) as e:
+        raise ValidationError(
+            "Setting 'embosser_version' must be 1 or 2",
+            {'key': 'embosser_version', 'value': raw},
+        ) from e
+    # A version is an enum, not a toggle, so a fractional value is refused
+    # rather than truncated. The gear beta's int(float(...)) would read 2.5 as
+    # "Version 2" and build a prototype cylinder for a request nobody could
+    # have meant - the same silent-fallback shape this project keeps finding.
+    if not number.is_integer():
+        raise ValidationError(
+            "Setting 'embosser_version' must be 1 or 2",
+            {'key': 'embosser_version', 'value': raw},
+        )
+    version = int(number)
+    if version == 1:
+        return True
+    if version != 2:
+        raise ValidationError(
+            "Setting 'embosser_version' must be 1 or 2",
+            {'key': 'embosser_version', 'value': raw},
+        )
+
+    if str(shape_type).strip().lower() != 'cylinder':
+        raise ValidationError(
+            'Version 2 is only available for cylinders.',
+            {'key': 'embosser_version', 'shape_type': shape_type, 'required': 'cylinder'},
+        )
+
+    clearance = _double_sided_number(
+        settings_data,
+        'v2_key_clearance_mm',
+        'version_2.key_clearance_mm',
+        version2.V2_KEY_CLEARANCE_DEFAULT_MM,
+    )
+    if not version2.V2_KEY_CLEARANCE_MIN_MM <= clearance <= version2.V2_KEY_CLEARANCE_MAX_MM:
+        raise ValidationError(
+            f"Setting 'version_2.key_clearance_mm' must be between "
+            f'{version2.V2_KEY_CLEARANCE_MIN_MM} and {version2.V2_KEY_CLEARANCE_MAX_MM} mm',
+            {
+                'key': 'v2_key_clearance_mm',
+                'value': clearance,
+                'minimum': version2.V2_KEY_CLEARANCE_MIN_MM,
+                'maximum': version2.V2_KEY_CLEARANCE_MAX_MM,
+            },
+        )
+
+    # Read exactly the way the gear gate reads its own flag, so the two can
+    # never disagree about what "gears are on" means.
+    gears_raw = settings_data.get('gear_rollers_enabled', 0)
+    if gears_raw is not None and gears_raw != '':
+        try:
+            gears_enabled = int(float(gears_raw))
+        except (TypeError, ValueError) as e:
+            raise ValidationError(
+                "Setting 'gear_rollers.enabled' must be 0 or 1",
+                {'key': 'gear_rollers_enabled', 'value': gears_raw},
+            ) from e
+        if gears_enabled == 1:
+            raise ValidationError(
+                'Integrated gears are not available in Version 2.',
+                {'key': 'gear_rollers_enabled', 'embosser_version': version},
+            )
+
+    return True
+
+
+def validate_gear_rollers_settings(settings_data: dict, shape_type: str, cylinder_params: dict) -> bool:
+    """
+    Hard gates for the gear-integrated one-piece rollers beta.
+
+    Both gates are skipped entirely when gear_rollers.enabled is off, so every
+    request that does not ask for gears is validated exactly as it was before
+    the beta existed.
+
+    Gate 1: gears are cylinders-only (S6).
+
+    Gate 2: the cylinder must BE the reference roller - 30.8 mm across and
+    52.0 mm tall (S7). This is a rejection rather than a warning because the
+    gears are fixed vendored geometry that does not move with the barrel; the
+    measurements behind it are recorded in app/geometry/gears.py, which owns
+    every number both this module and app/geometry_spec.py read.
+
+    There is nothing else to range-check: the gear geometry has no dials, it is
+    vendored 1:1 sample data (static/assets/gears/), not a set of parameters.
+
+    Deliberately NOT a gate here: forcing the barrel solid. Decision D-2 makes
+    that a behavior in app/geometry_spec.py (the polygonal cutout is dropped and
+    a warning is added), not a rejection - a user who saved a cutout radius
+    should not be blocked from trying the beta.
+
+    This function needs shape_type and cylinder_params, which validate_settings
+    does not receive, so the /geometry_spec route calls it separately rather
+    than changing that function's signature (it has other callers).
+
+    User-facing wording S6 and S7 signed off by Brennen 2026-08-24; reword only
+    with his sign-off.
+
+    Args:
+        settings_data: Settings dictionary from the request (flat CardSettings
+            key spelling).
+        shape_type: 'card' or 'cylinder', as the request asked for.
+        cylinder_params: The request's cylinder_params dict (may be empty; the
+            fallbacks below match app/geometry_spec.py's exactly).
+
+    Returns:
+        True if valid (or the beta is off)
+
+    Raises:
+        ValidationError: If a gear-mode request asks for anything but a cylinder,
+            or for a cylinder that is not the reference size
+    """
+    enabled_raw = settings_data.get('gear_rollers_enabled', 0)
+    if enabled_raw is None or enabled_raw == '':
+        return True
+    try:
+        enabled = int(float(enabled_raw))
+    except (TypeError, ValueError) as e:
+        raise ValidationError(
+            "Setting 'gear_rollers.enabled' must be 0 or 1",
+            {'key': 'gear_rollers_enabled', 'value': enabled_raw},
+        ) from e
+    if enabled != 1:
+        return True
+
+    if str(shape_type).strip().lower() != 'cylinder':
+        raise ValidationError(
+            'Integrated gears are only available for cylinders.',
+            {'key': 'gear_rollers_enabled', 'shape_type': shape_type, 'required': 'cylinder'},
+        )
+
+    try:
+        diameter, height = gears.cylinder_dimensions(cylinder_params or {})
+    except (TypeError, ValueError) as e:
+        raise ValidationError(
+            'Cylinder diameter and height must be numbers when integrated gears are on.',
+            {'key': 'cylinder_params', 'value': cylinder_params},
+        ) from e
+
+    if not gears.matches_reference_roller(diameter, height):
+        raise ValidationError(
+            gears.reference_roller_message(diameter, height),
+            {
+                'key': 'gear_rollers_enabled',
+                'diameter_mm': diameter,
+                'height_mm': height,
+                'required_diameter_mm': gears.GEAR_BARREL_DIAMETER_MM,
+                'required_height_mm': gears.GEAR_BARREL_HEIGHT_MM,
+            },
+        )
 
     return True
 

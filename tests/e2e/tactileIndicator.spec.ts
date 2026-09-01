@@ -51,13 +51,42 @@ async function generate(page: Page, state: { called: boolean }) {
     }
     if (state.called) return;
 
+    // #error-text is also where the app puts INFORMATIONAL notices - the card
+    // thickness preset's "All parameters updated." lands there when a preset is clicked (before 2026-08-22, also on load), with
+    // class `info` on the wrapper. Treating that as a blocking error turns a
+    // notice into a spurious failure, so only fail when it is not marked info.
+    const notice = await page.locator('#error-message').getAttribute('class');
+    const isInfo = notice?.includes('info') ?? false;
     const error = await page.locator('#error-text').textContent();
-    if (error && !/Manifold 3D engine/.test(error)) {
+    if (error && !isInfo && !/Manifold 3D engine/.test(error)) {
       throw new Error(`Generation was blocked before reaching /geometry_spec: ${error}`);
     }
     await page.waitForTimeout(1000);
   }
   throw new Error('The Manifold worker never became ready');
+}
+
+/**
+ * Fill the Braille (Unicode) field and prove the text landed.
+ *
+ * Under full-suite parallelism a single fill() on this textarea does not always
+ * take - measured as an intermittent "Please enter text in at least one line"
+ * from generate(). It is NOT the app clearing the field: instrumenting the
+ * element's value setter to record every write and its stack caught a run that
+ * ended empty with ZERO writes recorded, so nothing in page script touched it.
+ * The value simply never arrived.
+ *
+ * Re-filling is therefore input reliability, not a retry of anything under
+ * test; every assertion in these specs stays strict, and a field that refuses
+ * the text fails with a named message instead of a confusing downstream one.
+ */
+async function fillBraille(page: Page, text: string) {
+  const field = page.locator('#braille-unicode');
+  for (let attempt = 0; attempt < 5; attempt++) {
+    await field.fill(text);
+    if ((await field.inputValue()) === text) return;
+  }
+  throw new Error('the Braille (Unicode) field never accepted its text after 5 fills');
 }
 
 test.describe('Row Indicator Style', () => {
@@ -70,7 +99,7 @@ test.describe('Row Indicator Style', () => {
     await expect(page.locator('#grid_columns')).toHaveValue('13');
 
     const spec = await interceptGeometrySpec(page);
-    await page.locator('#braille-unicode').fill('\u2801\u2803');
+    await fillBraille(page, '\u2801\u2803');
     await generate(page, spec);
 
     const settings = spec.body?.settings as Record<string, unknown>;
@@ -104,7 +133,7 @@ test.describe('Row Indicator Style', () => {
     await expect(page.locator('#grid_columns')).toHaveValue('14');
 
     const spec = await interceptGeometrySpec(page);
-    await page.locator('#braille-unicode').fill('\u2801'.repeat(14));
+    await fillBraille(page, '\u2801'.repeat(14));
     await generate(page, spec);
 
     const settings = spec.body?.settings as Record<string, unknown>;
@@ -120,13 +149,38 @@ test.describe('Row Indicator Style', () => {
     expect(Number(settings.tactile_recess_extra_depth)).toBe(0.2);
   });
 
+  test('an emptied tactile dial falls back to the current default, not a stale one', async ({ page }) => {
+    // The payload builder reads each dial as `input?.value || 'literal'`, and an
+    // empty input is the empty string, which is falsy - so clearing a box hands
+    // the literal to the geometry. Those two literals were left at the OpenSCAD
+    // generator's old numbers (5.0 mm and 0.8 mm) when the defaults moved to
+    // 10.0 / 0.5, which meant clearing a box silently shrank the arrow. Nothing
+    // pinned them, so nothing caught it; this is that pin.
+    await openApp(page);
+    await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+
+    // The five dials live in a submenu of Expert Mode, both collapsed by default.
+    await page.locator('#expert-toggle').click();
+    await page.locator('button[aria-controls="expert-panel-tactile"]').click();
+    await page.locator('#tactile_indicator_length').fill('');
+    await page.locator('#tactile_indicator_raise').fill('');
+
+    const spec = await interceptGeometrySpec(page);
+    await fillBraille(page, '\u2801'.repeat(14));
+    await generate(page, spec);
+
+    const settings = spec.body?.settings as Record<string, unknown>;
+    expect(Number(settings.tactile_indicator_length)).toBe(10.0);
+    expect(Number(settings.tactile_indicator_raise)).toBe(0.5);
+  });
+
   test('tactile mode accepts a 14-cell row that visual mode rejects', async ({ page }) => {
     await openApp(page);
 
     const fourteenCells = '\u2801'.repeat(14);
 
     // Visual mode: 13 text cells available, so 14 is blocked
-    await page.locator('#braille-unicode').fill(fourteenCells);
+    await fillBraille(page, fourteenCells);
     await page.locator('#action-btn').click();
     await expect(page.locator('#error-text')).toContainText('the maximum is 13', { timeout: 15_000 });
 

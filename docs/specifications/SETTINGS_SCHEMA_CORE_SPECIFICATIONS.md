@@ -219,7 +219,7 @@ See: `BRAILLE_DOT_ADJUSTMENTS_SPECIFICATIONS.md`, `BRAILLE_DOT_SHAPE_SPECIFICATI
 - indicators.rotate_180: boolean (applies for counter plate on cylinder)
 
 Tactile mode dimensions (mm). Both Card Thickness presets apply the same five values —
-the arrow is sized by the finger that reads it, not by the print layer height — so a change
+the arrow is sized by the finger that reads it, not by the card stock thickness — so a change
 here must land in `settings.schema.json`, `app/models.py`, the HTML input defaults, and
 **both** `THICKNESS_PRESETS` entries:
 - indicators.tactile_indicator_width: number, 2–10 (default: 4.0) — width around the cylinder
@@ -281,6 +281,97 @@ See: `STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md`.
 
 ---
 
+### 3.8 What This Schema Actually Does at Runtime — and the Flat/Nested Name Split
+
+**This file is not loaded by any code path. It is a document.** Established by
+measurement 2026-08-23 (POST15_7 item I), because the whole risk assessment for
+editing it turns on the answer:
+
+- `jsonschema` is **not** in `requirements.txt` or `requirements-dev.txt`.
+- **No application code opens `settings.schema.json`** — `app/`, `backend.py` and
+  `wsgi.py` were all grepped.
+- The **only** reader anywhere in the repo is
+  `tests/test_smoke.py::test_schema_and_models_agree_on_indicator_fields`, and it
+  asserts on **defaults and the `indicator_mode` enum only — never on `minimum` or
+  `maximum`**.
+
+Runtime enforcement lives entirely in `app/validation.py` (`allowed_settings`, plus
+`validate_double_sided_settings()`). **Consequence for anyone editing this schema:
+adding or correcting a `minimum`/`maximum` here changes nothing at runtime and cannot
+by itself fix or break a request.** It also means the reverse — a wrong number here is
+invisible to every automated check in the repo, which is how an inclusive
+`minimum: 0` on three tactile spacing parameters survived (see §3.3).
+
+#### The two spellings are deliberate
+
+A field has a **nested schema name** with a unit suffix here (`card.plate_thickness_mm`)
+and a **flat runtime name** on the wire and in `app/validation.py` / `app/models.py`
+(`card_thickness`). Confirmed deliberate by Brennen 2026-08-23 (FD-26b). Nothing is
+renamed; both spellings stay.
+
+**Confirmed pairs** — stated in a spec or an item prompt, not derived:
+
+| Flat runtime name | Nested schema name |
+|---|---|
+| `card_width` | `card.plate_width_mm` |
+| `card_height` | `card.plate_height_mm` |
+| `card_thickness` | `card.plate_thickness_mm` |
+| `emboss_dot_base_diameter` | `dots.cone.diameter_mm` |
+| `emboss_dot_height` | `dots.cone.height_mm` |
+| `emboss_dot_flat_hat` | `dots.cone.flat_hat_diameter_mm` |
+
+**UNCONFIRMED candidates — do not rely on these.** Recovered only by matching default
+values, which is **ambiguous**: `hemi_counter_dot_base_diameter` and
+`cone_counter_dot_base_diameter` both default to 1.6, so defaults alone cannot tell
+them apart. Listed so the next reader starts here rather than re-deriving, and flagged
+because parameter names are public API needing Brennen's sign-off (project-facts core
+rule 6):
+
+| Flat runtime name (candidate) | Nested schema name |
+|---|---|
+| `rounded_dot_base_diameter` | `dots.rounded.base_diameter_mm` |
+| `rounded_dot_base_height` | `dots.rounded.base_height_mm` |
+| `rounded_dot_dome_diameter` | `dots.rounded.dome_diameter_mm` |
+| `rounded_dot_dome_height` | `dots.rounded.dome_height_mm` |
+| `bowl_counter_dot_base_diameter` | `dots.bowl.base_diameter_mm` |
+| `counter_dot_depth` | `dots.bowl.depth_mm` |
+| `cone_counter_dot_base_diameter` | `dots.recess_cone.base_diameter_mm` |
+| `cone_counter_dot_height` | `dots.recess_cone.height_mm` |
+| `cone_counter_dot_flat_hat` | `dots.recess_cone.flat_hat_diameter_mm` |
+
+**Eleven enforced fields have no schema entry at all**, under any spelling:
+`rounded_dot_diameter`, `rounded_dot_height`, `rounded_dot_cylinder_height`,
+`use_rounded_dots`, `use_bowl_recess`, `indicator_shapes`, `hemisphere_subdivisions`,
+`cone_segments`, `counter_plate_dot_size_offset`, `counter_dot_base_diameter`,
+`hemi_counter_dot_base_diameter`. Two of those are represented differently rather than
+missing — `use_rounded_dots` by the `dots.combined_shape` enum and `use_bowl_recess` by
+`dots.recess_shape`. Adding the rest would be **new public API surface**, not
+documentation of what exists, so item I left them alone.
+
+#### Coverage, measured 2026-08-23
+
+`app/validation.py` enforces **39** numeric ranges. Against this schema:
+
+| | Before item I | After item I |
+|---|---|---|
+| Fully agree (`minimum` **and** `maximum`) | 5 | **18** |
+| Present but no `maximum` | 23 | **10** |
+| No schema field at all | 11 | 11 |
+
+The 13 corrected are the ones whose schema home is confirmed or same-name. **The
+remaining gap is real and this spec does not claim otherwise** — see §2.5 of the
+POST15_7 audit.
+
+#### One disagreement deliberately left alone
+
+`dots.recess_shape` declares `"enum": [1, 2, "1", "2"]` (bowl, cone) while
+`app/validation.py` enforces `recess_shape` as `0..2`, where **0 = hemisphere**. The two
+disagree about which shapes exist — a different kind of defect from a missing maximum,
+and adding `minimum`/`maximum` beside a contradicting `enum` would make this file
+self-contradictory. Reported, not fixed (FD-26).
+
+---
+
 ## 4. Normalization Rules (Determinism & Caching)
 
 Applied before cache-key generation and geometry building:
@@ -304,6 +395,45 @@ High-level checks (non-exhaustive):
 - For selected dot shape families, only corresponding parameter groups are required
 - All mm values must be non-negative; heights/diameters > 0 where noted
 - Geometry safety checks: margins, grid centering, cylinder wrap
+
+Double-sided (interpoint) beta — hard gates (`validate_double_sided_settings()` in
+`app/validation.py`, called from `validate_settings()` on every request). All three
+are skipped when `double_sided.enabled` is off, so single-sided requests validate
+exactly as before the beta. This is the first runtime enforcement of these ranges —
+the `minimum`/`maximum` values in settings.schema.json are documentation only:
+- `double_sided.enabled` = true requires `indicator_mode` = "tactile"; any other
+  value (including the absent-key default "visual") is rejected with HTTP 400.
+  The soft warn-and-force branch in `geometry_spec.py` remains as defense-in-depth
+  for direct callers of `extract_cylinder_geometry_spec()`.
+- `double_sided.interpoint_offset_x_mm` and `_y_mm` must stay within
+  [1.15, 1.35] mm (`interpoint.INTERPOINT_OFFSET_MIN_MM` / `_MAX_MM`); out-of-range
+  values are rejected with the range quoted.
+- The same-surface gap — material between a raised dot (`ds_dot_base_diameter_mm`)
+  and the nearest back-side recess (`ds_bowl_base_diameter_mm`) sharing one cylinder
+  surface, computed by `interpoint.same_surface_min_gap()` with the active offsets
+  and grid — must clear 0.34 mm (`SAME_SURFACE_GAP_FLOOR_MM`, what a 0.4 mm nozzle
+  can lay down); below that the request is rejected with the gap quoted to three
+  decimals. **Since 2026-08-21 the rejection measures the recess's PRINTED mouth**,
+  `interpoint.printed_bowl_mouth_mm(bowl_diameter, bowl_depth)` — the worker cuts the
+  bowl as a hemisphere, so it comes out wider than nominal. The marginal band
+  0.34–0.45 mm (`SAME_SURFACE_GAP_RELIABLE_MM`, lowered from 0.50 and **provisional**
+  since 2026-08-23 — see INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §3) is NOT rejected, and both soft
+  channels deliberately keep measuring the NOMINAL diameter: geometry_spec returns
+  the warning in the spec's `warnings` array, and the UI recomputes the same gap live
+  (`checkDoubleSidedGap()` in public/index.html, status region `#ds-gap-warning`).
+  See INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md v1.6 §5 for why the two differ.
+  Reference values at offsets 1.25/1.25, nominal then printed: Option B / 0.3-preset
+  dot 1.2 + bowl 1.3 → 0.518 / 0.495 mm (clean); the 0.4-preset Q2 package dot 1.2 +
+  bowl 1.4 → 0.468 / 0.428 mm (warn — the shipped default with the beta on, accepted
+  by design since 2026-08-20); dot 1.2 + bowl 1.5 → 0.418 / 0.355 mm (warn);
+  single-sided dot 1.5 + bowl 1.8 → 0.118 nominal but **−0.042 printed** (reject).
+- The six `ds_*` footprint values must stay inside their schema ranges
+  (`ds_dot_base_diameter_mm` 0.5–3.0, `ds_dot_base_height_mm` 0.0–2.0,
+  `ds_dot_dome_diameter_mm` 0.5–3.0, `ds_dot_dome_height_mm` 0.1–2.0,
+  `ds_bowl_base_diameter_mm` 0.5–5.0, `ds_bowl_depth_mm` 0.0–5.0); out-of-range
+  values are rejected with the range quoted. Like the rest of these gates this
+  fires only when the beta is on; the range literals in `validate_double_sided_settings()`
+  mirror this schema and must change with it in the same commit.
 
 See feature specs for detailed constraints and formulas.
 
@@ -460,3 +590,10 @@ Before completing any task involving settings:
 - 2026-07-29 — Added `indicators.indicator_mode` and the five `indicators.tactile_*` dimensions for the tactile row indicator ported from the OpenSCAD version (Section 3.6), and noted the Braille (Unicode) field's effect on `text.lines` / `text.original_lines` (Section 3.1).
 - 2026-07-30 — Changed `indicators.tactile_indicator_length` to 10.0 and `indicators.tactile_indicator_raise` to 0.5; recorded that both Card Thickness presets now carry all five tactile dimensions, and documented where each indicator control lives in the UI (Section 3.6).
 - 2026-07-31 — Changed `spacing.grid_columns` default from 14 to 15 and the per-mode text-cell recommendations to 13 visual (either toggle state) and 14 tactile (Sections 3.3 and 3.6); replaced the visual-mode physical-fit warning rule with the dot-footprint threshold `dot_spacing + max(rounded_dot_base_diameter, emboss_dot_base_diameter)` (Section 3.6).
+- 2026-08-16 — Added the double-sided (interpoint) beta hard gates to Section 5: tactile indicator lock, interpoint offset range [1.15, 1.35] mm, the six `ds_*` footprint schema ranges, and the 0.34 mm same-surface-gap floor, enforced by `validate_double_sided_settings()` in app/validation.py when the beta is on (the schema's own min/max otherwise remain documentation only); noted the 0.34–0.50 mm marginal band stays a soft warning (geometry_spec `warnings` + live UI region `#ds-gap-warning`). All user-facing message wording signed off by Brennen the same day.
+- 2026-08-16 — Recorded the double-sided (interpoint) beta FIELDS added to `settings.schema.json`: the grouped `double_sided` object (`enabled` default false; `interpoint_offset_x_mm` / `interpoint_offset_y_mm` default 1.25, range 1.15–1.35; six `ds_*` footprint fields — dot base Ø1.2 / base height 0.4 / dome Ø0.8 / dome height 0.4, bowl Ø1.3 × 0.5 deep) plus `text.back_lines` (same braille-only pattern as `text.lines`). CardSettings stores them FLAT with the `_mm` dropped (the toggle as int 0/1 `double_sided_enabled`), the repo's existing grouped-to-flat convention. Full parameter catalog, naming bridge, and behavior: INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md.
+- 2026-08-21 — Section 5's same-surface-gap gate now measures the recess's PRINTED mouth (`interpoint.printed_bowl_mouth_mm`) rather than its nominal diameter, because the worker cuts the bowl as a hemisphere; the two soft warnings deliberately stay on the nominal figure. Reference values gain their printed column, and the single-sided 1.5 + 1.8 case is restated as −0.042 mm printed against the 0.118 mm nominal it used to quote. No schema field, default, or range changed — `ds_bowl_depth_mm` is still 0.0–5.0, though its 5.0 maximum can no longer be combined with a small mouth and pass the gate. Rationale and the measured per-package offset bands: INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md v1.6 §3, §5.
+- 2026-08-20 — Documented the six `double_sided.ds_*` defaults as the 0.3 mm-stock package (Option B, the absent-field fallback); the UI now sends the package for the selected card-stock preset (0.4 → the Q2 print-matrix winner: base_height 0.5, dome 1.0 × 0.5, bowl 1.4), source of truth `interpoint.DS_FOOTPRINTS_BY_PRESET`, smoke-guarded against public/index.html's copy. Section 5 reference values gain the Q2 gap (0.468 mm — a soft warning that now shows at the shipped defaults with the beta on, accepted by design). Schema descriptions updated in the same commit.
+- 2026-08-23 — **The schema starts stating the ranges it already claims to own, and says plainly that it is inert at runtime.** New §3.8 records three things measured this day (POST15_7 item I; audit §2.5 Contradiction 2, **partially** closed): (1) **nothing loads this file** — `jsonschema` is not a dependency, no application code opens it, and the only reader in the repo is one smoke test that checks defaults and the `indicator_mode` enum, never `minimum`/`maximum`; (2) the flat/nested name split is **deliberate** (FD-26b), with the 6 confirmed pairs tabulated and 9 further candidates listed as **unconfirmed**, recoverable only by matching defaults — a method that is ambiguous, since `hemi_counter_dot_base_diameter` and `cone_counter_dot_base_diameter` share the default 1.6; (3) coverage against `app/validation.py`'s 39 enforced ranges went **5 → 18 fully agreeing**, missing-`maximum` **23 → 10**, with 11 fields still having no schema entry at all. Thirteen fields gained `maximum` and, where it disagreed, a corrected `minimum`, **copied verbatim from `app/validation.py` — nothing invented, nothing widened, no enforced limit retuned**; every minimum change is a tightening toward what was already enforced. **The finding worth remembering:** `dot_spacing_mm`, `cell_spacing_mm` and `line_spacing_mm` carried an inclusive `minimum: 0`, so the declared single source of truth stated zero dot spacing was legal on three tactile parameters. Brennen picked `app/validation.py` as the correct side (FD-26c) — an assistant may not (accessibility rule 11). `dots.recess_shape`'s enum-vs-range conflict is reported and deliberately not fixed. Documentation only; suite unmoved before and after: ruff clean, 140 pytest, 2 vitest, 134 e2e.
+- 2026-08-31 — `cylinder.cylinder_height_mm` default 52 → 54: the barrel now stands 1 mm past each edge of the 52 mm card (which keeps its own 52 default) so a slightly mis-rolled card cannot ruffle over the ends; braille rows stay centered. The absent-field fallback also moved to 54 and is owned by `app/geometry/gears.py` `DEFAULT_CYLINDER_HEIGHT_MM` — cylinder height no longer falls back to `card_height` anywhere.
+- 2026-08-31 — **`cylinder.cylinder_height_mm` default returns to 52** (same day, Brennen's deployment verdict): 52 is the Version 1 standard barrel, the height every previously shipped V1 gear model pairs with, and the one-day 54 default made the integrated-gears BETA warn/reject on untouched dials. The 1 mm card-shelf barrel (54) is **Embosser Version 2 only**, forced by the UI's `V2_PRESET_OVERRIDES` (`version_2` docs) — never by this schema default. The absent-field fallback follows (52, still `gears.DEFAULT_CYLINDER_HEIGHT_MM`; still decoupled from `card_height`), and both card-stock presets carry 52 again.

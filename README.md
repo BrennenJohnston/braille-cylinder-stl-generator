@@ -14,12 +14,33 @@ The goal is to make braille labels and cards accessible to anyone with a 3D prin
 - Generates STL files for cylindrical braille labels (jars, bottles, containers, etc.)
 - All STL generation runs in the browser — nothing gets uploaded
 - Shows a 3D preview before you download
+- Embosses **both faces** of a card in one pass, with the Double-Sided Card beta
 
 Flat business card plates are **parked**, not in development here — the code is
 still in the repo but disabled in the UI. See
 [KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) for why. Directly readable braille cards
 already ship as their own tool:
 [braille-wedge-card-openscad](https://github.com/BrennenJohnston/braille-wedge-card-openscad).
+
+### Double-sided cards (beta)
+
+Turning on **Double-Sided Card (BETA — for testing)** makes the app generate a matched
+**pair** of cylinders instead of one. Run a card between them and it comes out with braille
+on both faces in a single pass.
+
+Turning it on adds a **Back of Card** section for the back text, and locks the Row
+Indicator Style to the tactile seam arrow, which both cylinders of a pair need. The back
+text wraps across the rows for you, the braille preview then shows both sides, and the two
+sides sit on grids offset diagonally by 1.25 mm so a dot on one face never lands where a
+dot on the other face already is.
+
+It has been printed and used: in August 2026 two rounds of pairs were printed on a Bambu
+Lab X1C with a 0.4 mm nozzle and embossed real card stock, legible on both faces. It keeps
+the beta label because that is one builder, one printer, and one paper stock — not because
+anything is known to be wrong with it.
+
+Step-by-step instructions are in
+[Double-Sided Cards (BETA)](docs/guides/CYLINDER_GUIDE.md#double-sided-cards-beta).
 
 ## The device these cylinders go into
 
@@ -34,6 +55,13 @@ Build files, print profiles, and documentation for the device are on
 [Printables](https://www.printables.com/model/1742352-custom-braille-card-embosser-hand-operated),
 [MakerWorld](https://makerworld.com/en/models/2881581-custom-braille-card-embosser-hand-operated),
 and [Thingiverse](https://www.thingiverse.com/thing:7365273).
+
+**Embosser Version 2 is a prototype.** A selector at the top of the page switches
+the generator to Version 2, whose cylinders are keyed at both ends so a drive gear
+cannot be seated in the wrong place. Its build files are not published yet, and the
+gears it needs must be cut to the new peg spec — earlier pegs do not fit. Version 1
+stays the default and is fully supported; see
+[KNOWN_ISSUES.md](./docs/KNOWN_ISSUES.md).
 
 You can also use the cylinders on their own as tactile labels for jars, bottles,
 and containers.
@@ -67,8 +95,15 @@ You can optionally set `PRODUCTION_DOMAIN` as an environment variable, but it's 
 1. Type your text (up to 4 lines)
 2. Pick a braille translation table and grade
 3. Set your cylinder dimensions — measure your container first
-4. Click Generate
-5. Download the STL and 3D print it
+4. Press **Generate STL**
+5. Press **Download STL** when it appears, then 3D print the file
+
+For a double-sided card, turn on **Double-Sided Card (BETA — for testing)** before step 4,
+type the back text into the **Back of Card** box, then press **Generate Both Cylinders
+(A and B)**. That builds both files and reveals two buttons: press **Download Cylinder A**
+to save `Cylinder_A_*.stl`, then **Download Cylinder B** to save `Cylinder_B_*.stl`.
+Neither file downloads on its own — you save each one by pressing its own button. Print
+both cylinders and emboss the card in one pass between them.
 
 There's a **Help** button inside the app that walks you through choosing what to include, formatting your text, and measuring containers. For more depth, check the guides below.
 
@@ -91,13 +126,16 @@ Issues and pull requests for the OpenSCAD program belong upstream. Nothing in
 
 The web app translates automatically; the OpenSCAD version needs you to translate manually (using [Branah.com](https://www.branah.com/braille-translator)), but it works without an internet connection and integrates with existing CAD workflows.
 
+As of v2.6.0 the OpenSCAD companion includes the **double-sided (interpoint) beta** as well,
+with the same paired Cylinder A / Cylinder B workflow. Back-of-card text there is
+pre-translated braille only, like the front — automatic translation stays a web-app feature.
+
 ## Project layout
 
 ```
 app/              Flask backend, geometry specs, validation
 public/           Production HTML (served on Vercel)
 static/           Frontend JS, CSS, Web Workers, liblouis tables
-templates/        Development HTML (served by Flask locally)
 tests/            Smoke tests and golden file regression tests
 docs/             Guides, technical specs, deployment notes
 ```

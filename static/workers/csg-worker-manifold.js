@@ -101,11 +101,160 @@ async function initManifold() {
 })();
 
 /**
+ * Tessellation of the cylinder shell and of every band concentric with it.
+ * Also the source of the raised-dot base embed below, so the two can never
+ * drift apart: a coarser shell dips further inside the ideal radius and needs
+ * a deeper embed to stay fused.
+ */
+const CYLINDER_SHELL_SEGMENTS = 64;
+
+/**
+ * Embosser Version 2: the thickness of the slabs a mouth chamfer is hulled from.
+ *
+ * A hull needs two solids, not two planes. The thickness itself is arbitrary and
+ * tiny, but WHERE each slab sits is not: a hull's tapering face is supported by
+ * the FAR edge of each slab, so each one is placed with its far edge exactly at
+ * the end of its own taper. Put either slab the other way round and the 45
+ * degree taper overshoots by the slab's own thickness. Measured in Phase 02,
+ * where six depth probes match the rule to five decimals only this way round.
+ * Must stay equal to SLAB_MM in tests/test_version2_keyed.py.
+ */
+const KEYED_SLAB_MM = 0.01;
+
+/**
+ * How far a raised dot's base must sink below the ideal cylinder radius to fuse
+ * with the shell instead of floating over it.
+ *
+ * The shell is a regular prism, so each facet dips this far inside the ideal
+ * radius at its centre. A dot whose flat base sat at exactly cylRadius spanned
+ * that void and exported as a SEPARATE connected body - measured 2026-08-21 on
+ * a real browser export: 1 shell + 1 body per raised dot. Watertight, but a
+ * loose body some toolchains can drop, and a void under a tactile feature.
+ *
+ * DERIVED, not a constant, because the dip scales with radius: 0.0186 mm on the
+ * default 30.8 mm cylinder but 0.1205 mm at the 200 mm the UI allows, so any
+ * fixed figure small enough to be tidy leaves large cylinders floating. The
+ * factor of two is the overlap margin.
+ *
+ * This does NOT change how far a dot stands proud: the base frustum is
+ * LENGTHENED downward along its own taper, so its radius at the shell surface
+ * is exactly the base diameter it always was.
+ */
+function raisedDotBaseEmbed(cylRadius) {
+    return cylRadius * (1 - Math.cos(Math.PI / CYLINDER_SHELL_SEGMENTS)) * 2;
+}
+
+/**
+ * Gear-integrated one-piece rollers (BETA): the vendored gear assets.
+ *
+ * The bytes under /static/assets/gears/ are a 1:1 replication of the reference
+ * gears and are ALREADY IN THIS WORKER'S FRAME - scripts/derive_gear_assets.py
+ * baked the sample-to-program transform into them (provenance in
+ * static/assets/gears/gears_manifest.json). So nothing here places, rotates or
+ * scales the asset, and the spec-frame theta negation that dots and markers get
+ * does NOT apply to it: a gear is not a spec-frame feature.
+ *
+ * Format, little-endian: magic "BCGR1\0", uint32 vertCount, uint32 triCount,
+ * float32[3*vertCount], uint32[3*triCount]. The header is 14 bytes, which is
+ * NOT a multiple of 4, so the typed arrays are built from COPIED slices - a
+ * Float32Array view at byteOffset 14 throws RangeError in every browser.
+ */
+const GEAR_ASSET_MAGIC = 'BCGR1\0';
+const GEAR_ASSET_HEADER_BYTES = 14;
+const gearAssetCache = new Map();
+
+async function loadGearAsset(assetName) {
+    if (gearAssetCache.has(assetName)) {
+        return gearAssetCache.get(assetName);
+    }
+    if (assetName !== 'gears_a' && assetName !== 'gears_b') {
+        throw new Error(`Gear asset name not recognized: ${assetName}`);
+    }
+
+    // Same-origin static fetch, exactly how manifold.wasm itself ships - no CSP
+    // change. Every failure below throws: a cylinder that asked for gears must
+    // never quietly come out without them.
+    const url = `/static/assets/gears/${assetName}.bin`;
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch gear asset ${url}: HTTP ${response.status} ${response.statusText}`);
+    }
+
+    const buffer = await response.arrayBuffer();
+    if (buffer.byteLength < GEAR_ASSET_HEADER_BYTES) {
+        throw new Error(`Gear asset ${url} is truncated: ${buffer.byteLength} bytes`);
+    }
+
+    const magic = String.fromCharCode(...new Uint8Array(buffer, 0, GEAR_ASSET_MAGIC.length));
+    if (magic !== GEAR_ASSET_MAGIC) {
+        throw new Error(`Gear asset ${url} has bad magic ${JSON.stringify(magic)}`);
+    }
+
+    const header = new DataView(buffer, 6, 8);
+    const vertCount = header.getUint32(0, true);
+    const triCount = header.getUint32(4, true);
+    const vertBytes = 12 * vertCount;
+    const triBytes = 12 * triCount;
+    const expectedBytes = GEAR_ASSET_HEADER_BYTES + vertBytes + triBytes;
+    if (buffer.byteLength !== expectedBytes) {
+        throw new Error(
+            `Gear asset ${url} size mismatch: header declares ${vertCount} vertices and ${triCount} triangles ` +
+            `(${expectedBytes} bytes) but the file is ${buffer.byteLength} bytes`
+        );
+    }
+
+    const asset = {
+        vertProperties: new Float32Array(buffer.slice(GEAR_ASSET_HEADER_BYTES, GEAR_ASSET_HEADER_BYTES + vertBytes)),
+        triVerts: new Uint32Array(buffer.slice(GEAR_ASSET_HEADER_BYTES + vertBytes)),
+    };
+    gearAssetCache.set(assetName, asset);
+    console.log(`Manifold CSG Worker: Loaded gear asset ${assetName} - ${vertCount} vertices, ${triCount} triangles`);
+    return asset;
+}
+
+/**
+ * Build the gear pair as one Manifold (two disjoint bodies, top and bottom).
+ *
+ * The cached arrays are COPIED into the Mesh because merge() works in place:
+ * without the copy the second generation of a session would read a mesh the
+ * first one had already rewritten.
+ */
+function createGearManifold(asset) {
+    const mesh = new Mesh({
+        numProp: 3,
+        vertProperties: asset.vertProperties.slice(),
+        triVerts: asset.triVerts.slice(),
+    });
+    mesh.merge();
+    return Manifold.ofMesh(mesh);
+}
+
+/**
+ * One hidden weld ring at a gear/barrel interface.
+ *
+ * The gear meets the barrel on an exactly coincident face, which this project's
+ * printability rules forbid and float32 STL rounding can turn into a pinch
+ * edge. The ring is entirely buried - it changes no external surface and, being
+ * inside both solids already, adds no measurable volume.
+ */
+function createWeldRingManifold(ring) {
+    const outer = createManifoldCylinder(ring.height, ring.r_out, CYLINDER_SHELL_SEGMENTS);
+    // Taller than the ring so the bore is cut cleanly through, never coplanar.
+    const inner = createManifoldCylinder(ring.height + 0.2, ring.r_in, CYLINDER_SHELL_SEGMENTS);
+    const annulus = outer.subtract(inner);
+    outer.delete();
+    inner.delete();
+    const placed = annulus.translate([0, 0, ring.z_center]);
+    annulus.delete();
+    return placed;
+}
+
+/**
  * Create a cylinder using Manifold primitives
  * Manifold.cylinder(height, radiusLow, radiusHigh, circularSegments)
  * Creates a cylinder along the Z-axis, centered at origin
  */
-function createManifoldCylinder(height, radius, segments = 64) {
+function createManifoldCylinder(height, radius, segments = CYLINDER_SHELL_SEGMENTS) {
     return Manifold.cylinder(height, radius, radius, segments, true);
 }
 
@@ -194,6 +343,10 @@ function createCylinderDotManifold(spec) {
     const shape = params.shape || 'standard';
     const isRecess = is_recess || shape === 'hemisphere' || shape === 'bowl';
 
+    // Recesses are subtracted, so they have no floating-body problem and get no
+    // skirt; zero here also keeps their geometry byte-identical.
+    const baseEmbed = isRecess ? 0 : raisedDotBaseEmbed(cylRadius);
+
     let dot = null;
     let dotHeight = 0;
 
@@ -209,10 +362,14 @@ function createCylinderDotManifold(spec) {
             dotHeight = baseHeight + domeHeight;
 
             if (baseHeight > 0) {
-                // Create frustum base
-                const frustum = createManifoldFrustum(baseRadius, topRadius, baseHeight, 24);
-                // Frustum is centered at origin, move so base is at z=0
-                const positionedFrustum = frustum.translate([0, 0, baseHeight / 2]);
+                // Create frustum base, continued baseEmbed below z=0 on its own
+                // taper so it bites into the shell without moving the profile the
+                // paper meets: its radius at z=0 is still baseRadius.
+                const skirtRadius = baseRadius + (baseRadius - topRadius) * baseEmbed / baseHeight;
+                const frustumHeight = baseHeight + baseEmbed;
+                const frustum = createManifoldFrustum(skirtRadius, topRadius, frustumHeight, 24);
+                // Frustum is centered at origin, move so its base is at -baseEmbed
+                const positionedFrustum = frustum.translate([0, 0, frustumHeight / 2 - baseEmbed]);
                 frustum.delete();
 
                 // Create dome on top of frustum
@@ -233,11 +390,22 @@ function createCylinderDotManifold(spec) {
                 dot = combinedDot.translate([0, 0, -dotHeight / 2]);
                 combinedDot.delete();
             } else {
-                // Dome only - also needs centering
+                // Dome only. The cap's base circle would sit flat on the shell, so
+                // it gets the same treatment: a stub frustum living entirely below
+                // z=0, invisible from outside.
                 const unceneredDome = createSphericalCap(domeRadius, domeHeight, 24);
+                let withSkirt = unceneredDome;
+                if (baseEmbed > 0) {
+                    const skirt = createManifoldFrustum(baseRadius, topRadius, baseEmbed, 24);
+                    const positionedSkirt = skirt.translate([0, 0, -baseEmbed / 2]);
+                    skirt.delete();
+                    withSkirt = unceneredDome.add(positionedSkirt);
+                    unceneredDome.delete();
+                    positionedSkirt.delete();
+                }
                 // Spherical cap spans [0, domeHeight], center it at origin
-                dot = unceneredDome.translate([0, 0, -domeHeight / 2]);
-                unceneredDome.delete();
+                dot = withSkirt.translate([0, 0, -domeHeight / 2]);
+                withSkirt.delete();
             }
 
         } else if (shape === 'hemisphere') {
@@ -250,6 +418,12 @@ function createCylinderDotManifold(spec) {
         } else if (shape === 'bowl') {
             // Bowl (spherical cap) recess
             const bowlRadius = (params.bowl_radius > 0) ? params.bowl_radius : 1.5;
+            // These fallbacks are unreachable: app/geometry_spec.py declines to
+            // emit a bowl at all when the depth is not positive, because 0 mm
+            // means no recess rather than a default one. Left as a divide-by-
+            // zero guard for sphereR below - do NOT treat 0.8 as a default to
+            // rely on, it is the single-sided depth and was silently overriding
+            // both a 0 mm request and the 0.5 mm double-sided value.
             const bowlDepth = (params.bowl_depth > 0) ? params.bowl_depth : 0.8;
             dotHeight = bowlDepth;
             // Calculate sphere radius for bowl
@@ -271,7 +445,13 @@ function createCylinderDotManifold(spec) {
             const topRadius = (params.top_radius >= 0) ? params.top_radius : 0.25;
             const height = (params.height > 0) ? params.height : 0.5;
             dotHeight = height;
-            dot = createManifoldFrustum(baseRadius, topRadius, height, 24);
+            // Same skirt as the rounded dot. dotHeight stays the ORIGINAL height
+            // so the radial placement below is untouched: the flat hat ends up at
+            // cylRadius + height and the extra length hangs below the surface.
+            const skirtRadius = baseRadius + (baseRadius - topRadius) * baseEmbed / height;
+            const embedded = createManifoldFrustum(skirtRadius, topRadius, height + baseEmbed, 24);
+            dot = embedded.translate([0, 0, -baseEmbed / 2]);
+            embedded.delete();
         }
 
         if (!dot) return null;
@@ -1269,8 +1449,8 @@ function createCylinderTactileArrowManifold(spec) {
 
         // Band tall enough to cover the arrow's axial extent, centered on it.
         const bandHeight = length + 2 * delta + 2;
-        const bandOuter = createManifoldCylinder(bandHeight, outerRadius, 64);
-        const bandInner = createManifoldCylinder(bandHeight + 2, innerRadius, 64);
+        const bandOuter = createManifoldCylinder(bandHeight, outerRadius, CYLINDER_SHELL_SEGMENTS);
+        const bandInner = createManifoldCylinder(bandHeight + 2, innerRadius, CYLINDER_SHELL_SEGMENTS);
         const bandAtOrigin = bandOuter.subtract(bandInner);
         bandOuter.delete();
         bandInner.delete();
@@ -1294,9 +1474,184 @@ function createCylinderTactileArrowManifold(spec) {
 }
 
 /**
+ * Embosser Version 2: one keyed profile as a CrossSection.
+ *
+ * Every profile app/geometry/version2.py emits is a simple loop wound
+ * counter-clockwise - verified for all four R14 keys, both mouth outlines and
+ * the nub - so 'NonNegative' fills exactly what the Python reference's NonZero
+ * does. A clockwise loop would have winding -1 and this rule would return an
+ * EMPTY section, which is why the winding is stated rather than assumed.
+ */
+function keyedProfileCrossSection(profile, label) {
+    if (!Array.isArray(profile) || profile.length < 3) {
+        const count = Array.isArray(profile) ? profile.length : 0;
+        throw new Error(`Version 2 ${label}: a keyed profile needs at least 3 points, got ${count}`);
+    }
+    const points = profile.map((point, index) => {
+        if (!point || !isFinite(point.x) || !isFinite(point.y)) {
+            throw new Error(`Version 2 ${label}: point ${index} is not a finite (x, y)`);
+        }
+        return [point.x, point.y];
+    });
+    return new CrossSection([points], 'NonNegative');
+}
+
+/**
+ * Embosser Version 2: a profile extruded `thickness` tall with its base at `zFrom`.
+ */
+function keyedPrismManifold(profile, zFrom, thickness, label) {
+    const crossSection = keyedProfileCrossSection(profile, label);
+    const extruded = Manifold.extrude(crossSection, thickness);
+    crossSection.delete();
+    const placed = extruded.translate([0, 0, zFrom]);
+    extruded.delete();
+    return placed;
+}
+
+/**
+ * Embosser Version 2: one mouth chamfer, the hull of the flared outline at the
+ * barrel face and the hole outline `depth` in.
+ *
+ * ONE rule covers all four mouths. D-V16 signed a second, scaled rule for the
+ * v7 six-scallop star, whose tips would have swallowed the nub base; family R14
+ * retired that star, so every mouth is now the same 2.0 mm x 45 degree hull and
+ * 'hull' is the only kind the spec emits. Anything else is malformed, not a
+ * shape to guess at.
+ */
+function createKeyedCountersinkManifold(sink, height) {
+    if (sink.kind !== 'hull') {
+        throw new Error(`Version 2 countersink ${sink.end}: unknown kind ${sink.kind}`);
+    }
+    if (!(sink.depth > 0)) {
+        throw new Error(`Version 2 countersink ${sink.end}: depth must be positive, got ${sink.depth}`);
+    }
+    const halfHeight = height / 2;
+    let faceZ;
+    let innerZ;
+    if (sink.end === 'bottom') {
+        faceZ = -halfHeight - KEYED_SLAB_MM;
+        innerZ = -halfHeight + sink.depth - KEYED_SLAB_MM;
+    } else if (sink.end === 'top') {
+        faceZ = halfHeight;
+        innerZ = halfHeight - sink.depth;
+    } else {
+        throw new Error(`Version 2 countersink: unknown end ${sink.end}`);
+    }
+    const face = keyedPrismManifold(sink.face_profile, faceZ, KEYED_SLAB_MM, `countersink ${sink.end} face`);
+    const inner = keyedPrismManifold(sink.inner_profile, innerZ, KEYED_SLAB_MM, `countersink ${sink.end} inner`);
+    const chamfer = Manifold.hull([face, inner]);
+    face.delete();
+    inner.delete();
+    return chamfer;
+}
+
+/**
+ * Embosser Version 2: Cylinder A's key nub - a flared base, a straight body and
+ * a chamfered top, built as THREE parts UNIONED.
+ *
+ * Never one hull over all the slabs. The nub widens at the base and narrows
+ * again at the top, so it is not convex: a single hull bridges straight from
+ * the flare to the chamfer and bulges the body out by 0.2 mm - measured
+ * 14.396 mm2 of section where the profile is 11.144. Gear A1's notch is this
+ * shape's exact negative, so that bulge would have jammed the one gear that
+ * carries the handle torque. Mirrors _nub_manifold() in
+ * tests/test_version2_keyed.py.
+ */
+function createNubManifold(nub) {
+    const bodyBottom = nub.z_from + nub.base_flare.depth;
+    const bodyTop = nub.z_to - nub.top_chamfer.depth;
+    if (!(bodyTop > bodyBottom)) {
+        throw new Error('Version 2 nub: too short for its flare and chamfer');
+    }
+
+    // Same far-edge slab placement as the mouth chamfers, for the same reason.
+    const flareBase = keyedPrismManifold(nub.base_flare.profile, nub.z_from - KEYED_SLAB_MM, KEYED_SLAB_MM, 'nub flare base');
+    const flareTop = keyedPrismManifold(nub.profile, bodyBottom - KEYED_SLAB_MM, KEYED_SLAB_MM, 'nub flare top');
+    const flare = Manifold.hull([flareBase, flareTop]);
+    flareBase.delete();
+    flareTop.delete();
+
+    const body = keyedPrismManifold(nub.profile, bodyBottom, bodyTop - bodyBottom, 'nub body');
+
+    const chamferBase = keyedPrismManifold(nub.profile, bodyTop - KEYED_SLAB_MM, KEYED_SLAB_MM, 'nub chamfer base');
+    const chamferTop = keyedPrismManifold(nub.top_chamfer.profile, nub.z_to - KEYED_SLAB_MM, KEYED_SLAB_MM, 'nub chamfer top');
+    const chamfer = Manifold.hull([chamferBase, chamferTop]);
+    chamferBase.delete();
+    chamferTop.delete();
+
+    const flaredBody = flare.add(body);
+    flare.delete();
+    body.delete();
+    const nubManifold = flaredBody.add(chamfer);
+    flaredBody.delete();
+    chamfer.delete();
+    return nubManifold;
+}
+
+/**
+ * Embosser Version 2: cut the keyed through-hole and countersink its four mouths.
+ *
+ * The two halves are separate keys - the bottom one runs from the bottom face to
+ * the mid-plane, the top one from the mid-plane to the top face - and each
+ * overshoots its own end of the barrel by KEYED_SLAB_MM's worth of overlap that
+ * the spec builds into z_from/z_to, so no two solids ever share an exact plane.
+ * They meet at the centre as ONE through-hole (D-V2).
+ *
+ * The anti-rotation socket is cut here too, for the same reason the halves are:
+ * it is material removed from the barrel, and the stages after this one only
+ * union things on.
+ */
+function cutKeyedCutoutsManifold(barrel, keyed, height) {
+    const halves = keyed.halves || [];
+    if (halves.length === 0) {
+        throw new Error('Version 2 keyed cutout: no halves to cut');
+    }
+
+    let result = barrel;
+    for (const half of halves) {
+        const span = half.z_to - half.z_from;
+        if (!(span > 0)) {
+            throw new Error(`Version 2 half ${half.end}: z_to (${half.z_to}) is not above z_from (${half.z_from})`);
+        }
+        const key = keyedPrismManifold(half.profile, half.z_from, span, `half ${half.end}`);
+        const cut = result.subtract(key);
+        result.delete();
+        key.delete();
+        result = cut;
+    }
+
+    for (const sink of keyed.countersinks || []) {
+        const chamfer = createKeyedCountersinkManifold(sink, height);
+        const cut = result.subtract(chamfer);
+        result.delete();
+        chamfer.delete();
+        result = cut;
+    }
+
+    // The anti-rotation socket: a plain prism sunk into the BOTTOM face, with no
+    // chamfer and no flare, because the gear's pin carries its own 0.5 mm
+    // lead-in. Both plates have carried one since 2026-08-29 - a triangle on
+    // Cylinder A, a square on B - and the spec decides which, so the worker
+    // never guesses a side. Mirrors socket_block() in app/geometry/version2.py.
+    if (keyed.socket) {
+        const span = keyed.socket.z_to - keyed.socket.z_from;
+        if (!(span > 0)) {
+            throw new Error(`Version 2 socket: z_to (${keyed.socket.z_to}) is not above z_from (${keyed.socket.z_from})`);
+        }
+        const socket = keyedPrismManifold(keyed.socket.profile, keyed.socket.z_from, span, 'socket');
+        const cut = result.subtract(socket);
+        result.delete();
+        socket.delete();
+        result = cut;
+    }
+
+    return result;
+}
+
+/**
  * Create cylinder shell with polygonal cutout using Manifold
  */
-function createCylinderShellManifold(spec) {
+function createCylinderShellManifold(spec, solid = false, keyed = null) {
     const { radius, height, thickness, polygon_points } = spec;
 
     const validRadius = (radius > 0) ? radius : 30;
@@ -1305,7 +1660,32 @@ function createCylinderShellManifold(spec) {
 
     try {
         // Create outer cylinder
-        const outer = createManifoldCylinder(validHeight, validRadius, 64);
+        const outer = createManifoldCylinder(validHeight, validRadius, CYLINDER_SHELL_SEGMENTS);
+
+        // Decision D-2, gear mode only: a one-piece roller is SOLID, like the
+        // reference part. An empty polygon_points list does not say that on its
+        // own - without a polygon this function falls through to hollowing by
+        // wall thickness, which on a geared cylinder leaves a 13.4 mm bore with
+        // the weld rings floating inside it and the cavity sealed at both ends
+        // by their bores. Measured in Chromium before this branch existed: a
+        // -29253 mm3 enclosed void in both plates. Nothing can reach or drain
+        // such a cavity, which is the exact failure D-2 exists to prevent.
+        // Embosser Version 2: the keyed cutout IS this barrel's only hole, so the
+        // barrel is solid for the D-2 reason above and one more - a wall-thickness
+        // bore would open straight into the key pockets. `keyed` therefore forces
+        // solid on its own and never falls through to the branches below, whatever
+        // the caller passed. Cut here, while the barrel is still a bare cylinder
+        // and the boolean is at its cheapest.
+        if (keyed) {
+            const keyedShell = cutKeyedCutoutsManifold(outer, keyed, validHeight);
+            console.log(`Manifold CSG Worker: Created Version 2 keyed cylinder (clearance ${keyed.clearance_mm} mm)`);
+            return keyedShell;
+        }
+
+        if (solid) {
+            console.log('Manifold CSG Worker: Created solid cylinder shell (gear mode)');
+            return outer;
+        }
 
         // Check for polygon cutout
         const validPoints = (polygon_points && polygon_points.length >= 3)
@@ -1337,7 +1717,7 @@ function createCylinderShellManifold(spec) {
             // No polygon - create hollow cylinder using wall thickness
             const innerRadius = validRadius - validThickness;
             if (innerRadius > 0) {
-                const inner = createManifoldCylinder(validHeight + 0.2, innerRadius, 64);
+                const inner = createManifoldCylinder(validHeight + 0.2, innerRadius, CYLINDER_SHELL_SEGMENTS);
                 const shell = outer.subtract(inner);
                 outer.delete();
                 inner.delete();
@@ -1386,8 +1766,8 @@ function batchUnionManifold(manifolds) {
  * Process geometry spec using Manifold primitives
  * This is the main entry point for geometry generation
  */
-function processGeometrySpec(spec) {
-    const { shape_type, plate_type, plate, dots, markers, cylinder } = spec;
+function processGeometrySpec(spec, gearAsset = null) {
+    const { shape_type, plate_type, plate, dots, markers, cylinder, gears, keyed_cutouts: keyedCutouts } = spec;
     const isNegative = plate_type === 'negative';
     const isCylinder = shape_type === 'cylinder';
 
@@ -1400,7 +1780,11 @@ function processGeometrySpec(spec) {
         let base;
 
         if (isCylinder && cylinder) {
-            base = createCylinderShellManifold(cylinder);
+            base = createCylinderShellManifold(
+                cylinder,
+                Boolean(gears) || cylinder.solid === true,
+                keyedCutouts || null
+            );
             console.log('Manifold CSG Worker: Created cylinder shell');
         } else {
             // Card plate - simple box
@@ -1412,8 +1796,12 @@ function processGeometrySpec(spec) {
             console.log('Manifold CSG Worker: Created card plate');
         }
 
-        // Collect dot manifolds
-        const dotManifolds = [];
+        // Collect dot manifolds, partitioned per dot. An explicit is_recess on
+        // the dot spec decides union vs subtract (double-sided mode mixes raised
+        // dots and recesses on the same plate); a dot without the flag falls back
+        // to the legacy plate-wide rule: positive plate unions, negative subtracts.
+        const raisedDotManifolds = [];
+        const recessDotManifolds = [];
 
         if (dots && dots.length > 0) {
             console.log(`Manifold CSG Worker: Creating ${dots.length} dots`);
@@ -1448,7 +1836,15 @@ function processGeometrySpec(spec) {
                     }
 
                     if (dotManifold) {
-                        dotManifolds.push(dotManifold);
+                        let dotIsRecess;
+                        if (dotSpec.is_recess === true) {
+                            dotIsRecess = true;
+                        } else if (dotSpec.is_recess === false) {
+                            dotIsRecess = false;
+                        } else {
+                            dotIsRecess = isNegative;
+                        }
+                        (dotIsRecess ? recessDotManifolds : raisedDotManifolds).push(dotManifold);
                         successCount++;
                     }
                 } catch (err) {
@@ -1548,27 +1944,60 @@ function processGeometrySpec(spec) {
         // Perform CSG operations
         let result = base;
 
-        // Process dots
-        if (dotManifolds.length > 0) {
-            console.log(`Manifold CSG Worker: Processing ${dotManifolds.length} dots`);
-            const unionedDots = batchUnionManifold(dotManifolds);
+        // Gear-integrated one-piece rollers (BETA). Unioned right after the
+        // base, inside the RAISED stage and well before any recess is cut, so
+        // the existing CSG order is untouched. Nothing is transformed here: the
+        // asset arrives already in this frame (see loadGearAsset above).
+        if (gears) {
+            if (!gearAsset) {
+                throw new Error('Geometry spec asks for gears but no gear asset was loaded');
+            }
+            const gearParts = [createGearManifold(gearAsset)];
+            for (const ring of gears.weld_rings || []) {
+                gearParts.push(createWeldRingManifold(ring));
+            }
+            const unionedGears = batchUnionManifold(gearParts);
+            if (!unionedGears) {
+                throw new Error('Gear union produced no geometry');
+            }
+            const withGears = result.add(unionedGears);
+            result.delete();
+            unionedGears.delete();
+            result = withGears;
+            console.log(`Manifold CSG Worker: Added gear set ${gears.asset} with ${gears.weld_rings?.length || 0} weld rings`);
+        }
+
+        // Embosser Version 2: the key nub is the only thing Version 2 ADDS to the
+        // barrel, so it joins the RAISED stage right after the base - before raised
+        // dots and markers, and well before any recess is cut, exactly as the gear
+        // set does above. The keyed HOLE and the anti-rotation SOCKET were both
+        // already cut inside createCylinderShellManifold.
+        //
+        // BOTH plates carry a nub since 2026-08-29. It was Cylinder A only while
+        // gear A1 was the only gear with a notch; every gear has an anti-rotation
+        // feature now. The two shapes differ - a triangle on A, a square on B -
+        // and the spec carries whichever this plate needs, so the worker still
+        // never guesses a side.
+        if (keyedCutouts && keyedCutouts.nub) {
+            const nub = createNubManifold(keyedCutouts.nub);
+            const withNub = result.add(nub);
+            result.delete();
+            nub.delete();
+            result = withNub;
+            console.log('Manifold CSG Worker: Added the Version 2 key nub');
+        }
+
+        // Process raised dots (union)
+        if (raisedDotManifolds.length > 0) {
+            console.log(`Manifold CSG Worker: Processing ${raisedDotManifolds.length} raised dots`);
+            const unionedDots = batchUnionManifold(raisedDotManifolds);
 
             if (unionedDots) {
-                if (isNegative) {
-                    // Counter plate: subtract dots
-                    const newResult = result.subtract(unionedDots);
-                    result.delete();
-                    unionedDots.delete();
-                    result = newResult;
-                    console.log('Manifold CSG Worker: Subtracted dots for counter plate');
-                } else {
-                    // Positive plate: add dots
-                    const newResult = result.add(unionedDots);
-                    result.delete();
-                    unionedDots.delete();
-                    result = newResult;
-                    console.log('Manifold CSG Worker: Added dots for embossing plate');
-                }
+                const newResult = result.add(unionedDots);
+                result.delete();
+                unionedDots.delete();
+                result = newResult;
+                console.log('Manifold CSG Worker: Added raised dots');
             }
         }
 
@@ -1584,6 +2013,21 @@ function processGeometrySpec(spec) {
                 unionedRaised.delete();
                 result = newResult;
                 console.log('Manifold CSG Worker: Added raised tactile indicators');
+            }
+        }
+
+        // Process recess dots (subtract) after every union above, so a recess
+        // can never be filled back in by a later raised dot or marker.
+        if (recessDotManifolds.length > 0) {
+            console.log(`Manifold CSG Worker: Processing ${recessDotManifolds.length} recess dots`);
+            const unionedRecessDots = batchUnionManifold(recessDotManifolds);
+
+            if (unionedRecessDots) {
+                const newResult = result.subtract(unionedRecessDots);
+                result.delete();
+                unionedRecessDots.delete();
+                result = newResult;
+                console.log('Manifold CSG Worker: Subtracted recess dots');
             }
         }
 
@@ -1873,8 +2317,17 @@ self.onmessage = async function(event) {
             console.log('Manifold CSG Worker: Dots count:', spec.dots?.length || 0);
             console.log('Manifold CSG Worker: Markers count:', spec.markers?.length || 0);
 
+            // Gear assets are fetched here rather than inside
+            // processGeometrySpec so that function stays synchronous. Cached in
+            // worker scope, so this is one fetch per asset per worker lifetime.
+            let gearAsset = null;
+            if (spec.gears) {
+                console.log('Manifold CSG Worker: Gear mode - loading asset', spec.gears.asset);
+                gearAsset = await loadGearAsset(spec.gears.asset);
+            }
+
             // Process geometry using Manifold
-            const manifold = processGeometrySpec(spec);
+            const manifold = processGeometrySpec(spec, gearAsset);
 
             // Get mesh statistics
             const mesh = manifold.getMesh();

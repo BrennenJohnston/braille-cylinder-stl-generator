@@ -63,7 +63,7 @@ The submenu contains **two grouped sections**:
 │                                                                   │
 │  ┌─ Cylinder Dimensions ─────────────────────────────────────────┐│
 │  │  • Cylinder Diameter (mm)                    [30.75]         ││
-│  │  • Cylinder Height (mm)                      [52]            ││
+│  │  • Cylinder Height (mm)                      [54]            ││
 │  │  • Polygonal Cutout Circumscribed Radius (mm) [13]           ││
 │  │      Creates a polygonal cutout along the cylinder's length. ││
 │  │      Set to 0 for no cutout.                                 ││
@@ -89,11 +89,17 @@ The submenu contains **two grouped sections**:
 ```html
 <!-- Submenu: Surface Dimensions -->
 <div class="expert-submenu">
-    <button type="button" class="expert-submenu-toggle" aria-expanded="false">
-        <span class="expert-submenu-title">Surface Dimensions</span>
-        <span class="expert-submenu-icon">▼</span>
-    </button>
-    <div class="expert-submenu-content" style="display: none;">
+    <!-- The heading wrapper is required: the WAI-ARIA APG Accordion pattern
+         says each header button is the sole child of an element with role
+         heading. See UI_INTERFACE_CORE_SPECIFICATIONS.md §4.11. -->
+    <h3 class="expert-submenu-heading">
+        <button type="button" class="expert-submenu-toggle" aria-expanded="false"
+                aria-controls="expert-panel-dimensions">
+            <span class="expert-submenu-title">Surface Dimensions</span>
+            <span class="expert-submenu-icon" aria-hidden="true">▼</span>
+        </button>
+    </h3>
+    <div id="expert-panel-dimensions" class="expert-submenu-content" style="display: none;">
         <!-- Cylinder Dimensions group -->
         <!-- Plate Dimensions group -->
     </div>
@@ -139,7 +145,7 @@ class CylinderParams:
     diameter_mm: float = 31.35
 
     @staticmethod
-    def from_dict(data: dict, card_height: float = 52.0) -> 'CylinderParams':
+    def from_dict(data: dict) -> 'CylinderParams':
         return CylinderParams(
             diameter_mm=float(data.get('diameter_mm', data.get('diameter', 31.35))),
             # ... other parameters
@@ -215,6 +221,16 @@ function createCylinderShell(spec) {
 | Min | `10` |
 | Max | `200` |
 
+**Why 52 (2026-08-31):** 52 is the **Version 1 standard barrel** — the height
+every previously shipped V1 gear model pairs with, and the size the
+integrated-gears BETA is hard-gated to (S7). The default spent part of this
+day at 54 (a 1 mm card shelf past each card edge), which broke gear mode on
+untouched dials; Brennen's deployment verdict moved the shelf to **Embosser
+Version 2 only** (its preset forces 30.8 × 54 — see
+EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS.md) and returned the default
+to 52. Cylinder height no longer defaults to the card height (also 52); the
+two remain independent settings.
+
 #### Parameter Names Across Codebase
 
 | Source | Parameter Name | Notes |
@@ -222,7 +238,7 @@ function createCylinderShell(spec) {
 | HTML/UI | `cylinder_height_mm` | Primary input name |
 | `app/models.py` | `height_mm` | In `CylinderParams` dataclass |
 | `backend.py` | `height_mm`, `height` | Both accepted |
-| `geometry_spec.py` | `height`, `height_mm` | Fallback to `settings.card_height` |
+| `geometry_spec.py` | `height`, `height_mm` | Fallback to `52` (`gears.DEFAULT_CYLINDER_HEIGHT_MM`, no longer `settings.card_height`) |
 | `csg-worker.js` | `height` | Direct usage |
 
 #### Backend Processing (app/models.py - CylinderParams)
@@ -230,12 +246,12 @@ function createCylinderShell(spec) {
 ```python
 @dataclass
 class CylinderParams:
-    height_mm: float | None = None  # If None, uses card_height from settings
+    height_mm: float = 52.0
 
     @staticmethod
-    def from_dict(data: dict, card_height: float = 52.0) -> 'CylinderParams':
+    def from_dict(data: dict) -> 'CylinderParams':
         return CylinderParams(
-            height_mm=float(data.get('height_mm', data.get('height', card_height))),
+            height_mm=float(data.get('height_mm', data.get('height', 52.0))),
             # ...
         )
 ```
@@ -305,7 +321,7 @@ class CylinderParams:
     polygonal_cutout_radius_mm: float = 13.0
 
     @staticmethod
-    def from_dict(data: dict, card_height: float = 52.0) -> 'CylinderParams':
+    def from_dict(data: dict) -> 'CylinderParams':
         return CylinderParams(
             polygonal_cutout_radius_mm=float(data.get('polygonal_cutout_radius_mm', 13.0)),
             # ...
@@ -446,7 +462,7 @@ class CylinderParams:
     seam_offset_deg: float = 355.0
 
     @staticmethod
-    def from_dict(data: dict, card_height: float = 52.0) -> 'CylinderParams':
+    def from_dict(data: dict) -> 'CylinderParams':
         return CylinderParams(
             seam_offset_deg=float(data.get('seam_offset_deg', data.get('seam_offset_degrees', 355.0))),
             # ...
@@ -1032,6 +1048,15 @@ depth = float(getattr(self, 'counter_dot_depth', 0.8))
 self.counter_dot_depth = max(0.0, min(depth, self.card_thickness - self.epsilon_mm))
 ```
 
+---
+
+## 9. Document History
+
+| Date | Change |
+|------|--------|
+| 2026-08-31 | Cylinder height default 52 → 54 mm: the barrel now carries a 1 mm shelf past each edge of the 52 mm card so a slightly mis-rolled card cannot ruffle over the ends. Braille rows remain centered (the layout centers itself in the height). Cylinder height no longer falls back to `card_height` anywhere — the absent-field default is 54, owned by `app/geometry/gears.py` (`DEFAULT_CYLINDER_HEIGHT_MM`). |
+| 2026-08-31 | **Cylinder height default returns to 52 mm — the 54 mm card-shelf barrel is Embosser Version 2 only** (Brennen's deployment verdict, same day). 52 is the Version 1 standard barrel, the height every previously shipped V1 gear model pairs with; the one-day 54 default made the integrated-gears BETA warn/reject on untouched dials. The decoupling from `card_height` stays: the absent-field fallback is 52, still owned by `gears.DEFAULT_CYLINDER_HEIGHT_MM`, and Version 2 still forces 30.8 × 54 via its preset overrides. Both card-stock presets carry 52 again. |
+
 ### 8.3 Polygon Point Validation (csg-worker.js)
 
 ```javascript
@@ -1315,7 +1340,11 @@ first_row_center_y = height - space_above - dot_spacing
 
 ---
 
-*Document Version: 1.1*
-*Last Updated: December 2024*
+*Document Version: 1.4*
+*Last Updated: 2026-08-22*
 *Revision Notes: Added detailed debug logging information and troubleshooting checklist for cylinder dot positioning (Section 10.7)*
-*Source Files Referenced: backend.py, wsgi.py, app/models.py, geometry_spec.py, static/workers/csg-worker.js, templates/index.html*
+*Revision Notes (1.2, 2026-08-21): Documentation only — the Source Files Referenced line named `templates/index.html`, an empty deprecated folder; it now names `public/index.html`. Part of the templates/ reference sweep (Phase 07b).*
+*Revision Notes (1.3, 2026-08-22): Documentation only — the HTML Implementation sample in Section 1 showed the accordion chevron as a bare `<span class="expert-submenu-icon">`, which is no longer what ships. All six live chevrons gained `aria-hidden="true"` so the decorative `▼` stops being read as part of the toggle's accessible name (POST15_7 audit finding F-B; UI_INTERFACE_CORE_SPECIFICATIONS.md v1.20 §4.5). The sample is updated to match so it is not copied into a new submenu without the attribute. No dimension, formula or measurement changed.*
+*Revision Notes (1.4, 2026-08-22): Documentation only — the same Section 1 sample still showed the accordion button as a bare `<button>`. Every one of the six is now the sole child of an `<h3 class="expert-submenu-heading">`, which the WAI-ARIA APG Accordion pattern requires and which gives the page a heading outline (audit finding F-A, decision D1). The `aria-controls` attribute and the panel `id`, always present in the real markup, are shown too: the click handler now resolves the panel through `aria-controls`, because the button no longer has a next sibling. Outline and rationale in UI_INTERFACE_CORE_SPECIFICATIONS.md v1.22 §4.11.*
+*Revision Notes (1.5, 2026-08-22): The three plate-dimension inputs `card_width`, `card_height` and `card_thickness` in `public/index.html` now declare `min`/`max` (50–200, 30–150, 1–10 mm), copied verbatim from `app/validation.py`, which already enforced those ranges. No dimension, default or enforced limit changed. Recorded here for completeness rather than as an accessibility gain: these three sit inside a `<div hidden>` with `tabindex="-1"` as hidden carriers of the schema defaults, and were measured as absent from the accessibility tree both before and after, so no screen reader reaches them. The announcement fix in POST15_7 item E (audit finding F-M, decision D8) is real for the other ten dials only.*
+*Source Files Referenced: backend.py, wsgi.py, app/models.py, geometry_spec.py, static/workers/csg-worker.js, public/index.html*

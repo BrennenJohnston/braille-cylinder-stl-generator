@@ -18,6 +18,8 @@ from app.utils import braille_to_dots, get_logger
 # Import validation from app.validation
 from app.validation import (
     validate_braille_lines,
+    validate_embosser_version_settings,
+    validate_gear_rollers_settings,
     validate_line_lengths,
     validate_lines,
     validate_original_lines,
@@ -493,12 +495,22 @@ def geometry_spec():
         settings_data = data.get('settings', {})
         shape_type = data.get('shape_type', 'card')
         cylinder_params = data.get('cylinder_params', {})
+        # Double-sided beta: back-of-card braille rides at the top level beside
+        # lines (there is no `text` object on the wire; text.back_lines is the
+        # saved-settings spelling only).
+        back_lines = data.get('back_lines', None)
 
         # Validate inputs
         validate_lines(lines)
         validate_original_lines(original_lines)
         validate_settings(settings_data)
         validate_braille_lines(lines, plate_type)
+        if back_lines is not None:
+            validate_lines(back_lines)
+            # Back braille is real geometry on BOTH plates (recesses on Cylinder
+            # A, raised dots on Cylinder B), so unlike the front lines there is
+            # no counter-plate case to skip: always validate as braille.
+            validate_braille_lines(back_lines, 'positive')
 
         # Validate plate_type
         if plate_type not in ['positive', 'negative']:
@@ -512,19 +524,29 @@ def geometry_spec():
         if shape_type not in ['card', 'cylinder']:
             return jsonify({'error': 'Invalid shape_type. Must be "card" or "cylinder"'}), 400
 
+        # Version 2 first: with both betas switched on it names the real
+        # conflict, where the gear gate would only report the cylinder size.
+        validate_embosser_version_settings(settings_data, shape_type, cylinder_params)
+        validate_gear_rollers_settings(settings_data, shape_type, cylinder_params)
+
         settings = CardSettings(**settings_data)
 
         # SAFETY-CRITICAL: Validate line lengths BEFORE geometry extraction
         # This prevents silent truncation (S0 bug) where characters exceeding
         # grid_columns were silently dropped in geometry_spec.py
-        if plate_type == 'positive':
+        if plate_type == 'positive' or back_lines is not None:
             grid_columns = int(settings_data.get('grid_columns', 18))
             # Default matches CardSettings (indicator letters on). Geometry uses the
             # same default, so validation must agree to avoid over/under-counting.
             indicator_shapes = int(settings_data.get('indicator_shapes', 1))
             # Tactile indicator mode has no marker columns, so all grid columns are text.
             indicator_mode = str(settings_data.get('indicator_mode', 'visual')).lower()
-            validate_line_lengths(lines, grid_columns, shape_type, indicator_shapes, indicator_mode)
+            if plate_type == 'positive':
+                validate_line_lengths(lines, grid_columns, shape_type, indicator_shapes, indicator_mode)
+            # Back lines get the same truncation gate: they become real geometry
+            # on both plates of the double-sided pair.
+            if back_lines is not None:
+                validate_line_lengths(back_lines, grid_columns, shape_type, indicator_shapes, indicator_mode)
 
         # Extract geometry spec
         if shape_type == 'card':
@@ -545,6 +567,7 @@ def geometry_spec():
                 original_lines,
                 plate_type,
                 braille_to_dots_func=braille_to_dots,
+                back_lines=back_lines,
             )
         else:
             return jsonify({'error': f'Invalid shape_type: {shape_type}'}), 400

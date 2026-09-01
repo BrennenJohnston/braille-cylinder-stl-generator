@@ -11,7 +11,9 @@ from __future__ import annotations
 import logging
 import math
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NamedTuple
+
+from app.geometry import gears, interpoint, version2
 
 if TYPE_CHECKING:
     pass
@@ -50,6 +52,32 @@ TACTILE_RECESS_OVERCUT = 1.0
 TACTILE_SEAM_THETA = math.pi
 
 
+# -----------------------------------------------------------------------------
+# DOUBLE-SIDED (INTERPOINT) BETA
+# -----------------------------------------------------------------------------
+# Off by default. When on, the two cylinders stop being "content plate + universal
+# counter plate" and become a matched pair: Cylinder A (positive) carries the card
+# FRONT's raised dots plus a recess for every BACK dot, Cylinder B (negative)
+# carries the BACK's raised dots plus one recess per FRONT dot — no universal
+# grid. The back grid is the front grid mirrored and stepped diagonally by the
+# interpoint offset; see app/geometry/interpoint.py for that math and the
+# research behind the numbers.
+
+
+class _CylinderLayout(NamedTuple):
+    """The grid numbers a dot walk needs, gathered once so helpers stay short."""
+
+    settings: Any
+    tactile_on: bool
+    height: float
+    radius: float
+    first_row_center_y: float
+    start_angle: float
+    cell_spacing_angle: float
+    dot_col_angle_offsets: list[float]
+    braille_to_dots_func: Callable[[str], list[int]]
+
+
 def extract_card_geometry_spec(
     lines: list[str],
     grade: str,
@@ -83,6 +111,10 @@ def extract_card_geometry_spec(
         'dots': [],
         'markers': [],
     }
+
+    # Counts recesses declined for having no depth, so the omission is reported
+    # once per request rather than silently or once per dot.
+    zero_depth_recesses = 0
 
     # Dot positioning constants
     dot_col_offsets = [-settings.dot_spacing / 2, settings.dot_spacing / 2]
@@ -151,7 +183,10 @@ def extract_card_geometry_spec(
                     recess_shape = recess_shape_map.get(recess_shape_int, 'bowl')
 
                     dot_spec = _create_dot_spec(dot_x, dot_y, settings, recess_shape, plate_type)
-                    spec['dots'].append(dot_spec)
+                    if dot_spec is None:
+                        zero_depth_recesses += 1
+                    else:
+                        spec['dots'].append(dot_spec)
 
     else:
         # Positive plate: add row indicators for ALL rows (including empty rows),
@@ -256,13 +291,19 @@ def extract_card_geometry_spec(
                     dot_spec = _create_dot_spec(dot_x, dot_y, settings, 'standard', plate_type)
                     spec['dots'].append(dot_spec)
 
+    if zero_depth_recesses:
+        logger.warning(
+            f'A recess depth of 0 mm was requested, so {zero_depth_recesses} counter recess(es) '
+            'were not cut. Nothing is carved at that depth; set a positive depth if you wanted bowls.'
+        )
+
     return spec
 
 
 def _create_dot_spec(
     x: float, y: float, settings: Any, shape_type: str = 'standard', plate_type: str = 'positive'
-) -> dict[str, Any]:
-    """Create a dot specification dict."""
+) -> dict[str, Any] | None:
+    """Create a dot specification dict, or None when the dot has no volume to cut."""
     z = settings.card_thickness
 
     if shape_type == 'hemisphere':
@@ -299,6 +340,11 @@ def _create_dot_spec(
             bowl_base = 1.8
         radius = bowl_base / 2
         depth = float(getattr(settings, 'counter_dot_depth', 0.8))
+        # A zero-depth bowl is not a shallow bowl, it is no bowl: the spherical
+        # cap has no volume and its sphere radius (a^2 + h^2) / 2h is undefined.
+        # Cut nothing, and let the caller count the omission.
+        if depth <= 0:
+            return None
         return {
             'type': 'rounded',
             'x': x,
@@ -374,6 +420,7 @@ def extract_cylinder_geometry_spec(
     original_lines: list[str] | None = None,
     plate_type: str = 'positive',
     braille_to_dots_func: Callable[[str], list[int]] | None = None,
+    back_lines: list[str] | None = None,
 ) -> dict[str, Any]:
     """
     Extract geometry specification for a braille cylinder without performing CSG.
@@ -382,6 +429,10 @@ def extract_cylinder_geometry_spec(
     - cylinder: shell dimensions and cutout polygon
     - dots: list of dot specifications with 3D positions on cylinder surface
     - markers: list of marker specifications
+
+    `back_lines` is the braille for the card's BACK face (the request's
+    text.back_lines). It is read only in double-sided mode; single-sided mode
+    ignores it entirely.
     """
     if braille_to_dots_func is None:
         raise ValueError('braille_to_dots_func is required')
@@ -389,8 +440,9 @@ def extract_cylinder_geometry_spec(
     if cylinder_params is None:
         cylinder_params = {}
 
-    diameter = float(cylinder_params.get('diameter', cylinder_params.get('diameter_mm', 30.75)))
-    height = float(cylinder_params.get('height', cylinder_params.get('height_mm', settings.card_height)))
+    # One reader for both spellings of each key, shared with app/validation.py's
+    # gear gate so the two can never disagree about what an absent field means.
+    diameter, height = gears.cylinder_dimensions(cylinder_params)
     thickness = float(cylinder_params.get('wall_thickness', cylinder_params.get('thickness', 2.0)))
     polygonal_cutout_radius = float(cylinder_params.get('polygonal_cutout_radius_mm', 0))
     polygonal_cutout_sides = int(cylinder_params.get('polygonal_cutout_sides', 12) or 12)
@@ -403,6 +455,62 @@ def extract_cylinder_geometry_spec(
     # Row indicator style. Tactile drops the marker columns entirely and puts one
     # raised arrow (emboss) / matching recess (counter) per row in the seam gap.
     tactile_on = str(getattr(settings, 'indicator_mode', 'visual')).lower() == 'tactile'
+
+    # Double-sided (interpoint) BETA. Read the flag once: every double-sided
+    # branch below tests this name, so with the toggle off the function runs the
+    # same lines it ran before the feature existed. It is a 0/1 int like
+    # indicator_shapes, not a bool.
+    double_sided = int(getattr(settings, 'double_sided_enabled', 0)) == 1
+    double_sided_warnings: list[str] = []
+    if double_sided:
+        if not tactile_on:
+            # A double-sided pair has no marker columns to spare and no visual
+            # side to read them on, so the row indicator style is locked to the
+            # tactile seam arrows. app/validation.py hard-rejects this case on
+            # the request route; this branch stays as defense-in-depth for
+            # direct callers.
+            indicator_mode = str(getattr(settings, 'indicator_mode', 'visual')).lower()
+            # User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off.
+            warning = (
+                'Double-sided mode is a beta that locks the row indicator style to the tactile '
+                f"seam arrows; '{indicator_mode}' was requested and 'tactile' was used instead."
+            )
+            double_sided_warnings.append(warning)
+            logger.warning(warning)
+            tactile_on = True
+        double_sided_warnings.extend(_double_sided_crowding_warnings(settings, tactile_on))
+
+    # Gear-integrated one-piece rollers BETA. Read once, exactly as the
+    # double-sided flag above is: with the toggle off every gear line below is
+    # skipped and the function runs as it did before the feature existed.
+    gear_rollers = int(getattr(settings, 'gear_rollers_enabled', 0)) == 1
+    gear_warnings: list[str] = []
+    if gear_rollers and not gears.matches_reference_roller(diameter, height):
+        # Unreachable from the request route - app/validation.py rejects this
+        # outright - but direct callers (tests, the golden fixture generator)
+        # bypass validation, and a gear spec for the wrong barrel silently
+        # produces loose or swallowed gears. Same defense-in-depth as the
+        # double-sided indicator_mode branch above.
+        warning = gears.reference_roller_message(diameter, height)
+        gear_warnings.append(warning)
+        logger.warning(warning)
+
+    # Embosser Version 2 (keyed gear pegs) PROTOTYPE. Read once, exactly as the
+    # two betas above are: with Version 1 selected - absent, 1, '1', 1.0 or '' -
+    # every Version 2 line below is skipped and the function emits precisely the
+    # spec it emitted before the prototype existed, new keys included.
+    embosser_v2 = int(getattr(settings, 'embosser_version', 1)) == 2
+    v2_warnings: list[str] = []
+    if embosser_v2 and not version2.matches_v2_barrel(diameter, height):
+        # D-V15: the Version 2 size is a soft preset, not a requirement -
+        # the barrel has been found by printing (30.1 -> 30.5 on 2026-08-29
+        # -> 30.8 on 2026-08-30) - so this is a warning
+        # even on the request route, unlike the gear size above, which is a
+        # rejection because the vendored gears cannot move with the barrel.
+        # Wording S-V5 signed as drafted, 2026-08-28.
+        warning = version2.v2_size_message(diameter, height)
+        v2_warnings.append(warning)
+        logger.warning(warning)
 
     # Calculate grid layout parameters (needed for polygon alignment).
     # settings.grid_columns is the TOTAL column count: in visual mode the frontend
@@ -428,7 +536,26 @@ def extract_cylinder_geometry_spec(
 
     # Compute polygon cutout points if specified, with rotation applied
     polygon_points = []
-    if polygonal_cutout_radius > 0:
+    if gear_rollers and polygonal_cutout_radius > 0:
+        # Decision D-2: the barrel is forced solid while gear mode is on. A
+        # one-piece roller has no through-path along its axis anyway - the gear
+        # bores are blind pockets - so keeping the cutout would seal a cavity
+        # nothing can reach or drain. Wording (S3) signed off by Brennen
+        # 2026-08-24; reword only with his sign-off.
+        warning = 'The polygonal cutout is not used while integrated gears are on.'
+        gear_warnings.append(warning)
+        logger.warning(warning)
+    elif embosser_v2 and polygonal_cutout_radius > 0:
+        # The Version 2 barrel is solid: its keyed cutout is the only hole, and
+        # a polygonal one running the length of the axis would break into it.
+        # Mirrors the gear rule above, and like it the barrel is forced solid
+        # rather than the request refused, so a saved cutout radius cannot lock
+        # a user out of the prototype. Wording S-V14 was new in Phase 05 and
+        # was signed as drafted at that gate, 2026-08-28.
+        warning = 'The polygonal cutout is not used in Version 2.'
+        v2_warnings.append(warning)
+        logger.warning(warning)
+    elif polygonal_cutout_radius > 0:
         circumscribed_radius = polygonal_cutout_radius / math.cos(math.pi / polygonal_cutout_sides)
         for i in range(polygonal_cutout_sides):
             base_angle = 2 * math.pi * i / polygonal_cutout_sides
@@ -457,6 +584,39 @@ def extract_cylinder_geometry_spec(
         'markers': [],
         'warnings': [],
     }
+    spec['warnings'].extend(double_sided_warnings)
+    spec['warnings'].extend(gear_warnings)
+    spec['warnings'].extend(v2_warnings)
+
+    if embosser_v2:
+        # 'solid' is emitted ONLY here, so a Version 1 spec carries no new key
+        # at all. It has to be explicit: an empty polygon_points list does NOT
+        # mean "solid" to the worker, which hollows the barrel by wall thickness
+        # unless it is told otherwise - the lesson decision D-2 recorded when
+        # gear mode sealed an undrainable cavity.
+        spec['cylinder']['solid'] = True
+        # Every number in the block comes from app/geometry/version2.py, and the
+        # z ranges are computed from THIS cylinder's height rather than the
+        # preset's, so an off-size barrel still gets a hole that meets in the
+        # middle. A missing plate_type raises there rather than guessing a side,
+        # exactly as the gear asset lookup does.
+        v2_clearance = float(getattr(settings, 'v2_key_clearance_mm', version2.V2_KEY_CLEARANCE_DEFAULT_MM))
+        spec['keyed_cutouts'] = version2.keyed_cutout_block(plate_type, height, v2_clearance)
+
+    if gear_rollers:
+        # The vendored asset already sits in the worker's frame (Phase 01 baked
+        # the sample-to-program transform in), so the worker applies no
+        # placement and no theta negation to it - see
+        # static/assets/gears/gears_manifest.json. A missing plate_type raises
+        # rather than guessing a side.
+        spec['gears'] = {
+            'asset': gears.GEAR_ASSET_BY_PLATE[plate_type],
+            'weld_rings': gears.weld_rings(height),
+        }
+
+    # Counts recesses declined for having no depth, so the omission is reported
+    # once per request rather than silently or once per dot.
+    zero_depth_recesses = 0
 
     # Seam gap: the arc between the last and first cell centers, measured the long
     # way around through the seam, where the tactile indicator sits. Warn (do not
@@ -487,6 +647,9 @@ def extract_cylinder_geometry_spec(
 
     # Note: seam_offset only affects polygon cutout rotation (computed above)
     # Braille content positioning uses fixed angles (not affected by seam_offset)
+    # The Version 2 keys are not rotated by it either. They are tied to the
+    # tactile arrow column - gear A1's notch drops onto the nub in exactly one
+    # orientation - so turning them with the seam would break the pairing.
 
     def apply_seam(angle: float) -> float:
         """Convert planar angle to cylinder theta (for embossing plate).
@@ -505,6 +668,18 @@ def extract_cylinder_geometry_spec(
         """
         return angle
 
+    layout = _CylinderLayout(
+        settings=settings,
+        tactile_on=tactile_on,
+        height=height,
+        radius=radius,
+        first_row_center_y=first_row_center_y,
+        start_angle=start_angle,
+        cell_spacing_angle=cell_spacing_angle,
+        dot_col_angle_offsets=dot_col_angle_offsets,
+        braille_to_dots_func=braille_to_dots_func,
+    )
+
     if plate_type == 'negative':
         # Counter plate: Mirror of embossing plate along vertical axis
         # Layout: triangle at col 0, rectangle placeholder at col 1, braille cells at cols 2+
@@ -518,7 +693,9 @@ def extract_cylinder_geometry_spec(
                 # The recess the emboss plate's raised arrow nests into. It sits at
                 # 180°, the fixed point of this plate's angle-negating mirror, so it
                 # needs no mirroring of its own.
-                spec['markers'].append(_create_tactile_indicator_spec(y_local, radius, settings, is_recess=True))
+                spec['markers'].append(
+                    _create_tactile_indicator_spec(y_local, radius, settings, is_recess=True, gear_rollers=gear_rollers)
+                )
 
             # Add markers (same column positions as embossing, but mirrored direction)
             # Triangle marker at column 0 (first position, same as embossing).
@@ -561,22 +738,47 @@ def extract_cylinder_geometry_spec(
 
             # Generate all 6 dots for all TEXT cells (same layout as embossing)
             # Uses mirrored angular direction so dots flow clockwise
-            reserved = _reserved_marker_columns(settings, tactile_on)
-            num_text_cols = settings.grid_columns - reserved
-            for col_num in range(num_text_cols):
-                # Braille cells start after the reserved marker columns
-                actual_col = col_num + reserved
-                col_raw_angle = start_angle + (actual_col * cell_spacing_angle)
+            # Double-sided mode replaces this universal grid with 1:1 paired
+            # recesses, generated once after the row loop.
+            if not double_sided:
+                reserved = _reserved_marker_columns(settings, tactile_on)
+                num_text_cols = settings.grid_columns - reserved
+                for col_num in range(num_text_cols):
+                    # Braille cells start after the reserved marker columns
+                    actual_col = col_num + reserved
+                    col_raw_angle = start_angle + (actual_col * cell_spacing_angle)
 
-                for dot_idx in range(6):
-                    row_off_idx, col_off_idx = dot_positions[dot_idx]
-                    # Use mirrored seam for clockwise direction
-                    dot_angle = apply_seam_mirrored(col_raw_angle + dot_col_angle_offsets[col_off_idx])
-                    dot_y = y_local + dot_row_offsets[row_off_idx]
+                    for dot_idx in range(6):
+                        row_off_idx, col_off_idx = dot_positions[dot_idx]
+                        # Use mirrored seam for clockwise direction
+                        dot_angle = apply_seam_mirrored(col_raw_angle + dot_col_angle_offsets[col_off_idx])
+                        dot_y = y_local + dot_row_offsets[row_off_idx]
 
-                    # Transform to 3D cylindrical coordinates
-                    dot_spec = _create_cylinder_dot_spec(dot_angle, dot_y, radius, settings, plate_type='negative')
-                    spec['dots'].append(dot_spec)
+                        # Transform to 3D cylindrical coordinates
+                        dot_spec = _create_cylinder_dot_spec(dot_angle, dot_y, radius, settings, plate_type='negative')
+                        if dot_spec is None:
+                            zero_depth_recesses += 1
+                        else:
+                            spec['dots'].append(dot_spec)
+
+        if double_sided:
+            # Cylinder B in double-sided mode. The order mirrors Cylinder A's —
+            # front features first, then back — so A's dot list and B's line up
+            # index for index, each pair meeting at theta and -theta.
+            for planar_angle, dot_y in _text_dot_placements(layout, lines):
+                ds_recess = _create_ds_cylinder_dot_spec(
+                    apply_seam_mirrored(planar_angle), dot_y, radius, settings, is_recess=True
+                )
+                if ds_recess is None:
+                    zero_depth_recesses += 1
+                else:
+                    spec['dots'].append(ds_recess)
+            for planar_angle, dot_y in _back_dot_placements(layout, back_lines):
+                spec['dots'].append(
+                    _create_ds_cylinder_dot_spec(
+                        apply_seam_mirrored(planar_angle), dot_y, radius, settings, is_recess=False
+                    )
+                )
 
     else:
         # Positive plate: add row indicators for ALL rows (including empty rows),
@@ -592,7 +794,11 @@ def extract_cylinder_geometry_spec(
             if tactile_on:
                 # Raised alignment arrow in the seam gap, apex toward the cylinder
                 # top so a blind user can feel which end is up.
-                spec['markers'].append(_create_tactile_indicator_spec(y_local, radius, settings, is_recess=False))
+                spec['markers'].append(
+                    _create_tactile_indicator_spec(
+                        y_local, radius, settings, is_recess=False, gear_rollers=gear_rollers
+                    )
+                )
 
             # Indicators (visual mode only — tactile has no marker columns):
             # - Triangle at column 0 (first position) - ALWAYS created (no user toggle)
@@ -688,8 +894,33 @@ def extract_cylinder_geometry_spec(
                     dot_y = y_local + dot_row_offsets[row_off_idx]
 
                     # Transform to 3D cylindrical coordinates
-                    dot_spec = _create_cylinder_dot_spec(dot_angle, dot_y, radius, settings, plate_type='positive')
+                    if double_sided:
+                        dot_spec = _create_ds_cylinder_dot_spec(dot_angle, dot_y, radius, settings, is_recess=False)
+                    else:
+                        dot_spec = _create_cylinder_dot_spec(dot_angle, dot_y, radius, settings, plate_type='positive')
                     spec['dots'].append(dot_spec)
+
+        if double_sided:
+            # Cylinder A also carries a recess for every raised dot Cylinder B
+            # will bring to the nip — one per ACTUAL back-text dot, never a
+            # universal grid. Same mapping as A's own dots (apply_seam), so the
+            # recess lands at -theta of B's dot: an exact pairing.
+            for planar_angle, dot_y in _back_dot_placements(layout, back_lines):
+                ds_recess = _create_ds_cylinder_dot_spec(
+                    apply_seam(planar_angle), dot_y, radius, settings, is_recess=True
+                )
+                if ds_recess is None:
+                    zero_depth_recesses += 1
+                else:
+                    spec['dots'].append(ds_recess)
+
+    if zero_depth_recesses:
+        zero_depth_note = (
+            f'A recess depth of 0 mm was requested, so {zero_depth_recesses} counter recess(es) '
+            'were not cut. Nothing is carved at that depth; set a positive depth if you wanted bowls.'
+        )
+        spec['warnings'].append(zero_depth_note)
+        logger.warning(zero_depth_note)
 
     logger.info(
         f'Cylinder geometry spec ({spec["indicator_mode"]} indicators): '
@@ -711,7 +942,136 @@ def _reserved_marker_columns(settings: Any, tactile_on: bool) -> int:
     return 2 if getattr(settings, 'indicator_shapes', 1) else 1
 
 
-def _create_tactile_indicator_spec(y_local: float, radius: float, settings: Any, is_recess: bool) -> dict[str, Any]:
+def _text_dot_placements(layout: _CylinderLayout, lines: list[str] | None) -> list[tuple[float, float]]:
+    """
+    Planar angle and height of every raised dot in `lines`.
+
+    The same walk the embossing plate does inline — row by row, cell by cell,
+    dot by dot, with the same column truncation — but it stops one step short of
+    the seam mapping. That leaves the caller free to send each position to
+    either cylinder: apply_seam() puts it on Cylinder A, apply_seam_mirrored()
+    on Cylinder B, and the two land at theta and -theta, which is exactly the
+    pairing app/geometry/interpoint.py expects.
+
+    Double-sided mode only. Angles are planar (pre-seam) radians; heights are mm
+    relative to the cylinder's mid-height.
+    """
+    settings = layout.settings
+    dot_row_offsets = [settings.dot_spacing, 0, -settings.dot_spacing]
+    dot_positions = [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1]]
+    reserved = _reserved_marker_columns(settings, layout.tactile_on)
+    max_cols = max(0, settings.grid_columns - reserved)
+
+    placements: list[tuple[float, float]] = []
+    for row_num in range(settings.grid_rows):
+        line = lines[row_num] if lines and row_num < len(lines) else ''
+        has_braille = any(0x2800 <= ord(c) <= 0x28FF for c in line) if line else False
+        if not has_braille:
+            continue
+
+        y_pos = layout.first_row_center_y - (row_num * settings.line_spacing) + settings.braille_y_adjust
+        y_local = y_pos - (layout.height / 2.0)
+
+        for col_num, braille_char in enumerate(list(line.strip())[:max_cols]):
+            col_raw_angle = layout.start_angle + ((col_num + reserved) * layout.cell_spacing_angle)
+            for dot_idx, dot_val in enumerate(layout.braille_to_dots_func(braille_char)):
+                if dot_val != 1:
+                    continue
+                row_off_idx, col_off_idx = dot_positions[dot_idx]
+                placements.append(
+                    (
+                        col_raw_angle + layout.dot_col_angle_offsets[col_off_idx],
+                        y_local + dot_row_offsets[row_off_idx],
+                    )
+                )
+    return placements
+
+
+def _back_dot_placements(layout: _CylinderLayout, back_lines: list[str] | None) -> list[tuple[float, float]]:
+    """
+    The same placements for the card's BACK face, moved onto the interpoint grid.
+
+    A back-side feature is laid out in its own reading order, then seen from the
+    front — the frame both cylinders share — it reads mirrored, and the diagonal
+    interpoint step is added so a back dot never lands on a front one.
+    `interpoint.back_grid_transform` does both, in the card frame, so the angle
+    is converted to arc length on the way in (x = angle * radius) and back on
+    the way out.
+
+    Double-sided mode only.
+    """
+    settings = layout.settings
+    offset_x = float(getattr(settings, 'interpoint_offset_x', interpoint.INTERPOINT_OFFSET_X_MM))
+    # Naming bridge: the settings field is the card's y (up the cylinder axis);
+    # interpoint.py calls that same axis z. Same number, two names.
+    offset_z = float(getattr(settings, 'interpoint_offset_y', interpoint.INTERPOINT_OFFSET_Z_MM))
+
+    placements: list[tuple[float, float]] = []
+    for planar_angle, y_local in _text_dot_placements(layout, back_lines):
+        x_back, z_back = interpoint.back_grid_transform(
+            planar_angle * layout.radius,
+            y_local,
+            offset_x,
+            offset_z,
+            interpoint.BACK_GRID_DIRECTION,
+        )
+        placements.append((x_back / layout.radius, z_back))
+    return placements
+
+
+def _double_sided_crowding_warnings(settings: Any, tactile_on: bool) -> list[str]:
+    """
+    Warn when a dot and its neighbouring back-side recess leave too little material.
+
+    In double-sided mode both faces' features share one cylinder surface, so the
+    closest front-to-back centre distance minus the two radii is the printed
+    ridge between them. Below interpoint.SAME_SURFACE_GAP_RELIABLE_MM a 0.4 mm
+    nozzle widens or thins that ridge unpredictably; below
+    SAME_SURFACE_GAP_FLOOR_MM it cannot lay it down at all.
+    """
+    dot_diameter = float(getattr(settings, 'ds_dot_base_diameter', interpoint.DS_DOT_BASE_DIAMETER_MM))
+    bowl_diameter = float(getattr(settings, 'ds_bowl_base_diameter', interpoint.DS_BOWL_DIAMETER_MM))
+    offset_x = float(getattr(settings, 'interpoint_offset_x', interpoint.INTERPOINT_OFFSET_X_MM))
+    offset_z = float(getattr(settings, 'interpoint_offset_y', interpoint.INTERPOINT_OFFSET_Z_MM))
+    columns = max(1, settings.grid_columns - _reserved_marker_columns(settings, tactile_on))
+
+    gap = interpoint.same_surface_min_gap(
+        dot_diameter,
+        bowl_diameter,
+        offset_x,
+        offset_z,
+        columns,
+        settings.grid_rows,
+        settings.dot_spacing,
+        settings.cell_spacing,
+        settings.line_spacing,
+    )
+    if gap >= interpoint.SAME_SURFACE_GAP_RELIABLE_MM:
+        return []
+
+    # User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off.
+    if gap < interpoint.SAME_SURFACE_GAP_FLOOR_MM:
+        severity = (
+            f'less than the {interpoint.SAME_SURFACE_GAP_FLOOR_MM:.2f} mm a 0.4 mm nozzle can lay down, so the '
+            f'ridge between them would not print'
+        )
+    else:
+        severity = (
+            f'less than the {interpoint.SAME_SURFACE_GAP_RELIABLE_MM:.2f} mm needed to print reliably, so the '
+            f'ridge between them may come out thin or merged'
+        )
+    warning = (
+        f'Double-sided crowding: a {dot_diameter:.2f} mm dot next to a {bowl_diameter:.2f} mm recess at the '
+        f'{offset_x:.2f} / {offset_z:.2f} mm interpoint offset leaves {gap:.3f} mm of material between them — '
+        f'{severity}. Reduce the double-sided dot or recess diameter, or check the interpoint offsets.'
+    )
+    logger.warning(warning)
+    return [warning]
+
+
+def _create_tactile_indicator_spec(
+    y_local: float, radius: float, settings: Any, is_recess: bool, gear_rollers: bool
+) -> dict[str, Any]:
     """
     Create one tactile row indicator spec at the seam-gap centre (180°).
 
@@ -730,6 +1090,9 @@ def _create_tactile_indicator_spec(y_local: float, radius: float, settings: Any,
         is_recess: True for the counter plate's recess (subtracted, grown by the
             clearance and extra depth), False for the emboss plate's raised arrow
             (unioned).
+        gear_rollers: True when the gear beta is on, which grows the RAISED
+            arrow's outline by GEAR_ARROW_WELD_MM (D-8a). Recess arrows are
+            unaffected - their clearance growth already overlaps.
     """
     theta = TACTILE_SEAM_THETA
     width = float(getattr(settings, 'tactile_indicator_width', 4.0))
@@ -749,7 +1112,12 @@ def _create_tactile_indicator_spec(y_local: float, radius: float, settings: Any,
         extra_depth = 0.0
         inner_radius = radius - TACTILE_BASE_EMBED
         outer_radius = radius + raise_mm
-        outline_delta = 0.0
+        # Decision D-8a: gear mode promises a watertight one-piece roller, and
+        # a 10 mm arrow on 10 mm line spacing touches its neighbour exactly -
+        # a tangency float32 STL rounding turns into a pinch edge. 5 um makes
+        # it a real overlap. Off, the outline is untouched, so today's exports
+        # keep the exact tangency they ship with.
+        outline_delta = gears.GEAR_ARROW_WELD_MM if gear_rollers else 0.0
 
     return {
         'type': 'cylinder_tactile_arrow',
@@ -770,7 +1138,7 @@ def _create_tactile_indicator_spec(y_local: float, radius: float, settings: Any,
 
 def _create_cylinder_dot_spec(
     theta: float, y_local: float, radius: float, settings: Any, plate_type: str = 'positive'
-) -> dict[str, Any]:
+) -> dict[str, Any] | None:
     """
     Create a dot spec with 3D position on cylinder surface.
 
@@ -830,6 +1198,9 @@ def _create_cylinder_dot_spec(
                 bowl_base = 1.8
             bowl_radius = bowl_base / 2
             bowl_depth = float(getattr(settings, 'counter_dot_depth', 0.8))
+            # See _create_dot_spec: depth 0 means no recess, not a default one.
+            if bowl_depth <= 0:
+                return None
             return {
                 'type': 'cylinder_dot',
                 'x': x,
@@ -912,6 +1283,81 @@ def _create_cylinder_dot_spec(
                     'height': dot_height,
                 },
             }
+
+
+def _create_ds_cylinder_dot_spec(
+    theta: float, y_local: float, radius: float, settings: Any, is_recess: bool
+) -> dict[str, Any] | None:
+    """
+    Create one double-sided dot spec: a rounded raised dot or its paired bowl.
+
+    Double-sided mode uses its own, smaller footprint (the ds_* settings) because
+    a raised dot and a neighbouring back-side recess share one cylinder surface;
+    single-sided mode is unaffected and keeps the shipped sizes. Both plates use
+    this same footprint, so a dot on one cylinder always meets an identically
+    sized bowl on the other.
+
+    The emitted 'rounded' and 'bowl' shapes are the ones the CSG workers already
+    build — double-sided mode changes the numbers, not the shape vocabulary.
+
+    Args:
+        theta: Angle around cylinder (radians), already seam-mapped for its plate
+        y_local: Height position relative to cylinder center
+        radius: Cylinder radius
+        settings: CardSettings
+        is_recess: True for the bowl that receives the opposing cylinder's dot,
+            False for the raised dot itself.
+    """
+    x = radius * math.cos(theta)
+    z = radius * math.sin(theta)
+
+    if is_recess:
+        bowl_diameter = float(getattr(settings, 'ds_bowl_base_diameter', interpoint.DS_BOWL_DIAMETER_MM))
+        bowl_depth = float(getattr(settings, 'ds_bowl_depth', interpoint.DS_BOWL_DEPTH_MM))
+        # See _create_dot_spec: depth 0 means no recess, not a default one.
+        if bowl_depth <= 0:
+            return None
+        return {
+            'type': 'cylinder_dot',
+            'x': x,
+            'y': y_local,
+            'z': z,
+            'theta': theta,
+            'radius': radius,
+            'is_recess': True,
+            'params': {
+                'shape': 'bowl',
+                'bowl_radius': bowl_diameter / 2,
+                'bowl_depth': bowl_depth,
+            },
+        }
+
+    base_dia = float(getattr(settings, 'ds_dot_base_diameter', interpoint.DS_DOT_BASE_DIAMETER_MM))
+    dome_dia = float(getattr(settings, 'ds_dot_dome_diameter', interpoint.DS_DOT_DOME_DIAMETER_MM))
+    base_h = float(getattr(settings, 'ds_dot_base_height', interpoint.DS_DOT_BASE_HEIGHT_MM))
+    dome_h = float(getattr(settings, 'ds_dot_dome_height', interpoint.DS_DOT_DOME_HEIGHT_MM))
+    top_radius = dome_dia / 2.0
+    if dome_h > 0:
+        R = (top_radius * top_radius + dome_h * dome_h) / (2.0 * dome_h)
+    else:
+        R = max(top_radius, 1.0)
+    return {
+        'type': 'cylinder_dot',
+        'x': x,
+        'y': y_local,
+        'z': z,
+        'theta': theta,
+        'radius': radius,
+        'is_recess': False,
+        'params': {
+            'shape': 'rounded',
+            'base_radius': base_dia / 2,
+            'top_radius': top_radius,
+            'base_height': base_h,
+            'dome_height': dome_h,
+            'dome_radius': R,
+        },
+    }
 
 
 def _create_cylinder_marker_spec(

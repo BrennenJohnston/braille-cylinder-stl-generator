@@ -4,6 +4,12 @@
 
 This document defines the Card Thickness Preset System, a frontend convenience feature that automatically adjusts all braille geometry parameters to optimal values for specific 3D printer layer heights (0.3mm and 0.4mm). This system ensures users can quickly configure appropriate settings for their printing capabilities without manually adjusting dozens of individual parameters.
 
+> **Naming note (2026-08-19, correcting 2026-08-18).** The 0.3 / 0.4 numbers are the thickness of the **paper card stock** the cylinders emboss — the stock standard paper business cards come in. They are **not** the printer's layer height, and the control is labelled **Card Thickness**.
+>
+> This document, and the sr-only descriptions in `public/index.html`, said "layer height" from the day the feature shipped. That was always wrong, and on 2026-08-18 it caused the visible label to be renamed to "Print Layer Height" to match. The argument for that rename was that "both presets set `card_thickness: 2.0`, so nothing about the card's thickness varies between them" — but `card_thickness` is the thickness of the printed **plastic plate**, not the paper. What the presets actually change is bowl **depth** (0.5 → 0.8 mm) and dot **height** (0.8 → 1.0 mm); cylinders print standing upright, so both are radial dimensions that a layer height cannot motivate and that thicker card stock motivates directly.
+>
+> Corrected throughout on 2026-08-19 with Brennen's sign-off. The field name `card_thickness_preset`, the `braille_prefs_*` localStorage key, and this document's filename were never changed by either edit, so nothing in the API or in stored user settings moved.
+
 ## Scope
 
 - Frontend preset system architecture
@@ -21,9 +27,8 @@ This document defines the Card Thickness Preset System, a frontend convenience f
 ## Source Priority (Order of Correctness)
 
 1. `public/index.html` — Production frontend with preset definitions
-2. `templates/index.html` — Template source (should match public/)
-3. This specification document
-4. SETTINGS_SCHEMA_CORE_SPECIFICATIONS.md — Backend schema for individual parameters
+2. This specification document
+3. SETTINGS_SCHEMA_CORE_SPECIFICATIONS.md — Backend schema for individual parameters
 
 ---
 
@@ -196,7 +201,7 @@ const THICKNESS_PRESETS = {
 ```
 
 The tactile indicator dimensions are **identical in both presets**: the arrow is sized by
-the finger that reads it, not by the print layer height. They are still listed in both
+the finger that reads it, not by the card stock thickness. They are still listed in both
 entries so that selecting either preset restores them, and so that hand-editing one of them
 flips the selector to Custom like every other preset-controlled dial.
 
@@ -223,7 +228,7 @@ flips the selector to Custom like every other preset-controlled dial.
 
 ### UI Location
 
-Card Thickness preset selector appears **above** the Expert Mode toggle:
+The Card Thickness preset selector (field name `card_thickness_preset`) appears **above** the Expert Mode toggle:
 - After the Braille Grade selection
 - Before the "Show Expert Mode" button
 
@@ -233,7 +238,10 @@ Card Thickness preset selector appears **above** the Expert Mode toggle:
 <div class="grade-selection">
     <fieldset>
         <legend class="grade-label">Card Thickness</legend>
-        <div class="radio-group thickness-toggle" role="radiogroup" aria-required="true" aria-label="Select card thickness preset">
+        <!-- No aria-label: the <legend> above is this group's only name.
+             Naming both made NVDA announce two groups for one set of
+             radios (audit F-N, fixed 2026-08-22). -->
+        <div class="radio-group thickness-toggle" role="radiogroup" aria-required="true">
             <label class="radio-option">
                 <input type="radio" name="card_thickness_preset" value="0.4" checked aria-describedby="thickness-04-desc">
                 <span class="radio-text">0.4mm</span>
@@ -251,7 +259,7 @@ Card Thickness preset selector appears **above** the Expert Mode toggle:
             <span id="thickness-custom-desc" class="sr-only">Custom settings - automatically selected when any parameter is modified from preset values</span>
         </div>
         <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
-            Selecting a thickness preset will automatically adjust all braille dot and surface parameters to optimal values for that layer height. "Custom" is automatically selected when you modify any parameter.
+            Selecting a card thickness preset will automatically adjust all braille dot and surface parameters to values tuned for embossing that card stock. This is the thickness of the paper business cards you feed through the cylinders — the printed plate itself is always 2 mm thick either way. "Custom" is automatically selected when you modify any parameter.
         </div>
     </fieldset>
 </div>
@@ -269,7 +277,7 @@ Card Thickness preset selector appears **above** the Expert Mode toggle:
 
 ### Confirmation Message
 
-Format: `Card Thickness preset "X.Xmm" applied. All parameters updated.`
+Format: `Card thickness preset "X.Xmm" applied. All parameters updated.`
 
 Styling:
 - Appears in the existing error/info banner area
@@ -282,7 +290,7 @@ Styling:
 
 ### Function: `applyThicknessPreset(presetKey)`
 
-**Location**: `public/index.html` ~lines 4302-4342, `templates/index.html` ~lines 4091-4131
+**Location**: `public/index.html` — `applyThicknessPreset()`
 
 **Purpose**: Applies all values from a preset to the form inputs
 
@@ -321,7 +329,7 @@ function applyThicknessPreset(presetKey) {
 
     // Show confirmation message
     try {
-        errorText.textContent = `Card Thickness preset "${presetKey}mm" applied. All parameters updated.`;
+        errorText.textContent = `Card thickness preset "${presetKey}mm" applied. All parameters updated.`;
         errorDiv.style.display = 'flex';
         errorDiv.className = 'error-message info';
         setTimeout(() => {
@@ -549,6 +557,19 @@ changeable by the user afterward.
 
 ---
 
+### Double-Sided Footprints Follow the Preset (2026-08-20)
+
+The double-sided beta's six `ds_*` footprint values are NOT in `THICKNESS_PRESETS`
+and have no dials, but the preset radio now selects which fixed package the generate
+handler sends when the beta is on: `DS_FOOTPRINTS['0.3']` is Option B (dot ⌀1.2 ×
+0.8 mm tall, bowl ⌀1.3), `DS_FOOTPRINTS['0.4']` is the Q2 print-matrix winner (dot
+⌀1.2 × 1.0 mm tall with dome ⌀1.0, bowl ⌀1.4). A 'custom' selection falls back to
+the last persisted preset, then '0.4'. Source-of-truth pairing:
+`app/geometry/interpoint.py` `DS_FOOTPRINTS_BY_PRESET`, diffed against the UI by
+`tests/test_smoke.py::test_ui_ds_footprints_match_interpoint_packages`. On the 0.4
+preset the crowding warning shows whenever the beta is on — by design; see
+INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §3, §7.3, §7.5.
+
 ## 6. LocalStorage Persistence
 
 ### Keys Stored
@@ -583,8 +604,10 @@ changeable by the user afterward.
         }
 
         // Apply the preset to ensure all values are consistent
-        // This fixes the issue where HTML defaults don't match preset values
-        applyThicknessPreset(presetToApply);
+        // This fixes the issue where HTML defaults don't match preset values.
+        // Silently (no notice, no announcement): a load restore is not a
+        // user action.
+        applyThicknessPreset(presetToApply, false, false);
         log.debug('Applied thickness preset on load:', presetToApply);
     } catch (e) {
         log.debug('Error restoring thickness preset:', e);
@@ -596,6 +619,14 @@ changeable by the user afterward.
 - **Problem**: Original implementation only set the radio button but didn't apply preset values on load
 - **Result**: HTML default values (which didn't match presets) were displayed instead
 - **Solution**: Now applies the preset on page load, ensuring consistency
+
+**Silent since 2026-08-22**: `applyThicknessPreset(presetKey, applyShape, showNotice)`
+takes a third parameter, default `true`; the load-time restore passes `false`, so the
+values are still applied on load exactly as before but the confirmation message is
+neither shown nor announced then. The first NVDA listening run (POST15_6) proved the
+mirrored announcement — `Card thickness preset "0.4mm" applied. All parameters
+updated.` — was spoken on every focused load or reload, before the user had touched
+anything. Clicking a preset still shows the notice and announces it once.
 
 ---
 
@@ -716,7 +747,6 @@ The preset system is designed to **never fail visibly**:
 ### Implementation Consistency
 
 - [x] `public/index.html` contains preset definitions
-- [x] `templates/index.html` matches `public/index.html` exactly
 - [x] All 26 parameters have corresponding `<input>` elements with matching IDs
 - [x] Both `change` and `click` events are attached to radio buttons
 - [x] Preset is applied on page load (2025-12-07 fix)
@@ -771,10 +801,18 @@ The preset system is designed to **never fail visibly**:
 | 2025-12-07 | 1.2 | Updated 0.3mm preset values: All dot dimensions reduced for finer detail (rounded base: 1.5→1.2, heights reduced, emboss cone: 1.5→1.2, counter depths reduced). |
 | 2025-12-07 | 1.3 | Added "Custom" radio button feature. Automatically detects when parameter values deviate from presets and switches to "Custom". Added `checkPresetMatch()`, `detectCurrentPreset()`, and `updatePresetSelection()` functions. Updated HTML structure and event listener documentation. |
 | 2026-07-30 | 1.4 | Added the five tactile indicator dimensions to both presets (32 parameters total). Corrected the documented `grid_columns` values to the 11 actually shipped, dropped the stale line-number and `templates/index.html` references, and updated the Expert Mode submenu map for the Tactile Indicator Dimensions and Translation Options submenus. Presets also now feed the `{preset}` segment of STL file names. |
+| 2026-08-18 | 1.5 | **User-facing rename, no API change.** The visible legend became "Print Layer Height" (was "Card Thickness") and the radiogroup `aria-label` became "Select print layer height preset", because both presets set `card_thickness: 2.0` and nothing about card thickness varies between them. Seven strings changed in `public/index.html`; the confirmation message is now `Layer height preset "X.Xmm" applied. All parameters updated.` and the explanatory note gained "The card itself stays 2 mm thick either way." The three sr-only descriptions were already correct and are unchanged, as are `card_thickness_preset`, the localStorage key, and this filename. Approved by Brennen 2026-08-18. |
+| 2026-08-31 | 1.6 | Both presets' `cylinder_height_mm` moved 52 → 54 with the project-wide cylinder default (`card_height` stays 52): the barrel now carries a 1 mm shelf past each edge of the 52 mm card so a slightly mis-rolled card cannot ruffle over the ends. Braille rows stay centered. Every other preset value is unchanged. |
+| 2026-08-19 | 1.6 | **Corrects v1.5 and an error older than it.** The 0.3 / 0.4 numbers are the thickness of the paper CARD STOCK being embossed, not the printer's layer height, so the visible legend is back to "Card Thickness" and the radiogroup `aria-label` to "Select card thickness preset". v1.5's argument was that `card_thickness: 2.0` never varies between presets — but that field is the printed PLASTIC PLATE's thickness, not the paper. What the presets change is bowl depth (0.5 → 0.8 mm) and dot height (0.8 → 1.0 mm), both radial dimensions on an upright print that a layer height cannot motivate. The three sr-only descriptions had said "layer height" since v1.0 and were wrong all along; they now read "Preset settings optimized for embossing 0.Xmm card stock". Confirmation message is `Card thickness preset "X.Xmm" applied. All parameters updated.` Ten strings and three code comments changed in `public/index.html`. `card_thickness_preset`, the localStorage key and this filename are unchanged, as in v1.5. Approved by Brennen 2026-08-19. |
+| 2026-08-20 | 1.7 | The preset radio now also selects the double-sided beta's fixed footprint package (no new dials): 0.3 → Option B, 0.4 → the Q2 print-matrix winner, sent on the wire only when the beta is on. New Section 5 subsection "Double-Sided Footprints Follow the Preset"; source of truth `interpoint.DS_FOOTPRINTS_BY_PRESET`, smoke-guarded against the UI copy. Also corrected four stale "optimized for 0.3mm layer" code comments in the 0.3 preset to "card stock" (leftovers of the naming confusion fixed in v1.6). |
+| 2026-08-21 | 1.8 | **Documentation only — no behavior change.** Removed the three remaining `templates/index.html` references (that folder is empty and deprecated): the Source Priority entry (list renumbered 1–3), the stale line-number pair on `applyThicknessPreset()` (now cited by function name, since line numbers in `public/index.html` have moved twice this month), and the Section 10 checklist row asserting the two HTML files matched. The Section 2 line already calling the copy deprecated is unchanged. Part of the templates/ reference sweep (Phase 07b). |
+| 2026-08-22 | 1.9 | **The load-time restore is now silent.** `applyThicknessPreset()` gained a third parameter `showNotice` (default `true`) and `restoreThicknessPreset()` passes `false`: values are still applied on load exactly as before, but the confirmation message is no longer shown or announced then. Found by the first NVDA listening run (POST15_6): the mirrored announcement was spoken on every focused load or reload, before the user had done anything. Clicking a preset is unchanged — notice shown and announced once. Verified by probe on Chromium and Firefox (the load-time `#a11y-status` write is gone). Approved by Brennen 2026-08-22 (FD-20). |
+| 2026-08-31 | 1.10 | **Both presets' `cylinder_height_mm` return 54 → 52** (undoing the same-day v1.6 row above, on Brennen's deployment verdict): 52 is the Version 1 standard barrel, the height every previously shipped V1 gear model pairs with, and 54 made the integrated-gears BETA warn/reject on untouched dials. The 1 mm card-shelf barrel (54) is Embosser Version 2 only — applied by `V2_PRESET_OVERRIDES` on top of whichever preset is active, exactly as the diameter already was. Every other preset value is unchanged. |
+| 2026-08-22 | 1.10 | **One group name for the radios instead of two — an attribute removal, no wording and no visual change.** The `role="radiogroup"` div carried `aria-label="Select card thickness preset"` while the `<legend>` above it already said "Card Thickness", so NVDA announced "Card Thickness grouping" and then "Select card thickness preset grouping required" before the first option (POST15_7 audit F-N; commit `63d5778`). The `aria-label` is gone; `role="radiogroup"` and `aria-required="true"` stay. **Verified on the live accessibility tree before editing that this was a one-off and not the house pattern:** both sibling groups — Select Plate to Generate and Row Indicator Style — expose an unnamed `role="radiogroup"` inside their named fieldset, and this one now matches them. Named grouping nodes on the page **16 → 15**. **This supersedes the second half of the v1.6 row**, which recorded the `aria-label` as "Select card thickness preset"; that row is left as written, since it is history. The visible legend, the three sr-only option descriptions and every preset value are untouched. Section 4's HTML sample updated. |
 
 ---
 
-**Document Version**: 1.4
+**Document Version**: 1.10
 **Created**: 2025-12-07
 **Purpose**: Specification for Card Thickness Preset System (frontend convenience feature)
 **Status**: ✅ Complete

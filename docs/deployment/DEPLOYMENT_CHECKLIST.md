@@ -17,7 +17,7 @@ v2.0.0 has no external service dependencies. The server is Flask serving static 
       `upstream_tag` against the latest tag on
       [braille-cylinder-stl-generator-openscad](https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad/releases).
       If it is behind, copy that release's
-      `makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad` (plus any
+      `makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad` (plus any
       changed docs) into `OpenSCAD/`, update every field in `VENDORED.json`
       including a fresh `sha256` for **each** file you copied, and re-run
       `pytest tests/test_vendored_openscad.py`.

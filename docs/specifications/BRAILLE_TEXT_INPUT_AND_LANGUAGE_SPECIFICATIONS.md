@@ -312,12 +312,12 @@ function createDynamicLineInputs(numLines) {
         lineDiv.innerHTML = `
             <div class="line-translation-row">
                 <label for="line_lang_${i}" class="line-label">Line ${i} Translation</label>
+                <!-- No aria-describedby: the label above already says
+                     "Line N Translation", and a description that only
+                     repeats its own label is spoken on every pass for
+                     nothing (audit F-K, fixed 2026-08-22). -->
                 <select id="line_lang_${i}" name="line_lang_${i}"
-                    class="language-select line-language-select"
-                    aria-describedby="line${i}-lang-help"></select>
-                <span id="line${i}-lang-help" class="sr-only">
-                    Select translation language for line ${i}
-                </span>
+                    class="language-select line-language-select"></select>
             </div>
             <div class="line-text-row">
                 <label for="line${i}" class="line-label">Line ${i}</label>
@@ -429,13 +429,18 @@ The master language selection dropdown controls:
                 <option value="en-us-g2.ctb">English (EBAE), United States — contracted (grade 2)</option>
                 <option value="en-us-g1.ctb">English (EBAE), United States — uncontracted (grade 1)</option>
             </select>
-            <div id="language-help" class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
+            <!-- The id sits on the LAST SENTENCE, not the div: everything before it is
+                 reference material that the combobox itself already announces or that the
+                 help guide carries, so it stays visible but is not spoken on every visit
+                 (ADA SOP Step 6.8; audit F-D). -->
+            <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
                 Default: English (UEB), United States — contracted (grade 2). The BANA
                 <em>Guidelines for Brailling Business Cards</em> (March 2024) says to follow
                 <em>The Rules of Unified English Braille</em>, and every worked example in that
                 fact sheet is contracted UEB. Contractions also pack more of a name, phone
-                number, or e-mail address into the 13–14 cells a card row allows. Switch to
-                uncontracted (grade 1) only if your reader has asked for it.
+                number, or e-mail address into the 13–14 cells a card row allows. <span
+                id="language-help">Switch to uncontracted (grade 1) only if your reader has
+                asked for it.</span>
             </div>
         </div>
     </fieldset>
@@ -603,7 +608,7 @@ The **Capitalized Letters** toggle allows users to control whether capital lette
 In braille, capital letters require additional indicator cells (e.g., dot-6 prefix in UEB). The toggle allows users to choose between:
 
 - **Enabled (default):** Preserve exact capitalization — what the user typed is what gets translated
-- **Disabled:** Convert text to lowercase before translation, saving one braille cell per capital letter (two per fully-capitalized word) — an option for power users short on space
+- **Disabled:** Convert text to lowercase before translation, saving one braille cell per capital letter (two per fully-capitalized word) — an option for power users short on space. **This sentence is delivered as VISIBLE text only** (the `.grade-note` under the radios). The Disabled radio carried an `sr-only` description saying the same thing, which was spoken 20 ms after the live `#caps-warning` said it again; it was removed 2026-08-22 (audit F-J, decision D6). Nothing left the page — the visible note is unchanged
 
 **Important:** The user's input text remains unchanged in the UI. The lowercase conversion happens only at translation time when the setting is disabled.
 
@@ -624,11 +629,12 @@ The toggle lives in the **Translation Options** submenu of Expert Mode (`#expert
         Enabled <span style="font-weight: normal; opacity: 0.85;">(default)</span>
     </label>
     <label style="display: inline-flex; align-items: center; gap: 0.4em;">
-        <input type="radio" name="capitalize_letters" value="disabled" id="capitalize_disabled" aria-describedby="caps-disabled-desc">
+        <!-- Disabled is labelled, NOT described. Its sr-only description duplicated
+             both the live #caps-warning and the visible .grade-note below (audit F-J). -->
+        <input type="radio" name="capitalize_letters" value="disabled" id="capitalize_disabled">
         Disabled
     </label>
     <span id="caps-enabled-desc" class="sr-only">Preserve capital letters in braille translation, using capital indicator cells</span>
-    <span id="caps-disabled-desc" class="sr-only">Convert text to lowercase before translation to save space on braille cells: one cell per capital letter, two per fully capitalized word</span>
     <div class="grade-note" style="margin: 0; font-size: 0.85em; flex-basis: 100%;">
         Disabling capitalization saves one braille cell per capital letter (two per fully-capitalized word) — an option for power users short on space.
     </div>
@@ -889,6 +895,31 @@ There is no silent reconciliation between the English inputs and the field, and 
 
 ### UI Structure
 
+**`lang="und-Brai"` on `#braille-unicode` — KEEP. Decided by Brennen 2026-08-23 after
+investigation, and recorded because the reasoning is not obvious from the attribute.**
+
+NVDA announces **"und (not supported)"** on every visit to this field — measured at **17
+utterances in a 30-minute walkthrough** on 2026-08-23, and 19 in the 2026-08-22 run. It
+looks like pure noise and it was raised as a finding. It is kept anyway, on three
+findings:
+
+1. **The tag is correct.** `und` = undetermined language, `Brai` = Braille script, which
+   is exactly what the field holds. It is used the same way on the three inline `<code>`
+   samples and three `<pre>` blocks in the help modal — seven uses in all.
+2. **Nothing in the code reads it.** It is a semantic declaration only; no script, worker,
+   test or style depends on it, so removing it would be free of side effects here.
+3. **The announcement is NVDA's *automatic language switching*, a user-configurable
+   setting.** The cost falls on speech users who can switch it off. The risk of removing
+   it falls on **braille-display** users — a `lang` with a script subtag can affect how a
+   screen reader routes content to a display, and this app's users are disproportionately
+   braille readers. That risk is untested and was not worth taking to silence something
+   the user can already silence.
+
+**If this is ever revisited, the measurement that settles it is a braille display**, not a
+speech test: does a display render this field's Unicode braille identically with and
+without the tag?
+
+
 Inside the "Enter Text for Braille Translation" fieldset, directly below the text entry area. The two boxes share one visual treatment (the braille box differs only in glyph size) with one translate button under each, so the pair reads as a single two-way control:
 
 | Element | ID | Role |
@@ -897,7 +928,7 @@ Inside the "Enter Text for Braille Translation" fieldset, directly below the tex
 | Textarea | `braille-unicode` | 4 rows, `lang="und-Brai"`, `aria-describedby="braille-unicode-help braille-unicode-status"` |
 | Translate to Text ↑ | `translate-to-text-btn` | Under the braille box: back-translates the braille into the English inputs |
 | Visible status | `braille-unicode-status` | Current state in plain words |
-| Help text | `braille-unicode-help` | Allowed range, how the field is used |
+| Help text | `braille-unicode-help` | A `<span>` around the FIRST SENTENCE only — the allowed range. The rest of the paragraph (how the field is used) stays visible in the same div, unwired: the textarea's description is this span **plus** `#braille-unicode-status`, so its budget is the 25-word ceiling minus a live status of 8–12 words (ADA SOP Step 6.8; audit F-C) |
 | Live region | `braille-unicode-live` | `class="sr-only" role="status" aria-live="polite"` |
 
 ### State Machine
@@ -1156,6 +1187,22 @@ if original_lines and row_num < len(original_lines):
         rect_polygon = create_line_marker_polygon(...)
 ```
 
+### Double-Sided Beta: `back_lines` (cylinder only, toggle-gated)
+
+**Source:** `public/index.html` (generate handler + `generateSTLClientSide`), `backend.py` (`/geometry_spec`)
+
+When the double-sided (interpoint) beta toggle is ON, the `/geometry_spec` request additionally carries:
+
+- A **top-level** `back_lines` key beside `lines` — an array of braille Unicode strings padded to `grid_rows`, produced by running the Back of Card text through the **same `banaAutoWrap()` pass the front's Auto Placement uses** (same language table, same capitalization setting, same contracted-grade default as the front lines; newlines are hard row breaks). There is no `text` object on the wire; `text.back_lines` is only the saved-settings spelling in `settings.schema.json`.
+- The flat double-sided fields inside `settings`: `double_sided_enabled` (int 1), `interpoint_offset_x`, `interpoint_offset_y`, `ds_dot_base_diameter`, `ds_dot_base_height`, `ds_dot_dome_diameter`, `ds_dot_dome_height`, `ds_bowl_base_diameter`, `ds_bowl_depth` (dial strings; absent dials fall back to the signed-off Option B defaults).
+- **Both plates carry the front braille.** Cylinder B (plate_type `negative`) requests send the translated front lines too — in single-sided mode counter-plate requests send empty lines — because Cylinder B needs them to place its 1:1 paired recesses.
+
+The backend validates `back_lines` with the same gates as the front lines (`validate_lines`, `validate_braille_lines`, `validate_line_lengths`); the braille-charset check always runs for `back_lines` (back braille is real geometry on both plates, so there is no counter-plate skip). With the toggle OFF the request is byte-identical to the single-sided one.
+
+The Back of Card source text lives in the `#back-text` textarea inside the Back of Card fieldset, revealed by the `#double_sided_enabled` toggle. Since 2026-08-17 it is **BANA auto-wrapped, not one row per newline**: `banaAutoWrap(backSrc, getAvailableColumns(), grid_rows, tableName)` wraps whole words across the available rows and treats each newline as a forced row break, exactly as the front does in Auto Placement. Because `banaAutoWrap()` always returns exactly `rows` lines, the padded-to-`grid_rows` wire shape is unchanged.
+
+Back text fails **closed** — the generate handler blocks with an error and sends no request — when the wrap needs more rows than the plate has, when a word cannot be divided per BANA, or when liblouis is unavailable. A live `role="status"` region (`#ds-back-overflow-warning`) runs the same wrap on a 250 ms debounce while the user types, gated on the toggle being on. The exact strings (signed off by Brennen 2026-08-17) and the live-warning wording live in INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §7.4; full geometry semantics belong to that document too.
+
 ---
 
 ## 9. BANA Auto-Wrap Algorithm
@@ -1344,6 +1391,8 @@ auto warning box) so the two warnings can never disagree.
 | `braille_prefs_shape_type` | Output shape | `"card"` or `"cylinder"` |
 | `braille_prefs_grid_rows` | Number of rows | Integer string |
 | `braille_prefs_grid_columns` | Number of columns | Integer string |
+| `braille_prefs_double_sided_enabled` | Double-sided beta toggle | `"1"` or `"0"` |
+| `braille_prefs_back_text` | Back of Card source text (double-sided beta) | Raw text, newlines = rows |
 
 ### Persistence Listeners
 
@@ -1435,15 +1484,18 @@ function applyPersistedSettings() {
 ### ARIA Attributes
 
 ```html
-<!-- Master language select -->
+<!-- Master language select: described by ONE SENTENCE, not the whole note.
+     #language-help is a <span> around the last sentence; the BANA rationale
+     before it stays visible in the same div, unwired (audit F-D). -->
 <select id="language-table" aria-describedby="language-help">
-<div id="language-help" class="grade-note">Default: English (UEB)...</div>
+<div class="grade-note">Default: English (UEB)... <span id="language-help">Switch to
+uncontracted (grade 1) only if your reader has asked for it.</span></div>
 
-<!-- Per-line language selects -->
-<select id="line_lang_1" aria-describedby="line1-lang-help">
-<span id="line1-lang-help" class="sr-only">Select translation language for line 1</span>
+<!-- Per-line language selects: labelled, NOT described. The description
+     that used to sit here only repeated the label (audit F-K). -->
+<select id="line_lang_1">
 
-<!-- Text inputs -->
+<!-- Text inputs: described, because the description adds the limit -->
 <input id="line1" aria-describedby="line1-help">
 <span id="line1-help" class="sr-only">Maximum 50 characters for line 1</span>
 ```
@@ -1874,7 +1926,12 @@ None required. All implementations match the specification exactly.
 
 ---
 
-*Document Version: 1.2*
-*Last Updated: 2026-07-30 — Capitalized Letters and Number Signs moved to the Expert Mode Translation Options submenu; the Braille (Unicode) field gained a Translate to Text button and now sits directly under the matching text box*
+*Document Version: 1.7*
+*Last Updated: 2026-08-23 - `lang="und-Brai"` on the braille field investigated and KEPT (new note in Section 8 UI Structure). NVDA says "und (not supported)" on every visit - 17 times in a 30-minute walkthrough - and it is kept anyway: the tag is correct, nothing in the code reads it, the announcement is a user-configurable NVDA setting, and removing it would trade a switchable annoyance for an untested risk to braille-display users. Brennen decided after the investigation; the note records that a braille display, not a speech test, is what would settle it. No markup changed.*
+*Previous: 1.6, 2026-08-22 - Two descriptions stop being spoken in full, and no word of either changed. (1) The language combobox is described by its LAST SENTENCE only - `id="language-help"` moved onto a `<span>` around "Switch to uncontracted (grade 1) only if your reader has asked for it." (13 w), and the BANA rationale before it stays in the same div, visible and unwired. Its dropped opening, "Default: English (UEB), United States - contracted (grade 2)", is exactly what the combobox announces as its selected option, so keeping it wired restated the label. Measured **71 -> 13 words**; it had been spoken 18 times in a 34-minute NVDA session (audit F-D, decision D2 step 2). (2) The **Disabled** capitals radio no longer carries `aria-describedby`, and the orphan `#caps-disabled-desc` span is gone with it: its text duplicated BOTH the live `#caps-warning` and the VISIBLE `.grade-note` beneath the radios, which is unchanged, so nothing left the page (audit F-J, decision D6). `#caps-enabled-desc` is deliberately still wired. The braille-field element table now records that `#braille-unicode-help` is a span around its first sentence, and that this textarea's budget is the ceiling minus `#braille-unicode-status`. Every HTML sample here updated - they would otherwise teach the old markup. Keepers approved by Brennen as drafts before the edit (FD-25). Pattern: `UI_INTERFACE_CORE_SPECIFICATIONS.md` 4.13.*
+*Previous: 1.5, 2026-08-22 - The four per-line language selects no longer carry a screen-reader description (audit F-K; commit 23575ab); descriptions on those selects 4 -> 0, spans in the DOM 4 -> 0, and the sibling `#line{N}-help` deliberately unchanged.*
+*Previous: 1.4, 2026-08-17 — Back of Card text reaches parity with the front: Section 8 now records BANA auto-wrap via the shared `banaAutoWrap()` (newlines = forced row breaks, wire shape unchanged), the three fail-closed blocking paths, and the live `#ds-back-overflow-warning` status region*
+*Previous: 1.3, 2026-08-16 — Double-sided (interpoint) beta: Section 8 documents the toggle-gated `back_lines` wire field, the flat `settings` fields, and the both-plates-carry-front-lines rule; Section 11 adds the two new `braille_prefs_*` keys*
+*Previous: 1.2, 2026-07-30 — Capitalized Letters and Number Signs moved to the Expert Mode Translation Options submenu; the Braille (Unicode) field gained a Translate to Text button and now sits directly under the matching text box*
 *Verification Completed: 2024-12-06*
 *Source Priority: backend.py > wsgi.py > csg-worker.js > Manifold WASM*

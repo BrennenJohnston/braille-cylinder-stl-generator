@@ -12,6 +12,7 @@
     "shape_type": { "type": "string", "enum": ["card", "cylinder"], "default": "card" },
     "plate_type": { "type": "string", "enum": ["positive", "negative"], "default": "positive" },
     "placement_mode": { "type": "string", "enum": ["auto", "manual"], "default": "manual" },
+    "embosser_version": { "type": "integer", "enum": [1, 2], "default": 1, "description": "Which embosser hardware this cylinder is for. 1 is the machine the app has always generated for and stays the default - absent, 1, \"1\", 1.0 or \"\" all leave every existing code path exactly as it is. 2 is the keyed gear-peg PROTOTYPE: each cylinder end carries a shaped through-cutout so a drive gear physically cannot be seated in the wrong place. CYLINDERS ONLY, and it may change while testing continues. Integrated gears are rejected with version 2. See EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS.md." },
 
     "text": {
       "type": "object",
@@ -21,6 +22,11 @@
         "lines": {
           "type": "array",
           "items": { "type": "string", "pattern": "^[\\u2800-\\u28FF\\s]*$" }
+        },
+        "back_lines": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[\\u2800-\\u28FF\\s]*$" },
+          "description": "BETA, double-sided mode only: the braille for the BACK face of the card. Same Unicode braille rule as 'lines'. Ignored unless double_sided.enabled is true."
         },
         "languages": { "type": "array", "items": { "type": "string" } },
         "default_language": { "type": "string", "default": "en-ueb-g2.ctb" },
@@ -34,13 +40,13 @@
       "description": "Braille spacing and layout parameters",
       "additionalProperties": false,
       "properties": {
-        "grid_columns": { "type": "integer", "minimum": 1, "default": 15, "description": "TOTAL grid columns per row, including reserved marker columns. The UI dial counts text cells only and adds the markers before sending: visual mode with indicator letters reserves 2 columns (default 13 text + 2 = 15), letters off reserves 1 (13 text + 1 = 14), tactile reserves 0 (default 14 text). The seam gap left over, pi x cylinder_diameter_mm - (total - 1) x cell_spacing_mm, must still clear one cell's dot footprint (dot_spacing + dot base diameter) in visual mode, or the tactile indicator plus its 5 mm clear zone in tactile mode." },
-        "grid_rows": { "type": "integer", "minimum": 1, "default": 4, "description": "Number of braille rows on the plate" },
-        "dot_spacing_mm": { "type": "number", "minimum": 0, "default": 2.5 },
-        "cell_spacing_mm": { "type": "number", "minimum": 0, "default": 6.5 },
-        "line_spacing_mm": { "type": "number", "minimum": 0, "default": 10.0 },
-        "braille_x_adjust_mm": { "type": "number", "default": 0 },
-        "braille_y_adjust_mm": { "type": "number", "default": 0 }
+        "grid_columns": { "type": "integer", "minimum": 1, "maximum": 20, "default": 15, "description": "TOTAL grid columns per row, including reserved marker columns. The UI dial counts text cells only and adds the markers before sending: visual mode with indicator letters reserves 2 columns (default 13 text + 2 = 15), letters off reserves 1 (13 text + 1 = 14), tactile reserves 0 (default 14 text). The seam gap left over, pi x cylinder_diameter_mm - (total - 1) x cell_spacing_mm, must still clear one cell's dot footprint (dot_spacing + dot base diameter) in visual mode, or the tactile indicator plus its 5 mm clear zone in tactile mode." },
+        "grid_rows": { "type": "integer", "minimum": 1, "maximum": 200, "default": 4, "description": "Number of braille rows on the plate" },
+        "dot_spacing_mm": { "type": "number", "minimum": 1, "maximum": 5, "default": 2.5, "description": "Centre-to-centre distance between dots within one cell. TACTILE: the minimum was 0 here until 2026-08-23, which documented merged dots as legal; app/validation.py has always enforced 1-5." },
+        "cell_spacing_mm": { "type": "number", "minimum": 2, "maximum": 15, "default": 6.5 },
+        "line_spacing_mm": { "type": "number", "minimum": 5, "maximum": 25, "default": 10.0 },
+        "braille_x_adjust_mm": { "type": "number", "minimum": -10, "maximum": 10, "default": 0 },
+        "braille_y_adjust_mm": { "type": "number", "minimum": -10, "maximum": 10, "default": 0 }
       }
     },
 
@@ -49,9 +55,9 @@
       "description": "Card (flat plate) surface dimensions",
       "additionalProperties": false,
       "properties": {
-        "plate_width_mm": { "type": "number", "exclusiveMinimum": 0, "default": 90 },
-        "plate_height_mm": { "type": "number", "exclusiveMinimum": 0, "default": 52 },
-        "plate_thickness_mm": { "type": "number", "exclusiveMinimum": 0, "default": 2.0 }
+        "plate_width_mm": { "type": "number", "minimum": 50, "maximum": 200, "default": 90, "description": "Runtime name: card_width" },
+        "plate_height_mm": { "type": "number", "minimum": 30, "maximum": 150, "default": 52, "description": "Runtime name: card_height" },
+        "plate_thickness_mm": { "type": "number", "minimum": 1, "maximum": 10, "default": 2.0, "description": "Runtime name: card_thickness" }
       }
     },
 
@@ -103,9 +109,9 @@
           "description": "Emboss plate cone (frustum) parameters",
           "additionalProperties": false,
           "properties": {
-            "diameter_mm": { "type": "number", "exclusiveMinimum": 0, "default": 1.8 },
-            "height_mm": { "type": "number", "minimum": 0, "default": 1.0 },
-            "flat_hat_diameter_mm": { "type": "number", "minimum": 0, "default": 0.4 }
+            "diameter_mm": { "type": "number", "minimum": 0.5, "maximum": 3, "default": 1.8 },
+            "height_mm": { "type": "number", "minimum": 0.3, "maximum": 2, "default": 1.0 },
+            "flat_hat_diameter_mm": { "type": "number", "minimum": 0.1, "maximum": 2, "default": 0.4 }
           }
         },
 
@@ -164,6 +170,41 @@
         "use_client_side_csg": { "type": "boolean", "default": true },
         "use_manifold_repair": { "type": "boolean", "default": true },
         "file_name_prefix": { "type": "string" }
+      }
+    },
+
+    "double_sided": {
+      "type": "object",
+      "description": "BETA: double-sided (interpoint) cylinder pair. When enabled, Cylinder A (plate_type positive) carries the card FRONT's raised dots plus 1:1 recesses for the BACK's dots, and Cylinder B (plate_type negative) carries the BACK's raised dots plus 1:1 recesses for the FRONT's - no universal all-position counter grid. The back grid is shifted diagonally from the front grid so front and back paper domes never cancel. Cylinder only, and tactile row indicators only. The ds_* defaults below are the 0.3 mm-stock package (Option B, physically validated 2026-08-17) and act as the absent-field fallback; the UI sends the package for the selected card-stock preset (0.4 -> dot base_height 0.5, dome 1.0 x 0.5, bowl 1.4 - the 2026-08-20 print-matrix winner, keyed per FD-8/FD-9). See INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": false, "description": "BETA feature toggle, default false. false preserves today's single-sided behavior exactly: no geometry, warnings, or output files change. true generates the paired A/B cylinders described above and requires text.back_lines." },
+        "interpoint_offset_x_mm": { "type": "number", "minimum": 1.15, "maximum": 1.35, "default": 1.25, "description": "Back-grid shift measured around the cylinder (arc length, mm). Default 1.25 is the published interpoint offset (US Patent 5,527,117), which maximises the smallest front-to-back dot-centre distance (1.76777 mm) on the 2.5/6.5/10.0 grid. The 1.15-1.35 range keeps the same-surface dot-to-recess gap above the 0.34 mm printability floor - see INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md." },
+        "interpoint_offset_y_mm": { "type": "number", "minimum": 1.15, "maximum": 1.35, "default": 1.25, "description": "Back-grid shift measured along the cylinder axis (mm). Default 1.25 is the published interpoint offset (US Patent 5,527,117); the 1.15-1.35 range keeps the same-surface dot-to-recess gap above the 0.34 mm printability floor - see INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md. Naming bridge: app/geometry/interpoint.py calls this same number offset_z (INTERPOINT_OFFSET_Z_MM) because its card frame uses z for the axial axis." },
+        "ds_dot_base_diameter_mm": { "type": "number", "minimum": 0.5, "maximum": 3.0, "default": 1.2, "description": "Double-sided mode only: rounded emboss dot base diameter (mm). Smaller than the single-sided default because a dot and a neighbouring back-side recess share one surface; 1.2 with a 1.3 bowl leaves 0.518 mm of material between them nominally (0.495 mm as printed - the worker cuts the bowl mouth wider than nominal, see INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md). Single-sided mode is unaffected." },
+        "ds_dot_base_height_mm": { "type": "number", "minimum": 0.0, "maximum": 2.0, "default": 0.4, "description": "Double-sided mode only: height of the dot's rounded base below the dome (mm)." },
+        "ds_dot_dome_diameter_mm": { "type": "number", "minimum": 0.5, "maximum": 3.0, "default": 0.8, "description": "Double-sided mode only: diameter where the dome meets the base (mm)." },
+        "ds_dot_dome_height_mm": { "type": "number", "minimum": 0.1, "maximum": 2.0, "default": 0.4, "description": "Double-sided mode only: dome height above the base (mm). Total dot height is ds_dot_base_height_mm + ds_dot_dome_height_mm = 0.8 mm at the defaults." },
+        "ds_bowl_base_diameter_mm": { "type": "number", "minimum": 0.5, "maximum": 5.0, "default": 1.3, "description": "Double-sided mode only: diameter of the paired bowl recess that receives the opposing cylinder's dot (mm)." },
+        "ds_bowl_depth_mm": { "type": "number", "minimum": 0.0, "maximum": 5.0, "default": 0.5, "description": "Double-sided mode only: depth of the paired bowl recess (mm). The dot dips (dot height - surface gap) into it at the nip, so depths below the dip make the two cylinders intersect." }
+      }
+    },
+
+    "gear_rollers": {
+      "type": "object",
+      "description": "BETA: gear-integrated one-piece rollers. When enabled, a generated cylinder ships as ONE watertight solid with its top and bottom drive gears already attached, instead of a barrel that separate printed gears are pushed onto. The gears are a 1:1 replication of Brennen's reference set, vendored as static/assets/gears/gears_a.bin (positive plate) and gears_b.bin (negative plate) and regenerated only by scripts/derive_gear_assets.py: 24 teeth, tip radius 16.1093702290795 mm (diameter 32.2187), 10.000 mm thick, sitting at z -10..0 and 52..62 around the 52.000 mm barrel for a 72.000 mm roller. Meshing the pair is what holds the two cylinders rotationally synchronised. See GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": false, "description": "BETA feature toggle, default false. false preserves today's behavior exactly - no geometry, warnings, or output files change. true adds the integrated top and bottom gears to generated CYLINDERS as one solid piece (cards reject it), forces the barrel solid (no polygonal cutout), and uses the vendored 1:1 gear assets in static/assets/gears/." }
+      }
+    },
+
+    "version_2": {
+      "type": "object",
+      "description": "PROTOTYPE: the dials that exist only for embosser_version 2. Its cylinder is a solid barrel with one keyed through-cutout: the bottom gear's peg profile extruded from the bottom face to the mid-plane, the top gear's from the mid-plane to the top face, each mouth countersunk 2.0 mm at 45 degrees to clear the peg's root flare, and a 3.0 mm triangular nub on Cylinder A's top face that fixes the handle gear's orientation. The four keys are family R14 - rounded rectangles 14x14, 18x10, 16x12 and 20x8 with a 0.5 mm corner radius, sized so no peg enters any hole but its own. Every number lives in app/geometry/version2.py. See EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS.md.",
+      "additionalProperties": false,
+      "properties": {
+        "key_clearance_mm": { "type": "number", "minimum": 0.0, "maximum": 0.5, "default": 0.110, "description": "Extra room around each gear peg, per side (mm). Every keyed cutout grows by this, so one number means one thing: how loose the four keys are. The nub on Cylinder A does NOT move with it - gear A1's notch is already cut, so the nub keeps the size that gear was made for. 0.110 is where two printed rounds put it: 0.15 left all four holes too loose and 0.075 made them too tight. Raising it eats the error-proofing margin - 0.890 mm of margin at 0.110, 0.850 at 0.15, 0.500 at the 0.5 maximum - so the keys stay mutually exclusive across the whole range, but only just at the top." }
       }
     }
   },

@@ -102,6 +102,10 @@ def index_explicit():
    - 4.5 [Toggle Button ARIA Requirements](#45-toggle-button-aria-requirements)
    - 4.6 [Reduced Motion Support](#46-reduced-motion-support)
    - 4.7 [Two-Way Translation Controls](#47-two-way-translation-controls)
+   - 4.8 [Double-Sided Card Beta: Disclosure Checkbox and Locked Radio Option](#48-double-sided-card-beta-disclosure-checkbox-and-locked-radio-option)
+   - 4.9 [Button Contrast Tokens and the 44 px Action Button](#49-button-contrast-tokens-and-the-44-px-action-button)
+   - 4.10 [Live Regions Must Already Be in the Accessibility Tree](#410-live-regions-must-already-be-in-the-accessibility-tree)
+   - 4.11 [Heading Outline](#411-heading-outline)
 5. [Scrollbar Customization](#5-scrollbar-customization)
    - 5.1 [Form Scroll Area Scrollbar](#51-form-scroll-area-scrollbar)
    - 5.2 [Global Page Scrollbar](#52-global-page-scrollbar)
@@ -174,11 +178,17 @@ All theme-dependent colors are defined using CSS custom properties (variables) o
     --border-secondary: #cbd5e1;
     --border-focus: #3182ce;
 
-    /* Button colors */
-    --btn-primary-bg: linear-gradient(90deg, #3182ce 60%, #63b3ed 100%);
-    --btn-primary-hover-bg: linear-gradient(90deg, #2563eb 60%, #4299e1 100%);
-    --btn-success-bg: #10b981;
-    --btn-success-hover-bg: #059669;
+    /* Button colors — every gradient stop clears 4.5:1 against the #fff label
+       on its own; border tokens equal the fill here because the fill already
+       clears 3:1 against the surface behind it (see Section 4.9) */
+    --btn-primary-bg: linear-gradient(90deg, #245d94 60%, #2c6ca8 100%);
+    --btn-primary-hover-bg: linear-gradient(90deg, #1d4e7c 60%, #245d94 100%);
+    --btn-success-bg: #0f7a5a;
+    --btn-success-hover-bg: #0c6349;
+    --btn-primary-border: #245d94;
+    --btn-primary-border-hover: #1d4e7c;
+    --btn-success-border: #0f7a5a;
+    --btn-success-border-hover: #0c6349;
     --btn-secondary-bg: #9ca3af;
     --btn-tertiary-bg: #6b7280;
 
@@ -189,6 +199,18 @@ All theme-dependent colors are defined using CSS custom properties (variables) o
     --info-bg: #dbeafe;
     --info-border: #93c5fd;
     --info-text: #1e40af;
+
+    /* Front-of-card warning and note text (added 2026-08-21). Measured on
+       --bg-secondary, the surface all three boxes sit on: 6.18:1 and 5.08:1.
+       Both reuse a value already in this palette rather than adding a new hex
+       - --warning-text is --error-text, --note-text is --btn-success-bg. */
+    --warning-text: #b91c1c;
+    --note-text: #0f7a5a;
+
+    /* Skip link label. One value serves all three themes - it clears 4.5:1 on
+       every --border-focus (5.21 / 9.20 / 6.70), so it is declared once here
+       and not repeated per theme. See Section 4.1. */
+    --skip-link-text: #000000;
 
     /* Shadow colors */
     --shadow-light: rgba(49,130,206,0.10);
@@ -232,11 +254,17 @@ All theme-dependent colors are defined using CSS custom properties (variables) o
     --border-secondary: #718096;
     --border-focus: #63b3ed;
 
-    /* Button colors */
-    --btn-primary-bg: linear-gradient(90deg, #4299e1 60%, #63b3ed 100%);
-    --btn-primary-hover-bg: linear-gradient(90deg, #3182ce 60%, #4299e1 100%);
-    --btn-success-bg: #059669;
-    --btn-success-hover-bg: #047857;
+    /* Button colors — solid, not gradient: a fill dark enough for a #fff label
+       drops under 3:1 against the #374151 surface, so the border carries the
+       component boundary instead (see Section 4.9) */
+    --btn-primary-bg: #2c6ca8;
+    --btn-primary-hover-bg: #245d94;
+    --btn-success-bg: #0c6b4f;
+    --btn-success-hover-bg: #0a5940;
+    --btn-primary-border: #90cdf4;
+    --btn-primary-border-hover: #bee3f8;
+    --btn-success-border: #6ee7b7;
+    --btn-success-border-hover: #a7f3d0;
     --btn-secondary-bg: #718096;
     --btn-tertiary-bg: #4a5568;
 
@@ -247,6 +275,11 @@ All theme-dependent colors are defined using CSS custom properties (variables) o
     --info-bg: #2c5282;
     --info-border: #3182ce;
     --info-text: #bee3f8;
+
+    /* 7.81:1 and 6.76:1 on --bg-secondary. Same reuse as the light theme:
+       --error-text and --btn-success-border. */
+    --warning-text: #fed7d7;
+    --note-text: #6ee7b7;
 
     /* Shadow colors */
     --shadow-light: rgba(0,0,0,0.3);
@@ -297,6 +330,12 @@ All theme-dependent colors are defined using CSS custom properties (variables) o
     --btn-primary-hover-bg: #02fe05;
     --btn-success-bg: #02fe05;
     --btn-success-hover-bg: #02fe05;
+    /* Declared for completeness; every high-contrast button rule below sets its
+       own border with !important, so these tokens never paint */
+    --btn-primary-border: #000000;
+    --btn-primary-border-hover: #ffff00;
+    --btn-success-border: #000000;
+    --btn-success-border-hover: #ffff00;
     --btn-secondary-bg: #ff6600;    /* Orange */
     --btn-tertiary-bg: #ff6600;
 
@@ -307,6 +346,13 @@ All theme-dependent colors are defined using CSS custom properties (variables) o
     --info-bg: #0000ff;
     --info-border: #0000ff;
     --info-text: #02fe05;
+
+    /* Declared for completeness only: the [data-theme="high-contrast"]
+       .grade-note rule forces #fdfe00 with !important and the strong rule
+       forces #02fe05, so neither token paints. Both already clear the floor
+       (16.04:1 body, 12.58:1 label). */
+    --warning-text: #fdfe00;
+    --note-text: #fdfe00;
 
     /* No shadows in high contrast mode */
     --shadow-light: none;
@@ -1229,11 +1275,18 @@ updateContrastStepper();
     text-align: center;
 }
 
+/* Stepper buttons: 44x44 floor (WCAG 2.5.5), raised 2026-08-21 from 1.6em */
+.preview-stepper-btn {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    padding: 0.2em 0.35em !important;
+}
+
 /* Edge outline toggle - same stepper metrics, but wide enough for a word */
 .preview-toggle-btn {
-    min-width: 4em;
-    min-height: 1.6em;
-    padding: 0.2em 0.6em;
+    min-width: max(4em, 44px) !important;
+    min-height: 44px !important;
+    padding: 0.2em 0.6em !important;
 }
 
 /* Same WCAG-AA active blues the Expert Mode toggles use */
@@ -1495,32 +1548,157 @@ renderer.domElement.addEventListener('webglcontextrestored', () => {
 
 ### 4.1 Skip Link Navigation
 
-A skip link is provided for keyboard users to bypass the header and jump directly to the main content:
+**Two** skip links are provided for keyboard users. The first bypasses the banner — the
+theme toggle, the font-size controls, the source link and the help button — and lands in
+the main content. The second carries on to the braille text entry, because on this page
+"main content" and "the thing you came to do" are not the same place.
 
 ```html
 <a href="#main-content" class="skip-link" tabindex="0">Skip to main content</a>
+<a href="#front-entry-heading" class="skip-link" tabindex="0">Skip to braille text entry</a>
 ```
+
+> **The sentence above was false until 2026-08-23, and this is the change that made it
+> true.** It claimed the link let keyboard users "bypass the header and jump directly to
+> the main content". **There was no header.** The font-size, theme, GitHub and help
+> controls all sat *inside* `<main>`, so the link bypassed **zero** focusable controls and
+> landed the user immediately before the font-size buttons — audit finding **F-E**, probe
+> `focusableBeforeTarget: 0`, `firstInsideTarget: font-decrease`. POST15_7 item G moved the
+> chrome out rather than softening the sentence. Recorded here because a spec that
+> describes an intention as though it were behaviour is worse than one that says nothing.
+
+#### The banner, and why the whole top bar moved rather than half of it
+
+`<header class="site-header">` sits **above** `<main>` and holds the compact top bar: the `<h1>`
+and the utility controls together. A `<header>` nested inside `<main>` is *not* a banner
+landmark, so it has to be a sibling — which is why `<body>` is a flex **column** and
+`.main-layout` takes `flex: 1 1 auto; min-height: 0` instead of a second `height: 100vh`.
+
+**There is no `role="banner"`, and that is deliberate.** A top-level `<header>` already
+IS the banner landmark, so the role adds nothing; the W3C Nu validator emits
+*"The “banner” role is unnecessary for element “header”"*, which fails the ADA SOP's
+0-errors-**and**-0-warnings gate at Step 6.1. It was written with the role, measured,
+and the role removed. Confirmed over CDP that the computed accessibility tree still
+reports `banner` without it — static markup is not evidence here, and this project has
+been caught by that before.
+
+Item G's own prompt asked for the `<h1>` to stay in `<main>` and only the chrome to move.
+Both versions were built and measured, and Brennen chose to move the bar whole:
+
+| | h1 stays in main | **bar moves whole (shipped)** |
+|---|---|---|
+| Content height, 1440×900 @100% | 808 → 763 px | 808 → **808** |
+| @200% | 634 → 618 px | 634 → **634** |
+| 1024×800 | 671 → 663 px | 671 → **671** |
+| "Translate to Text" on load | **below the fold** | visible |
+
+Splitting the div turns the one-row top bar into two rows on a layout locked to the
+viewport, and the app pays for it in height. Moving it whole satisfies the constraint that
+mattered — the `<h1>` is still the **first heading in document order**, because the banner
+is above `<main>` — and `id="main-heading"` still resolves for `<form aria-labelledby>`,
+which is an IDREF and does not care about ancestry.
+
+#### Both targets carry `tabindex="-1"`, and that is load-bearing
+
+`<main id="main-content" tabindex="-1">` and `<h2 id="front-entry-heading" tabindex="-1">`.
+
+**Without it a skip link does not move focus at all.** A fragment link to a non-focusable
+element only shifts the *sequential-navigation start point*: Tab continues from the target,
+but `document.activeElement` stays on `<body>`, so a screen reader in focus mode is told
+nothing and Safari moves nothing whatsoever. Measured on this page — before the attribute
+was added, activating "Skip to main content" left focus on `<body>`. `-1` keeps both
+elements out of the Tab ring (verified: ring size unchanged, neither id appears in it), and
+both draw the normal 3px focus ring on arrival, so the jump is visible as well as spoken.
+
+The second link targets the **section heading and not `#auto-text`** for the same class of
+reason: Manual Placement hides `#auto-input-container`, and a fragment link to a
+`display:none` element moves nothing either. The heading is present in both placement
+modes, so the link cannot go dead. Verified in both modes.
+
+#### What the landmark inventory looks like now
+
+| Landmark | Label |
+|---|---|
+| `banner` | — |
+| `main` | — |
+| `region` | 3D STL Preview |
+| `region` | Braille Cylinder Configuration |
+| `form` | Custom Braille STL Generator |
+
+Five, where there were four and none of them a banner.
+
+**What this did NOT fix, stated plainly.** The tab ring is **32 stops before and 32 after**,
+and **14 of them still precede the first control that does the app's job** — exactly the
+figure audit finding **F-F** opened with. The added skip link and the removed duplicate
+GitHub link cancel each other out. What changed is that a keyboard user no longer has to
+walk the ring: **three keystrokes** reach the text entry. Reordering the columns to shorten
+the ring itself was offered and declined — it would put DOM order out of step with visual
+order for sighted keyboard users (WCAG 2.4.3). See FD-27b.
 
 ```css
 .skip-link {
     position: absolute;
-    top: -40px;
+    top: 0;
     left: 0;
+    transform: translateY(-100%);  /* Hidden by its OWN height */
     background: var(--border-focus);
-    color: white;
+    color: var(--skip-link-text);
     padding: 8px 16px;
     text-decoration: none;
     border-radius: 0 0 8px 0;
     z-index: 1000;
-    transition: top 0.3s;
+    transition: transform 0.3s;
 }
 
 .skip-link:focus {
-    top: 0;  /* Becomes visible when focused */
+    transform: translateY(0);  /* Becomes visible when focused */
     outline: 3px solid var(--border-focus);
     outline-offset: 2px;
 }
 ```
+
+**Why the label is `var(--skip-link-text)` and not `white` (fixed 2026-08-21).**
+White on `--border-focus` failed WCAG 2.1 SC 1.4.3 (AA) in **all three themes** -
+4.03:1 light, 2.28:1 dark, 3.14:1 high contrast, against a 4.5:1 floor.
+
+The obvious repair, darkening `--border-focus` itself, was measured and **rejected**.
+That token is also the page-wide focus-ring colour, and the two jobs pull apart: a
+blue dark enough to carry white text at 4.5:1 (`#2c5282`, 7.97:1) measures **1.51:1
+against the dark theme's page** and 2.47:1 against high-contrast black, dropping every
+focus ring on the page below the 3:1 non-text floor of WCAG 2.2 SC 1.4.11. Fixing one
+AA failure would have created dozens.
+
+The label moves instead. `#000000` clears 4.5:1 on all three focus colours -
+**5.21:1 / 9.20:1 / 6.70:1** - so it needs no per-theme value, and the background,
+the focus ring, and every other consumer of `--border-focus` are untouched. Chosen by
+Brennen 2026-08-21 (FD-19c) over a decoupled `--skip-link-bg` token, which would have
+kept white-on-blue but left the box itself at 2.18:1 / 2.47:1 against the page in the
+dark and high-contrast themes, relying on the focus outline alone for its boundary.
+
+**Why `translateY(-100%)` and not a pixel offset (fixed 2026-08-21).** The rule was
+`top: -40px`, a fixed lift that cannot hide an element whose height scales with the
+app font size. Measured on the real UI, driving `applyFontSize()`'s own scale:
+
+| App font size | Link height | Showing on screen, unfocused (was) | (now) |
+|---|---|---|---|
+| 100% | 37 px | 0 px | 0 px |
+| 125% | 43 px | 3 px | 0 px |
+| 150% | 48 px | 8 px | 0 px |
+| 175% | 53 px | 13 px | 0 px |
+| 200% | 59 px | **19 px** | **0 px** |
+
+`translateY(-100%)` is always exactly one link-height, whatever that height turns out
+to be, so the leak closes at every step of the scale. Focusing it still brings it
+fully on screen at `y = 0`. The transition moved from `top` to `transform` with it;
+`prefers-reduced-motion` still neutralises it through the global
+`transition-duration: 0.01ms` override.
+
+> **Correction to the original finding.** The 2026-08-18 audit recorded this as a
+> **102 px** link leaving **~62 px** on screen at 200%. Those numbers came from a
+> measurement that scaled `<html>` *and* `<body>` together, which compounds;
+> `applyFontSize()` sets the root only. The defect was real and is fixed, but its
+> true size was 59 px and 19 px. Recorded so the smaller number is not mistaken for
+> an incomplete fix.
 
 ### 4.2 Focus Indicators
 
@@ -1671,7 +1849,13 @@ When `aria-expanded` changes, screen readers automatically announce the new stat
 
 All six submenus use the identical `.expert-submenu-toggle` markup and are wired by one
 handler (`initExpertSubmenus()`), which sets `aria-expanded`, toggles `.active`, flips the
-`▼`/`▲` icon, and moves focus into the panel on open. A new submenu needs only the markup:
+`▼`/`▲` icon, and moves focus into the panel on open. Since 2026-08-31 the handler serves
+a seventh accordion outside Expert Mode: the Double-Sided Card menu (§4.8), whose header
+heading is an `<h2>` rather than `<h3>` because it is a top-level form section. Since 2026-08-22 each button is
+**wrapped in `<h3 class="expert-submenu-heading">` as its sole child**, which the APG
+Accordion pattern requires — see §4.11 — and the handler therefore resolves its panel
+through `aria-controls` rather than `toggle.nextElementSibling`, which is now `null`.
+A new submenu needs the heading wrapper plus the markup:
 
 | Order | Submenu | `aria-controls` | Notes |
 |-------|---------|-----------------|-------|
@@ -1681,6 +1865,15 @@ handler (`initExpertSubmenus()`), which sets `aria-expanded`, toggles `.active`,
 | 4 | Surface Dimensions | `expert-panel-dimensions` | |
 | 5 | Tactile Indicator Dimensions | `expert-panel-tactile` | Whole accordion hidden unless Row Indicator Style is *Tactile seam arrow* |
 | 6 | Translation Options | `expert-panel-translation` | Capitalized Letters and Number Signs |
+
+The chevron is decorative and **must** be marked
+`<span class="expert-submenu-icon" aria-hidden="true">`. Without it the glyph is folded
+into the button's own accessible name and read aloud — NVDA said "Shape Selection▼ button
+collapsed" (audit finding F-B). `aria-expanded` already conveys open/closed state, so the
+icon carries no information a screen reader needs. The handler flips the glyph with
+`icon.textContent = …`, which replaces only the text node, so `aria-hidden` survives every
+open and close — verified live, ▼ → ▲ → ▼ with the attribute intact throughout. This
+matches `#expert-toggle-icon` and `#info-toggle-icon`, which were already marked this way.
 
 Active toggles use `#1e4976` (light, 6.1:1 with white) and `#1e5a8a` (dark, 4.7:1), not
 `--border-focus`, which is only 3.7:1 and fails WCAG AA for the button label.
@@ -1790,16 +1983,604 @@ the direction the content moves on screen. Neither button changes the contract: 
 `#braille-unicode` holds content, those exact cells are what get embossed, and
 "Translate to Text" deliberately leaves the braille untouched.
 
+Since 2026-08-31 the **Back of Card entry (double-sided beta) carries the same pair** —
+`#back-translate-to-braille-btn` / `#back-translate-to-text-btn` beside the authoritative
+`#back-braille-unicode` field, announced through its own `#back-braille-unicode-live` and
+`#back-braille-unicode-status` — the exact mirror of this section at back-specific ids,
+with the "Back of Card" group name telling the two sides apart. Contract, wording and the
+accessibility requirements below apply 1:1; details in
+INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §7.1.
+
 Accessibility requirements:
 
-- Both are `<button type="button" class="btn-translate">` with `aria-describedby` pointing
-  at `#braille-unicode-help`, which explains the pair.
+- Both are `<button type="button" class="btn-translate">`, and **neither carries
+  `aria-describedby`**. The 72-word `#braille-unicode-help` paragraph was previously wired
+  to both buttons as well as the textarea, so a screen reader spoke it in full on every
+  button focus — measured at 59 exposures and 30.9% of all speech in a 34-minute NVDA
+  session (audit finding F-C). The paragraph itself is unchanged and still sits visibly
+  directly under the field, where a browse-mode user reads it on demand; only the forced
+  repetition is gone. The textarea keeps
+  `aria-describedby="braille-unicode-help braille-unicode-status"` — it is the one control
+  the paragraph is really about ("one description, one host").
+- **Since 2026-08-22 the textarea is described by ONE SENTENCE of that paragraph, not
+  all four** — `id="braille-unicode-help"` moved onto a `<span>` around "Accepts braille
+  characters only (U+2800–U+28FF)." See §4.13 for the pattern and the arithmetic.
 - Progress and outcome are announced through the existing `#braille-unicode-live`
   (`role="status" aria-live="polite"`) region, and shown visually in
   `#braille-unicode-status`. Errors set the highlighted variant of the status text rather
   than a colour-only cue.
 - Each button disables itself and shows "Translating…" while the worker runs, then restores
   its label in a `finally` block so a worker failure can never leave it stuck.
+
+### 4.8 Double-Sided Card Beta: Disclosure Checkbox and Locked Radio Option
+
+The Double-Sided Card beta toggle (`#double_sided_enabled`) introduces two patterns —
+and since 2026-08-31 the whole item sits inside a third:
+
+**Collapsible menu (2026-08-31).** The entire Double-Sided item folds away behind
+`#double-sided-menu-toggle`, an APG accordion header button that is the sole child of a
+real `<h2 class="expert-submenu-heading">` and reuses the `.expert-submenu-*` classes,
+so `initExpertSubmenus()` wires it with the same aria-expanded / `.active` / chevron /
+focus-on-open behaviour as the Expert Mode accordions. The fieldset inside keeps the
+signed heading text as an **sr-only legend**, so the checkbox's group name is unchanged.
+`setDoubleSidedMenuOpen()` (no focus, no announcement) keeps one invariant: **the beta
+being on forces the menu open** — a revealed Back of Card section never sits inside a
+closed menu, including after a reload with the beta persisted. Reset closes it; turning
+the beta off leaves it open, since the user is still looking at the toggle.
+
+**Disclosure checkbox.** The toggle is a real `<input type="checkbox">` (not a button):
+checking it changes what generation produces, so its on/off state is the semantic, and it
+additionally discloses the Back of Card section. It carries `aria-expanded` (mirrored to
+the checkbox state by `updateDoubleSidedUI()`) and `aria-controls="double-sided-section"`;
+ARIA 1.2 permits `aria-expanded` on the checkbox role and the W3C Nu validator accepts it.
+The wrapping label uses `.ds-toggle-option` for an explicit 44 px minimum hit target. While
+on, the front entry legend `#front-entry-legend` is relabeled "Front of Card — …" and
+restored verbatim when off, so the toggle-off page is exactly today's page.
+
+**Locked radio option.** While the beta is on, the Row Indicator Style is forced to
+"Tactile seam arrow" (the backend hard-rejects double-sided requests with any other style).
+The "Visual markers" radio gets the native `disabled` attribute — announced by screen
+readers, skipped by arrow-key navigation, and exempt from contrast minimums (WCAG SC 1.4.3)
+— while staying visible, dimmed via `opacity` so every theme keeps its own token colors. A
+visible explanation (`#indicator-mode-lock-note`, `role="status"` `aria-live="polite"`) appears
+next to the group, and `updateDoubleSidedUI()` appends its id to the disabled radio's
+`aria-describedby` so the reason travels with the option; both are removed when the beta
+turns off. Native `disabled` was chosen over `aria-disabled` because the repository's
+existing convention for unavailable controls is the native attribute, and it needs no
+keyboard interception to keep the lock honest.
+
+### 4.9 Button Contrast Tokens and the 44 px Action Button
+
+The full [ADA Accessibility Validation SOP](../development/ADA_ACCESSIBILITY_VALIDATION_SOP.md)
+was executed against the double-sided beta flow on 2026-08-17. Two failures were
+found, both pre-existing and both app-wide rather than beta-specific.
+
+**Why the tooling did not catch the contrast failure.** Lighthouse scored 100/100
+and axe-core passed the primary buttons, because `--btn-primary-bg` was a gradient
+and a `background-image` defeats both tools' colour sampling — they skip the element
+instead of failing it. Measured directly, white text on the old tokens ran 4.03:1 at
+the gradient's dark stop down to **2.28:1** at its light stop, and 2.54:1 on
+`--btn-success-bg`. **Any future button token must be measured directly, at every
+gradient stop, not trusted to an automated score.**
+
+**Why the dark theme needs a border.** The two rules pull in opposite directions
+there. A fill dark enough to carry a white label at 4.5:1 (WCAG 1.4.3) falls under
+3:1 against the `#374151` surface behind it (WCAG 1.4.11), so the button block stops
+being identifiable as a control. The dark theme therefore uses a solid dark fill for
+the label ratio and a light border for the boundary ratio. The light theme needs no
+such split — its fill clears both — so its border tokens simply equal its fill and
+never paint. The high contrast theme was already compliant and is untouched; its
+per-button `!important` border rules override the tokens entirely.
+
+Measured after the change, all three themes:
+
+| Control | Theme | Label vs fill (need 4.5:1) | Boundary vs surface (need 3:1) |
+|---|---|---|---|
+| `#action-btn`, `#generate-both-btn` | light | 5.50:1 | 6.54:1 (fill) |
+| `.pair-downloads button` | light | 5.31:1 | 5.08:1 (fill) |
+| `#action-btn`, `#generate-both-btn` | dark | 5.50:1 | 6.00:1 (border) |
+| `.pair-downloads button` | dark | 6.50:1 | 6.76:1 (border) |
+| `#action-btn`, `#generate-both-btn` | high contrast | 7.94:1 | 16.04:1 (border) |
+| `.pair-downloads button` | high contrast | 15.18:1 | 12.58:1 (fill) |
+
+Because `box-sizing: border-box` is global, the added 2 px border does not grow any
+button; it was verified not to clip any label (`scrollWidth`/`scrollHeight` equal
+`clientWidth`/`clientHeight` on every button in every theme).
+
+**Touch target.** `#action-btn` rendered 34 px tall at desktop widths against the
+44 × 44 px floor — the `max-width: 768px` block already forced 48 px, so only desktop
+was short. It now carries an explicit `min-height: 44px`. Nothing shrank.
+
+**Reflow and the remaining small targets (fixed 2026-08-18).** Three further
+failures were found on 2026-08-17 and fixed the next day:
+
+- **Reflow (WCAG 1.4.10).** At a 320 CSS px viewport **combined with** the app's own
+  font control at 200%, the page scrolled horizontally by 127 px. The desktop rules
+  pin both header toolbar groups with `flex-shrink: 0`, which stops their children
+  ever needing to wrap, so `.font-size-controls` measured 357 px and
+  `.theme-toggle-section` 575 px against a 320 px viewport. Each condition passed
+  alone; only the combination failed. The `max-width: 768px` block now releases the
+  pin (`flex-shrink: 1; min-width: 0; max-width: 100%`), lets `.font-size-controls`
+  wrap, and drops `white-space: nowrap` from `.theme-label-box` and
+  `.theme-toggle-btn`. All six viewport × font-size combinations now report zero
+  horizontal overflow.
+- **Header font-size buttons.** Were 36 × 31 px and 34 × 30 px; now carry
+  `min-width: 44px; min-height: 44px` under `.font-size-controls .font-size-btn`.
+  The selector is scoped on purpose — see the gap below.
+- **Radio label rows.** `.radio-option` was 28 px tall and is the hit target for its
+  radio; it now carries `min-height: 44px`, the same fix and the same value as
+  `.ds-toggle-option`. Nothing shrank.
+
+**Gaps found 2026-08-18, deferred then, both CLOSED 2026-08-21 (v1.17, commit
+`7634035`).** Recorded here as found rather than deleted, because when a defect was
+seen and why it waited is part of what this section is for. Neither is outstanding:
+
+- ~~The preview panel's stepper and toggle buttons render **20 × 22 px**
+  (`#brightness-decrease`, `#brightness-increase`, `#contrast-decrease`,
+  `#contrast-increase`) and **49 × 20 px** (`#edges-toggle`)~~ — **FIXED.** They reuse
+  the `.font-size-btn` class, which is why the 2026-08-18 header fix was scoped to
+  `.font-size-controls .font-size-btn` rather than applied to the bare class: the
+  preview panel is laid out tightly, so more than doubling these buttons was a layout
+  change that needed its own review. It got one — Brennen approved the reflow from
+  before/after screenshots at 100% and 200% font (FD-18). `.preview-stepper-btn` is now
+  **44 × 44 px** and `.preview-toggle-btn` **49 × 44 px** (`min-width: max(4em, 44px)`);
+  the overlay grows 35 → 56 px at 100% font and 128 → 131 px at 200%, wrapping to two
+  rows inside the viewer with nothing clipped. See §3.8.
+- ~~The skip link is hidden with a hardcoded `top: -40px`, but at 200% app font size it
+  grows to 102 px tall, so roughly 62 px of it stays on screen over the page header.~~
+  — **FIXED, and the figure above was wrong.** The 102 px / ~62 px measurement came from
+  a probe that scaled `<html>` and `<body>` together, which compounds the two; the real
+  leak was **19 px at 200%**, and 0/3/8/13/19 px at 100/125/150/175/200%. The diagnosis
+  was right — a fixed pixel offset hiding an element whose height scales with the font —
+  so `top: -40px` is now `transform: translateY(-100%)`, which hides the link by its own
+  height at any font size: **0 px at all five steps**. See §4.1.
+
+**Nothing from the 2026-08-18 sweep remains open.**
+
+**Warning and note text tokens (fixed 2026-08-21).** The three front-of-card boxes
+`#auto-overflow-warning`, `#cylinder-overflow-warning` and `#caps-warning` hardcoded
+their colour in a `style=` attribute — `#d73502` on the two overflow warnings,
+`#059669` on the capitalization note — which both failed WCAG 2.1 SC 1.4.3 (AA) and
+broke the standing rule that every colour comes from a design token. One fix served
+both: the values moved into `--warning-text` and `--note-text` in all three theme
+blocks of Section 1.2.
+
+| Box | Theme | Was | Now | Ratio before → after |
+|---|---|---|---|---|
+| Both overflow warnings | light | `#d73502` | `var(--warning-text)` `#b91c1c` | 4.56:1 → **6.18:1** |
+| Both overflow warnings | dark | `#d73502` | `var(--warning-text)` `#fed7d7` | **2.16:1** → **7.81:1** |
+| Capitalization note | light | `#059669` | `var(--note-text)` `#0f7a5a` | **3.60:1** → **5.08:1** |
+| Capitalization note | dark | `#059669` | `var(--note-text)` `#6ee7b7` | **2.74:1** → **6.76:1** |
+| All three | high contrast | (overridden) | (overridden) | 16.04:1 / 12.58:1, unchanged |
+
+All ratios are against `--bg-secondary`, the surface the boxes sit on, which is the
+worst case — `--bg-primary` is lighter in the light theme and darker in the dark
+theme, so both tokens measure higher there. High contrast never changed because
+`[data-theme="high-contrast"] .grade-note` forces `#fdfe00` with `!important`, which
+outranks a normal inline declaration; the tokens are declared in that block for
+completeness and never paint.
+
+**Why these values.** Both reuse a hex already in the palette rather than introducing
+a new one — `--warning-text` takes `--error-text`'s value in each theme, `--note-text`
+takes `--btn-success-bg` (light) and `--btn-success-border` (dark). Chosen by Brennen
+2026-08-21 (FD-19a, FD-19b). Note that the light-theme `#d73502` this replaces was
+*passing*, at 4.56:1 — by 0.06. A token used in two themes should not sit on that
+margin, so it was moved with the failing values rather than left alone.
+
+**The tooling trap, again.** Lighthouse scored **100/100 with all eleven of these
+failures live**, on desktop and mobile, exactly as it had in v1.11 for the button
+gradients. Two causes: an inline colour on a box that is `display: none` at audit
+time is never sampled, and the page background is a `background-image` gradient,
+which defeats sampling outright. **A Lighthouse accessibility score of 100 is
+necessary but never sufficient evidence on this page — contrast must be measured
+directly, with the boxes forced visible, in each of the three themes.**
+
+---
+
+### 4.10 Live Regions Must Already Be in the Accessibility Tree
+
+Found by the NVDA walkthrough on 2026-08-18, not by any automated tool.
+
+**The rule.** A live region announces a **change** to a node the assistive
+technology is already tracking. A region that is `display: none` is not in the
+accessibility tree at all, so writing its text while it is hidden and revealing it
+afterwards produces an **insertion** — a new node that arrives with its text
+already inside. Insertions are not changes, and nothing is announced.
+
+Both live regions in the generate flow were written in exactly that order:
+
+```js
+el.textContent = message;          // written while the node is off-tree
+el.style.display = 'flex';         // revealed only afterwards -> silent
+```
+
+**Measured, via the Chrome accessibility tree (CDP `Accessibility.getFullAXTree`):**
+
+| Point in the sequence | `role=status` nodes | Verdict |
+|---|---|---|
+| Page load (region `display:none`) | 4 | region absent from the tree |
+| After 1st message | 5 | node **inserted** with its text — silent |
+| After 2nd message | 5 | in-place change — announced |
+| After 3rd message | 5 | in-place change — announced |
+
+**Why the tooling passed it.** The markup is textbook-correct — correct `role`,
+correct `aria-live`, correct `aria-atomic`. Only the *ordering* is wrong, and
+neither Lighthouse nor axe-core evaluates the runtime sequence. Both scored 100/100
+with this defect live. **A live region is only proven by hearing it, or by
+observing the accessibility tree across the write.**
+
+**Fixed here — `#pair-status` (double-sided pair progress).** The node now stays in
+the tree permanently and `setPairStatus()` writes text only. Hiding is done with
+`#pair-status:empty`, which clips the region and takes it out of flow while it has
+nothing to say, so `.action-footer`'s flex `gap` never sees it. Verified: the
+`role=status` node count is **5 at load and 5 after every write**, and
+`.action-footer` measures **53.16 px both with the empty region present and with the
+element deleted outright** — layout with the beta off is unchanged, as required by
+the byte-identical rule in `.clinerules/project-facts.md` §6b. No message wording
+changed; this is a timing fix only.
+
+**Fixed here — the four remaining beta-flow warning boxes.** An audit of every live
+region on the page found **8 of 10 absent from the accessibility tree at page load**;
+only `braille-unicode-live` (an `sr-only` region that is never hidden) was built
+correctly. `#pair-status` could be repaired in place because its whole content *is*
+the message, so `:empty` matches it. The other four cannot: each wraps a
+`<strong>Warning:</strong>` or, in the lock note's case, a full sentence of static
+text, so they are never empty and `:empty` never matches.
+
+Those four — `ds-back-overflow-warning`, `ds-gap-warning`,
+`indicator-mode-lock-note`, `tactile-gap-warning` — are instead announced through a
+**single shared `sr-only` mirror region, `#a11y-status`**, which is never hidden and
+never moves, so writing to it is always a change. `announceStatus(source, message)`
+takes the id of the owning box: a box only clears the channel when its own message is
+still the one showing, so hiding one warning cannot silently wipe another's. Writing
+an unchanged string is not a mutation and announces nothing, which is what stops the
+per-keystroke recomputes from chattering. Each announcement repeats the box's own
+`textContent`, so what is heard matches what is shown, "Warning:" included — the
+mirror authors no wording of its own.
+
+**`role="status"` and `aria-live="polite"` were removed from those four boxes.** This
+is a deliberate ARIA removal, and worth understanding rather than reverting: on a box
+that is hidden between messages those attributes can never fire on first appearance,
+and leaving them in place would let an assistive technology that *does* announce a
+newly-inserted live region speak the same warning twice — once from the box, once
+from the mirror. Everything else about the boxes is unchanged; in particular
+`#indicator-mode-lock-note` is still referenced by the disabled "Visual markers"
+radio's `aria-describedby`, which reads its text whether or not the box is visible,
+so that wiring is untouched.
+
+`#indicator-mode-lock-note` is the sharp case, and the reason this class of bug
+survives review: a box whose text updates repeatedly loses only its **first** message
+and works perfectly afterwards, but the lock note appears once with fixed text and
+was therefore silent **every single time**.
+
+Verified by driving the real UI, not by calling internals: the `role=status` node
+count holds at 6 across every write, and each of the four puts its own text on the
+channel — the lock note's "Locked: Double-Sided Card is on…" on toggling the beta,
+back-of-card overflow on over-long text, the same-surface gap warning on a squeezed
+lattice, and the tactile seam-gap warning on a reduced diameter — with the channel
+released again once the condition clears.
+
+**Two refinements from the NVDA run that followed (2026-08-18).** Hearing the fix work
+exposed two things the accessibility tree cannot show:
+
+*Queue order.* Written synchronously inside the change handler, the lock note was
+queued **ahead** of the checkbox's own "checked, expanded" — so the user sat through a
+30-word sentence before learning whether the box they had just pressed was ticked. The
+announcement is now deferred by one task (`setTimeout(…, 0)`), which lets the
+control's own state event go first. There is no declarative way to order a live region
+against a control's state announcement, so this is deliberate and must not be
+"cleaned up" into a synchronous call.
+
+*Typing chatter.* `ds-back-overflow-warning` recomputes on every keystroke and its text
+carries a live cell count, so every character typed produced a genuinely different
+string — three separate announcements in one sentence of typing, talking over the user
+as they wrote. It now announces only on the transition from hidden to shown; while the
+warning stays up, the visible box keeps updating silently. Clearing the overflow and
+re-triggering it announces again. Measured: **3 announcements before, 1 after**, over
+the same typed sentence.
+
+The general rule both point at: the accessibility tree proves a region *can* announce.
+Only listening proves it announces *usefully*.
+
+**Fixed 2026-08-18 — `#error-message`.** Mirrored to `#a11y-status` by a single
+MutationObserver rather than an announce call threaded through each of its ~20
+writers, so it cannot drift out of step with the visible box and picks up any
+message added later. Its `role="alert"`/`aria-live` were removed, for the same
+double-speak reason as the four boxes above. The observer reads
+`#error-text-container`, which excludes the decorative warning glyph and the
+permanent browser-capability notice. Details and the two further defects this
+uncovered are in STL Export and Download Specifications §8.
+
+**Was, before that fix:** The same defect affects
+the single-sided flow, where `#error-message` carries *every* progress notice,
+validation error and failure message. A blind user who overruns a line is shown
+"Line 1 exceeds 13 cells…" on screen and hears **nothing**, so they cannot discover
+why generation refused. This is a **WCAG 2.1 SC 4.1.3 Status Messages (AA)**
+failure and it is app-wide, not beta-specific. The agreed fix is a separate,
+always-present `sr-only` mirror region that the code writes to alongside the visual
+box, leaving that box's styling and timing untouched — `#error-message` is
+`position: absolute` with its own background, border and shadow, so keeping it
+permanently in flow is not viable. `#a11y-status` and `announceStatus()` already
+exist for this, so the scheduled work is wiring, not new machinery.
+
+**Fixed 2026-08-21 — the last three regions: `auto-overflow-warning`,
+`cylinder-overflow-warning` and `caps-warning`.** These carried the identical defect
+for three days longer than the rest, because the phase that was to fix them lost its
+slot to a numbering collision. All three had textbook-correct
+`role="status" aria-live="polite"` on a box that is `display:none` between messages,
+and none was among `announceStatus()`'s wired sources — so the front-of-card overflow
+warning, the one users hit most often, was silent every time it appeared. The
+attributes were removed from all three boxes and each now announces its own
+`textContent` through `#a11y-status`, exactly as the beta-flow boxes do. No wording
+was authored: what is heard is the box's own text, "Warning:" and "Note:" included.
+
+Each of the three writes and clears through a small helper so no call site can drift:
+`hideAutoOverflow()`, `hideCylinderOverflow()`, and the inline clear in
+`updateCapsWarning()`. All three announce **only on the transition from hidden to
+shown**, for the reason `ds-back-overflow-warning` does.
+
+**The capitalization note is the one that had to be measured rather than reasoned
+about.** Its text is fixed, so the expectation was that the "an unchanged string is
+not a mutation" property above would suppress its repeats by itself. It does not:
+`announceStatus()` assigns `textContent` unconditionally, and assigning an identical
+string still replaces the text node — a real DOM mutation. `updateCapsWarning()` also
+runs on **every keystroke with no debounce**, unlike the two overflow checks which are
+debounced by 250 ms. Measured on the real UI: **11 announcements over 11 keystrokes
+without the gate, 1 with it.** The same hidden-to-shown gate the overflow boxes use is
+therefore applied here too, despite the static text.
+
+Verified by driving the real UI: the `role=status` node count is **6 at page load and
+6 while each of the three warnings is shown** — previously each one pushed the tree to
+7 whenever it appeared — and each box announces once per episode and releases the
+channel when its condition clears. Listening steps for all three are in
+[NVDA Live Warnings Walkthrough](../development/NVDA_LIVE_WARNINGS_WALKTHROUGH.md).
+
+**With these three, every live region on the page is accounted for.** The
+`#action-btn` silent-rename defect listed here as outstanding was in fact resolved on
+2026-08-18 by the Generate/Download split — `#action-btn` keeps its name and role for
+its whole life and the file is offered by a separate `#download-stl-btn` (see STL
+Export and Download Specifications §8, v1.8). This paragraph had not been updated to
+match; corrected 2026-08-21.
+
+### 4.11 Heading Outline
+
+Headings are the primary way screen-reader users navigate a long page: **71.6% of
+respondents to WebAIM's Screen Reader User Survey #10 look for headings first**, against
+3.7% who reach for landmarks. Until 2026-08-22 this page carried **exactly one visible
+heading**, the `<h1>`. Every section below it was a `<fieldset>`/`<legend>` or a bare
+button, and the 40+ well-structured headings in the app all live inside the help modal,
+which is `class="modal hidden"` and out of the accessibility tree until it is opened. So
+the one method seven users in ten try first found nothing (audit finding F-A).
+
+#### The outline
+
+| Level | Heading | Where it lives | Visible when |
+|-------|---------|----------------|--------------|
+| h1 | Custom Braille STL Generator | `.title-section` | always |
+| h2 | Embosser version | `#embosser-version-selection` legend (2026-08-31, moved from the header) | always |
+| h2 | Enter Text for Braille Translation | `legend#front-entry-legend` | always |
+| h2 | Double-Sided Card (BETA — for testing) | accordion header button `#double-sided-menu-toggle` (2026-08-31) | always |
+| h2 | Integrated Gears (BETA — for testing) | gears beta fieldset (2026-08-24; missing from this table until 2026-08-31) | always |
+| h2 | Row Indicator Style | `#indicator-mode-selection` | always |
+| h2 | Card Thickness | thickness fieldset | always |
+| h2 | Select Plate to Generate | plate-type fieldset | always |
+| h2 | Braille Translation Preview: | `#braille-preview` | Expert Mode open **and** Preview pressed |
+| h3 | Shape Selection | `.expert-submenu` | Expert Mode open |
+| h3 | Braille Spacing | `.expert-submenu` | Expert Mode open |
+| h3 | Braille Dot Adjustments | `.expert-submenu` | Expert Mode open |
+| h3 | Surface Dimensions | `.expert-submenu` | Expert Mode open |
+| h3 | Tactile Indicator Dimensions | `#tactile-indicator-submenu` | Expert Mode open **and** Row Indicator Style set to tactile |
+| h3 | Translation Options | `.expert-submenu` | Expert Mode open |
+
+Counts measured from the live document (the probe pattern of
+`build/a11yverify/post15_7c/headings.cjs`, which filters on `offsetParent !== null` so
+hidden headings are never counted). The 2026-08-22 measurement read **6 / 11 / 12**
+(load / Expert open / plus the double-sided beta, which locks the indicator tactile and
+reveals the sixth accordion); the Integrated Gears h2 then joined on 2026-08-24 without
+this section being re-measured, and the Embosser version h2 joined on 2026-08-31.
+Re-measured 2026-08-31 (`build/a11yverify/ui_pass_2026_08_31/headings.cjs`): **8 on
+load, 13 with Expert Mode open, 14 with the double-sided beta on as well.** **No level
+is skipped in any of the three states.**
+
+#### Level choice
+
+The seven section headings are **h2** (five at the 2026-08-22 restructure; Integrated
+Gears joined 2026-08-24, Embosser version 2026-08-31): they are the form's own
+top-level sections, one step below the page title, and h2 keeps the step from the
+`<h1>` at exactly one. The six
+accordion headers are **h3** because they are one level deeper again — they exist only
+inside Expert Mode, and the level is what tells a listener "this is inside the thing I
+just opened" rather than another basic section. This is also what the WAI-ARIA APG and
+the GOV.UK Design System accordion do. The Double-Sided accordion header stays **h2**
+for the same reason in reverse: it is a top-level section that happens to fold.
+
+**Known limit, recorded rather than hidden:** the Expert Mode disclosure button itself
+carries no heading, so a strict outline algorithm nests the six h3s under *Select Plate
+to Generate*, the last h2 before them. Nothing is skipped and heading navigation is
+unaffected; wrapping that button too would need a decision about its label, which
+changes between "Show Expert Mode" and "Hide Expert Mode". Left for the page-structure
+pass. The pre-existing `h2` on the preview panel sits inside Expert Mode too and so
+has the same shape of oddity when it is showing; it is left as it is, being outside
+this change, and the `h3` *Front of Card* / *Back of Card* headings the preview injects
+for the double-sided beta nest under it correctly.
+
+#### Heading inside `<legend>` — why it is allowed, and why not a `<div>`
+
+```html
+<legend class="grade-label"><h2 class="legend-heading">Card Thickness</h2></legend>
+```
+
+The HTML content model for `<legend>` is *phrasing content, optionally intermixed with
+heading content*, so this is valid — **confirmed against the W3C Nu validator, 0 errors
+and 0 warnings on both `public/index.html` and the rendered DOM**, not assumed from the
+spec text. Converting the fieldsets to plain `<div>`s to make headings easier would have
+been simpler and is **forbidden**: the `<fieldset>`/`<legend>` grouping is what gives each
+radio set its single announced name, and removing it would trade one accessibility
+feature for another. Verified from the AX tree: every `role=group` name is unchanged by
+the addition, because the name is computed from the legend's whole subtree.
+
+The headings are **semantics only**. `.legend-heading` and `.expert-submenu-heading` both
+set `margin: 0` and inherit `font-size`, `font-weight`, `line-height` and `color`, so the
+browser's own h2/h3 defaults never reach the page. Proof: the header screenshots and
+every measured box are byte-identical before and after (accordion headers 672 × 38 px at
+12.92 px / 600; section legends 19 px tall at 14.28 px / 600).
+
+#### Two load-bearing consequences
+
+1. `updateDoubleSidedUI()` relabels the first section *"Front of Card — …"* while the
+   beta is on. It used to assign `legend.textContent`, which would now **delete the
+   heading element**; it writes to `#front-entry-heading` instead. `id="front-entry-legend"`
+   stays on the legend — `tests/e2e/doubleSided.spec.ts` reads it — and the off-state text
+   is byte-identical, verified by toggling the beta on and off under probe.
+2. `initExpertSubmenus()` used to find each panel with `toggle.nextElementSibling`. The
+   button is now the heading's only child (an APG requirement) and has **no next
+   sibling**, so the handler resolves `aria-controls` instead — an attribute all six
+   already carried. Without this change every accordion silently stops opening.
+
+### 4.12 A Constraint Failure Must Always Reach the User
+
+Added 2026-08-22 (audit finding F-O). Found by measurement while checking something
+else, not by any automated tool — the 122-test e2e suite was green through the whole
+defect.
+
+**Why this section exists.** `#action-btn` generates through `form.requestSubmit()`,
+which is *native* submission: it fires a real submit event **and runs interactive
+constraint validation first**. Any `:invalid` control therefore aborts generation
+before the app's own submit handler runs. `requestSubmit()` is deliberate and must not
+be swapped for a synthetic event — Firefox processes the form's default action and
+navigates away — so constraint validation is permanently armed on this form.
+
+**Two paths, and only one of them was ever handled by the browser:**
+
+| The offending control is | The browser does | Result |
+|---|---|---|
+| On screen | Focuses it and states the problem | Correct. **Leave it alone.** |
+| Not reachable | Cannot focus it; logs `An invalid form control … is not focusable` | **Nothing at all** — no error, no message, a dead button |
+
+The second row was not an edge case. **All 33 numeric dials carry `min`/`max`, and not
+one of them is rendered on a fresh load** — every one sits inside collapsed Expert Mode
+or a hidden block. On a default load, "not reachable" was the *only* state possible.
+
+**The rules.**
+
+1. **Never add `novalidate` to `#braille-form`.** It was built and measured during the
+   preceding item: it does restore generation and keeps all 29 announced ranges, but it
+   strips native validation from the controls that have it, including the correct
+   focus-and-announce behaviour in row 1. Rejected by Brennen deliberately.
+2. **The visible path stays untouched.** The handler checks `document.activeElement`
+   after the browser's own focus step; if the browser reached one of the invalid
+   controls, it returns without adding anything. A second message on top of the
+   browser's is the announcement stacking finding F-I warns about.
+3. **Reveal through the toggle, never by writing `display`.** The accordion toggle owns
+   `aria-expanded`, the chevron and the active class; a second copy of that logic drifts.
+   `revealHiddenControl()` clicks each container's real `[aria-controls]` button, and the
+   two toggles skip their usual "focus the first field" step while it does (otherwise
+   their 100 ms timer pulls focus off the dial being reported).
+4. **One message, however many controls failed.** `invalid` fires once per invalid field
+   — three bad dials measured as three events — and does **not** bubble, so the listener
+   is registered in the **capture** phase on the form. The flush names only the control
+   focus is sent to.
+5. **Announce through `#error-message`, not a new region.** `mirrorErrorMessage()`
+   already relays that box to `#a11y-status`, so the message is visible and spoken with
+   no second live region (see §4.10).
+
+**The wording is approved text (Brennen, 2026-08-22) — do not reword it without asking.**
+Both sentences sit inside the 25-word ceiling of ADA SOP Step 6.8.
+
+| Cause | Message |
+|---|---|
+| Out of range | `Braille Dot Spacing is 99. Enter a value between 1 and 5 to generate.` |
+| Off-step | `Braille Dot Spacing is 2.55. The nearest values it accepts are 2.5 and 2.6.` |
+
+A `step` mismatch is a real trap, not a theoretical one: **2.55 is inside
+`dot_spacing`'s 1–5 range and still refused**, and the range now announced on the dial
+actively invites a user to type it. The range sentence would be wrong there, hence two.
+
+**Saved values are validated on restore.** A dial's value is persisted to
+`localStorage` exactly as typed, so a value the form cannot accept was stored as
+happily as one it can — and restoring it unchecked re-armed the trap on **every**
+subsequent load. `applySavedValue()` refuses such a value and leaves the field at its
+shipped `defaultValue`, which is exactly what a first-ever load shows.
+
+- **Refused, never clamped.** Clamping would choose a tactile dimension on the user's
+  behalf, which accessibility rule 11 forbids.
+- **Reported, never silent.** The discard is announced and shown:
+  `Braille Dot Spacing 99 was out of range; reset to 2.5.` This is the one load-time
+  announcement that survives FD-20's silencing of the preset notice, because unlike
+  that notice it is rare and reports something the user cannot otherwise discover.
+- **Read `el.validity.valid`, never `checkValidity()`.** The latter *fires* an `invalid`
+  event, which during load would trip the submit-time handler and open Expert Mode at a
+  user who has done nothing.
+
+**Regression tests:** `tests/e2e/constraintValidation.spec.ts` — six tests, four of
+which fail if the fix is reverted and two of which are controls that pass either way.
+
+**Fixed 2026-08-25: the step-invalid default.** `cylinder_diameter_mm` shipped at
+`value="30.75"` with `min="10" step="0.1"`. The step base is the `min`, so **30.75 was
+not a valid step and the shipped default was itself invalid**. A normal load hid it
+because the 0.4 preset writes 30.8 over the dial; a user whose saved preset was `custom`
+— anyone who had edited any dial and reloaded — met a form that refused to generate
+before they touched anything. Pre-existing since the original commit (verified against
+`95b735a^`).
+
+Brennen's call was to **move the step to `0.05`, not the value**: 30.75 is the Layer-1
+schema and backend default (`settings.schema.json`, `app/models.py`), so changing the
+value would have had to move four files together and risked exactly the cross-file
+default drift this project treats as its worst bug class. The step is presentation, and
+0.05 keeps every previously-valid entry valid — it only *adds* legal positions. Note the
+30.75-vs-30.8 split is real and deliberate elsewhere: gear mode still hard-rejects
+anything but 30.8 × 52.0 (`app/geometry/gears.py`, `app/validation.py`).
+
+---
+
+### 4.13 Long Notes Are Split, Not Deleted: the Sentence-Span Pattern
+
+**The rule.** `aria-describedby` gets one short sentence — target 15 words, hard ceiling
+25 (ADA SOP Step 6.8). A note longer than that is **not shortened and not moved**. The
+`id` is placed on a `<span>` around the ONE sentence that belongs on the control, and the
+rest of the note stays exactly where it is: same `.grade-note` div, same order, same
+words, still visible, just no longer forced into speech on every visit.
+
+**Why a `<span>` and not a second `<div>`.** The span is inline, so the note still renders
+as one flowing paragraph. Splitting into two block elements would insert a line break and
+change the layout; this changes nothing on screen. **No pixel moves and no word changes**
+— which is also what lets this be done to strings that carry a sign-off.
+
+**Applied 2026-08-22** (audit F-C / F-D, decision D2; every keeper approved by Brennen as a
+draft before the edit, FD-25):
+
+| Host | Note | Spoken before | Spoken after | Sentence kept |
+|---|---|---|---|---|
+| `#braille-unicode` (textarea) | `#braille-unicode-help` | 72 w | **5 w** | "Accepts braille characters only (U+2800–U+28FF)." |
+| `#double_sided_enabled` (checkbox) | `#double-sided-note` | 96 w | **17 w** | "This is a beta for testing — proofread both sides and check every braille surface before use." |
+| `#language-table` (combobox) | `#language-help` | 71 w | **13 w** | "Switch to uncontracted (grade 1) only if your reader has asked for it." |
+
+Total description words in one full read of the default page: **430 → 226**, measured on
+the live accessibility tree.
+
+**A trap the probe alone will not show you.** `#braille-unicode` carries **two**
+describedby targets — `aria-describedby="braille-unicode-help braille-unicode-status"` —
+and the computed description is the two joined. `#braille-unicode-status` is a live status
+that reads "Empty — the text above will be translated" (8 w) on load and grows to 12 w
+after an auto-clear. **The budget on that control is therefore 25 minus a moving number**,
+which is why the 5-word first sentence is the keeper and the 20-word "used exactly as
+written" sentence is not: it would have measured 28 w in the default state. Totals across
+all four field states are 13 / 16 / 11 / 17 w. Step 6.8's probe measures the default state
+only, so **when a host has sibling describedby targets, add them in by hand**.
+
+**Choosing which sentence stays.** It is the one the user needs *at that control*, that the
+accessible name does not already carry. `#language-help`'s opening — "Default: English
+(UEB), United States — contracted (grade 2)" — is exactly what the combobox announces as
+its selected option, so keeping it wired would have restated the label (Step 6.8.1
+clause 4). It stays on screen.
+
+**What this is not.** It is not a licence to delete. Nothing above was removed from the
+page or reworded, the 2026-08-16 double-sided sign-off is intact word for word, and taking
+a sentence off the page altogether remains a separate change needing Brennen's sign-off
+(Step 6.8.2, accessibility rule 12).
+
+**Still over the ceiling, reported and deliberately left** (his call, FD-25d): Tactile seam
+arrow 43 w, 3D preview 38 w, Visual markers 26 w.
 
 ---
 
@@ -2429,6 +3210,26 @@ Low vision users benefit from enhanced depth perception:
 | 1.7 | 2026-01-05 | Added critical warning section about HTML file locations — must edit `public/index.html` (served by Flask), not `templates/index.html` (legacy/not served) |
 | 1.8 | 2026-01-05 | **Cross-Browser UI Hardening:** Added Section 3.9 (WebGL Context Recovery), Section 4.5 (Toggle Button ARIA Requirements), Section 4.6 (Reduced Motion Support), and Section 7.3 (iOS Safe Area Handling) to document new accessibility and cross-browser compatibility features |
 | 1.9 | 2026-07-30 | **Form column restructure:** Split `.form-section` into a non-scrolling panel plus `.form-scroll` and a pinned `.action-footer`, so `#action-btn` is always in view (Sections 5.1, 6.3, 7.1, 7.2). Documented the form-level event delegation that resets the button on any settings change (Section 6.2), the six Expert Mode submenus and their contrast-safe active colours (Section 4.5), and the two-way translation buttons (new Section 4.7) |
+| 1.10 | 2026-08-16 | **Double-Sided Card beta UI:** Added Section 4.8 documenting the disclosure-checkbox toggle (`#double_sided_enabled` with `aria-expanded`/`aria-controls`, 44 px hit target), the Back of Card section reveal with front-legend relabeling, and the locked "Visual markers" radio pattern (native `disabled` + live-region lock note wired into `aria-describedby`). Validated: W3C Nu 0 errors, Lighthouse accessibility 100/100 desktop and mobile |
+| 1.11 | 2026-08-17 | **Full ADA SOP executed against the beta flow.** Added Section 4.9 (button contrast tokens, the dark-theme fill-versus-boundary tension, the 44 px `#action-btn`, and the known remaining gaps). Rewrote the `--btn-primary-*` and `--btn-success-*` values in all three theme blocks of Section 1.2 and added four border tokens per theme: white labels were 2.28:1 on the old primary gradient and 2.54:1 on the old success fill, and neither Lighthouse nor axe-core could see it because a `background-image` defeats their sampling. `#action-btn` gained `min-height: 44px` (was 34 px on desktop). Validated after the change: W3C Nu 0 errors 0 warnings on the rendered beta-state DOM, Lighthouse accessibility 100/100 desktop and mobile, 48 of 48 contrast measurements passing across light/dark/high-contrast, keyboard walkthrough clean beta-on and beta-off, reflow clean at 320 px and at 75%/200% app font size on desktop |
+| 1.12 | 2026-08-18 | **Reflow and touch-target follow-up to the v1.11 audit, plus a user-facing rename.** Section 4.9 extended: the 320 px + 200% horizontal-scroll failure is fixed by releasing `flex-shrink: 0` on the two header toolbar groups and dropping `white-space: nowrap` from the theme label and button in the `max-width: 768px` block; `.font-size-controls .font-size-btn` gained a 44 × 44 px floor (scoped, not on the bare class); `.radio-option` gained `min-height: 44px`. Two newly found gaps recorded instead of fixed: the preview stepper buttons at 20 × 22 px, and the skip link's hardcoded `top: -40px` failing to hide a 102 px-tall link at 200% font. Separately, the Card Thickness control was renamed to **Print Layer Height** in user-facing text only — see CARD_THICKNESS_PRESET_SPECIFICATIONS.md v1.5. Validated after the change: W3C Nu 0 errors / 0 warnings, Lighthouse 100/100 desktop and mobile, 48 of 48 contrast measurements passing, keyboard walkthrough clean, all six viewport × font-size reflow combinations clean, ruff clean, 30 smoke passed, 90 e2e passed |
+| 1.13 | 2026-08-19 | **Reverts the v1.12 rename.** The Card Thickness control keeps its original name: the 0.3 / 0.4 numbers are paper card stock thickness, not print layer height — see CARD_THICKNESS_PRESET_SPECIFICATIONS.md v1.6 for the evidence. User-facing text only; no layout, contrast or structural change, so the v1.12 reflow and touch-target findings stand unaltered. |
+| 1.13 | 2026-08-18 | **Live-region defect found by the NVDA walkthrough.** Added Section 4.10: a live region that is `display:none` when its text is written is inserted into the accessibility tree already holding that text, and an insertion is not a change, so nothing is announced. Measured with CDP `Accessibility.getFullAXTree` (`role=status` node count 4 at load, 5 after the first message). Fixed `#pair-status`, which silently swallowed the first of the three double-sided pair messages: the node now stays in the tree and `#pair-status:empty` clips it out of flow instead, with `.action-footer` measured identical (53.16 px) either way. Recorded `#error-message` (all single-sided progress, validation and failure messages, WCAG 4.1.3) and the unannounced `#action-btn` name change as outstanding, scheduled separately. Validated: W3C Nu 0 errors/0 warnings, Lighthouse accessibility 100/100 desktop and mobile |
+| 1.14 | 2026-08-18 | **Live-region fix extended to the whole double-sided beta flow.** Section 4.10 extended. An audit of every live region found 8 of 10 absent from the accessibility tree at page load. `#pair-status` took the `:empty` fix; the other four beta boxes (`ds-back-overflow-warning`, `ds-gap-warning`, `indicator-mode-lock-note`, `tactile-gap-warning`) are never empty - each wraps a `<strong>Warning:</strong>` or static text - so they are announced through a new shared always-present `sr-only` region `#a11y-status` via `announceStatus(source, message)`, which is source-scoped so one box clearing cannot wipe another's message. `role="status"`/`aria-live` removed from those four boxes to prevent double-speak; `aria-describedby` wiring on the lock note unaffected. Each announcement repeats the box's own textContent, so no new user-facing wording was authored. `#indicator-mode-lock-note` was silent every time, not just on first appearance. Verified by driving the real UI (role=status node count constant at 6). Remaining: `#error-message`, `auto-overflow-warning`, `cylinder-overflow-warning`, `caps-warning` and the `#action-btn` name change. Validated: W3C Nu 0 errors/0 warnings, Lighthouse accessibility 100/100 desktop and mobile, ruff clean, 119 tests passed |
+| 1.15 | 2026-08-18 | **Refinements from hearing the fix run under NVDA.** Section 4.10 extended. The lock note was being queued ahead of the checkbox's own "checked, expanded" because it was written synchronously in the change handler, so the user waited out a 30-word sentence to learn the box was ticked - now deferred one task so the control's state is spoken first. `ds-back-overflow-warning` announced on every keystroke (its text carries a live cell count, so each character is a real change): now announces only on the hidden-to-shown transition, measured 3 announcements before and 1 after over the same typed sentence. Neither was visible in the accessibility tree - the tree proves a region CAN announce, only listening proves it announces usefully |
+| 1.16 | 2026-08-18 | **Single-plate flow made audible; Generate/Download split.** Section 4.10: `#error-message` is now mirrored to `#a11y-status` by one MutationObserver, closing the WCAG 4.1.3 failure that left every validation error, progress notice and failure message silent. Its `role="alert"`/`aria-live` removed to prevent double-speak. `#action-btn` no longer renames itself into a download control under the user's focus - a separate `#download-stl-btn` appears instead (styled under its own selectors, 310x44px, contrast 7.25/8.35/15.18:1 across the three themes). Full rationale in STL Export and Download Specifications §8 |
+| 1.17 | 2026-08-21 | **The last three unwired live regions, the two remaining touch-target gaps, and the skip link.** Section 4.10: `auto-overflow-warning`, `cylinder-overflow-warning` and `caps-warning` had carried textbook-correct `role="status" aria-live="polite"` on boxes hidden between messages and were in no announcement path at all - a shipped **WCAG 2.1 SC 4.1.3 (AA)** failure covering the front-of-card overflow warning users hit most. Attributes removed from all three; each now announces its own `textContent` through `#a11y-status`, gated hidden-to-shown, via `hideAutoOverflow()` / `hideCylinderOverflow()` / the inline clear in `updateCapsWarning()`. **No user-facing wording was authored.** The capitalization note needed measuring rather than reasoning about: its text is fixed, but `announceStatus()` assigns `textContent` unconditionally and an identical assignment still replaces the text node, and `updateCapsWarning()` runs on every keystroke with no debounce - **11 announcements over 11 keystrokes without a gate, 1 with it** (INTERPOINT §7.6's contradictory "an unchanged string is not a mutation" bullet corrected in the same pass). Section 4.1: the skip link's `top: -40px` replaced by `transform: translateY(-100%)`, which hides it by its own height at any font size - measured leak **0/3/8/13/19 px at 100/125/150/175/200% before, 0 px at all five after**; the original finding's "102 px tall, ~62 px showing" came from a probe that scaled `<html>` and `<body>` together and is corrected in place. Section 3.8: `.preview-stepper-btn` **20x22 -> 44x44 px** and `.preview-toggle-btn` **49x20 -> 49x44 px** (`min-width: max(4em, 44px)`), closing the last WCAG 2.5.5 gaps from v1.12; the overlay grows 35 -> 56 px at 100% font and 128 -> 131 px at 200%, wrapping to two rows inside the viewer with nothing clipped. Separately, all **21 empty `catch` blocks** in `public/index.html` now log (12 `log.error`, 9 `log.debug`), per core rule 13; every `try` kept, no path made able to throw. Validated: W3C Nu **0 errors 0 warnings**, Lighthouse accessibility **100/100 desktop and mobile, 0 failing audits** (`target-size` passing), reflow **0 failures of 6** viewport x font-size combinations, 8 accordion toggles with 0 `aria-expanded`/`aria-controls` defects, ruff clean, **135 pytest / 2 vitest / 106 e2e** (chromium+firefox) unchanged from baseline. **Contrast: 11 pre-existing failures found and NOT introduced here** - identical counts measured against the parent commit; reported separately, see below. |
+| 1.19 | 2026-08-21 | **Section 4.9's "Known remaining gaps" list corrected — documentation only.** Both of its bullets were fixed by v1.17 on 2026-08-21 and recorded as fixed in that entry, but the list still presented them as open, so anyone reading §4.9 was told two closed defects were outstanding. The bullets are struck through and marked FIXED in place rather than deleted, each carrying its version, commit `7634035`, and its measured after-figure (steppers 20 × 22 → **44 × 44 px**, toggle 49 × 20 → **49 × 44 px**; skip link **0 px leak at all five font steps**). The skip link's original "102 px tall, ~62 px showing" is corrected where it stands: that probe scaled `<html>` and `<body>` together, and the real leak was **19 px at 200%**. The heading now states that nothing from the 2026-08-18 sweep remains open. No CSS, markup, behaviour, or measurement changed — v1.17's and v1.18's rows are untouched. |
+| 1.18 | 2026-08-21 | **The 11 contrast failures v1.17 reported are closed; three colours become tokens.** All eleven were pre-existing and none were introduced by v1.17 — proved by re-running the identical probe against parent commit `9aff093` and getting the same 11 at the same values. Section 1.2: three new tokens per theme block. `--warning-text` and `--note-text` replace the hardcoded inline `color: #d73502` and `color: #059669` on `#auto-overflow-warning`, `#cylinder-overflow-warning` and `#caps-warning`, which broke the design-token rule as well as WCAG 2.1 SC 1.4.3 (AA): the overflow warnings went **2.16:1 → 7.81:1** dark and 4.56:1 → **6.18:1** light, the capitalization note **2.74:1 → 6.76:1** dark and **3.60:1 → 5.08:1** light. Both tokens reuse a hex already in the palette (`--error-text`; `--btn-success-bg` / `--btn-success-border`) rather than adding a new one. The light `#d73502` was *passing* at 4.56:1 — by 0.06 — and was moved anyway rather than leave a two-theme token on that margin. High contrast never failed and never changed: `.grade-note` forces `#fdfe00` with `!important`, which outranks a normal inline declaration. Section 4.1: `.skip-link` was `color: white` on `--border-focus` and failed **all three themes** at 4.03 / 2.28 / 3.14:1; the label is now `var(--skip-link-text)` `#000000`, measuring **5.21 / 9.20 / 6.70:1**. Darkening `--border-focus` itself was measured and rejected — it is also the page-wide focus-ring colour, and a blue dark enough for white text (`#2c5282`, 7.97:1) falls to **1.51:1 against the dark theme page**, breaking WCAG 2.2 SC 1.4.11 for every focus ring on the page. All three values chosen by Brennen 2026-08-21 (FD-19a/b/c). Section 4.9 extended with the before/after table and the tooling trap: **Lighthouse scored 100/100 with all eleven failures live**, because an inline colour on a `display:none` box is never sampled and a `background-image` page gradient defeats sampling outright. Validated after the change: contrast **11 failures → 0** across light/dark/high-contrast, plus a new page-wide sweep over *every* visible text element in all three themes at **0 failures** (proved to detect: it reports the 3 skip-link failures when run against the pre-fix file). W3C Nu **0 errors 0 warnings**, Lighthouse accessibility **100/100 desktop and mobile, 0 failing audits**, reflow **0 of 6** viewport × font-size combinations, ruff clean, **135 pytest / 2 vitest / 122 e2e** (chromium+firefox) all unchanged from baseline. No user-facing string, geometry, worker, settings or live-region behaviour changed. |
+| 1.21 | 2026-08-22 | **Four small accessibility repairs, four commits, no user-visible sentence and no pixel changed — the batch after the two free wins.** (1) **The 3D preview left the tab ring** (`847ea09`, audit F-G / FD-21 D4): `#viewer` was a `tabindex="0"` div with `role="img"` and no `keydown` listener anywhere in the file, so tabbing into it produced ~65 words ending in "requires mouse or touch" and nothing to do. `tabindex` removed; `role="img"`, the `aria-label` and `aria-describedby="viewer-instructions"` all kept, so browse mode is unchanged. Checked first that nothing depended on it: no test references `#viewer` focus, no script focuses it, and `#viewer:focus-within, #viewer:active` still applies on pointer use. Measured: **real tab ring on load 33 → 32**, with a diff of the two rings showing exactly one removal. That also moves §4.x's reading of audit F-F — **14 of 32** stops now precede Placement Mode, not 15 of 33. Keyboard controls for the preview stay a deferred feature. (2) **The `<h1>` is no longer read "Custom BrailleSTL Generator"** (`8b8f532`, F-H / D5): `.title-section h1` was `display: flex`, which blockifies its children, so both title spans computed to `display: block` and NVDA's browse-mode buffer broke a line between them. Chrome's computed name was always right, and so was the `<form aria-labelledby="main-heading">` that borrows it — only the buffer was wrong, which is why no `aria-label` was added. The h1 is now a block box with `display: inline` spans; `innerText` `"Custom Braille
+STL Generator"` → **`"Custom Braille STL Generator"`**. The font size moved onto the h1 so the line box matches the text (box height identical before and after: 29 px at 1440, 20 px at 320) and the two per-breakpoint rules that set both spans collapsed into the h1 rule. `id="main-heading"` untouched. **D5 as written called for a single text node; that was not followed, with Brennen's agreement** — the title renders on one line at every tested width and font size, so there was no "two-line look" to move into CSS, and a single text node would have flattened the two-tone (CSS cannot colour half a text node). Both renderings were shown to him and he chose to keep the spans. All three themes re-checked; SOP reflow 0 failures of 6. (3) **Card Thickness announces one group, not two** (`63d5778`, F-N) — see CARD_THICKNESS_PRESET_SPECIFICATIONS v1.10; named grouping nodes on the page **16 → 15**. (4) **Four per-line language selects lost a description that only repeated their label** (`23575ab`, F-K) — see BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS v1.5; 4 → 0, measured in manual placement mode, where those rows are the only place they exist. Validated: ruff clean, **140 pytest / 2 vitest / 122 e2e** (chromium+firefox), every count identical before and after; W3C Nu 0 errors, 0 warnings. **All four are measured on the accessibility tree, not yet confirmed by ear** — the re-listen is the last step of the audit's item G. |
+| 1.20 | 2026-08-22 | **Eight attribute edits that remove roughly a fifth of everything a screen reader says — no wording and no visual change.** The first of the follow-on items from the POST15_7 audit (FD-21, decisions D1-icons and D2 step 1); both were Brennen's approved options. Section 4.5: the six `.expert-submenu-icon` chevrons gained `aria-hidden="true"`, so the decorative `▼` stops being folded into the toggle's accessible name — NVDA had been saying "Shape Selection▼ button collapsed", 17 times for that one button in a measured 34-minute session, while `#expert-toggle-icon` one line away was already marked correctly (audit F-B). Measured on the live AX tree: **5 of 5 exposed accordion names leaked a triangle before, 0 after** (the sixth, Tactile Indicator Dimensions, is hidden unless Row Indicator Style is *Tactile seam arrow*, so it has no AX node in the default state; all six spans carry the attribute). The glyph swap uses `icon.textContent = …`, which replaces only the text node — `aria-hidden` was verified to survive open and close, ▼ → ▲ → ▼, so no JS change was needed. Section 4.7: `aria-describedby="braille-unicode-help"` **removed from `#translate-to-braille-btn` and `#translate-to-text-btn`**. That 72-word paragraph was wired to three controls at once and accounted for 59 exposures, 4,913 words and **30.9% of all speech** (audit F-C); it is unchanged, still visible directly under the field, and still described by `#braille-unicode`, which is the control it is actually about. Measured on the live AX tree: hosts **3 → 1**, nodes carrying a description **20 → 18**, and total description words reachable in one full read of the default page **574 → 430** — a drop of exactly 144, the predicted 72 × 2. **No text was reworded** — shortening the three long paragraphs is D2 step 2 and returns to Brennen as a draft first. Validated: ruff clean, **140 pytest / 2 vitest / 122 e2e** (chromium+firefox), every count unchanged before and after. The speech reduction is measured by accessibility-tree probe, **not yet confirmed by ear**. |
+| 1.22 | 2026-08-22 | **The page gets a heading map: 1 visible heading → 6 on load, 11 with Expert Mode open, 12 with the beta on — and not one pixel moved.** New Section 4.11 records the outline, the level choice and both load-bearing consequences; §4.5's submenu paragraph updated to match. Audit finding F-A, decision D1. **Part 1:** the six `.expert-submenu-toggle` buttons are each now the sole child of an `<h3>`, per the WAI-ARIA APG Accordion pattern and GOV.UK. That broke `initExpertSubmenus()`, which found its panel with `toggle.nextElementSibling` — now `null` — so the handler resolves `aria-controls`, which all six already carried. **Part 2:** Enter Text, Double-Sided Card, Row Indicator Style, Card Thickness and Select Plate each gained an `<h2>` **inside** the existing `<legend>`, keeping the fieldset grouping intact; `updateDoubleSidedUI()` now writes to `#front-entry-heading`, because assigning `legend.textContent` would have deleted the heading. **Levels: h2 for the five sections (one step below the h1), h3 for the six accordions (one deeper again, and only reachable inside Expert Mode); no level is skipped in any state.** Recorded, not hidden: the Expert Mode button itself carries no heading, so a strict outline nests the h3s under *Select Plate to Generate*. Validated: **W3C Nu 0 errors / 0 warnings on the source file AND the rendered DOM** (this is what proves heading-in-legend is legal), Lighthouse accessibility **100/100 desktop and mobile, 0 failing audits**, reflow **0 failures of 6**, 8 accordion toggles with **0 `aria-expanded`/`aria-controls` defects** and the toggle still flipping, tab ring **unchanged at 32**, description budget **unchanged at 430 words / 18 nodes**, every `role=group` name unchanged, header screenshots **byte-identical**. Suite unchanged: ruff clean, **140 pytest / 2 vitest / 122 e2e**. **The outline is proven by probe; that it helps is not proven until it is heard under NVDA.** |
+| 1.24 | 2026-08-22 | **The three longest spoken descriptions drop from 239 words to 35, and not one word of them was rewritten.** New **Section 4.13** records the sentence-span pattern; §4.7 gains a pointer to it. Audit F-C / F-D, decision D2 step 2, each keeper approved by Brennen as a draft before the edit (FD-25). Applied to a **pure sentence split**: the `id` moved onto a `<span>` around ONE sentence that was already in the paragraph, and every other sentence stayed in the same div, in the same order, visible. **Not one word was rewritten, nothing was deleted from the page, and no pixel moved** (the span is inline, so the note still renders as one flowing paragraph) — which is what let this be applied to a signed-off string. Measured on the live accessibility tree: `#braille-unicode-help` **72 → 5 w**, `#double-sided-note` **96 → 17 w** (the beta warning lifted whole, so the 2026-08-16 sign-off is intact word for word), `#language-help` **71 → 13 w**; total description words in one full read of the default page **430 → 226**. §4.13 also records a trap the Step 6.8 probe cannot show on its own: `#braille-unicode` has **two** describedby targets, so its budget is 25 minus a live status worth 8–12 words — that ruled out the 20-word "used exactly as written" sentence, which would have measured 28 w. Also here: the **Disabled** capitals radio lost its `sr-only` description, which duplicated both the live `#caps-warning` and the visible `.grade-note` beneath it (audit F-J, decision D6). Deliberately NOT done: relocating anything to the help guide (Step 6.8.2 makes that a separate change), and the three descriptions still over the ceiling — Tactile seam arrow 43 w, 3D preview 38 w, Visual markers 26 w — which Brennen chose to leave and log (FD-25d). Suite unmoved before and after: ruff clean, **140 pytest / 2 vitest / 134 e2e** (chromium+firefox). Measured by probe; **not yet heard under NVDA**. |
+| 1.25 | 2026-08-23 | **The page gets a banner, and §4.1's opening sentence stops being false.** POST15_7 item G, decision D3, closing audit findings F-E and F-L and §2.5 Contradiction 1; F-F **partly**. §4.1 said the skip link let users "bypass the header and jump directly to the main content" — there was no header, the chrome sat inside `<main>`, and the link bypassed **zero** controls. The chrome moved instead of the sentence being softened: a top-level `<header>` above `<main>`, so **landmarks 4 → 5**, `focusableBeforeTarget` **0 → 7**, `firstInsideTarget` **font-decrease → brightness-decrease**. `<body>` became a flex column to take the sibling at all. **The whole top bar moved, not half of it, and Brennen chose that from two built and measured versions** — leaving the `<h1>` in `<main>` costs 45px of app height on a layout locked to the viewport and pushes "Translate to Text" below the fold, while moving the bar whole is pixel-exact (808 → 808, and identical at 200% and 1024px); the `<h1>` is still the first heading either way. **A defect found while verifying and fixed here:** the skip link never moved FOCUS — a fragment link to a non-focusable element only shifts the sequential-navigation start point, so `activeElement` stayed on `<body>`; `<main>` now carries `tabindex="-1"`, as does the second link's target. **A second skip link** goes straight to the text entry (FD-27b), targeting the section heading rather than `#auto-text` because Manual Placement hides that textarea. **F-L closed** by widening `<form>` to wrap `.form-scroll` and `.action-footer` rather than moving the button — the button cannot move, the footer is pinned outside the scrolling pane and is `position:sticky` on mobile; the AX tree now puts the button under the form, both constraint probes are byte-identical before and after, and no rendered element moved. **Stated plainly: F-F's headline number did not improve** — 32 stops before and after, 14 still ahead of the task — because the added link and the removed duplicate GitHub link cancel; what changed is that three keystrokes now reach the task. Suite: ruff clean, 140 pytest, 2 vitest, 134 e2e, before and after. |
+| 1.23 | 2026-08-22 | **The Generate button could die in silence; it no longer can.** Added Section 4.12. `#action-btn` generates through `form.requestSubmit()`, which runs native constraint validation first, so any `:invalid` control aborted generation — and when that control was not reachable the browser could not focus it, logged `not focusable` to the console and produced **no message at all**. Not an edge case: **all 33 numeric dials carry `min`/`max` and none is rendered on a fresh load**, so that was the only state a default load could be in. A capture-phase `invalid` listener now reveals the control through its own accordion toggle (keeping `aria-expanded` truthful), focuses it, and states the problem through `#error-message`, which §4.10's mirror already relays to `#a11y-status` — no new live region, and one message however many controls failed. The **visible-dial path is deliberately unchanged**. Saved values are now validated on restore: an unusable one is refused, the field falls back to its shipped default, and the discard is announced — refused and reported, never clamped (accessibility rule 11) and never silent. Wording approved by Brennen; a `step` mismatch gets its own sentence because 2.55 is *inside* `dot_spacing`'s 1–5 range and still refused. Regression cover: `tests/e2e/constraintValidation.spec.ts`, e2e 122 → 134. One defect found and left open by decision — `cylinder_diameter_mm` ships at 30.75 with `min="10" step="0.1"`, so the shipped default is itself invalid whenever the saved preset is `custom`; pre-existing, and a public-parameter call. |
+| 1.24 | 2026-08-25 | **That open defect is closed: `cylinder_diameter_mm` steps by 0.05.** The dial shipped at 30.75 against `step="0.1"` counted from `min="10"`, so it was invalid from its own default and a user whose saved preset was `custom` met a form that refused to generate before they touched anything. Brennen's call was to move the **step**, not the value: 30.75 is the Layer-1 schema and backend default, so changing it would have had to move `settings.schema.json`, `app/models.py`, the UI and the specs together — the cross-file default drift this project treats as its worst bug class — while the step is presentation and 0.05 only *adds* legal positions, invalidating nothing a user could already have entered. Section 4.12's closing paragraph rewritten from "reported and not fixed" to the fix. The `constraintValidation.spec.ts` seed that pinned the dial to 30.8 purely to work around this is deleted, so those six tests now exercise the real shipped default. |
+| 1.25 | 2026-08-31 | **Main-menu organization pass (Brennen's call), three moves.** (1) The Embosser version selector left the site header for the form's selection menu, directly under "What Does This Program Do?" — the first menu item, with the menu-item `<h2 class="legend-heading">` in its legend and the stock `.radio-group` layout; every signed S-V string byte-identical; two header-only CSS rules retired. (2) The Double-Sided Card item became a collapsible menu on the Expert-submenu accordion pattern at h2 level — §4.8 gains the pattern and `initExpertSubmenus()` now serves seven accordions. §4.11 re-measured live: **8 / 13 / 14** headings (load / Expert open / beta on), no level skipped — and the re-measure surfaced that the table had been missing the Integrated Gears h2 since 2026-08-24, so the old 6/11/12 was already stale before this pass. (3) The Back of Card entry reached 1:1 parity with the front (§4.7): its own Translate pair, an authoritative `#back-braille-unicode` field with status + sr-only announcer, and both back textareas joined the front's themed textarea CSS — `#back-text` previously had no themed rule and rendered white in dark mode. Details: EMBOSSER_VERSION_2 v1.5 and INTERPOINT_DOUBLE_SIDED v1.13. |
 
 ---
 

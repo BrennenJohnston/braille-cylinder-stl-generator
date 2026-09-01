@@ -744,7 +744,9 @@ if (shape === 'cone') {
 ### UI Input Collection (JavaScript)
 
 ```javascript
-// From templates/index.html — getSettings() function
+// From public/index.html — the settings object built in runGenerateForCurrentPlate().
+// The getSettings() wrapper below is illustrative only; the real code builds this
+// object inline, with more fields and a different order.
 
 function getSettings() {
     return {
@@ -1037,6 +1039,15 @@ defaults = {
 | `cone_counter_dot_base_diameter` | 0.1 | 5.0 | HTML `min`/`max` |
 | `cone_counter_dot_height` | 0.0 | 5.0 | HTML `min`/`max` |
 | `cone_counter_dot_flat_hat` | 0.0 | 5.0 | HTML `min`/`max` |
+| `emboss_dot_base_diameter` | 0.5 | 3.0 | HTML `min`/`max` |
+| `emboss_dot_height` | 0.3 | 2.0 | HTML `min`/`max` |
+| `emboss_dot_flat_hat` | 0.1 | 2.0 | HTML `min`/`max` |
+
+The three `emboss_dot_*` rows were added on 2026-08-22. They carry the ranges
+`app/validation.py` already enforced; the controls simply never declared them, so
+`aria-valuemin`/`aria-valuemax` had nothing to map to and a screen reader was told
+the range was "0 to 0" (Chrome synthesises that pair for a bare spinbutton). No
+value, default or enforced limit changed.
 
 ### Backend Validation
 
@@ -1168,6 +1179,8 @@ sphere_center_z = plate_thickness - (R - depth)
 | Date | Version | Author | Changes |
 |------|---------|--------|---------|
 | 2024-12-06 | 1.0 | Contributor | Initial specification |
+| 2026-08-21 | 1.1 | Contributor | **Documentation only — no behavior change.** The UI Input Collection snippet cited `templates/index.html` (empty and deprecated) and a `getSettings()` function; neither exists. It now cites the settings object built in `runGenerateForCurrentPlate()` in `public/index.html`, and flags the `getSettings()` wrapper shown as illustrative. Part of the templates/ reference sweep (Phase 07b). |
+| 2026-08-22 | 1.2 | Contributor | §11 UI-Level Constraints gained `emboss_dot_base_diameter` (0.5–3.0), `emboss_dot_height` (0.3–2.0) and `emboss_dot_flat_hat` (0.1–2.0), which now declare `min`/`max` in `public/index.html`. Values copied verbatim from `app/validation.py`, which already enforced them — no default, no enforced limit and no geometry changed. Closes part of POST15_7 audit finding F-M (decision D8); the announcement gain is measured as dials exposing a real range 19 → 29 across the page. Note also that `hemi_counter_dot_base_diameter` carries HTML `min`/`max` in the markup but is still absent from this table — pre-existing, reported not fixed. |
 
 ---
 

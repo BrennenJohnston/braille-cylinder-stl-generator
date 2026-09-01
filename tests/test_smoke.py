@@ -552,6 +552,33 @@ def test_schema_and_models_agree_on_indicator_fields():
         )
 
 
+def test_schema_and_models_agree_on_embosser_version_fields():
+    """
+    The Version 2 fields, guarded the same way.
+
+    settings.schema.json is loaded by nothing at runtime, so a wrong number in
+    it fails no other check - this test is the only thing that notices. The
+    clearance is compared against app/geometry/version2.py too, because that
+    module is where the value actually lives.
+    """
+    import json
+    from pathlib import Path
+
+    from app.geometry import version2
+
+    schema_path = Path(__file__).resolve().parents[1] / 'settings.schema.json'
+    properties = json.loads(schema_path.read_text(encoding='utf-8'))['properties']
+    settings = CardSettings()
+
+    assert properties['embosser_version']['enum'] == [1, 2]
+    assert properties['embosser_version']['default'] == settings.embosser_version == 1
+
+    clearance = properties['version_2']['properties']['key_clearance_mm']
+    assert clearance['default'] == settings.v2_key_clearance_mm == version2.V2_KEY_CLEARANCE_DEFAULT_MM
+    assert clearance['minimum'] == version2.V2_KEY_CLEARANCE_MIN_MM
+    assert clearance['maximum'] == version2.V2_KEY_CLEARANCE_MAX_MM
+
+
 # =============================================================================
 # PR-8: braille_to_dots() Strict Mode Tests (Defense-in-Depth)
 # =============================================================================
@@ -632,3 +659,203 @@ def test_braille_to_dots_braille_blank_pattern():
     # U+2800 is the "braille pattern blank" - a valid braille character with no dots
     result = braille_to_dots('⠀')
     assert result == [0, 0, 0, 0, 0, 0], f'Expected empty cell for ⠀ (U+2800), got {result}'
+
+
+def test_ui_ds_footprints_match_interpoint_packages():
+    """
+    public/index.html's DS_FOOTPRINTS and app/geometry/interpoint.py's
+    DS_FOOTPRINTS_BY_PRESET are two copies of the same signed-off packages
+    (0.3 -> Option B, 0.4 -> the 2026-08-20 Q2 print-matrix winner).
+    Cross-file default drift is this project's #1 historical bug source,
+    so the two copies are diffed here.
+    """
+    import re
+    from pathlib import Path
+
+    from app.geometry import interpoint
+
+    html = (Path(__file__).resolve().parents[1] / 'public' / 'index.html').read_text(encoding='utf-8')
+    match = re.search(r'const DS_FOOTPRINTS = \{(.*?)\n {8}\};', html, re.DOTALL)
+    assert match, 'DS_FOOTPRINTS block not found in public/index.html'
+    ui_packages = {}
+    for preset in re.finditer(r"'(0\.[34])': \{(.*?)\}", match.group(1), re.DOTALL):
+        pairs = re.findall(r'(ds_\w+): ([0-9.]+)', preset.group(2))
+        assert len(pairs) == 6, f'expected 6 ds fields in the {preset.group(1)} package'
+        ui_packages[preset.group(1)] = {name: float(value) for name, value in pairs}
+    assert ui_packages == interpoint.DS_FOOTPRINTS_BY_PRESET
+
+
+def test_ui_version2_numbers_match_the_geometry_module():
+    """
+    public/index.html mirrors four Version 2 numbers that app/geometry/version2.py
+    owns: the preset barrel it forces on the dials, and the clearance dial's
+    bounds and default. Cross-file default drift is this project's #1 historical
+    bug source, so the two copies are diffed here rather than trusted.
+
+    The dial's attributes are checked as text, not as floats only, because the
+    step has to divide the default exactly: 0.110 / 0.005 = 22. A default that is
+    invalid against its own step makes the input :invalid and kills the Generate
+    button silently - a trap this repo has already been bitten by once.
+    """
+    import re
+    from pathlib import Path
+
+    from app.geometry import version2
+
+    html = (Path(__file__).resolve().parents[1] / 'public' / 'index.html').read_text(encoding='utf-8')
+
+    match = re.search(r'const V2_PRESET_OVERRIDES = \{(.*?)\};', html, re.DOTALL)
+    assert match, 'V2_PRESET_OVERRIDES block not found in public/index.html'
+    overrides = {name: float(value) for name, value in re.findall(r'(\w+): ([0-9.]+)', match.group(1))}
+    assert overrides == {
+        'cylinder_diameter_mm': version2.V2_BARREL_DIAMETER_MM,
+        'cylinder_height_mm': version2.V2_BARREL_HEIGHT_MM,
+        'seam_offset_deg': 0.0,
+    }
+
+    dial = re.search(r'<input type="number" id="v2_key_clearance_mm"[^>]*>', html)
+    assert dial, 'the v2_key_clearance_mm dial was not found in public/index.html'
+    attrs = dict(re.findall(r'(value|step|min|max)="([^"]+)"', dial.group(0)))
+    assert float(attrs['value']) == version2.V2_KEY_CLEARANCE_DEFAULT_MM
+    assert float(attrs['min']) == version2.V2_KEY_CLEARANCE_MIN_MM
+    assert float(attrs['max']) == version2.V2_KEY_CLEARANCE_MAX_MM
+    # The default must be a whole number of steps above the minimum.
+    steps = (float(attrs['value']) - float(attrs['min'])) / float(attrs['step'])
+    assert abs(steps - round(steps)) < 1e-9, f'{attrs["value"]} is not a whole number of {attrs["step"]} steps'
+
+    # The live UI constants must also agree with the module, since the size
+    # warning is compared against them before any request is sent.
+    for js_name, expected in (
+        ('V2_BARREL_DIAMETER_MM', version2.V2_BARREL_DIAMETER_MM),
+        ('V2_BARREL_HEIGHT_MM', version2.V2_BARREL_HEIGHT_MM),
+        ('V2_SIZE_TOLERANCE_MM', version2.V2_SIZE_TOLERANCE_MM),
+    ):
+        found = re.search(rf'const {js_name} = ([0-9.]+);', html)
+        assert found, f'{js_name} not found in public/index.html'
+        assert float(found.group(1)) == expected, f'{js_name} disagrees with version2.py'
+
+
+def test_zero_recess_depth_cuts_no_cylinder_bowls(client):
+    """
+    Bowl Recess Dot Depth 0 mm means NO recess, not the shipped default.
+
+    The Manifold worker substitutes 0.8 mm for a non-positive bowl_depth
+    (static/workers/csg-worker-manifold.js), so a spec that still carried
+    depth 0 handed the user an 0.8 mm bowl they never asked for. The spec now
+    declines to emit those dots, which makes that substitution unreachable.
+    """
+    payload = {
+        'lines': ['⠁⠃', '', '', ''],
+        'plate_type': 'negative',
+        'shape_type': 'cylinder',
+        'grade': 'g1',
+        'settings': {'grid_rows': 4, 'grid_columns': 4, 'recess_shape': 1, 'counter_dot_depth': 0.0},
+        'cylinder_params': {'diameter': 60.0, 'height': 40.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0},
+    }
+
+    resp = client.post('/geometry_spec', json=payload, headers={'Content-Type': 'application/json'})
+    assert resp.status_code == 200, resp.data
+    data = resp.get_json()
+    assert data['dots'] == [], f'expected no recesses at 0 mm depth, got {len(data["dots"])}'
+    assert any('0 mm' in w for w in data.get('warnings', [])), (
+        f'the omission must be reported to the user, not silent; warnings were {data.get("warnings")}'
+    )
+
+    # Markers are untouched: only the recess dots go.
+    settings = CardSettings(**payload['settings'])
+    assert len(data['markers']) == settings.grid_rows * 2
+
+
+def test_zero_recess_depth_does_not_crash_the_card_plate(client):
+    """
+    The card counter plate divides by the depth to size its sphere, so 0 mm
+    used to raise ZeroDivisionError and return a 500. It now cuts nothing.
+    """
+    payload = {
+        'lines': ['⠁⠃', '', '', ''],
+        'plate_type': 'negative',
+        'shape_type': 'card',
+        'grade': 'g1',
+        'settings': {'grid_rows': 4, 'grid_columns': 4, 'recess_shape': 1, 'counter_dot_depth': 0.0},
+    }
+
+    resp = client.post('/geometry_spec', json=payload, headers={'Content-Type': 'application/json'})
+    assert resp.status_code == 200, resp.data
+    data = resp.get_json()
+    assert all(d.get('type') != 'rounded' for d in data['dots']), 'no bowl may be cut at 0 mm depth'
+
+
+def test_positive_recess_depths_are_unchanged():
+    """
+    The zero-depth guard must not move any dimension a user actually prints.
+    These are the shipped depths: 0.8 mm single-sided, 0.5 mm double-sided.
+    """
+    from app.geometry_spec import _create_cylinder_dot_spec, _create_dot_spec, _create_ds_cylinder_dot_spec
+
+    settings = CardSettings(**{'counter_dot_depth': 0.8, 'recess_shape': 1, 'use_bowl_recess': 1})
+    card = _create_dot_spec(0.0, 0.0, settings, shape_type='bowl', plate_type='negative')
+    assert card['params']['dome_height'] == 0.8
+
+    cylinder = _create_cylinder_dot_spec(0.0, 0.0, 15.4, settings, plate_type='negative')
+    assert cylinder['params'] == {'shape': 'bowl', 'bowl_radius': 0.9, 'bowl_depth': 0.8}
+
+    ds_settings = CardSettings(**{'shape_type': 'cylinder'})
+    ds_settings.ds_bowl_depth = 0.5
+    ds = _create_ds_cylinder_dot_spec(0.0, 0.0, 15.4, ds_settings, is_recess=True)
+    assert ds['params'] == {'shape': 'bowl', 'bowl_radius': 0.65, 'bowl_depth': 0.5}
+
+
+def test_zero_ds_bowl_depth_cuts_no_paired_recess():
+    """
+    ds_bowl_depth_mm is schema-legal at 0.0 and reaches the same worker line
+    as the single-sided depth, so it gets the same treatment.
+    """
+    from app.geometry_spec import _create_ds_cylinder_dot_spec
+
+    settings = CardSettings(**{'shape_type': 'cylinder'})
+    settings.ds_bowl_depth = 0.0
+    assert _create_ds_cylinder_dot_spec(0.0, 0.0, 15.4, settings, is_recess=True) is None
+
+    # The raised dot on the same cylinder is unaffected - only the bowl goes.
+    raised = _create_ds_cylinder_dot_spec(0.0, 0.0, 15.4, settings, is_recess=False)
+    assert raised is not None and raised['is_recess'] is False
+
+
+def test_payload_fallback_literals_match_the_shipped_defaults():
+    """
+    The /geometry_spec payload builder in public/index.html reads each dial as
+    `document.getElementById('x')?.value || 'literal'`. An empty input is the
+    empty string, which is falsy, so CLEARING a box hands that literal straight
+    to the geometry - these are live fallbacks, not dead code.
+
+    Nothing pinned them, and twice now a literal has been left behind when the
+    real default moved: the tactile pair sat at the OpenSCAD generator's old
+    5.0 / 0.8 after the defaults became 10.0 / 0.5 (fixed 33f11d6), and
+    counter_dot_depth carried 0.6 - which is not this parameter's default at all
+    but `indicators.depth_mm`, a different schema field (fixed 2026-08-22).
+
+    Pinned at the source rather than through the browser on purpose: an e2e test
+    has to edit a dial, and restoreThicknessPreset() re-applies the card-stock
+    preset over every dial on load, which makes any such test racy. Measured at
+    roughly 1 run in 3 before it was abandoned.
+    """
+    import re
+    from pathlib import Path
+
+    html = (Path(__file__).resolve().parents[1] / 'public' / 'index.html').read_text(encoding='utf-8')
+
+    # field name -> the value the app should fall back to, and where that is set
+    expected = {
+        'counter_dot_depth': ('0.8', 'settings.schema.json dots.bowl.depth_mm and app/models.py'),
+        'tactile_indicator_length': ('10.0', 'the 2026-07-30 tactile defaults'),
+        'tactile_indicator_raise': ('0.5', 'the 2026-07-30 tactile defaults'),
+    }
+
+    for field, (want, source) in expected.items():
+        pattern = rf"{field}: document\.getElementById\('{field}'\)\?\.value \|\| '([0-9.]+)'"
+        match = re.search(pattern, html)
+        assert match, f'payload fallback for {field} not found in public/index.html'
+        assert match.group(1) == want, (
+            f'Emptying the {field} box would send {match.group(1)}, but the shipped default is '
+            f'{want} ({source}). A fallback literal must never be a second, drifting copy of a default.'
+        )

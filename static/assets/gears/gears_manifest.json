@@ -1,0 +1,142 @@
+{
+  "note": "Derived 1:1 from Brennen's reference STLs; regenerate only via scripts/derive_gear_assets.py",
+  "derived": "2026-08-24",
+  "frame": "Browser worker cylinder frame: axis at x=y=0, barrel centered on z=0 (cylinder spans z -26..+26, gears -36..-26 and +26..+36). Millimeters, Z-up.",
+  "format": {
+    "magic": "BCGR1\\x00",
+    "byte_order": "little-endian",
+    "layout": "magic[6] + uint32 vertCount + uint32 triCount + float32[3*vertCount] + uint32[3*triCount]",
+    "header_bytes": 14
+  },
+  "transform": {
+    "source": "01_SAMPLE_GEOMETRY_AUDIT.md section 10.2",
+    "a": "p_programA = Rz(180) * (p_sample - (-16.0000, 0.0000, 0)) - (0, 0, 26.0000)",
+    "b": "p_programB = (p_sample - (+16.0473, -0.0079, 0)) - (0, 0, 26.0000)",
+    "constants": {
+      "a_axis_x_mm": -16.0,
+      "a_axis_y_mm": 0.0,
+      "a_rotation_z_deg": 180.0,
+      "b_axis_x_mm": 16.0473,
+      "b_axis_y_mm": -0.0079,
+      "b_rotation_z_deg": 0.0,
+      "z_shift_mm": -26.0
+    }
+  },
+  "gear_metrology": {
+    "tooth_count": 24,
+    "tip_radius_mm": 16.1093702290795,
+    "gear_thickness_mm": 10.0
+  },
+  "assets": {
+    "gears_a.bin": {
+      "sources": [
+        {
+          "role": "A1",
+          "file": "Rollers v7 (Gear Sample A1) (Top of Cylinder A, joins to handle connector).stl",
+          "sha256": "fd1f3fa1c01108ac62f0269eb498b07bcc0c95c8c0b8ac67837c6d7db94d676c",
+          "vert_count": 7614,
+          "tri_count": 15224,
+          "tooth_count": 24,
+          "tip_radius_mm": 16.109371,
+          "z_span_mm": [
+            26.0,
+            36.0
+          ]
+        },
+        {
+          "role": "A2",
+          "file": "Rollers v7 (Gear Sample A2) (Bottom of Cylinder A).stl",
+          "sha256": "eef0793878a1ea9610a03408c4725c025813b101bdff479c8f634f94051ad8fe",
+          "vert_count": 7596,
+          "tri_count": 15188,
+          "tooth_count": 24,
+          "tip_radius_mm": 16.109371,
+          "z_span_mm": [
+            -36.0,
+            -26.0
+          ]
+        }
+      ],
+      "vert_count": 15210,
+      "tri_count": 30412,
+      "byte_size": 547478,
+      "bounds_mm": {
+        "min": [
+          -16.109356,
+          -16.109356,
+          -36.0
+        ],
+        "max": [
+          16.109356,
+          16.109356,
+          36.0
+        ]
+      },
+      "body_volumes_mm3": [
+        5349.290599,
+        5665.283071
+      ],
+      "volume_mm3": 11014.57367,
+      "bodies_watertight": [
+        true,
+        true
+      ],
+      "sha256": "5d459f2e15cad13e14f19371cc1cea6c5a1df210c5644e62f78f7c522cb52af8"
+    },
+    "gears_b.bin": {
+      "sources": [
+        {
+          "role": "B1",
+          "file": "Rollers v7 (Gear Sample B1) (Top of Cylinder B).stl",
+          "sha256": "df58d10a8826e562584260add1941f846902cd104fe4ba6be7daaa80edc89352",
+          "vert_count": 7540,
+          "tri_count": 15076,
+          "tooth_count": 24,
+          "tip_radius_mm": 16.109402,
+          "z_span_mm": [
+            26.0,
+            36.0
+          ]
+        },
+        {
+          "role": "B2",
+          "file": "Rollers v7 (Gear Sample B2) (Bottom of Cylinder B).stl",
+          "sha256": "649d63f87ddb87fa28a6f481ca04e695c41e484aec763b7511eac35e58a78e26",
+          "vert_count": 7540,
+          "tri_count": 15076,
+          "tooth_count": 24,
+          "tip_radius_mm": 16.109402,
+          "z_span_mm": [
+            -36.0,
+            -26.0
+          ]
+        }
+      ],
+      "vert_count": 15080,
+      "tri_count": 30152,
+      "byte_size": 542798,
+      "bounds_mm": {
+        "min": [
+          -16.10877,
+          -16.108807,
+          -36.0
+        ],
+        "max": [
+          16.108778,
+          16.108744,
+          36.0
+        ]
+      },
+      "body_volumes_mm3": [
+        6414.813186,
+        6414.394175
+      ],
+      "volume_mm3": 12829.207361,
+      "bodies_watertight": [
+        true,
+        true
+      ],
+      "sha256": "f4311a6f0f3f121719db2234bbd63c7e85c78dc915101358d3ef073e9e9933a1"
+    }
+  }
+}

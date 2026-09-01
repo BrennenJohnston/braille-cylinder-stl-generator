@@ -15,14 +15,11 @@ Changes to the UI typically touch these files:
 
 | What | Where |
 |------|-------|
-| Production frontend | `public/index.html` |
-| Dev frontend (Flask) | `templates/index.html` |
+| Frontend (the whole UI) | `public/index.html` |
 | Data models | `app/models.py` |
 | Validation | `app/validation.py` |
 | Settings schema | `settings.schema.json` |
 | Geometry | `app/geometry/*.py` |
-
-**Important:** `public/index.html` and `templates/index.html` must stay in sync. Diff them after making changes.
 
 ## Implementation checklist
 
@@ -33,7 +30,6 @@ Changes to the UI typically touch these files:
 - [ ] Restore saved values on page load
 - [ ] Update `settings.schema.json` if adding parameters
 - [ ] Update `app/models.py` if backend needs new fields
-- [ ] Keep `public/index.html` and `templates/index.html` identical
 
 ### Documentation
 - [ ] Create a specification doc in `docs/specifications/` if the feature is substantial
@@ -50,6 +46,5 @@ Changes to the UI typically touch these files:
 ## Common mistakes
 
 - **Skipping the specs**: Reading existing specs before coding prevents naming conflicts and duplicate work. This saved hours on the thickness preset feature.
-- **Forgetting to sync HTML files**: The two HTML files must match. Use `diff public/index.html templates/index.html` to check.
 - **No error handling on localStorage**: Wrap all `localStorage.setItem()` calls in try-catch.
 - **Missing ARIA attributes**: All form controls need labels. Radio groups need `role="radiogroup"`.

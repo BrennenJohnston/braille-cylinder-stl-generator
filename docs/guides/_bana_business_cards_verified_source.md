@@ -336,6 +336,5 @@ This is the list of corrections to apply downstream. Each item is anchored to th
 ## Regression-prevention checklist (referenced by Phase 4)
 
 - [ ] Top-of-file notice on `docs/guides/BUSINESS_CARD_TRANSLATION_GUIDE.md` pointing back to this file.
-- [ ] HTML comment above the BANA help block in `templates/index.html`.
 - [ ] HTML comment above the BANA help block in `public/index.html`.
 - [ ] `CHANGELOG.md` entry recording the correction and naming the prior failure mode (rewrite from the hidden NABA ASCII text layer).
