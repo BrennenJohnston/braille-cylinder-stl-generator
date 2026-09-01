@@ -189,7 +189,7 @@ def test_the_dimension_gate_is_skipped_entirely_when_gears_are_off():
 @pytest.mark.parametrize(
     'params,expected_diameter,expected_height',
     [
-        ({}, 30.75, 52.0),  # both fall back to the schema defaults (52 = the Version 1 standard barrel; the 54 shelf is V2-only)
+        ({}, 30.75, 52.0),  # both fall back to the schema defaults (52 = the V1 standard; 54 is V2-only)
         ({'diameter_mm': 30.8, 'height_mm': 52.0}, 30.8, 52.0),  # the _mm spellings work
         ({'diameter': 30.8, 'height': 52.0}, 30.8, 52.0),
     ],
