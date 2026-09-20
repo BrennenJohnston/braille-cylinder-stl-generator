@@ -148,6 +148,12 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      2026-08-31 (was 52) - the 1 mm card shelf at each end, VERSION 2's ALONE
      since the same day (the project default returned to the 52 mm Version 1
      standard; V2_PRESET_OVERRIDES is what carries a V2 cylinder to 54).
+     TRAP (found by a 52 mm V2 print from the live site, 2026-09-20): BOTH
+     card-stock presets carry cylinder_height_mm 52, so a preset chosen
+     AFTER Version 2 used to put the barrel back to 52 with only the soft
+     S-V5 warning; applyThicknessPreset() now re-asserts
+     V2_PRESET_OVERRIDES whenever isVersion2() - keep that when the version
+     handling is reworked.
      54 print test PASSED (Brennen, 2026-09-01) — both cylinders printed
      from the OpenSCAD V2 file. Version 2 and the gears BETA share ⌀30.8 but the
      HEIGHT now tells them apart (V2 54, gears and the V1 default 52) - and

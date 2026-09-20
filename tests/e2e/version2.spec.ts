@@ -406,4 +406,37 @@ test.describe('Embosser Version 2 (prototype)', () => {
     await setDial(page, 'cylinder_height_mm', V2_HEIGHT);
     await expect(page.locator('input[name="card_thickness_preset"][value="0.4"]')).toBeChecked();
   });
+
+  test('a card stock chosen after Version 2 keeps the 54 mm barrel on the dial and on the wire', async ({ page }) => {
+    // Both card-stock presets carry the Version 1 barrel (30.8 x 52). Choosing
+    // a preset AFTER Version 2 used to write that 52 back onto the dial, and
+    // the size gate is a warning, not a rejection (D-V15) - so a 52 mm
+    // Version 2 cylinder was printed from the live site on 2026-09-20. This is
+    // the natural order for anyone working down the form: version first,
+    // card stock later.
+    await openApp(page);
+    await page.locator('#auto-text').fill('abc');
+    await openExpertDimensions(page);
+    await selectVersion2(page);
+    await expect(page.locator('#cylinder_height_mm')).toHaveValue(V2_HEIGHT);
+
+    // The preset toast lands in #error-text, which generate() reads on slow
+    // runs, so clear it before generating.
+    await page.locator('input[name="card_thickness_preset"][value="0.3"]').check();
+    await page.evaluate(() => { const t = document.getElementById('error-text'); if (t) t.textContent = ''; });
+    await expect(page.locator('#cylinder_height_mm')).toHaveValue(V2_HEIGHT);
+    await expect(page.locator('#cylinder_diameter_mm')).toHaveValue(V2_DIAMETER);
+    await expect(page.locator('#v2-size-warning')).toBeHidden();
+
+    const state = watchGeometrySpecRequests(page);
+    await generate(page, state, 1);
+    const cylinder = (state.bodies[0] as { cylinder_params: Record<string, string> }).cylinder_params;
+    expect(Number(cylinder.height_mm)).toBe(54);
+    expect(Number(cylinder.diameter_mm)).toBe(30.8);
+
+    // And back to Version 1 still restores the dials the user had before
+    // Version 2 (the snapshot, not the preset).
+    await page.locator('#embosser_version_1').check();
+    await expect(page.locator('#cylinder_height_mm')).toHaveValue('52');
+  });
 });

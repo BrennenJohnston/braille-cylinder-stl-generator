@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The Double-Sided Card item is now a collapsible menu**, opening and closing exactly like the Expert Mode sections, so it can be folded out of the way. The on/off toggle lives inside the menu, unchanged. The menu opens itself whenever the beta is on — including after a reload with the beta remembered — so the Back of Card section can never be hidden inside a closed menu.
 
 ### Fixed
+- **Choosing a card thickness preset after Version 2 no longer shrinks the barrel back to 52 mm.** Both presets carry the Version 1 cylinder (30.8 × 52 mm) and the preset applied it over Version 2's 30.8 × 54 mm, leaving only the size warning to say so — a 52 mm Version 2 double-sided pair was printed from the live site on 2026-09-20 that way. The preset now re-applies the Version 2 barrel whenever Version 2 is selected, so version-first, card-stock-second (the natural order down the form) keeps 54 mm on the dial and in the request. Switching back to Version 1 still restores the dials you had. Pinned by a new browser test.
 - **The Back of Card boxes were white in dark mode.** The back text area had no themed styling at all, so it kept the browser's default white background against the dark page. Both back boxes now share the front entry area's theme tokens and sizing in all three themes.
 
 ### Changed

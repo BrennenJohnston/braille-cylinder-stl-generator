@@ -396,6 +396,21 @@ the Card Thickness preset, hides the three inert rows, hides **and unchecks** th
 toggle, reveals the clearance dial and the prototype notice, joins pair mode, and
 announces S-V10 once. **Selecting Version 1** restores the snapshot exactly.
 
+**A card-stock preset chosen after Version 2 re-asserts the overrides (2026-09-20).**
+Both `THICKNESS_PRESETS` entries carry the Version 1 barrel (`cylinder_height_mm` 52,
+diameter 30.8, seam offset 0), and `applyThicknessPreset()` writes every preset dial.
+Until 2026-09-20 nothing re-applied `V2_PRESET_OVERRIDES` afterwards, so the natural
+top-to-bottom order — version first, card stock later — quietly returned the barrel to
+52 mm with only the soft S-V5 warning showing (D-V15 makes the size a warning, not a
+rejection), and a 52 mm Version 2 double-sided pair was printed from the live site.
+`applyThicknessPreset()` now re-applies `V2_PRESET_OVERRIDES` through `setAndPersistDial`
+whenever `isVersion2()` is true, before the live warnings refresh. On the silent load-time
+restore the version radio is still Version 1, so that path is a no-op and the version
+restore that follows applies the overrides as before. The Version 1 snapshot is untouched:
+switching back still restores the dials the user had. Pinned by
+`tests/e2e/version2.spec.ts` ("a card stock chosen after Version 2 keeps the 54 mm barrel
+on the dial and on the wire").
+
 The Card Thickness presets themselves are untouched, but `checkPresetMatch()` **skips
 the three dials Version 2 forces** while Version 2 is on. Without that skip the preset
 re-detected "custom" the moment any dial was touched, which renamed downloads to
@@ -596,6 +611,7 @@ it.
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-09-20 | 1.10 | **A card-stock preset chosen after Version 2 no longer returns the barrel to 52 mm.** Both presets carry the Version 1 barrel and `applyThicknessPreset()` wrote it over the Version 2 overrides; the soft S-V5 warning was the only sign, and a 52 mm Version 2 double-sided pair printed from the live site. The preset function now re-asserts `V2_PRESET_OVERRIDES` while Version 2 is on (§8). New e2e pin. |
 | 2026-09-01 | 1.9 | **The 54 mm print test is passed.** Brennen confirmed it the same day v1.8 recorded the inspection, completing the claim that row deliberately left half-made: the 30.8 × 54 pair printed from the OpenSCAD Version 2 file has now passed the print test, not merely inspection. Labels in both repos say so. The remaining MakerWorld gates are unchanged and his: sign the listing draft's DRAFT blocks, shoot and approve the five photos, confirm the print-orientation advice. |
 | 2026-09-01 | 1.8 | **54 mm print-inspected, the wording revisions signed, and the MakerWorld package completed.** Both cylinders printed from the OpenSCAD Version 2 file (30.8 × 54) passed Brennen's inspection, so the "not print-tested at 54" flags are cleared in both repos (an embossing run at 54 is not yet reported). He signed the 2026-08-31 wording revisions the same day (the `.scad` header, the S-V11 clearance-tab figures, the 4-row instructions) — the sign-off tags in the file now record it. MakerWorld de-muddle: the Version 1 file is renamed `_v1.5` (his rename, byte-pure, history preserved), `makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad` is now the **Embosser Version 2 upload** — a byte-identical copy of the canonical file, guarded by `test_the_makerworld_copy_is_byte_identical` — and `docs/MAKERWORLD_V2_LISTING_DRAFT.md` holds the listing text (S-V12 title and S-V13 status verbatim; the description/media blocks remain DRAFT awaiting his sign-off). KNOWN_ISSUES' stale "30.5 × 52" aside corrected to 30.8 × 54. |
 | 2026-08-31 | 1.7 | **§12's companion file catches up to the app** (Brennen's direction, same day as v1.6): `Braille_Cylinder_STL_Generator_EmbosserV2.scad` in braille-stl-generator-openscad now renders the **30.8 × 54** barrel and trims text input to the Version 2 standard **4 rows per face** (`Line_1–4` / `Back_Line_1–4`, `grid_rows` capped at 4; Version 1 keeps its ten). Interpoint was already ported; integrated gears stay excluded (D-V6) — deliberately the one feature with no Version 2 OpenSCAD counterpart. Two lagging comments corrected to shipped facts: the S-V11 tab comment now quotes the 0.110 clearance (wording had stayed at 0.075; the dial was already 0.110) and the header records both plates' nubs. That repo's `test_embosser_v2_scad.py` grew to 23 tests (two new source guards pin the 4-row input and the 54 barrel); scad-check clean, renders inspected. All wording edits inside signed blocks flagged for Brennen's review. Not print-tested at 54. |

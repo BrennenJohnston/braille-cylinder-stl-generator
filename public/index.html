@@ -8597,6 +8597,19 @@
                 }
             });
 
+            // Embosser Version 2 forces its barrel ON TOP of the card-stock preset
+            // (D-V4), but both presets carry the Version 1 barrel (30.8 x 52), so a
+            // preset chosen AFTER Version 2 quietly put the height back to 52 with
+            // only the soft S-V5 warning to show for it - a 52 mm Version 2
+            // cylinder was printed from the live site on 2026-09-20 that way.
+            // Re-assert the overrides here, exactly as updateEmbosserVersionUI()
+            // applies them. On the silent load-time restore the version radio is
+            // still Version 1, so this is a no-op there and the version restore
+            // that runs afterwards applies the overrides as before.
+            if (isVersion2()) {
+                Object.entries(V2_PRESET_OVERRIDES).forEach(([id, value]) => setAndPersistDial(id, value));
+            }
+
             // Persist the selected preset
             try { localStorage.setItem('braille_prefs_thickness_preset', presetKey); } catch (e) { log.debug('Could not save the selected thickness preset:', e); }
             // Remembered separately from the radio state above, which the
