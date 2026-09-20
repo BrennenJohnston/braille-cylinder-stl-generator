@@ -5,7 +5,9 @@
  * version: one raised arrow per row on the embossing plate, a matching recess on
  * the counter plate, both centred in the seam gap. It removes the marker cells,
  * which changes text capacity - so the payload sent to /geometry_spec is what
- * these tests assert on.
+ * these tests assert on. Since 2026-09-20 the 0.3 mm card thickness preset
+ * marks its cylinders with three fixed arrows instead (tactile_indicator_layout
+ * 'three_spaced'); the 0.4 preset sends nothing and keeps one arrow per row.
  *
  * @see docs/specifications/RECESS_INDICATOR_SPECIFICATIONS.md
  */
@@ -147,6 +149,61 @@ test.describe('Row Indicator Style', () => {
     expect(Number(settings.tactile_indicator_raise)).toBe(0.5);
     expect(Number(settings.tactile_recess_clearance)).toBe(0.2);
     expect(Number(settings.tactile_recess_extra_depth)).toBe(0.2);
+  });
+
+  test('the 0.4 preset sends no arrow layout and the 0.3 preset sends three_spaced', async ({ page }) => {
+    await openApp(page);
+    await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+
+    const spec = await interceptGeometrySpec(page);
+    await fillBraille(page, '⠁'.repeat(14));
+    await generate(page, spec);
+    // 0.4, the load default: the field is absent, so this request body is
+    // byte-identical to one from before the layout existed (the backend's
+    // absent-field fallback is per_row, one arrow per row).
+    expect(spec.body?.settings).not.toHaveProperty('tactile_indicator_layout');
+
+    // The 0.3 preset's marking: three fixed arrows. The preset toast lands in
+    // #error-text, which generate() reads on slow runs, so clear it first.
+    await page.locator('input[name="card_thickness_preset"][value="0.3"]').check();
+    await page.evaluate(() => { const t = document.getElementById('error-text'); if (t) t.textContent = ''; });
+    spec.called = false;
+    await generate(page, spec);
+    const settings03 = spec.body?.settings as Record<string, unknown>;
+    expect(settings03.tactile_indicator_layout).toBe('three_spaced');
+  });
+
+  test('a Custom preset follows the card stock last chosen for its arrows', async ({ page }) => {
+    // What a previous session leaves behind after a dial nudge on a 0.3 pair:
+    // the radio state says Custom (the auto-detection persisted it) while the
+    // separate "chosen" key still says 0.3. Seeded before any page script runs,
+    // so restoreThicknessPreset() takes its Custom branch and applies no preset.
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem('braille_prefs_thickness_preset', 'custom');
+        localStorage.setItem('braille_prefs_thickness_preset_chosen', '0.3');
+      } catch { /* private mode */ }
+    });
+    await openApp(page);
+    await expect(page.locator('input[name="card_thickness_preset"][value="custom"]')).toBeChecked();
+
+    await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+    const spec = await interceptGeometrySpec(page);
+    await fillBraille(page, '⠁'.repeat(14));
+    await generate(page, spec);
+    const settings = spec.body?.settings as Record<string, unknown>;
+    expect(settings.tactile_indicator_layout).toBe('three_spaced');
+  });
+
+  test('visual mode never sends an arrow layout, whatever the preset', async ({ page }) => {
+    await openApp(page);
+    await page.locator('input[name="card_thickness_preset"][value="0.3"]').check();
+    await page.evaluate(() => { const t = document.getElementById('error-text'); if (t) t.textContent = ''; });
+
+    const spec = await interceptGeometrySpec(page);
+    await fillBraille(page, '⠁'.repeat(13));
+    await generate(page, spec);
+    expect(spec.body?.settings).not.toHaveProperty('tactile_indicator_layout');
   });
 
   test('an emptied tactile dial falls back to the current default, not a stale one', async ({ page }) => {

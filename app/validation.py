@@ -8,6 +8,7 @@ ensuring security, correctness, and helpful error messages.
 from typing import Any
 
 from app.geometry import gears, interpoint, version2
+from app.geometry_spec import TACTILE_ARROW_LAYOUTS, TACTILE_THREE_SPACED_PITCH_MM
 from app.utils import get_logger
 
 # Configure logging
@@ -204,6 +205,16 @@ def validate_settings(settings_data: Any) -> bool:
             raise ValidationError(
                 "Setting 'indicator_mode' must be 'visual' or 'tactile'",
                 {'key': 'indicator_mode', 'value': mode, 'valid_options': ['visual', 'tactile']},
+            )
+
+    # tactile_indicator_layout is the other string enum, checked the same way: a
+    # typo must be rejected, never quietly read as one layout or the other.
+    if 'tactile_indicator_layout' in settings_data:
+        layout = settings_data['tactile_indicator_layout']
+        if str(layout).strip().lower() not in TACTILE_ARROW_LAYOUTS:
+            raise ValidationError(
+                "Setting 'tactile_indicator_layout' must be 'per_row' or 'three_spaced'",
+                {'key': 'tactile_indicator_layout', 'value': layout, 'valid_options': list(TACTILE_ARROW_LAYOUTS)},
             )
 
     for key, value in settings_data.items():
@@ -657,6 +668,57 @@ def validate_gear_rollers_settings(settings_data: dict, shape_type: str, cylinde
             },
         )
 
+    return True
+
+
+def validate_tactile_arrow_fit(settings_data: dict, shape_type: str, cylinder_params: dict) -> bool:
+    """
+    Reject a three_spaced tactile layout whose outer arrows would run past the
+    barrel ends.
+
+    Skipped unless the shape is a cylinder, the row indicator style is tactile
+    and tactile_indicator_layout is three_spaced, so every other request is
+    validated exactly as it was before the layout existed. The per-row layout
+    is not measured here: it follows the braille rows, which have never had a
+    fit gate of their own.
+
+    The outer arrows sit TACTILE_THREE_SPACED_PITCH_MM from mid-height. The
+    larger of the two outlines is the counter plate's recess, grown by the
+    clearance, and both plates of a pair must pass or fail together, so that is
+    the outline measured for both. An arrow past the end face would print as a
+    burr on the emboss plate and a notch in the rim of the counter plate, so
+    this is a rejection, not a warning (Brennen, 2026-09-20). The 52 mm and
+    54 mm barrels clear it at every dial setting: the 15 mm maximum indicator
+    length and 1 mm maximum clearance need 45 mm.
+    """
+    if str(shape_type).strip().lower() != 'cylinder':
+        return True
+    if str(settings_data.get('indicator_mode', 'visual')).strip().lower() != 'tactile':
+        return True
+    if str(settings_data.get('tactile_indicator_layout', 'per_row')).strip().lower() != 'three_spaced':
+        return True
+
+    length = _double_sided_number(
+        settings_data, 'tactile_indicator_length', 'indicators.tactile_indicator_length', 10.0
+    )
+    clearance = _double_sided_number(
+        settings_data, 'tactile_recess_clearance', 'indicators.tactile_recess_clearance', 0.2
+    )
+    _, height = gears.cylinder_dimensions(cylinder_params)
+    minimum_height = 2.0 * (TACTILE_THREE_SPACED_PITCH_MM + length / 2.0 + clearance)
+    if height + 1e-9 < minimum_height:
+        raise ValidationError(
+            f'The three-arrow tactile layout used by the 0.3 mm card thickness preset needs a cylinder at least '
+            f'{gears._format_mm(minimum_height)} mm tall so its outer arrows stay on the barrel; this cylinder is '
+            f'{gears._format_mm(height)} mm. Use a taller cylinder, shorten the indicator length, or choose the '
+            f'0.4 mm preset.',
+            {
+                'key': 'cylinder_height_mm',
+                'value': height,
+                'minimum': minimum_height,
+                'tactile_indicator_layout': 'three_spaced',
+            },
+        )
     return True
 
 

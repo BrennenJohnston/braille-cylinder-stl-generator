@@ -159,7 +159,8 @@ def test_golden_specs_ignore_an_absent_or_off_double_sided_flag(client, fixtures
 # Bowls are cut with the shipping worker's centre-on-surface convention (cut
 # depth = sphere radius, mouth = its diameter), NOT the exact-depth Python
 # convention - decided 2026-08-19 (the app's geometry is what has been
-# printed and embossed); fixtures regenerated 2026-08-20.
+# printed and embossed); fixtures regenerated 2026-08-20, and again on
+# 2026-09-20 when the 0.3 mm preset's tactile arrows became three fixed ones.
 #
 # The specs are built by calling extract_cylinder_geometry_spec directly:
 # back_lines has no request route until the backend plumbing phase lands.
@@ -171,6 +172,11 @@ DS_FIXTURE_SETTINGS = {
     'grid_columns': 14,
     'grid_rows': 4,
     'indicator_mode': 'tactile',
+    # The ds_* package below is the 0.3 mm card-stock preset's, and since
+    # 2026-09-20 that preset marks its cylinders with three fixed seam arrows
+    # (mid-height and 15 mm either side) instead of one per row - so the pair
+    # carries the layout the UI sends for it. Regenerated the same day.
+    'tactile_indicator_layout': 'three_spaced',
     'double_sided_enabled': 1,
     'interpoint_offset_x': 1.25,
     'interpoint_offset_y': 1.25,
@@ -489,7 +495,7 @@ def generate_ds_golden_fixtures():
                 'back_lines': DS_FIXTURE_BACK_LINES,
                 'settings': DS_FIXTURE_SETTINGS,
                 'cylinder_params': DS_FIXTURE_CYLINDER_PARAMS,
-                'generated': '2026-08-20',
+                'generated': '2026-09-20',
                 'trimesh_version': importlib.metadata.version('trimesh'),
                 'manifold3d_version': importlib.metadata.version('manifold3d'),
             },
@@ -524,7 +530,9 @@ def test_ds_golden_pair_is_paired_dot_for_recess_with_a_printable_gap():
     for spec in (plate_a, plate_b):
         assert spec['warnings'] == []
         assert spec['indicator_mode'] == 'tactile'
-        assert [m['type'] for m in spec['markers']] == ['cylinder_tactile_arrow'] * DS_FIXTURE_SETTINGS['grid_rows']
+        # Three fixed arrows, the 0.3 mm preset's marking - not one per row
+        assert [m['type'] for m in spec['markers']] == ['cylinder_tactile_arrow'] * 3
+        assert [m['y'] for m in spec['markers']] == [15.0, 0.0, -15.0]
 
     front_dots = sum(sum(braille_to_dots(char)) for char in DS_FIXTURE_FRONT_LINES[0])
     back_dots = sum(sum(braille_to_dots(char)) for char in DS_FIXTURE_BACK_LINES[0])
@@ -653,7 +661,14 @@ def test_ds_golden_fixture_matches_regenerated_geometry(fixtures_dir, plate_type
 #     at both ends, which is what makes it a 72 mm one-piece part.
 # ---------------------------------------------------------------------------
 
-GEAR_FIXTURE_SETTINGS = {**DS_FIXTURE_SETTINGS, 'gear_rollers_enabled': 1}
+# The double-sided pair's three-arrow layout is NOT inherited here: only that
+# pair was approved for regeneration on 2026-09-20, so the gear pair keeps its
+# per-row arrows and its fixtures stay byte-identical (the key is dropped, not
+# set to 'per_row', so the recorded settings do not change either).
+GEAR_FIXTURE_SETTINGS = {
+    **{key: value for key, value in DS_FIXTURE_SETTINGS.items() if key != 'tactile_indicator_layout'},
+    'gear_rollers_enabled': 1,
+}
 GEAR_FIXTURE_CYLINDER_PARAMS = {**DS_FIXTURE_CYLINDER_PARAMS, 'diameter': 30.8}
 GEAR_FIXTURE_NAMES = {'positive': 'gear_rollerA_golden', 'negative': 'gear_rollerB_golden'}
 GEAR_FIXTURE_ASSETS = {'positive': 'gears_a', 'negative': 'gears_b'}
@@ -886,7 +901,13 @@ def test_gear_golden_fixture_has_material_where_a_tooth_is(fixtures_dir, plate_t
 # ---------------------------------------------------------------------------
 
 V2_FIXTURE_SETTINGS = {
-    **{key: value for key, value in DS_FIXTURE_SETTINGS.items() if key != 'double_sided_enabled'},
+    # Neither the double-sided flag nor its pair's three-arrow layout (see the
+    # gear pair's note) is inherited; this pair keeps its per-row arrows.
+    **{
+        key: value
+        for key, value in DS_FIXTURE_SETTINGS.items()
+        if key not in ('double_sided_enabled', 'tactile_indicator_layout')
+    },
     'grid_columns': 3,
     'embosser_version': 2,
     'v2_key_clearance_mm': version2.V2_KEY_CLEARANCE_DEFAULT_MM,

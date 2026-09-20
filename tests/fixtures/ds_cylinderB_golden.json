@@ -20,6 +20,7 @@
       "grid_columns": 14,
       "grid_rows": 4,
       "indicator_mode": "tactile",
+      "tactile_indicator_layout": "three_spaced",
       "double_sided_enabled": 1,
       "interpoint_offset_x": 1.25,
       "interpoint_offset_y": 1.25,
@@ -36,13 +37,13 @@
       "wall_thickness": 2.0,
       "seam_offset_deg": 355.0
     },
-    "generated": "2026-08-20",
+    "generated": "2026-09-20",
     "trimesh_version": "4.10.1",
     "manifold3d_version": "3.3.2"
   },
   "expected_properties": {
-    "face_count": 14914,
-    "vertex_count": 7459,
+    "face_count": 14862,
+    "vertex_count": 7433,
     "is_watertight": true,
     "bbox_min": [
       -15.754814147949219,
@@ -54,7 +55,7 @@
       15.375,
       52.0
     ],
-    "volume": 38486.1843816535,
-    "surface_area": 6592.195563812918
+    "volume": 38503.20346872619,
+    "surface_area": 6579.215308616949
   }
 }

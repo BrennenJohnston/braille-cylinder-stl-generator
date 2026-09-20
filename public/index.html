@@ -3753,12 +3753,12 @@
                                       <input type="radio" name="card_thickness_preset" value="0.4" checked aria-describedby="thickness-04-desc">
                                       <span class="radio-text">0.4mm</span>
                                   </label>
-                                  <span id="thickness-04-desc" class="sr-only">Preset settings optimized for embossing 0.4mm card stock</span>
+                                  <span id="thickness-04-desc" class="sr-only">Preset settings optimized for embossing 0.4mm card stock. In the tactile style its cylinders carry one seam arrow per row.</span>
                                   <label class="radio-option">
                                       <input type="radio" name="card_thickness_preset" value="0.3" aria-describedby="thickness-03-desc">
                                       <span class="radio-text">0.3mm</span>
                                   </label>
-                                  <span id="thickness-03-desc" class="sr-only">Preset settings optimized for embossing 0.3mm card stock</span>
+                                  <span id="thickness-03-desc" class="sr-only">Preset settings optimized for embossing 0.3mm card stock. In the tactile style its cylinders carry three evenly spaced seam arrows, so the preset can be felt.</span>
                                   <label class="radio-option">
                                       <input type="radio" name="card_thickness_preset" value="custom" aria-describedby="thickness-custom-desc">
                                       <span class="radio-text">Custom</span>
@@ -6670,7 +6670,8 @@
         // app/geometry_spec.py and the OpenSCAD version.
         const TACTILE_MIN_GAP_MARGIN_MM = 5.0;
 
-        // Row Indicator Style: tactile puts one arrow per row in the seam gap
+        // Row Indicator Style: tactile puts arrows in the seam gap (one per row,
+        // or three fixed ones on the 0.3 preset - see TACTILE_ARROW_LAYOUT_BY_PRESET)
         // instead of markers in the first cells of the row.
         function isTactileIndicatorOn() {
             return document.querySelector('input[name="indicator_mode"]:checked')?.value === 'tactile';
@@ -6942,6 +6943,32 @@
                 try { key = localStorage.getItem('braille_prefs_thickness_preset'); } catch (e) { /* fall through */ }
             }
             return DS_FOOTPRINTS[key] || DS_FOOTPRINTS['0.4'];
+        }
+
+        // Tactile seam-arrow layout, keyed by the card-stock preset (2026-09-20):
+        // the 0.4 preset keeps one arrow per row, the 0.3 preset marks its
+        // cylinders with three fixed arrows (mid-height and 15 mm either side)
+        // so a blind user can tell the presets apart by touch, and a 0.3 mm
+        // cylinder will not nest with a 0.4 mm one. Keep in lockstep with
+        // app/geometry_spec.py TACTILE_ARROW_LAYOUTS (a smoke test diffs the two).
+        const TACTILE_ARROW_LAYOUT_BY_PRESET = {
+            '0.4': 'per_row',
+            '0.3': 'three_spaced'
+        };
+
+        // The preset the arrows follow. 'custom' has no arrow layout of its own,
+        // so it follows the preset last CHOSEN (0.4 or 0.3), remembered under its
+        // own key: the auto-detection that flips the radio to Custom also
+        // overwrites braille_prefs_thickness_preset with 'custom', so that key
+        // cannot say what was chosen. Nudging a dial on a 0.3 pair therefore
+        // keeps its three arrows, now and after a reload (Brennen, 2026-09-20).
+        // Nothing chosen yet falls back to '0.4', the load default.
+        function activeArrowLayoutPreset() {
+            const key = document.querySelector('input[name="card_thickness_preset"]:checked')?.value;
+            if (TACTILE_ARROW_LAYOUT_BY_PRESET[key]) return key;
+            let chosen = null;
+            try { chosen = localStorage.getItem('braille_prefs_thickness_preset_chosen'); } catch (e) { /* fall through */ }
+            return TACTILE_ARROW_LAYOUT_BY_PRESET[chosen] ? chosen : '0.4';
         }
 
         // Live same-surface crowding warning for the double-sided beta,
@@ -8301,6 +8328,7 @@
                 // Reset thickness preset to default (0.4mm)
                 try {
                     localStorage.setItem('braille_prefs_thickness_preset', '0.4');
+                    localStorage.setItem('braille_prefs_thickness_preset_chosen', '0.4');
                     const thicknessRadio = document.querySelector('input[name="card_thickness_preset"][value="0.4"]');
                     if (thicknessRadio) thicknessRadio.checked = true;
                 } catch (e) { log.debug('Could not reset the saved thickness preset:', e); }
@@ -8571,6 +8599,9 @@
 
             // Persist the selected preset
             try { localStorage.setItem('braille_prefs_thickness_preset', presetKey); } catch (e) { log.debug('Could not save the selected thickness preset:', e); }
+            // Remembered separately from the radio state above, which the
+            // auto-detection overwrites with 'custom'; see activeArrowLayoutPreset.
+            try { localStorage.setItem('braille_prefs_thickness_preset_chosen', presetKey); } catch (e) { log.debug('Could not save the chosen thickness preset:', e); }
 
             // Update related UI elements. A preset supersedes any hand-typed cell
             // count, so the dial goes back to auto-filling from the recommendation.
@@ -9770,6 +9801,17 @@
                 tactile_recess_clearance: document.getElementById('tactile_recess_clearance')?.value || '0.2',
                 tactile_recess_extra_depth: document.getElementById('tactile_recess_extra_depth')?.value || '0.2'
             };
+
+            // Tactile arrow layout (2026-09-20): sent ONLY when the row indicator
+            // style is tactile and the preset the arrows follow is 0.3, so every
+            // 0.4 request body stays byte-identical to a pre-layout one. The
+            // backend's absent-field fallback is per_row, the 0.4 layout.
+            if (isTactileIndicatorOn()) {
+                const arrowLayout = TACTILE_ARROW_LAYOUT_BY_PRESET[activeArrowLayoutPreset()];
+                if (arrowLayout && arrowLayout !== 'per_row') {
+                    settings.tactile_indicator_layout = arrowLayout;
+                }
+            }
 
             const gearRollersOn = isGearRollersOn();
 
@@ -11395,6 +11437,7 @@
                             <li>By default, each row holds <strong>13 braille cells of text</strong> (2 additional cells are reserved for the indicator letter and the triangle alignment indicator). With indicator letters turned off, up to <strong>14 cells</strong> are available — the alignment triangles are always included.</li>
                             <li>Cells are spaced 6.5mm apart, so the default 13-cell layout needs about 91mm of circumference — the default 30.8mm-diameter cylinder (about 96.8mm around) fits it with room for the seam gap.</li>
                             <li>A larger diameter gives more circumference, which adds margin around the seam rather than more cells per row.</li>
+                            <li>In the <strong>Tactile seam arrow</strong> style, the 0.4mm card thickness preset places one arrow per row and the 0.3mm preset places three evenly spaced arrows, so you can feel which preset a cylinder was made for — and a 0.3mm cylinder will not nest with a 0.4mm one.</li>
                         </ul>
 
                         <h4>Tips for Best Results</h4>

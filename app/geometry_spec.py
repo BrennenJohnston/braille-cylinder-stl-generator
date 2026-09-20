@@ -51,6 +51,20 @@ TACTILE_RECESS_OVERCUT = 1.0
 # the arrow and its recess line up by construction.
 TACTILE_SEAM_THETA = math.pi
 
+# Arrow layouts along the cylinder axis. 'per_row' puts one arrow at every
+# braille row centre - the geometry every request got before 2026-09-20, and
+# the absent-field fallback. 'three_spaced' puts exactly three arrows at
+# mid-height and one pitch above and below it, whatever the row count: the
+# 0.3 mm card-stock preset's marking, so a blind user can tell the two presets
+# apart by touch (three separated arrows against the 0.4 preset's chain of
+# four touching ones) and a 0.3 mm cylinder will not nest with a 0.4 mm one -
+# the middle arrow's 4 mm base lands where the per-row recess chain is only
+# 2.2 mm wide. Brennen chose 15 mm over the quarter-height points on
+# 2026-09-20: the same 40 mm span as the four-row chain, 5 mm gaps that are
+# easy to count, and one number for the 52 mm and 54 mm barrels alike.
+TACTILE_ARROW_LAYOUTS = ('per_row', 'three_spaced')
+TACTILE_THREE_SPACED_PITCH_MM = 15.0
+
 
 # -----------------------------------------------------------------------------
 # DOUBLE-SIDED (INTERPOINT) BETA
@@ -452,8 +466,10 @@ def extract_cylinder_geometry_spec(
 
     radius = diameter / 2
 
-    # Row indicator style. Tactile drops the marker columns entirely and puts one
-    # raised arrow (emboss) / matching recess (counter) per row in the seam gap.
+    # Row indicator style. Tactile drops the marker columns entirely and puts
+    # raised arrows (emboss) / matching recesses (counter) in the seam gap - one
+    # per row, or three fixed ones on the 0.3 mm card-stock preset (see
+    # tactile_arrow_y_positions).
     tactile_on = str(getattr(settings, 'indicator_mode', 'visual')).lower() == 'tactile'
 
     # Double-sided (interpoint) BETA. Read the flag once: every double-sided
@@ -685,17 +701,20 @@ def extract_cylinder_geometry_spec(
         # Layout: triangle at col 0, rectangle placeholder at col 1, braille cells at cols 2+
         # Note: Counter plates use rectangle placeholders (not character indicators) at column 1
         # Uses mirrored angular direction so content flows CLOCKWISE instead of counter-clockwise
+        if tactile_on:
+            # The recesses the emboss plate's raised arrows nest into. They sit at
+            # 180°, the fixed point of this plate's angle-negating mirror, so they
+            # need no mirroring of their own. Emitted before the row loop: in
+            # tactile mode nothing else joins spec['markers'], so the per-row
+            # layout lists them in the row order it always did.
+            for arrow_y in tactile_arrow_y_positions(settings, height, first_row_center_y):
+                spec['markers'].append(
+                    _create_tactile_indicator_spec(arrow_y, radius, settings, is_recess=True, gear_rollers=gear_rollers)
+                )
+
         for row_num in range(settings.grid_rows):
             y_pos = first_row_center_y - (row_num * settings.line_spacing) + settings.braille_y_adjust
             y_local = y_pos - (height / 2.0)
-
-            if tactile_on:
-                # The recess the emboss plate's raised arrow nests into. It sits at
-                # 180°, the fixed point of this plate's angle-negating mirror, so it
-                # needs no mirroring of its own.
-                spec['markers'].append(
-                    _create_tactile_indicator_spec(y_local, radius, settings, is_recess=True, gear_rollers=gear_rollers)
-                )
 
             # Add markers (same column positions as embossing, but mirrored direction)
             # Triangle marker at column 0 (first position, same as embossing).
@@ -784,21 +803,23 @@ def extract_cylinder_geometry_spec(
         # Positive plate: add row indicators for ALL rows (including empty rows),
         # and add dots only for rows with braille characters.
         # Layout matches Python backend: Triangle at column 0, Character at column 1
+        if tactile_on:
+            # Raised alignment arrows in the seam gap, apex toward the cylinder
+            # top so a blind user can feel which end is up. Emitted before the
+            # row loop for the same reason as on the counter plate.
+            for arrow_y in tactile_arrow_y_positions(settings, height, first_row_center_y):
+                spec['markers'].append(
+                    _create_tactile_indicator_spec(
+                        arrow_y, radius, settings, is_recess=False, gear_rollers=gear_rollers
+                    )
+                )
+
         for row_num in range(settings.grid_rows):
             # Get line content if available
             line = lines[row_num] if row_num < len(lines) else ''
 
             y_pos = first_row_center_y - (row_num * settings.line_spacing) + settings.braille_y_adjust
             y_local = y_pos - (height / 2.0)
-
-            if tactile_on:
-                # Raised alignment arrow in the seam gap, apex toward the cylinder
-                # top so a blind user can feel which end is up.
-                spec['markers'].append(
-                    _create_tactile_indicator_spec(
-                        y_local, radius, settings, is_recess=False, gear_rollers=gear_rollers
-                    )
-                )
 
             # Indicators (visual mode only — tactile has no marker columns):
             # - Triangle at column 0 (first position) - ALWAYS created (no user toggle)
@@ -1067,6 +1088,26 @@ def _double_sided_crowding_warnings(settings: Any, tactile_on: bool) -> list[str
     )
     logger.warning(warning)
     return [warning]
+
+
+def tactile_arrow_y_positions(settings: Any, height: float, first_row_center_y: float) -> list[float]:
+    """
+    Axial centres of the tactile arrows, as y_local (0 at mid-height), top first.
+
+    per_row: the row centres, computed in the same two steps the row loops use,
+    so the per-row spec is unchanged to the last bit. three_spaced: +pitch, 0,
+    -pitch about the barrel's mid-height. That one is a preset marking, not a
+    row marking, so it follows neither the row count nor braille_y_adjust.
+    """
+    layout = str(getattr(settings, 'tactile_indicator_layout', 'per_row')).lower()
+    if layout == 'three_spaced':
+        return [TACTILE_THREE_SPACED_PITCH_MM, 0.0, -TACTILE_THREE_SPACED_PITCH_MM]
+
+    positions = []
+    for row_num in range(settings.grid_rows):
+        y_pos = first_row_center_y - (row_num * settings.line_spacing) + settings.braille_y_adjust
+        positions.append(y_pos - (height / 2.0))
+    return positions
 
 
 def _create_tactile_indicator_spec(

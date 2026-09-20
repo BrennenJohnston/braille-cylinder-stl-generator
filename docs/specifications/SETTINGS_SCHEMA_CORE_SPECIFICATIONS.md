@@ -228,7 +228,17 @@ here must land in `settings.schema.json`, `app/models.py`, the HTML input defaul
 - indicators.tactile_recess_clearance: number, 0–1 (default: 0.2) — counter recess outline margin
 - indicators.tactile_recess_extra_depth: number, 0–1 (default: 0.2) — counter recess depth beyond the raise
 
-All eleven fields appear **flat** in the runtime settings payload under the same names
+Tactile arrow layout (2026-09-20) — where along the axis the arrows sit, the Card
+Thickness preset's tactile marking (RECESS_INDICATOR_SPECIFICATIONS.md §4):
+- indicators.tactile_indicator_layout: string enum `per_row` | `three_spaced` (default:
+  `per_row`) — `per_row` is one arrow per braille row, unchanged from before and the
+  absent-field fallback (the 0.4 mm preset); `three_spaced` is exactly three arrows at
+  mid-height and ±15 mm, whatever the row count (the 0.3 mm preset). The UI sends it only
+  for the 0.3 preset in tactile mode. A typo is rejected (HTTP 400), and so is a
+  `three_spaced` cylinder too short for its outer arrows
+  (`height < 2 × (15 + tactile_indicator_length / 2 + tactile_recess_clearance)`).
+
+All twelve fields appear **flat** in the runtime settings payload under the same names
 (`indicator_mode`, `tactile_indicator_width`, …), matching the OpenSCAD parameter names.
 `indicators.enabled` is the one exception: its runtime name is `indicator_shapes` (0 or 1).
 

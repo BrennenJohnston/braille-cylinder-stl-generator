@@ -150,6 +150,12 @@
           "default": "visual",
           "description": "Cylinder only. visual = recessed triangle (plus optional letter square) in marker cells at the start of each row. tactile = raised arrow on the emboss plate and a matching recess on the counter plate, centred in the seam gap at 180 degrees with the apex toward the cylinder top; removes the marker columns and ignores 'enabled'."
         },
+        "tactile_indicator_layout": {
+          "type": "string",
+          "enum": ["per_row", "three_spaced"],
+          "default": "per_row",
+          "description": "Tactile only. per_row = one arrow per braille row at the row centres: the 0.4 mm card-stock preset, and the absent-field fallback, so every existing request is unchanged. three_spaced = exactly three arrows, at mid-height and 15 mm above and below it, whatever the row count: the 0.3 mm card-stock preset's marking (2026-09-20), so a blind user can tell the two presets apart by touch, and a 0.3 mm cylinder will not nest with a 0.4 mm one. The UI sends this only for the 0.3 preset in tactile mode. The request is rejected when the outer arrows would run past the barrel ends: cylinder height must be at least 2 x (15 + tactile_indicator_length / 2 + tactile_recess_clearance)."
+        },
         "tactile_indicator_width": { "type": "number", "minimum": 2, "maximum": 10, "default": 4.0, "description": "Tactile only: indicator width measured around the cylinder (mm)" },
         "tactile_indicator_length": { "type": "number", "minimum": 2, "maximum": 15, "default": 10.0, "description": "Tactile only: indicator length measured along the cylinder axis (mm)" },
         "tactile_indicator_raise": { "type": "number", "minimum": 0, "maximum": 2, "default": 0.5, "description": "Tactile only: how far the emboss plate's arrow stands proud of the surface (mm). Keep below the braille dot height so the dots carry the rolling pressure." },

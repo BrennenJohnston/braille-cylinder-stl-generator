@@ -24,6 +24,7 @@ from app.validation import (
     validate_lines,
     validate_original_lines,
     validate_settings,
+    validate_tactile_arrow_fit,
 )
 
 # Configure logging for this module
@@ -528,6 +529,9 @@ def geometry_spec():
         # conflict, where the gear gate would only report the cylinder size.
         validate_embosser_version_settings(settings_data, shape_type, cylinder_params)
         validate_gear_rollers_settings(settings_data, shape_type, cylinder_params)
+        # The 0.3 mm preset's three fixed arrows must stay on the barrel; skipped
+        # for every other request.
+        validate_tactile_arrow_fit(settings_data, shape_type, cylinder_params)
 
         settings = CardSettings(**settings_data)
 

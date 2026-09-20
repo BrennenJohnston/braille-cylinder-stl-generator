@@ -300,6 +300,15 @@ class CardSettings:
         indicator_mode = str(kwargs.get('indicator_mode') or 'visual').strip().lower()
         self.indicator_mode = indicator_mode if indicator_mode in ('visual', 'tactile') else 'visual'
 
+        # Tactile arrow layout, the same kind of string enum. 'per_row' is the
+        # one-arrow-per-row geometry every request got before 2026-09-20;
+        # 'three_spaced' is the 0.3 mm card-stock preset's three fixed arrows.
+        # Anything unrecognized falls back to per_row so a bad value can never
+        # silently change a pair's marking; app/validation.py rejects typos on
+        # the request route before this runs.
+        layout = str(kwargs.get('tactile_indicator_layout') or 'per_row').strip().lower()
+        self.tactile_indicator_layout = layout if layout in ('per_row', 'three_spaced') else 'per_row'
+
         # Ensure attributes that represent counts are integers
         self.grid_columns = int(self.grid_columns)
         self.grid_rows = int(self.grid_rows)
