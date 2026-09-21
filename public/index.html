@@ -1595,6 +1595,13 @@
         .radio-option:has(input:disabled) .radio-text {
             cursor: not-allowed;
         }
+        /* The Back of Card section is disabled (native attribute) while the
+           card is single-sided. Its controls dim like a locked radio option;
+           the legend is left at full opacity so the heading stays readable
+           (disabled controls are exempt from contrast minimums, SC 1.4.3). */
+        #back-entry-fieldset:disabled > :not(legend) {
+            opacity: 0.6;
+        }
         form {
             display: flex;
             flex-direction: column;
@@ -3345,62 +3352,141 @@
                       </p>
                   </div>
 
-                      <!-- Embosser version selector (D-V13). Moved out of the site
-                           header and into the form's selection menu, directly under
-                           "What Does This Program Do?", on 2026-08-31 (Brennen's
-                           call) - it is the first choice that shapes everything
-                           below it. Native fieldset + legend + radios, so the
-                           group's accessible name, the roving-arrow keyboard
-                           behaviour and the checked state all come from the
-                           platform: the only ARIA here is aria-describedby, which
-                           has no native equivalent. Version 1 is checked IN THE
-                           MARKUP, so a user who never touches this gets exactly
-                           the app that shipped before Version 2 existed. The ids
-                           are load-bearing: updateEmbosserVersionUI() finds the
-                           radios by name="embosser_version", the prototype notice
-                           by #v2-prototype-note and the size warning by
-                           #v2-size-warning; persistence stores
-                           braille_prefs_embosser_version. The radios are still
-                           read by id and never submitted - sitting inside the
-                           form changes nothing on the wire. -->
-                      <div class="grade-selection" id="embosser-version-selection">
-                          <fieldset aria-describedby="embosser-version-note">
-                              <!-- S-V1, signed off by Brennen (2026-08-28); reword only with
-                                   his sign-off. The heading is semantics only (the menu-item
-                                   rule): it inherits the legend's own type so nothing moves. -->
-                              <legend class="grade-label"><h2 class="legend-heading">Embosser version</h2></legend>
-                              <div class="radio-group">
-                                  <!-- S-V2, signed off by Brennen (2026-08-28). -->
-                                  <label class="radio-option" for="embosser_version_1">
-                                      <input type="radio" name="embosser_version" id="embosser_version_1" value="1" checked>
-                                      <span class="radio-text">Version 1</span>
-                                  </label>
-                                  <label class="radio-option" for="embosser_version_2">
-                                      <input type="radio" name="embosser_version" id="embosser_version_2" value="2">
-                                      <span class="radio-text">Version 2 (prototype)</span>
-                                  </label>
-                              </div>
-                              <!-- S-V3, signed off by Brennen (2026-08-28). 17 words, under
-                                   the ADA SOP Step 6.8 ceiling of 25. -->
-                              <div class="grade-note" id="embosser-version-note" style="margin-top: 6px; font-size: 0.85em;">Choose Version 2 only if you are building the Version 2 embosser, which uses keyed gear pegs. Version 1 stays supported.</div>
-                              <!-- S-V4, signed off by Brennen (2026-08-28) WITH the R14
-                                   sentence added; reword only with his sign-off. 31 words,
-                                   DELIBERATELY over the Step 6.8 ceiling of 25 - he chose the
-                                   stronger warning knowing the cost, and it is allowed because
-                                   this notice is VISIBLE rather than describedby-only. Recorded
-                                   as a finding at the Phase 08 accessibility check; do not trim
-                                   or split it. `hidden` rather than display:none so the
-                                   accessibility tree and the CSS agree with one attribute. -->
-                              <div id="v2-prototype-note" class="grade-note inline-warning" style="margin-top: 0.6em;" hidden>
-                                  <strong>Prototype:</strong> Version 2 is a work-in-progress prototype. Its cylinder size, cutouts and fit may change as testing continues. It fits only gears with R14 pegs; earlier pegs do not enter the holes.
-                              </div>
-                              <!-- S-V5, signed off by Brennen (2026-08-28). The server emits
-                                   this exact sentence into spec.warnings, so the words a user
-                                   reads here and the words the spec carries are the same. -->
-                              <div id="v2-size-warning" class="grade-note inline-warning"
-                                   style="margin-top: 0.6em; display: none;">
-                                  <strong>Warning:</strong> <span id="v2-size-message"></span>
-                              </div>
+                      <!-- Embosser setup (2026-09-20 programme, sub-plan C; decisions
+                           D-7, D-8). ONE menu item at the top of the form holds the three
+                           either/or choices that used to be three toggles in three places:
+                           embosser version, gears, card sides. The version radios keep
+                           their ids (embosser_version_1/2); the gear and sides choices are
+                           NEW radios (gear_mode, card_sides) that replace the
+                           #gear_rollers_enabled and #double_sided_enabled checkboxes.
+                           updateEmbosserVersionUI(), updateGearRollersUI() and
+                           updateDoubleSidedUI() read them through isVersion2(),
+                           isGearRollersOn() and isDoubleSidedOn(); the persistence keys are
+                           unchanged so saved choices carry over. Nested fieldsets: the
+                           outer one names the menu item, each inner one names its choice,
+                           and every inner legend carries an h3 under the item's h2
+                           (UI spec 4.11). The "(BETA - for testing)" tags and the Version 2
+                           "(prototype)" tag and notice are gone (D-7).
+                           DRAFT strings S-M1..S-M8 are FLAGGED FOR BRENNEN; S-V1, S-V3,
+                           S-V5, S2, S3, S7 and the 2026-08-16 double-sided sentence stay
+                           as signed. -->
+                      <div class="grade-selection" id="embosser-setup-selection">
+                          <fieldset id="embosser-setup-fieldset">
+                              <!-- S-M1, DRAFT. Heading semantics only (the menu-item rule). -->
+                              <legend class="grade-label"><h2 class="legend-heading">Embosser setup</h2></legend>
+
+                              <!-- Choice 1: the embosser version. S-V1 legend text kept, one
+                                   heading level down. S-V2 labels lose "(prototype)" (D-7).
+                                   S-V3 stays the group's description, verbatim (17 words);
+                                   S-M2 is a VISIBLE second note, not wired to describedby. -->
+                              <fieldset id="embosser-version-selection" aria-describedby="embosser-version-note" style="margin-top: 0.6em;">
+                                  <legend class="grade-label"><h3 class="legend-heading">Embosser version</h3></legend>
+                                  <div class="radio-group">
+                                      <label class="radio-option" for="embosser_version_1">
+                                          <input type="radio" name="embosser_version" id="embosser_version_1" value="1" checked>
+                                          <span class="radio-text">Version 1</span>
+                                      </label>
+                                      <label class="radio-option" for="embosser_version_2">
+                                          <input type="radio" name="embosser_version" id="embosser_version_2" value="2">
+                                          <span class="radio-text">Version 2</span>
+                                      </label>
+                                  </div>
+                                  <!-- S-V3, signed off by Brennen (2026-08-28). -->
+                                  <div class="grade-note" id="embosser-version-note" style="margin-top: 6px; font-size: 0.85em;">Choose Version 2 only if you are building the Version 2 embosser, which uses keyed gear pegs. Version 1 stays supported.</div>
+                                  <!-- S-M2, DRAFT (21 words, visible only). -->
+                                  <div class="grade-note" id="embosser-version-compare" style="margin-top: 4px; font-size: 0.85em;">Version 1 prints the most accurate braille dots. Version 2 adds tactile row markers and a simpler assembly for blind users.</div>
+                                  <!-- S-V5, signed off by Brennen (2026-08-28). The server emits
+                                       this exact sentence into spec.warnings, so the words a user
+                                       reads here and the words the spec carries are the same. -->
+                                  <div id="v2-size-warning" class="grade-note inline-warning"
+                                       style="margin-top: 0.6em; display: none;">
+                                      <strong>Warning:</strong> <span id="v2-size-message"></span>
+                                  </div>
+                              </fieldset>
+
+                              <!-- Choice 2: the gears. Replaces the "Integrated Gears (BETA)"
+                                   checkbox. S-M3a/b labels and the S-M4 description are
+                                   DRAFT; S2 (signed 2026-08-24) stays as a visible note so
+                                   no signed sentence leaves the page; S-M5 replaces S9'.
+                                   #gear-cutout-note (S3) and #gear-size-warning (S7) are
+                                   unchanged and still found by updateGearRollersUI(). -->
+                              <fieldset id="gear-rollers-selection" aria-describedby="gear-rollers-note" style="margin-top: 0.8em;">
+                                  <legend class="grade-label"><h3 class="legend-heading">Gears</h3></legend>
+                                  <div class="radio-group">
+                                      <label class="radio-option" for="gear_mode_standard">
+                                          <input type="radio" name="gear_mode" id="gear_mode_standard" value="standard" checked>
+                                          <span class="radio-text">Standard: print the gears separately</span>
+                                      </label>
+                                      <label class="radio-option" for="gear_mode_fixed">
+                                          <input type="radio" name="gear_mode" id="gear_mode_fixed" value="fixed">
+                                          <span class="radio-text">Simplified: gears fixed to the cylinders</span>
+                                      </label>
+                                  </div>
+                                  <!-- S-M4, DRAFT (20 words). -->
+                                  <div class="grade-note" id="gear-rollers-note" style="margin-top: 6px; font-size: 0.85em;">Fixed gears save assembly time and parts, but each cylinder prints much longer and dots fail more often.</div>
+                                  <!-- S2, signed off by Brennen (2026-08-24); visible only. -->
+                                  <div class="grade-note" style="margin-top: 4px; font-size: 0.85em;">Adds the top and bottom drive gears to each generated cylinder as one solid piece, matched to the roller assembly. The barrel prints solid while this is on.</div>
+                                  <!-- S-M5, DRAFT, replaces S9'. Always shown: the warning must be
+                                       read BEFORE someone chooses fixed gears. The link opens the
+                                       Embosser Setup help tab. -->
+                                  <div id="gear-hardware-note" class="grade-note inline-warning"
+                                       style="margin-top: 0.6em;">
+                                      <strong>Important:</strong> <span id="gear-hardware-message">Fixed gears fit only the fixed-gear housing for your version; the standard housing takes the standard cylinders. See Embosser Setup in Help.</span>
+                                      <span id="gear-hardware-link-slot"> <button type="button" class="btn-link" onclick="window.openHelpModal('setup')">Open Embosser Setup help →</button></span>
+                                  </div>
+                                  <!-- S3, signed off by Brennen (2026-08-24). Shown only when a
+                                       polygonal cutout is set AND fixed gears are chosen. Announced
+                                       through #a11y-status - see that region's note. -->
+                                  <div id="gear-cutout-note" class="grade-note inline-warning"
+                                       style="margin-top: 0.6em; display: none;">
+                                      <strong>Note:</strong> <span id="gear-cutout-message"></span>
+                                  </div>
+                                  <!-- S7, signed off by Brennen (2026-08-24). The gears only fit
+                                       the reference roller, and the request is REJECTED otherwise,
+                                       so say it here rather than letting the user meet a 400. -->
+                                  <div id="gear-size-warning" class="grade-note inline-warning"
+                                       style="margin-top: 0.6em; display: none;">
+                                      <strong>Warning:</strong> <span id="gear-size-message"></span>
+                                  </div>
+                              </fieldset>
+
+                              <!-- Choice 3: the card sides. Replaces the "Double-Sided Card
+                                   (BETA)" accordion and checkbox. S-M6a/b labels and the S-M7
+                                   description are DRAFT; the 2026-08-16 signed sentence stays
+                                   visible minus its "This is a beta for testing" clause (D-7).
+                                   #ds-gap-warning moved here from the old menu; its id and
+                                   ARIA are load-bearing for checkDoubleSidedGap(). -->
+                              <fieldset id="card-sides-selection" aria-describedby="double-sided-note" style="margin-top: 0.8em;">
+                                  <legend class="grade-label"><h3 class="legend-heading">Card sides</h3></legend>
+                                  <div class="radio-group">
+                                      <label class="radio-option" for="card_sides_single">
+                                          <input type="radio" name="card_sides" id="card_sides_single" value="single" checked>
+                                          <span class="radio-text">Single-sided</span>
+                                      </label>
+                                      <label class="radio-option" for="card_sides_double">
+                                          <input type="radio" name="card_sides" id="card_sides_double" value="double">
+                                          <span class="radio-text">Double-sided</span>
+                                      </label>
+                                  </div>
+                                  <!-- S-M7, DRAFT (16 words). -->
+                                  <div class="grade-note" id="double-sided-note" style="margin-top: 6px; font-size: 0.85em;">Double-sided embosses both faces of the card in one pass and uses the tactile row markers.</div>
+                                  <!-- User-facing wording signed off by Brennen (2026-08-16); visible only. -->
+                                  <div class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
+                                      Embosses both sides of the card in one pass: <strong>Cylinder A</strong> (the embossing plate) carries the front's raised dots plus recesses for the back, and <strong>Cylinder B</strong> (the counter plate) carries the back's raised dots plus recesses for the front, offset diagonally by 1.25 mm so the two sides never collide. Turning this on shows the Back of Card section below and locks the Row Indicator Style to the tactile seam arrow. Generate each cylinder with the same settings.
+                                  </div>
+                                  <!-- Live same-surface crowding warning (the ids and ARIA are
+                                       load-bearing for checkDoubleSidedGap()). Announced through
+                                       #a11y-status - see that region's note. -->
+                                  <div id="ds-gap-warning" class="grade-note inline-warning"
+                                       style="margin-top: 0.6em; display: none;">
+                                      <strong>Warning:</strong> <span id="ds-gap-message"></span>
+                                  </div>
+                              </fieldset>
+
+                              <!-- S-M8, DRAFT. Opens the help modal on the Embosser Setup tab. -->
+                              <p style="margin: 0.8em 0 0;">
+                                  <button type="button" class="btn-link" onclick="window.openHelpModal('setup')">Which setup should I choose? →</button>
+                              </p>
                           </fieldset>
                       </div>
 
@@ -3484,54 +3570,21 @@
                           </fieldset>
                       </div>
 
-                      <!-- Double-Sided Card (interpoint) beta: toggle + Back of Card entry.
-                           The checkbox and textarea are the Phase 07 plumbing controls and
-                           their ids are load-bearing: the generate handler reads
-                           #double_sided_enabled.checked and #back-text.value (one row per
-                           newline), persistence stores braille_prefs_double_sided_enabled /
-                           braille_prefs_back_text, and checkDoubleSidedGap() finds the
-                           toggle and #ds-gap-warning by id.
-                           Since 2026-08-31 the whole item is a collapsible menu (Brennen's
-                           call): the disclosure button reuses the Expert Mode submenu
-                           pattern - initExpertSubmenus() wires anything carrying
-                           .expert-submenu-toggle - and setDoubleSidedMenuOpen() opens it
-                           whenever the beta is on, so the revealed Back of Card section
-                           can never sit inside a closed menu. The button carries the
-                           section's h2; the fieldset keeps the same signed text as an
-                           sr-only legend so the group keeps its accessible name. -->
-                      <div class="expert-submenu" id="double-sided-selection">
-                          <h2 class="expert-submenu-heading">
-                              <!-- Signed heading wording (2026-08-16) reused verbatim as the button title. -->
-                              <button type="button" id="double-sided-menu-toggle" class="expert-submenu-toggle"
-                                      aria-expanded="false" aria-controls="double-sided-menu">
-                                  <span class="expert-submenu-title">Double-Sided Card (BETA — for testing)</span>
-                                  <span class="expert-submenu-icon" aria-hidden="true">▼</span>
-                              </button>
-                          </h2>
-                          <div id="double-sided-menu" class="expert-submenu-content" style="display: none;">
-                          <fieldset>
+                      <!-- Back of Card (2026-09-20 programme, sub-plan C; full parity with
+                           the front is sub-plan D). Always in the tree, one level with the
+                           front entry, and DISABLED with the native attribute while the card
+                           is single-sided - every control inside is inert and announced as
+                           unavailable - so the section is never hidden inside a closed menu
+                           again. updateDoubleSidedUI() enables it when Double-sided is chosen.
+                           The legend keeps the signed 2026-08-16 text as this section's h2.
+                           The ids inside are load-bearing: the generate handler reads
+                           #back-text.value, persistence stores braille_prefs_back_text, the
+                           back braille field is wired by wireBackBrailleField(), and
+                           computeBackOverflow() finds #ds-back-overflow-warning by id. -->
+                      <div class="line-input-group" id="double-sided-section">
+                          <fieldset class="line-input-fieldset" id="back-entry-fieldset" disabled>
                               <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
-                              <legend class="sr-only">Double-Sided Card (BETA — for testing)</legend>
-                              <label class="radio-option ds-toggle-option" for="double_sided_enabled">
-                                  <input type="checkbox" id="double_sided_enabled"
-                                         aria-expanded="false" aria-controls="double-sided-section"
-                                         aria-describedby="double-sided-note">
-                                  <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
-                                  <span class="radio-text">Emboss both sides of the card (interpoint)</span>
-                              </label>
-                              <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
-                              <!-- ADA SOP Step 6.8: the id sits on the BETA WARNING sentence, not the div.
-                                   Every word of the 2026-08-16 signed-off note is still here and still
-                                   visible; only the describedby wiring narrowed (audit F-D). -->
-                              <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
-                                  Embosses both sides of the card in one pass: <strong>Cylinder A</strong> (the embossing plate) carries the front's raised dots plus recesses for the back, and <strong>Cylinder B</strong> (the counter plate) carries the back's raised dots plus recesses for the front, offset diagonally by 1.25 mm so the two sides never collide. Turning this on shows the Back of Card section below and locks the Row Indicator Style to the tactile seam arrow. Generate each cylinder with the same settings. <span id="double-sided-note">This is a beta for testing — proofread both sides and check every braille surface before use.</span>
-                              </div>
-                          </fieldset>
-                          <div id="double-sided-section" style="display: none;">
-                              <div class="line-input-group" style="margin-top: 0.8em;">
-                                  <fieldset class="line-input-fieldset">
-                                      <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
-                                      <legend class="grade-label">Back of Card — Enter Text for Braille Translation</legend>
+                              <legend class="grade-label"><h2 class="legend-heading" id="back-entry-heading">Back of Card — Enter Text for Braille Translation</h2></legend>
                                       <!-- Label wording signed off by Brennen (2026-08-16). Placeholder
                                            replaced with his sign-off (2026-08-17): BANA auto-wrap made
                                            "each line becomes one braille row" untrue, since one typed
@@ -3589,81 +3642,6 @@
                                       </div>
                                   </fieldset>
                               </div>
-                              <!-- Live same-surface crowding warning (Phase 06 hook, moved here
-                                   from after the Row Indicator Style fieldset; the ids and ARIA
-                                   attributes are load-bearing for checkDoubleSidedGap()). -->
-                              <!-- Announced through #a11y-status - see that region's note. -->
-                              <div id="ds-gap-warning" class="grade-note inline-warning"
-                                   style="margin-top: 0.6em; display: none;">
-                                  <strong>Warning:</strong> <span id="ds-gap-message"></span>
-                              </div>
-                          </div>
-                          </div>
-                      </div>
-
-                      <!-- Gear-Integrated Rollers (BETA): the cylinder ships with its
-                           top and bottom drive gears as one solid piece. The checkbox id is
-                           load-bearing: the generate handler reads
-                           #gear_rollers_enabled.checked, persistence stores
-                           braille_prefs_gear_rollers_enabled, and updateGearRollersUI()
-                           finds the toggle, #gear-cutout-note and #gear-size-warning by id.
-                           No card branch here on purpose: Output Shape offers only Cylinder,
-                           so a card can never be selected in this UI. The API keeps its own
-                           cylinders-only gate for direct callers. -->
-                      <div class="grade-selection" id="gear-rollers-selection">
-                          <fieldset>
-                              <!-- S8, signed off by Brennen (2026-08-25); reword only with his
-                                   sign-off. Follows the double-sided beta's legend template
-                                   word for word, with this feature's name substituted. -->
-                              <legend class="grade-label"><h2 class="legend-heading">Integrated Gears (BETA — for testing)</h2></legend>
-                              <!-- S1, signed off by Brennen (2026-08-24); reword only with his sign-off. -->
-                              <label class="radio-option ds-toggle-option" for="gear_rollers_enabled">
-                                  <input type="checkbox" id="gear_rollers_enabled"
-                                         aria-describedby="gear-rollers-note">
-                                  <span class="radio-text">Generate with integrated gears (BETA — for testing)</span>
-                              </label>
-                              <!-- S2, signed off by Brennen (2026-08-24); reword only with his
-                                   sign-off. ADA SOP Step 6.8: the whole note is 28 words, over
-                                   the 25-word ceiling, so the describedby id sits on the FIRST
-                                   SENTENCE only (20 words) - the same pure sentence split the
-                                   A-I programme's item F used. Not one word was rewritten and
-                                   nothing left the page; the second sentence is still read by
-                                   anyone moving through the content. -->
-                              <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
-                                  <span id="gear-rollers-note">Adds the top and bottom drive gears to each generated cylinder as one solid piece, matched to the roller assembly.</span> The barrel prints solid while this is on.
-                              </div>
-                              <!-- S9, signed off by Brennen (2026-08-25) and RE-SIGNED
-                   2026-08-28 as S9': "version 2" now names the KEYED-PEG
-                   embosser, which these gears do not fit either, so the
-                   sentence names the housing they DO fit. Wording AND the
-                                   always-visible choice; reword only with his sign-off.
-                                   Always shown, not gated on the toggle: the warning must
-                                   be read BEFORE someone decides to turn gears on for a
-                                   version 1 embosser. -->
-                              <div id="gear-hardware-note" class="grade-note inline-warning"
-                                   style="margin-top: 0.6em;">
-                                  <strong>Important:</strong> <span id="gear-hardware-message">Integrated gears fit only the one-piece geared-roller housing. They do not fit the Version 1 or Version 2 embosser bodies.</span>
-                                  <!-- Link to the version 2 build files goes here once
-                                       Brennen publishes them - keep the span so the note
-                                       text does not move when the link lands. -->
-                                  <span id="gear-hardware-link-slot"></span>
-                              </div>
-                              <!-- S3, signed off by Brennen (2026-08-24). Shown only when a
-                                   polygonal cutout is set AND the toggle is on. Announced
-                                   through #a11y-status - see that region's note. -->
-                              <div id="gear-cutout-note" class="grade-note inline-warning"
-                                   style="margin-top: 0.6em; display: none;">
-                                  <strong>Note:</strong> <span id="gear-cutout-message"></span>
-                              </div>
-                              <!-- S7, signed off by Brennen (2026-08-24). The gears only fit
-                                   the reference roller, and the request is REJECTED otherwise,
-                                   so say it here rather than letting the user meet a 400. -->
-                              <div id="gear-size-warning" class="grade-note inline-warning"
-                                   style="margin-top: 0.6em; display: none;">
-                                  <strong>Warning:</strong> <span id="gear-size-message"></span>
-                              </div>
-                          </fieldset>
-                      </div>
 
                       <!-- Language Selection -->
                       <div class="grade-selection">
@@ -11492,6 +11470,7 @@
                     <button class="help-tab" role="tab" aria-selected="true" aria-controls="helpPanelWhatToInclude" id="tab-whattoinclude" tabindex="0">What to Include</button>
                     <button class="help-tab" role="tab" aria-selected="false" aria-controls="helpPanelFormatting" id="tab-formatting" tabindex="-1">Formatting</button>
                     <button class="help-tab" role="tab" aria-selected="false" aria-controls="helpPanelHowToUse" id="tab-howtouse" tabindex="-1">How to Use</button>
+                    <button class="help-tab" role="tab" aria-selected="false" aria-controls="helpPanelSetup" id="tab-setup" tabindex="-1">Embosser Setup</button>
                     <button class="help-tab" role="tab" aria-selected="false" aria-controls="helpPanelCylinder" id="tab-cylinder" tabindex="-1">Cylinders</button>
                     <button class="help-tab" role="tab" aria-selected="false" aria-controls="helpPanelExpertMode" id="tab-expertmode" tabindex="-1">Expert Mode</button>
                     <button class="help-tab" role="tab" aria-selected="false" aria-controls="helpPanelExamples" id="tab-examples" tabindex="-1">Examples</button>
@@ -11579,6 +11558,41 @@
                     </div>
 
                     <!-- Cylinder Guide Panel -->
+                    <!-- Embosser Setup Panel (2026-09-20 programme, sub-plan C). S-M9, DRAFT -
+                         FLAGGED FOR BRENNEN. Opened by the "Which setup should I choose?"
+                         link in the Embosser setup menu item and by the gear hardware note. -->
+                    <div class="help-panel" role="tabpanel" aria-labelledby="tab-setup" id="helpPanelSetup" hidden>
+                        <h3>Embosser Setup Guide</h3>
+
+                        <p>The <strong>Embosser setup</strong> item at the top of the page has three either/or choices. Together they pick which of the four released embosser projects your cylinders are made for.</p>
+
+                        <h4>The four projects</h4>
+                        <table class="help-table">
+                            <thead>
+                                <tr><th>Setup</th><th>What you get</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><strong>Version 1, Standard gears</strong></td><td>The most accurate braille dots. The drive gears print separately and are pushed onto each cylinder. Not blind-user friendly: the row markers are visual letters and triangles.</td></tr>
+                                <tr><td><strong>Version 1, Simplified gears</strong></td><td>The same cylinders with the gears fixed on as one piece, so there are fewer parts to assemble. Each cylinder prints much longer and dots fail more often.</td></tr>
+                                <tr><td><strong>Version 2, Standard gears</strong></td><td>Tactile row markers a blind user can feel, keyed gear pegs that fit only their own hole, and a simpler assembly. The gears print separately.</td></tr>
+                                <tr><td><strong>Version 2, Simplified gears</strong></td><td>Version 2 with the gears fixed on as one piece: the simplest assembly, the longest print, and the highest chance of a failed dot.</td></tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Double-sided cards</h4>
+                        <p>Choosing <strong>Double-sided</strong> makes a matched pair of cylinders that emboss both faces of the card in one pass. It opens the Back of Card section and uses the tactile row markers, which both cylinders of a pair need. It works with every version and gear choice.</p>
+
+                        <h4>Build files</h4>
+                        <ul>
+                            <li><a href="https://www.printables.com/model/1742352-custom-braille-card-embosser-hand-operated" target="_blank" rel="noopener noreferrer">Printables</a></li>
+                            <li><a href="https://makerworld.com/en/models/2881581-custom-braille-card-embosser-hand-operated" target="_blank" rel="noopener noreferrer">MakerWorld</a></li>
+                            <li><a href="https://www.thingiverse.com/thing:7365273" target="_blank" rel="noopener noreferrer">Thingiverse</a></li>
+                            <li><a href="https://github.com/BrennenJohnston/braille-cylinder-stl-generator/blob/main/docs/guides/CYLINDER_GUIDE.md" target="_blank" rel="noopener noreferrer">Cylinder guide</a></li>
+                        </ul>
+
+                        <p><button type="button" class="btn-link" onclick="window.switchHelpTab('tab-cylinder')">Cylinder printing tips →</button></p>
+                    </div>
+
                     <div class="help-panel" role="tabpanel" aria-labelledby="tab-cylinder" id="helpPanelCylinder" hidden>
                         <h3>Cylinder Guide</h3>
 
