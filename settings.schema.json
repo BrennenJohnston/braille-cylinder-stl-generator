@@ -205,6 +205,15 @@
       }
     },
 
+    "seam_channel": {
+      "type": "object",
+      "description": "Slicer seam channel: a shallow V-groove, 1.0 mm wide x 0.5 mm deep at 90 degrees, cut the full height of every cylinder's OUTER surface inside the seam gap beside the row-indicator column, on both plates. In a slicer's default 'aligned' seam mode each layer's seam snaps into the groove instead of into a braille dot, so no seam painting is needed (2026-09-20 slicing spike: 100 % of layers captured on both visual plates and the tactile counter plate, 90.8 % on the tactile embossing plate with the rest on the raised arrow tips, never a dot). Width, depth and side margin are constants in app/geometry_spec.py (SEAM_CHANNEL_*), not dials: the groove is print-tuned and its safe ranges live in SURFACE_DIMENSIONS_SPECIFICATIONS.md. Cylinders only; cards never get one. It is left out, with a warning, when the seam gap has less than 1.5 mm of free surface at the cell count and diameter, or when the polygonal cutout would leave less than 1.2 mm of wall under it. Solid barrels (integrated gears, Version 2) skip the wall rule.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": true, "description": "Default true: every cylinder gets the channel. false restores the plain barrel exactly as it was before 2026-09-20 - no geometry, warning or output-file change apart from the missing groove. The Expert Mode switch is the only thing that sends false; an absent field means true." }
+      }
+    },
+
     "version_2": {
       "type": "object",
       "description": "PROTOTYPE: the dials that exist only for embosser_version 2. Its cylinder is a solid barrel with one keyed through-cutout: the bottom gear's peg profile extruded from the bottom face to the mid-plane, the top gear's from the mid-plane to the top face, each mouth countersunk 2.0 mm at 45 degrees to clear the peg's root flare, and a 3.0 mm triangular nub on Cylinder A's top face that fixes the handle gear's orientation. The four keys are family R14 - rounded rectangles 14x14, 18x10, 16x12 and 20x8 with a 0.5 mm corner radius, sized so no peg enters any hole but its own. Every number lives in app/geometry/version2.py. See EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS.md.",

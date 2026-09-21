@@ -1,0 +1,71 @@
+{
+  "lines": [
+    "⠁⠃⠉",
+    "",
+    "",
+    ""
+  ],
+  "original_lines": [
+    "a",
+    "",
+    "",
+    ""
+  ],
+  "placement_mode": "auto",
+  "grade": "g2",
+  "plate_type": "positive",
+  "shape_type": "cylinder",
+  "cylinder_params": {
+    "diameter_mm": "30.8",
+    "height_mm": "52",
+    "polygonal_cutout_radius_mm": "13",
+    "polygonal_cutout_sides": "12",
+    "seam_offset_deg": "0"
+  },
+  "per_line_language_tables": [
+    "en-ueb-g2.ctb",
+    "en-ueb-g2.ctb",
+    "en-ueb-g2.ctb",
+    "en-ueb-g2.ctb"
+  ],
+  "settings": {
+    "grid_columns": "15",
+    "grid_rows": "4",
+    "cell_spacing": "6.5",
+    "line_spacing": "10",
+    "dot_spacing": "2.5",
+    "emboss_dot_base_diameter": "1.5",
+    "emboss_dot_height": "0.8",
+    "emboss_dot_flat_hat": "0.4",
+    "hemi_counter_dot_base_diameter": "1.6",
+    "bowl_counter_dot_base_diameter": "1.8",
+    "counter_dot_base_diameter": "1.8",
+    "counter_dot_depth": "0.8",
+    "use_bowl_recess": 1,
+    "recess_shape": 1,
+    "cone_counter_dot_base_diameter": "1.9",
+    "cone_counter_dot_height": "0.7",
+    "cone_counter_dot_flat_hat": "1",
+    "card_width": "90",
+    "card_height": "52",
+    "card_thickness": "2",
+    "braille_x_adjust": "0",
+    "braille_y_adjust": "0",
+    "use_rounded_dots": 1,
+    "dot_shape": "rounded",
+    "rounded_dot_diameter": "1",
+    "rounded_dot_height": "0.5",
+    "rounded_dot_base_diameter": "1.5",
+    "rounded_dot_base_height": "0.5",
+    "rounded_dot_cylinder_height": "0.5",
+    "rounded_dot_dome_diameter": "1",
+    "rounded_dot_dome_height": "0.5",
+    "indicator_shapes": 1,
+    "indicator_mode": "visual",
+    "tactile_indicator_width": "4",
+    "tactile_indicator_length": "10",
+    "tactile_indicator_raise": "0.5",
+    "tactile_recess_clearance": "0.2",
+    "tactile_recess_extra_depth": "0.2"
+  }
+}

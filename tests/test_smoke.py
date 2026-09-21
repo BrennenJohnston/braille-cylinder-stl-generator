@@ -766,6 +766,36 @@ def test_schema_and_models_agree_on_embosser_version_fields():
     assert clearance['maximum'] == version2.V2_KEY_CLEARANCE_MAX_MM
 
 
+def test_schema_and_models_agree_on_seam_channel():
+    """
+    The slicer seam channel is ON by default (decision D-2, 2026-09-20): the
+    schema says true, CardSettings says 1, and an absent or blank field means
+    on. Only an explicit 0 turns it off. The groove's size is deliberately not
+    a setting, so the schema object carries the toggle alone.
+    """
+    import json
+    from pathlib import Path
+
+    schema_path = Path(__file__).resolve().parents[1] / 'settings.schema.json'
+    properties = json.loads(schema_path.read_text(encoding='utf-8'))['properties']
+
+    seam_channel = properties['seam_channel']
+    assert seam_channel['additionalProperties'] is False
+    assert list(seam_channel['properties']) == ['enabled']
+    assert seam_channel['properties']['enabled']['type'] == 'boolean'
+    assert seam_channel['properties']['enabled']['default'] is True
+
+    assert CardSettings().seam_channel_enabled == 1
+    assert CardSettings(seam_channel_enabled='').seam_channel_enabled == 1
+    assert CardSettings(seam_channel_enabled=None).seam_channel_enabled == 1
+    assert CardSettings(seam_channel_enabled=0).seam_channel_enabled == 0
+    assert CardSettings(seam_channel_enabled='0').seam_channel_enabled == 0
+    assert CardSettings(seam_channel_enabled='1').seam_channel_enabled == 1
+    assert isinstance(CardSettings(seam_channel_enabled=1.0).seam_channel_enabled, int)
+    with pytest.raises(ValueError):
+        CardSettings(seam_channel_enabled='on')
+
+
 # =============================================================================
 # PR-8: braille_to_dots() Strict Mode Tests (Defense-in-Depth)
 # =============================================================================

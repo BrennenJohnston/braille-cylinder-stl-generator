@@ -268,6 +268,12 @@ class CardSettings:
             # The gear geometry itself has no dials: it is vendored 1:1 sample
             # data (static/assets/gears/), so there is nothing else to default.
             'gear_rollers_enabled': 0,
+            # Slicer seam channel. Flat runtime name for the settings.schema.json
+            # "seam_channel" object; 1 = on, the default since 2026-09-20, so an
+            # absent field means every cylinder gets the groove. Only the Expert
+            # Mode switch sends 0. The groove's size is not a dial - it lives in
+            # app/geometry_spec.py (SEAM_CHANNEL_*) because it is print-tuned.
+            'seam_channel_enabled': 1,
             # Embosser Version 2 (keyed gear pegs) PROTOTYPE. Flat runtime name
             # for the settings.schema.json "embosser_version" field; 1 = today's
             # hardware, which leaves every existing code path exactly as it is.
@@ -318,6 +324,8 @@ class CardSettings:
         self.double_sided_enabled = int(self.double_sided_enabled)
         # Gear beta toggle, normalized the same way and for the same reason.
         self.gear_rollers_enabled = int(self.gear_rollers_enabled)
+        # Seam channel toggle, the same way.
+        self.seam_channel_enabled = int(self.seam_channel_enabled)
         # Embosser hardware version. An enum, not a measurement, so it is cast
         # back to int after the loop above floats it; the clearance beside it
         # stays a float. Validation of the allowed values is app/validation.py's
