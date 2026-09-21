@@ -1,16 +1,16 @@
 {
   "$comment": "Provenance for the vendored OpenSCAD copy. Every file below is copied verbatim from the upstream repository at the recorded tag, except where a note says otherwise. Edit them upstream, never here. Each sha256 is of the bytes this repo ships, which for a file with an 'edited on copy' note is deliberately not the upstream hash; tests/test_vendored_openscad.py fails if any file drifts from its record.",
   "upstream_repo": "https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad",
-  "upstream_tag": "v2.7.0",
-  "upstream_commit": "5d73d82ca73397f787748435585e5f41875a1a59",
-  "upstream_release_date": "2026-08-23",
-  "vendored_on": "2026-08-23",
+  "upstream_tag": "v2.8.0",
+  "upstream_commit": "a96c0ee7e73fa97570f73e04fbace3d59e316415",
+  "upstream_release_date": "2026-09-21",
+  "vendored_on": "2026-09-21",
   "canonical": "upstream",
   "files": {
     "Braille_Cylinder_STL_Generator.scad": {
-      "upstream_path": "makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad",
-      "sha256": "8e9c109342719a745d8ad5dbe81b97aa923451644b0ab68ff02a9668bd9fa3dc",
-      "note": "The MakerWorld single-file build is vendored rather than the dual-file desktop build, so the download is self-contained (no include <presets.scad>). Renamed on copy: this repo ships one file, so the _MakerWorld_v2 suffix would only confuse."
+      "upstream_path": "makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad",
+      "sha256": "56c2a25321f4ab2e31d4cb8908599e0bc7d47f3b7dc4bbaed17b7777ab2aa32f",
+      "note": "The MakerWorld single-file build of the Version 1 model is vendored rather than the dual-file desktop build, so the download is self-contained (no include <presets.scad>). Renamed on copy: this repo ships one file, so the _MakerWorld_v1.5 suffix would only confuse. Upstream renamed this file from _v2 to _v1.5 on 2026-09-01; its _v2 file is now the separate Embosser Version 2 generator, which is NOT vendored here."
     },
     "LICENSE": {
       "upstream_path": "LICENSE",
@@ -18,12 +18,12 @@
     },
     "PARAMETER_MAPPING.md": {
       "upstream_path": "docs/PARAMETER_MAPPING.md",
-      "sha256": "c483101e1f04b34aaa6c38d2fa04b1d9893af7bc099021cedddc1e2249c9b6d6",
+      "sha256": "ed785c7de595698410d9ba606fe3bad260ebd7bc9557919efc6605bef30b6343",
       "note": "One sentence edited on copy: upstream says 'this repository contains only the OpenSCAD cylinder generator', which is false here. The hash covers the edited copy, so it still catches later drift."
     },
     "docs/MAKERWORLD_QUICK_START.md": {
       "upstream_path": "docs/MAKERWORLD_QUICK_START.md",
-      "sha256": "f4895b3c62ae91374fbca7aa6d321558a84df22b6d445b021572998a18f634f2"
+      "sha256": "0520ee6cb00d1e0578ae45242597e99b5855c18db85ac8d26169e23dfb385c7b"
     },
     "docs/MakerWorld_Quick_Start_Guide.pdf": {
       "upstream_path": "docs/MakerWorld_Quick_Start_Guide.pdf",
@@ -31,7 +31,7 @@
     },
     "docs/OPENSCAD_COORDINATE_SYSTEM_SPECIFICATIONS.md": {
       "upstream_path": "docs/OPENSCAD_COORDINATE_SYSTEM_SPECIFICATIONS.md",
-      "sha256": "97c70d60e27696acbaa7e754ed3a81f59612cf2f81bf352958aa069a508c26df"
+      "sha256": "8a1068a89340102e2248a80398c7f9977ec32e2924b63b18c83ca9904909027b"
     },
     "docs/QUICK_START_TESTING.md": {
       "upstream_path": "docs/QUICK_START_TESTING.md",
@@ -39,7 +39,7 @@
     },
     "docs/WEB_TO_OPENSCAD_PORTING_GUIDE.md": {
       "upstream_path": "docs/WEB_TO_OPENSCAD_PORTING_GUIDE.md",
-      "sha256": "cdf9b187f0c8664ae4be3f1eacc1772532f4d53a3f25764eff3950126b2c5d16"
+      "sha256": "aaf8c07cfaa9ab01e80caa01f6c285dfe6d7960924e3b9cdf22b1f53dbccf29e"
     }
   }
 }

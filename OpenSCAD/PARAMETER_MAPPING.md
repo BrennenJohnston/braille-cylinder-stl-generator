@@ -22,6 +22,33 @@ The OpenSCAD version has been updated to match the web-based generator's UI para
 
 ## Parameter Mapping
 
+### Version 2 Keyed Cutouts
+
+These apply to `Braille_Cylinder_STL_Generator_EmbosserV2.scad` only. The
+Version 1 file has no such tab.
+
+| OpenSCAD | Web API | Web UI Label | Default | Range |
+|----------|---------|--------------|---------|-------|
+| `key_clearance_mm` | `v2_key_clearance_mm` | Key clearance (mm) | 0.110 | 0–0.5 |
+
+Three Version 1 parameters are **not present in the Version 2 file** and have no
+Version 2 equivalent to map:
+
+| Parameter | Why it is gone |
+|-----------|----------------|
+| `polygon_cutout_radius_mm` | the keyed cutout IS the bore |
+| `polygon_cutout_points` | same |
+| `seam_offset_degrees` | the keys sit on the tactile arrow column; turning the seam would put them in the wrong place |
+
+`integrated_gears` is **present** in the Version 2 file too (since 2026-09-21),
+under a tab named `[Integrated Gears]`: it fuses the **Version 2** gear set,
+not the Version 1 one — see [Integrated Gears](#integrated-gears-beta) below.
+On the web that is `gear_rollers_enabled: 1` together with `embosser_version: 2`.
+
+On the web side these ride inside `settings` as the flat names
+`embosser_version` (integer 1 or 2) and `v2_key_clearance_mm`, and nothing is
+added to the request while Version 1 is selected.
+
 ### Text Input - Pre-Translated Braille
 | OpenSCAD Parameter | Web App Equivalent | Notes |
 |--------------------|-------------------|-------|
@@ -98,6 +125,36 @@ in the web repository for the two packages.
 | OpenSCAD Parameter | Web App Equivalent | Values |
 |--------------------|-------------------|--------|
 | `plate_type` | Select Plate to Generate | `"Embossing Plate"`, `"Counter Plate"` |
+| `render_both_plates` | Generate Both Cylinders (no wire field) | `"Off"` (default), `"On"`. Renders Cylinder A and Cylinder B side by side in one pass; `plate_type` is ignored while On. **No request field maps to this**: the web app reaches the same outcome by running its single-plate pipeline twice and concatenating the two STLs into one combined download. Accepts the lowercase `on`/`off` the test system passes with `-D`. |
+| `pair_spacing_mm` | (no wire field; the web app hard-codes 10 mm) | `10` (default), range `2`–`50`. Gap between the two barrel **surfaces** while `render_both_plates` is On, for laying the pair out on one print plate; centre-to-centre is this plus one diameter. It is **not** the assembly distance — a meshed pair runs at a 32.0473 mm axis distance, and with gears On the teeth overhang the barrel, leaving about 8.58 mm tip to tip at the default. |
+
+### Integrated Gears (BETA)
+
+| OpenSCAD Parameter | Web App Equivalent | Values |
+|--------------------|-------------------|--------|
+| `integrated_gears` | `gear_rollers_enabled` | `"Off"` (default), `"On"`. Builds the cylinder as one solid piece with its drive gears attached. The gears are a 1:1 replica of the reference set and are **not adjustable**, so the cylinder is locked to 30.8 mm × 52 mm while On and any other size is refused rather than mis-built; the barrel also prints solid (the polygonal cutout is dropped). Web schema home `gear_rollers.enabled`; on the wire it is the flat integer `gear_rollers_enabled` (0/1). |
+
+**Desktop build only.** The gear meshes are real files — `assets/gears_a.stl` and
+`assets/gears_b.stl` — that must sit beside the `.scad`. The MakerWorld
+single-file build declares the same parameter (the sync test requires it) but in
+a `[Hidden]` tab, so its Customizer never offers it. That is not a packaging
+choice that could be worked around: MakerWorld's Parametric Model Maker has no
+way to accept a mesh file at all (tested 2026-08-25).
+
+**Embosser Version 2 (`Braille_Cylinder_STL_Generator_EmbosserV2.scad`, since
+2026-09-21).** The same switch, under a tab named `[Integrated Gears]` (no BETA
+tag), fuses the **Version 2** gear set — `assets/v2_gears_a.stl` /
+`assets/v2_gears_b.stl`, derived from the web repo's packed assets and pinned by
+`assets/GEARS_PROVENANCE.json` — with the cylinder locked to **30.8 mm × 54 mm**
+(any other size is refused with the web generator's own sentence, "Fixed gears
+for the Version 2 embosser fit only a 30.8 mm x 54 mm cylinder."). While it is
+On the barrel is solid with **no keyed holes, nub or socket** — the gears' own
+pegs and pins are inside the imported solids — and each top gear's anti-rotation
+notch is filled by hidden material (the measured notch outline grown 0.05 mm as
+an exact parallel curve, capped at r 13.95 mm) so no void is sealed in. The seam
+channel is still cut. On the web the same roller is `gear_rollers_enabled: 1`
+with `embosser_version: 2`. The MakerWorld Version 2 upload hides the switch
+exactly as the Version 1 build does.
 
 ### Indicator Mode
 
@@ -117,6 +174,7 @@ Expert Mode.
 | `tactile_indicator_raise` | `tactile_indicator_raise` | 0.5 mm | 0–2 mm | How far the emboss arrow stands proud. Kept below the braille dot height so the dots carry the rolling pressure |
 | `tactile_recess_clearance` | `tactile_recess_clearance` | 0.2 mm | 0–1 mm | Outline margin around the counter recess |
 | `tactile_recess_extra_depth` | `tactile_recess_extra_depth` | 0.2 mm | 0–1 mm | Counter recess depth beyond the raise; 0 = exact same-depth nesting |
+| *(derived: `paper_thickness_preset == "0.3mm"`)* | `tactile_indicator_layout` | one per row | `per_row`, `three_spaced` | **2026-09-20.** Where the arrows sit along the axis. `"0.4mm"` and `"Custom"` keep one arrow per braille row; `"0.3mm"` places exactly three, at mid-height and `TACTILE_THREE_SPACED_PITCH` (15 mm) above and below it, whatever the row count — so a blind user can tell the presets apart by touch and a 0.3 mm cylinder will not nest with a 0.4 mm one. No slider here: the preset decides. The web UI sends `three_spaced` for its 0.3 preset (and for Custom when 0.3 was the preset last chosen — its radio can flip to Custom by itself, which this Customizer's cannot). An `assert` refuses a barrel too short for the outer arrows, as the web API does. The pitch is pinned across the two repos by `tests/test_tactile_arrow_layout.py`. |
 
 Defaults are asserted equal on the web side
 (`tests/test_smoke.py::test_tactile_settings_defaults_match_openscad`), so the
@@ -126,7 +184,10 @@ there — deliberately.
 The five tactile sliders are **not** preset-driven — same policy as
 `grid_columns`. The paper-thickness presets describe paper and dot geometry;
 the indicator is a mechanical alignment feature and must not move when the
-user switches preset.
+user switches preset. The one exception, since 2026-09-20, is the arrow
+*layout* above: the arrow itself never changes size, but the 0.3mm preset
+places three of them instead of one per row, precisely so the preset can be
+recognised by touch.
 
 ### Paper Thickness Preset
 | OpenSCAD Parameter | Web App Equivalent | Default | Values |
@@ -149,6 +210,24 @@ user switches preset.
 | `polygon_cutout_radius_mm` | Cutout Radius | 13.0 mm | 0-50 mm |
 | `polygon_cutout_points` | Cutout Points/Sides | 12 | 3-24 |
 | `seam_offset_degrees` | Seam Offset | 0.0° | 0-360° |
+| `seam_channel` | Slicer seam channel (Expert Mode switch, wire name `seam_channel_enabled`) | `On` | `On` / `Off` |
+
+**Slicer seam channel** (both files, since 2026-09-21): a V groove **1.0 mm
+wide × 0.5 mm deep** the full height of the outer surface, in the seam gap
+beside the row markers, where a slicer's default *Aligned* seam mode hides each
+layer's seam instead of in a dot. On by default on every cylinder, both plates.
+The size is a constant, not a dial, in both implementations
+(`SEAM_CHANNEL_WIDTH_MM` 1.0, `DEPTH` 0.5, `MARGIN` 0.25, `OVERSHOOT` 1.0,
+`LIP` 0.5, `MIN_WALL` 1.2 — `tests/test_seam_channel_scad.py` diffs them
+against the web repo's `app/geometry_spec.py`). It is left out, with a console
+`NOTE:` and a red `SEAM CHANNEL LEFT OUT` badge on the model, when the free
+window is under 1.5 mm (15 columns in Tactile mode) or the wall under the groove
+would be under 1.2 mm. On the web the switch sends `seam_channel_enabled: 0`
+only when turned off; On adds nothing to the request. The groove's angle is the
+web spec's `theta` taken as a **physical** angle here — embossing plate
+`180 + s/R`, counter plate `180 − s/R` (181.67° / 178.33° at 15 visual columns
+on the 30.8 mm cylinder); see
+[`OPENSCAD_COORDINATE_SYSTEM_SPECIFICATIONS.md` §3.6](OPENSCAD_COORDINATE_SYSTEM_SPECIFICATIONS.md).
 
 ### Expert Mode - Braille Spacing
 | OpenSCAD Parameter | Web App Equivalent | Default | Range |
@@ -245,9 +324,12 @@ blind-accessible indicator carried by both plates. Cylinder diameter, height,
 and the polygonal cutout are unchanged — only surface features differ.
 
 - **Placement.** One indicator per braille row, centred in the seam gap
-  between the last and first cell. The grid is centred on angle 0, so that
-  midpoint is always exactly **180°** — and 180° is the fixed point of the
-  counter plate's `mirror([0,1,0])` / angle-negation construction, so the
+  between the last and first cell — or, on the `"0.3mm"` paper-thickness
+  preset since 2026-09-20, exactly three at mid-height and ±15 mm, whatever
+  the row count (`tactile_arrow_y_positions()`; the preset's tactile
+  marking, see the Indicator Mode table). The grid is centred on angle 0, so
+  that midpoint is always exactly **180°** — and 180° is the fixed point of
+  the counter plate's `mirror([0,1,0])` / angle-negation construction, so the
   emboss arrow and the counter recess self-align radially with no extra maths,
   at any rotation of the paired cylinders.
 - **Shape.** An isosceles triangle, **symmetric circumferentially** (so the

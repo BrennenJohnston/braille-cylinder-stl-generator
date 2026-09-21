@@ -212,6 +212,20 @@ interpoint_offset_y_mm = 1.25; // [1.15:0.01:1.35]
 // Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
 plate_type = "Embossing Plate"; // [Embossing Plate, Counter Plate]
 
+// BETA - render BOTH plates in one go, standing side by side and spaced apart
+// for printing on one plate: Embossing Plate (Cylinder A) on the left, Counter
+// Plate (Cylinder B) on the right. While this is On the plate_type choice
+// above is ignored. Suggested export name: Cylinder_Pair_<your text>.stl.
+// Wording SIGNED OFF by Brennen 2026-08-25 - reword only with his sign-off.
+render_both_plates = "Off"; // [Off, On]
+// Gap between the two cylinders' surfaces (mm) - PRINT spacing only, not the
+// meshed-gear assembly distance (32.0473 mm axis to axis); a printed pair is
+// separated for assembly anyway. With Integrated Gears On, the gear tips
+// overhang the barrel by 0.71 mm each side, so the tip-to-tip gap comes out
+// about 1.4 mm less than this number.
+// Wording SIGNED OFF by Brennen 2026-08-25 - reword only with his sign-off.
+pair_spacing_mm = 10; // [2:1:50]
+
 /* [Indicator Mode] */
 // How each row is marked for alignment. Visual = today's recessed triangle (plus the optional letter square) in marker cells at the start of every row. Tactile = a raised arrow on the embossing plate and a matching recess on the counter plate, centred in the seam gap and pointing at the cylinder top, so a blind user can find the alignment point and tell which end is up by touch. Tactile removes the marker cells (freeing them for text) and ignores the Indicator Letters toggle.
 indicator_mode = "Visual"; // [Visual, Tactile]
@@ -244,6 +258,15 @@ cylinder_height_mm = 52; // [20:1:150] Cylinder height in mm
 polygon_cutout_radius_mm = 13.0; // [0:0.1:50] Polygonal cutout circumscribed radius (0 = no cutout)
 polygon_cutout_points = 12; // [3:1:24] Number of sides/points for polygonal cutout
 seam_offset_degrees = 0.0; // [0:1:360] Seam offset (degrees) — Rotates starting position around cylinder
+
+// Slicer seam channel (OpenSCAD parity plan phase O1, 2026-09-21; web decisions
+// D-1, D-2, D-13..D-15). Size is not a dial: the six SEAM_CHANNEL_* constants
+// below the sync marker mirror the web generator's app/geometry_spec.py and
+// tests/test_seam_channel_scad.py diffs them. The description below is the
+// web generator's note for the same switch (its string S-C1), kept identical.
+
+// A shallow groove beside the row markers where the slicer hides its layer seam, keeping it off the dots. Turn Off for a plain surface.
+seam_channel = "On"; // [On, Off]
 
 /* [Expert Mode - Braille Spacing] */
 // --- Braille Dimensions ---
@@ -446,6 +469,30 @@ function preset_value(preset, key, fallback) =
 // only what derives from them.
 
 /* [Hidden] */
+// INTEGRATED GEARS (BETA) - DESKTOP BUILD ONLY, and deliberately hidden here.
+// The desktop generator ships assets/gears_a.stl and assets/gears_b.stl and
+// offers this as a visible dropdown. This single-file build has no assets
+// folder, so switching it on would render a plate with NO gears and only a
+// console warning to say why. It is declared - because
+// tests/test_makerworld_sync.py requires both builds to carry the same
+// parameter set, and the geometry body below is byte-identical - but it lives
+// in a Hidden tab so the Customizer never offers it.
+//
+// TESTED 2026-08-25, so nobody has to wonder whether this is still true: the
+// gears cannot be shipped here, and the reason is one step earlier than "no
+// assets folder". MakerWorld's Parametric Model Maker - v1.1.0, redesigned
+// 2025-10-27 - has no way to upload a mesh at all. Its editor offers no asset
+// panel, and its file picker refuses STL selection outright and takes one file
+// at a time. So there is no version of this build that could carry the gear
+// meshes, however they were packaged. Two things were confirmed in the same
+// session and are worth knowing: this file's customizer syntax parses correctly
+// there, and a single-file gear delivery is otherwise solved (one combined mesh
+// with the second gear set parked 100 mm away, cropped per plate - proven exact
+// locally). If MakerWorld ever ships asset uploads, that is the design to reach
+// for. Until then, geared cylinders come from the desktop OpenSCAD build or the
+// web app.
+// Wording SIGNED OFF by Brennen 2026-08-25 - reword only with his sign-off.
+integrated_gears = "Off"; // [Off, On]
 // Print the self-check echoes below. Off in normal renders so scripts\scad-check.ps1
 // stays quiet; tests/test_interpoint_math_scad.py renders with this On. A test
 // hook, not a user control, so it stays out of the Customizer.
@@ -458,6 +505,10 @@ ds_self_check = false;
 // than beside is_emboss_plate / tactile_on in CALCULATED VALUES because that
 // section lives past the MakerWorld sync marker.
 ds_on = (double_sided == "On") || (double_sided == "on");
+
+// Gear-mode gate, mirroring the canonical build. Always false in practice here:
+// `integrated_gears` is hidden from this build's Customizer (see above).
+gears_on = (integrated_gears == "On") || (integrated_gears == "on");
 
 // Back-face counterpart of _all_lines, under the same contract: the single
 // source of truth for the back content, so no geometry ever names a Back_Line_N.
@@ -811,6 +862,11 @@ is_emboss_plate = (plate_type == "positive") ? true :
                   (plate_type == "negative") ? false :
                   (plate_type == "Embossing Plate");
 
+// Both-plates mode (BETA): lowercase accepted the way the other toggles
+// accept theirs from the test system. While On, plate_type is ignored and
+// MAIN RENDERING at the bottom builds both cylinders side by side.
+both_on = (render_both_plates == "On") || (render_both_plates == "on");
+
 use_rounded_dots = (combined_shape == "rounded") ? true :
                    (combined_shape == "cone") ? false :
                    (dot_shape == "Rounded");
@@ -845,11 +901,24 @@ if (ds_forced_tactile)
 // renamed. Deliberately not a WARNING: it is a hint, and scripts\scad-check.ps1
 // treats that token as a failure.
 // Wording SIGNED OFF by Brennen 2026-08-20 - reword only with his sign-off.
-if (ds_on)
+// (2026-08-25: gated on !both_on - in both-plates mode one file holds the
+// pair, so the pair hint below speaks instead. Condition change only, the
+// wording is untouched.)
+if (ds_on && !both_on)
     echo(str("Double-sided: this render is Cylinder ", is_emboss_plate ? "A" : "B",
              " (the ", is_emboss_plate ? "Embossing Plate" : "Counter Plate",
              "). Suggested export filename: Cylinder_", is_emboss_plate ? "A" : "B",
              "_<your name>.stl"));
+
+// Both-plates mode: one render, one file, one suggested name. Deliberately
+// not a WARNING - scripts\scad-check.ps1 treats that token as a failure.
+// Wording SIGNED OFF by Brennen 2026-08-25 - reword only with his sign-off.
+if (both_on) {
+    echo(str("Both plates: one STL containing Cylinder A / Embossing Plate (left) ",
+             "and Cylinder B / Counter Plate (right), surfaces ", pair_spacing_mm,
+             " mm apart. Suggested export filename: Cylinder_Pair_<your name>.stl"));
+    echo("NOTE: render_both_plates is On, so plate_type is ignored and both cylinders render.");
+}
 
 // Material left between a raised dot and its nearest neighbouring recess, both
 // of which share this surface in double-sided mode. The 336-point lattice sweep
@@ -865,10 +934,21 @@ ds_same_surface_gap = ds_on
 // used the floor instead, which retired this text for it entirely.
 ds_dots_too_close = ds_on && (ds_same_surface_gap < DS_GAP_ACCEPTED);
 
-// Map render quality to segment counts (support both UI and test system)
-quality_fn = (hemisphere_quality == "low" || render_quality == "Low") ? 24 :
-             (hemisphere_quality == "medium" || render_quality == "Medium") ? 32 :
-             (hemisphere_quality == "high" || render_quality == "High") ? 64 : 32;
+// Map render quality to segment counts (support both UI and test system).
+//
+// The test override is ranked ABOVE the dropdown, not interleaved with it.
+// Interleaved - the arms reading `hemisphere_quality == "low" || render_quality
+// == "Low"` and so on - the override could not raise quality: with the shipped
+// default render_quality "Medium" standing, `hemisphere_quality="high"` fell
+// through arm 1, then matched "Medium" in arm 2 and silently rendered at 32.
+// The 64 arm was unreachable. "low" and "medium" appeared to work only by
+// accident ("medium" collides with the default's own answer), so the bug bit
+// exactly the one value that disagrees with the default.
+quality_fn = (hemisphere_quality == "low")    ? 24 :
+             (hemisphere_quality == "medium") ? 32 :
+             (hemisphere_quality == "high")   ? 64 :
+             (render_quality == "Low")        ? 24 :
+             (render_quality == "High")       ? 64 : 32;
 
 // =============================================================================
 // PRESET ROUTING - Select preset vs. custom values
@@ -948,6 +1028,13 @@ active_polygon_cutout_radius_mm = _preset_polygon_cutout_radius_mm;
 active_polygon_cutout_points = _preset_polygon_cutout_points;
 active_seam_offset_degrees = _preset_seam_offset_degrees;
 
+// Both-plates mode, PRINT layout only: centres one diameter plus the gap
+// apart puts the barrel surfaces exactly pair_spacing_mm apart. Not related
+// to the 32.0473 mm meshed-gear assembly distance. Brennen chose the
+// barrel-based measure on 2026-08-25 (gear tips overhang it; the slider
+// comment carries that caveat).
+pair_center_offset_mm = active_cylinder_diameter_mm + pair_spacing_mm;
+
 // -----------------------------------------------------------------------------
 // TACTILE INDICATOR CONSTANTS
 // -----------------------------------------------------------------------------
@@ -961,6 +1048,23 @@ active_seam_offset_degrees = _preset_seam_offset_degrees;
 // cell plus 1 mm of margin).
 TACTILE_MIN_GAP_MARGIN = 5.0;
 
+// Slicer seam channel: a V groove the full height of the outer surface, in the
+// seam gap beside the row-indicator column, so a slicer's default "aligned"
+// seam mode hides each layer's seam in it instead of in a braille dot. Mirrors
+// the web generator's app/geometry_spec.py SEAM_CHANNEL_* one for one
+// (tests/test_seam_channel_scad.py diffs them); changing the groove needs
+// Brennen's decision AND a new slicing spike (web decisions D-13..D-15).
+SEAM_CHANNEL_WIDTH_MM     = 1.0;   // mouth width at the surface, mm
+SEAM_CHANNEL_DEPTH_MM     = 0.5;   // apex depth below the surface, mm (90 degree V)
+SEAM_CHANNEL_MARGIN_MM    = 0.25;  // clear surface kept on each side, mm
+SEAM_CHANNEL_OVERSHOOT_MM = 1.0;   // cutter length past each end face, mm
+SEAM_CHANNEL_LIP_MM       = 0.5;   // cutter sides carried past the surface, mm
+SEAM_CHANNEL_MIN_WALL_MM  = 1.2;   // FDM minimum wall under the apex, mm
+
+// Normalised gate for the `seam_channel` dropdown, read the way gears_on reads
+// its own: "On"/"Off" from the Customizer, "on"/"off" from -D.
+seam_channel_on = (seam_channel == "On") || (seam_channel == "on");
+
 // Radial thickness of the working prism the arrow is extruded into. Must exceed
 // raise + recess depth + base embed so the prism always straddles the shell
 // surface; the shell band intersection is what sets the actual raise/depth.
@@ -973,6 +1077,33 @@ TACTILE_BASE_EMBED = 0.2;
 // How far the recess cutter projects past the shell surface, so the cut opening
 // never leaves coplanar faces behind.
 TACTILE_RECESS_OVERCUT = 1;
+
+// Arrow layout along the axis (Brennen, 2026-09-20). The "0.4mm" preset keeps
+// one arrow per braille row; the "0.3mm" preset marks its cylinders with
+// exactly three arrows, at mid-height and TACTILE_THREE_SPACED_PITCH above and
+// below it, whatever the row count - so a blind user can tell the presets
+// apart by touch (three separated arrows against a chain of four touching
+// ones) and a 0.3mm cylinder will not nest with a 0.4mm one: the middle
+// arrow's 4 mm base lands where the per-row recess chain is only 2.2 mm wide.
+// "Custom" is an explicit choice here (no auto-detection, unlike the web UI),
+// so it keeps one per row like the default. 15 mm was chosen over the
+// quarter-height points: the same 40 mm span as the four-row chain, 5 mm gaps
+// that are easy to count, one number for the 52 and 54 mm barrels alike.
+// Keep in lockstep with the web repo's app/geometry_spec.py
+// TACTILE_THREE_SPACED_PITCH_MM; tests/test_tactile_mode.py pins it.
+tactile_three_spaced = (paper_thickness_preset == "0.3mm");
+TACTILE_THREE_SPACED_PITCH = 15;
+
+// The three fixed arrows must stay on the barrel. Measured on the larger,
+// clearance-grown recess outline so both plates of a pair pass or fail
+// together; a rejection, not a warning, to match the web generator (Brennen,
+// 2026-09-20). Both presets set the cylinder to 52 mm, so the shipped defaults
+// pass at every slider setting (the slider maxima need 45 mm).
+assert(!(tactile_on && tactile_three_spaced)
+       || active_cylinder_height_mm >= 2 * (TACTILE_THREE_SPACED_PITCH
+                                            + tactile_indicator_length / 2
+                                            + tactile_recess_clearance),
+       "The 0.3mm preset's three tactile arrows need a taller cylinder: at least 2 x (15 + tactile_indicator_length / 2 + tactile_recess_clearance) mm.");
 
 // Grid dimensions. In Visual indicator mode the triangle alignment marker column
 // is ALWAYS present (it has no user-facing toggle) and the indicator letter/square
@@ -1078,6 +1209,58 @@ dot_spacing_angle     = active_dot_spacing / radius;
 dot_col_angle_offsets = [-dot_spacing_angle / 2, dot_spacing_angle / 2];
 dot_row_offsets       = [active_dot_spacing, 0, -active_dot_spacing];
 dot_positions         = [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1]];
+
+// Slicer seam channel placement - the web generator's _seam_channel_block(),
+// ported verbatim. Positions are signed arcs `s` along the surface from the
+// seam centre (180 degrees), positive TOWARD column 0; the free window
+// [lo, hi] is what the features either side leave of the seam gap and the
+// groove sits at its middle so both margins are equal. The footprint is the
+// SAME number on both plates, so the two grooves mirror exactly.
+//
+// ANGLE CONVENTION. This file places dots at their physical angle
+// (start_angle = -grid_angle / 2, so column 0 sits on the NEGATIVE side of
+// the seam centre) and the counter plate negates angles. Toward column 0 from
+// 180 is therefore INCREASING angle on the emboss plate and decreasing on the
+// counter plate: 181.67 / 178.33 degrees for the default 15-column visual
+// layout at 30.8 mm - the same physical angles the web generator's STL
+// carries (its spec theta is in the dot convention that its worker negates).
+// Never treat this angle differently from a dot's.
+seam_channel_footprint_mm = active_dot_spacing / 2
+    + (ds_on
+        ? max(DS_DOT_BASE_DIA / 2, DS_BOWL_DIA / 2)
+        : max(use_rounded_dots ? _preset_rounded_dot_base_diameter / 2 : _preset_emboss_dot_base_diameter / 2,
+              use_rounded_dots ? _preset_bowl_counter_dot_base_diameter / 2 : _preset_cone_counter_dot_base_diameter / 2));
+seam_channel_lo_mm = tactile_on
+    ? (tactile_indicator_width / 2 + tactile_recess_clearance)        // past the (clearance-grown) arrow recess
+    : -(seam_gap_mm / 2 - seam_channel_footprint_mm);                  // past the last cell's dots
+seam_channel_hi_mm = tactile_on
+    ? (seam_gap_mm / 2 - seam_channel_footprint_mm)                    // before the first cell's dots
+    : (seam_gap_mm / 2 - active_dot_spacing / 2);                      // before column 0's triangle
+seam_channel_free_mm = seam_channel_hi_mm - seam_channel_lo_mm;
+seam_channel_need_mm = SEAM_CHANNEL_WIDTH_MM + 2 * SEAM_CHANNEL_MARGIN_MM;
+seam_channel_fits = seam_channel_free_mm >= seam_channel_need_mm;
+// The wall under the apex: only a polygonal cutout can thin it - this shell
+// has no wall-thickness hollowing (a barrel with no cutout is solid) and gear
+// mode forces the barrel solid. The cutout's vertices reach the circumradius.
+seam_channel_bore_mm = (gears_on || active_polygon_cutout_radius_mm <= 0)
+    ? 0
+    : active_polygon_cutout_radius_mm / cos(180 / active_polygon_cutout_points);
+seam_channel_wall_mm = radius - SEAM_CHANNEL_DEPTH_MM - seam_channel_bore_mm;
+seam_channel_wall_ok = (seam_channel_bore_mm <= 0) || (seam_channel_wall_mm >= SEAM_CHANNEL_MIN_WALL_MM);
+seam_channel_present = seam_channel_on && seam_channel_fits && seam_channel_wall_ok;
+seam_channel_s_mm = (seam_channel_lo_mm + seam_channel_hi_mm) / 2;
+seam_channel_theta_emboss_deg  = 180 + (seam_channel_s_mm / radius) * 180 / PI;
+seam_channel_theta_counter_deg = 180 - (seam_channel_s_mm / radius) * 180 / PI;
+
+// The console copies of the two omission sentences, S-C2 and S-C3 - the web
+// generator's own words, quoted verbatim and pinned by the tests; keep them
+// identical. "NOTE:", never "WARNING:" - scripts\scad-check.ps1 fails on
+// that token.
+if (seam_channel_on && !seam_channel_fits)
+    echo("NOTE: The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.");
+if (seam_channel_on && seam_channel_fits && !seam_channel_wall_ok)
+    echo(str("NOTE: The seam channel was left out: the cylinder wall would be thinner than ",
+             SEAM_CHANNEL_MIN_WALL_MM, " mm under it."));
 
 // Counter plate recess radii (spherical cap formula to match web generator)
 // For a bowl recess: R = (a² + h²) / (2h) where a = opening radius, h = depth
@@ -1205,6 +1388,32 @@ CYLINDER_SHELL_FN = 64;
 // source-order reason as TACTILE_SEAM_WALL_MIN below.
 SHELL_FACET_DIP = radius * (1 - cos(180 / CYLINDER_SHELL_FN));
 DOT_BASE_EMBED  = SHELL_FACET_DIP * 2;
+
+// -----------------------------------------------------------------------------
+// ROUNDED-DOT DOME WELD
+// -----------------------------------------------------------------------------
+// The embed above fused dot to shell; this fuses the two halves of the dot to
+// each other. Inside every rounded dot the spherical cap was cut off at exactly
+// the frustum's top plane, and the cap's base circle there is exactly the
+// frustum's top radius - provably so, since R = (r^2 + h^2) / 2h rearranges to
+// give the cap radius r at that height. Two bodies meeting on one shared circle
+// with no overlap, tessellated differently either side of it (cone_segments 16
+// against quality_fn 24/32). It welded, but by luck: raising DOT_BASE_EMBED far
+// enough was observed splitting the dome off as its own body at 0.08, 0.18 and
+// 0.20 mm, and the embed is DERIVED - it already reaches 0.1204 mm at the 100 mm
+// diameter ceiling, past all three.
+//
+// The cure is the house rule the rest of this file follows: overlap, never
+// touch. Only the cap's CUT PLANE moves down; the sphere does not, so the dome's
+// apex stays exactly where it was and the dot stands as proud as it always did.
+// What changes is buried - the cap now continues a hair below the frustum's top,
+// where the frustum has already widened past the cap's radius, so the two bodies
+// genuinely intersect.
+//
+// 0.005 mm is the figure GEAR_ARROW_WELD_MM already uses for the same job on the
+// tactile arrows. Fixed rather than derived because this junction is internal to
+// the dot and does not scale with the cylinder.
+DOT_DOME_WELD_MM = 0.005;
 
 // "INVALID CHARACTERS" warning text placement (rendered above the cylinder
 // when get_dot_pattern() returns the bad-pattern marker for an untranslated
@@ -1374,7 +1583,10 @@ module tactile_surface_prism(y_pos, span) {
 module tactile_raised(y_pos) {
     intersection() {
         tactile_surface_prism(y_pos, TACTILE_PRISM_SPAN)
-            tactile_arrow_2d(tactile_indicator_width, tactile_indicator_length);
+            // Gear mode grows the outline by GEAR_ARROW_WELD_MM so the arrow
+            // tip-to-base tangency becomes a real overlap; see that constant.
+            offset(delta = gears_on ? GEAR_ARROW_WELD_MM : 0)
+                tactile_arrow_2d(tactile_indicator_width, tactile_indicator_length);
         tactile_shell_band(radius - TACTILE_BASE_EMBED, radius + tactile_indicator_raise);
     }
 }
@@ -1465,20 +1677,38 @@ module ds_mode_warnings() {
     }
 }
 
-// One tactile indicator per braille row, at the same row pitch the Visual
-// marker columns use.
-module tactile_rows_raised() {
-    for (row = [0 : active_grid_rows - 1]) {
-        y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
-        tactile_raised(y_pos);
+// The seam channel was left out: warn in 3D, same reasons and same pattern as
+// tactile_gap_warning above, on both plates (one set of settings serves the
+// pair). Wording S-O1 in the OpenSCAD parity plan.
+module seam_channel_warning() {
+    if (seam_channel_on && !seam_channel_present) {
+        translate([0, 0, active_cylinder_height_mm/2 + INVALID_TEXT_Z_OFFSET + 7 * INVALID_TEXT_STACK_GAP])
+        color("red")
+        linear_extrude(height = INVALID_TEXT_DEPTH)
+        text(seam_channel_fits
+                 ? str("SEAM CHANNEL LEFT OUT: wall ", round(seam_channel_wall_mm * 100) / 100, "mm")
+                 : str("SEAM CHANNEL LEFT OUT: gap ", round(seam_channel_free_mm * 10) / 10, "mm"),
+             size = INVALID_TEXT_SIZE, halign = "center", valign = "center");
     }
 }
 
+// Tactile indicator heights along the axis, top first: one per braille row at
+// the same row pitch the Visual marker columns use, or - on the "0.3mm"
+// preset - three fixed ones about mid-height that follow neither the row
+// count nor braille_y_adjust (a preset marking, not a row marking; see
+// TACTILE_THREE_SPACED_PITCH).
+function tactile_arrow_y_positions() =
+    tactile_three_spaced
+        ? [TACTILE_THREE_SPACED_PITCH, 0, -TACTILE_THREE_SPACED_PITCH]
+        : [for (row = [0 : active_grid_rows - 1])
+              active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust];
+
+module tactile_rows_raised() {
+    for (y_pos = tactile_arrow_y_positions()) tactile_raised(y_pos);
+}
+
 module tactile_rows_recessed() {
-    for (row = [0 : active_grid_rows - 1]) {
-        y_pos = active_cylinder_height_mm/2 - top_margin - (row * active_line_spacing) + active_braille_y_adjust;
-        tactile_recess_cut(y_pos);
-    }
+    for (y_pos = tactile_arrow_y_positions()) tactile_recess_cut(y_pos);
 }
 
 // =============================================================================
@@ -1520,11 +1750,15 @@ module braille_dot_centered() {
                     center = true,
                     $fn = cone_segments
                 );
-                // Dome: proper spherical cap
+                // Dome: proper spherical cap. The cutting cube's lower face sits
+                // DOT_DOME_WELD_MM BELOW the frustum's top plane, not on it, so
+                // the cap overlaps the frustum instead of merely touching it.
+                // The sphere itself is unmoved, so the apex - the part a finger
+                // reads - is exactly where it was.
                 intersection() {
                     translate([0, 0, _center_z])
                     sphere(r = _R_sphere, $fn = quality_fn);
-                    translate([0, 0, _preset_rounded_dot_base_height + _R_sphere])
+                    translate([0, 0, _preset_rounded_dot_base_height + _R_sphere - DOT_DOME_WELD_MM])
                     cube([_R_sphere * 4, _R_sphere * 4, _R_sphere * 2], center = true);
                 }
             }
@@ -1625,13 +1859,136 @@ module counter_recess() {
 // CYLINDER MODULES
 // =============================================================================
 
-module cylinder_shell(cutout_rotate_deg = 0) {
+// =============================================================================
+// INTEGRATED GEARS (BETA)
+// =============================================================================
+// The gears are vendored 1:1 replica meshes, never parametric geometry. They
+// are derived by the web generator's scripts/derive_gear_assets.py and
+// converted into this file's frame by tests/test_gear_assets.py;
+// assets/GEARS_PROVENANCE.json records the whole chain. In THIS frame the
+// barrel base sits at z=0, so the assets already place their own gears at
+// z -10..0 and 52..62 with the axis at the origin - the import is never
+// rotated or scaled here.
+//
+// DESKTOP BUILD ONLY. The MakerWorld single-file build carries this code so the
+// two files stay in lockstep (tests/test_makerworld_sync.py compares them byte
+// for byte), but it ships without assets/, and its copy of the dropdown is
+// declared in a Hidden tab so the Customizer never offers it.
+
+// The reference roller the gears were measured against. They are baked at fixed
+// heights and do NOT move with the barrel, so any other size is refused rather
+// than silently mis-built: a barrel 1 mm short exports as THREE loose bodies
+// (each closed, so it still reports watertight - only a body count catches it),
+// and a 10 mm taller one swallows the teeth. The diameter never breaks the
+// union but it sets the nip: the pair meshes at an axis distance of 32.0473 mm,
+// so the barrel-to-barrel surface gap is 32.0473 - diameter.
+GEAR_BARREL_DIAMETER_MM = 30.8;
+GEAR_BARREL_HEIGHT_MM = 52;
+
+// Hidden weld ring at each gear/barrel interface. The gear meets the barrel on
+// an exactly coincident face, which the printability rules forbid and float32
+// STL rounding can turn into a pinch edge. The ring is entirely buried: it
+// clears both gear bores and changes no external surface.
+GEAR_WELD_RING_R_IN = 8.0;
+GEAR_WELD_RING_R_OUT = 13.0;
+GEAR_WELD_RING_H = 0.1;
+
+// Gear mode only: grow the RAISED tactile arrow's outline by 5 um. At the
+// default 10 mm indicator length on 10 mm line spacing each arrow's apex
+// touches the next arrow's base exactly, and float32 STL rounding welds that
+// tangency into a non-manifold pinch edge - which would break the watertight
+// one-piece roller. Physically negligible: 2.5% of the recess nesting
+// clearance, far below print accuracy. Off, the outline is untouched, so
+// existing exports keep the tangency they ship with.
+GEAR_ARROW_WELD_MM = 0.005;
+
+// The size gate, mirroring the web generator's, which Brennen signed on
+// 2026-08-24 as a HARD STOP covering BOTH dimensions rather than a warning.
+// OpenSCAD cannot test whether an imported file exists, so this is the guard
+// that matters: it refuses the sizes that would produce a broken part rather
+// than letting one export. Both paper-thickness presets already set the
+// cylinder to 30.8 x 52, so the shipped defaults pass.
+assert(!gears_on || (active_cylinder_height_mm == GEAR_BARREL_HEIGHT_MM
+                     && active_cylinder_diameter_mm == GEAR_BARREL_DIAMETER_MM),
+       "Integrated gears are matched to the reference roller and only fit a 30.8 mm x 52 mm cylinder.");
+
+// Decision D-2: the polygonal cutout is dropped while gears are on. Said out
+// loud only when the user actually had one, so the note means something.
+if (gears_on && active_polygon_cutout_radius_mm > 0) {
+    echo("NOTE: polygonal cutout is not used while integrated gears are on.");
+}
+
+// The console copy of the S9 hardware warning, so a CLI render says it too.
+// Wording SIGNED OFF by Brennen 2026-08-25 - reword only with his sign-off.
+// "NOTE:", never "WARNING:" - scripts\scad-check.ps1 fails on that token.
+if (gears_on) {
+    echo("NOTE: integrated gears fit only the one-piece geared-roller housing. They do not fit the Version 1 or Version 2 embosser bodies.");
+}
+
+// Both gears plus their two weld rings, in the plate modules' LOCAL frame.
+//
+// The plates build centred and then translate up by h/2, so inside that
+// translated context the barrel spans -h/2..+h/2 and the interfaces sit at
+// z = +/-h/2. The asset file is in the base-at-zero frame, hence the shift down
+// by h/2 before importing.
+//
+// Which gear set is a parameter, not a read of the global plate selection:
+// gears_b's teeth are clocked to mesh with gears_a's, so each plate module
+// names its own set - which also lets a single render build both plates.
+module gear_set(emboss = is_emboss_plate) {
+    half_h = active_cylinder_height_mm / 2;
+
+    translate([0, 0, -half_h])
+        import(emboss ? "assets/gears_a.stl" : "assets/gears_b.stl");
+
+    for (z = [-half_h, half_h]) {
+        translate([0, 0, z])
+            difference() {
+                cylinder(h = GEAR_WELD_RING_H, r = GEAR_WELD_RING_R_OUT, center = true, $fn = CYLINDER_SHELL_FN);
+                // Taller than the ring so the bore is cut cleanly through,
+                // never leaving coplanar faces behind.
+                cylinder(h = GEAR_WELD_RING_H + 0.2, r = GEAR_WELD_RING_R_IN, center = true, $fn = CYLINDER_SHELL_FN);
+            }
+    }
+}
+
+// The seam channel cutter, the web worker's createSeamChannelManifold: a V
+// section in the radial plane (X radial, Y tangential) - apex SEAM_CHANNEL_DEPTH_MM
+// below the surface, sides through the surface at SEAM_CHANNEL_WIDTH_MM and on
+// out to a lip beyond it so the mouth is cut rather than touched - extruded
+// the full height plus an overshoot past each end face, then turned to the
+// groove's physical angle. It is subtracted from the BARE outer cylinder,
+// before the cutout and before anything is unioned on, so a raised arrow can
+// never be undercut and the gears fill their share back in.
+module seam_channel_cut(theta_deg) {
+    half_mouth = (SEAM_CHANNEL_WIDTH_MM / 2)
+                 * (SEAM_CHANNEL_DEPTH_MM + SEAM_CHANNEL_LIP_MM) / SEAM_CHANNEL_DEPTH_MM;
+    r_apex = radius - SEAM_CHANNEL_DEPTH_MM;
+    r_lip  = radius + SEAM_CHANNEL_LIP_MM;
+    rotate([0, 0, theta_deg])
+        linear_extrude(height = active_cylinder_height_mm + 2 * SEAM_CHANNEL_OVERSHOOT_MM, center = true)
+            polygon(points = [[r_apex, 0], [r_lip, -half_mouth], [r_lip, half_mouth]]);
+}
+
+module cylinder_shell(cutout_rotate_deg = 0, force_solid = false, channel_theta_deg = undef) {
     difference() {
         // Outer cylinder (see $fn TESSELLATION POLICY: case 1)
         cylinder(h = active_cylinder_height_mm, r = active_cylinder_diameter_mm / 2, center = true, $fn = CYLINDER_SHELL_FN);
+
+        // Slicer seam channel, cut first while the barrel is still bare.
+        if (seam_channel_present && !is_undef(channel_theta_deg)) {
+            seam_channel_cut(channel_theta_deg);
+        }
         
         // Polygonal cutout if specified
-        if (active_polygon_cutout_radius_mm > 0) {
+        // force_solid drops the cutout for gear mode (decision D-2): a
+        // one-piece roller has no through-path along its axis anyway - the gear
+        // bores are blind pockets - so keeping it would seal a cavity nothing
+        // can reach or drain. NOTE this shell has no wall-thickness hollowing
+        // of its own, so suppressing the cutout IS what makes it solid here.
+        // The web worker needed a separate flag because it hollows by wall
+        // thickness whenever no polygon is given.
+        if (active_polygon_cutout_radius_mm > 0 && !force_solid) {
             // Web UI: "Circumscribed Radius" but implementation uses inscribed radius
             cutout_circumradius = active_polygon_cutout_radius_mm / cos(180 / active_polygon_cutout_points);
             rotate([0, 0, cutout_rotate_deg])
@@ -1797,7 +2154,14 @@ module cylinder_emboss_plate() {
         difference() {
             union() {
                 // Base cylinder
-                cylinder_shell(cutout_rotate_deg = -active_seam_offset_degrees);
+                cylinder_shell(cutout_rotate_deg = -active_seam_offset_degrees, force_solid = gears_on,
+                               channel_theta_deg = seam_channel_theta_emboss_deg);
+
+                // Integrated gears (BETA): the top and bottom drive gears, so
+                // this plate exports as one solid roller.
+                if (gears_on) {
+                    gear_set(emboss = true);
+                }
 
                 // INVALID CHARACTERS warning — covers the back lines too while
                 // double-sided is on (see invalid_characters_warning above).
@@ -1825,6 +2189,10 @@ module cylinder_emboss_plate() {
                 // cutout only; no-op otherwise).
                 tactile_seam_wall_warning();
 
+                // SEAM CHANNEL LEFT OUT warning (switch On but no room or no
+                // wall for the groove; no-op otherwise).
+                seam_channel_warning();
+
                 // TOO MANY LINES warning (see top-level rows_used /
                 // too_many_rows). The dot loop below stops at active_grid_rows,
                 // so without this the text on the extra lines would simply not
@@ -1836,7 +2204,8 @@ module cylinder_emboss_plate() {
                     text(str("TOO MANY LINES: ", rows_used, "/", active_grid_rows), size = INVALID_TEXT_SIZE, halign = "center", valign = "center");
                 }
 
-                // Tactile mode: raised alignment arrows in the seam gap, one per row.
+                // Tactile mode: raised alignment arrows in the seam gap - one per
+                // row, or three fixed ones on the "0.3mm" preset.
                 if (tactile_on) {
                     tactile_rows_raised();
                 }
@@ -1921,7 +2290,14 @@ module cylinder_counter_plate() {
         difference() {
             union() {
                 // Base cylinder
-                cylinder_shell(cutout_rotate_deg = active_seam_offset_degrees);
+                cylinder_shell(cutout_rotate_deg = active_seam_offset_degrees, force_solid = gears_on,
+                               channel_theta_deg = seam_channel_theta_counter_deg);
+
+                // Integrated gears (BETA): the top and bottom drive gears, so
+                // this plate exports as one solid roller.
+                if (gears_on) {
+                    gear_set(emboss = false);
+                }
 
                 // Double-sided: this cylinder's own raised dots - the BACK
                 // text it embosses. Unioned in before any recess is subtracted
@@ -2024,6 +2400,7 @@ module cylinder_counter_plate() {
         // above. All no-ops unless their condition holds.
         ds_mode_warnings();
         tactile_seam_wall_warning();
+        seam_channel_warning();
     }
 }
 
@@ -2031,7 +2408,24 @@ module cylinder_counter_plate() {
 // MAIN RENDERING
 // =============================================================================
 
-if (is_emboss_plate) {
+if (both_on) {
+    // Cylinder A on the left, Cylinder B on the right, surfaces
+    // pair_spacing_mm apart. Z stays the print axis - both cylinders stand
+    // upright exactly as they do alone - and the pair is symmetric about the
+    // origin so the default camera frames it. The gear size gate and the DS
+    // guards are file-scope, so they fire once, not once per body.
+    //
+    // render() on each body is REQUIRED, not an optimisation: two whole
+    // plates in one preview tree blow past OpenCSG's normalization cap
+    // ("Normalized tree is growing past 100000/200000 elements") and the
+    // preview comes back EMPTY - reproduced 2026-08-25 with both plates +
+    // gears + double-sided, and in Brennen's GUI log with less. Each body
+    // is evaluated to a mesh once (Manifold, ~2 s) and the preview tree
+    // stays at two elements no matter what the dials say. Single-plate
+    // renders never enter this branch, so their output is untouched.
+    translate([-pair_center_offset_mm / 2, 0, 0]) render() cylinder_emboss_plate();
+    translate([ pair_center_offset_mm / 2, 0, 0]) render() cylinder_counter_plate();
+} else if (is_emboss_plate) {
     cylinder_emboss_plate();
 } else {
     cylinder_counter_plate();

@@ -4,6 +4,7 @@
 | Date | Version | Changes |
 |------|---------|---------|
 | 2024-12-09 | 1.0 | Initial specification document |
+| 2026-09-21 | 1.1 | Section 3.6: the slicer seam channel's angle, and why the web spec's `theta` is negated on the way to the STL |
 
 ---
 
@@ -168,6 +169,45 @@ With `R = cylRadius + h/2`:
 - Top at radial distance = R + h = cylRadius + 3h/2 ❌
 
 **This is why the "stable" version had floating dots!**
+
+### 3.6 The Slicer Seam Channel Angle (Physical vs. Web-Spec `theta`)
+
+Both `.scad` files cut a V groove the full height of the outer surface
+(`seam_channel_cut()`, subtracted from the BARE cylinder before the cutout, the
+keyed halves, the gears or anything unioned on):
+
+```openscad
+// Section in the radial plane: X radial, Y tangential. Apex DEPTH below the
+// surface, mouth WIDTH wide at the surface, sides carried on to a lip beyond it
+// so the mouth is cut rather than touched. Extruded height + 2 * OVERSHOOT.
+rotate([0, 0, theta_deg])
+    linear_extrude(height = active_cylinder_height_mm + 2 * SEAM_CHANNEL_OVERSHOOT_MM, center = true)
+        polygon(points = [[r_apex, 0], [r_lip, -half_mouth], [r_lip, half_mouth]]);
+```
+
+`theta_deg` is a **physical** angle in this file's frame — the `atan2(y, x)` of
+the groove floor in the exported STL:
+
+| Plate | Angle | Default 15-column Visual layout (30.8 mm) | 14-column Tactile |
+|-------|-------|--------------------------------------------|-------------------|
+| Embossing | `180 + (s / radius) * 180 / PI` | 181.67° | 191.50° |
+| Counter | `180 − (s / radius) * 180 / PI` | 178.33° | 168.50° |
+
+where `s` is the signed arc (mm) from the seam centre toward column 0, at the
+middle of the free window between the last cell's dots and column 0's marker
+(Visual) or between the arrow recess and the first cell's dots (Tactile). The
+two plates mirror: their angles sum to 360°.
+
+**Why the web spec's number is not the same number.** The web generator's
+`app/geometry_spec.py` emits `seam_channel.theta` in its *dot convention* —
+178.33° for the embossing plate — and its Manifold worker negates **every**
+theta it places (dots, markers and the channel alike), so the STL it exports
+has the groove at 181.67°, the same physical angle as here. This file works in
+physical angles directly: dots start at `start_angle = −grid_angle / 2` and the
+counter plate is mirrored with `mirror([0, 1, 0])`. When a feature is defined by
+an angle in the web spec, port the **physical** angle — measure it on an exported
+STL — never the spec's `theta`. `tests/test_seam_channel_scad.py` pins 181.67 /
+178.33 on both files' end caps.
 
 ---
 

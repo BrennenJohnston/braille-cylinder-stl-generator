@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **The vendored OpenSCAD copy is refreshed to upstream v2.8.0** (`OpenSCAD/`, 2026-09-21). The single-file build now carries the slicer seam channel switch (`seam_channel`, On by default, the same constants and physical angles as this app) and the tactile arrow layouts, and the manifest's upstream path is corrected to `makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad`, the Version 1 build — upstream's `_v2` file has been the separate Embosser Version 2 generator since 2026-09-01 and is not vendored. Upstream 2.8.0 also gives that Version 2 file its own fixed-gear switch, so every feature of this app now has an OpenSCAD counterpart.
+
 ### Added
 - **The Back of Card now has the front's Manual Placement.** Under the Back of Card heading the same Auto / Manual toggle appears; Manual gives one text box per braille row with its own translation dropdown, so a multilingual back is placed row by row exactly like a multilingual front. Each row is checked against the cell count while you type and again before generating (a row that does not fit blocks with its line named), the Translate to Braille button and the preview read the rows, and the choice is remembered between visits. Auto placement, the default, is unchanged. Wording signed off by Brennen on 2026-09-21.
 

@@ -199,9 +199,10 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      so does the version. Version 2 has its own OpenSCAD companion (since
      2026-08-31 also at 30.8 x 54 with 4 text rows per face):
      Braille_Cylinder_STL_Generator_EmbosserV2.scad in the OpenSCAD repo -
-     self-contained, interpoint included, gears excluded (D-V6), NOT vendored
-     into this repo. The V1 .scad files stay 52 and untouched; the gears BETA
-     is the one feature with no Version 2 OpenSCAD counterpart.
+     self-contained, interpoint included, and since OpenSCAD v2.8.0
+     (2026-09-21) with its own [Integrated Gears] switch for the fused
+     Version 2 roller (D-V6 retired); NOT vendored into this repo. The V1
+     .scad files stay 52 and untouched.
    - Clearance 0.110 default, range 0.0-0.5, input step 0.005. Applied OUTWARD
      to the four holes ONLY. TWO printed rounds bracketed it on 2026-08-29:
      too loose at 0.15, too tight at 0.075. NOT the midpoint 0.1125 - an
@@ -249,8 +250,11 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      message S-G2 (signed 2026-09-21) replaces S5 + S-V8' for a fused run. The version
      change listener now makes ONE composed DEFERRED announcement (S-V10 +
      gear notes) - keep the deferral: the form-wide change listener bubbles
-     after it and re-announces the bare gear note. No OpenSCAD counterpart
-     yet (follow-on plan).
+     after it and re-announces the bare gear note. OpenSCAD counterpart since
+     v2.8.0 (2026-09-21): `[Integrated Gears]` in the EmbosserV2 file -
+     gear_set_v2 imports assets/v2_gears_{a,b}.stl, the same weld rings and
+     notch fill, the same hard 30.8 x 54 gate with the S-G1 sentence; its
+     MakerWorld copy hides the switch (no assets there).
    - Naming: a `V2_` segment is inserted ONLY when Version 2 is on
      (Embossing_Cylinder_V2_{preset}_{name}.stl). Version 1 names never change.
    - Version 2 recommends the SAME cell counts as Version 1. The one-fewer
@@ -304,6 +308,11 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      (_seam_channel_cutter); all six golden pairs regenerated once on
      2026-09-20 (+8 triangles each, bounds unchanged).
    - Cards never get one.
+   - OpenSCAD parity since v2.8.0 (2026-09-21): `seam_channel` switch in both
+     .scad files with the same six constants (a test in that repo diffs them
+     against app/geometry_spec.py) and the groove at the PHYSICAL angle
+     180 +/- s/R (emboss +, counter -) - the .scad negates nothing, so its
+     181.67 / 178.33 equals this worker's exported STL.
 
 6f. One Generate / one Download (2026-09-21, sub-plan E of the 2026-09-20
    programme; D-8, D-9, D-10). Generate STL builds BOTH cylinders unless

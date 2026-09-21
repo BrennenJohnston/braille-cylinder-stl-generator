@@ -4,7 +4,7 @@
 
 This guide walks you from "I want a braille label" to a downloadable STL pair
 using the single-file build in
-[`makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`](../makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad)
+[`makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad`](../makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad)
 on [MakerWorld](https://makerworld.com/)'s Parametric Model Maker.
 
 A PDF version of this guide is available:
@@ -98,7 +98,7 @@ end of the first line is preferred; omit it only as a last resort. Tip: omit
 ## 4. Using the Customizer
 
 1. Go to MakerWorld → **Create** → **Parametric Model Maker** and upload
-   **only** `Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`.
+   **only** `Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad`.
 2. In the parameter panel:
    - Paste your Unicode braille into `Line_1`, `Line_2`, `Line_3`, `Line_4`
      (leave unused lines empty). Do **not** type plain English. Lines 5–8 are in
@@ -137,7 +137,10 @@ layout and what the mechanical device expects.
 seam gap instead — the empty stretch between the last and first cell as the
 text wraps around the cylinder. On the embossing plate it is a **raised
 arrow**; on the counter plate, a **matching recess** the arrow settles into as
-the pair rolls.
+the pair rolls. On the **0.3mm** paper-thickness preset the cylinder carries
+exactly **three evenly spaced arrows** instead of one per row, so the two
+presets can be told apart by touch and a 0.3mm cylinder will not nest with a
+0.4mm one.
 
 Choose Tactile when a blind user needs to align the two cylinders unaided:
 
