@@ -167,7 +167,11 @@ async function loadGearAsset(assetName) {
     if (gearAssetCache.has(assetName)) {
         return gearAssetCache.get(assetName);
     }
-    if (assetName !== 'gears_a' && assetName !== 'gears_b') {
+    // Version 1's pair, and since 2026-09-21 the Embosser Version 2 fixed-gear
+    // pair (v2_gears_*, derived by scripts/derive_gear_assets_v2.py). The spec
+    // names one of these four and nothing else is fetched.
+    const KNOWN_GEAR_ASSETS = ['gears_a', 'gears_b', 'v2_gears_a', 'v2_gears_b'];
+    if (!KNOWN_GEAR_ASSETS.includes(assetName)) {
         throw new Error(`Gear asset name not recognized: ${assetName}`);
     }
 
@@ -2019,6 +2023,20 @@ function processGeometrySpec(spec, gearAsset = null) {
             for (const ring of gears.weld_rings || []) {
                 gearParts.push(createWeldRingManifold(ring));
             }
+            // Fused Version 2 (2026-09-21, decision D-6): each top gear keeps an
+            // anti-rotation notch in its barrel face, and a solid barrel over
+            // it would seal a void nothing can drain. The spec carries the
+            // notch's outline grown 0.05 mm (app/geometry/version2.py
+            // notch_fill_block) as a plain prism from just inside the barrel
+            // face to just past the notch floor; it joins the gear stage so
+            // the CSG order is unchanged. The profile is a simple CCW loop,
+            // like the nub's, so the same cross-section rule applies.
+            for (const fill of gears.notch_fills || []) {
+                if (!(fill.z_to > fill.z_from)) {
+                    throw new Error(`Version 2 notch fill ${fill.gear}: z_to ${fill.z_to} must be above z_from ${fill.z_from}`);
+                }
+                gearParts.push(keyedPrismManifold(fill.profile, fill.z_from, fill.z_to - fill.z_from, `notch fill ${fill.gear}`));
+            }
             const unionedGears = batchUnionManifold(gearParts);
             if (!unionedGears) {
                 throw new Error('Gear union produced no geometry');
@@ -2027,7 +2045,7 @@ function processGeometrySpec(spec, gearAsset = null) {
             result.delete();
             unionedGears.delete();
             result = withGears;
-            console.log(`Manifold CSG Worker: Added gear set ${gears.asset} with ${gears.weld_rings?.length || 0} weld rings`);
+            console.log(`Manifold CSG Worker: Added gear set ${gears.asset} with ${gears.weld_rings?.length || 0} weld rings and ${gears.notch_fills?.length || 0} notch fills`);
         }
 
         // Embosser Version 2: the key nub is the only thing Version 2 ADDS to the
