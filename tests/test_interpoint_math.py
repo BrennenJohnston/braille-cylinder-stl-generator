@@ -113,7 +113,11 @@ def test_worst_case_lattice_is_every_dot_of_every_cell():
 
 
 def test_mirror_fixes_the_grid_centre_and_the_seam_arrow():
-    """theta -> -theta holds 0 and pi still; pi is where the tactile arrow sits."""
+    """
+    theta -> -theta holds 0 and pi still; pi is the seam-gap centre the arrow
+    sat on until 2026-09-21, and the arrow's lead-in angles pi -/+ s/R are each
+    other's mirror about it.
+    """
     assert ip.mirror_theta(0.0) == 0.0
     assert math.cos(ip.mirror_theta(math.pi)) == pytest.approx(math.cos(math.pi), abs=1e-12)
     assert math.sin(ip.mirror_theta(math.pi)) == pytest.approx(math.sin(math.pi), abs=1e-12)
@@ -283,6 +287,43 @@ def test_d3_sign_variants_report_their_arrow_zone_margins():
 def test_arrow_zone_margins_reject_a_direction_that_is_not_a_sign():
     with pytest.raises(ValueError):
         ip.arrow_zone_margins(direction=2)
+
+
+def test_arrow_zone_margins_follow_the_lead_in_arrow():
+    """
+    The lead-in (D-T1, 2026-09-21) moves the arrow toward column 0 - the RIGHT
+    of Cylinder A's arrow - so the right side's back features come exactly the
+    arc closer and the left side's go the arc further; the crowded (left) side
+    only gains. The shipped 14-column layout on the Option B package: gap
+    12.10 mm, lead-in 2.0 + 0.2 + 1.0 + (1.25 + 0.65) = 5.10 mm, arc 0.95 mm.
+    """
+    from app.geometry_spec import tactile_arrow_arc_mm, tactile_lead_in_mm
+    from app.models import CardSettings
+
+    settings = CardSettings(
+        grid_columns=ip.TACTILE_COLUMNS,
+        indicator_mode='tactile',
+        double_sided_enabled=1,
+        ds_dot_base_diameter=ip.DS_DOT_BASE_DIAMETER_MM,
+        ds_bowl_base_diameter=ip.DS_BOWL_DIAMETER_MM,
+    )
+    centred = ip.arrow_zone_margins()
+    arc = tactile_arrow_arc_mm(settings, True, centred['seam_gap_mm'])
+    assert tactile_lead_in_mm(settings, True) == pytest.approx(5.10, abs=1e-9)
+    assert arc == pytest.approx(centred['seam_gap_mm'] / 2.0 - 5.10, abs=1e-9)
+    assert arc > 0
+
+    shifted = ip.arrow_zone_margins(arrow_arc_mm=arc)
+    assert shifted['arrow_arc_mm'] == arc
+    for before, after in zip(centred['sides'], shifted['sides'], strict=True):
+        assert after['side_of_arrow_on_a'] == before['side_of_arrow_on_a']
+        sign = 1.0 if after['side_of_arrow_on_a'] == 'left' else -1.0
+        for key in ('centre_to_arrow_centre_mm', 'recess_edge_margin_on_a_mm', 'dot_edge_margin_on_b_mm'):
+            assert after[key] == pytest.approx(before[key] + sign * arc, abs=1e-9)
+    assert shifted['tight_side_of_arrow_on_a'] == 'left'
+    assert shifted['tight_margin_mm'] > centred['tight_margin_mm']
+    with pytest.raises(ValueError):
+        ip.arrow_zone_margins(arrow_arc_mm=-0.1)
 
 
 # -----------------------------------------------------------------------------
