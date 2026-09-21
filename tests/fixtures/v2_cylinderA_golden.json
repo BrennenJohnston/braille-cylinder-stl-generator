@@ -17,6 +17,7 @@
       ""
     ],
     "settings": {
+      "card_width": 100.0,
       "grid_columns": 3,
       "grid_rows": 4,
       "indicator_mode": "tactile",
@@ -42,11 +43,11 @@
     "manifold3d_version": "3.3.2"
   },
   "expected_properties": {
-    "face_count": 7712,
-    "vertex_count": 3856,
+    "face_count": 7760,
+    "vertex_count": 3880,
     "is_watertight": true,
     "bbox_min": [
-      -15.899999618530273,
+      -15.399999618530273,
       -15.399999618530273,
       0.0
     ],
@@ -55,7 +56,7 @@
       15.399999618530273,
       57.0
     ],
-    "volume": 29475.987875795447,
-    "surface_area": 9470.36533580542
+    "volume": 29476.02755573833,
+    "surface_area": 9470.429654451109
   }
 }

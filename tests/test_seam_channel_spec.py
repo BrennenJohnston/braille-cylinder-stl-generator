@@ -134,17 +134,38 @@ def test_visual_15_columns_worked_numbers():
 
 def test_tactile_14_columns_worked_numbers():
     """
-    14 columns tactile: gap 12.261 mm, window from 2.2 (arrow recess half-width
-    plus clearance) to 3.981 (first cell's dots), free 1.781 mm - it fits the
-    1.5 mm the groove needs but would NOT have fitted the 1.7 mm a 1.2 mm
-    groove needed. Centre 3.090 mm from the seam: 168.50 / 191.50 degrees.
+    14 columns tactile, since the arrow lead-in of 2026-09-21 (D-T1): gap
+    12.261 mm; the arrow sits 5.35 mm before the first cell centre, so only
+    0.781 mm toward column 0 from the seam centre, and the groove goes on
+    the trailing side - the window runs from -3.981 (last cell's dots) to
+    -1.419 (the arrow recess), free 2.561 mm, centre -2.700 mm
+    BEHIND the seam: 190.05 degrees on the embossing plate and
+    169.95 on the counter plate (dot convention). Before the lead-in the
+    groove sat on the column-0 side at 168.50 / 191.50.
     """
     tactile = {'grid_columns': 14, 'indicator_mode': 'tactile'}
     lines = [FULL_CELL * 14] * 4
     a = channel_of(build_spec('positive', tactile, lines=lines))
     b = channel_of(build_spec('negative', tactile, lines=lines))
-    assert math.degrees(a['theta']) == pytest.approx(168.503, abs=0.005)
-    assert math.degrees(b['theta']) == pytest.approx(191.497, abs=0.005)
+    assert math.degrees(a['theta']) == pytest.approx(190.045, abs=0.005)
+    assert math.degrees(b['theta']) == pytest.approx(169.955, abs=0.005)
+
+
+def test_tactile_groove_sits_behind_the_arrow_never_between_arrow_and_column_0():
+    """
+    The lead-in side keeps exactly its 1 mm margin, so the groove can only live
+    behind the arrow: on every tactile layout the groove's arc from the seam
+    centre is on the last-cell side and the arrow lies between it and column 0.
+    """
+    for columns, extra in ((13, {}), (14, {}), (12, {'tactile_indicator_layout': 'three_spaced'})):
+        settings = {'grid_columns': columns, 'indicator_mode': 'tactile', **extra}
+        lines = [FULL_CELL * columns] * 4
+        spec = build_spec('positive', settings, lines=lines)
+        groove = channel_of(spec)['theta']
+        arrow = spec['markers'][0]['theta']
+        assert arrow < math.pi < groove, (
+            f'{columns} columns: arrow {math.degrees(arrow):.2f}, groove {math.degrees(groove):.2f}'
+        )
 
 
 @pytest.mark.parametrize(
@@ -164,7 +185,11 @@ def test_the_two_plates_mirror_exactly(settings, lines):
     a = channel_of(build_spec('positive', settings, lines=lines, back_lines=back))
     b = channel_of(build_spec('negative', settings, lines=lines, back_lines=back))
     assert a['theta'] + b['theta'] == pytest.approx(2 * math.pi, abs=1e-12)
-    assert a['theta'] < math.pi < b['theta']
+    if settings.get('indicator_mode') == 'tactile':
+        # Behind the arrow, on the last-cell side (D-T1, 2026-09-21).
+        assert b['theta'] < math.pi < a['theta']
+    else:
+        assert a['theta'] < math.pi < b['theta']
 
 
 @pytest.mark.parametrize('plate_type', ['positive', 'negative'])
@@ -289,9 +314,13 @@ def test_no_cutout_means_the_wall_thickness_tube():
 
 
 def test_solid_barrels_skip_the_wall_rule():
-    """Gear mode and Version 2 force the barrel solid, so there is no bore to keep a wall from."""
-    lines = [FULL_CELL * 14] * 4
-    tactile = {'grid_columns': 14, 'indicator_mode': 'tactile'}
+    """
+    Gear mode and Version 2 force the barrel solid, so there is no bore to keep
+    a wall from. 13 cells: the most a 90 mm card holds in tactile mode, so no
+    card-fit warning joins the (empty) list.
+    """
+    lines = [FULL_CELL * 13] * 4
+    tactile = {'grid_columns': 13, 'indicator_mode': 'tactile'}
     thin = {'diameter': 30.8, 'height': 52.0, 'wall_thickness': 1.0, 'seam_offset_deg': 0.0}
 
     geared = build_spec('positive', {**tactile, 'gear_rollers_enabled': 1}, cylinder=thin, lines=lines)

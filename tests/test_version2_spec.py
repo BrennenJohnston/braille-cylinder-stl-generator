@@ -57,6 +57,11 @@ VERSION_ONE_VALUES = [
 
 # S-V14, new in this phase, and S-V5. Both DRAFT.
 CUTOUT_WARNING = 'The polygonal cutout is not used in Version 2.'
+
+# S-T1 (DRAFT, 2026-09-21): a 14-cell tactile row does not fit a 90 mm card,
+# and every 14-column layout in this module says so. The arrow lead-in
+# (D-T1..D-T4) is what put the sentence here; 13 cells is the tactile maximum.
+CARD_FIT_WARNING = 'The last braille cell would run off the card: this layout needs 92.2 mm of card from the alignment arrow and the card is 90 mm. Use 13 cells or fewer.'
 SIZE_WARNING_START = 'The Version 2 embosser expects a 30.8 mm x 54 mm cylinder.'
 
 
@@ -141,7 +146,7 @@ def test_fused_version_two_is_a_solid_barrel_with_its_own_gears_and_a_notch_fill
     assert spec['cylinder']['solid'] is True
     assert spec['cylinder']['polygon_points'] == []
     assert 'keyed_cutouts' not in spec
-    assert spec['warnings'] == []
+    assert spec['warnings'] == [CARD_FIT_WARNING]
     gears = spec['gears']
     assert gears['asset'] == asset
     assert [ring['z_center'] for ring in gears['weld_rings']] == [-27.0, 27.0]
@@ -170,7 +175,7 @@ def test_version_one_gear_mode_carries_no_notch_fill_and_the_version_one_asset()
     assert spec['gears']['asset'] == 'gears_a'
     assert 'notch_fills' not in spec['gears']
     assert 'solid' not in spec['cylinder']
-    assert spec['warnings'] == []
+    assert spec['warnings'] == [CARD_FIT_WARNING]
 
 
 def test_fused_version_two_at_the_version_one_height_warns_with_the_version_two_sentence():
@@ -184,13 +189,15 @@ def test_fused_version_two_at_the_version_one_height_warns_with_the_version_two_
     assert fused['warnings'] == [
         'Fixed gears for the Version 2 embosser fit only a 30.8 mm x 54 mm cylinder. Received 30.8 mm x 52 mm.',
         'The Version 2 embosser expects a 30.8 mm x 54 mm cylinder. Received 30.8 mm x 52 mm.',
+        CARD_FIT_WARNING,
     ]
     assert not any('reference roller' in warning for warning in fused['warnings'])
     settings = {'grid_columns': 14, 'indicator_mode': 'tactile', 'gear_rollers_enabled': 1}
     tall = build_spec('positive', settings, {**V2_CYLINDER, 'height': 54.0})
     assert tall['warnings'] == [
         'Integrated gears are matched to the reference roller and only fit a 30.8 mm x 52 mm cylinder. '
-        'Received 30.8 mm x 54 mm.'
+        'Received 30.8 mm x 54 mm.',
+        CARD_FIT_WARNING,
     ]
 
 
@@ -265,7 +272,8 @@ def test_the_clearance_flows_into_the_profiles(clearance):
 
 
 def test_the_preset_size_warns_about_nothing():
-    assert v2_spec()['warnings'] == []
+    """Nothing about the SIZE: the one warning is the 14-cell card fit."""
+    assert v2_spec()['warnings'] == [CARD_FIT_WARNING]
 
 
 def test_an_off_size_cylinder_warns_but_is_still_built():
