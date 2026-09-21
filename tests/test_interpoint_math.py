@@ -289,30 +289,17 @@ def test_arrow_zone_margins_reject_a_direction_that_is_not_a_sign():
         ip.arrow_zone_margins(direction=2)
 
 
-def test_arrow_zone_margins_follow_the_lead_in_arrow():
+def test_arrow_zone_margins_follow_an_arrow_moved_toward_column_0():
     """
-    The lead-in (D-T1, 2026-09-21) moves the arrow toward column 0 - the RIGHT
-    of Cylinder A's arrow - so the right side's back features come exactly the
-    arc closer and the left side's go the arc further; the crowded (left) side
-    only gains. The shipped 14-column layout on the Option B package: gap
-    12.10 mm, lead-in 2.0 + 0.2 + 1.0 + (1.25 + 0.65) = 5.10 mm, arc 0.95 mm.
+    arrow_zone_margins() can report an arrow moved toward column 0 - the RIGHT
+    of Cylinder A's arrow, seen from outside - so the right side's back features
+    come exactly the arc closer and the left side's go the arc further. The
+    shipped arrow sits at the seam-gap centre (arc 0, the default); the
+    parameter exists for layouts that move it, and is refused when negative.
     """
-    from app.geometry_spec import tactile_arrow_arc_mm, tactile_lead_in_mm
-    from app.models import CardSettings
-
-    settings = CardSettings(
-        grid_columns=ip.TACTILE_COLUMNS,
-        indicator_mode='tactile',
-        double_sided_enabled=1,
-        ds_dot_base_diameter=ip.DS_DOT_BASE_DIAMETER_MM,
-        ds_bowl_base_diameter=ip.DS_BOWL_DIAMETER_MM,
-    )
     centred = ip.arrow_zone_margins()
-    arc = tactile_arrow_arc_mm(settings, True, centred['seam_gap_mm'])
-    assert tactile_lead_in_mm(settings, True) == pytest.approx(5.10, abs=1e-9)
-    assert arc == pytest.approx(centred['seam_gap_mm'] / 2.0 - 5.10, abs=1e-9)
-    assert arc > 0
-
+    assert centred['arrow_arc_mm'] == 0.0
+    arc = 0.95
     shifted = ip.arrow_zone_margins(arrow_arc_mm=arc)
     assert shifted['arrow_arc_mm'] == arc
     for before, after in zip(centred['sides'], shifted['sides'], strict=True):

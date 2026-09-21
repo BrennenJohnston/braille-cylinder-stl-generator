@@ -264,7 +264,7 @@ test.describe('Row Indicator Style', () => {
     await page.locator('#grid_columns').dispatchEvent('input');
     await expect(page.locator('#card-fit-warning')).toBeVisible();
     await expect(page.locator('#card-fit-message')).toContainText(
-      'The last braille cell would run off the card: this layout needs 92.0 mm of card from the alignment arrow and the card is 90 mm. Use 13 cells or fewer.',
+      'The last braille cell would run off the card: this layout needs 92.8 mm of card from the alignment arrow and the card is 90 mm. Use 13 cells or fewer.',
     );
 
     const spec = await interceptGeometrySpec(page);

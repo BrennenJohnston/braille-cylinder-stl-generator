@@ -1675,7 +1675,7 @@ function cutKeyedCutoutsManifold(barrel, keyed, height) {
  * request to guess a groove.
  */
 function createSeamChannelManifold(channel, height, radius) {
-    const { theta, width, depth, overshoot, lip } = channel;
+    const { theta, width, depth, overshoot, lip, segments } = channel;
     if (!isFinite(theta) || !(width > 0) || !(depth > 0) || !(lip > 0) || !(overshoot >= 0) || !(radius > 0)) {
         throw new Error(`seam channel: malformed block ${JSON.stringify(channel)}`);
     }
@@ -1696,12 +1696,34 @@ function createSeamChannelManifold(channel, height, radius) {
     ].map(([u, v]) => [u * c - v * s, u * s + v * c]);
 
     const crossSection = new CrossSection([section], 'Positive');
-    const length = height + 2 * overshoot;
-    const extruded = Manifold.extrude(crossSection, length);
+    // The full height plus the overshoot at both ends, or - in tactile mode
+    // (D-T6) - the stretches outside the arrow chain the spec lists, from
+    // z_from to z_to in this frame. The full-height case is the pre-segment
+    // extrusion exactly: extrude the length, then shift down by half of it.
+    const spans = (Array.isArray(segments) && segments.length > 0)
+        ? segments.map(({ z_from: zFrom, z_to: zTo }) => {
+            if (!isFinite(zFrom) || !isFinite(zTo) || !(zTo > zFrom)) {
+                throw new Error(`seam channel: malformed segment ${JSON.stringify(channel)}`);
+            }
+            return [zFrom, zTo];
+        })
+        : [[-(height + 2 * overshoot) / 2, (height + 2 * overshoot) / 2]];
+    let result = null;
+    for (const [zFrom, zTo] of spans) {
+        const extruded = Manifold.extrude(crossSection, zTo - zFrom);
+        const placed = extruded.translate([0, 0, zFrom]);
+        extruded.delete();
+        if (result === null) {
+            result = placed;
+        } else {
+            const merged = result.add(placed);
+            result.delete();
+            placed.delete();
+            result = merged;
+        }
+    }
     crossSection.delete();
-    const centered = extruded.translate([0, 0, -length / 2]);
-    extruded.delete();
-    return centered;
+    return result;
 }
 
 function createCylinderShellManifold(spec, solid = false, keyed = null) {

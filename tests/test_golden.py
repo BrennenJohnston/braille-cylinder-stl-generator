@@ -394,10 +394,17 @@ def _seam_channel_cutter(channel, radius, height):
     theta = channel['theta']
     c, s = math.cos(theta), math.sin(theta)
     outline = Polygon([(u * c - v * s, u * s + v * c) for u, v in section])
-    length = height + 2.0 * overshoot
-    prism = trimesh.creation.extrude_polygon(outline, height=length)
-    prism.apply_translation([0.0, 0.0, -length / 2.0])
-    return prism
+    # Full height plus the overshoot, or - tactile mode, D-T6 - the stretches
+    # outside the arrow chain the spec lists (createSeamChannelManifold does
+    # the same).
+    full = height + 2.0 * overshoot
+    spans = [(seg['z_from'], seg['z_to']) for seg in channel.get('segments', [])] or [(-full / 2.0, full / 2.0)]
+    prisms = []
+    for z_from, z_to in spans:
+        prism = trimesh.creation.extrude_polygon(outline, height=z_to - z_from)
+        prism.apply_translation([0.0, 0.0, z_from])
+        prisms.append(prism)
+    return trimesh.util.concatenate(prisms) if len(prisms) > 1 else prisms[0]
 
 
 def _build_ds_cylinder_mesh(spec, shell=None):
@@ -1583,8 +1590,11 @@ def _seam_channel_fixture(family, plate_type):
 def test_golden_fixture_has_the_seam_channel(fixtures_dir, family, plate_type):
     """
     Air in the groove at the spec's angle and solid wall 2.5 degrees either
-    side of it, at mid-height and near both ends. Both plates of every pair
-    carry it, and the two angles of a pair sum to 360 degrees.
+    side of it, near both ends - and, since D-T6 (2026-09-21), solid at
+    mid-height on the embossing plate: every golden is a tactile layout, whose
+    groove runs down the arrow column in two stretches that stop short of the
+    arrow chain, so mid-height sits under a raised arrow there. Both plates of
+    every pair carry it, and the two angles of a pair sum to 360 degrees.
 
     Only the margin band is probed for solid: the seam centre is the arrow
     RECESS on every counter plate, and on a double-sided pair the far side of
@@ -1612,7 +1622,21 @@ def test_golden_fixture_has_the_seam_channel(fixtures_dir, family, plate_type):
     def point(angle, z):
         return [probe_radius * math.cos(angle), probe_radius * math.sin(angle), z]
 
-    heights = [2.0, height / 2.0, height - 2.0]
+    segments = channel.get('segments')
+    if segments:
+        # Tactile: probe inside each stretch (fixture z runs from 0 at the
+        # base; the spec's z_from/z_to are about mid-height) and check the
+        # chain in between is untouched on the embossing plate.
+        heights = [
+            (max(seg['z_from'], -height / 2.0) + min(seg['z_to'], height / 2.0)) / 2.0 + height / 2.0
+            for seg in segments
+        ]
+        if plate_type == 'positive':
+            assert mesh.contains(np.array([point(theta, height / 2.0)])).all(), (
+                f'{fixture_name}: the groove reaches the arrow chain at mid-height'
+            )
+    else:
+        heights = [2.0, height / 2.0, height - 2.0]
     air = np.array([point(theta, z) for z in heights])
     solid = np.array([point(angle, z) for z in heights for angle in (theta - side, theta + side)])
     assert not mesh.contains(air).any(), f'{fixture_name}: no groove at {math.degrees(theta):.2f} deg'

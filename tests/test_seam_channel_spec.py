@@ -134,38 +134,47 @@ def test_visual_15_columns_worked_numbers():
 
 def test_tactile_14_columns_worked_numbers():
     """
-    14 columns tactile, since the arrow lead-in of 2026-09-21 (D-T1): gap
-    12.261 mm; the arrow sits 5.35 mm before the first cell centre, so only
-    0.781 mm toward column 0 from the seam centre, and the groove goes on
-    the trailing side - the window runs from -3.981 (last cell's dots) to
-    -1.419 (the arrow recess), free 2.561 mm, centre -2.700 mm
-    BEHIND the seam: 190.05 degrees on the embossing plate and
-    169.95 on the counter plate (dot convention). Before the lead-in the
-    groove sat on the column-0 side at 168.50 / 191.50.
+    Tactile mode since D-T6 (2026-09-21): the groove runs down the arrow column
+    itself - 180 degrees on both plates, the arrow's own angle - from each end
+    face up to the arrow chain. 4 rows on 10 mm spacing put the arrows at
+    +/-15 and +/-5 mm, a chain from -20 to +20; the groove stops 0.3 mm short of
+    it, and 0.2 mm (clearance) + 1.02 mm (the mitred apex) further on the
+    counter plate. The overshoot carries each stretch 1 mm past the end face.
     """
     tactile = {'grid_columns': 14, 'indicator_mode': 'tactile'}
     lines = [FULL_CELL * 14] * 4
     a = channel_of(build_spec('positive', tactile, lines=lines))
     b = channel_of(build_spec('negative', tactile, lines=lines))
-    assert math.degrees(a['theta']) == pytest.approx(190.045, abs=0.005)
-    assert math.degrees(b['theta']) == pytest.approx(169.955, abs=0.005)
+    assert a['theta'] == pytest.approx(math.pi) and b['theta'] == pytest.approx(math.pi)
+    assert [(round(s['z_from'], 3), round(s['z_to'], 3)) for s in a['segments']] == [(-27.0, -20.3), (20.3, 27.0)]
+    assert [(round(s['z_from'], 3), round(s['z_to'], 3)) for s in b['segments']] == [(-27.0, -20.5), (21.32, 27.0)]
 
 
-def test_tactile_groove_sits_behind_the_arrow_never_between_arrow_and_column_0():
+def test_tactile_groove_never_reaches_an_arrow_outline():
     """
-    The lead-in side keeps exactly its 1 mm margin, so the groove can only live
-    behind the arrow: on every tactile layout the groove's arc from the seam
-    centre is on the last-cell side and the arrow lies between it and column 0.
+    From the emitted markers, not the formula: on every tactile layout each
+    stretch of the groove ends at least the margin short of every arrow's
+    outline (the recess outline on the counter plate), and the groove's angle
+    is the arrows' own.
     """
+    margin = geometry_spec.SEAM_CHANNEL_ARROW_MARGIN_MM
     for columns, extra in ((13, {}), (14, {}), (12, {'tactile_indicator_layout': 'three_spaced'})):
-        settings = {'grid_columns': columns, 'indicator_mode': 'tactile', **extra}
-        lines = [FULL_CELL * columns] * 4
-        spec = build_spec('positive', settings, lines=lines)
-        groove = channel_of(spec)['theta']
-        arrow = spec['markers'][0]['theta']
-        assert arrow < math.pi < groove, (
-            f'{columns} columns: arrow {math.degrees(arrow):.2f}, groove {math.degrees(groove):.2f}'
-        )
+        for plate_type in ('positive', 'negative'):
+            settings = {'grid_columns': columns, 'indicator_mode': 'tactile', **extra}
+            spec = build_spec(plate_type, settings, lines=[FULL_CELL * columns] * 4)
+            groove = channel_of(spec)
+            arrows = [m for m in spec['markers'] if m['type'] == 'cylinder_tactile_arrow']
+            assert arrows and groove['segments']
+            for arrow in arrows:
+                assert groove['theta'] == pytest.approx(arrow['theta'])
+                delta = arrow['outline_delta']
+                apex = delta / math.sin(math.atan2(arrow['width'] / 2.0, arrow['length'])) if delta else 0.0
+                low = arrow['y'] - arrow['length'] / 2.0 - delta
+                high = arrow['y'] + arrow['length'] / 2.0 + apex
+                for segment in groove['segments']:
+                    assert segment['z_to'] <= low - margin + 1e-9 or segment['z_from'] >= high + margin - 1e-9, (
+                        f'{plate_type} {columns} columns: a groove stretch {segment} reaches the arrow at {arrow["y"]}'
+                    )
 
 
 @pytest.mark.parametrize(
@@ -186,8 +195,8 @@ def test_the_two_plates_mirror_exactly(settings, lines):
     b = channel_of(build_spec('negative', settings, lines=lines, back_lines=back))
     assert a['theta'] + b['theta'] == pytest.approx(2 * math.pi, abs=1e-12)
     if settings.get('indicator_mode') == 'tactile':
-        # Behind the arrow, on the last-cell side (D-T1, 2026-09-21).
-        assert b['theta'] < math.pi < a['theta']
+        # Down the arrow column on both plates: 180 degrees, its own mirror (D-T6).
+        assert a['theta'] == pytest.approx(math.pi) and b['theta'] == pytest.approx(math.pi)
     else:
         assert a['theta'] < math.pi < b['theta']
 
@@ -224,7 +233,9 @@ def test_the_groove_keeps_its_margin_from_every_dot_and_marker(settings, lines, 
     for marker in spec['markers']:
         arc = radius * angular_distance(marker['theta'], theta_c)
         if marker['type'] == 'cylinder_tactile_arrow':
-            half = marker['width'] / 2.0 + marker['outline_delta']
+            # Tactile mode (D-T6): the groove shares the arrow's column and keeps
+            # clear of it along the AXIS instead - test_tactile_groove_never_reaches_an_arrow_outline.
+            continue
         elif marker['type'] == 'cylinder_triangle':
             half = marker['size'] / 2.0
         else:
@@ -256,16 +267,34 @@ def test_double_sided_uses_its_own_package_for_the_footprint():
 # ---------------------------------------------------------------------------
 
 
-def test_tactile_15_columns_has_no_room_and_says_so():
+def test_tactile_15_columns_still_gets_its_groove():
     """
-    15 columns tactile leaves a 5.761 mm gap: the arrow recess (2.2) and the
-    first cell's dots (2.15) already overlap, so the groove is left out with
-    S-C2 - beside the existing 'needs at least 9 mm' tactile warning.
+    15 columns tactile leaves a 5.761 mm gap - the layout draws the signed
+    'needs at least 9 mm' tactile warning - but the groove sits on the arrow
+    column, not in the gap, so it is cut regardless (D-T6). The tactile
+    omission sentence (S-C4) is for a chain that fills the whole height.
     """
     spec = build_spec('positive', {'grid_columns': 15, 'indicator_mode': 'tactile'}, lines=[FULL_CELL * 15] * 4)
-    assert 'seam_channel' not in spec['cylinder']
-    assert GAP_WARNING in spec['warnings']
+    assert 'seam_channel' in spec['cylinder']
+    assert GAP_WARNING not in spec['warnings']
     assert any(w.startswith('Tactile indicator needs a seam gap') for w in spec['warnings'])
+
+
+def test_arrows_covering_the_whole_height_leave_the_groove_out():
+    """
+    A barrel no taller than its arrow chain has nowhere for the groove: the
+    spec says so with S-C4 (DRAFT) and emits no block. 4 rows on 10 mm spacing
+    with 10 mm arrows span 40 mm; on a 41 mm barrel the stretches left at the
+    ends are under the 1 mm minimum.
+    """
+    short = {'diameter': 30.8, 'height': 41.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0}
+    spec = build_spec(
+        'positive', {'grid_columns': 13, 'indicator_mode': 'tactile'}, cylinder=short, lines=[FULL_CELL * 13] * 4
+    )
+    assert 'seam_channel' not in spec['cylinder']
+    assert (
+        'The seam channel was left out: the tactile arrows leave no room for it along the cylinder.' in spec['warnings']
+    )
 
 
 def test_narrow_barrel_visual_has_no_room_and_says_so():

@@ -239,6 +239,40 @@ test.describe('Slicer seam channel', () => {
     expect(counterApex[0]).toBeCloseTo(360 - EMBOSS_CHANNEL_DEG, 1);
   });
 
+  test('in tactile mode the groove runs down the arrow column and stops short of the arrows', async ({ page }) => {
+    // 13 cells, 4 rows: the arrows sit at +/-15 and +/-5 mm about mid-height,
+    // a chain from -20 to +20 mm; the groove (180 degrees, the arrow column)
+    // is cut from each end face to 0.3 mm short of the chain and nowhere
+    // inside it (D-T6, 2026-09-21).
+    await openApp(page);
+    await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+    await expect(page.locator('#grid_columns')).toHaveValue('13');
+    await page.locator('#auto-text').fill('abc');
+    const state = watchGeometrySpecRequests(page);
+    const stl = await generateAndDownload(page, state, 1);
+
+    const apex = channelApexAngles(stl);
+    expect(apex).toHaveLength(1);
+    expect(apex[0]).toBeCloseTo(180, 1);
+
+    const vertices = stlVertices(stl);
+    let zMin = Infinity;
+    let zMax = -Infinity;
+    for (const [, , z] of vertices) {
+      if (z < zMin) zMin = z;
+      if (z > zMax) zMax = z;
+    }
+    const zMid = (zMax + zMin) / 2;
+    const floorZ = vertices
+      .filter(([x, y]) => Math.abs(Math.hypot(x, y) - (BARREL_RADIUS_MM - CHANNEL_DEPTH_MM)) < 0.05)
+      .map(([, , z]) => z - zMid);
+    expect(floorZ.length).toBeGreaterThan(0);
+    // The groove floor exists only outside the chain (|z| >= 20.3) ...
+    expect(floorZ.every((z) => Math.abs(z) >= 20.3 - 0.05)).toBe(true);
+    // ... and its ends sit exactly 0.3 mm short of the outermost arrows.
+    expect(Math.min(...floorZ.map(Math.abs))).toBeCloseTo(20.3, 1);
+  });
+
   test('a layout with no room says so before Generate, and the note clears', async ({ page }) => {
     await openApp(page);
     await revealDimensions(page);
@@ -250,25 +284,26 @@ test.describe('Slicer seam channel', () => {
       }
     });
 
-    // Tactile mode at 15 cells leaves a 5.8 mm seam gap: the arrow recess and
-    // the first cell's dots already overlap, so the groove is left out.
+    // Tactile mode (D-T6, 2026-09-21): the groove runs down the arrow column
+    // itself, so it needs no room in the seam gap. 15 cells leave a 5.8 mm gap
+    // and raise the signed tactile-gap warning, but the channel note stays
+    // silent.
     await page.locator('input[name="indicator_mode"][value="tactile"]').check();
     await expect(page.locator('#grid_columns')).toHaveValue('13');
     await expect(page.locator('#seam-channel-warning')).toBeHidden();
 
     await page.locator('#grid_columns').fill('15');
     await page.locator('#grid_columns').dispatchEvent('input');
-    await expect(page.locator('#seam-channel-warning')).toBeVisible();
-    await expect(page.locator('#seam-channel-message')).toHaveText(GAP_NOTE);
-    // The same edit also raises the signed tactile-gap warning, and the page
-    // has ONE live region: that older, debounced sentence is the one left in
-    // it. The note stays visible in its box; the region is asserted below on
-    // a case where only the channel note fires.
-    await expect(page.locator('#a11y-status')).toContainText('seam gap');
+    await expect(page.locator('#tactile-gap-warning')).toBeVisible();
+    await expect(page.locator('#seam-channel-warning')).toBeHidden();
 
     await page.locator('#grid_columns').fill('13');
     await page.locator('#grid_columns').dispatchEvent('input');
+    await expect(page.locator('#tactile-gap-warning')).toBeHidden();
     await expect(page.locator('#seam-channel-warning')).toBeHidden();
+    // Visual mode again for the wall case below, which is the only omission
+    // the groove has left in tactile mode too - but here it must fire alone.
+    await page.locator('input[name="indicator_mode"][value="visual"]').check();
 
     // A cutout that leaves under 1.2 mm of wall under the groove raises the
     // channel note ALONE, so it is what the live region carries.

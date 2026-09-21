@@ -46,25 +46,24 @@ TACTILE_BASE_EMBED = 0.2
 TACTILE_RECESS_OVERCUT = 1.0
 
 # The grid is centred on angle 0, so the middle of the seam gap — the arc between
-# the last and first cell measured the long way round — is always exactly 180°,
-# the fixed point of the counter plate's angle-negating mirror. Until 2026-09-21
-# the arrow sat exactly there. It now sits a fixed LEAD-IN before the first
-# cell instead (tactile_arrow_theta below), and 180° is only where it falls
-# back to when the gap is too small to honour the lead-in on both sides.
+# the last and first cell measured the long way round — is always exactly 180°.
+# That is also the fixed point of the counter plate's angle-negating mirror, so
+# the arrow and its recess line up by construction. (A fixed lead-in before the
+# first cell was tried and reverted the same day, 2026-09-21, decision D-T6:
+# Brennen wants equal space either side of the arrow; the 90 mm card is met by
+# the 13-cell recommendation and the card-fit warning instead.)
 TACTILE_SEAM_THETA = math.pi
 
-# Tactile arrow lead-in (Brennen's decisions D-T1..D-T4, 2026-09-21). The
-# embosser is loaded with the card's leading edge at the arrow, so every
-# millimetre between the arrow and the first cell is paper spent on nothing,
-# and with the arrow at the gap midpoint a 14-cell row ran off the end of a
-# 90 mm card while its start lay blank. The arrow now sits
-#   lead_in = width/2 + recess clearance + this margin + the cell footprint
-# before the first cell centre - 5.35 mm at the 0.4 preset - and whatever the
-# gap has to spare falls after the last cell, where it costs nothing. The margin
-# is the same 1 mm the 5 mm clear-zone rule (TACTILE_MIN_GAP_MARGIN) already
-# carries between a feature edge and the arrow; never lower it - it is the
-# printed ridge between the arrow recess and the first bowl.
-TACTILE_LEAD_IN_MARGIN_MM = 1.0
+# In tactile mode the slicer seam channel runs down the arrow column itself
+# (D-T6) - 180°, the arrow's own angle, so it takes no circumference of its
+# own - from each end face up to the arrow chain, and stops this far short of
+# the nearest arrow outline (the recess outline on the counter plate, mitre and
+# clearance included), so the arrows are untouched. Over the chain the arrows'
+# own corners hold the seam: the 2026-09-21 slicing study's no-groove tactile
+# controls put 0 % of layers in a dot. A stretch shorter than the minimum is
+# not worth a cut and is left out.
+SEAM_CHANNEL_ARROW_MARGIN_MM = 0.3
+SEAM_CHANNEL_MIN_SEGMENT_MM = 1.0
 
 # Arrow layouts along the cylinder axis. 'per_row' puts one arrow at every
 # braille row centre - the geometry every request got before 2026-09-20, and
@@ -690,7 +689,6 @@ def extract_cylinder_geometry_spec(
     # way around through the seam, where the tactile indicator sits. Warn (do not
     # fail) when the gap can no longer hold the indicator plus a clear zone either
     # side of it, matching the OpenSCAD version's behavior.
-    arrow_arc_mm = 0.0
     if tactile_on:
         tactile_width = float(getattr(settings, 'tactile_indicator_width', 4.0))
         seam_gap_mm = math.pi * diameter - grid_width
@@ -704,24 +702,32 @@ def extract_cylinder_geometry_spec(
             spec['warnings'].append(warning)
             logger.warning(warning)
 
-        # Where the arrow sits: a fixed lead-in before column 0 (D-T1), with
-        # the spare gap after the last cell. And whether the row then fits the
-        # card at all, measured from the arrow where the card's leading edge
-        # is placed (D-T3, D-T4) - the check that would have caught a 14-cell
-        # row running off a 90 mm card.
-        arrow_arc_mm = tactile_arrow_arc_mm(settings, double_sided, seam_gap_mm)
+        # Whether the row fits the card, measured from the arrow where the
+        # card's leading edge is placed (D-T3, D-T4): half the gap to the first
+        # cell, the grid, the last cell's footprint. The check that would have
+        # caught a 14-cell row running off a 90 mm card.
         card_length_mm = float(getattr(settings, 'card_width', 90.0))
-        card_need_mm = tactile_card_need_mm(settings, double_sided, grid_width)
+        card_need_mm = tactile_card_need_mm(settings, double_sided, grid_width, seam_gap_mm)
         if card_need_mm > card_length_mm:
             # S-T1, DRAFT (2026-09-21) - awaiting Brennen's sign-off.
             warning = (
                 f'The last braille cell would run off the card: this layout needs '
                 f'{card_need_mm:.1f} mm of card from the alignment arrow and the card is '
-                f'{card_length_mm:.0f} mm. Use {tactile_max_cells(settings, double_sided, card_length_mm)} '
-                f'cells or fewer.'
+                f'{card_length_mm:.0f} mm. Use '
+                f'{tactile_max_cells(settings, double_sided, card_length_mm, diameter)} cells or fewer.'
             )
             spec['warnings'].append(warning)
             logger.warning(warning)
+
+    # Dot positioning with angular offsets for columns, linear for rows
+    dot_col_angle_offsets = [-dot_spacing_angle / 2, dot_spacing_angle / 2]
+    dot_row_offsets = [settings.dot_spacing, 0, -settings.dot_spacing]
+    dot_positions = [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1]]
+
+    # Calculate vertical centering
+    braille_content_height = (settings.grid_rows - 1) * settings.line_spacing + 2 * settings.dot_spacing
+    space_above = (height - braille_content_height) / 2.0
+    first_row_center_y = height - space_above - settings.dot_spacing
 
     # Slicer seam channel, on by default since 2026-09-20 (decision D-2). The
     # worker cuts it in the shell stage, before anything is added. The key is
@@ -735,11 +741,16 @@ def extract_cylinder_geometry_spec(
             double_sided,
             plate_type,
             diameter,
+            height,
             grid_width,
             thickness,
             polygon_points,
             solid=gear_rollers or embosser_v2,
-            arrow_arc_mm=arrow_arc_mm,
+            arrow_span=(
+                tactile_arrow_span(settings, height, first_row_center_y, plate_type == 'negative', gear_rollers)
+                if tactile_on
+                else None
+            ),
         )
         if seam_channel is not None:
             spec['cylinder']['seam_channel'] = seam_channel
@@ -747,16 +758,6 @@ def extract_cylinder_geometry_spec(
         else:
             spec['warnings'].append(channel_warning)
             logger.warning(channel_warning)
-
-    # Dot positioning with angular offsets for columns, linear for rows
-    dot_col_angle_offsets = [-dot_spacing_angle / 2, dot_spacing_angle / 2]
-    dot_row_offsets = [settings.dot_spacing, 0, -settings.dot_spacing]
-    dot_positions = [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1]]
-
-    # Calculate vertical centering
-    braille_content_height = (settings.grid_rows - 1) * settings.line_spacing + 2 * settings.dot_spacing
-    space_above = (height - braille_content_height) / 2.0
-    first_row_center_y = height - space_above - settings.dot_spacing
 
     # Note: seam_offset only affects polygon cutout rotation (computed above)
     # Braille content positioning uses fixed angles (not affected by seam_offset)
@@ -799,18 +800,14 @@ def extract_cylinder_geometry_spec(
         # Note: Counter plates use rectangle placeholders (not character indicators) at column 1
         # Uses mirrored angular direction so content flows CLOCKWISE instead of counter-clockwise
         if tactile_on:
-            # The recesses the emboss plate's raised arrows nest into, at this
-            # plate's mirror of the emboss arrow's angle (pi + s/R against the
-            # emboss plate's pi - s/R), so the two still meet at the nip.
-            # Emitted before the row loop: in tactile mode nothing else joins
-            # spec['markers'], so the per-row layout lists them in the row
-            # order it always did.
-            arrow_theta = tactile_arrow_theta('negative', radius, arrow_arc_mm)
+            # The recesses the emboss plate's raised arrows nest into. They sit at
+            # 180°, the fixed point of this plate's angle-negating mirror, so they
+            # need no mirroring of their own. Emitted before the row loop: in
+            # tactile mode nothing else joins spec['markers'], so the per-row
+            # layout lists them in the row order it always did.
             for arrow_y in tactile_arrow_y_positions(settings, height, first_row_center_y):
                 spec['markers'].append(
-                    _create_tactile_indicator_spec(
-                        arrow_y, radius, settings, is_recess=True, gear_rollers=gear_rollers, theta=arrow_theta
-                    )
+                    _create_tactile_indicator_spec(arrow_y, radius, settings, is_recess=True, gear_rollers=gear_rollers)
                 )
 
         for row_num in range(settings.grid_rows):
@@ -906,14 +903,12 @@ def extract_cylinder_geometry_spec(
         # Layout matches Python backend: Triangle at column 0, Character at column 1
         if tactile_on:
             # Raised alignment arrows in the seam gap, apex toward the cylinder
-            # top so a blind user can feel which end is up, a fixed lead-in
-            # before column 0. Emitted before the row loop for the same reason
-            # as on the counter plate.
-            arrow_theta = tactile_arrow_theta('positive', radius, arrow_arc_mm)
+            # top so a blind user can feel which end is up. Emitted before the
+            # row loop for the same reason as on the counter plate.
             for arrow_y in tactile_arrow_y_positions(settings, height, first_row_center_y):
                 spec['markers'].append(
                     _create_tactile_indicator_spec(
-                        arrow_y, radius, settings, is_recess=False, gear_rollers=gear_rollers, theta=arrow_theta
+                        arrow_y, radius, settings, is_recess=False, gear_rollers=gear_rollers
                     )
                 )
 
@@ -1091,59 +1086,50 @@ def _seam_channel_footprint(settings: Any, double_sided: bool) -> float:
     return float(settings.dot_spacing) / 2.0 + max(radii)
 
 
-def tactile_lead_in_mm(settings: Any, double_sided: bool) -> float:
-    """
-    Arc from the arrow centre to the first cell centre, in mm (D-T1).
-
-    Half the arrow, the recess clearance (the counter plate's outline is the
-    wider one), the 1 mm margin, then the cell footprint out to the first dot
-    or bowl edge - the same footprint the seam channel keeps clear.
-    """
-    width = float(getattr(settings, 'tactile_indicator_width', 4.0))
-    clearance = float(getattr(settings, 'tactile_recess_clearance', 0.2))
-    return width / 2.0 + clearance + TACTILE_LEAD_IN_MARGIN_MM + _seam_channel_footprint(settings, double_sided)
-
-
-def tactile_arrow_arc_mm(settings: Any, double_sided: bool, seam_gap_mm: float) -> float:
-    """
-    Signed arc from the seam-gap centre to the arrow centre, positive toward
-    column 0, in mm: gap/2 minus the lead-in, never negative. Zero means the
-    gap cannot honour the lead-in on both sides, so the arrow stays at the
-    centre and the seam-gap warning speaks (15 cells on the 30.8 mm barrel).
-    """
-    return max(0.0, seam_gap_mm / 2.0 - tactile_lead_in_mm(settings, double_sided))
-
-
-def tactile_arrow_theta(plate_type: str, radius: float, arrow_arc_mm: float) -> float:
-    """
-    The arrow's theta in this spec's dot convention: column 0 sits at
-    +grid_angle/2 on the positive plate and -grid_angle/2 on the negative one,
-    so "toward column 0" is pi - s/R on the positive plate and pi + s/R on the
-    negative - exactly the seam channel's rule, and its own mirror, so the
-    arrow and its recess still meet at the nip. The Manifold worker negates
-    every theta it places, dots, markers and this one alike.
-    """
-    shift = arrow_arc_mm / radius
-    return TACTILE_SEAM_THETA + shift if plate_type == 'negative' else TACTILE_SEAM_THETA - shift
-
-
-def tactile_card_need_mm(settings: Any, double_sided: bool, grid_width: float) -> float:
+def tactile_card_need_mm(settings: Any, double_sided: bool, grid_width: float, seam_gap_mm: float) -> float:
     """
     Card length a tactile row needs, measured from the alignment arrow where the
-    card's leading edge sits (D-T3): the lead-in, the grid, and the last cell's
-    footprint out to its far dot edge.
+    card's leading edge sits (D-T3): half the seam gap to the first cell centre,
+    the grid, and the last cell's footprint out to its far dot edge.
     """
-    return tactile_lead_in_mm(settings, double_sided) + grid_width + _seam_channel_footprint(settings, double_sided)
+    return seam_gap_mm / 2.0 + grid_width + _seam_channel_footprint(settings, double_sided)
 
 
-def tactile_max_cells(settings: Any, double_sided: bool, card_length_mm: float) -> int:
-    """The largest cell count whose tactile_card_need_mm fits card_length_mm."""
-    lead_in = tactile_lead_in_mm(settings, double_sided)
-    footprint = _seam_channel_footprint(settings, double_sided)
-    room = card_length_mm - lead_in - footprint
+def tactile_max_cells(settings: Any, double_sided: bool, card_length_mm: float, diameter: float) -> int:
+    """
+    The largest cell count whose tactile_card_need_mm fits card_length_mm. With
+    the arrow at the gap's midpoint the need grows by half a cell spacing per
+    cell: need(n) = pi * D / 2 + (n - 1) * cell / 2 + footprint.
+    """
+    cell = float(settings.cell_spacing)
+    room = card_length_mm - math.pi * diameter / 2.0 - _seam_channel_footprint(settings, double_sided)
     if room < 0:
         return 0
-    return int(room // float(settings.cell_spacing)) + 1
+    return int(room * 2.0 // cell) + 1
+
+
+def tactile_arrow_span(
+    settings: Any, height: float, first_row_center_y: float, is_recess: bool, gear_rollers: bool
+) -> tuple[float, float]:
+    """
+    The axial band this plate's arrow outlines occupy, as y_local, grown by
+    SEAM_CHANNEL_ARROW_MARGIN_MM at both ends: where the seam channel must not
+    run (D-T6). The counter plate's recess outline is the arrow grown by the
+    clearance as a mitre, which pushes its apex out by clearance / sin(half the
+    apex angle) - 1.02 mm at the defaults - and its base by the clearance; the
+    raised arrow grows only by the gear-mode weld.
+    """
+    width = float(getattr(settings, 'tactile_indicator_width', 4.0))
+    length = float(getattr(settings, 'tactile_indicator_length', 10.0))
+    if is_recess:
+        delta = float(getattr(settings, 'tactile_recess_clearance', 0.2))
+    else:
+        delta = gears.GEAR_ARROW_WELD_MM if gear_rollers else 0.0
+    apex_growth = delta / math.sin(math.atan2(width / 2.0, length)) if delta else 0.0
+    ys = tactile_arrow_y_positions(settings, height, first_row_center_y)
+    low = min(ys) - length / 2.0 - delta - SEAM_CHANNEL_ARROW_MARGIN_MM
+    high = max(ys) + length / 2.0 + apex_growth + SEAM_CHANNEL_ARROW_MARGIN_MM
+    return low, high
 
 
 def _seam_channel_block(
@@ -1152,12 +1138,13 @@ def _seam_channel_block(
     double_sided: bool,
     plate_type: str,
     diameter: float,
+    height: float,
     grid_width: float,
     thickness: float,
     polygon_points: list[dict[str, float]],
     solid: bool,
-    arrow_arc_mm: float = 0.0,
-) -> tuple[dict[str, float] | None, str | None]:
+    arrow_span: tuple[float, float] | None = None,
+) -> tuple[dict[str, Any] | None, str | None]:
     """
     Place the seam channel, or say why it was left out.
 
@@ -1179,34 +1166,37 @@ def _seam_channel_block(
     radius = diameter / 2.0
     gap = math.pi * diameter - grid_width
     footprint = _seam_channel_footprint(settings, double_sided)
+    segments: list[dict[str, float]] = []
     if tactile_on:
-        # Since 2026-09-21 the arrow sits a fixed lead-in before column 0
-        # (arrow_arc_mm toward column 0 from the seam centre), which leaves
-        # only the 1 mm margin on that side - so the groove goes on the OTHER
-        # side: between the last cell's dots and the arrow recess (grown by
-        # the clearance on the counter plate, the wider of the two).
-        arrow_half = float(getattr(settings, 'tactile_indicator_width', 4.0)) / 2.0
-        arrow_half += float(getattr(settings, 'tactile_recess_clearance', 0.2))
-        # Double-sided: the back grid slides toward the END of the line by the
-        # interpoint offset (interpoint.BACK_GRID_DIRECTION), so on this side
-        # its last cell reaches that much closer to the seam than the front's.
-        reach = footprint
-        if double_sided:
-            reach += float(getattr(settings, 'interpoint_offset_x', interpoint.INTERPOINT_OFFSET_X_MM))
-        lo = -(gap / 2.0 - reach)
-        hi = arrow_arc_mm - arrow_half
+        # D-T6 (2026-09-21): down the arrow column itself - 180 degrees on
+        # both plates, the arrow's own angle and the mirror's fixed point - so
+        # the groove takes no circumference of its own. It runs from each end
+        # face up to the arrow chain and stops SEAM_CHANNEL_ARROW_MARGIN_MM
+        # short of it (tactile_arrow_span); the arrows' own corners hold the
+        # seam across the chain. No window to fit: the column always exists.
+        assert arrow_span is not None, 'tactile mode needs the arrow span'
+        span_low, span_high = arrow_span
+        end_low = -height / 2.0 - SEAM_CHANNEL_OVERSHOOT_MM
+        end_high = height / 2.0 + SEAM_CHANNEL_OVERSHOOT_MM
+        if span_low - (-height / 2.0) >= SEAM_CHANNEL_MIN_SEGMENT_MM:
+            segments.append({'z_from': end_low, 'z_to': span_low})
+        if height / 2.0 - span_high >= SEAM_CHANNEL_MIN_SEGMENT_MM:
+            segments.append({'z_from': span_high, 'z_to': end_high})
+        if not segments:
+            # S-C4, DRAFT (2026-09-21) - awaiting Brennen's sign-off.
+            return None, ('The seam channel was left out: the tactile arrows leave no room for it along the cylinder.')
     else:
         # Between the last cell's dots and column 0's alignment triangle, whose
         # outline is dot_spacing wide.
         lo = -(gap / 2.0 - footprint)
         hi = gap / 2.0 - float(settings.dot_spacing) / 2.0
-    free = hi - lo
-    need = SEAM_CHANNEL_WIDTH_MM + 2.0 * SEAM_CHANNEL_MARGIN_MM
-    if free < need:
-        # S-C2, signed off by Brennen (2026-09-21); reword only with his sign-off.
-        return None, (
-            'The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.'
-        )
+        free = hi - lo
+        need = SEAM_CHANNEL_WIDTH_MM + 2.0 * SEAM_CHANNEL_MARGIN_MM
+        if free < need:
+            # S-C2, signed off by Brennen (2026-09-21); reword only with his sign-off.
+            return None, (
+                'The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.'
+            )
 
     if not solid:
         # The worker's shell is either the polygonal cutout (thinnest at the
@@ -1223,15 +1213,24 @@ def _seam_channel_block(
                 f'{SEAM_CHANNEL_MIN_WALL_MM:.1f} mm under it.'
             )
 
-    s_c = (lo + hi) / 2.0
-    theta = math.pi + s_c / radius if plate_type == 'negative' else math.pi - s_c / radius
-    return {
+    if tactile_on:
+        theta = TACTILE_SEAM_THETA
+    else:
+        s_c = (lo + hi) / 2.0
+        theta = math.pi + s_c / radius if plate_type == 'negative' else math.pi - s_c / radius
+    block: dict[str, Any] = {
         'theta': theta,
         'width': SEAM_CHANNEL_WIDTH_MM,
         'depth': SEAM_CHANNEL_DEPTH_MM,
         'overshoot': SEAM_CHANNEL_OVERSHOOT_MM,
         'lip': SEAM_CHANNEL_LIP_MM,
-    }, None
+    }
+    if segments:
+        # Tactile only: the stretches to cut, in y_local. Absent, the worker
+        # and the golden renderer cut the full height plus the overshoot, so
+        # a visual-mode spec is byte-identical to before.
+        block['segments'] = segments
+    return block, None
 
 
 def _reserved_marker_columns(settings: Any, tactile_on: bool) -> int:
@@ -1403,9 +1402,8 @@ def _create_tactile_indicator_spec(
     theta: float = TACTILE_SEAM_THETA,
 ) -> dict[str, Any]:
     """
-    Create one tactile row indicator spec at `theta` (tactile_arrow_theta: a
-    fixed lead-in before column 0 since 2026-09-21; the seam-gap centre, 180°,
-    is the fallback for a gap too small to honour it).
+    Create one tactile row indicator spec at `theta`, the seam-gap centre (180°)
+    unless a caller says otherwise.
 
     Port of the OpenSCAD `tactile_raised` / `tactile_recess_cut` modules. Both are
     the same construction: an isosceles arrow outline (symmetric around the

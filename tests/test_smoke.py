@@ -391,29 +391,20 @@ def test_tactile_arrow_is_raised_on_positive_and_recessed_on_negative(client):
     assert negative['outline_delta'] == pytest.approx(0.2)  # tactile_recess_clearance
 
 
-def test_tactile_arrow_sits_a_fixed_lead_in_before_column_0_on_both_plates(client):
+def test_tactile_arrow_sits_at_the_seam_gap_centre_on_both_plates(client):
     """
-    Since 2026-09-21 (D-T1) the arrow is not at the seam-gap centre but a fixed
-    lead-in before the first cell: half the arrow (2.0) + the recess clearance
-    (0.2) + the 1 mm margin + the cell footprint (dot_spacing/2 = 1.25 plus the
-    2.0 mm default dot's 1.0 radius) = 5.45 mm from the arrow centre to the
-    first cell centre - the same on the 60 mm test barrel as on any other. The
-    counter plate mirrors it (theta_A + theta_B = 2 pi), so the arrow and its
-    recess still meet at the nip.
+    180 degrees is the fixed point of the counter plate's angle-negating mirror,
+    so the arrow and its recess line up without any extra bookkeeping. (A fixed
+    lead-in before the first cell was tried and reverted on 2026-09-21, D-T6:
+    Brennen wants equal space either side of the arrow.)
     """
     import math
 
     positive = _tactile_spec(client, 'positive', ['⠁', '', '', ''])['markers']
     negative = _tactile_spec(client, 'negative', ['', '', '', ''])['markers']
 
-    radius = TACTILE_CYLINDER_PARAMS['diameter'] / 2
-    grid_angle = (4 - 1) * 6.5 / radius  # 4 columns in the helper's settings
-    lead_in_mm = 2.0 + 0.2 + 1.0 + 1.25 + 1.0
-    for marker in positive:
-        assert radius * (marker['theta'] - grid_angle / 2) == pytest.approx(lead_in_mm, abs=1e-9)
-        assert marker['theta'] < math.pi
-    for marker in negative:
-        assert marker['theta'] + positive[0]['theta'] == pytest.approx(2 * math.pi, abs=1e-12)
+    for marker in positive + negative:
+        assert marker['theta'] == pytest.approx(math.pi)
 
     # One indicator per row, at the same row pitch the visual markers use
     assert [m['y'] for m in positive] == pytest.approx([m['y'] for m in negative])
@@ -458,11 +449,11 @@ def test_tactile_gap_warning_when_seam_gap_too_small(client):
 
 def test_tactile_row_that_runs_off_the_card_is_warned_about(client):
     """
-    D-T4 (2026-09-21): the card's leading edge sits at the arrow, so a row needs
-    lead-in + grid + the last cell's footprint of card. 14 cells on the 0.4 mm
-    families need 92.0 mm and a 90 mm card warns (S-T1, DRAFT); 13 cells need
-    85.5 and pass; a 100 mm card takes the 14. Visual mode never warns - its
-    alignment is a different procedure.
+    D-T4 (2026-09-21): the card's leading edge sits at the arrow, at the middle
+    of the seam gap, so a row needs half the gap + the grid + the last cell's
+    footprint of card. 14 cells on the 0.4 mm families need 92.8 mm and a 90 mm
+    card warns (S-T1, DRAFT); 13 cells need 89.5 and pass; a 100 mm card takes
+    the 14. Visual mode never warns - its alignment is a different procedure.
     """
     families = {
         'use_rounded_dots': 1,
@@ -491,7 +482,7 @@ def test_tactile_row_that_runs_off_the_card_is_warned_about(client):
 
     off_card = warnings_for(14)
     assert len(off_card) == 1, off_card
-    assert off_card[0].startswith('The last braille cell would run off the card: this layout needs 92.0 mm')
+    assert off_card[0].startswith('The last braille cell would run off the card: this layout needs 92.8 mm')
     assert 'the card is 90 mm. Use 13 cells or fewer.' in off_card[0]
     assert warnings_for(13) == []
     assert warnings_for(14, card_width=100) == []
@@ -590,10 +581,7 @@ def test_three_spaced_layout_places_three_arrows_at_fixed_heights_on_both_plates
     for markers in (positive, negative):
         assert [m['type'] for m in markers] == ['cylinder_tactile_arrow'] * 3
         assert [m['y'] for m in markers] == pytest.approx(THREE_SPACED_ARROW_HEIGHTS)
-        # All three share the plate's lead-in angle (D-T1); the plates mirror.
-        assert len({round(m['theta'], 12) for m in markers}) == 1
-    assert positive[0]['theta'] < math.pi
-    assert positive[0]['theta'] + negative[0]['theta'] == pytest.approx(2 * math.pi, abs=1e-12)
+        assert all(m['theta'] == pytest.approx(math.pi) for m in markers)
 
     assert [m['is_recess'] for m in positive] == [False] * 3
     assert [m['is_recess'] for m in negative] == [True] * 3
@@ -873,7 +861,6 @@ def test_ui_seam_channel_numbers_and_sentences_match_the_geometry_module():
         'SEAM_CHANNEL_DEPTH_MM',
         'SEAM_CHANNEL_MARGIN_MM',
         'SEAM_CHANNEL_MIN_WALL_MM',
-        'TACTILE_LEAD_IN_MARGIN_MM',
     ):
         match = re.search(rf'const {name} = ([0-9.]+);', html)
         assert match, f'{name} not found in public/index.html'

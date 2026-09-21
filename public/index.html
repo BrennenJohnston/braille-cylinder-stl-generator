@@ -5747,9 +5747,10 @@
             // footprint (raised from 13 on 2026-08-22, FD-20 — supersedes the
             // 2026-07-31 both-states-13 choice; a 13-cell phone number still
             // fits either way). Tactile mode reserves no marker columns, but
-            // since 2026-09-21 (D-T4) the arrow's lead-in and a 90 mm card cap
-            // it at 13 text cells: 14 need 92 mm of card measured from the
-            // alignment arrow, where the card's leading edge sits.
+            // since 2026-09-21 (D-T4) the 90 mm card caps it at 13 text cells:
+            // the card is loaded with its leading edge at the alignment arrow,
+            // which sits at the middle of the seam gap, and 14 cells need
+            // 92.8 mm of card from there.
             // Note wording is FD-20c-shaped: availability is text cells only,
             // and marker columns never appear in what the user reads or hears.
             let explanation;
@@ -7654,12 +7655,6 @@
         // The request never carries a wall thickness, so a barrel without a
         // polygonal cutout is hollowed by the backend's 2 mm default.
         const SEAM_CHANNEL_DEFAULT_WALL_MM = 2.0;
-        // Tactile arrow lead-in (D-T1, 2026-09-21): the arrow sits width/2 +
-        // recess clearance + this margin + the cell footprint before the first
-        // cell centre, so the groove goes behind the arrow and a row's card
-        // need is measured from the arrow. Mirrors app/geometry_spec.py
-        // TACTILE_LEAD_IN_MARGIN_MM (the smoke test diffs it).
-        const TACTILE_LEAD_IN_MARGIN_MM = 1.0;
 
         function isSeamChannelOn() {
             return !!document.getElementById('seam_channel_enabled')?.checked;
@@ -7685,14 +7680,6 @@
             return dotSpacing / 2 + widest / 2;
         }
 
-        // Arc from the arrow centre to the first cell centre:
-        // app/geometry_spec.py tactile_lead_in_mm, dial for dial.
-        function tactileLeadInMm() {
-            const width = parseFloat(document.getElementById('tactile_indicator_width')?.value);
-            const clearance = parseFloat(document.getElementById('tactile_recess_clearance')?.value);
-            return width / 2 + clearance + TACTILE_LEAD_IN_MARGIN_MM + seamChannelFootprintMm();
-        }
-
         // Says, before Generate, when the server will leave the groove out.
         // Hidden-to-shown announcement gate, same reason as checkPhysicalFitNow.
         function updateSeamChannelUI() {
@@ -7709,26 +7696,16 @@
                 const totalColumns = getAvailableColumns() + getReservedMarkerColumns();
                 const footprint = seamChannelFootprintMm();
                 const gap = Math.PI * diameter - (totalColumns - 1) * cellSpacing;
-                let lo;
-                let hi;
-                if (isTactileIndicatorOn()) {
-                    // Behind the arrow since the lead-in (D-T1): between the last
-                    // cell's dots - the back grid's, an interpoint offset closer,
-                    // when double-sided - and the arrow recess.
-                    const arrowHalf = parseFloat(document.getElementById('tactile_indicator_width')?.value) / 2
-                        + parseFloat(document.getElementById('tactile_recess_clearance')?.value);
-                    const arrowArc = Math.max(0, gap / 2 - tactileLeadInMm());
-                    let reach = footprint;
-                    if (isDoubleSidedOn()) {
-                        reach += parseFloat(document.getElementById('interpoint_offset_x')?.value);
-                    }
-                    lo = -(gap / 2 - reach);
-                    hi = arrowArc - arrowHalf;
-                } else {
-                    lo = -(gap / 2 - footprint);
-                    hi = gap / 2 - dotSpacing / 2;
+                // Tactile mode (D-T6, 2026-09-21): the groove runs down the
+                // arrow column itself, outside the arrow chain, so there is no
+                // window to fit - only the wall rule below applies. Visual:
+                // between the last cell's dots and column 0's triangle.
+                let free = Infinity;
+                if (!isTactileIndicatorOn()) {
+                    const lo = -(gap / 2 - footprint);
+                    const hi = gap / 2 - dotSpacing / 2;
+                    free = hi - lo;
                 }
-                const free = hi - lo;
                 const need = SEAM_CHANNEL_WIDTH_MM + 2 * SEAM_CHANNEL_MARGIN_MM;
 
                 // A dial that is empty or mid-edit gives NaN; the box stays
@@ -7761,12 +7738,13 @@
         }
 
         // Says, before Generate, when a tactile row would run off the card. The
-        // card's leading edge sits at the alignment arrow (D-T3), so a row
-        // needs lead-in + grid + the last cell's footprint of card: mirrors
-        // app/geometry_spec.py tactile_card_need_mm / tactile_max_cells and
-        // shows the server's sentence word for word. Tactile only - the visual
-        // markers are aligned by a different procedure. Hidden-to-shown
-        // announcement gate, same as the boxes above.
+        // card's leading edge sits at the alignment arrow (D-T3), which sits at
+        // the middle of the seam gap, so a row needs half the gap + the grid +
+        // the last cell's footprint of card: mirrors app/geometry_spec.py
+        // tactile_card_need_mm / tactile_max_cells and shows the server's
+        // sentence word for word. Tactile only - the visual markers are aligned
+        // by a different procedure. Hidden-to-shown announcement gate, same as
+        // the boxes above.
         function updateCardFitUI() {
             const warning = document.getElementById('card-fit-warning');
             const message = document.getElementById('card-fit-message');
@@ -7776,15 +7754,18 @@
             let text = '';
             const shapeType = document.querySelector('input[name="shape_type"]:checked')?.value || 'cylinder';
             if (shapeType === 'cylinder' && isTactileIndicatorOn()) {
+                const diameter = parseFloat(document.getElementById('cylinder_diameter_mm')?.value);
                 const cellSpacing = parseFloat(document.getElementById('cell_spacing')?.value);
                 const totalColumns = getAvailableColumns() + getReservedMarkerColumns();
                 const footprint = seamChannelFootprintMm();
-                const leadIn = tactileLeadInMm();
+                const gridWidth = (totalColumns - 1) * cellSpacing;
+                const halfGap = (Math.PI * diameter - gridWidth) / 2;
                 const cardLength = parseFloat(document.getElementById('card_width')?.value);
-                const need = leadIn + (totalColumns - 1) * cellSpacing + footprint;
+                const need = halfGap + gridWidth + footprint;
                 if (Number.isFinite(need) && Number.isFinite(cardLength) && need > cardLength) {
-                    const room = cardLength - leadIn - footprint;
-                    const maxCells = room < 0 ? 0 : Math.floor(room / cellSpacing) + 1;
+                    // need(n) = pi * D / 2 + (n - 1) * cell / 2 + footprint
+                    const room = cardLength - (Math.PI * diameter) / 2 - footprint;
+                    const maxCells = room < 0 ? 0 : Math.floor((room * 2) / cellSpacing) + 1;
                     /* S-T1, DRAFT (2026-09-21) - awaiting Brennen's sign-off. Byte-for-byte the server's sentence. */
                     text = `The last braille cell would run off the card: this layout needs ${need.toFixed(1)} mm of card ` +
                         `from the alignment arrow and the card is ${cardLength.toFixed(0)} mm. Use ${maxCells} cells or fewer.`;
