@@ -446,6 +446,17 @@ def _build_ds_cylinder_mesh(spec, shell=None):
             )
             band.apply_translation([0.0, 0.0, ring['z_center']])
             raised.append(band)
+        # Fused Version 2 (decision D-6): each top gear's anti-rotation notch is
+        # filled with hidden material so the solid barrel cannot seal a void
+        # under it. The same prism the worker's keyedPrismManifold builds.
+        for fill in gears_block.get('notch_fills', []):
+            from shapely.geometry import Polygon
+
+            prism = trimesh.creation.extrude_polygon(
+                Polygon([(point['x'], point['y']) for point in fill['profile']]), height=fill['z_to'] - fill['z_from']
+            )
+            prism.apply_translation([0.0, 0.0, fill['z_from']])
+            raised.append(prism)
     cutters = []
     for marker in spec['markers']:
         if marker['type'] != 'cylinder_tactile_arrow':
@@ -1298,6 +1309,239 @@ def test_a_double_sided_request_is_unchanged_by_a_version_1_embosser_version(cli
 
 
 # ---------------------------------------------------------------------------
+# Fused Version 2 rollers (2026-09-20 programme, sub-plan B, phase B5)
+#
+# The Version 2 pair with fixed gears: the same inputs as the keyed Version 2
+# pair plus gear_rollers_enabled=1, so the only things this pair adds are the
+# v8 gear set, its weld rings and the notch fills - and the only thing it
+# removes is the keyed cutout (decision D-6: the barrel is plain solid). Built
+# by the double-sided renderer with its default solid shell, so the geometry is
+# exactly what the worker builds: shell -> gears + rings + fills -> raised ->
+# recesses. The seam channel is on, as on every pair since phase A5.
+# ---------------------------------------------------------------------------
+
+V2_GEAR_FIXTURE_SETTINGS = {**V2_FIXTURE_SETTINGS, 'gear_rollers_enabled': 1}
+V2_GEAR_FIXTURE_NAMES = {'positive': 'v2_gear_rollerA_golden', 'negative': 'v2_gear_rollerB_golden'}
+V2_GEAR_FIXTURE_ASSETS = {'positive': 'v2_gears_a', 'negative': 'v2_gears_b'}
+# The fused roller in the fixture frame (barrel base reseated to z = 0): gears
+# at -10..0 and 54..64, nothing above - no nub in fused mode.
+_V2_GEAR_FIXTURE_Z_MIN = -10.0
+_V2_GEAR_FIXTURE_Z_MAX = version2.V2_BARREL_HEIGHT_MM + 10.0
+
+
+def _v2_gear_fixture_spec(plate_type):
+    """Geometry spec for one side of the fused Version 2 golden pair."""
+    settings = CardSettings(**V2_GEAR_FIXTURE_SETTINGS)
+    return extract_cylinder_geometry_spec(
+        DS_FIXTURE_FRONT_LINES,
+        'g1',
+        settings,
+        V2_FIXTURE_CYLINDER_PARAMS,
+        None,
+        plate_type,
+        braille_to_dots_func=braille_to_dots,
+    )
+
+
+def generate_v2_gear_golden_fixtures():
+    """
+    Regenerate the fused Version 2 golden STL pair and its metadata.
+
+    Run manually - never from the test suite, and only when a geometry change is
+    intended. The other pairs are not touched.
+    """
+    import importlib.metadata
+
+    fixtures_dir = Path(__file__).parent / 'fixtures'
+    for plate_type, fixture_name in V2_GEAR_FIXTURE_NAMES.items():
+        spec = _v2_gear_fixture_spec(plate_type)
+        if spec['warnings']:
+            raise ValueError(f'fixture spec for {fixture_name} has warnings: {spec["warnings"]}')
+        if 'keyed_cutouts' in spec:
+            raise ValueError(f'{fixture_name}: a fused Version 2 spec must carry no keyed cutout (D-6)')
+        mesh = _build_ds_cylinder_mesh(spec)
+        (fixtures_dir / f'{fixture_name}.stl').write_bytes(mesh.export(file_type='stl'))
+
+        metadata = {
+            'description': (
+                f'Fused Embosser Version 2 golden: {"Cylinder A" if plate_type == "positive" else "Cylinder B"} '
+                f'({plate_type}), solid 54 mm barrel plus its fixed v8 gears as one part, notch filled'
+            ),
+            'fixture_name': fixture_name,
+            'plate_type': plate_type,
+            'generation': {
+                'note': (
+                    'Rendered by tests/test_golden.py generate_v2_gear_golden_fixtures() from '
+                    'extract_cylinder_geometry_spec called directly with embosser_version=2 and '
+                    'gear_rollers_enabled=1 (no back_lines: single-sided). The barrel is the plain '
+                    'solid cylinder - no keyed holes, countersinks, nub or socket (decision D-6) - with '
+                    'the vendored v8 gear set from static/assets/gears/v2_gears_*.bin, the two weld '
+                    'rings and the top gear notch fill unioned in before any recess is cut. Z-up, theta '
+                    'as emitted, base of the barrel reseated to z=0, which puts the gears at z -10..0 '
+                    'and 54..64. The slicer seam channel is cut as on every pair.'
+                ),
+                'gear_asset': V2_GEAR_FIXTURE_ASSETS[plate_type],
+                'front_lines': DS_FIXTURE_FRONT_LINES,
+                'settings': V2_GEAR_FIXTURE_SETTINGS,
+                'cylinder_params': V2_FIXTURE_CYLINDER_PARAMS,
+                'generated': '2026-09-21',
+                'trimesh_version': importlib.metadata.version('trimesh'),
+                'manifold3d_version': importlib.metadata.version('manifold3d'),
+            },
+            'expected_properties': {
+                'face_count': len(mesh.faces),
+                'vertex_count': len(mesh.vertices),
+                'is_watertight': bool(mesh.is_watertight),
+                'bbox_min': mesh.bounds[0].tolist(),
+                'bbox_max': mesh.bounds[1].tolist(),
+                'volume': float(mesh.volume),
+                'surface_area': float(mesh.area),
+            },
+        }
+        (fixtures_dir / f'{fixture_name}.json').write_text(json.dumps(metadata, indent=2) + '\n', encoding='utf-8')
+        print(
+            f'{fixture_name}: {len(mesh.faces)} faces, volume {mesh.volume:.3f} mm^3, watertight {mesh.is_watertight}, '
+            f'z {mesh.bounds[0][2]:.3f}..{mesh.bounds[1][2]:.3f}'
+        )
+
+
+@pytest.mark.parametrize('plate_type', ['positive', 'negative'])
+def test_v2_gear_golden_spec_is_fused(plate_type):
+    """The spec the pair is built from: solid, no keys, the v8 asset, one notch fill, no warnings."""
+    spec = _v2_gear_fixture_spec(plate_type)
+    assert spec['warnings'] == []
+    assert spec['cylinder']['solid'] is True
+    assert 'keyed_cutouts' not in spec
+    assert spec['gears']['asset'] == V2_GEAR_FIXTURE_ASSETS[plate_type]
+    assert len(spec['gears']['notch_fills']) == 1
+    assert 'seam_channel' in spec['cylinder']
+
+
+@pytest.mark.parametrize('plate_type', ['positive', 'negative'])
+def test_v2_gear_golden_fixture_metadata_records_the_module_inputs(fixtures_dir, plate_type):
+    metadata = load_fixture_metadata(fixtures_dir, V2_GEAR_FIXTURE_NAMES[plate_type])
+    generation = metadata['generation']
+    assert generation['settings'] == V2_GEAR_FIXTURE_SETTINGS
+    assert generation['cylinder_params'] == V2_FIXTURE_CYLINDER_PARAMS
+    assert generation['gear_asset'] == V2_GEAR_FIXTURE_ASSETS[plate_type]
+    assert generation['settings']['gear_rollers_enabled'] == 1
+    assert generation['settings']['embosser_version'] == 2
+
+
+@pytest.mark.parametrize('plate_type', ['positive', 'negative'])
+def test_v2_gear_golden_fixture_matches_regenerated_geometry(fixtures_dir, plate_type):
+    """The committed roller must match a fresh render of today's fused Version 2 spec."""
+    trimesh = pytest.importorskip('trimesh')
+    pytest.importorskip('manifold3d')
+    pytest.importorskip('shapely')
+
+    fixture_name = V2_GEAR_FIXTURE_NAMES[plate_type]
+    fixture_mesh = trimesh.load(str(fixtures_dir / f'{fixture_name}.stl'), file_type='stl', force='mesh')
+
+    spec = _v2_gear_fixture_spec(plate_type)
+    rebuilt = _build_ds_cylinder_mesh(spec)
+    rebuilt = trimesh.load(io.BytesIO(rebuilt.export(file_type='stl')), file_type='stl', force='mesh')
+
+    assert fixture_mesh.is_watertight
+    assert rebuilt.is_watertight
+    assert fixture_mesh.volume == pytest.approx(rebuilt.volume, abs=0.02)
+    assert fixture_mesh.area == pytest.approx(rebuilt.area, abs=0.2)
+    assert fixture_mesh.bounds == pytest.approx(rebuilt.bounds, abs=1e-3)
+
+
+@pytest.mark.parametrize('plate_type', ['positive', 'negative'])
+def test_v2_gear_golden_fixture_is_one_sealed_roller_with_no_void(fixtures_dir, plate_type):
+    """
+    The D-6 acceptance: ONE body and no enclosed void - a sealed notch would
+    appear as a second shell in split(only_watertight=False) - 74 mm tall,
+    gears at both ends with 24 teeth each, the old keyed-hole region SOLID,
+    the notch region solid, the barrel rim still 15.4 mm, nothing proud of the
+    top face (no nub in fused mode).
+    """
+    trimesh = pytest.importorskip('trimesh')
+    import numpy as np
+
+    mesh = trimesh.load(str(fixtures_dir / f'{V2_GEAR_FIXTURE_NAMES[plate_type]}.stl'), file_type='stl', force='mesh')
+    mesh.merge_vertices()
+
+    bodies = mesh.split(only_watertight=False)
+    assert all(body.volume > 0 for body in bodies)
+    rollers = [body for body in bodies if body.bounds[1][2] - body.bounds[0][2] > 70.0]
+    assert len(rollers) == 1
+    roller = rollers[0]
+    for body in bodies:
+        if body is roller:
+            continue
+        # Only the recorded dot-dome tangency bodies may exist beside the roller.
+        assert body.volume < 1.0
+        assert np.hypot(body.vertices[:, 0], body.vertices[:, 1]).min() >= version2.V2_BARREL_DIAMETER_MM / 2
+
+    assert roller.bounds[0][2] == pytest.approx(_V2_GEAR_FIXTURE_Z_MIN, abs=1e-3)
+    assert roller.bounds[1][2] == pytest.approx(_V2_GEAR_FIXTURE_Z_MAX, abs=1e-3)
+
+    # 24 teeth on both gears, in the fixture frame (barrel 0..54).
+    for z_low, z_high in ((-9.0, -1.0), (55.0, 63.0)):
+        count, _ = tooth_band_phase(roller.vertices, z_low, z_high)
+        assert count == _GEAR_TOOTH_COUNT
+
+    # The rim: the 64-gon barrel's vertices sit ON the radius at mid-height.
+    mid = roller.vertices[np.abs(roller.vertices[:, 2] - version2.V2_BARREL_HEIGHT_MM / 2) < 1.0]
+    radial = np.hypot(mid[:, 0], mid[:, 1])
+    assert radial[radial > 15.0].min() == pytest.approx(version2.V2_BARREL_DIAMETER_MM / 2, abs=0.02)
+
+    # Solid where the keyed hole and the socket used to be, and inside the
+    # notch volume the fill closed (r 12 on the arrow column, 1.5 mm into the
+    # top gear), and through the whole axis.
+    axis = np.array([[0.0, 0.0, float(z)] for z in range(1, int(version2.V2_BARREL_HEIGHT_MM))])
+    assert roller.contains(axis).all()
+    column = math.radians(version2.V2_ARROW_COLUMN_DEG)
+    probes = np.array(
+        [
+            [12.0 * math.cos(column), 12.0 * math.sin(column), version2.V2_BARREL_HEIGHT_MM + 1.5],
+            [12.0 * math.cos(column), 12.0 * math.sin(column), 1.5],
+            [12.0 * math.cos(column), 12.0 * math.sin(column), version2.V2_BARREL_HEIGHT_MM - 1.5],
+        ]
+    )
+    assert roller.contains(probes).all()
+
+
+@pytest.mark.parametrize('plate_type', ['positive', 'negative'])
+def test_v2_gear_golden_fixture_keeps_the_vendored_gear_surface(fixtures_dir, plate_type):
+    """Points sampled on the vendored gears lie on the roller's surface: the union moved nothing."""
+    trimesh = pytest.importorskip('trimesh')
+    import numpy as np
+
+    from tests.test_gear_rollers import surface_distances
+
+    roller = trimesh.load(str(fixtures_dir / f'{V2_GEAR_FIXTURE_NAMES[plate_type]}.stl'), file_type='stl', force='mesh')
+    gears_mesh = load_gear_asset(V2_GEAR_FIXTURE_ASSETS[plate_type])
+    gears_mesh.apply_translation([0.0, 0.0, version2.V2_BARREL_HEIGHT_MM / 2])  # fixture frame
+    points, distances = surface_distances(gears_mesh, roller, 4000, seed=7)
+    # The pegs are buried in the solid barrel and the notch is filled, so only
+    # the gear surface OUTSIDE the barrel must survive - and the gear/barrel
+    # contact planes at z 0 and z 54 are interior to the union, so points
+    # within 0.1 mm of them are excluded as the Version 1 harness does.
+    z = points[:, 2]
+    outside = (z < -0.1) | (z > version2.V2_BARREL_HEIGHT_MM + 0.1)
+    # The top gear's notch walls and floor are buried inside the fill (D-6), so
+    # points sampled on them are interior now - the very thing the fill exists
+    # to do. Exclude the notch window: on the arrow column, inside r 14.2, in
+    # the notch's depth band above the barrel face.
+    angles = np.degrees(np.arctan2(points[:, 1], points[:, 0])) % 360.0
+    on_column = np.abs(angles - version2.V2_ARROW_COLUMN_DEG) < 20.0
+    in_notch = (
+        on_column
+        & (np.hypot(points[:, 0], points[:, 1]) < 14.2)
+        & (z > version2.V2_BARREL_HEIGHT_MM - 0.1)
+        & (z < version2.V2_BARREL_HEIGHT_MM + 3.5)
+    )
+    keep = outside & ~in_notch
+    assert keep.sum() > 500
+    assert float(np.percentile(distances[keep], 99)) < 0.01
+    assert float(distances[keep].max()) < 0.05
+
+
+# ---------------------------------------------------------------------------
 # Slicer seam channel (2026-09-20 programme, sub-plan A)
 #
 # Every cylinder fixture carries the groove since 2026-09-20; all six STLs were
@@ -1313,6 +1557,8 @@ _SEAM_CHANNEL_FIXTURES = [
     ('gear', 'negative'),
     ('v2', 'positive'),
     ('v2', 'negative'),
+    ('v2_gear', 'positive'),
+    ('v2_gear', 'negative'),
 ]
 
 
@@ -1321,6 +1567,8 @@ def _seam_channel_fixture(family, plate_type):
         return DS_FIXTURE_NAMES[plate_type], _ds_fixture_spec(plate_type)
     if family == 'gear':
         return GEAR_FIXTURE_NAMES[plate_type], _gear_fixture_spec(plate_type)
+    if family == 'v2_gear':
+        return V2_GEAR_FIXTURE_NAMES[plate_type], _v2_gear_fixture_spec(plate_type)
     return V2_FIXTURE_NAMES[plate_type], _v2_fixture_spec(plate_type)
 
 
@@ -1371,3 +1619,4 @@ if __name__ == '__main__':
     generate_ds_golden_fixtures()
     generate_gear_golden_fixtures()
     generate_v2_golden_fixtures()
+    generate_v2_gear_golden_fixtures()
