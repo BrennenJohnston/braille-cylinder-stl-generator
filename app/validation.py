@@ -472,8 +472,10 @@ def validate_embosser_version_settings(settings_data: dict, shape_type: str, cyl
     would either weld the gear into the cylinder or throw away the margin that
     stops a peg entering the wrong hole, and nothing downstream re-checks it.
 
-    Gate 3: integrated gears and Version 2 are different hardware and cannot be
-    combined (S-V7). The gears BETA builds the Version 1 one-piece roller.
+    Gate 3 (S-V7, gears refused with Version 2) was RETIRED on 2026-09-21:
+    Version 2 has its own vendored fixed-gear set (2026-09-20 programme,
+    sub-plan B), and validate_gear_rollers_settings gates the cylinder size
+    per version - 30.8 x 52 for Version 1, 30.8 x 54 for Version 2.
 
     Deliberately NOT a gate: the cylinder size. D-V15 makes the Version 2
     barrel a soft preset - it has been found by printing, 30.1 -> 30.5 on
@@ -564,22 +566,10 @@ def validate_embosser_version_settings(settings_data: dict, shape_type: str, cyl
             },
         )
 
-    # Read exactly the way the gear gate reads its own flag, so the two can
-    # never disagree about what "gears are on" means.
-    gears_raw = settings_data.get('gear_rollers_enabled', 0)
-    if gears_raw is not None and gears_raw != '':
-        try:
-            gears_enabled = int(float(gears_raw))
-        except (TypeError, ValueError) as e:
-            raise ValidationError(
-                "Setting 'gear_rollers.enabled' must be 0 or 1",
-                {'key': 'gear_rollers_enabled', 'value': gears_raw},
-            ) from e
-        if gears_enabled == 1:
-            raise ValidationError(
-                'Integrated gears are not available in Version 2.',
-                {'key': 'gear_rollers_enabled', 'embosser_version': version},
-            )
+    # Gate 3 (S-V7, "Integrated gears are not available in Version 2.") was
+    # RETIRED on 2026-09-21 (2026-09-20 programme, phase B3): Version 2 has
+    # its own vendored fixed-gear set now, and validate_gear_rollers_settings
+    # below gates the size per version instead.
 
     return True
 
@@ -656,15 +646,24 @@ def validate_gear_rollers_settings(settings_data: dict, shape_type: str, cylinde
             {'key': 'cylinder_params', 'value': cylinder_params},
         ) from e
 
-    if not gears.matches_reference_roller(diameter, height):
+    # Which gear set, and so which reference barrel: Version 1's 30.8 x 52 or
+    # Version 2's 30.8 x 54 (2026-09-21, phase B3). The version is read the way
+    # validate_embosser_version_settings reads it - that gate runs first and
+    # has already refused anything that is not 1 or 2, so junk cannot reach
+    # here; an absent or blank field is Version 1.
+    version_raw = settings_data.get('embosser_version', 1)
+    version = 1 if version_raw is None or version_raw == '' else int(float(version_raw))
+    required_diameter, required_height = gears.reference_barrel(version)
+    if not gears.matches_reference_roller(diameter, height, version):
         raise ValidationError(
-            gears.reference_roller_message(diameter, height),
+            gears.reference_roller_message(diameter, height, version),
             {
                 'key': 'gear_rollers_enabled',
+                'embosser_version': version,
                 'diameter_mm': diameter,
                 'height_mm': height,
-                'required_diameter_mm': gears.GEAR_BARREL_DIAMETER_MM,
-                'required_height_mm': gears.GEAR_BARREL_HEIGHT_MM,
+                'required_diameter_mm': required_diameter,
+                'required_height_mm': required_height,
             },
         )
 

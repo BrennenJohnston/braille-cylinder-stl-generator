@@ -520,14 +520,19 @@ def extract_cylinder_geometry_spec(
     # double-sided flag above is: with the toggle off every gear line below is
     # skipped and the function runs as it did before the feature existed.
     gear_rollers = int(getattr(settings, 'gear_rollers_enabled', 0)) == 1
+    # Which gear set: Version 2 has its own since 2026-09-21 (sub-plan B), with
+    # its own reference barrel (30.8 x 54 against Version 1's 30.8 x 52). Read
+    # here as well as below so the gear branch and the Version 2 branch can
+    # never disagree about the version.
+    gear_version = 2 if int(getattr(settings, 'embosser_version', 1)) == 2 else 1
     gear_warnings: list[str] = []
-    if gear_rollers and not gears.matches_reference_roller(diameter, height):
+    if gear_rollers and not gears.matches_reference_roller(diameter, height, gear_version):
         # Unreachable from the request route - app/validation.py rejects this
         # outright - but direct callers (tests, the golden fixture generator)
         # bypass validation, and a gear spec for the wrong barrel silently
         # produces loose or swallowed gears. Same defense-in-depth as the
         # double-sided indicator_mode branch above.
-        warning = gears.reference_roller_message(diameter, height)
+        warning = gears.reference_roller_message(diameter, height, gear_version)
         gear_warnings.append(warning)
         logger.warning(warning)
 
@@ -636,19 +641,31 @@ def extract_cylinder_geometry_spec(
         # preset's, so an off-size barrel still gets a hole that meets in the
         # middle. A missing plate_type raises there rather than guessing a side,
         # exactly as the gear asset lookup does.
-        v2_clearance = float(getattr(settings, 'v2_key_clearance_mm', version2.V2_KEY_CLEARANCE_DEFAULT_MM))
-        spec['keyed_cutouts'] = version2.keyed_cutout_block(plate_type, height, v2_clearance)
+        if not gear_rollers:
+            v2_clearance = float(getattr(settings, 'v2_key_clearance_mm', version2.V2_KEY_CLEARANCE_DEFAULT_MM))
+            spec['keyed_cutouts'] = version2.keyed_cutout_block(plate_type, height, v2_clearance)
+        # With fixed gears (2026-09-21, sub-plan B, decision D-6) the Version 2
+        # barrel stays solid and carries NO keyed holes, countersinks, nub or
+        # socket: the gears are already on it. Only the notch each top gear
+        # keeps in its barrel face needs hidden material, emitted with the
+        # gears below.
 
     if gear_rollers:
-        # The vendored asset already sits in the worker's frame (Phase 01 baked
-        # the sample-to-program transform in), so the worker applies no
-        # placement and no theta negation to it - see
-        # static/assets/gears/gears_manifest.json. A missing plate_type raises
-        # rather than guessing a side.
+        # The vendored asset already sits in the worker's frame (the derive
+        # scripts baked the sample-to-program transform in), so the worker
+        # applies no placement and no theta negation to it - see
+        # static/assets/gears/gears_manifest.json and v2_gears_manifest.json.
+        # A missing plate_type raises rather than guessing a side.
         spec['gears'] = {
-            'asset': gears.GEAR_ASSET_BY_PLATE[plate_type],
+            'asset': gears.gear_asset_for(plate_type, gear_version),
             'weld_rings': gears.weld_rings(height),
         }
+        if embosser_v2:
+            # Version 2's top gears carry an anti-rotation notch in their
+            # barrel face; against a solid barrel that notch would seal a void
+            # nothing can drain, so it is filled (D-6). The fill is unioned in
+            # the gear stage, before the recesses are cut.
+            spec['gears']['notch_fills'] = [version2.notch_fill_block(plate_type, height)]
 
     # Counts recesses declined for having no depth, so the omission is reported
     # once per request rather than silently or once per dot.
