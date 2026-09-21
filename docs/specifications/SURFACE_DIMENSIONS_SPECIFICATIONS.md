@@ -570,7 +570,11 @@ gap       = π · diameter − (grid_columns_total − 1) · cell_spacing
 footprint = dot_spacing / 2 + max(active dot base radius, active recess mouth radius)
             (double-sided: the ds_* package's dot and bowl radii; the SAME number on both plates)
 visual :  lo = −(gap/2 − footprint)                  hi = gap/2 − dot_spacing/2        (column 0's triangle)
-tactile:  lo = tactile_indicator_width/2 + clearance  hi = gap/2 − footprint
+tactile:  lo = −(gap/2 − footprint − offset_x·[double-sided])    hi = s_arrow − (tactile_indicator_width/2 + clearance)
+          (behind the arrow since 2026-09-21: the arrow sits a fixed lead-in before column 0 and keeps only its 1 mm
+           margin on that side; s_arrow = max(0, gap/2 − lead_in) is its arc from the seam centre, see
+           RECESS_INDICATOR_SPECIFICATIONS.md §4 Position; double-sided, the back grid's last cell reaches the
+           interpoint offset closer to the seam on this side)
 free = hi − lo ;  need = SEAM_CHANNEL_WIDTH_MM + 2 · SEAM_CHANNEL_MARGIN_MM = 1.5 mm
 s_c = (lo + hi) / 2
 theta = π − s_c / R  (positive plate)      theta = π + s_c / R  (negative plate)
@@ -583,7 +587,9 @@ Worked numbers (30.8 mm, 0.4 mm preset, footprint 2.15 mm):
 | Layout | gap | free | Result |
 |--------|-----|------|--------|
 | 15 columns, visual | 5.761 | 2.361 | s_c 0.450 → 178.33° (A) / 181.67° (B); in the STL 181.67° (A) / 178.33° (B) |
-| 14 columns, tactile | 12.261 | 1.781 | s_c 3.090 → 168.50° (A) / 191.50° (B) |
+| 14 columns, tactile | 12.261 | 2.561 | s_c −2.700 → 190.05° (A) / 169.95° (B); in the STL 169.95° (A) / 190.05° (B). Behind the arrow since 2026-09-21 (was 168.50 / 191.50 on the column-0 side) |
+| 13 columns, tactile | 18.761 | 9.061 | s_c −2.700 → 190.05° (A) / 169.95° (B) — the same angles: the groove sits a fixed distance behind the arrow |
+| 14 columns, double-sided (0.4 package, footprint 1.95, offset 1.25) | 12.261 | 1.711 | s_c −2.075 → 187.72° (A) / 172.28° (B) |
 | 15 columns, tactile | 5.761 | < 0 | left out, S-C2 |
 
 Fit rules (each leaves the groove out and adds one warning to `spec.warnings`; the UI shows the same sentence live):
@@ -1137,6 +1143,7 @@ self.counter_dot_depth = max(0.0, min(depth, self.card_thickness - self.epsilon_
 |------|--------|
 | 2026-08-31 | Cylinder height default 52 → 54 mm: the barrel now carries a 1 mm shelf past each edge of the 52 mm card so a slightly mis-rolled card cannot ruffle over the ends. Braille rows remain centered (the layout centers itself in the height). Cylinder height no longer falls back to `card_height` anywhere — the absent-field default is 54, owned by `app/geometry/gears.py` (`DEFAULT_CYLINDER_HEIGHT_MM`). |
 | 2026-08-31 | **Cylinder height default returns to 52 mm — the 54 mm card-shelf barrel is Embosser Version 2 only** (Brennen's deployment verdict, same day). 52 is the Version 1 standard barrel, the height every previously shipped V1 gear model pairs with; the one-day 54 default made the integrated-gears BETA warn/reject on untouched dials. The decoupling from `card_height` stays: the absent-field fallback is 52, still owned by `gears.DEFAULT_CYLINDER_HEIGHT_MM`, and Version 2 still forces 30.8 × 54 via its preset overrides. Both card-stock presets carry 52 again. |
+| 2026-09-21 | **§2.6: the tactile groove moves behind the arrow.** With the tactile arrow at a fixed lead-in before column 0 (RECESS_INDICATOR_SPECIFICATIONS.md v3.9, D-T1), the lead-in side keeps only its 1 mm margin, so in tactile mode the window is now between the last cell's dots (the back grid's, an interpoint offset closer, when double-sided) and the arrow recess; the visual window is unchanged. Worked numbers: 14 tactile 190.05° / 169.95°, 13 tactile the same, double-sided 187.72° / 172.28°. The slicing study reran on the new side (`scripts/seam_spike.py --layouts tactile14,tactile13`); its capture figures are recorded in §2.6 when the run is filed. All eight golden pairs regenerated. |
 | 2026-09-20 | **Slicer seam channel (new §2.6).** Every cylinder now carries a V 1.0 × 0.5 mm groove the full height of its outer surface, in the seam gap beside the row-indicator column, on both plates, so a slicer's default "aligned" seam mode hides each layer's seam there instead of in a dot. ON by default; Expert Mode switch `#seam_channel_enabled` turns it off and is the only thing that sends `seam_channel_enabled: 0`. Constants in `app/geometry_spec.py` (`SEAM_CHANNEL_*`), placement and fit rules with worked numbers, the two DRAFT omission warnings S-C2/S-C3, the worker cut, the regenerated goldens and the slicing-spike evidence are all in §2.6. Decisions D-1, D-2, D-13, D-14 (no export rotation), D-15 (groove size). |
 
 ### 8.3 Polygon Point Validation (csg-worker.js)

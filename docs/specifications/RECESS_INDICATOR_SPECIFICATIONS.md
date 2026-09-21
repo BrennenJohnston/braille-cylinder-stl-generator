@@ -15,7 +15,7 @@ Cylinders offer two mutually exclusive styles, selected by the user-facing **"Ro
 
 | | `visual` (default) | `tactile` |
 |---|---|---|
-| Where | Marker cells at the start of every row | One indicator per row, centred in the seam gap at 180° |
+| Where | Marker cells at the start of every row | One indicator per row, in the seam gap a fixed lead-in before the first cell (§4, Position) |
 | Emboss plate | Recessed triangle (+ square when `indicator_shapes` is on) | **Raised** arrow, apex toward the cylinder top |
 | Counter plate | Mirrored recesses | Matching arrow **recess** the arrow nests into |
 | Cells used for markers | 2 (on) or 1 (off) | **0** |
@@ -44,11 +44,13 @@ Reserved marker columns per row:
 |---------------|------------------|------------------------|
 | `visual`, toggle On (1) | 2 (letter + triangle) | 13 (15 total, 5.6 mm seam gap) |
 | `visual`, toggle Off (0) | 1 (triangle only) | 14 (15 total, 5.6 mm seam gap) |
-| `tactile` | 0 | 14 recommended (14 total, 12.1 mm seam gap; 15 leaves 5.6 mm, too little for the arrow) |
+| `tactile` | 0 | 13 recommended since 2026-09-21 (13 total, 18.6 mm seam gap). 14 still clears the arrow (12.1 mm) but runs off a 90 mm card loaded at the arrow; 15 leaves 5.6 mm, too little for the arrow |
 
 With indicator letters on, visual mode recommends 13 text cells because that is what a phone number takes on one row: a period-formatted number translates to exactly 13 cells under UEB (`206.616.7678` → `⠼⠃⠚⠋⠲⠋⠁⠋⠲⠛⠋⠛⠓`, one number sign), and a hyphenated one comes to 13 once the repeated number signs are edited out in the Braille (Unicode) field (`⠼⠑⠁⠚⠤⠃⠃⠊⠤⠛⠊⠁⠓`).
 
 With indicator letters off, the recommendation is **14** (raised from 13 on 2026-08-22, FD-20 — superseding the 2026-07-31 v3.2 decision that kept 13 in both toggle states): the freed letter column goes to text, the triangle still takes one column, and 14 + 1 = 15 total columns is the same seam footprint as the letters-on default, so nothing prints tighter and a 13-cell phone number still fits either way. This also matched the shipped help text, which had promised "up to 14 cells with indicator letters turned off" all along.
+
+Tactile mode recommends **13** since 2026-09-21 (Brennen's decision D-T4, after a printed card): the card is loaded with its leading edge at the alignment arrow, so a row needs the arrow's lead-in plus the grid plus the last cell's footprint of card — 14 cells need 92.0 mm of a 90 mm card and lose their last cell, 13 need 85.5 mm and fit. The cylinder itself still holds 14 (see §4, Card Fit), which is why the dial stays free to 14 with a warning rather than a refusal.
 
 Embosser Version 2 (prototype) recommends **exactly what Version 1 does**. It briefly recommended one cell fewer in visual mode — 12 with indicator letters on, 13 with them off — while its barrel was 30.1 mm: at 13 text cells plus 2 marker columns the seam gap was 3.6 mm where a cell's dots need 4.0 mm, so the page named a layout `checkPhysicalFit()` warned against on the same screen. The barrel moved to 30.5 mm on 2026-08-29 after the first print test and that gap became 4.8 mm, so the special case was removed rather than left recommending one cell fewer than fits. It moved again to 30.8 mm on 2026-08-30, widening the gap to 5.76 mm, so the rule stays retired. **Tactile mode was never affected** — it needs 9.0 mm and gets 12.3 mm at 14 cells on the 30.8 mm barrel. See EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS.md §8.1.
 
@@ -485,7 +487,16 @@ Ported from `OpenSCAD/Braille_Cylinder_STL_Generator.scad` (`tactile_raised`, `t
 
 Two properties make the raised/recessed pair nest:
 
-- **Position.** The braille grid is centred on angle 0, so the midpoint of the gap between the last and first cell — measured the long way round through the seam — is always exactly **180°**. 180° is also the fixed point of the counter plate's angle-negating mirror (`apply_seam_mirrored`), so the arrow and its recess line up radially by construction, at any rotation of the paired cylinders, with no extra bookkeeping.
+- **Position.** The braille grid is centred on angle 0, so the midpoint of the gap between the last and first cell — measured the long way round through the seam — is exactly **180°**, the fixed point of the counter plate's angle-negating mirror (`apply_seam_mirrored`). Until 2026-09-21 the arrow sat exactly there. It now sits a fixed **lead-in** before the first cell (Brennen's decision D-T1, after a printed card ran out of paper at the end of every row while its start lay blank — the embosser is loaded with the card's leading edge at the arrow, so every millimetre between the arrow and the first cell was paper spent on nothing):
+
+  ```
+  lead_in  = tactile_indicator_width/2 + tactile_recess_clearance + TACTILE_LEAD_IN_MARGIN_MM + footprint
+           = 2.0 + 0.2 + 1.0 + 2.15 = 5.35 mm at the 0.4 mm preset (footprint = dot_spacing/2 + the widest dot or bowl radius, as the seam channel defines it)
+  s_arrow  = max(0, gap/2 − lead_in)          arc from the seam centre toward column 0
+  theta    = π − s_arrow/R  (positive plate)    π + s_arrow/R  (negative plate)
+  ```
+
+  The two plates mirror (`theta_A + theta_B = 2π`), so the arrow and its recess still meet at the nip when the cylinders are in their paired pose; the spare gap all falls after the last cell, where it costs nothing. At 13 cells on the 30.8 mm barrel `s_arrow` is 4.03 mm (15.0°), at 14 cells 0.78 mm; when the gap cannot honour the lead-in on both sides (15 cells) `s_arrow` is 0 — the arrow stays at 180° and the seam-gap warning below speaks. The lead-in side keeps exactly its 1 mm margin, so the slicer seam channel goes on the other side, behind the arrow (`SURFACE_DIMENSIONS_SPECIFICATIONS.md` §2.6). Helpers: `tactile_lead_in_mm()`, `tactile_arrow_arc_mm()`, `tactile_arrow_theta()` in `app/geometry_spec.py`; the double-sided arrow-zone margins take the same arc (`interpoint.arrow_zone_margins(arrow_arc_mm=...)`).
 - **Shape.** An isosceles triangle **symmetric circumferentially**, apex toward the cylinder **top**. Circumferential symmetry means the mirrored recess has the same outline as the arrow, so the two nest instead of colliding. Axial asymmetry means the point is felt as "up" on both plates, while raised-versus-recessed identifies which cylinder is in hand.
 
 The raise (0.5 mm) is deliberately **less than the braille dot height** (1.0 mm at defaults) so the dots, never the indicator, carry the rolling pressure.
@@ -536,7 +547,8 @@ Derived constants (`app/geometry_spec.py`, mirroring the `.scad`):
 | `TACTILE_PRISM_SPAN` | 6.0 mm | Radial thickness of the working prism the outline is extruded into |
 | `TACTILE_BASE_EMBED` | 0.2 mm | How far the raised arrow's base sinks below the surface, so the union is a solid overlap not a coplanar touch |
 | `TACTILE_RECESS_OVERCUT` | 1.0 mm | How far the recess cutter projects past the surface, so the opening leaves no coplanar faces |
-| `TACTILE_SEAM_THETA` | π | Seam-gap centre |
+| `TACTILE_SEAM_THETA` | π | Seam-gap centre — the fallback angle when the gap cannot honour the lead-in on both sides |
+| `TACTILE_LEAD_IN_MARGIN_MM` | 1.0 mm | Margin between the arrow recess and the first cell's nearest dot or bowl edge (2026-09-21); the same 1 mm the clear-zone rule carries. Never lower — it is the printed ridge |
 
 ### Geometry Specification
 
@@ -545,8 +557,8 @@ Derived constants (`app/geometry_spec.py`, mirroring the `.scad`):
 ```python
 {
     'type': 'cylinder_tactile_arrow',
-    'x': radius * cos(pi), 'y': y_local, 'z': radius * sin(pi),
-    'theta': pi,                # seam-gap centre; its own negation
+    'x': radius * cos(theta), 'y': y_local, 'z': radius * sin(theta),
+    'theta': theta,             # tactile_arrow_theta(): pi -/+ s_arrow/R (positive/negative)
     'radius': radius,
     'width': tactile_indicator_width,
     'length': tactile_indicator_length,
@@ -590,14 +602,33 @@ When `seam_gap_mm < required` the layout is **warned about, not rejected** — m
 - **Backend:** the message is appended to `spec['warnings']` (a list, always present, empty in visual mode) and logged.
 - **Frontend:** `checkPhysicalFit()` shows it live in `#tactile-gap-warning` (`role="status"`, `aria-live="polite"`), recomputed whenever the diameter, cell spacing, cell count, indicator width, or mode changes. Generation is not blocked.
 
-At defaults (30.75 mm diameter, 6.5 mm cell spacing, 4 mm indicator) the gap needs ≥ 9 mm: 13 cells leave 18.6 mm and 14 cells leave 12.1 mm, both passing; 15 cells leave 5.6 mm and warn. The UI recommends 14, the widest tactile layout that still clears the arrow.
+At defaults (30.75 mm diameter, 6.5 mm cell spacing, 4 mm indicator) the gap needs ≥ 9 mm: 13 cells leave 18.6 mm and 14 cells leave 12.1 mm, both passing; 15 cells leave 5.6 mm and warn. The UI recommends 13 since 2026-09-21: 14 still clears the arrow but runs off a 90 mm card (Card Fit, next).
+
+### Card Fit (2026-09-21)
+
+The card's leading edge sits at the alignment arrow when the embosser is loaded (D-T3), so a tactile row needs this much card, measured from the arrow:
+
+```
+card_need = lead_in + (grid_columns − 1) · cell_spacing + footprint
+          13 cells, 0.4 mm preset:  5.35 + 78.0 + 2.15 = 85.5 mm   (fits a 90 mm card by 4.5; a 3.5 in card by 3.4)
+          14 cells:                 5.35 + 84.5 + 2.15 = 92.0 mm   (runs off a 90 mm card — the last cell is lost)
+max_cells = floor((card_width − lead_in − footprint) / cell_spacing) + 1 = 13 at 90 mm
+```
+
+When `card_need > card_width` (the settings field, default 90 mm) the layout is **warned about, not rejected** — the cylinder itself still holds the row:
+
+- **Backend:** `tactile_card_need_mm()` / `tactile_max_cells()` in `app/geometry_spec.py`; the sentence joins `spec['warnings']`.
+- **Frontend:** `updateCardFitUI()` shows the same sentence live in `#card-fit-warning` / `#card-fit-message`, recomputed with the other live warnings and announced once through `#a11y-status` on its hidden-to-shown edge.
+- **Sentence (S-T1, DRAFT 2026-09-21, awaiting Brennen's sign-off):** "The last braille cell would run off the card: this layout needs {need} mm of card from the alignment arrow and the card is {card} mm. Use {max_cells} cells or fewer."
+- **Golden fixtures** are 14-column geometry references, not 90 mm card rows; their settings declare a 100 mm card so the generator's no-warnings rule holds.
+- Visual mode never gets this check: its markers are aligned by a different procedure.
 
 ### Column Layout
 
 **Both plates, tactile mode:**
 ```
 Columns 0 to N-1:   Braille content (no shift; reserved = 0)
-Seam gap at 180°:   One tactile indicator per row
+Seam gap:           One tactile indicator per row, a fixed lead-in before column 0 (Position, above)
 
 Where N = grid_columns
 Available braille columns = N
@@ -975,6 +1006,7 @@ When implementing or modifying indicator code, verify:
 | 2026-07-31 | 3.2 | Per-row text capacity at defaults changed to 13 cells in visual mode (either toggle state, `grid_columns` default 15) and 14 in tactile mode, so a 13-cell UEB phone number fits one row |
 | 2026-08-16 | 3.3 | Double-sided (interpoint) beta: `indicator_mode` is LOCKED to `tactile` whenever `double_sided_enabled` is on — the UI disables the visual radio and `validate_double_sided_settings()` rejects non-tactile double-sided requests with HTTP 400. Cylinder A keeps the raised arrows, Cylinder B the recesses, and the arrow's 180° position is the fixed point of the A/B pairing mirror. See INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md |
 | 2026-08-22 | 3.4 | **Letters-off recommendation raised 13 → 14, and all availability wording moves to text cells only (FD-20).** Supersedes v3.2's both-states-13: with letters off, 14 text + 1 triangle = 15 total columns — the identical seam footprint to the letters-on default (5.6 mm gap), so nothing prints tighter, a 13-cell phone number still fits, and the shipped help text (which already said "up to 14") stops contradicting the dial. The cells-dial note (all three visual variants) and the seam-fit warning were rewritten after the first NVDA listening run heard "needs 14 cells but 13 are available" beside "needs 16 columns (14 text + 2 marker)" — marker columns stay in the arithmetic, never in the sentences. A tip under Placement Mode now says the tactile style frees one more cell. Backend arithmetic, `_reserved_marker_columns()`, wire shape, and all defaults with letters ON are unchanged. Approved by Brennen 2026-08-22. |
+| 2026-09-21 | 3.9 | **The tactile arrow sits a fixed lead-in before the first cell, and tactile mode recommends 13 cells with a card-fit warning.** A printed 14-cell tactile card ran out of paper at the end of every row while its start lay blank: the embosser is loaded with the card's leading edge at the arrow, and the arrow sat at the seam-gap midpoint. The arrow now sits `width/2 + clearance + 1.0 mm + footprint` (5.35 mm at the 0.4 preset) before the first cell centre — `theta = π ∓ s_arrow/R`, the seam channel's own rule and its own mirror, 180° only as the fallback for a gap too small to honour it — and the spare gap falls after the last cell. The slicer seam channel moves behind the arrow. New card-fit warning (S-T1, DRAFT) from `card_width`: 14 cells need 92.0 mm of a 90 mm card, 13 fit; the tactile recommendation is 13 (S-T3, DRAFT). All eight golden pairs regenerated; their settings declare a 100 mm card. `interpoint.arrow_zone_margins()` takes the arrow arc. Decisions D-T1..D-T4 by Brennen, 2026-09-21; OpenSCAD parity follows. |
 | 2026-09-20 | 3.8 | **The tactile arrow layout follows the Card Thickness preset.** New string enum `tactile_indicator_layout` (`per_row` \| `three_spaced`, default `per_row`). The 0.4 mm preset keeps one arrow per row, unchanged to the byte; the 0.3 mm preset places exactly three arrows at mid-height and ±15 mm, whatever the row count, so a blind user can tell the presets apart by touch and a 0.3 mm cylinder will not nest with a 0.4 mm one. Custom follows the preset last chosen (a new `braille_prefs_thickness_preset_chosen` key). Too short a barrel for the outer arrows is rejected, not warned. The double-sided golden pair (the 0.3 mm package) was regenerated; the gear and Version 2 pairs were not. Decisions by Brennen, 2026-09-20. |
 | 2026-08-30 | 3.7 | **The barrel moves to 30.8 mm and the rule stays retired.** A printed 30.5 mm double-sided pair embossed shallow and uneven, so Version 2's barrel took Version 1's long-proven 30.8 mm. The seam gap at 15 columns widens 4.8 -> 5.76 mm and the tactile gap at 14 cells 11.3 -> 12.3 mm, both further clear of what they need, so nothing in this document changes behaviour - only the supporting numbers. The restore threshold is unchanged: below a 30.24 mm barrel. |
 | 2026-08-29 | 3.6 | **The Version 2 one-fewer-cell rule of v3.5 is retired.** Version 2's barrel moved from 30.1 mm to 30.5 mm after the first print test, which lifts the seam gap at 15 columns from 3.6 mm to 4.8 mm against the 4.0 mm a cell's dots need. The recommendation that was right at 30.1 would now name one cell fewer than fits, so it was removed rather than kept; Version 2 recommends exactly what Version 1 does, in both modes, and tactile is untouched as it always was. Restore it below a 30.24 mm barrel. Approved by Brennen 2026-08-29. |

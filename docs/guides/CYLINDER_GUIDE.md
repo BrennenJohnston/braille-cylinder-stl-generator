@@ -73,10 +73,10 @@ Each row holds a fixed number of braille cells in this app:
 
 - **13 text cells per row** by default (2 additional cells are reserved for the indicator letter and the triangle alignment indicator, for 15 columns in total)
 - **13 text cells per row** when Indicator Letters is turned off (the alignment triangle is always included, for 14 columns in total)
-- **14 text cells per row** in Tactile indicator mode (no marker cells; the arrow sits in the seam gap)
+- **13 text cells per row** in Tactile indicator mode (no marker cells; the arrow sits in the seam gap a short lead-in before the first cell, and 13 is what a 90 mm card holds measured from it)
 - Cells are spaced 6.5mm center-to-center
 
-The cylinder's circumference determines whether that layout fits physically. What matters is the seam gap the columns leave — the arc between the last cell of a row and the first, measured the long way round. On the default 30.75mm-diameter cylinder (~96.6mm circumference) that gap is 5.6mm at 15 columns and 12.1mm at 14. Visual mode needs the gap to clear one cell's dot footprint (4.5mm at the default dot sizes) so the last cell cannot touch the first; Tactile mode needs room for the arrow plus a 5mm clear zone, which is why 14 columns is its ceiling. A larger diameter adds margin around the seam rather than more cells per row. The app warns live when the dialed columns no longer leave enough gap.
+The cylinder's circumference determines whether that layout fits physically. What matters is the seam gap the columns leave — the arc between the last cell of a row and the first, measured the long way round. On the default 30.75mm-diameter cylinder (~96.6mm circumference) that gap is 5.6mm at 15 columns and 12.1mm at 14. Visual mode needs the gap to clear one cell's dot footprint (4.5mm at the default dot sizes) so the last cell cannot touch the first; Tactile mode needs room for the arrow plus a 5mm clear zone, so 14 columns still fit the cylinder — but the card is the tighter limit: it is loaded with its leading edge at the alignment arrow, and 14 cells need 92mm of a 90mm card, so the last cell would run off the end. That is why Tactile recommends 13, and the app warns when a layout would run off the card. A larger diameter adds margin around the seam rather than more cells per row. The app warns live when the dialed columns no longer leave enough gap.
 
 **Phone number tip:** a 10-digit phone number formatted per BANA guidance (`206.616.7678`) translates to exactly 13 cells — one number sign, ten digits, two periods. UEB keeps numeric mode across the periods, so only one number sign is needed. That is why every mode's default row holds at least 13 cells, so the number fits on one line. A hyphenated number needs three number signs and runs to 15 cells, which does not fit — split it after a period and start the next row with the remaining digits; the translator adds a new number sign (`⠼`) automatically (e.g., `⠼⠃⠚⠋⠲⠋⠁⠋⠲` then `⠼⠛⠋⠛⠓`).
 
@@ -209,8 +209,8 @@ Double-sided works for cylinders only. It is not available for flat cards.
    language and grade as the front, and it wraps across the rows for you, keeping whole
    words together. Press Enter only where you want to force the start of a new row.
 
-   The back holds exactly as much as the front: 14 cells per row and 4 rows in tactile mode,
-   so 56 cells a side and 112 for the card. Turning the beta on does not shrink either side.
+   The back holds exactly as much as the front: 13 cells per row and 4 rows in tactile mode,
+   so 52 cells a side and 104 for the card. Turning the beta on does not shrink either side.
    If the back text runs past that, a warning appears under the box while you type and tells
    you how much is over.
 

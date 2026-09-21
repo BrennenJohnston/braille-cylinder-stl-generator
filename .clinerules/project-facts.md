@@ -290,10 +290,11 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      tests/e2e/fixtures/*.request.json). Switch OFF reproduces the pre-channel
      STL byte for byte (tests/e2e/fixtures/*_before_seam_channel.stl).
    - Placement: signed arc s from the seam centre toward column 0; the free
-     window is what the last cell's dots and column 0's triangle (visual) or
-     the arrow recess and the first cell's dots (tactile) leave of the gap,
-     groove at its middle; theta = pi -/+ s_c/R (positive/negative), so
-     theta_A + theta_B = 2 pi. theta is in the DOT convention: the worker
+     window is what the last cell's dots and column 0's triangle (visual) or,
+     since 2026-09-21, the last cell's dots (the back grid's, offset_x closer,
+     when double-sided) and the arrow recess (tactile - BEHIND the arrow, see
+     6g) leave of the gap, groove at its middle; theta = pi -/+ s_c/R
+     (positive/negative), so theta_A + theta_B = 2 pi. theta is in the DOT convention: the worker
      negates EVERY theta it places (dots, markers, channel alike) - never
      treat this angle differently from a dot's. In the STL the default
      15-column visual layout has the groove at 181.67 deg (A) / 178.33 (B).
@@ -301,7 +302,9 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      under 1.5 mm or the wall under the apex is under 1.2 mm (polygon
      circumradius, or wall_thickness - depth for a barrel with no cutout;
      solid barrels - gears, Version 2 - skip the wall rule). 15 columns tactile
-     never fits; 14 tactile and 15 visual do at 30.8.
+     never fits; 13 and 14 tactile (190.05 / 169.95 deg in the spec, 169.95 /
+     190.05 in the STL - a fixed distance behind the arrow) and 15 visual do
+     at 30.8.
    - CSG order: the groove is cut from the BARE outer cylinder before the bore,
      the keyed pockets or anything unioned, in both the worker
      (createSeamChannelManifold) and tests/test_golden.py
@@ -332,6 +335,37 @@ translation, Three.js preview. Working branch: develop — never commit to main.
    (selectCylinders - the radio is in the collapsed panel, so check() would
    refuse it); pair tests choose 'both'. The submenu toggle focuses its first
    control after 100 ms - wait for it before arrow keys.
+
+6g. Tactile arrow lead-in (2026-09-21, decisions D-T1..D-T4 after Brennen's
+   printed 14-cell card ran out of paper at the end of every row while its
+   start lay blank; plan 05_TACTILE_LEAD_IN_PLAN.md in the 2026_09_20 research
+   folder):
+   - The embosser is loaded with the card's leading edge AT the alignment
+     arrow (D-T3). The arrow is therefore no longer at the seam-gap midpoint
+     (it was, exactly - the grid is centred, cells are centres, so "make the
+     two sides equal" would have changed nothing) but a fixed lead-in before
+     column 0: lead_in = width/2 + recess clearance + TACTILE_LEAD_IN_MARGIN_MM
+     (1.0, never lower - the printed ridge) + the cell footprint = 5.35 mm at
+     the 0.4 preset. s_arrow = max(0, gap/2 - lead_in); theta = pi - s/R on
+     the positive plate, pi + s/R on the negative (the seam channel's own rule
+     and its own mirror, so the arrow and recess still meet at the nip); 180
+     is the FALLBACK for a gap too small to honour the lead-in (15 cells),
+     with the existing gap warning. app/geometry_spec.py tactile_lead_in_mm /
+     tactile_arrow_arc_mm / tactile_arrow_theta own it; index.html mirrors the
+     margin (smoke test).
+   - Card fit: a tactile row needs lead_in + grid + footprint of card measured
+     from the arrow; 14 cells need 92.0 mm of a 90 mm card (last cell lost),
+     13 need 85.5. Warning S-T1 (DRAFT) from card_width in spec warnings and
+     the live #card-fit-warning box; tactile recommendation 13 (S-T3, DRAFT);
+     the dial stays free to 14 with the warning, never a rejection. Visual
+     mode is NOT checked (different alignment procedure).
+   - All eight golden pairs regenerated 2026-09-21; the fixture settings
+     declare card_width 100 because the generator refuses a spec with
+     warnings and the fixtures are 14-column geometry references.
+   - interpoint.arrow_zone_margins(arrow_arc_mm) reports the shifted arrow;
+     the crowded (left) side only gains.
+   - OpenSCAD parity (both .scad files, MakerWorld copies, v2.8.1) follows as
+     phase T6; until then the OpenSCAD arrows are still at 180.
 
 ## Settings changes — order of operations
 7. settings.schema.json is the single source of truth. When adding or changing

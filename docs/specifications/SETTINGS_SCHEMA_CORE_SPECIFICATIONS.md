@@ -258,7 +258,7 @@ Reserved marker columns per row. The UI dial counts TEXT cells only; the payload
 it leaves, `π × diameter − (total − 1) × cell_spacing`: at the defaults (30.75 mm
 diameter, so a 96.61 mm circumference, and 6.5 mm cell spacing) that is 5.6 mm at 15
 total columns and 12.1 mm at 14.
-- indicator_mode = "tactile": 0 columns — the indicator sits in the seam gap — 14 text cells recommended at defaults (14 total, leaving 12.1 mm against the 9.0 mm the arrow and its clear zone need; 15 total leaves only 5.6 mm and is still too many for tactile)
+- indicator_mode = "tactile": 0 columns — the indicator sits in the seam gap — 13 text cells recommended at defaults since 2026-09-21 (13 total, leaving 18.6 mm; 14 would still clear the arrow at 12.1 mm but run off a 90 mm card loaded at the arrow, and the app warns) against the 9.0 mm the arrow and its clear zone need; 15 total leaves only 5.6 mm and is still too many for tactile)
 - indicator_shapes = 1 (On): 2 marker columns reserved per row (letter + triangle) — 13 text cells at defaults (13 + 2 = 15 total, 5.6 mm gap)
 - indicator_shapes = 0 (Off): 1 marker column reserved per row (triangle only) — 13 text cells at defaults (13 + 1 = 14 total, 12.1 mm gap)
 

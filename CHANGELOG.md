@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **The tactile alignment arrow now sits a short lead-in before the first cell, so a card loaded at the arrow uses its whole length** (2026-09-21, Brennen's decisions D-T1..D-T4 after a printed card). The embosser is loaded with the card's leading edge at the arrow, and the arrow used to sit at the midpoint of the seam gap — so every row began with blank paper and a 14-cell row lost its last cell off the end of a 90 mm card. The arrow (and its recess on the counter plate) now sits `arrow width/2 + recess clearance + 1 mm + the cell footprint` before the first cell — 5.35 mm at the 0.4 mm preset — and whatever the gap has to spare falls after the last cell. The slicer seam channel moves behind the arrow. Tactile mode now recommends **13 cells**: 14 still fit the cylinder but need 92 mm of a 90 mm card. Every generated tactile cylinder changes; all eight golden pairs were regenerated.
+
+### Added
+- **A card-fit warning for tactile rows.** When a layout would run off the card measured from the alignment arrow, the app says so live beside the seam-gap warning and in the generated spec's warnings — a warning, never a refusal (S-T1, wording awaiting sign-off).
+
+### Changed
 - **The vendored OpenSCAD copy is refreshed to upstream v2.8.0** (`OpenSCAD/`, 2026-09-21). The single-file build now carries the slicer seam channel switch (`seam_channel`, On by default, the same constants and physical angles as this app) and the tactile arrow layouts, and the manifest's upstream path is corrected to `makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad`, the Version 1 build — upstream's `_v2` file has been the separate Embosser Version 2 generator since 2026-09-01 and is not vendored. Upstream 2.8.0 also gives that Version 2 file its own fixed-gear switch, so every feature of this app now has an OpenSCAD counterpart.
 
 ### Added
