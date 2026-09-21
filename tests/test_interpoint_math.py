@@ -540,7 +540,12 @@ PRE_DOUBLE_SIDED_CYLINDER_PARAMS = {
     'polygonal_cutout_radius_mm': 6.0,
     'polygonal_cutout_sides': 3,
 }
-PRE_DOUBLE_SIDED_SETTINGS = {'grid_rows': 2, 'grid_columns': 3}
+# The slicer seam channel (2026-09-20) is ON by default for every cylinder and
+# adds cylinder.seam_channel to a spec; it is the one deliberate default-on
+# change since this snapshot was taken, so it is switched off here. The
+# snapshot itself is untouched, and tests/test_seam_channel_spec.py proves the
+# switch off changes nothing but that key.
+PRE_DOUBLE_SIDED_SETTINGS = {'grid_rows': 2, 'grid_columns': 3, 'seam_channel_enabled': 0}
 PRE_DOUBLE_SIDED_LINES = ['⠁⠃', '⠉', '', '']
 PRE_DOUBLE_SIDED_ORIGINAL_LINES = ['ab', 'c', '', '']
 

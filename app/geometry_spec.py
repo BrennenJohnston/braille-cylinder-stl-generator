@@ -67,6 +67,26 @@ TACTILE_THREE_SPACED_PITCH_MM = 15.0
 
 
 # -----------------------------------------------------------------------------
+# SLICER SEAM CHANNEL
+# A shallow V-groove the full height of the barrel's OUTER surface, inside the
+# seam gap beside the row-indicator column, on both plates. A slicer's default
+# "aligned" seam mode snaps every layer's seam into a concave corner, and on a
+# smooth barrel the only corners are the dots - a seam inside a dot ruins it on
+# paper. The groove is a better corner: the 2026-09-20 slicing spike
+# (scripts/seam_spike.py) captured 100 % of layers on both visual plates and the
+# tactile counter plate, and 90.8 % on the tactile emboss plate with the rest on
+# the raised arrow tips, never in a dot. These are print-tuned constants, not
+# dials (decisions D-1, D-2, D-13..D-15, 2026-09-20); the safe ranges live in
+# docs/specifications/SURFACE_DIMENSIONS_SPECIFICATIONS.md.
+SEAM_CHANNEL_WIDTH_MM = 1.0  # mouth width at the surface (a 90 degree V)
+SEAM_CHANNEL_DEPTH_MM = 0.5  # apex depth below the surface
+SEAM_CHANNEL_MARGIN_MM = 0.25  # clear surface kept either side of the mouth
+SEAM_CHANNEL_OVERSHOOT_MM = 1.0  # the cutter runs this far past both end faces
+SEAM_CHANNEL_LIP_MM = 0.5  # the cutter's mouth starts this far outside the surface
+SEAM_CHANNEL_MIN_WALL_MM = 1.2  # FDM minimum wall left under the apex
+
+
+# -----------------------------------------------------------------------------
 # DOUBLE-SIDED (INTERPOINT) BETA
 # -----------------------------------------------------------------------------
 # Off by default. When on, the two cylinders stop being "content plate + universal
@@ -651,6 +671,30 @@ def extract_cylinder_geometry_spec(
             spec['warnings'].append(warning)
             logger.warning(warning)
 
+    # Slicer seam channel, on by default since 2026-09-20 (decision D-2). The
+    # worker cuts it in the shell stage, before anything is added. The key is
+    # emitted only when the groove fits, so the Expert Mode switch OFF - and an
+    # omitted channel - leave the spec byte-identical to the one this function
+    # emitted before the channel existed, apart from the omission warning.
+    if int(getattr(settings, 'seam_channel_enabled', 1)) == 1:
+        seam_channel, channel_warning = _seam_channel_block(
+            settings,
+            tactile_on,
+            double_sided,
+            plate_type,
+            diameter,
+            grid_width,
+            thickness,
+            polygon_points,
+            solid=gear_rollers or embosser_v2,
+        )
+        if seam_channel is not None:
+            spec['cylinder']['seam_channel'] = seam_channel
+            logger.info(f'Seam channel at {math.degrees(seam_channel["theta"]):.2f} degrees (spec theta)')
+        else:
+            spec['warnings'].append(channel_warning)
+            logger.warning(channel_warning)
+
     # Dot positioning with angular offsets for columns, linear for rows
     dot_col_angle_offsets = [-dot_spacing_angle / 2, dot_spacing_angle / 2]
     dot_row_offsets = [settings.dot_spacing, 0, -settings.dot_spacing]
@@ -948,6 +992,122 @@ def extract_cylinder_geometry_spec(
         f'{len(spec["dots"])} dots, {len(spec["markers"])} markers'
     )
     return spec
+
+
+def _seam_channel_footprint(settings: Any, double_sided: bool) -> float:
+    """
+    Arc from a cell centre to the far edge of its widest dot or recess, in mm.
+
+    dot_spacing/2 reaches the outer dot column; the larger of the active
+    families' radii reaches that dot's edge. It is the SAME number on both
+    plates, so the two channels mirror exactly. Double-sided mode replaces every
+    dot on both plates with the ds_* package, so only that package counts there;
+    single-sided mode reads the emboss family and the recess family the way
+    _create_cylinder_dot_spec does.
+    """
+    if double_sided:
+        radii = [
+            float(getattr(settings, 'ds_dot_base_diameter', interpoint.DS_DOT_BASE_DIAMETER_MM)) / 2.0,
+            float(getattr(settings, 'ds_bowl_base_diameter', interpoint.DS_BOWL_DIAMETER_MM)) / 2.0,
+        ]
+    else:
+        if getattr(settings, 'use_rounded_dots', 0):
+            emboss = float(getattr(settings, 'rounded_dot_base_diameter', 2.0)) / 2.0
+        else:
+            emboss = float(settings.emboss_dot_base_diameter) / 2.0
+        recess_shape = int(getattr(settings, 'recess_shape', 1))
+        if recess_shape == 0:
+            recess = float(
+                getattr(settings, 'hemi_counter_dot_base_diameter', getattr(settings, 'counter_dot_base_diameter', 1.6))
+            )
+        elif recess_shape == 1:
+            recess = float(
+                getattr(settings, 'bowl_counter_dot_base_diameter', getattr(settings, 'counter_dot_base_diameter', 1.8))
+            )
+        else:
+            recess = float(
+                getattr(settings, 'cone_counter_dot_base_diameter', getattr(settings, 'counter_dot_base_diameter', 1.6))
+            )
+        radii = [emboss, recess / 2.0]
+    return float(settings.dot_spacing) / 2.0 + max(radii)
+
+
+def _seam_channel_block(
+    settings: Any,
+    tactile_on: bool,
+    double_sided: bool,
+    plate_type: str,
+    diameter: float,
+    grid_width: float,
+    thickness: float,
+    polygon_points: list[dict[str, float]],
+    solid: bool,
+) -> tuple[dict[str, float] | None, str | None]:
+    """
+    Place the seam channel, or say why it was left out.
+
+    Returns (block, None) when the groove fits and (None, warning) when it does
+    not. Positions are signed arcs `s` along the surface from the seam centre,
+    positive toward column 0 (the row-indicator column in visual mode); the free
+    window [lo, hi] is what is left of the seam gap after the features either
+    side of it, and the groove sits at its middle so both margins are equal.
+
+    The emitted `theta` is in the SAME convention as every dot's `theta` in this
+    spec: column 0 sits at +grid_angle/2 on the positive plate and at
+    -grid_angle/2 on the negative one, the seam centre at pi on both, and the
+    counter plate is the angle-negating mirror of the emboss plate (see
+    apply_seam / apply_seam_mirrored). The Manifold worker negates every theta
+    it places - dots, markers and this channel alike - so the groove lands
+    beside column 0 in the STL by construction; the Python golden renderer uses
+    theta as emitted. Neither may treat this angle differently from a dot's.
+    """
+    radius = diameter / 2.0
+    gap = math.pi * diameter - grid_width
+    footprint = _seam_channel_footprint(settings, double_sided)
+    if tactile_on:
+        # Between the arrow recess (grown by the clearance on the counter plate,
+        # the wider of the two) and the first cell's dots.
+        arrow_half = float(getattr(settings, 'tactile_indicator_width', 4.0)) / 2.0
+        arrow_half += float(getattr(settings, 'tactile_recess_clearance', 0.2))
+        lo = arrow_half
+        hi = gap / 2.0 - footprint
+    else:
+        # Between the last cell's dots and column 0's alignment triangle, whose
+        # outline is dot_spacing wide.
+        lo = -(gap / 2.0 - footprint)
+        hi = gap / 2.0 - float(settings.dot_spacing) / 2.0
+    free = hi - lo
+    need = SEAM_CHANNEL_WIDTH_MM + 2.0 * SEAM_CHANNEL_MARGIN_MM
+    if free < need:
+        # DRAFT wording S-C2 (2026-09-20 programme, phase A2). FLAGGED FOR BRENNEN.
+        return None, (
+            'The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.'
+        )
+
+    if not solid:
+        # The worker's shell is either the polygonal cutout (thinnest at the
+        # polygon's vertices, the circumradius) or, without one, a tube hollowed
+        # by wall thickness (2 mm when the field is missing) - mirror both.
+        if polygon_points:
+            bore = max(math.hypot(point['x'], point['y']) for point in polygon_points)
+        else:
+            bore = radius - (thickness if thickness > 0 else 2.0)
+        if bore > 0 and radius - SEAM_CHANNEL_DEPTH_MM - bore < SEAM_CHANNEL_MIN_WALL_MM:
+            # DRAFT wording S-C3 (2026-09-20 programme, phase A2). FLAGGED FOR BRENNEN.
+            return None, (
+                f'The seam channel was left out: the cylinder wall would be thinner than '
+                f'{SEAM_CHANNEL_MIN_WALL_MM:.1f} mm under it.'
+            )
+
+    s_c = (lo + hi) / 2.0
+    theta = math.pi + s_c / radius if plate_type == 'negative' else math.pi - s_c / radius
+    return {
+        'theta': theta,
+        'width': SEAM_CHANNEL_WIDTH_MM,
+        'depth': SEAM_CHANNEL_DEPTH_MM,
+        'overshoot': SEAM_CHANNEL_OVERSHOOT_MM,
+        'lip': SEAM_CHANNEL_LIP_MM,
+    }, None
 
 
 def _reserved_marker_columns(settings: Any, tactile_on: bool) -> int:
