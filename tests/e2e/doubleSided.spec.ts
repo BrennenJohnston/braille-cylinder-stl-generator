@@ -32,8 +32,10 @@ import { selectCylinders, selectedCylinders } from './helpers/cylinders';
 // fresh profile) and proven byte-identical to the post-feature off-state by
 // fc /b in Phases 07 and 08. The toggle-off payload must deep-equal these:
 // any added key (double_sided_enabled, back_lines, ds_*) is a regression.
+// One value has moved since the capture: grid_columns, 14 -> 13 on 2026-09-21
+// (D-T4, the tactile recommendation on a 90 mm card); the key set is unchanged.
 const BASELINE_SETTINGS = {
-  grid_columns: '14',
+  grid_columns: '13',
   grid_rows: '4',
   cell_spacing: '6.5',
   line_spacing: '10',

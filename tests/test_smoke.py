@@ -873,6 +873,7 @@ def test_ui_seam_channel_numbers_and_sentences_match_the_geometry_module():
         'SEAM_CHANNEL_DEPTH_MM',
         'SEAM_CHANNEL_MARGIN_MM',
         'SEAM_CHANNEL_MIN_WALL_MM',
+        'TACTILE_LEAD_IN_MARGIN_MM',
     ):
         match = re.search(rf'const {name} = ([0-9.]+);', html)
         assert match, f'{name} not found in public/index.html'
@@ -886,9 +887,13 @@ def test_ui_seam_channel_numbers_and_sentences_match_the_geometry_module():
 
     gap_sentence = 'The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.'
     wall_sentence = 'The seam channel was left out: the cylinder wall would be thinner than '
-    for sentence in (gap_sentence, wall_sentence):
+    # S-T1 (DRAFT, 2026-09-21): the card-fit sentence, up to its first number.
+    card_sentence = 'The last braille cell would run off the card: this layout needs '
+    for sentence in (gap_sentence, wall_sentence, card_sentence):
         assert sentence in html, f'UI is missing the sentence: {sentence}'
         assert sentence in module, f'geometry_spec is missing the sentence: {sentence}'
+    assert 'from the alignment arrow and the card is ' in html
+    assert 'from the alignment arrow and the card is ' in module
 
 
 # =============================================================================

@@ -253,7 +253,7 @@ test.describe('Slicer seam channel', () => {
     // Tactile mode at 15 cells leaves a 5.8 mm seam gap: the arrow recess and
     // the first cell's dots already overlap, so the groove is left out.
     await page.locator('input[name="indicator_mode"][value="tactile"]').check();
-    await expect(page.locator('#grid_columns')).toHaveValue('14');
+    await expect(page.locator('#grid_columns')).toHaveValue('13');
     await expect(page.locator('#seam-channel-warning')).toBeHidden();
 
     await page.locator('#grid_columns').fill('15');
@@ -266,7 +266,7 @@ test.describe('Slicer seam channel', () => {
     // a case where only the channel note fires.
     await expect(page.locator('#a11y-status')).toContainText('seam gap');
 
-    await page.locator('#grid_columns').fill('14');
+    await page.locator('#grid_columns').fill('13');
     await page.locator('#grid_columns').dispatchEvent('input');
     await expect(page.locator('#seam-channel-warning')).toBeHidden();
 
