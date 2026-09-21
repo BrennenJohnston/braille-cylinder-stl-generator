@@ -333,7 +333,11 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      against app/geometry_spec.py) and the visual groove at the PHYSICAL
      angle 180 +/- s/R (emboss +, counter -) - the .scad negates nothing, so
      its 181.67 / 178.33 equals this worker's exported STL. The tactile
-     stretches on the arrow column follow in the D-T6 pass (6g).
+     stretches on the arrow column landed in that repo's D-T6 pass
+     (develop eef068a, 2026-09-21): seam_channel_cuts(theta, stretches),
+     per-plate seam_channel_stretches_emboss/_counter, the same two
+     constants (its tests diff them), S-C4 NOTE + "SEAM CHANNEL LEFT OUT:
+     arrows" badge (DRAFT).
 
 6f. One Generate / one Download (2026-09-21, sub-plan E of the 2026-09-20
    programme; D-8, D-9, D-10). Generate STL builds BOTH cylinders unless
@@ -392,9 +396,11 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      build/seam_spike_column): 0 % of layers in a dot on every plate, groove
      or not; 60 % (emboss) / 37 % (counter) of layers within 0.8 mm of arc
      of 180 deg, the rest on the arrows' own edges.
-   - OpenSCAD: the lead-in parity (T6, a7585cc, pushed) is reworked to D-T6
-     on that repo's develop; v2.8.1 and the re-vendor wait for Brennen's
-     13-cell tactile print test.
+   - OpenSCAD: the lead-in parity (T6, a7585cc) was reworked to D-T6 in
+     that repo's develop eef068a (2026-09-21, pushed): arrow at 180 via
+     place_cylinder_marker(180, ...), card fit from the midpoint,
+     GEAR_ARROW_WELD_MM moved beside gears_on in the V1 file; v2.8.1 and the
+     re-vendor wait for Brennen's 13-cell tactile print test.
 
 ## Settings changes — order of operations
 7. settings.schema.json is the single source of truth. When adding or changing
