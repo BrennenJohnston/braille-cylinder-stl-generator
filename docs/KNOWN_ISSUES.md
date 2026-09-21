@@ -1,8 +1,11 @@
 # Known Issues
 
-## Double-sided (interpoint) beta — status
+## Double-sided (interpoint) — status
 
-The Double-Sided Card (BETA) toggle is **feature-complete and physically validated**. In
+Double-sided is a released choice since 2026-09-20: pick **Double-sided** under **Card
+sides** in the **Embosser setup** item at the top of the page (the BETA-labelled toggle
+and its collapsible menu are gone; the Back of Card section is always on the page, greyed
+out until Double-sided is chosen). It is **feature-complete and physically validated**. In
 August 2026 two rounds of Cylinder A / Cylinder B pairs were printed on a Bambu Lab X1C with
 a 0.4 mm nozzle and used to emboss real card stock; the braille came out legible on **both**
 faces. The dot and bowl sizes it ships with (dot 1.2 mm across, bowl 1.3 mm across × 0.5 mm
@@ -11,8 +14,8 @@ tune.
 
 What the finished beta does:
 
-- Turning the toggle on reveals a **Back of Card** section and locks the Row Indicator Style
-  to the tactile seam arrow, which both cylinders of a pair need.
+- Choosing Double-sided activates the **Back of Card** section and locks the Row Indicator
+  Style to the tactile seam arrow, which both cylinders of a pair need.
 - Back text has the same handling as front text: translated with the same language and
   grade, wrapped across the rows for you with whole words kept together, and warned about
   live while you type if it overruns.
@@ -21,8 +24,8 @@ What the finished beta does:
 - Each file is then saved by pressing its own button — **Download Cylinder A** and
   **Download Cylinder B**. Nothing downloads by itself.
 
-It keeps the BETA label because it has been proven by one builder on one printer with one
-paper stock, not because anything is known to be wrong with it.
+It carried a BETA label until 2026-09-20 because it had been proven by one builder on one
+printer with one paper stock, not because anything was known to be wrong with it.
 
 Two caveats remain:
 
@@ -104,18 +107,21 @@ generator v2.6 and was refined in v2.7 (2026-08-23).
 Full technical detail: `docs/specifications/INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md`.
 Step-by-step instructions: `docs/guides/CYLINDER_GUIDE.md`.
 
-## Gear-integrated one-piece rollers (BETA) — status
+## Gear-integrated one-piece rollers — status
 
-A generated cylinder can ship as ONE solid part with its top and bottom drive gears
+Since 2026-09-20 this is the **Simplified: gears fixed to the cylinders** choice under
+**Gears** in the **Embosser setup** item at the top of the page (the BETA-labelled toggle
+is gone; **Standard: print the gears separately** is the default). A generated cylinder
+can then ship as ONE solid part with its top and bottom drive gears
 already attached, instead of a bare barrel that separately printed gears are pushed
 onto. Meshing the two rollers' gears is also what holds the paired cylinders
 rotationally synchronised — the assembly risk the double-sided work recorded as about
 ±1.0°. That budget note still stands: the gears hold phase to roughly their backlash,
 measured at 0.65 mm of flank clearance on the reference set.
 
-**Cylinders only, and off by default.** With the toggle off nothing changes: the
+**Cylinders only, and Standard by default.** With Standard chosen nothing changes: the
 request body, the geometry and the filenames are byte-identical to a build without the
-feature. With it on the download gains a `Geared_` segment
+feature. With Simplified chosen the download gains a `Geared_` segment
 (`Embossing_Cylinder_Geared_0.4_name.stl`).
 
 **The gears are not adjustable, and the cylinder size is fixed while they are on.**
@@ -149,15 +155,17 @@ reason.
 
 Full technical detail: `docs/specifications/GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md`.
 
-## Embosser Version 2 (prototype) — status
+## Embosser Version 2 — status
 
 Version 2 is a new embosser design: its drive gears are separate prints again, each
 carrying a differently shaped peg, and each end of each cylinder gets a matching keyed
-hole — so a gear cannot be seated in the wrong place. Choose it from the selector at
-the top of the page.
+hole — so a gear cannot be seated in the wrong place — and its cylinders carry tactile
+row markers a blind user can feel. Choose it under **Embosser version** in the
+**Embosser setup** item at the top of the page (the "(prototype)" tag and its notice were
+dropped on 2026-09-20; the 54 mm barrel passed its print test on 2026-09-01).
 
-**It is a work-in-progress prototype.** The cylinder size, the cutout shapes and the
-fit may all change as testing continues. Nothing about it is final.
+**Fixed gears are not available for Version 2 yet.** Choosing Version 2 puts the Gears
+choice back to Standard and says so; fixed Version 2 gears are planned.
 
 **The gears must be re-cut.** The holes are family **R14** — four rounded rectangles,
 14 × 14 mm at Cylinder A's top (the nub end), 18 × 10 at A's bottom, 16 × 12 at B's

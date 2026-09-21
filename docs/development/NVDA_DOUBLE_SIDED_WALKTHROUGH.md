@@ -54,7 +54,15 @@ order they arrive in.
 
 ---
 
-## Part 1 — Finding the beta with the toggle off
+> **Rewritten 2026-09-20 (programme phase C4, NOT yet run):** double-sided is no
+> longer a BETA checkbox inside a collapsible menu. It is the **Card sides**
+> radio group (Single-sided / Double-sided) inside the **Embosser setup** item
+> at the top of the form, and the Back of Card section is always on the page —
+> greyed out and unavailable until Double-sided is chosen. Steps 1–5 and 23–24
+> describe the new controls; the expected words in them are DRAFT strings
+> awaiting Brennen's sign-off. Steps 6–22 are unchanged.
+
+## Part 1 — Finding the choice while single-sided
 
 **Step 1.** Load the page fresh, click once on an empty part of the page so focus
 is inside it, then press `Tab` once.
@@ -68,47 +76,51 @@ is inside it, then press `Tab` once.
 > instead, you have gone one control too far — `Shift+Tab` back one and listen
 > again.
 
-**Step 2.** Keep pressing `Tab` until you reach the Double-Sided Card checkbox
-(about 27 presses from the top of the page; it comes after the Row Indicator
-Style radio buttons).
+**Step 2.** Keep pressing `Tab` until you reach the **Card sides** radio group
+inside the Embosser setup item (it comes after the Embosser version and Gears
+radio groups, before the front text box).
 
-> **Expect:** "Emboss both sides of the card (interpoint), check box, not
-> checked, collapsed" — followed by the long description beginning "Embosses
-> both sides of the card in one pass: Cylinder A (the embossing plate) carries
-> the front's raised dots…"
+> **Expect:** "Card sides, grouping" (or "group") with its description
+> "Double-sided embosses both faces of the card in one pass and uses the tactile
+> row markers." — then "Single-sided, radio button, checked, 1 of 2".
 >
-> Three things must be in there: the **name**, "not checked", and **"collapsed"**.
-> "Collapsed" is how a blind user knows there is more to open.
+> Three things must be in there: the group **name**, the description, and
+> "checked" on Single-sided.
 
-**Step 3.** Do **not** press Space yet. Press `Tab` twice more.
+**Step 3.** Do **not** press an arrow key yet. Press `Tab` on through the front
+text box until you reach the Back of Card heading area.
 
-> **Expect:** you go straight on to the Select Language combo box. You must
-> **not** hear "Back of Card Text" or "Generate Both Cylinders" — while the beta
-> is off, none of its controls exist for the screen reader.
+> **Expect:** you go straight from the front entry controls to the Select
+> Language combo box. You must **not** land on "Back of Card Text" or hear
+> "Generate Both Cylinders" — while the card is single-sided, the Back of Card
+> controls are **unavailable** (disabled) and Tab skips them. If you read the
+> page with the arrow keys instead, you will find the "Back of Card — Enter Text
+> for Braille Translation" heading and its controls announced as "unavailable".
 
 ---
 
-## Part 2 — Turning the beta on
+## Part 2 — Choosing Double-sided
 
-**Step 4.** `Shift+Tab` back to the Double-Sided Card checkbox and press `Space`.
+**Step 4.** `Shift+Tab` back to the Card sides radio group and press the
+`Down arrow` to select Double-sided.
 
-> **Expect:** "checked" — and then, a moment later, the locked-style note read
-> out on its own without you moving:
-> "Locked: Double-Sided Card is on, so the Row Indicator Style stays on the
-> tactile seam arrow — both cylinders of a double-sided pair need it. Turn the
-> beta off to choose visual markers."
+> **Expect:** "Double-sided, radio button, checked, 2 of 2" — and then, a moment
+> later, ONE announcement read out on its own without you moving:
+> "Double-sided card selected. The Back of Card section is now active. Locked:
+> Double-sided is on, so the Row Indicator Style stays on the tactile seam arrow
+> — both cylinders of a double-sided pair need it. Choose Single-sided to pick
+> visual markers."
 >
 > That second announcement is a **polite live region**. It may arrive a second
 > or two late, and NVDA will wait until it has finished saying "checked" first.
 > If you hear nothing at all, that is a fail.
 
 **Step 5.** Press `Shift+Tab` once, then `Tab` once, to land back on the
-checkbox and hear its state again.
+radio group and hear its state again.
 
-> **Expect:** "Emboss both sides of the card (interpoint), check box, checked,
-> **expanded**"
+> **Expect:** "Double-sided, radio button, checked, 2 of 2"
 >
-> The word "expanded" must have changed from "collapsed" in step 2.
+> The selection must have moved from Single-sided (step 2) to Double-sided.
 
 ---
 
@@ -173,7 +185,7 @@ controls (many do not — that is correct behaviour and not a fail).
 
 > **Expect, if you can reach it:** "Visual markers, radio button, **unavailable**"
 > plus **both** descriptions — the normal one about marker cells, *and* the
-> "Locked: Double-Sided Card is on…" note. The lock reason must travel with the
+> "Locked: Double-sided is on…" note. The lock reason must travel with the
 > disabled option, so a blind user learns *why* it is unavailable.
 
 ---
@@ -284,17 +296,20 @@ Cylinder B" and press `Enter` there too.
 
 ---
 
-## Part 8 — Turning the beta off again
+## Part 8 — Choosing Single-sided again
 
-**Step 23.** `Shift+Tab` back to the Double-Sided Card checkbox and press
-`Space`.
+**Step 23.** `Shift+Tab` back to the Card sides radio group and press the
+`Up arrow` to select Single-sided.
 
-> **Expect:** "not checked", and the checkbox reports **collapsed** again.
+> **Expect:** "Single-sided, radio button, checked, 1 of 2", then a moment
+> later, on its own: "Single-sided card selected."
 
-**Step 24.** `Tab` forward through where the beta section used to be.
+**Step 24.** `Tab` forward through the front entry controls and on past the
+Back of Card section.
 
-> **Expect:** "Back of Card Text" is gone entirely. You should go from the
-> Double-Sided Card checkbox to the Select Language combo box.
+> **Expect:** the Back of Card controls are **unavailable** again and Tab skips
+> them: you go from the front entry controls to the Select Language combo box.
+> The "Back of Card" heading itself is still on the page for arrow-key reading.
 
 **Step 25.** `Tab` to the Row Indicator Style group.
 

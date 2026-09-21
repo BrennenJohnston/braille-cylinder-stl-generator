@@ -3596,8 +3596,15 @@
                                            with his sign-off. Replaces the 2026-08-16 note, which said "there is
                                            no automatic wrapping here yet, so press Enter where each row should
                                            end" - false since the back text gained BANA auto-wrap. -->
-                                      <div id="back-text-help" class="grade-note" style="margin-top: 0.6em; font-size: 0.85em;">
-                                          Your text is translated with the language selected below and wrapped across the braille rows for you, keeping whole words together. Press Enter only where you want to force the start of a new row. The back has the same number of rows and cells per row as the front.
+                                      <!-- ADA SOP Step 6.8: the describedby id sits on the FIRST
+                                           SENTENCE only (22 words) - the same pure sentence split
+                                           the front field uses (UI spec 4.13). Every word of the
+                                           2026-08-17 signed note is still here and still visible.
+                                           Measured 2026-09-20 at 50 words once the Back of Card
+                                           section stopped being display:none (it is disabled, not
+                                           hidden, since the Embosser setup menu). -->
+                                      <div class="grade-note" style="margin-top: 0.6em; font-size: 0.85em;">
+                                          <span id="back-text-help">Your text is translated with the language selected below and wrapped across the braille rows for you, keeping whole words together.</span> Press Enter only where you want to force the start of a new row. The back has the same number of rows and cells per row as the front.
                                       </div>
                                       <!-- Live back-text overflow warning. Same job, same shape, and the same
                                            run-id guard as the front's #auto-overflow-warning; both ids are

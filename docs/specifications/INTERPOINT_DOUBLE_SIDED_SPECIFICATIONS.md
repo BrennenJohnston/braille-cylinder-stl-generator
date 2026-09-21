@@ -2,9 +2,12 @@
 
 ## Overview
 
-This document specifies the **Double-Sided Card (BETA)** feature: a toggle that turns the
+This document specifies the **Double-sided card** feature: a choice that turns the
 single cylinder the app generates today into a **paired set** that embosses both faces of a
-card in one pass between two counter-rotating cylinders.
+card in one pass between two counter-rotating cylinders. Since 2026-09-20 it is the
+**Card sides** either/or choice (Single-sided / Double-sided) inside the **Embosser setup**
+menu item at the top of the form, no longer a BETA-labelled checkbox in an accordion
+(programme decision D-7; §7).
 
 | Name in this feature | Repo `plate_type` | Single-sided name | Carries when the beta is ON |
 |---|---|---|---|
@@ -23,8 +26,8 @@ stock** legibly on both faces — the same pair did NOT emboss 0.4 mm stock (cor
 2026-08-20 the beta ships **two fixed footprint packages keyed to the card-stock
 preset** — 0.3 → Option B, 0.4 → the Q2 matrix winner (see
 [Section 10, Physical validation](#10-physical-validation-2026-08)). Still no tuning
-dials, and the UI label still carries "(BETA — for testing)" — that label now waits on
-broader user testing, not on the embossing test.
+dials. The "(BETA — for testing)" label was dropped on 2026-09-20 (decision D-7): the
+feature is a released choice in the Embosser setup menu item.
 
 **Code is authoritative.** Where this document and the code disagree, the code wins — flag
 the mismatch, do not silently edit either side. Authoritative sources in order:
@@ -463,52 +466,62 @@ Full pattern documented in UI_INTERFACE_CORE_SPECIFICATIONS.md v1.16 Section 4.8
 here with the signed-off strings. **All wording below was signed off by Brennen
 2026-08-16 — reword only with his sign-off** (each string carries that comment in code).
 
-### 7.1 The toggle block
+### 7.1 The Card sides choice (2026-09-20) and the Back of Card section
 
-Since 2026-08-31 the whole item is a **collapsible menu** (Brennen's call), directly
-after the front entry fieldset. It reuses the Expert Mode submenu pattern verbatim —
-`initExpertSubmenus()` wires anything carrying `.expert-submenu-toggle` — so the open
-and close behaviour, the design tokens, the `:focus-visible` ring, the ▼/▲ chevron and
-the focus-to-first-control-on-open are all the accordion's own:
+**Since 2026-09-20 there is no toggle and no accordion.** The choice is the third of the
+three either/or radio groups inside the **Embosser setup** menu item at the top of the
+form (`#embosser-setup-selection`, h2 "Embosser setup" — DRAFT S-M1; the other two are
+the embosser version and the gears). Full pattern in UI_INTERFACE_CORE_SPECIFICATIONS.md
+§4.8:
 
-- `#double-sided-menu-toggle` — the disclosure button, sole child of a real `<h2
-  class="expert-submenu-heading">` (APG accordion). Title: the signed heading text
-  **"Double-Sided Card (BETA — for testing)"**, verbatim. `aria-expanded` +
-  `aria-controls="double-sided-menu"`.
-- `#double-sided-menu` — the content. Inside it the fieldset keeps the same signed text
-  as an **sr-only legend** (the group keeps its accessible name; the visible heading is
-  the button's), then the checkbox and notes exactly as before.
-- `setDoubleSidedMenuOpen(open)` — the no-focus, no-announcement writer used by the
-  load-time restore, `updateDoubleSidedUI()` and Reset. **The beta being ON forces the
-  menu open** (a revealed Back of Card section must never sit inside a closed menu),
-  which is what re-opens it on a reload with the beta persisted. Turning the beta OFF
-  leaves the menu open — the user is still looking at the toggle they just pressed;
-  Reset closes it.
+- `#card-sides-selection` — a nested `<fieldset>` whose legend carries
+  `<h3 class="legend-heading">Card sides</h3>`, `aria-describedby="double-sided-note"`.
+- Radios `name="card_sides"`: `#card_sides_single` (`value="single"`, **checked in the
+  markup**) and `#card_sides_double` (`value="double"`), labels **"Single-sided"** /
+  **"Double-sided"** (DRAFT S-M6a/b), in the stock `.radio-group` / `.radio-option`
+  layout (44 px targets). `isDoubleSidedOn()` reads `#card_sides_double.checked` and is
+  the ONLY reader — the wire, the pair flow, the live warnings and the back-text checks
+  all go through it.
+- `#double-sided-note` — the group's description (DRAFT S-M7, 16 words): "Double-sided
+  embosses both faces of the card in one pass and uses the tactile row markers."
+- The 2026-08-16 signed sentence stays VISIBLE below it, verbatim minus its last clause:
+  "Embosses both sides of the card in one pass: **Cylinder A** (the embossing plate)
+  carries the front's raised dots plus recesses for the back, and **Cylinder B** (the
+  counter plate) carries the back's raised dots plus recesses for the front, offset
+  diagonally by 1.25 mm so the two sides never collide. Turning this on shows the Back of
+  Card section below and locks the Row Indicator Style to the tactile seam arrow. Generate
+  each cylinder with the same settings." The "This is a beta for testing — proofread both
+  sides…" sentence was removed with the BETA label (decision D-7).
+- `#ds-gap-warning` / `#ds-gap-message` (§7.3) moved into this fieldset.
+- Change listener: `updateDoubleSidedUI()`, persist, `resetToGenerateState()`,
+  `refreshLiveWarnings()`, then ONE announcement deferred by a tick (so the radio's own
+  "selected" is heard first): DRAFT S-M11 — "Double-sided card selected. The Back of Card
+  section is now active." followed, when turning on, by the lock note's text (§7.2), or
+  "Single-sided card selected." `updateDoubleSidedUI()` itself is silent (load restore
+  and Reset call it too).
 
-Inside the menu:
+Retired with the accordion: `#double-sided-menu-toggle`, `#double-sided-menu`,
+`setDoubleSidedMenuOpen()`, the `#double_sided_enabled` checkbox and its `aria-expanded`
+/ `aria-controls`, the sr-only legend and the label "Emboss both sides of the card
+(interpoint)".
 
-- Legend (sr-only): **"Double-Sided Card (BETA — for testing)"**
-- `#double_sided_enabled` — a real checkbox in a 44 px `.ds-toggle-option` label, with
-  `aria-expanded` (mirrors the state), `aria-controls="double-sided-section"`, and
-  `aria-describedby` pointing at the explanation note. Label text: **"Emboss both sides of
-  the card (interpoint)"**
-- Explanation note. **All four sentences below are unchanged and all four are still
-  visible.** Since 2026-08-22 the `id="double-sided-note"` sits on a `<span>` around the
-  FOURTH sentence only — the beta warning — so `aria-describedby` on the checkbox resolves
-  to 17 words instead of 96. The first three sentences stay in the same `.grade-note` div,
-  in the same order, simply not forced into speech on every visit (ADA SOP Step 6.8; audit
-  F-D, decision D2). The 2026-08-16 sign-off is intact: the spoken sentence is lifted
-  whole, not reworded. Full text: "Embosses both sides of the card in one pass:
-  **Cylinder A** (the embossing plate) carries the front's raised dots plus recesses for
-  the back, and **Cylinder B** (the counter plate) carries the back's raised dots plus
-  recesses for the front, offset diagonally by 1.25 mm so the two sides never collide.
-  Turning this on shows the Back of Card section below and locks the Row Indicator Style
-  to the tactile seam arrow. Generate each cylinder with the same settings. This is a beta
-  for testing — proofread both sides and check every braille surface before use."
+**The Back of Card section is always in the tree.** `#double-sided-section` is a
+`.line-input-group` sibling of the front entry, directly after it, holding
+`<fieldset class="line-input-fieldset" id="back-entry-fieldset" disabled>`. The native
+`disabled` attribute is what "off" means: every control inside is inert and read as
+unavailable, Tab skips them, and the controls dim (`#back-entry-fieldset:disabled >
+:not(legend) { opacity: 0.6 }`, the locked-radio convention) while the legend stays at
+full opacity. `updateDoubleSidedUI()` sets `backEntry.disabled = !isDoubleSidedOn()` —
+nothing is hidden, so the section can never sit inside a closed menu again. Playwright
+note: `toBeDisabled()` does not recognise the attribute on the `<fieldset>` element
+itself, only on its controls — the e2e specs assert `toHaveAttribute('disabled', '')` on
+the fieldset and `toBeDisabled()` on `#back-text`.
 
-Toggling ON reveals `#double-sided-section` containing the **Back of Card** fieldset:
+Inside it:
 
-- Legend: **"Back of Card — Enter Text for Braille Translation"**
+- Legend: `<h2 class="legend-heading" id="back-entry-heading">` **"Back of Card — Enter
+  Text for Braille Translation"** (the signed 2026-08-16 text; the section's own h2 now,
+  always visible — UI spec §4.11)
 - Label: **"Back of Card Text"** for the `#back-text` textarea, placeholder **signed off by
   Brennen 2026-08-17**: **"Type the text for the back of the card here. It wraps across the
   rows automatically."** This replaces the 2026-08-16 placeholder ("Each line becomes one
@@ -742,9 +755,12 @@ STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md §8.
 
 ### 7.5 Persistence, reset, and no dials
 
-- Persisted as `braille_prefs_double_sided_enabled` (`'1'`/`'0'`) and
-  `braille_prefs_back_text`; restored on load (a restored ON state re-reveals the section
-  and re-applies the lock), cleared by Reset and by Clear-all. Also documented in
+- Persisted as `braille_prefs_double_sided_enabled` (`'1'`/`'0'` — the SAME key the
+  retired checkbox used, so a saved choice carries over to the radios) and
+  `braille_prefs_back_text`; restored on load by checking `#card_sides_double` or
+  `#card_sides_single` (a restored ON state re-enables the section and re-applies the
+  lock, silently), cleared by Reset (the radio group's `defaultChecked` sweep puts
+  Single-sided back) and by Clear-all. Also documented in
   BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md v1.4 (Section 8 and the Section 11
   localStorage table).
 - **There are no offset or footprint dials, by decision** (Brennen, 2026-08-16; preset
@@ -758,8 +774,9 @@ STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md §8.
 ### 7.7 Pair mode is shared with the gears beta (2026-08-25)
 
 The Generate Both flow, the Cylinder A/B radio relabel, and the pair download row are no
-longer exclusive to this beta: they follow `isPairModeOn()` — Double-Sided OR Integrated
-Gears (a gear set only works meshed with its counterpart, so a gears-only user needs the
+longer exclusive to this feature: they follow `isPairModeOn()` — `isDoubleSidedOn()` OR
+`isGearRollersOn()` OR `isVersion2()` (since 2026-09-20 all three read the Embosser setup
+radios; a gear set only works meshed with its counterpart, so a gears-only user needs the
 pair too). What stays double-sided-only: the back text, the tactile lock, the paired 1:1
 recesses, and the `Cylinder_A_`/`Cylinder_B_` FILENAMES — a gears-only pair run keeps the
 frozen `Embossing_Cylinder_Geared_*`/`Counter_Cylinder_Geared_*` names. A pair run now
@@ -921,6 +938,7 @@ and separated**. Full record: the research folder's `00_PROJECT_MEMORY.md`, FD-8
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-09-20 | 1.14 | **Out of beta, into the Embosser setup menu (programme decisions D-7, D-8; phases C1-C4).** Overview and §7.1 rewritten: the "Double-Sided Card (BETA — for testing)" accordion and its `#double_sided_enabled` checkbox are retired; the choice is the **Card sides** radio group (`#card_sides_single` checked / `#card_sides_double`, DRAFT S-M6a/b, description DRAFT S-M7) inside the new `#embosser-setup-selection` item at the top of the form, read only through `isDoubleSidedOn()`. The Back of Card fieldset (`#back-entry-fieldset`, h2 legend) is always in the tree as a sibling of the front entry, native-`disabled` while single-sided and enabled by `updateDoubleSidedUI()`. The 2026-08-16 signed explanation stays visible minus its beta sentence; one composed, deferred announcement per change (DRAFT S-M11 plus the lock note, whose wording is now DRAFT S-M12: "Choose Single-sided to pick visual markers"). §7.5 and §7.7 updated (same persistence key; `isPairModeOn()` reads the three radios). Strings await Brennen's sign-off. |
 | 2026-08-31 | 1.13 | **§7.1 and §7.1's Back of Card block: the item becomes a collapsible menu, and the back gains the front's two-way translation** (Brennen's call). The whole Double-Sided item now opens and closes like an Expert Mode submenu — `#double-sided-menu-toggle` (a real `<h2>`'s sole-child button, APG accordion, reusing `.expert-submenu-*` so tokens, focus ring and behaviour cannot drift) over `#double-sided-menu`; the fieldset keeps the signed heading text as an sr-only legend. The beta being ON forces the menu open (`setDoubleSidedMenuOpen()`), so a reload with the beta persisted lands open; Reset closes it. The Back of Card entry gains `#back-translate-to-braille-btn`, the authoritative `#back-braille-unicode` field and `#back-translate-to-text-btn` — the front's machinery mirrored with separate `backBrailleField*` state, the shared `validateBrailleFieldLines()`, its own sr-only announcer `#back-braille-unicode-live` (the page's 7th permanent `role=status` node; liveRegions.spec pins the count), and the same authority rule: **a non-empty back field IS `back_lines`, padded to `grid_rows`, no liblouis pass; a generate-time problem blocks as `Back of card: …`.** Both back textareas join the front's themed CSS — `#back-text` had no themed rule at all and rendered white in dark mode. **Every 2026-08-16/17 signed string is byte-identical**; the new visible strings are the front's, verbatim, with the group name telling the sides apart. Toggle-off payload untouched (pinned); a new e2e pins the field-wins-on-the-wire contract and the menu contract. |
 | 2026-08-25 | 1.12 | **Pair mode is shared with the Integrated Gears beta** (new §7.7). Generate Both, the Cylinder A/B radio relabel (reuse confirmed by Brennen 2026-08-25), and the pair download row now follow `isPairModeOn()` — either beta. Double-sided keeps exclusively: back text, tactile lock, paired recesses, and the `Cylinder_A_`/`Cylinder_B_` filenames (gears-only runs keep the frozen Geared single-sided names). Pair runs also build a combined two-body `Cylinder_Pair_[Geared_]` file, offered first (mechanics in STL_EXPORT §6/§15); §8's is_watertight prohibition extends to it — it inherits Cylinder A's 3 pinch edges and contains two bodies by design. Wire shape, footprints, thresholds, geometry, and the toggle-off payload untouched. |
 | 2026-08-21 | 1.8 | **Section 7.6 corrected and extended** (post-initiative accessibility hygiene bundle). The bullet claiming "an unchanged string is not a mutation, which keeps the per-keystroke recomputes from chattering" was **wrong and contradicted the `announceDsGap` bullet in the same list**: `announceStatus()` assigns `textContent` unconditionally, and assigning an identical string still replaces the text node. Disproved by measurement - `#caps-warning`, whose text never changes, announced **11 times over 11 keystrokes** when wired without a gate. The bullet now states that writing does not deduplicate and that frequent callers must gate themselves. Also records the three non-beta sources that joined the channel the same day (`auto-overflow-warning`, `cylinder-overflow-warning`, `caps-warning`), bringing the wired total to **nine**. Documentation and one UI file only - no beta behaviour, wire shape, footprint, threshold, or geometry changed, and the toggle-off payload is untouched. |

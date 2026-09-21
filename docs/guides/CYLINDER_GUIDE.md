@@ -174,28 +174,31 @@ Access these by clicking **Show Expert Mode**:
 | Braille Spacing | Cells per row, number of rows, spacing |
 | Surface Dimensions | Diameter, height, wall thickness, polygon sides |
 
-## Double-Sided Cards (BETA)
+## Double-Sided Cards
 
-Normally the app makes one cylinder that embosses braille on one face of a card. With the
-**Double-Sided Card** beta turned on it makes a matched **pair** of cylinders instead, and a
-card run between them comes out with braille on **both** faces in a single pass.
+Normally the app makes one cylinder that embosses braille on one face of a card. With
+**Double-sided** chosen it makes a matched **pair** of cylinders instead, and a card run
+between them comes out with braille on **both** faces in a single pass.
 
-This is a beta. It has been printed and used — see [Is it ready to
-use?](#is-it-ready-to-use) below — but proofread both sides and feel every braille surface
-before you give a card to anyone.
+It has been printed and used — see [Is it ready to use?](#is-it-ready-to-use) below — but
+as with any braille, proofread both sides and feel every braille surface before you give a
+card to anyone.
 
 Double-sided works for cylinders only. It is not available for flat cards.
 
 ### Steps
 
-1. **Turn on the toggle.** Under the text box, tick **Double-Sided Card (BETA — for
-   testing)**. Two things happen straight away: a **Back of Card** section appears below,
-   and the **Row Indicator Style** locks to the tactile seam arrow.
+1. **Choose Double-sided.** Under **Embosser setup** at the top of the page, in the
+   **Card sides** choice, pick **Double-sided** (the page starts on Single-sided). Two
+   things happen straight away: the **Back of Card** section below the front text becomes
+   active (it is always on the page, greyed out until now), and the **Row Indicator
+   Style** locks to the tactile seam arrow.
 
    The lock is deliberate. Visual row markers spend a braille cell per row on a printed
    letter, and on a pair each cylinder would need its own markers on a surface the other
    cylinder is pressing against. The tactile seam arrow sits in the seam gap instead, where
-   both cylinders of a pair can carry it. To choose visual markers again, turn the beta off.
+   both cylinders of a pair can carry it. To choose visual markers again, pick
+   Single-sided.
 
 2. **Type the front text** as you normally would, in the main text box.
 
@@ -269,8 +272,8 @@ were printed on a Bambu Lab X1C with a 0.4 mm nozzle and used to emboss real car
 braille came out legible on both faces. That is why the sizes above are final and have no
 tuning dials.
 
-It keeps the BETA label because it has been proven by one builder, on one printer, with one
-paper stock — not because anything is known to be wrong with it.
+It carried a BETA label until September 2026 because it had been proven by one builder, on
+one printer, with one paper stock — not because anything was known to be wrong with it.
 
 One thing the app cannot do for you: **the two cylinders must stay within about 1.0 degree
 of each other as they turn.** Further out of phase than that and a front dot can meet the

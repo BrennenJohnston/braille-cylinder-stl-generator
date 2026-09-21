@@ -66,8 +66,14 @@ translation, Three.js preview. Working branch: develop — never commit to main.
 
    Never "fix" one layer to match the other on your own — the preset numbers
    are print-tuned and the schema numbers are the absent-field fallback.
-6b. Double-sided (interpoint) BETA — cylinders only, toggle default OFF, and
-   toggle-off behavior must stay byte-identical to single-sided:
+6b. Double-sided (interpoint) — cylinders only, OUT OF BETA since 2026-09-20
+   (D-7): the choice is the "Card sides" radio group (`card_sides_single`
+   checked / `card_sides_double`) inside the "Embosser setup" menu item at the
+   top of the form, read ONLY through isDoubleSidedOn(); the old
+   `#double_sided_enabled` checkbox and its accordion are gone; the Back of
+   Card fieldset (`#back-entry-fieldset`) is always in the tree and
+   native-disabled while single-sided. Single-sided behavior must stay
+   byte-identical to before the feature:
    - interpoint offset default (1.25, 1.25) mm diagonal, range 1.15–1.35 each
      (settings double_sided.interpoint_offset_x_mm/_y_mm → flat runtime
      interpoint_offset_x/_y; interpoint.py calls the y number offset_z).
@@ -90,9 +96,13 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      "Cylinder B" = negative plate, downloads Cylinder_A_/Cylinder_B_*.stl.
      Never rename single-sided labels/filenames (training videos use them).
 
-6c. Gear-integrated one-piece rollers BETA — cylinders only, toggle default
-   OFF, and toggle-off must stay byte-identical (proved at three levels: the
-   geometry spec, the worker STL, and the request body).
+6c. Gear-integrated one-piece rollers — cylinders only, OUT OF BETA since
+   2026-09-20 (D-7): the choice is the "Gears" radio group
+   (`gear_mode_standard` checked / `gear_mode_fixed`) inside the "Embosser
+   setup" menu item, read ONLY through isGearRollersOn(); the old
+   `#gear_rollers_enabled` checkbox fieldset is gone. Standard (the old OFF)
+   must stay byte-identical (proved at three levels: the geometry spec, the
+   worker STL, and the request body).
    - Flat name gear_rollers_enabled (schema gear_rollers.enabled), int 0/1.
    - The gears are VENDORED 1:1 replica data at static/assets/gears/
      gears_{a,b}.bin — NEVER hand-edit them, and regenerate ONLY via
@@ -124,10 +134,15 @@ translation, Three.js preview. Working branch: develop — never commit to main.
    - There is NO card shape in the UI (one radio, value="cylinder"), so do not
      add UI branches for one; the cylinders-only rule lives in the API.
 
-6d. Embosser Version 2 keyed cutouts PROTOTYPE - cylinders only, selector
-   default Version 1, and Version 1 must stay byte-identical (proved at FIVE
-   levels: settings, geometry spec, HTTP, golden fixtures, and a real-browser
-   `fc /b` of both the request body and the exported STL).
+6d. Embosser Version 2 keyed cutouts - cylinders only, selector default
+   Version 1, and Version 1 must stay byte-identical (proved at FIVE levels:
+   settings, geometry spec, HTTP, golden fixtures, and a real-browser `fc /b`
+   of both the request body and the exported STL). Since 2026-09-20 (D-7,
+   D-8) the "(prototype)" tag and the prototype notice are gone and the
+   version radios (`embosser_version_1/2`, ids unchanged) are the FIRST of
+   three choices inside the "Embosser setup" menu item
+   (`#embosser-setup-selection`, the form's first item), whose legend is the
+   page's h2 while each choice's legend is an h3.
    - Flat names `embosser_version` (int enum 1|2, schema `embosser_version`)
      and `v2_key_clearance_mm` (schema `version_2.key_clearance_mm`). The
      version is parsed as an EXACT integer - 2.5 is refused, not rounded.
@@ -194,8 +209,12 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      c = 0.1525 - a guard rail, NOT dead code. seam_offset never turns any of
      them.
    - The barrel is SOLID while Version 2 is on; the keyed hole is the bore.
-   - Gears BETA is Version 1 ONLY - the UI hides and unchecks the toggle and
-     the API refuses the combination.
+   - Integrated gears are Version 1 ONLY until sub-plan B of the 2026-09-20
+     programme ships fixed Version 2 gears: the API refuses the combination,
+     and since 2026-09-20 the UI no longer hides the Gears choice - a
+     TEMPORARY guard in updateEmbosserVersionUI() puts it back to Standard
+     when Version 2 is chosen and the version announcement says so (DRAFT
+     S-M13). Phase B6 removes the guard.
    - Naming: a `V2_` segment is inserted ONLY when Version 2 is on
      (Embossing_Cylinder_V2_{preset}_{name}.stl). Version 1 names never change.
    - Version 2 recommends the SAME cell counts as Version 1. The one-fewer

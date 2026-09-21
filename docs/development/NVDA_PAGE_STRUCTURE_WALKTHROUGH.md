@@ -63,7 +63,7 @@ rule in those two apply here unchanged.
    |---|---|---|
    | Placement Mode | **Auto Placement** | Part 5 types into the Auto Placement box, and Part 2's heading count assumes the default |
    | Shape | **Cylinder** | Part 6 generates a cylinder |
-   | Double-Sided Card (BETA) | **off** | Part 2 counts headings with it off, then turns it on deliberately |
+   | Card sides (under Embosser setup) | **Single-sided** | Part 2 counts headings single-sided, then chooses Double-sided deliberately |
    | Expert Mode | **closed** | Part 2 opens it as a step |
 
    To start completely clean, clear site data for `localhost:5001` and reload.
@@ -118,12 +118,26 @@ This is the highest-value listen in the document. Item C proved the outline
 
 Press `H` repeatedly from the top.
 
-**Expected: six, in this order.**
+> **Counts rewritten 2026-09-20 (programme phase C4, NOT yet run):** the outline
+> changed twice since this walkthrough was run on 2026-08-23 — the Embosser
+> version and Integrated Gears items gained h2s on 2026-08-24/31, and on
+> 2026-09-20 the three choices became ONE "Embosser setup" item (an h2 with
+> three h3s inside it, always visible) while the Back of Card section became a
+> permanent h2. The numbers below were MEASURED at the phase C5 accessibility
+> pass (`build/a11yverify/setup_menu/probe.cjs`, Chromium, 2026-09-20): 10 on
+> load, 15 with Expert Mode open, 16 with Double-sided chosen, no level skipped
+> in any state. What NVDA actually reads is still for Brennen to hear.
+
+**Expected: ten, in this order.**
 
 ```
 h1  Custom Braille STL Generator
+h2  Embosser setup
+h3    Embosser version
+h3    Gears
+h3    Card sides
 h2  Enter Text for Braille Translation
-h2  Double-Sided Card (BETA — for testing)
+h2  Back of Card — Enter Text for Braille Translation
 h2  Row Indicator Style
 h2  Card Thickness
 h2  Select Plate to Generate
@@ -133,17 +147,18 @@ h2  Select Plate to Generate
 
 Open Expert Mode, then press `H` from the top again.
 
-**Expected: eleven** — the six above plus five at level 3: *Shape Selection*,
+**Expected: fifteen** — the ten above plus five at level 3: *Shape Selection*,
 *Braille Spacing*, *Braille Dot Adjustments*, *Surface Dimensions*,
 *Translation Options*.
 
-### 2c — With the double-sided beta on
+### 2c — With Double-sided chosen
 
-Turn on **Emboss both sides of the card**, leave Expert Mode open, press `H`.
+Choose **Double-sided** under Card sides, leave Expert Mode open, press `H`.
 
-**Expected: twelve.** The beta forces tactile mode, which reveals a sixth level-3
-header, *Tactile Indicator Dimensions*. The first `h2` also relabels itself to
-**"Front of Card — Enter Text for Braille Translation"**.
+**Expected: sixteen.** Double-sided forces tactile mode, which reveals a sixth
+Expert Mode level-3 header, *Tactile Indicator Dimensions*. The front entry `h2`
+also relabels itself to **"Front of Card — Enter Text for Braille Translation"**;
+the Back of Card `h2` was already there, its controls simply become available.
 
 ### The rule for all three
 
@@ -309,9 +324,9 @@ Speech log windowed with nvdaspeech.py?   yes / no
 Part | What I heard | Count | Expected | Pass/Fail
 -----|--------------|-------|----------|----------
   1  landmarks      |      | 5 incl. banner |
-  2a headings load  |      | 6              |
-  2b + expert mode  |      | 11             |
-  2c + double-sided |      | 12             |
+  2a headings load  |      | 10             |
+  2b + expert mode  |      | 15             |
+  2c + double-sided |      | 16             |
   2  any skipped levels?  |      | none      |
   3  link 1 lands on      |      | main      |
   3  link 2 lands on      |      | the h2    |
