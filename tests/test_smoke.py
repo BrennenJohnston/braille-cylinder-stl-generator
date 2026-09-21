@@ -1054,6 +1054,40 @@ def test_ui_version2_gear_size_sentence_matches_the_gears_module():
     assert 'Fixed gears are not available for Version 2 yet' not in html
 
 
+def test_schema_and_request_model_declare_the_back_per_line_tables():
+    """
+    Back of Card parity (2026-09-20 programme, sub-plan D, D-11): the back's
+    per-line liblouis tables are declared in settings.schema.json as
+    text.back_languages, the mirror of text.languages, and the request model
+    carries them as back_per_line_language_tables beside back_lines. The wire
+    key is what the generate handler sends only for a manually placed back.
+    """
+    import json
+    from dataclasses import fields
+    from pathlib import Path
+
+    from app.models import GenerateBrailleRequest
+
+    root = Path(__file__).resolve().parents[1]
+    schema = json.loads((root / 'settings.schema.json').read_text(encoding='utf-8'))
+    text = schema['properties']['text']['properties']
+    assert text['back_languages']['type'] == 'array'
+    assert text['back_languages']['items'] == text['languages']['items']
+    assert 'back_per_line_language_tables' in text['back_languages']['description']
+
+    names = {f.name for f in fields(GenerateBrailleRequest)}
+    assert {'back_lines', 'back_per_line_language_tables'} <= names
+    parsed = GenerateBrailleRequest.from_request_data(
+        {'back_lines': ['⠁', '', '', ''], 'back_per_line_language_tables': ['en-ueb-g2.ctb'] * 4}
+    )
+    assert parsed.back_lines == ['⠁', '', '', '']
+    assert parsed.back_per_line_language_tables == ['en-ueb-g2.ctb'] * 4
+    assert GenerateBrailleRequest.from_request_data({}).back_per_line_language_tables is None
+
+    html = (root / 'public' / 'index.html').read_text(encoding='utf-8')
+    assert 'specRequestBody.back_per_line_language_tables = backPerLineLanguageTables;' in html
+
+
 def test_zero_recess_depth_cuts_no_cylinder_bowls(client):
     """
     Bowl Recess Dot Depth 0 mm means NO recess, not the shipped default.

@@ -775,6 +775,156 @@ test.describe('Double-Sided Card beta', () => {
     await expect(page.locator('#back-text')).toHaveValue('def');
   });
 
+  // Back of Card parity (2026-09-20 programme, sub-plan D, decision D-11): the
+  // back has its own Auto / Manual placement, per-line inputs and per-line
+  // translation dropdowns, mirroring the front. DRAFT strings S-D1..S-D3 are
+  // flagged for Brennen; the pins here move with his sign-off.
+  const S_D1_START = 'Back line 1 exceeds';
+
+  /** Choose Manual placement for the back and fill its rows (the section must be enabled). */
+  async function fillBackManualLines(page: Page, lines: string[]) {
+    await page.locator('#back_placement_mode_manual').check();
+    await expect(page.locator('#back-dynamic-line-inputs')).toBeVisible();
+    for (let i = 0; i < lines.length; i++) {
+      await page.locator(`#back_line${i + 1}`).fill(lines[i]);
+    }
+  }
+
+  /** The value of the first master-table option that differs from the default. */
+  async function anotherLanguageTable(page: Page): Promise<string> {
+    const value = await page.evaluate(() => {
+      const master = document.getElementById('language-table') as HTMLSelectElement;
+      const other = Array.from(master.options).find((o) => o.value && o.value !== master.value);
+      return other?.value ?? null;
+    });
+    if (!value) throw new Error('no second language table to choose');
+    return value;
+  }
+
+  test('the back has its own placement toggle, Auto by default, and Manual reveals per-line rows', async ({
+    page,
+  }) => {
+    await openApp(page);
+    // Disabled with the section while single-sided, like every other back control.
+    await expect(page.locator('#back_placement_mode_auto')).toBeDisabled();
+    await chooseDoubleSided(page);
+    await expect(page.locator('#back_placement_mode_auto')).toBeEnabled();
+    await expect(page.locator('#back_placement_mode_auto')).toBeChecked();
+    await expect(page.locator('#back-auto-input-container')).toBeVisible();
+    await expect(page.locator('#back-dynamic-line-inputs')).toBeHidden();
+
+    await page.locator('#back_placement_mode_manual').check();
+    await expect(page.locator('#back-auto-input-container')).toBeHidden();
+    await expect(page.locator('#back-dynamic-line-inputs')).toBeVisible();
+    // One row per braille row, each with its own translation dropdown filled
+    // from the master list, and the front's choice untouched.
+    await expect(page.locator('#back-dynamic-line-inputs input[type="text"]')).toHaveCount(4);
+    await expect(page.locator('#back-dynamic-line-inputs select.line-language-select')).toHaveCount(4);
+    expect(await page.locator('#back_line_lang_1 option').count()).toBeGreaterThan(1);
+    await expect(page.locator('#placement_mode_auto')).toBeChecked();
+  });
+
+  test('manual back lines reach the wire translated per line with their own tables', async ({ page }) => {
+    await openApp(page);
+    await enableBeta(page, 'abc', '');
+    await fillBackManualLines(page, ['def', 'ghi']);
+    const other = await anotherLanguageTable(page);
+    await page.locator('#back_line_lang_2').selectOption(other);
+
+    const spec = await interceptGeometrySpec(page);
+    await generate(page, spec, 1);
+    const body = spec.bodies[0] as Record<string, unknown>;
+    const back = body.back_lines as string[];
+    const settings = body.settings as Record<string, unknown>;
+    const rows = Number(settings.grid_rows);
+
+    // One braille row per typed line, padded to grid_rows, nothing else.
+    expect(back).toHaveLength(rows);
+    expect(back[0]).toMatch(/^[⠀-⣿]+$/);
+    expect(back[1]).toMatch(/^[⠀-⣿]+$/);
+    expect(back.slice(2)).toEqual(Array(rows - 2).fill(''));
+
+    // The per-line tables travel beside the front's, one per row, the chosen
+    // table on row 2 and the master table elsewhere.
+    const tables = body.back_per_line_language_tables as string[];
+    expect(tables).toHaveLength(rows);
+    expect(tables[1]).toBe(other);
+    expect(tables[0]).toBe(await page.locator('#language-table').inputValue());
+    expect(body.per_line_language_tables).toHaveLength(rows);
+  });
+
+  test('Auto placement for the back sends no per-line tables, and the back field still wins', async ({ page }) => {
+    await openApp(page);
+    await enableBeta(page, 'abc', 'def');
+    const spec = await interceptGeometrySpec(page);
+    await generate(page, spec, 1);
+    expect('back_per_line_language_tables' in (spec.bodies[0] as Record<string, unknown>)).toBe(false);
+
+    // Manual rows typed, but hand-entered braille in the back field outranks them.
+    await fillBackManualLines(page, ['def']);
+    const handBraille = '⠭⠽⠵';
+    const field = page.locator('#back-braille-unicode');
+    for (let attempt = 0; attempt < 5; attempt++) {
+      await field.fill(handBraille);
+      if ((await field.inputValue()) === handBraille) break;
+    }
+    await expect(field).toHaveValue(handBraille);
+    await generate(page, spec, 2);
+    const body = spec.bodies[1] as Record<string, unknown>;
+    expect((body.back_lines as string[])[0]).toBe(handBraille);
+    expect('back_per_line_language_tables' in body).toBe(false);
+  });
+
+  test('an overflowing manual back line blocks generation and names the line', async ({ page }) => {
+    await openApp(page);
+    await enableBeta(page, 'abc', '');
+    await page.locator('#back_placement_mode_manual').check();
+    await expect(page.locator('#back-dynamic-line-inputs')).toBeVisible();
+
+    // The live warning names it first, in the signed per-line sentence. Filled
+    // with the same retry loop fillBackUntilOverflow() uses: the live check is
+    // a debounced liblouis call that is skipped while the worker is still
+    // starting, which Firefox under parallel load does hit.
+    const tooLong = 'this back line is far too long to fit on one braille row';
+    const warning = page.locator('#ds-back-overflow-warning');
+    let shown = false;
+    for (let attempt = 0; attempt < 12 && !shown; attempt++) {
+      await page.locator('#back_line1').fill('');
+      await page.locator('#back_line1').fill(tooLong);
+      shown = await expect(warning).toBeVisible({ timeout: 3000 }).then(() => true, () => false);
+    }
+    expect(shown).toBe(true);
+    await expect(page.locator('#ds-back-overflow-message')).toContainText('Back line 1');
+    await expect(page.locator('#ds-back-overflow-message')).toContainText('are available');
+
+    const spec = await interceptGeometrySpec(page);
+    await page.locator('#action-btn').click();
+    await expect(page.locator('#error-text')).toContainText(S_D1_START, { timeout: 15_000 });
+    expect(spec.bodies).toHaveLength(0);
+
+    // Shortening it clears the warning and lets the request through.
+    await page.locator('#back_line1').fill('def');
+    await expect(page.locator('#ds-back-overflow-warning')).toBeHidden();
+    await generate(page, spec, 1);
+    expect((spec.bodies[0] as Record<string, unknown>).back_lines).toBeTruthy();
+  });
+
+  test('the back placement choice survives a reload and Reset restores Auto', async ({ page }) => {
+    await openApp(page);
+    await chooseDoubleSided(page);
+    await page.locator('#back_placement_mode_manual').check();
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_back_placement_mode'))).toBe('manual');
+
+    await page.reload();
+    await page.waitForSelector('#indicator-mode-selection');
+    await expect(page.locator('#back_placement_mode_manual')).toBeChecked();
+    await expect(page.locator('#back-dynamic-line-inputs')).toBeVisible();
+
+    await page.locator('#reset-defaults-btn').click();
+    await expect(page.locator('#back_placement_mode_auto')).toBeChecked();
+    await expect(page.locator('#back-dynamic-line-inputs')).toBeHidden();
+  });
+
   test('the back-of-card overflow warning appears, clears, and goes with the toggle', async ({ page }) => {
     await openApp(page);
     await enableBeta(page, 'abc', 'def');

@@ -29,6 +29,11 @@
           "description": "BETA, double-sided mode only: the braille for the BACK face of the card. Same Unicode braille rule as 'lines'. Ignored unless double_sided.enabled is true."
         },
         "languages": { "type": "array", "items": { "type": "string" } },
+        "back_languages": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Double-sided only: the liblouis table used for each BACK row, the mirror of 'languages' (on the wire: top-level back_per_line_language_tables beside per_line_language_tables). Sent only when the back was placed manually, one entry per row; absent for Auto placement and for a hand-filled back braille field, which use the master table. Informational: geometry never reads it."
+        },
         "default_language": { "type": "string", "default": "en-ueb-g2.ctb" },
         "original_lines": { "type": "array", "items": { "type": "string" } },
         "auto_wrap": { "type": "boolean" }

@@ -108,6 +108,13 @@ class GenerateBrailleRequest:
     # Optional metadata
     original_lines: list[str] | None = None
     per_line_language_tables: list[str] | None = None
+    # Double-sided: the back face's braille (top-level back_lines on the wire,
+    # text.back_lines in settings.schema.json) and, when the back was placed
+    # manually (2026-09-21, programme sub-plan D), the liblouis table used for
+    # each back row - the mirror of per_line_language_tables
+    # (text.back_languages). Informational: geometry never reads the tables.
+    back_lines: list[str] | None = None
+    back_per_line_language_tables: list[str] | None = None
 
     @staticmethod
     def from_request_data(data: dict) -> 'GenerateBrailleRequest':
@@ -145,6 +152,8 @@ class GenerateBrailleRequest:
             cylinder_params=data.get('cylinder_params'),
             original_lines=data.get('original_lines'),
             per_line_language_tables=data.get('per_line_language_tables'),
+            back_lines=data.get('back_lines'),
+            back_per_line_language_tables=data.get('back_per_line_language_tables'),
         )
 
 

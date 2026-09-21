@@ -3490,6 +3490,24 @@
                           <fieldset class="line-input-fieldset" id="back-entry-fieldset" disabled>
                               <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
                               <legend class="grade-label"><h2 class="legend-heading" id="back-entry-heading">Back of Card — Enter Text for Braille Translation</h2></legend>
+                              <!-- Back placement toggle (2026-09-21, programme sub-plan D, decision
+                                   D-11): the front's toggle element-for-element, under its own radio
+                                   name, so the two sides choose independently. Auto is the default,
+                                   as it is for the front. -->
+                              <div class="line-input-mode-toggle" style="margin-bottom: 0.8em; display: flex; align-items: center; gap: 1em;">
+                                  <span class="line-label" style="margin: 0;">Placement Mode:</span>
+                                  <label style="display: inline-flex; align-items: center; gap: 0.4em;">
+                                      <input type="radio" name="back_placement_mode" value="auto" id="back_placement_mode_auto" checked>
+                                      Auto Placement
+                                  </label>
+                                  <label style="display: inline-flex; align-items: center; gap: 0.4em;">
+                                      <input type="radio" name="back_placement_mode" value="manual" id="back_placement_mode_manual">
+                                      Manual Placement
+                                  </label>
+                              </div>
+                              <!-- Back auto placement: the wrapped textarea (shown in Auto, hidden in
+                                   Manual by updateBackPlacementUI(), exactly as #auto-input-container). -->
+                              <div id="back-auto-input-container">
                                       <!-- Label wording signed off by Brennen (2026-08-16). Placeholder
                                            replaced with his sign-off (2026-08-17): BANA auto-wrap made
                                            "each line becomes one braille row" untrue, since one typed
@@ -3511,9 +3529,17 @@
                                       <div class="grade-note" style="margin-top: 0.6em; font-size: 0.85em;">
                                           <span id="back-text-help">Your text is translated with the language selected below and wrapped across the braille rows for you, keeping whole words together.</span> Press Enter only where you want to force the start of a new row. The back has the same number of rows and cells per row as the front.
                                       </div>
+                              </div>
+                              <!-- Back manual placement: one row per braille row with its own
+                                   translation dropdown, built by createBackDynamicLineInputs() from
+                                   grid_rows exactly as #dynamic-line-inputs is (2026-09-21, D-11). -->
+                              <div id="back-dynamic-line-inputs" style="display: none;">
+                                  <!-- Back line inputs will be dynamically generated here based on grid_rows value -->
+                              </div>
                                       <!-- Live back-text overflow warning. Same job, same shape, and the same
                                            run-id guard as the front's #auto-overflow-warning; both ids are
-                                           load-bearing for computeBackOverflow(). -->
+                                           load-bearing for computeBackOverflow(). In Manual placement the
+                                           same box carries the per-line sentences instead. -->
                                       <!-- Announced through #a11y-status, not from here: this box is
                                            hidden between messages, so a live region on it cannot fire
                                            on first appearance. Leaving one here as well would let some
@@ -3529,6 +3555,9 @@
                                            group name is what tells the two apart. -->
                                       <div class="translate-row">
                                           <button type="button" id="back-translate-to-braille-btn" class="btn-translate">Translate to Braille ↓</button>
+                                      </div>
+                                      <div class="grade-note" style="margin-top: 0.6em; font-size: 0.85em;">
+                                          Capital letters are translated by default (each adds a capital-indicator cell). To save cells you can disable capitalization in Expert Mode, where number-sign options also live.
                                       </div>
                                       <!-- Editable Unicode braille field for the BACK: the authoritative
                                            back_lines whenever non-empty, exactly as the front field is
@@ -6029,6 +6058,79 @@
             });
         }
 
+        // The BACK's per-line rows (2026-09-21, programme sub-plan D, D-11): the
+        // front's builder mirrored under back_ ids. The selects carry the shared
+        // line-language-select class, so syncLineLanguageSelects() fills them
+        // with the front's. Row labels DRAFT S-D2 - FLAGGED FOR BRENNEN.
+        function createBackDynamicLineInputs(numLines) {
+            const container = document.getElementById('back-dynamic-line-inputs');
+            if (!container) return;
+            container.innerHTML = '';
+
+            for (let i = 1; i <= numLines; i++) {
+                const lineDiv = document.createElement('div');
+                lineDiv.className = 'line-input';
+                lineDiv.innerHTML = `
+                    <div class="line-translation-row">
+                        <label for="back_line_lang_${i}" class="line-label">Back Line ${i} Translation</label>
+                        <select id="back_line_lang_${i}" name="back_line_lang_${i}" class="language-select line-language-select"></select>
+                    </div>
+                    <div class="line-text-row">
+                        <label for="back_line${i}" class="line-label">Back Line ${i}</label>
+                        <input type="text" id="back_line${i}" name="back_line${i}" placeholder="Enter English text here..." maxlength="50" aria-describedby="back_line${i}-help" autocomplete="off">
+                        <span id="back_line${i}-help" class="sr-only">Maximum 50 characters for back line ${i}</span>
+                    </div>
+                `;
+                container.appendChild(lineDiv);
+                // A pristine back braille field mirrors a translation, so an edit
+                // to its source clears it - the same rule #back-text follows.
+                lineDiv.querySelector(`#back_line${i}`).addEventListener('input', onBackSourceTextChangedForBackBrailleField);
+            }
+
+            syncLineLanguageSelects();
+        }
+
+        function getBackDynamicLineValues() {
+            const gridRows = parseInt(document.getElementById('grid_rows').value) || 4;
+            const lines = [];
+            for (let i = 1; i <= gridRows; i++) {
+                const input = document.getElementById(`back_line${i}`);
+                lines.push(input ? input.value : '');
+            }
+            return lines;
+        }
+
+        function backPlacementMode() {
+            return document.querySelector('input[name="back_placement_mode"]:checked')?.value || 'auto';
+        }
+
+        // Translate the back's manual rows one by one with their own tables - the
+        // front's manual branch, mirrored. Returns the braille rows (padded to
+        // grid_rows), the tables, and the first failure, if any.
+        async function translateBackManualLines() {
+            const tableName = document.getElementById('language-table')?.value || DEFAULT_LANGUAGE_TABLE;
+            const rows = parseInt(document.getElementById('grid_rows').value) || 4;
+            const lines = getBackDynamicLineValues();
+            const brailleLines = [];
+            const tables = new Array(rows).fill(tableName);
+            for (let i = 0; i < rows; i++) {
+                const line = (lines[i] || '').trim();
+                if (!line) {
+                    brailleLines.push('');
+                    continue;
+                }
+                const perLineTable = document.getElementById(`back_line_lang_${i + 1}`)?.value || tableName;
+                tables[i] = perLineTable;
+                try {
+                    brailleLines.push(await translateWithLiblouis(applyCapitalizationSetting(line), 'g2', perLineTable));
+                } catch (error) {
+                    log.error(`Failed to translate back line ${i + 1}:`, error);
+                    return { brailleLines, tables, failedLine: i + 1, error };
+                }
+            }
+            return { brailleLines, tables, failedLine: null, error: null };
+        }
+
         // Function to collect all dynamic line values
         function getDynamicLineValues() {
             const gridRows = parseInt(document.getElementById('grid_rows').value) || 4;
@@ -6052,6 +6154,7 @@
                         gridRowsInput.value = safeLines;
                     }
                     createDynamicLineInputs(safeLines);
+                    createBackDynamicLineInputs(safeLines);
                     resetToGenerateState();
                 });
             }
@@ -6451,6 +6554,17 @@
         async function translateIntoBackBrailleField() {
             const tableName = document.getElementById('language-table')?.value || DEFAULT_LANGUAGE_TABLE;
             const rows = parseInt(document.getElementById('grid_rows').value) || 4;
+            if (backPlacementMode() === 'manual') {
+                if (getBackDynamicLineValues().every(line => !line.trim())) {
+                    /* DRAFT S-D3 (2026-09-20 programme, sub-plan D) - FLAGGED FOR BRENNEN. */
+                    return { error: 'Enter text in at least one Back Line first, then press Translate to Braille.' };
+                }
+                const manual = await translateBackManualLines();
+                if (manual.failedLine) {
+                    return { error: `Back line ${manual.failedLine} could not be translated: ${manual.error?.message || manual.error}` };
+                }
+                return { lines: manual.brailleLines, warnings: [] };
+            }
             const src = (document.getElementById('back-text')?.value || '').trim();
             if (!src) return { error: 'Enter text in the Back of Card Text box first, then press Translate to Braille.' };
             const wrap = await banaAutoWrap(src, getAvailableColumns(), rows, tableName);
@@ -6623,6 +6737,7 @@
         const gridRowsEl = document.getElementById('grid_rows');
         if (gridRowsEl) gridRowsEl.value = '4';
         createDynamicLineInputs(4);
+        createBackDynamicLineInputs(4);
         wireStaticFormListeners();
         addGridRowsListener();
 
@@ -7269,6 +7384,26 @@
 
         placementRadios.forEach(r => r.addEventListener('change', updatePlacementUI));
 
+        // The back's own switch (D-11): one container or the other, the shared
+        // selects synced on the way into Manual, the STL invalidated. The live
+        // back overflow follows the mode through refreshLiveWarnings().
+        function updateBackPlacementUI() {
+            const autoBack = document.getElementById('back-auto-input-container');
+            const manualBack = document.getElementById('back-dynamic-line-inputs');
+            if (!autoBack || !manualBack) return;
+            if (backPlacementMode() === 'auto') {
+                autoBack.style.display = '';
+                manualBack.style.display = 'none';
+            } else {
+                autoBack.style.display = 'none';
+                manualBack.style.display = '';
+                syncLineLanguageSelects();
+            }
+            resetToGenerateState();
+        }
+
+        document.querySelectorAll('input[name="back_placement_mode"]').forEach(r => r.addEventListener('change', updateBackPlacementUI));
+
         // Row Indicator Style changes the number of marker columns, so it changes
         // text capacity, wrapping, and the seam gap the arrow needs.
         document.querySelectorAll('input[name="indicator_mode"]').forEach(radio => {
@@ -7885,8 +8020,9 @@
             const warningDiv = document.getElementById('ds-back-overflow-warning');
             const warningMsg = document.getElementById('ds-back-overflow-message');
             if (!warningDiv || !warningMsg) return;
-            const src = (document.getElementById('back-text')?.value || '').trim();
-            if (!src) {
+            const manualBack = backPlacementMode() === 'manual';
+            const src = manualBack ? '' : (document.getElementById('back-text')?.value || '').trim();
+            if (!manualBack && !src) {
                 hideBackOverflow();
                 return;
             }
@@ -7895,10 +8031,40 @@
                 const tableName = languageSelect?.value || DEFAULT_LANGUAGE_TABLE;
                 const cols = getAvailableColumns();
                 const rows = parseInt(document.getElementById('grid_rows').value) || 4;
+
+                const messages = [];
+                if (manualBack) {
+                    // Manual placement (D-11): each back row against the cell
+                    // count, the front's checkCylinderOverflowNow() mirrored,
+                    // written in the signed per-line sentence.
+                    const lines = getBackDynamicLineValues();
+                    for (let i = 0; i < lines.length; i++) {
+                        const line = (lines[i] || '').trim();
+                        if (!line) continue;
+                        const perLineTable = document.getElementById(`back_line_lang_${i + 1}`)?.value || tableName;
+                        const braille = await translateWithLiblouis(applyCapitalizationSetting(line), 'g2', perLineTable);
+                        if (braille.length > cols) {
+                            messages.push(`Back line ${i + 1} ("${line}") needs ${braille.length} cells but ${cols} are available.`);
+                        }
+                    }
+                    if (runId !== backOverflowRun) return;
+                    if (messages.length) {
+                        const wasHidden = warningDiv.hidden;
+                        warningMsg.textContent = messages.join(' ');
+                        warningDiv.hidden = false;
+                        if (wasHidden) {
+                            announceStatus('ds-back-overflow-warning',
+                                warningDiv.textContent.replace(/\s+/g, ' ').trim());
+                        }
+                    } else {
+                        hideBackOverflow();
+                    }
+                    return;
+                }
+
                 const wrap = await banaAutoWrap(src, cols, rows, tableName);
                 if (runId !== backOverflowRun) return; // superseded by newer input
 
-                const messages = [];
                 if (wrap.error) {
                     messages.push(...(wrap.warnings || []));
                 } else if (wrap.rowsNeeded > rows || !wrap.rowsNeededIsExact) {
@@ -7990,6 +8156,7 @@
 
         // Initialize placement UI
         updatePlacementUI();
+        updateBackPlacementUI();
 
         // Persistence: save and restore user settings
         function persistValue(key, value) {
@@ -8032,6 +8199,7 @@
                 'braille_prefs_dot_shape',
                 'braille_prefs_combined_shape',
                 'braille_prefs_placement_mode',
+                'braille_prefs_back_placement_mode',
                 'braille_prefs_indicator_shapes',
                 'braille_prefs_indicator_mode',
                 'braille_prefs_tactile_indicator_width',
@@ -8194,6 +8362,11 @@
             if (seamChannelEl && (savedSeamChannel === '1' || savedSeamChannel === '0')) {
                 seamChannelEl.checked = savedSeamChannel === '1';
             }
+            const savedBackPlacement = readPersisted('braille_prefs_back_placement_mode');
+            if (savedBackPlacement === 'auto' || savedBackPlacement === 'manual') {
+                const radio = document.querySelector(`input[name="back_placement_mode"][value="${savedBackPlacement}"]`);
+                if (radio) radio.checked = true;
+            }
             const savedBackText = readPersisted('braille_prefs_back_text');
             const backTextEl = document.getElementById('back-text');
             if (backTextEl && savedBackText !== null && savedBackText !== undefined) {
@@ -8268,6 +8441,10 @@
             // Placement mode (auto/manual)
             document.querySelectorAll('input[name="placement_mode"]').forEach(r => {
                 r.addEventListener('change', () => persistValue('braille_prefs_placement_mode', document.querySelector('input[name="placement_mode"]:checked').value));
+            });
+            // Back placement mode (auto/manual), independent of the front's
+            document.querySelectorAll('input[name="back_placement_mode"]').forEach(r => {
+                r.addEventListener('change', () => persistValue('braille_prefs_back_placement_mode', backPlacementMode()));
             });
             // Cylinders to Generate (both / positive / negative), same key as ever
             document.querySelectorAll('input[name="plate_selection"]').forEach(r => {
@@ -8384,6 +8561,7 @@
         try { wirePersistenceListeners(); } catch (e) { log.error('Persistence listeners failed to wire; settings will not be saved:', e); }
         // After restoring persisted settings, update placement UI to reflect restored mode
         try { updatePlacementUI(); } catch (e) { log.error('Placement UI failed to initialise:', e); }
+        try { updateBackPlacementUI(); } catch (e) { log.error('Back placement UI failed to initialise:', e); }
         // Restored double-sided state fires no events either: reveal the Back of
         // Card section and apply the tactile lock by hand when it came back on.
         // The try stays so a throw here cannot stop page startup; the catch says
@@ -8460,6 +8638,7 @@
                 version1DialSnapshot = null;
                 try { updateEmbosserVersionUI(); } catch (e) { log.error('Embosser version UI failed to refresh after reset to defaults:', e); }
                 try { updateDoubleSidedUI(); } catch (e) { log.error('Double-sided UI failed to refresh after reset to defaults:', e); }
+                try { updateBackPlacementUI(); } catch (e) { log.error('Back placement UI failed to refresh after reset to defaults:', e); }
                 try { updateGearRollersUI(); } catch (e) { log.error('Gear roller UI failed to refresh after reset to defaults:', e); }
                 updateShapeSettings();
                 clearGridColumnsDirty();
@@ -9210,7 +9389,33 @@
             if (doubleSidedOn) {
                 const backSrc = String(document.getElementById('back-text')?.value || '').trim();
                 let backHTML = '';
-                if (!backSrc) {
+                if (backPlacementMode() === 'manual') {
+                    // Manual placement for the back (D-11): one line per row, the
+                    // same per-line tables generation uses. Braille and shorthand
+                    // only are interpolated, never the raw text.
+                    const manual = await translateBackManualLines();
+                    const backLines = getBackDynamicLineValues();
+                    if (backLines.every(line => !line.trim())) {
+                        /* DRAFT S-D3 (2026-09-20 programme, sub-plan D) - FLAGGED FOR BRENNEN. */
+                        backHTML = `<div class="preview-line-success">
+                            <div>No back of card text yet. Type it in the Back Line boxes above and preview again.</div>
+                        </div>`;
+                    } else {
+                        for (let i = 0; i < backLines.length; i++) {
+                            if (!backLines[i].trim()) continue;
+                            if (manual.failedLine === i + 1) {
+                                backHTML += `<div class="preview-line-error"><strong>Line ${i + 1}:</strong> Error: could not be translated.</div>`;
+                                break;
+                            }
+                            const braille = manual.brailleLines[i] || '';
+                            const shorthand = braille ? brailleToComputerShorthand(braille) : '';
+                            backHTML += `<div class="preview-line-success">
+                                <div><strong>Line ${i + 1}:</strong> "${braille}"</div>
+                                <div class="preview-subline">${shorthand ? `Computer shorthand: "${shorthand}"` : ''}</div>
+                            </div>`;
+                        }
+                    }
+                } else if (!backSrc) {
                     /* User-facing wording signed off by Brennen (2026-08-17); reword only with
                        his sign-off. */
                     backHTML = `<div class="preview-line-success">
@@ -9758,6 +9963,11 @@
             // still hard row breaks - so both sides of the card wrap by one set of
             // rules. Every failure blocks generation: wrong braille must never emboss.
             let backBrailleLines = null;
+            // The back's per-line tables travel only when they carry information:
+            // Manual placement for the back (D-11). Auto placement and the back
+            // braille field use the master table, as they always have, and send
+            // nothing - the double-sided request body is unchanged for them.
+            let backPerLineLanguageTables = null;
             if (doubleSidedOn) {
                 const backRows = parseInt(document.getElementById('grid_rows').value) || 4;
                 // The back Braille (Unicode) field wins whenever it has content:
@@ -9782,6 +9992,39 @@
                         timestamp: new Date().toISOString(),
                         source: 'back-braille-unicode-field',
                         edited: backBrailleFieldDirty,
+                        brailleLines: backBrailleLines,
+                    }, null, 2));
+                } else if (backPlacementMode() === 'manual') {
+                    // Manual placement for the back (D-11): the front's per-line
+                    // branch mirrored - each row with its own table, each row
+                    // held to the cell count, every failure blocking.
+                    const manual = await translateBackManualLines();
+                    if (manual.failedLine) {
+                        /* User-facing wording signed off by Brennen (2026-08-17), reused here
+                           for a per-line failure; reword only with his sign-off. */
+                        errorText.textContent = 'Back text could not be translated to braille. Please check the text and try again. The STL file was not generated to prevent producing incorrect braille.';
+                        errorDiv.style.display = 'flex';
+                        errorDiv.className = 'error-message';
+                        resetToGenerateState();
+                        return false;
+                    }
+                    const backCols = getAvailableColumns();
+                    for (let i = 0; i < manual.brailleLines.length; i++) {
+                        if (manual.brailleLines[i].length > backCols) {
+                            /* DRAFT S-D1 (2026-09-20 programme, sub-plan D) - FLAGGED FOR BRENNEN. */
+                            errorText.textContent = `Back line ${i + 1} exceeds ${backCols} cells. Shorten it or use Auto Placement for the back.`;
+                            errorDiv.style.display = 'flex';
+                            errorDiv.className = 'error-message';
+                            resetToGenerateState();
+                            return false;
+                        }
+                    }
+                    backBrailleLines = manual.brailleLines;
+                    backPerLineLanguageTables = manual.tables;
+                    log.debug('Back translation receipt:', JSON.stringify({
+                        timestamp: new Date().toISOString(),
+                        source: 'back-manual-lines',
+                        perLineLanguageTables: backPerLineLanguageTables,
                         brailleLines: backBrailleLines,
                     }, null, 2));
                 } else {
@@ -10127,7 +10370,8 @@
                     cylinderParams: cylinderParams,
                     perLineLanguageTables: perLineLanguageTables,
                     settings: settings,
-                    backLines: backBrailleLines
+                    backLines: backBrailleLines,
+                    backPerLineLanguageTables: backPerLineLanguageTables
                 });
 
                 // Hide loading message
@@ -11089,7 +11333,7 @@
          * @returns {Promise<ArrayBuffer>} Binary STL data
          */
         async function generateSTLClientSide(params) {
-            const { lines, originalLines, placementMode, plateType, shapeType, cylinderParams, perLineLanguageTables, settings, backLines } = params;
+            const { lines, originalLines, placementMode, plateType, shapeType, cylinderParams, perLineLanguageTables, settings, backLines, backPerLineLanguageTables } = params;
 
             // Determine which worker to use based on shape type
             // Per specification: NO FALLBACK between workers
@@ -11146,6 +11390,12 @@
             // double-sided beta is off, keeping the payload byte-identical.
             if (backLines) {
                 specRequestBody.back_lines = backLines;
+            }
+            // Informational mirror of per_line_language_tables for the back
+            // (settings.schema.json text.back_languages); present only when the
+            // back was placed manually (D-11).
+            if (backPerLineLanguageTables) {
+                specRequestBody.back_per_line_language_tables = backPerLineLanguageTables;
             }
             const specResponse = await fetch('/geometry_spec', {
                 method: 'POST',
