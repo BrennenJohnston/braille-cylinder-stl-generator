@@ -289,33 +289,51 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      byte-identical to a pre-channel one (pinned against the captured
      tests/e2e/fixtures/*.request.json). Switch OFF reproduces the pre-channel
      STL byte for byte (tests/e2e/fixtures/*_before_seam_channel.stl).
-   - Placement: signed arc s from the seam centre toward column 0; the free
-     window is what the last cell's dots and column 0's triangle (visual) or,
-     since 2026-09-21, the last cell's dots (the back grid's, offset_x closer,
-     when double-sided) and the arrow recess (tactile - BEHIND the arrow, see
-     6g) leave of the gap, groove at its middle; theta = pi -/+ s_c/R
-     (positive/negative), so theta_A + theta_B = 2 pi. theta is in the DOT convention: the worker
-     negates EVERY theta it places (dots, markers, channel alike) - never
-     treat this angle differently from a dot's. In the STL the default
-     15-column visual layout has the groove at 181.67 deg (A) / 178.33 (B).
-   - Left out, with a warning (S-C2 / S-C3 (signed 2026-09-21)), when the free window is
-     under 1.5 mm or the wall under the apex is under 1.2 mm (polygon
-     circumradius, or wall_thickness - depth for a barrel with no cutout;
-     solid barrels - gears, Version 2 - skip the wall rule). 15 columns tactile
-     never fits; 13 and 14 tactile (190.05 / 169.95 deg in the spec, 169.95 /
-     190.05 in the STL - a fixed distance behind the arrow) and 15 visual do
-     at 30.8.
+   - Placement, VISUAL mode: signed arc s from the seam centre toward column
+     0; the free window is what the last cell's dots and column 0's triangle
+     leave of the gap, groove at its middle; theta = pi -/+ s_c/R
+     (positive/negative), so theta_A + theta_B = 2 pi. theta is in the DOT
+     convention: the worker negates EVERY theta it places (dots, markers,
+     channel alike) - never treat this angle differently from a dot's. In the
+     STL the default 15-column visual layout has the groove at 181.67 deg (A)
+     / 178.33 (B).
+   - Placement, TACTILE mode (D-T6, 2026-09-21, Brennen's call after testing
+     the one-day "behind the arrow" placement): the groove runs down the
+     ARROW COLUMN itself, theta = pi on BOTH plates, as TWO stretches that
+     stop SEAM_CHANNEL_ARROW_MARGIN_MM 0.3 short of the arrow chain (block
+     key `segments`: [{z_from, z_to}] about mid-height, each from the end
+     face + overshoot to the chain, emitted in tactile mode only; a stretch
+     under SEAM_CHANNEL_MIN_SEGMENT_MM 1.0 is dropped). The chain's extent
+     comes from tactile_arrow_span(): the outermost row's arrow +/- length/2,
+     grown by the recess clearance (counter) or the gear weld (emboss, gear
+     mode) - the mitred recess APEX grows by clearance/sin(atan((w/2)/l)) =
+     1.02 mm, not by the clearance. 13 cells, 4 rows, 0.4 preset: emboss
+     (-27, -20.3) + (20.3, 27), counter (-27, -20.5) + (21.32, 27). There is
+     no window to fit, so the gap rule never speaks in tactile mode; when the
+     arrows reach both end faces the groove is left out with S-C4 (DRAFT).
+     The groove never runs UNDER a raised arrow (a 0.3 mm tunnel and tip
+     notches); across the chain the arrows' own corners hold the seam (the
+     slicing study: 0 % of layers in a dot).
+   - Left out, with a warning (S-C2 / S-C3 (signed 2026-09-21)), when the
+     visual free window is under 1.5 mm or the wall under the apex is under
+     1.2 mm (polygon circumradius, or wall_thickness - depth for a barrel
+     with no cutout; solid barrels - gears, Version 2 - skip the wall rule).
+     15 visual fits at 30.8; every tactile layout gets its groove (15 columns
+     tactile trips the seam-GAP warning, not the channel's).
    - CSG order: the groove is cut from the BARE outer cylinder before the bore,
      the keyed pockets or anything unioned, in both the worker
-     (createSeamChannelManifold) and tests/test_golden.py
+     (createSeamChannelManifold - one prism per stretch when `segments` is
+     present, else one full-height prism) and tests/test_golden.py
      (_seam_channel_cutter); all six golden pairs regenerated once on
-     2026-09-20 (+8 triangles each, bounds unchanged).
+     2026-09-20 (+8 triangles each, bounds unchanged), all eight again on
+     2026-09-21 (D-T6).
    - Cards never get one.
    - OpenSCAD parity since v2.8.0 (2026-09-21): `seam_channel` switch in both
      .scad files with the same six constants (a test in that repo diffs them
-     against app/geometry_spec.py) and the groove at the PHYSICAL angle
-     180 +/- s/R (emboss +, counter -) - the .scad negates nothing, so its
-     181.67 / 178.33 equals this worker's exported STL.
+     against app/geometry_spec.py) and the visual groove at the PHYSICAL
+     angle 180 +/- s/R (emboss +, counter -) - the .scad negates nothing, so
+     its 181.67 / 178.33 equals this worker's exported STL. The tactile
+     stretches on the arrow column follow in the D-T6 pass (6g).
 
 6f. One Generate / one Download (2026-09-21, sub-plan E of the 2026-09-20
    programme; D-8, D-9, D-10). Generate STL builds BOTH cylinders unless
@@ -336,40 +354,47 @@ translation, Three.js preview. Working branch: develop — never commit to main.
    refuse it); pair tests choose 'both'. The submenu toggle focuses its first
    control after 100 ms - wait for it before arrow keys.
 
-6g. Tactile arrow lead-in (2026-09-21, decisions D-T1..D-T4 after Brennen's
-   printed 14-cell card ran out of paper at the end of every row while its
-   start lay blank; plan 05_TACTILE_LEAD_IN_PLAN.md in the 2026_09_20 research
-   folder):
-   - The embosser is loaded with the card's leading edge AT the alignment
-     arrow (D-T3). The arrow is therefore no longer at the seam-gap midpoint
-     (it was, exactly - the grid is centred, cells are centres, so "make the
-     two sides equal" would have changed nothing) but a fixed lead-in before
-     column 0: lead_in = width/2 + recess clearance + TACTILE_LEAD_IN_MARGIN_MM
-     (1.0, never lower - the printed ridge) + the cell footprint = 5.35 mm at
-     the 0.4 preset. s_arrow = max(0, gap/2 - lead_in); theta = pi - s/R on
-     the positive plate, pi + s/R on the negative (the seam channel's own rule
-     and its own mirror, so the arrow and recess still meet at the nip); 180
-     is the FALLBACK for a gap too small to honour the lead-in (15 cells),
-     with the existing gap warning. app/geometry_spec.py tactile_lead_in_mm /
-     tactile_arrow_arc_mm / tactile_arrow_theta own it; index.html mirrors the
-     margin (smoke test).
-   - Card fit: a tactile row needs lead_in + grid + footprint of card measured
-     from the arrow; 14 cells need 92.0 mm of a 90 mm card (last cell lost),
-     13 need 85.5. Warning S-T1 (DRAFT) from card_width in spec warnings and
-     the live #card-fit-warning box; tactile recommendation 13 (S-T3, DRAFT);
-     the dial stays free to 14 with the warning, never a rejection. Visual
-     mode is NOT checked (different alignment procedure).
-   - All eight golden pairs regenerated 2026-09-21; the fixture settings
-     declare card_width 100 because the generator refuses a spec with
-     warnings and the fixtures are 14-column geometry references.
-   - interpoint.arrow_zone_margins(arrow_arc_mm) reports the shifted arrow;
-     the crowded (left) side only gains.
-   - OpenSCAD parity landed the same day (T6 on the OpenSCAD repo's develop):
-     both .scad files and both MakerWorld copies place the arrow at the
-     PHYSICAL angle 180 +/- s/R (195.0 / 165.0 at 13 cells), cut the groove
-     behind it (169.95 / 190.05) and carry CARD_LENGTH_MM 90 with a NOTE and
-     a red TEXT RUNS OFF CARD badge; v2.8.1 and the re-vendor wait for
-     Brennen's print test.
+6g. Tactile arrow position and card fit (2026-09-21, decisions D-T1..D-T6
+   after Brennen's printed 14-cell card ran out of paper at the end of every
+   row while its start lay blank; plan 05_TACTILE_LEAD_IN_PLAN.md in the
+   2026_09_20 research folder):
+   - The arrow sits at the SEAM-GAP MIDPOINT, TACTILE_SEAM_THETA = pi, on
+     both plates - equal space either side of it, last cell to arrow and
+     arrow to first cell (D-T6). A fixed lead-in before column 0 (D-T1,
+     "Option A") was built, pushed and REVERTED the same day: Brennen's test
+     of the Vercel build showed the groove beside the arrows and a large
+     trailing space after the last cell, and he asked for the groove centred
+     on the arrows and the spacing back to even. Never re-shift the arrow on
+     your own.
+   - The card, not the cylinder, bounds a tactile row. The embosser is loaded
+     with the card's leading edge AT the alignment arrow (D-T3), so a row
+     needs gap/2 + grid + footprint of card (footprint = dot_spacing/2 + the
+     widest dot or bowl radius, the seam channel's number; 2.15 at the 0.4
+     preset): 13 cells need 89.5 mm of a 90 mm card, 14 need 92.8 (92.9 with
+     the default dot families) and lose their last cell at ANY arrow
+     position. app/geometry_spec.py tactile_card_need_mm / tactile_max_cells
+     (max = floor((card - pi*D/2 - footprint) * 2 / cell) + 1) own it;
+     index.html updateCardFitUI mirrors the arithmetic. Warning S-T1 (DRAFT)
+     from card_width in spec warnings and the live #card-fit-warning box;
+     tactile recommendation 13 (S-T3, DRAFT); the dial stays free to 14 with
+     the warning, never a rejection. Visual mode is NOT checked (different
+     alignment procedure). NOTE: a US 3.5 in card (88.9 mm) now warns at 13
+     cells (max 12) - reported to Brennen 2026-09-21, not decided.
+   - All eight golden pairs regenerated 2026-09-21 (twice: the lead-in, then
+     D-T6); the fixture settings declare card_width 100 because the generator
+     refuses a spec with warnings and the fixtures are 14-column geometry
+     references.
+   - interpoint.arrow_zone_margins(arrow_arc_mm=0.0) keeps its parameter
+     (negative refused); the arrow is at pi, so callers pass nothing.
+   - The seam channel in tactile mode runs down the arrow column in two
+     stretches (6e). The slicing study reran on it (scripts/seam_spike.py
+     --layouts tactile14,tactile13 --channels none,v10 --no-rear --out
+     build/seam_spike_column): 0 % of layers in a dot on every plate, groove
+     or not; 60 % (emboss) / 37 % (counter) of layers within 0.8 mm of arc
+     of 180 deg, the rest on the arrows' own edges.
+   - OpenSCAD: the lead-in parity (T6, a7585cc, pushed) is reworked to D-T6
+     on that repo's develop; v2.8.1 and the re-vendor wait for Brennen's
+     13-cell tactile print test.
 
 ## Settings changes — order of operations
 7. settings.schema.json is the single source of truth. When adding or changing

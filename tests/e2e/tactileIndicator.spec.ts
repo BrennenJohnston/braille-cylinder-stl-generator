@@ -133,7 +133,7 @@ test.describe('Row Indicator Style', () => {
 
     await page.locator('input[name="indicator_mode"][value="tactile"]').check();
     // The dial normalizes to the recommended tactile capacity: 13 since the
-    // arrow lead-in of 2026-09-21 (D-T4) - the most a 90 mm card holds.
+    // card-fit check of 2026-09-21 (D-T4) - the most a 90 mm card holds.
     await expect(page.locator('#grid_columns')).toHaveValue('13');
 
     const spec = await interceptGeometrySpec(page);
@@ -243,9 +243,9 @@ test.describe('Row Indicator Style', () => {
     await page.locator('#action-btn').click();
     await expect(page.locator('#error-text')).toContainText('the maximum is 13', { timeout: 15_000 });
 
-    // Tactile mode frees both marker columns, but since the arrow lead-in of
+    // Tactile mode frees both marker columns, but since the card-fit check of
     // 2026-09-21 (D-T4) it recommends 13: the card's leading edge sits at the
-    // alignment arrow, and 14 cells need 92 mm of a 90 mm card. The row is
+    // alignment arrow, and 14 cells need 92.8 mm of a 90 mm card. The row is
     // still blocked at the dial's 13.
     await page.locator('input[name="indicator_mode"][value="tactile"]').check();
     await expect(page.locator('#grid_columns')).toHaveValue('13');

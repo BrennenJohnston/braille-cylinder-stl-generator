@@ -466,14 +466,14 @@ def arrow_zone_margins(
     """
     How close the shifted back grid comes to the tactile row arrow.
 
-    The arrow sits in the seam gap at theta = pi, or - since 2026-09-21 (the
-    lead-in, geometry_spec.tactile_arrow_theta) - `arrow_arc_mm` toward column
-    0 from there, which is the RIGHT of Cylinder A's arrow seen from outside.
+    The arrow sits in the seam gap at theta = pi (TACTILE_SEAM_THETA; a
+    lead-in before column 0 was tried and reverted on 2026-09-21, D-T6), or
+    `arrow_arc_mm` toward column 0 from there - the RIGHT of Cylinder A's
+    arrow seen from outside - should a caller ever place it off-centre.
     Shifting the back grid by the interpoint offset moves it towards the arrow
     on one side and away on the other; this reports both sides, on both
-    cylinders, from feature edge to arrow edge. The default arc of 0 is the
-    pre-lead-in arrow; callers pass the arc geometry_spec computes for their
-    layout (this module cannot import it - geometry_spec imports this one).
+    cylinders, from feature edge to arrow edge. geometry_spec passes nothing
+    today (this module cannot import it - geometry_spec imports this one).
 
     On Cylinder A the neighbouring feature is a back-side recess and the arrow
     is raised at its nominal width. On Cylinder B the feature is a raised back

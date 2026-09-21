@@ -115,7 +115,7 @@ def test_worst_case_lattice_is_every_dot_of_every_cell():
 def test_mirror_fixes_the_grid_centre_and_the_seam_arrow():
     """
     theta -> -theta holds 0 and pi still; pi is the seam-gap centre the arrow
-    sat on until 2026-09-21, and the arrow's lead-in angles pi -/+ s/R are each
+    sits on (D-T6, 2026-09-21), and any pair of angles pi -/+ s/R are each
     other's mirror about it.
     """
     assert ip.mirror_theta(0.0) == 0.0

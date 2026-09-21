@@ -636,8 +636,9 @@ GEAR_ARROW_WELD_MM = 0.005  # D-8a
 CUTOUT_WARNING = 'The polygonal cutout is not used while integrated gears are on.'  # S3
 
 # S-T1 (DRAFT, 2026-09-21): a 14-cell tactile row does not fit a 90 mm card,
-# and every 14-column layout in this module says so. The arrow lead-in
-# (D-T1..D-T4) is what put the sentence here; 13 cells is the tactile maximum.
+# and every 14-column layout in this module says so. The card-fit check
+# (D-T3, D-T4; the arrow sits at the gap midpoint, D-T6) put the sentence
+# here; 13 cells is the tactile maximum.
 CARD_FIT_WARNING = 'The last braille cell would run off the card: this layout needs 92.9 mm of card from the alignment arrow and the card is 90 mm. Use 13 cells or fewer.'
 
 

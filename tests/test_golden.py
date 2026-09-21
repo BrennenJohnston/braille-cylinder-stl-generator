@@ -171,7 +171,7 @@ DS_FIXTURE_FRONT_LINES = ['⠁⠃⠉', '', '', '']  # 1 + 2 + 2 = 5 raised dots
 DS_FIXTURE_BACK_LINES = ['⠙⠑⠋', '', '', '']  # 3 + 2 + 3 = 8 raised dots
 DS_FIXTURE_SETTINGS = {
     # The golden pairs are 14-column geometry references, not 90 mm card rows:
-    # since the arrow lead-in (D-T4, 2026-09-21) a 14-cell tactile row warns
+    # since the card-fit check (D-T4, 2026-09-21) a 14-cell tactile row warns
     # that it runs off a 90 mm card, and the generator refuses a fixture spec
     # with warnings. Declared for a 100 mm card, which the gear and Version 2
     # settings inherit by spreading this dict. The warning itself is pinned in

@@ -8,11 +8,12 @@ braille dot or bowl - and does turning the part so the groove faces +Y do the sa
     python scripts/seam_spike.py            # build, slice, report -> build/seam_spike/REPORT.md
     python scripts/seam_spike.py --no-slice # build the STLs only
     python scripts/seam_spike.py --layouts tactile14,tactile13 --channels none,v10 --no-rear \
-        --out build/seam_spike_leadin       # the 2026-09-21 rerun (arrow lead-in, groove behind it)
+        --out build/seam_spike_column       # the 2026-09-21 D-T6 rerun (groove down the arrow column)
 
-2026-09-21 (D-T1): the tactile arrow moved a fixed lead-in before column 0 and the groove
-went to the trailing side, so the tactile placement here mirrors app/geometry_spec.py's new
-rule and main() refuses to run if the two disagree about the groove's angle.
+2026-09-21 (D-T6): in tactile mode the groove runs down the arrow column itself (180 degrees)
+in two stretches that stop short of the arrow chain, so the tactile placement here is read
+from the spec's own block - angle and stretches - and main() refuses to run if this script
+and the spec disagree about the angle.
 
 Cylinders are built with the repo's own geometry spec (app.geometry_spec) and the golden
 fixture renderer's helpers (tests/test_golden.py), so dots, bowls and tactile arrows are the
@@ -41,7 +42,7 @@ from shapely.geometry import Polygon
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
-from app.geometry_spec import extract_cylinder_geometry_spec, tactile_arrow_arc_mm  # noqa: E402
+from app.geometry_spec import extract_cylinder_geometry_spec  # noqa: E402
 from app.models import CardSettings  # noqa: E402
 from app.utils import braille_to_dots  # noqa: E402
 from tests.test_golden import (  # noqa: E402
@@ -136,12 +137,9 @@ def channel_placement(layout: str, plate_type: str, settings: CardSettings, chan
         lo = -(gap / 2.0 - footprint)
         hi = gap / 2.0 - settings.dot_spacing / 2.0
     else:
-        # Since 2026-09-21 (D-T1) the arrow sits a fixed lead-in before column
-        # 0, so the groove goes BEHIND it: between the last cell's dots and the
-        # arrow recess (app/geometry_spec.py _seam_channel_block, single-sided).
-        arrow_arc = tactile_arrow_arc_mm(settings, False, gap)
-        lo = -(gap / 2.0 - footprint)
-        hi = arrow_arc - (settings.tactile_indicator_width / 2.0 + settings.tactile_recess_clearance)
+        # D-T6 (2026-09-21): down the arrow column itself, outside the arrow
+        # chain - no window to fit. The stretches come from the spec's block.
+        return {'gap_mm': gap, 'free_mm': math.inf, 'need_mm': 0.0, 'fits': True, 's_c_mm': 0.0, 'theta': math.pi}
     free = hi - lo
     width = channel['width'] if channel else 0.0
     need = width + 2.0 * CHANNEL_MARGIN_MM
@@ -150,8 +148,14 @@ def channel_placement(layout: str, plate_type: str, settings: CardSettings, chan
     return {'gap_mm': gap, 'free_mm': free, 'need_mm': need, 'fits': free >= need, 's_c_mm': s_c, 'theta': theta}
 
 
-def channel_cutter(channel: dict, theta: float, radius: float, height: float) -> trimesh.Trimesh:
-    """Full-height groove cutter: V or rectangle cross-section in the (radial, circumferential) plane."""
+def channel_cutter(
+    channel: dict, theta: float, radius: float, height: float, segments: list[dict] | None = None
+) -> trimesh.Trimesh:
+    """
+    Groove cutter: V or rectangle cross-section in the (radial, circumferential)
+    plane, the full height plus the overshoot or - tactile mode, D-T6 - the
+    spec's stretches (z_from/z_to about mid-height).
+    """
     width, depth = channel['width'], channel['depth']
     r_out = radius + CHANNEL_LIP_MM
     if channel['shape'] == 'v':
@@ -167,10 +171,14 @@ def channel_cutter(channel: dict, theta: float, radius: float, height: float) ->
     # local (u radial, v circumferential) -> world xy at angle theta
     c, s = math.cos(theta), math.sin(theta)
     poly = Polygon([(u * c - v * s, u * s + v * c) for u, v in section])
-    length = height + 2.0 * CHANNEL_OVERSHOOT_MM
-    prism = trimesh.creation.extrude_polygon(poly, height=length)
-    prism.apply_translation([0.0, 0.0, -length / 2.0])
-    return prism
+    full = height + 2.0 * CHANNEL_OVERSHOOT_MM
+    spans = [(seg['z_from'], seg['z_to']) for seg in (segments or [])] or [(-full / 2.0, full / 2.0)]
+    prisms = []
+    for z_from, z_to in spans:
+        prism = trimesh.creation.extrude_polygon(poly, height=z_to - z_from)
+        prism.apply_translation([0.0, 0.0, z_from])
+        prisms.append(prism)
+    return trimesh.util.concatenate(prisms) if len(prisms) > 1 else prisms[0]
 
 
 def bore_cutter(spec: dict) -> trimesh.Trimesh:
@@ -218,13 +226,15 @@ def visual_marker_cutter(marker: dict) -> trimesh.Trimesh:
     raise ValueError(f'unexpected marker type {kind!r}')
 
 
-def build_cylinder(spec: dict, channel: dict | None, theta_c: float | None) -> trimesh.Trimesh:
+def build_cylinder(
+    spec: dict, channel: dict | None, theta_c: float | None, segments: list[dict] | None = None
+) -> trimesh.Trimesh:
     cylinder = spec['cylinder']
     radius, height = cylinder['radius'], cylinder['height']
     shell = trimesh.creation.cylinder(radius=radius, height=height, sections=_DS_SHELL_SECTIONS)
     cutters = [bore_cutter(spec)]
     if channel and theta_c is not None:
-        cutters.append(channel_cutter(channel, theta_c, radius, height))
+        cutters.append(channel_cutter(channel, theta_c, radius, height, segments))
     # Shell stage first (bore + channel), then raised features, then recesses - the worker's order.
     shell = trimesh.boolean.difference([shell, trimesh.boolean.union(cutters, engine='manifold')], engine='manifold')
     raised = [shell]
@@ -426,7 +436,7 @@ def main() -> None:
                 stl = OUT / f'{stem}.stl'
                 if not stl.exists():
                     print(f'[build] {stem}')
-                    mesh = build_cylinder(spec, channel, theta_c)
+                    mesh = build_cylinder(spec, channel, theta_c, (emitted or {}).get('segments'))
                     mesh.export(stl)
                     if channel and not args.no_rear:
                         rotate_to_face_rear(mesh, theta_c).export(OUT / f'{stem}_rear.stl')
