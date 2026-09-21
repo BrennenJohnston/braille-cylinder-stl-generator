@@ -7,6 +7,12 @@ braille dot or bowl - and does turning the part so the groove faces +Y do the sa
 
     python scripts/seam_spike.py            # build, slice, report -> build/seam_spike/REPORT.md
     python scripts/seam_spike.py --no-slice # build the STLs only
+    python scripts/seam_spike.py --layouts tactile14,tactile13 --channels none,v10 --no-rear \
+        --out build/seam_spike_leadin       # the 2026-09-21 rerun (arrow lead-in, groove behind it)
+
+2026-09-21 (D-T1): the tactile arrow moved a fixed lead-in before column 0 and the groove
+went to the trailing side, so the tactile placement here mirrors app/geometry_spec.py's new
+rule and main() refuses to run if the two disagree about the groove's angle.
 
 Cylinders are built with the repo's own geometry spec (app.geometry_spec) and the golden
 fixture renderer's helpers (tests/test_golden.py), so dots, bowls and tactile arrows are the
@@ -35,7 +41,7 @@ from shapely.geometry import Polygon
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
-from app.geometry_spec import extract_cylinder_geometry_spec  # noqa: E402
+from app.geometry_spec import extract_cylinder_geometry_spec, tactile_arrow_arc_mm  # noqa: E402
 from app.models import CardSettings  # noqa: E402
 from app.utils import braille_to_dots  # noqa: E402
 from tests.test_golden import (  # noqa: E402
@@ -80,6 +86,9 @@ LAYOUTS = {
     # name: (indicator_mode, total grid_columns, text cells per row)
     'visual15': ('visual', 15, 13),
     'tactile14': ('tactile', 14, 14),
+    # The tactile recommendation since 2026-09-21 (D-T4): 14 fit the cylinder
+    # but run off a 90 mm card loaded at the arrow.
+    'tactile13': ('tactile', 13, 13),
 }
 # Plan A2 constants (D-4): V 1.2 x 0.6 first, 1.0 x 0.5 as the fallback, a rectangle for contrast.
 CHANNELS = {
@@ -127,8 +136,12 @@ def channel_placement(layout: str, plate_type: str, settings: CardSettings, chan
         lo = -(gap / 2.0 - footprint)
         hi = gap / 2.0 - settings.dot_spacing / 2.0
     else:
-        lo = settings.tactile_indicator_width / 2.0 + settings.tactile_recess_clearance
-        hi = gap / 2.0 - footprint
+        # Since 2026-09-21 (D-T1) the arrow sits a fixed lead-in before column
+        # 0, so the groove goes BEHIND it: between the last cell's dots and the
+        # arrow recess (app/geometry_spec.py _seam_channel_block, single-sided).
+        arrow_arc = tactile_arrow_arc_mm(settings, False, gap)
+        lo = -(gap / 2.0 - footprint)
+        hi = arrow_arc - (settings.tactile_indicator_width / 2.0 + settings.tactile_recess_clearance)
     free = hi - lo
     width = channel['width'] if channel else 0.0
     need = width + 2.0 * CHANNEL_MARGIN_MM
@@ -368,11 +381,21 @@ def seam_in_a_dot(z: float, theta: float, windows: list[tuple[float, float, floa
 
 
 def main() -> None:
+    global OUT
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('--no-slice', action='store_true', help='build the STLs only')
     parser.add_argument('--layouts', default='visual15,tactile14')
+    parser.add_argument('--channels', default=','.join(CHANNELS), help='which CHANNELS entries to build')
+    parser.add_argument('--no-rear', action='store_true', help='skip the rotated "rear" variants (D-14 evidence)')
+    parser.add_argument(
+        '--out',
+        default=str(OUT),
+        help='output directory (a fresh one for a rerun: STLs and G-code are reused if present)',
+    )
     args = parser.parse_args()
+    OUT = Path(args.out)
     OUT.mkdir(parents=True, exist_ok=True)
+    channels = {name: CHANNELS[name] for name in args.channels.split(',')}
 
     rows = []
     manifest = {}
@@ -382,9 +405,18 @@ def main() -> None:
             spec = spec_for(layout, plate_type)
             radius = spec['cylinder']['radius']
             windows = dot_windows(spec)
-            for name, channel in CHANNELS.items():
+            for name, channel in channels.items():
                 placement = channel_placement(layout, plate_type, settings, channel)
                 theta_c = placement['theta'] if channel else None
+                # The spec is the source of truth for where the groove goes; this
+                # script only mirrors it. Refuse to measure a groove the app
+                # would not cut there.
+                emitted = spec['cylinder'].get('seam_channel')
+                if channel and name == 'v10' and emitted is not None and abs(emitted['theta'] - theta_c) > 1e-9:
+                    raise SystemExit(
+                        f'{layout} {plate_type}: spike places the groove at {math.degrees(theta_c):.3f} deg, '
+                        f'the spec at {math.degrees(emitted["theta"]):.3f} deg - mirror the spec first'
+                    )
                 if channel and not placement['fits']:
                     print(
                         f'[skip] {layout} {plate_type} {name}: free {placement["free_mm"]:.2f} < need {placement["need_mm"]:.2f}'
@@ -396,7 +428,7 @@ def main() -> None:
                     print(f'[build] {stem}')
                     mesh = build_cylinder(spec, channel, theta_c)
                     mesh.export(stl)
-                    if channel:
+                    if channel and not args.no_rear:
                         rotate_to_face_rear(mesh, theta_c).export(OUT / f'{stem}_rear.stl')
                 manifest[stem] = {
                     'layout': layout,
@@ -407,7 +439,7 @@ def main() -> None:
                 if args.no_slice:
                     continue
                 variants = [('aligned', stl, theta_c)]
-                if channel:
+                if channel and not args.no_rear:
                     variants.append(('rear', OUT / f'{stem}_rear.stl', math.pi / 2.0))
                 for seam_mode, model, target in variants:
                     gcode = OUT / f'{model.stem}_{seam_mode}.gcode'
