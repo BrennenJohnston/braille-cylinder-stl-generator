@@ -1651,8 +1651,57 @@ function cutKeyedCutoutsManifold(barrel, keyed, height) {
 /**
  * Create cylinder shell with polygonal cutout using Manifold
  */
+/**
+ * Slicer seam channel: a V-groove the full height of the barrel's OUTER
+ * surface, inside the seam gap beside the row-indicator column, so a slicer's
+ * default "aligned" seam mode hides every layer's seam in it instead of in a
+ * dot (2026-09-20 programme, decisions D-1, D-2, D-13..D-15). The spec block
+ * (app/geometry_spec.py, SEAM_CHANNEL_*) gives the mouth width, the apex depth,
+ * how far the cutter overshoots both end faces, and the lip it starts outside
+ * the surface so the mouth cuts clean.
+ *
+ * theta is in the SAME convention as every dot's theta in the spec, and this
+ * cutter is placed at -theta exactly as every dot and marker is: that global
+ * negation is what puts the groove beside column 0 (see the dots at
+ * adjustedTheta above). The cross-section is built in the radial /
+ * circumferential plane and extruded along the barrel axis, the shape the
+ * slicing spike proved (scripts/seam_spike.py, channel_cutter).
+ *
+ * A malformed block throws: the backend wrote it, so it is a bug, not a
+ * request to guess a groove.
+ */
+function createSeamChannelManifold(channel, height, radius) {
+    const { theta, width, depth, overshoot, lip } = channel;
+    if (!isFinite(theta) || !(width > 0) || !(depth > 0) || !(lip > 0) || !(overshoot >= 0) || !(radius > 0)) {
+        throw new Error(`seam channel: malformed block ${JSON.stringify(channel)}`);
+    }
+
+    const adjustedTheta = -theta;
+    const rOut = radius + lip;
+    // The V is a 90 degree groove of `width` at the surface; extend its sides
+    // outward to the lip so the mouth is cut, not merely touched.
+    const halfMouth = (width / 2) * (depth + lip) / depth;
+    const c = Math.cos(adjustedTheta);
+    const s = Math.sin(adjustedTheta);
+    // Local (u radial-out, v circumferential), wound counter-clockwise, rotated
+    // into world XY at the adjusted angle.
+    const section = [
+        [rOut, -halfMouth],
+        [rOut, halfMouth],
+        [radius - depth, 0],
+    ].map(([u, v]) => [u * c - v * s, u * s + v * c]);
+
+    const crossSection = new CrossSection([section], 'Positive');
+    const length = height + 2 * overshoot;
+    const extruded = Manifold.extrude(crossSection, length);
+    crossSection.delete();
+    const centered = extruded.translate([0, 0, -length / 2]);
+    extruded.delete();
+    return centered;
+}
+
 function createCylinderShellManifold(spec, solid = false, keyed = null) {
-    const { radius, height, thickness, polygon_points } = spec;
+    const { radius, height, thickness, polygon_points, seam_channel: seamChannel } = spec;
 
     const validRadius = (radius > 0) ? radius : 30;
     const validHeight = (height > 0) ? height : 80;
@@ -1660,7 +1709,21 @@ function createCylinderShellManifold(spec, solid = false, keyed = null) {
 
     try {
         // Create outer cylinder
-        const outer = createManifoldCylinder(validHeight, validRadius, CYLINDER_SHELL_SEGMENTS);
+        let outer = createManifoldCylinder(validHeight, validRadius, CYLINDER_SHELL_SEGMENTS);
+
+        // Seam channel first, while the barrel is a bare cylinder: it is an
+        // outer-surface cut, so taking it before the bore, the keyed pockets or
+        // anything unioned later gives the same solid whichever branch follows,
+        // and a raised arrow or dot can never be undercut by it. Absent block,
+        // absent cut - the pre-channel bytes exactly.
+        if (seamChannel) {
+            const channel = createSeamChannelManifold(seamChannel, validHeight, validRadius);
+            const grooved = outer.subtract(channel);
+            outer.delete();
+            channel.delete();
+            outer = grooved;
+            console.log(`Manifold CSG Worker: cut seam channel at ${(-seamChannel.theta * 180 / Math.PI).toFixed(2)} deg (${seamChannel.width} x ${seamChannel.depth} mm)`);
+        }
 
         // Decision D-2, gear mode only: a one-piece roller is SOLID, like the
         // reference part. An empty polygon_points list does not say that on its
