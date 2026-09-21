@@ -16,6 +16,7 @@ from pathlib import Path
 
 import pytest
 
+from app import geometry_spec
 from app.geometry import interpoint, version2
 from app.geometry_spec import extract_cylinder_geometry_spec
 from app.models import CardSettings
@@ -364,6 +365,34 @@ def _ds_tactile_arrow_mesh(marker):
     return trimesh.boolean.intersection([prism, band], engine='manifold')
 
 
+def _seam_channel_cutter(channel, radius, height):
+    """
+    The slicer seam channel's cutter: a V cross-section in the radial /
+    circumferential plane, extruded the barrel height plus the overshoot at
+    both ends, at the spec's theta AS EMITTED (this renderer's convention for
+    every dot and marker; the worker places it at -theta like every dot).
+
+    Port of scripts/seam_spike.py channel_cutter, the shape the 2026-09-20
+    slicing spike measured, and of csg-worker-manifold.js
+    createSeamChannelManifold: the V's sides are extended outward to the lip
+    so the mouth is cut rather than touched.
+    """
+    import trimesh
+    from shapely.geometry import Polygon
+
+    width, depth, lip, overshoot = channel['width'], channel['depth'], channel['lip'], channel['overshoot']
+    r_out = radius + lip
+    half_mouth = (width / 2.0) * (depth + lip) / depth
+    section = [(r_out, -half_mouth), (r_out, half_mouth), (radius - depth, 0.0)]
+    theta = channel['theta']
+    c, s = math.cos(theta), math.sin(theta)
+    outline = Polygon([(u * c - v * s, u * s + v * c) for u, v in section])
+    length = height + 2.0 * overshoot
+    prism = trimesh.creation.extrude_polygon(outline, height=length)
+    prism.apply_translation([0.0, 0.0, -length / 2.0])
+    return prism
+
+
 def _build_ds_cylinder_mesh(spec, shell=None):
     """
     Render a double-sided cylinder spec to a watertight mesh.
@@ -393,6 +422,16 @@ def _build_ds_cylinder_mesh(spec, shell=None):
     # the worker makes a tube. That predates the gear beta and is left alone.
     if shell is None:
         shell = trimesh.creation.cylinder(radius=radius, height=height, sections=_DS_SHELL_SECTIONS)
+
+    # Slicer seam channel (2026-09-20 programme): cut from the bare shell
+    # FIRST, before any raised feature joins, exactly where the worker cuts it,
+    # so nothing added later can be undercut. Absent key, absent cut - the
+    # pre-channel bytes. All three families pass through here, so one place
+    # gives every pair the same groove.
+    channel = cylinder.get('seam_channel')
+    if channel:
+        cutter = _seam_channel_cutter(channel, radius, height)
+        shell = trimesh.boolean.difference([shell, cutter], engine='manifold')
     raised = [shell]
 
     # Gear-integrated one-piece rollers (BETA): the vendored gear pair plus its
@@ -489,7 +528,9 @@ def generate_ds_golden_fixtures():
                     'Rendered by tests/test_golden.py generate_ds_golden_fixtures() from '
                     'extract_cylinder_geometry_spec called directly with back_lines= (no request route yet). '
                     'Z-up, theta as emitted; browser workers negate theta for Three.js. '
-                    'Bowls are cut centre-on-surface (the shipping worker convention).'
+                    'Bowls are cut centre-on-surface (the shipping worker convention). '
+                    'Since 2026-09-20 the barrel also carries the slicer seam channel, a V 1.0 x 0.5 mm '
+                    'groove cut from the bare shell at cylinder.seam_channel.theta before anything joins.'
                 ),
                 'front_lines': DS_FIXTURE_FRONT_LINES,
                 'back_lines': DS_FIXTURE_BACK_LINES,
@@ -728,7 +769,9 @@ def generate_gear_golden_fixtures():
                     'double-sided one. Z-up, theta as emitted, base of the barrel reseated to '
                     'z=0 - which puts the gears at z -10..0 and 52..62. The gear geometry is '
                     'the vendored asset from static/assets/gears/, unmodified: the sample-to-'
-                    'program transform is already baked into those bytes.'
+                    'program transform is already baked into those bytes. Since 2026-09-20 the '
+                    'barrel also carries the slicer seam channel (V 1.0 x 0.5 mm, cut from the bare '
+                    'shell before the gears join, so the gear discs fill its overshoot).'
                 ),
                 'cylinder_diameter_note': (
                     'ds_cylinder*_golden uses 30.75 mm; this pair uses 30.8 mm because the '
@@ -740,7 +783,7 @@ def generate_gear_golden_fixtures():
                 'back_lines': DS_FIXTURE_BACK_LINES,
                 'settings': GEAR_FIXTURE_SETTINGS,
                 'cylinder_params': GEAR_FIXTURE_CYLINDER_PARAMS,
-                'generated': '2026-08-24',
+                'generated': '2026-09-20',
                 'trimesh_version': importlib.metadata.version('trimesh'),
                 'manifold3d_version': importlib.metadata.version('manifold3d'),
             },
@@ -1002,7 +1045,9 @@ def generate_v2_golden_fixtures():
                     'back_lines, so this pair is a SINGLE-SIDED Version 2 cylinder. The barrel comes '
                     'from tests/test_version2_keyed.build_v2_cylinder, the same builder the acceptance '
                     'harness measures. Z-up, theta as emitted, base of the barrel reseated to z=0 - '
-                    'which puts Cylinder A nub at z 54..57 and leaves Cylinder B at z 0..54.'
+                    'which puts Cylinder A nub at z 54..57 and leaves Cylinder B at z 0..54. Since '
+                    '2026-09-20 the barrel also carries the slicer seam channel (V 1.0 x 0.5 mm, cut '
+                    'from the keyed shell before anything joins).'
                 ),
                 'cylinder_diameter_note': (
                     'ds_cylinder*_golden uses 30.75 mm; this pair uses 30.8 mm because that is the '
@@ -1026,7 +1071,7 @@ def generate_v2_golden_fixtures():
                 'front_lines': DS_FIXTURE_FRONT_LINES,
                 'settings': V2_FIXTURE_SETTINGS,
                 'cylinder_params': V2_FIXTURE_CYLINDER_PARAMS,
-                'generated': '2026-08-28',
+                'generated': '2026-09-20',
                 'trimesh_version': importlib.metadata.version('trimesh'),
                 'manifold3d_version': importlib.metadata.version('manifold3d'),
             },
@@ -1250,6 +1295,76 @@ def test_a_double_sided_request_is_unchanged_by_a_version_1_embosser_version(cli
     assert toggled_off.status_code == 200, toggled_off.data
 
     assert toggled_off.get_json() == baseline.get_json()
+
+
+# ---------------------------------------------------------------------------
+# Slicer seam channel (2026-09-20 programme, sub-plan A)
+#
+# Every cylinder fixture carries the groove since 2026-09-20; all six STLs were
+# regenerated once for it (decision D-2). The check is by containment, not by
+# vertex hunting: bowl vertices also pass through the groove's radius, so a
+# "no vertices at R - 0.5 elsewhere" rule would fail on every counter plate.
+# ---------------------------------------------------------------------------
+
+_SEAM_CHANNEL_FIXTURES = [
+    ('ds', 'positive'),
+    ('ds', 'negative'),
+    ('gear', 'positive'),
+    ('gear', 'negative'),
+    ('v2', 'positive'),
+    ('v2', 'negative'),
+]
+
+
+def _seam_channel_fixture(family, plate_type):
+    if family == 'ds':
+        return DS_FIXTURE_NAMES[plate_type], _ds_fixture_spec(plate_type)
+    if family == 'gear':
+        return GEAR_FIXTURE_NAMES[plate_type], _gear_fixture_spec(plate_type)
+    return V2_FIXTURE_NAMES[plate_type], _v2_fixture_spec(plate_type)
+
+
+@pytest.mark.parametrize('family, plate_type', _SEAM_CHANNEL_FIXTURES)
+def test_golden_fixture_has_the_seam_channel(fixtures_dir, family, plate_type):
+    """
+    Air in the groove at the spec's angle and solid wall 2.5 degrees either
+    side of it, at mid-height and near both ends. Both plates of every pair
+    carry it, and the two angles of a pair sum to 360 degrees.
+
+    Only the margin band is probed for solid: the seam centre is the arrow
+    RECESS on every counter plate, and on a double-sided pair the far side of
+    the seam is crowded by the back grid, so neither is a fair "untouched
+    surface" probe.
+    """
+    trimesh = pytest.importorskip('trimesh')
+    import numpy as np
+
+    fixture_name, spec = _seam_channel_fixture(family, plate_type)
+    channel = spec['cylinder']['seam_channel']
+    assert channel['width'] == geometry_spec.SEAM_CHANNEL_WIDTH_MM
+    assert channel['depth'] == geometry_spec.SEAM_CHANNEL_DEPTH_MM
+
+    mesh = trimesh.load(str(fixtures_dir / f'{fixture_name}.stl'), file_type='stl', force='mesh')
+    radius = spec['cylinder']['radius']
+    height = spec['cylinder']['height']
+    theta = channel['theta']
+    # Just under the surface: inside the V at its centre line (the groove is
+    # 0.5 deep there), clear of it 0.67 mm to either side (inside the 0.25 mm
+    # margin band, where the surface is untouched).
+    probe_radius = radius - 0.2
+    side = math.radians(2.5)
+
+    def point(angle, z):
+        return [probe_radius * math.cos(angle), probe_radius * math.sin(angle), z]
+
+    heights = [2.0, height / 2.0, height - 2.0]
+    air = np.array([point(theta, z) for z in heights])
+    solid = np.array([point(angle, z) for z in heights for angle in (theta - side, theta + side)])
+    assert not mesh.contains(air).any(), f'{fixture_name}: no groove at {math.degrees(theta):.2f} deg'
+    assert mesh.contains(solid).all(), f'{fixture_name}: surface missing beside the groove'
+
+    mirror_name, mirror_spec = _seam_channel_fixture(family, 'negative' if plate_type == 'positive' else 'positive')
+    assert theta + mirror_spec['cylinder']['seam_channel']['theta'] == pytest.approx(2 * math.pi, abs=1e-12)
 
 
 if __name__ == '__main__':

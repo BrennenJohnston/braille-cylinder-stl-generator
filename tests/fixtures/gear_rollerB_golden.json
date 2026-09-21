@@ -3,7 +3,7 @@
   "fixture_name": "gear_rollerB_golden",
   "plate_type": "negative",
   "generation": {
-    "note": "Rendered by tests/test_golden.py generate_gear_golden_fixtures() from extract_cylinder_geometry_spec called directly with back_lines= and gear_rollers_enabled=1, so this pair covers the gear beta ON TOP of the double-sided one. Z-up, theta as emitted, base of the barrel reseated to z=0 - which puts the gears at z -10..0 and 52..62. The gear geometry is the vendored asset from static/assets/gears/, unmodified: the sample-to-program transform is already baked into those bytes.",
+    "note": "Rendered by tests/test_golden.py generate_gear_golden_fixtures() from extract_cylinder_geometry_spec called directly with back_lines= and gear_rollers_enabled=1, so this pair covers the gear beta ON TOP of the double-sided one. Z-up, theta as emitted, base of the barrel reseated to z=0 - which puts the gears at z -10..0 and 52..62. The gear geometry is the vendored asset from static/assets/gears/, unmodified: the sample-to-program transform is already baked into those bytes. Since 2026-09-20 the barrel also carries the slicer seam channel (V 1.0 x 0.5 mm, cut from the bare shell before the gears join, so the gear discs fill its overshoot).",
     "cylinder_diameter_note": "ds_cylinder*_golden uses 30.75 mm; this pair uses 30.8 mm because the vendored gears were measured against a 15.400 mm radius barrel and gear mode rejects any other size (S7, signed 2026-08-24).",
     "gear_asset": "gears_b",
     "front_lines": [
@@ -39,13 +39,13 @@
       "wall_thickness": 2.0,
       "seam_offset_deg": 355.0
     },
-    "generated": "2026-08-24",
+    "generated": "2026-09-20",
     "trimesh_version": "4.10.1",
     "manifold3d_version": "3.3.2"
   },
   "expected_properties": {
-    "face_count": 45098,
-    "vertex_count": 22551,
+    "face_count": 45106,
+    "vertex_count": 22555,
     "is_watertight": true,
     "bbox_min": [
       -16.1087703704834,
@@ -57,7 +57,7 @@
       16.10874366760254,
       62.0
     ],
-    "volume": 51440.87885194133,
-    "surface_area": 10858.355295317691
+    "volume": 51428.5213820643,
+    "surface_area": 10878.406015800014
   }
 }
