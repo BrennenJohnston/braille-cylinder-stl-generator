@@ -364,8 +364,12 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      warnings and the fixtures are 14-column geometry references.
    - interpoint.arrow_zone_margins(arrow_arc_mm) reports the shifted arrow;
      the crowded (left) side only gains.
-   - OpenSCAD parity (both .scad files, MakerWorld copies, v2.8.1) follows as
-     phase T6; until then the OpenSCAD arrows are still at 180.
+   - OpenSCAD parity landed the same day (T6 on the OpenSCAD repo's develop):
+     both .scad files and both MakerWorld copies place the arrow at the
+     PHYSICAL angle 180 +/- s/R (195.0 / 165.0 at 13 cells), cut the groove
+     behind it (169.95 / 190.05) and carry CARD_LENGTH_MM 90 with a NOTE and
+     a red TEXT RUNS OFF CARD badge; v2.8.1 and the re-vendor wait for
+     Brennen's print test.
 
 ## Settings changes — order of operations
 7. settings.schema.json is the single source of truth. When adding or changing
