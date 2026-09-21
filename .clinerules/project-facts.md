@@ -101,7 +101,7 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      syncLineLanguageSelects() fills them; rebuilt with the front's on every
      grid_rows change), read through backPlacementMode() /
      getBackDynamicLineValues() / translateBackManualLines(). Manual back
-     rows are held to the cell count (DRAFT S-D1, fail closed) and send
+     rows are held to the cell count (S-D1 (signed 2026-09-21), fail closed) and send
      back_per_line_language_tables (schema text.back_languages) - ONLY for a
      manual back; Auto and the back braille field send nothing extra, so
      their request bodies are byte-identical to before. The overflow box
@@ -134,7 +134,7 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      app/validation.py and app/geometry_spec.py read it, so it is the ONE place
      these numbers live.
    - The cylinder size is FIXED while gears are on: 30.8 x 52.0 mm in
-     Version 1 (S7) and 30.8 x 54.0 mm in Version 2 (DRAFT S-G1; the gate
+     Version 1 (S7) and 30.8 x 54.0 mm in Version 2 (S-G1 (signed 2026-09-21); the gate
      reads embosser_version and gears.reference_barrel(version)), +/- 0.001,
      or the request is REJECTED. The gears are baked at fixed z and do not
      move with the barrel — a 51 mm barrel exports as THREE loose bodies and
@@ -246,7 +246,7 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      from mesh.split(only_watertight=False). Golden pair
      tests/fixtures/v2_gear_roller{A,B}_golden.* (regenerate only via
      python -m tests.test_golden). Filenames compose: _Geared_V2_. Ready
-     message DRAFT S-G2 replaces S5 + S-V8' for a fused run. The version
+     message S-G2 (signed 2026-09-21) replaces S5 + S-V8' for a fused run. The version
      change listener now makes ONE composed DEFERRED announcement (S-V10 +
      gear notes) - keep the deferral: the form-wide change listener bubbles
      after it and re-announces the bare gear note. No OpenSCAD counterpart
@@ -293,7 +293,7 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      negates EVERY theta it places (dots, markers, channel alike) - never
      treat this angle differently from a dot's. In the STL the default
      15-column visual layout has the groove at 181.67 deg (A) / 178.33 (B).
-   - Left out, with a warning (DRAFT S-C2 / S-C3), when the free window is
+   - Left out, with a warning (S-C2 / S-C3 (signed 2026-09-21)), when the free window is
      under 1.5 mm or the wall under the apex is under 1.2 mm (polygon
      circumradius, or wall_thickness - depth for a barrel with no cutout;
      solid barrels - gears, Version 2 - skip the wall rule). 15 columns tactile
@@ -318,7 +318,7 @@ translation, Three.js preview. Working branch: develop — never commit to main.
    file after a both run, Cylinder A then B (pairFallbackQueue) after a failed
    combine, or the single file. Filenames NEVER changed (training videos).
    Persistence key stays braille_prefs_plate_type (old positive/negative
-   values honoured). Strings S-E1..S-E7 are DRAFT. e2e: single-plate specs
+   values honoured). Strings S-E1..S-E7 signed 2026-09-21. e2e: single-plate specs
    choose Cylinder A in openApp() via tests/e2e/helpers/cylinders.ts
    (selectCylinders - the radio is in the collapsed panel, so check() would
    refuse it); pair tests choose 'both'. The submenu toggle focuses its first

@@ -5,14 +5,14 @@ phase B2).
 
   1. The gear helpers become version-aware: which asset a plate carries, which
      barrel the gears were measured against, and the rejection sentence - S7
-     (signed) for Version 1, S-G1 (DRAFT) for Version 2.
+     (signed 2026-08-24) for Version 1, S-G1 (signed 2026-09-21) for Version 2.
   2. The notch fill: each top gear's measured notch grown by 0.05 mm as an exact
      parallel curve, on the arrow column, inside the 13.95 mm cap and clear of
      the other roller's teeth, extruded from just inside the barrel face to
      just past the notch floor.
 
 No mesh library needed: these read dicts and polygons. The S-G1 sentence is
-DRAFT. FLAGGED FOR BRENNEN.
+signed off by Brennen on 2026-09-21; reword only with his sign-off.
 """
 
 import math
@@ -67,7 +67,7 @@ def test_the_version_one_sentence_is_untouched():
 
 
 def test_the_version_two_sentence_is_s_g1():
-    """S-G1, DRAFT (phase B2) - FLAGGED FOR BRENNEN. Numbers spelled the signed way: 54, not 54.0."""
+    """S-G1, signed 2026-09-21 (phase B2). Numbers spelled the signed way: 54, not 54.0."""
     assert gears.reference_roller_message(30.8, 52.0, 2) == (
         'Fixed gears for the Version 2 embosser fit only a 30.8 mm x 54 mm cylinder. Received 30.8 mm x 52 mm.'
     )

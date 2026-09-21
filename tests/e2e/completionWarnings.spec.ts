@@ -53,7 +53,7 @@ import { selectCylinders } from './helpers/cylinders';
 
 /** The signed-off sentences. Neither may change; the suffix is appended after them. */
 const SINGLE_READY = 'Your STL file is ready. Use the Download STL button to save it.';
-// DRAFT S-E5 (2026-09-20 programme, sub-plan E) - FLAGGED FOR BRENNEN. It
+// S-E5 (signed 2026-09-21; 2026-09-20 programme, sub-plan E). It
 // replaces his signed 2026-08-25 sentence, which named the three pair buttons
 // that left the footer on 2026-09-21 (one Generate, one Download).
 const PAIR_READY = 'Both cylinders are ready. Use the Download STL button to save '

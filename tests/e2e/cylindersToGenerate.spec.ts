@@ -8,7 +8,7 @@
  * to Generate" - so a single cylinder is still one press away for anyone who
  * wants it. The filenames never changed (D-10): the training videos show them.
  *
- * Strings S-E1..S-E6 are DRAFT (flagged for Brennen); the pins here move with
+ * Strings S-E1..S-E6 were signed by Brennen on 2026-09-21; the pins here move only with
  * his sign-off.
  *
  * @see docs/specifications/STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md
@@ -19,7 +19,7 @@ import { expect, test, type Page } from '@playwright/test';
 import fs from 'node:fs';
 import { selectCylinders, selectedCylinders } from './helpers/cylinders';
 
-// DRAFT S-E5 (2026-09-20 programme, sub-plan E) - FLAGGED FOR BRENNEN.
+// S-E5 (signed 2026-09-21; 2026-09-20 programme, sub-plan E).
 const BOTH_READY =
   'Both cylinders are ready. Use the Download STL button to save one file with both cylinders spaced for printing on one plate.';
 const SINGLE_READY = 'Your STL file is ready. Use the Download STL button to save it.';

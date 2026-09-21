@@ -38,7 +38,7 @@ owns the gear constants.
 | Cylinders only | `validate_embosser_version_settings()` in `app/validation.py` |
 | The version is an exact integer | same function: `2.5` is refused, not rounded to Version 2 |
 | The clearance stays inside 0.0–0.5 mm | same function, and the dial is bounded at the source |
-| Fixed gears are available in Version 2 too (since 2026-09-21, sub-plan B) | the old refusal is retired; `validate_gear_rollers_settings()` gates the size PER VERSION (30.8 × 54 here, DRAFT S-G1) — §13 and the gear spec §11 |
+| Fixed gears are available in Version 2 too (since 2026-09-21, sub-plan B) | the old refusal is retired; `validate_gear_rollers_settings()` gates the size PER VERSION (30.8 × 54 here, S-G1 (signed 2026-09-21)) — §13 and the gear spec §11 |
 | The barrel is solid while Version 2 is on | `app/geometry_spec.py` sets `cylinder.solid`; the worker's `keyed` branch forces it |
 | The size is a WARNING, never a rejection | `version2.v2_size_message()`, carried in `spec['warnings']` |
 | Existing golden fixtures never change | Phase 07 re-ran the double-sided and gear pairs; git reported them byte-identical |
@@ -397,7 +397,7 @@ behaviour and the checked state all come from the platform; the only ARIA is
 
 **Since 2026-09-20 (programme decisions D-7, D-8; phases C1-C2)** the selector is the
 FIRST of three either/or choices inside the **Embosser setup** menu item
-(`#embosser-setup-selection`, legend h2 "Embosser setup" — DRAFT S-M1), which is the
+(`#embosser-setup-selection`, legend h2 "Embosser setup" — S-M1 (signed 2026-09-21)), which is the
 form's first item; the gears and the card sides are the other two (UI spec §4.8). The
 version fieldset is nested inside it, its legend one level down (`<h3
 class="legend-heading">`), and the "(prototype)" tag and the prototype notice are gone.
@@ -405,9 +405,9 @@ class="legend-heading">`), and the "(prototype)" tag and the prototype notice ar
 | Element | id | Carries |
 |---|---|---|
 | Fieldset (nested) | `embosser-version-selection` | legend S-V1 "Embosser version" as an h3 |
-| Radios | `embosser_version_1` (checked), `embosser_version_2` | S-V2 — labels "Version 1" / "Version 2" (DRAFT S-V2′: the "(prototype)" suffix dropped, D-7) |
+| Radios | `embosser_version_1` (checked), `embosser_version_2` | S-V2 — labels "Version 1" / "Version 2" (S-V2 (signed 2026-09-21)′: the "(prototype)" suffix dropped, D-7) |
 | Selector note | `embosser-version-note` | S-V3, the fieldset's `aria-describedby` |
-| Comparison note (visible only) | `embosser-version-compare` | DRAFT S-M2 *"Version 1 prints the most accurate braille dots. Version 2 adds tactile row markers and a simpler assembly for blind users."* |
+| Comparison note (visible only) | `embosser-version-compare` | S-M2 (signed 2026-09-21) *"Version 1 prints the most accurate braille dots. Version 2 adds tactile row markers and a simpler assembly for blind users."* |
 | ~~Prototype notice~~ | ~~`v2-prototype-note`~~ | S-V4 retired 2026-09-20 (D-7) |
 | Size warning | `v2-size-warning` / `v2-size-message` | S-V5, the server's sentence verbatim |
 | Clearance fieldset | `v2-keyed-cutouts-selection` | Expert Mode, hidden in Version 1 |
@@ -446,8 +446,8 @@ list is empty.
 **Fixed gears work in Version 2 since 2026-09-21** (sub-plan B; D-V6 retired). The Gears
 choice is left exactly as the user set it across a version change; the temporary guard
 and its S-M13 sentence are gone. While Version 2 is chosen `updateGearRollersUI()` gates
-the barrel against `V2_BARREL_*` with DRAFT S-G1 (a smoke test pins the template against
-`gears.py`), and a fused run's ready message is DRAFT S-G2 *"Cylinder generated with fixed
+the barrel against `V2_BARREL_*` with S-G1 (signed 2026-09-21) (a smoke test pins the template against
+`gears.py`), and a fused run's ready message is S-G2 (signed 2026-09-21) *"Cylinder generated with fixed
 gears for the Version 2 embosser."* in place of S5 and S-V8′ together. Because a
 fixed-gear choice now survives the version change, the version listener defers and
 composes its one announcement — without that, the form-wide refresh that bubbles behind
@@ -652,10 +652,10 @@ mode; this section records only what changes on THIS document's side.
   `spec['gears']['notch_fills']` and joins the worker's gear stage.
 - **D-V6 is retired.** `validate_embosser_version_settings()` no longer refuses gears
   with Version 2; `validate_gear_rollers_settings()` picks the reference barrel by
-  version — 30.8 × 54 here — and rejects with DRAFT S-G1. The S-V5 size WARNING still
+  version — 30.8 × 54 here — and rejects with S-G1 (signed 2026-09-21). The S-V5 size WARNING still
   applies to the same dials, so an off-size fused request shows both sentences.
 - **Naming** composes without a new rule: `Embossing_Cylinder_Geared_V2_{preset}_{name}.stl`
-  and the `Counter_` / `Cylinder_Pair_` forms. The ready message is DRAFT S-G2 alone.
+  and the `Counter_` / `Cylinder_Pair_` forms. The ready message is S-G2 (signed 2026-09-21) alone.
 - **Pinned** by `tests/test_version2_fused.py`, the fused section of
   `tests/test_version2_spec.py`, `tests/test_version2_validation.py`, the
   `v2_gear_roller{A,B}_golden` pair, and `tests/e2e/version2.spec.ts`.
@@ -680,8 +680,8 @@ mode; this section records only what changes on THIS document's side.
 | Date | Version | Changes |
 |------|---------|---------|
 | 2026-09-21 | 1.13 | **Pair mode is universal (programme sub-plan E).** §8.2's D-V10 paragraph: no Generate Both button to reveal — every run builds both cylinders unless one is chosen under Cylinders to Generate. Nothing else changed. |
-| 2026-09-21 | 1.12 | **Fixed gears on a Version 2 cylinder — fused mode (programme sub-plan B, phases B1-B7; decision D-6; D-V6 retired).** New §13: no keyed cutouts, the notch fill, the per-version size gate with DRAFT S-G1, the `_Geared_V2_` names and DRAFT S-G2, and where it is pinned. §1's gear rule flipped; §6 gains the fused `gears` block; §7 item 2 rewritten; §8's temporary-guard paragraph replaced (S-M13 retired; the version announcement now composes the gear notes and is deferred); §12 points both missing OpenSCAD features at the follow-on plan. The "(PROTOTYPE)" left in the title since 2026-09-20 removed (D-7). |
-| 2026-09-20 | 1.11 | **The selector joins the Embosser setup menu item, and the prototype tag goes (programme decisions D-7, D-8; phases C1-C4).** §8 rewritten: the version fieldset is nested inside `#embosser-setup-selection` with an h3 legend; the radio labels are "Version 1" / "Version 2" (DRAFT S-V2′); the S-V4 prototype notice is retired and a visible comparison note (DRAFT S-M2) added; S-V3 and S-V5 unchanged. The Gears choice is no longer hidden in Version 2 — a temporary guard resets it to Standard and appends DRAFT S-M13 to the S-V10 announcement until phase B6; the ready-message prefix is DRAFT S-V8′ without "(prototype)". Strings await Brennen's sign-off. |
+| 2026-09-21 | 1.12 | **Fixed gears on a Version 2 cylinder — fused mode (programme sub-plan B, phases B1-B7; decision D-6; D-V6 retired).** New §13: no keyed cutouts, the notch fill, the per-version size gate with S-G1 (signed 2026-09-21), the `_Geared_V2_` names and S-G2 (signed 2026-09-21), and where it is pinned. §1's gear rule flipped; §6 gains the fused `gears` block; §7 item 2 rewritten; §8's temporary-guard paragraph replaced (S-M13 retired; the version announcement now composes the gear notes and is deferred); §12 points both missing OpenSCAD features at the follow-on plan. The "(PROTOTYPE)" left in the title since 2026-09-20 removed (D-7). |
+| 2026-09-20 | 1.11 | **The selector joins the Embosser setup menu item, and the prototype tag goes (programme decisions D-7, D-8; phases C1-C4).** §8 rewritten: the version fieldset is nested inside `#embosser-setup-selection` with an h3 legend; the radio labels are "Version 1" / "Version 2" (S-V2 (signed 2026-09-21)′); the S-V4 prototype notice is retired and a visible comparison note (S-M2 (signed 2026-09-21)) added; S-V3 and S-V5 unchanged. The Gears choice is no longer hidden in Version 2 — a temporary guard resets it to Standard and appends S-M13 (signed 2026-09-21) to the S-V10 announcement until phase B6; the ready-message prefix is S-V8 (signed 2026-09-21)′ without "(prototype)". Strings signed off by Brennen 2026-09-21. |
 | 2026-09-20 | 1.10 | **A card-stock preset chosen after Version 2 no longer returns the barrel to 52 mm.** Both presets carry the Version 1 barrel and `applyThicknessPreset()` wrote it over the Version 2 overrides; the soft S-V5 warning was the only sign, and a 52 mm Version 2 double-sided pair printed from the live site. The preset function now re-asserts `V2_PRESET_OVERRIDES` while Version 2 is on (§8). New e2e pin. |
 | 2026-09-01 | 1.9 | **The 54 mm print test is passed.** Brennen confirmed it the same day v1.8 recorded the inspection, completing the claim that row deliberately left half-made: the 30.8 × 54 pair printed from the OpenSCAD Version 2 file has now passed the print test, not merely inspection. Labels in both repos say so. The remaining MakerWorld gates are unchanged and his: sign the listing draft's DRAFT blocks, shoot and approve the five photos, confirm the print-orientation advice. |
 | 2026-09-01 | 1.8 | **54 mm print-inspected, the wording revisions signed, and the MakerWorld package completed.** Both cylinders printed from the OpenSCAD Version 2 file (30.8 × 54) passed Brennen's inspection, so the "not print-tested at 54" flags are cleared in both repos (an embossing run at 54 is not yet reported). He signed the 2026-08-31 wording revisions the same day (the `.scad` header, the S-V11 clearance-tab figures, the 4-row instructions) — the sign-off tags in the file now record it. MakerWorld de-muddle: the Version 1 file is renamed `_v1.5` (his rename, byte-pure, history preserved), `makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad` is now the **Embosser Version 2 upload** — a byte-identical copy of the canonical file, guarded by `test_the_makerworld_copy_is_byte_identical` — and `docs/MAKERWORLD_V2_LISTING_DRAFT.md` holds the listing text (S-V12 title and S-V13 status verbatim; the description/media blocks remain DRAFT awaiting his sign-off). KNOWN_ISSUES' stale "30.5 × 52" aside corrected to 30.8 × 54. |

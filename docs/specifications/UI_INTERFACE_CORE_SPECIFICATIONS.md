@@ -2019,7 +2019,7 @@ feature toggles that used to sit in three places — the Embosser version fields
 "Double-Sided Card (BETA — for testing)" accordion with its checkbox, and the
 "Integrated Gears (BETA — for testing)" checkbox fieldset — are ONE menu item at the top
 of the form, `#embosser-setup-selection`: a `.grade-selection` whose `<fieldset>` legend
-carries `<h2 class="legend-heading">Embosser setup</h2>` (DRAFT S-M1) and holds three
+carries `<h2 class="legend-heading">Embosser setup</h2>` (S-M1 (signed 2026-09-21)) and holds three
 nested fieldsets, each with an `<h3 class="legend-heading">` legend, native radios in the
 stock `.radio-group` / `.radio-option` layout (44 px targets, arrow-key movement and the
 checked state all from the platform), and one `.grade-note` as the fieldset's
@@ -2031,14 +2031,14 @@ checked state all from the platform), and one `.grade-note` as the fieldset's
 | Gears | `gear-rollers-selection` | `gear_mode_standard` / `gear_mode_fixed` (`gear_mode`) | Standard | `isGearRollersOn()` |
 | Card sides | `card-sides-selection` | `card_sides_single` / `card_sides_double` (`card_sides`) | Single-sided | `isDoubleSidedOn()` |
 
-A closing `.btn-link` "Which setup should I choose?" (DRAFT S-M8) opens the help modal on
-the new **Embosser Setup** tab (`#tab-setup` / `#helpPanelSetup`, DRAFT S-M9). No BETA or
+A closing `.btn-link` "Which setup should I choose?" (S-M8 (signed 2026-09-21)) opens the help modal on
+the new **Embosser Setup** tab (`#tab-setup` / `#helpPanelSetup`, S-M9 (signed 2026-09-21)). No BETA or
 "(prototype)" text remains on the page; the Version 2 prototype notice is gone. Each radio
 group's change listener persists under the SAME localStorage key the old control used,
 resets the generate state, refreshes the live warnings, and makes ONE announcement
 deferred by a tick (so the radio's own "selected" is heard first, and so the form-wide
-refresh that bubbles behind the listener cannot overwrite it): DRAFT S-M10 for gears
-(composed with the S3/S7 notes `updateGearRollersUI()` returns), DRAFT S-M11 for the card
+refresh that bubbles behind the listener cannot overwrite it): S-M10 (signed 2026-09-21) for gears
+(composed with the S3/S7 notes `updateGearRollersUI()` returns), S-M11 (signed 2026-09-21) for the card
 sides (composed with the lock note when turning double-sided on), the signed S-V10 for
 the version (composed, since 2026-09-21, with the S3/S7/S-G1 notes the gear refresh
 returns — the temporary Version 2 gear guard and its S-M13 sentence are retired now that
@@ -2068,7 +2068,7 @@ readers, skipped by arrow-key navigation, and exempt from contrast minimums (WCA
 visible explanation (`#indicator-mode-lock-note`, `role="status"` `aria-live="polite"`) appears
 next to the group, and `updateDoubleSidedUI()` appends its id to the disabled radio's
 `aria-describedby` so the reason travels with the option; both are removed when
-Single-sided is chosen again. Since 2026-09-20 the note's text is DRAFT S-M12 ("Locked:
+Single-sided is chosen again. Since 2026-09-20 the note's text is S-M12 (signed 2026-09-21) ("Locked:
 Double-sided is on, … Choose Single-sided to pick visual markers.") and it is no longer
 announced on its own: the card-sides change listener reads it into its one composed
 announcement. Native `disabled` was chosen over `aria-disabled` because the repository's
@@ -3251,8 +3251,8 @@ Low vision users benefit from enhanced depth perception:
 | 1.0 | 2024-12-06 | Initial specification document |
 | 1.1 | 2024-12-06 | Cross-check verification completed; corrected skip link href from `#main-form` to `#main-content`; updated appendices to match actual implementation |
 | 1.2 | 2024-12-06 | Added CAMERA_SETTINGS global configuration documentation in Section 3.4; expanded camera controls section with detailed instructions for adjusting initial view positions for cards and cylinders |
-| 1.27 | 2026-09-21 | **One Generate, one Download, "Cylinders to Generate" (programme sub-plan E; phases E1–E4).** §4.11 outline: the "Select Plate to Generate" h2 leaves the main form and a "Cylinders to Generate" h3 becomes the first Expert submenu (re-measured 9 / 15, no level skipped); §6.1 records the both-by-default rule and points at STL_EXPORT §8/§15 for the footer. Strings S-E1..S-E7 are DRAFT. |
-| 1.26 | 2026-09-20 | **The Embosser setup menu item (programme decisions D-7, D-8; phases C1–C4).** §4.8 rewritten: the Embosser version fieldset, the Double-Sided Card (BETA) accordion + checkbox and the Integrated Gears (BETA) checkbox are ONE item `#embosser-setup-selection` (h2 "Embosser setup", DRAFT S-M1) holding three nested h3 fieldsets with native radios — version (`embosser_version_1/2`), gears (`gear_mode_standard/fixed`), card sides (`card_sides_single/double`) — each described within the Step 6.8 ceiling, a "Which setup should I choose?" link opening the new Embosser Setup help tab, one composed deferred announcement per change, the same persistence keys as before. The Back of Card fieldset is always in the tree and native-`disabled` while single-sided (no disclosure ARIA). §4.11 outline: h2 Embosser setup + three h3s, permanent Back of Card h2; computed counts 10/15/16 to be re-measured at phase C5. No BETA or prototype text remains. All new strings are DRAFT pending Brennen's sign-off. |
+| 1.27 | 2026-09-21 | **One Generate, one Download, "Cylinders to Generate" (programme sub-plan E; phases E1–E4).** §4.11 outline: the "Select Plate to Generate" h2 leaves the main form and a "Cylinders to Generate" h3 becomes the first Expert submenu (re-measured 9 / 15, no level skipped); §6.1 records the both-by-default rule and points at STL_EXPORT §8/§15 for the footer. Strings S-E1..S-E7 signed 2026-09-21. |
+| 1.26 | 2026-09-20 | **The Embosser setup menu item (programme decisions D-7, D-8; phases C1–C4).** §4.8 rewritten: the Embosser version fieldset, the Double-Sided Card (BETA) accordion + checkbox and the Integrated Gears (BETA) checkbox are ONE item `#embosser-setup-selection` (h2 "Embosser setup", S-M1 (signed 2026-09-21)) holding three nested h3 fieldsets with native radios — version (`embosser_version_1/2`), gears (`gear_mode_standard/fixed`), card sides (`card_sides_single/double`) — each described within the Step 6.8 ceiling, a "Which setup should I choose?" link opening the new Embosser Setup help tab, one composed deferred announcement per change, the same persistence keys as before. The Back of Card fieldset is always in the tree and native-`disabled` while single-sided (no disclosure ARIA). §4.11 outline: h2 Embosser setup + three h3s, permanent Back of Card h2; computed counts 10/15/16 to be re-measured at phase C5. No BETA or prototype text remains. All new strings are DRAFT pending Brennen's sign-off. |
 | 1.3 | 2025-12-08 | Added Section 3.7 (STL Preview Label) to clarify the preview panel's purpose; Added Section 3.8 (Preview Display Settings) documenting new brightness and contrast radio button controls for 3D preview customization |
 | 1.4 | 2025-12-08 | Fixed Expert Toggle button active state contrast ratio: Changed background from `var(--border-focus)` to darker blues (`#1e4976` for light mode, `#1e5a8a` for dark mode) to meet WCAG AA 4.5:1 contrast requirement with white text |
 | 1.5 | 2025-12-08 | **UI Enhancement:** (1) Moved STL Preview Label to top of preview panel as overlay with z-index for visibility; (2) Changed Brightness and Contrast controls from radio buttons to click-through toggle buttons (like Theme toggle) that cycle through levels 1→2→3→4→5→1 on each click |

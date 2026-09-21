@@ -14,7 +14,7 @@
  *   5. Choices persist across a reload; Reset restores the defaults.
  *   6. No BETA or prototype tags remain anywhere on the page.
  *
- * The strings quoted here are DRAFT (S-M1..S-M11). FLAGGED FOR BRENNEN.
+ * The strings quoted here (S-M1..S-M11) were signed off by Brennen on 2026-09-21; reword only with his sign-off.
  *
  * @see docs/specifications/UI_INTERFACE_CORE_SPECIFICATIONS.md
  */

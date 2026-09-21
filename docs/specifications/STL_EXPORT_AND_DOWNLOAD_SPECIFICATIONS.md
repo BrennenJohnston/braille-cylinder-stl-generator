@@ -882,8 +882,8 @@ Expert Mode → Cylinders to Generate. No name changed (programme decision D-10)
 
 Since 2026-09-21 there is no second download control: after the default both-cylinder
 run the same `#download-stl-btn` is **Offered** with the combined pair file behind it (or,
-when the combine failed, Cylinder A on the first press and Cylinder B on the next — DRAFT
-S-E6), and the pair's progress and ready sentence live in `#pair-status`. The three pair
+when the combine failed, Cylinder A on the first press and Cylinder B on the next — S-E6 (signed 2026-09-21)
+), and the pair's progress and ready sentence live in `#pair-status`. The three pair
 download buttons and the Generate Both button of 2026-08-17..2026-09-20 are gone —
 Section 15.
 
@@ -1449,7 +1449,7 @@ One press runs the whole pipeline twice with nothing editable between the runs.
 
 | Element | Id | Shown | Notes |
 |---|---|---|---|
-| Cylinders to Generate | `#cylinders-to-generate-submenu` → `#expert-panel-cylinders` | Expert Mode open | The first submenu (h3 like the others). Radios `name="plate_selection"`: `both` (checked; label DRAFT S-E2 *"Both Cylinder A and B"*, sr-only description DRAFT S-E3), `positive` (*"Cylinder A — Embossing Plate"*), `negative` (*"Cylinder B — Universal Counter Plate"*) — the A/B labels signed 2026-08-17, now static markup. Legend DRAFT S-E1. The old main-form "Select Plate to Generate" fieldset is gone |
+| Cylinders to Generate | `#cylinders-to-generate-submenu` → `#expert-panel-cylinders` | Expert Mode open | The first submenu (h3 like the others). Radios `name="plate_selection"`: `both` (checked; label S-E2 (signed 2026-09-21) *"Both Cylinder A and B"*, sr-only description S-E3 (signed 2026-09-21)), `positive` (*"Cylinder A — Embossing Plate"*), `negative` (*"Cylinder B — Universal Counter Plate"*) — the A/B labels signed 2026-08-17, now static markup. Legend S-E1 (signed 2026-09-21). The old main-form "Select Plate to Generate" fieldset is gone |
 | Generate STL | `#action-btn` | always | Unchanged control; `runGenerate()` sends it to `runGenerateBothCylinders()` when `both` is chosen, else `runGenerateForCurrentPlate()` |
 | Pair status line | `#pair-status` | While a run is in flight and after it ends | `role="status" aria-live="polite"`, visible text — sighted and screen-reader users get the same progress |
 | Download STL | `#download-stl-btn` | After a successful run | Saves the combined `Cylinder_Pair_…` file after a both run; Cylinder A then Cylinder B (one press each) when the combine failed; the single file after a single-cylinder run |
@@ -1476,11 +1476,11 @@ still honoured as that single cylinder, anything else leaves the default `both`.
    A and B stay usable, instead of as a dead button press later. On success the pair is
    also presented in the 3D preview: two centred bodies, A screen-left, B screen-right,
    centres `pairXOffsetMm()` apart.
-7. Announce the result in `#pair-status`. Combine succeeded — DRAFT S-E5:
+7. Announce the result in `#pair-status`. Combine succeeded — S-E5 (signed 2026-09-21):
    `Both cylinders are ready. Use the Download STL button to save one file with both cylinders spaced for printing on one plate.`
    (replaces the sentence signed 2026-08-25, which named the three pair buttons; pinned as
    `PAIR_READY` in `tests/e2e/completionWarnings.spec.ts` — the sentence and the pin change
-   in one commit). Combine failed — DRAFT S-E6:
+   in one commit). Combine failed — S-E6 (signed 2026-09-21):
    `The combined file could not be built. Download STL now saves Cylinder A; press it again for Cylinder B.`
    and `pairFallbackQueue` holds A then B for the Download button. **Nothing downloads on
    its own** — see *Downloads* below.
@@ -1517,7 +1517,7 @@ carries no text of its own, so only `settings` and `cylinder_params` are identic
 
 A failure on Cylinder A aborts the run and downloads nothing — a Cylinder B with no
 matching A embosses the two sides of a card out of register, which is worse than no file.
-The status line reads (DRAFT S-E7, replacing the 2026-08-17 sentence that named the
+The status line reads (S-E7 (signed 2026-09-21), replacing the 2026-08-17 sentence that named the
 Generate Both button) `Cylinder A could not be generated, so nothing was downloaded. Fix
 the problem shown in the error message, then press Generate STL again.` (same sentence
 with `Cylinder B` for a second-plate failure), the underlying reason is in the existing
@@ -1649,7 +1649,7 @@ the action button already looks idle. After a pair run the action button always 
 | 1.5 | 2026-08-16 | **DOUBLE-SIDED NAMING (Phase 09):** When the Double-Sided Card beta is on, downloads are named `Cylinder_A_{preset}_{name}` (positive) / `Cylinder_B_{preset}_{name}` (negative); both take `{name}` from the front text. Single-sided names unchanged. Updated Section 7; covered by tests/e2e/doubleSided.spec.ts. |
 | 2.1 | 2026-08-25 | **§7 listing synced to the shipped 3-argument `buildStlFilename`** on Brennen's direction, resolving the KNOWN DRIFT flag v2.0 raised the same day: the listing now shows the `geared` parameter and the D-5 `Geared_` segment rule; the flag note is removed. Documentation only — no code changed. |
 | 2.0 | 2026-08-25 | **PAIR MODE + COMBINED DOWNLOAD.** Section 15 widened from the double-sided beta to `isPairModeOn()` (either beta — gears-only users need the meshed pair too); §6 gains the *Combined Pair File* subsection (client-side two-body concatenation, DataView-only access, barrel-based 40.8 mm centre offset chosen by Brennen, throw-don't-fallback dial read); §7 gains the `Cylinder_Pair_[Geared_]` name (signed 2026-08-25), the gears-only frozen-names rule, and a **KNOWN DRIFT flag** on the 2-arg `buildStlFilename` listing (code is 3-arg with `geared`; kept pending Brennen's direction); §15 run sequence gains the eager combine + two-body preview step and the new signed completion sentence (PAIR_READY pin updated in the same commit); §8 cross-references the three pair download buttons. The combined file contains TWO bodies by design — never assert watertightness on it. |
-| 2.3 | 2026-09-21 | **ONE Generate, ONE Download, "Cylinders to Generate" in Expert Mode (programme sub-plan E, decisions D-8, D-9, D-10; phases E1–E4).** §15 rewritten: the pair run is universal — Generate STL builds both cylinders unless the first Expert submenu names one; the Generate Both button, the three pair download buttons and the plate-radio relabel are retired; `#download-stl-btn` saves the combined file (or A then B after a failed combine, DRAFT S-E6); DRAFT S-E5 replaces the signed 2026-08-25 ready sentence (PAIR_READY pin moved in the same commit) and DRAFT S-E7 the failure sentence; the identical-settings contract distinguishes double-sided (whole body) from single-sided (settings + cylinder). §8 cross-reference and §7 combined-name note updated. Filenames unchanged. |
+| 2.3 | 2026-09-21 | **ONE Generate, ONE Download, "Cylinders to Generate" in Expert Mode (programme sub-plan E, decisions D-8, D-9, D-10; phases E1–E4).** §15 rewritten: the pair run is universal — Generate STL builds both cylinders unless the first Expert submenu names one; the Generate Both button, the three pair download buttons and the plate-radio relabel are retired; `#download-stl-btn` saves the combined file (or A then B after a failed combine, S-E6 (signed 2026-09-21)); S-E5 (signed 2026-09-21) replaces the signed 2026-08-25 ready sentence (PAIR_READY pin moved in the same commit) and S-E7 (signed 2026-09-21) the failure sentence; the identical-settings contract distinguishes double-sided (whole body) from single-sided (settings + cylinder). §8 cross-reference and §7 combined-name note updated. Filenames unchanged. |
 | 2.2 | 2026-09-20 | **Slicer seam channel — no export rotation.** §6 Coordinate System gains one paragraph: the groove every cylinder now carries (SURFACE_DIMENSIONS_SPECIFICATIONS.md §2.6) is placed by the worker at `-theta` like every dot, exports keep their orientation (programme decision D-14), and the in-file angles for the default layout are recorded. Documentation only. |
 | 1.9 | 2026-08-21 | **Documentation only — no behavior change.** Removed the last `templates/index.html` citations (that folder is empty and deprecated). The Source Priority list now names one frontend file; the two `// From templates/index.html - NO FALLBACK` code comments now name `public/index.html`; and Section 4's Worker Initialization source now points at the CSG worker setup inside the `window` `load` handler, flagging the `initCSGWorker()` snippet as illustrative because no function of that name exists in the real code. Part of the templates/ reference sweep (Phase 07b). |
 

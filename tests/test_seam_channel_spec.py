@@ -14,7 +14,7 @@ tests read the dict the worker acts on; they need no mesh library.
   3. Off: with the switch off (or the channel left out) the spec is
      byte-identical to the one built before the channel existed.
 
-The warning sentences quoted here are DRAFT (S-C2, S-C3). FLAGGED FOR BRENNEN.
+The warning sentences quoted here (S-C2, S-C3) were signed off by Brennen on 2026-09-21; reword only with his sign-off.
 """
 
 import copy
@@ -67,7 +67,7 @@ V1_CYLINDER = {
     'polygonal_cutout_sides': 12,
 }
 
-# DRAFT wording, phase A2. FLAGGED FOR BRENNEN.
+# Wording signed off by Brennen (2026-09-21), phase A2; reword only with his sign-off.
 GAP_WARNING = 'The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.'
 WALL_WARNING = 'The seam channel was left out: the cylinder wall would be thinner than 1.2 mm under it.'
 

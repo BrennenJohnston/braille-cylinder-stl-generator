@@ -15,7 +15,7 @@ Two halves, and the second matters as much as the first:
 These need no mesh library - they read the dict the worker will act on.
 
 The Version 2 sentences quoted here are DRAFT: Brennen deferred the strings to
-their phase gates on 2026-08-28. FLAGGED FOR BRENNEN.
+their phase gates on 2026-08-28.
 """
 
 import copy
@@ -176,7 +176,7 @@ def test_version_one_gear_mode_carries_no_notch_fill_and_the_version_one_asset()
 def test_fused_version_two_at_the_version_one_height_warns_with_the_version_two_sentence():
     """
     Direct callers bypass validation: a fused Version 2 spec on the 52 mm
-    Version 1 barrel carries the DRAFT S-G1 warning, and a Version 1 gear spec
+    Version 1 barrel carries the S-G1 warning (signed 2026-09-21), and a Version 1 gear spec
     on the 54 mm barrel carries S7 - each version answers for its own gears.
     """
     fused = fused_spec(cylinder={**V2_CYLINDER, 'height': 52.0})

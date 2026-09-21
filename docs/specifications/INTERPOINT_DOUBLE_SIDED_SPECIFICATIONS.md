@@ -378,7 +378,7 @@ plates (recesses on A, raised dots on B). Decided by Brennen 2026-08-16.
    **Manual placement for the back** (2026-09-21, D-11): each `#back_line{i}` goes
    through `translateWithLiblouis(applyCapitalizationSetting(line), 'g2', table)` with
    its own `#back_line_lang_{i}` table — the front's manual branch mirrored — every row is
-   held to the cell count (DRAFT S-D1, fail closed), and the tables travel as
+   held to the cell count (S-D1 (signed 2026-09-21), fail closed), and the tables travel as
    `back_per_line_language_tables`. The back braille field outranks both when it has
    content. Fails **closed** on a failed translation or an over-long row (§7.4 strings).
 4. The request body gains a top-level `back_lines` and, inside `settings`, the flat
@@ -483,7 +483,7 @@ here with the signed-off strings. **All wording below was signed off by Brennen
 
 **Since 2026-09-20 there is no toggle and no accordion.** The choice is the third of the
 three either/or radio groups inside the **Embosser setup** menu item at the top of the
-form (`#embosser-setup-selection`, h2 "Embosser setup" — DRAFT S-M1; the other two are
+form (`#embosser-setup-selection`, h2 "Embosser setup" — S-M1 (signed 2026-09-21); the other two are
 the embosser version and the gears). Full pattern in UI_INTERFACE_CORE_SPECIFICATIONS.md
 §4.8:
 
@@ -491,11 +491,11 @@ the embosser version and the gears). Full pattern in UI_INTERFACE_CORE_SPECIFICA
   `<h3 class="legend-heading">Card sides</h3>`, `aria-describedby="double-sided-note"`.
 - Radios `name="card_sides"`: `#card_sides_single` (`value="single"`, **checked in the
   markup**) and `#card_sides_double` (`value="double"`), labels **"Single-sided"** /
-  **"Double-sided"** (DRAFT S-M6a/b), in the stock `.radio-group` / `.radio-option`
+  **"Double-sided"** (S-M6a/b (signed 2026-09-21)), in the stock `.radio-group` / `.radio-option`
   layout (44 px targets). `isDoubleSidedOn()` reads `#card_sides_double.checked` and is
   the ONLY reader — the wire, the pair flow, the live warnings and the back-text checks
   all go through it.
-- `#double-sided-note` — the group's description (DRAFT S-M7, 16 words): "Double-sided
+- `#double-sided-note` — the group's description (S-M7 (signed 2026-09-21), 16 words): "Double-sided
   embosses both faces of the card in one pass and uses the tactile row markers."
 - The 2026-08-16 signed sentence stays VISIBLE below it, verbatim minus its last clause:
   "Embosses both sides of the card in one pass: **Cylinder A** (the embossing plate)
@@ -508,7 +508,7 @@ the embosser version and the gears). Full pattern in UI_INTERFACE_CORE_SPECIFICA
 - `#ds-gap-warning` / `#ds-gap-message` (§7.3) moved into this fieldset.
 - Change listener: `updateDoubleSidedUI()`, persist, `resetToGenerateState()`,
   `refreshLiveWarnings()`, then ONE announcement deferred by a tick (so the radio's own
-  "selected" is heard first): DRAFT S-M11 — "Double-sided card selected. The Back of Card
+  "selected" is heard first): S-M11 (signed 2026-09-21) — "Double-sided card selected. The Back of Card
   section is now active." followed, when turning on, by the lock note's text (§7.2), or
   "Single-sided card selected." `updateDoubleSidedUI()` itself is silent (load restore
   and Reset call it too).
@@ -694,14 +694,14 @@ Back of Card section carries the front's placement toggle under its own radio na
 rebuilt with the front's rows on every `grid_rows` change; the dropdowns share the
 `line-language-select` class so `syncLineLanguageSelects()` fills them). Generation
 translates each row with its own table (`translateBackManualLines()`), holds every row to
-the cell count and blocks with DRAFT S-D1 — *"Back line N exceeds C cells. Shorten it or
+the cell count and blocks with S-D1 (signed 2026-09-21) — *"Back line N exceeds C cells. Shorten it or
 use Auto Placement for the back."* — or, on a failed translation, the signed 2026-08-17
 "Back text could not be translated…" sentence. The live warning (`computeBackOverflowNow()`)
 checks the manual rows on the same debounce and writes the signed per-line sentence
 (*"Back line N ("…") needs C cells but A are available."*); the row-count sentence does not
 apply in Manual. `translateIntoBackBrailleField()` and the braille preview read the manual
-rows too (the preview interpolates braille and shorthand only; the empty case says DRAFT
-S-D3 *"Enter text in at least one Back Line first, then press Translate to Braille."* /
+rows too (the preview interpolates braille and shorthand only; the empty case says S-D3 (signed 2026-09-21)
+ *"Enter text in at least one Back Line first, then press Translate to Braille."* /
 *"No back of card text yet. Type it in the Back Line boxes above and preview again."*).
 Auto placement is untouched: everything above this paragraph still describes it.
 
@@ -973,9 +973,9 @@ and separated**. Full record: the research folder's `00_PROJECT_MEMORY.md`, FD-8
 
 | Date | Version | Changes |
 |------|---------|---------|
-| 2026-09-21 | 1.16 | **Back of Card parity (programme sub-plan D, decision D-11).** §3.1 adds the back per-row tables' three spellings (`text.back_languages` / `back_per_line_language_tables` / the request model), sent only for a manually placed back; §6.1 step 3 splits into the Auto and Manual branches; §7.4 gains the Manual-placement paragraph (toggle, rows, dropdowns, DRAFT S-D1 gate, live per-line warning, fill-from-text and preview, DRAFT S-D3); §7.5 records `braille_prefs_back_placement_mode`. Auto placement, the wire shape for Auto, the footprints and the geometry are untouched. |
+| 2026-09-21 | 1.16 | **Back of Card parity (programme sub-plan D, decision D-11).** §3.1 adds the back per-row tables' three spellings (`text.back_languages` / `back_per_line_language_tables` / the request model), sent only for a manually placed back; §6.1 step 3 splits into the Auto and Manual branches; §7.4 gains the Manual-placement paragraph (toggle, rows, dropdowns, S-D1 (signed 2026-09-21) gate, live per-line warning, fill-from-text and preview, S-D3 (signed 2026-09-21)); §7.5 records `braille_prefs_back_placement_mode`. Auto placement, the wire shape for Auto, the footprints and the geometry are untouched. |
 | 2026-09-21 | 1.15 | **Pair mode is universal (programme sub-plan E).** §7.7 rewritten: Generate STL builds both cylinders by default, Download STL saves the combined file, a single cylinder is chosen under Expert Mode → Cylinders to Generate; `isPairModeOn()`, Generate Both, the relabel and the pair download row retired. Filenames, wire shape, geometry and the double-sided-only rules untouched. |
-| 2026-09-20 | 1.14 | **Out of beta, into the Embosser setup menu (programme decisions D-7, D-8; phases C1-C4).** Overview and §7.1 rewritten: the "Double-Sided Card (BETA — for testing)" accordion and its `#double_sided_enabled` checkbox are retired; the choice is the **Card sides** radio group (`#card_sides_single` checked / `#card_sides_double`, DRAFT S-M6a/b, description DRAFT S-M7) inside the new `#embosser-setup-selection` item at the top of the form, read only through `isDoubleSidedOn()`. The Back of Card fieldset (`#back-entry-fieldset`, h2 legend) is always in the tree as a sibling of the front entry, native-`disabled` while single-sided and enabled by `updateDoubleSidedUI()`. The 2026-08-16 signed explanation stays visible minus its beta sentence; one composed, deferred announcement per change (DRAFT S-M11 plus the lock note, whose wording is now DRAFT S-M12: "Choose Single-sided to pick visual markers"). §7.5 and §7.7 updated (same persistence key; `isPairModeOn()` reads the three radios). Strings await Brennen's sign-off. |
+| 2026-09-20 | 1.14 | **Out of beta, into the Embosser setup menu (programme decisions D-7, D-8; phases C1-C4).** Overview and §7.1 rewritten: the "Double-Sided Card (BETA — for testing)" accordion and its `#double_sided_enabled` checkbox are retired; the choice is the **Card sides** radio group (`#card_sides_single` checked / `#card_sides_double`, S-M6a/b (signed 2026-09-21), description S-M7 (signed 2026-09-21)) inside the new `#embosser-setup-selection` item at the top of the form, read only through `isDoubleSidedOn()`. The Back of Card fieldset (`#back-entry-fieldset`, h2 legend) is always in the tree as a sibling of the front entry, native-`disabled` while single-sided and enabled by `updateDoubleSidedUI()`. The 2026-08-16 signed explanation stays visible minus its beta sentence; one composed, deferred announcement per change (S-M11 (signed 2026-09-21) plus the lock note, whose wording is now S-M12 (signed 2026-09-21): "Choose Single-sided to pick visual markers"). §7.5 and §7.7 updated (same persistence key; `isPairModeOn()` reads the three radios). Strings signed off by Brennen 2026-09-21. |
 | 2026-08-31 | 1.13 | **§7.1 and §7.1's Back of Card block: the item becomes a collapsible menu, and the back gains the front's two-way translation** (Brennen's call). The whole Double-Sided item now opens and closes like an Expert Mode submenu — `#double-sided-menu-toggle` (a real `<h2>`'s sole-child button, APG accordion, reusing `.expert-submenu-*` so tokens, focus ring and behaviour cannot drift) over `#double-sided-menu`; the fieldset keeps the signed heading text as an sr-only legend. The beta being ON forces the menu open (`setDoubleSidedMenuOpen()`), so a reload with the beta persisted lands open; Reset closes it. The Back of Card entry gains `#back-translate-to-braille-btn`, the authoritative `#back-braille-unicode` field and `#back-translate-to-text-btn` — the front's machinery mirrored with separate `backBrailleField*` state, the shared `validateBrailleFieldLines()`, its own sr-only announcer `#back-braille-unicode-live` (the page's 7th permanent `role=status` node; liveRegions.spec pins the count), and the same authority rule: **a non-empty back field IS `back_lines`, padded to `grid_rows`, no liblouis pass; a generate-time problem blocks as `Back of card: …`.** Both back textareas join the front's themed CSS — `#back-text` had no themed rule at all and rendered white in dark mode. **Every 2026-08-16/17 signed string is byte-identical**; the new visible strings are the front's, verbatim, with the group name telling the sides apart. Toggle-off payload untouched (pinned); a new e2e pins the field-wins-on-the-wire contract and the menu contract. |
 | 2026-08-25 | 1.12 | **Pair mode is shared with the Integrated Gears beta** (new §7.7). Generate Both, the Cylinder A/B radio relabel (reuse confirmed by Brennen 2026-08-25), and the pair download row now follow `isPairModeOn()` — either beta. Double-sided keeps exclusively: back text, tactile lock, paired recesses, and the `Cylinder_A_`/`Cylinder_B_` filenames (gears-only runs keep the frozen Geared single-sided names). Pair runs also build a combined two-body `Cylinder_Pair_[Geared_]` file, offered first (mechanics in STL_EXPORT §6/§15); §8's is_watertight prohibition extends to it — it inherits Cylinder A's 3 pinch edges and contains two bodies by design. Wire shape, footprints, thresholds, geometry, and the toggle-off payload untouched. |
 | 2026-08-21 | 1.8 | **Section 7.6 corrected and extended** (post-initiative accessibility hygiene bundle). The bullet claiming "an unchanged string is not a mutation, which keeps the per-keystroke recomputes from chattering" was **wrong and contradicted the `announceDsGap` bullet in the same list**: `announceStatus()` assigns `textContent` unconditionally, and assigning an identical string still replaces the text node. Disproved by measurement - `#caps-warning`, whose text never changes, announced **11 times over 11 keystrokes** when wired without a gate. The bullet now states that writing does not deduplicate and that frequent callers must gate themselves. Also records the three non-beta sources that joined the channel the same day (`auto-overflow-warning`, `cylinder-overflow-warning`, `caps-warning`), bringing the wired total to **nine**. Documentation and one UI file only - no beta behaviour, wire shape, footprint, threshold, or geometry changed, and the toggle-off payload is untouched. |

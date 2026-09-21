@@ -12,8 +12,8 @@ Two things are proved here, and the second matters as much as the first:
 
 The isolation half is the gear beta's proof pattern re-run for Version 2.
 
-Every user-facing sentence quoted below is DRAFT. Brennen deferred the Version
-2 strings to their phase gates on 2026-08-28, so these are FLAGGED FOR BRENNEN
+Every user-facing sentence quoted below is signed 2026-09-21. Brennen deferred the Version
+2 strings to their phase gates on 2026-08-28, so these are
 and not yet signed.
 """
 
@@ -34,7 +34,7 @@ PRE_BETA_FIXTURES = ['card_positive_small', 'card_counter_small', 'cylinder_posi
 # (2026-09-20 programme, sub-plan B) and the gear gate answers per version.
 CYLINDER_ONLY_MESSAGE = 'Version 2 is only available for cylinders.'
 RETIRED_NO_GEARS_MESSAGE = 'Integrated gears are not available in Version 2.'
-# S-G1, DRAFT (phase B2) - FLAGGED FOR BRENNEN.
+# S-G1, signed 2026-09-21 (phase B2).
 V2_GEAR_SIZE_MESSAGE_START = 'Fixed gears for the Version 2 embosser fit only a 30.8 mm x 54 mm cylinder.'
 
 # Values that all mean "the user did not ask for Version 2". CardSettings reads

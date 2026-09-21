@@ -19,12 +19,12 @@ What the finished beta does:
 - Back text has the same handling as front text: translated with the same language and
   grade, wrapped across the rows for you with whole words kept together, and warned about
   live while you type if it overruns — and, since 2026-09-21, the same Auto / Manual
-  placement choice with a translation dropdown per row (wording DRAFT).
+  placement choice with a translation dropdown per row (wording signed 2026-09-21).
 - The braille preview shows **both sides**, under Front of Card and Back of Card headings.
 - **Generate STL** builds the whole pair from one press (since 2026-09-21 that is what it
   does for every cylinder unless one is chosen under Expert Mode → Cylinders to Generate).
 - **Download STL** then saves one file with both cylinders spaced for one print plate.
-  Nothing downloads by itself. (Wording of this pair of lines DRAFT, 2026-09-21.)
+  Nothing downloads by itself. (Wording signed 2026-09-21.)
 
 It carried a BETA label until 2026-09-20 because it had been proven by one builder on one
 printer with one paper stock, not because anything was known to be wrong with it.
@@ -166,8 +166,7 @@ row markers a blind user can feel. Choose it under **Embosser version** in the
 **Embosser setup** item at the top of the page (the "(prototype)" tag and its notice were
 dropped on 2026-09-20; the 54 mm barrel passed its print test on 2026-09-01).
 
-**Fixed gears work for Version 2 too (2026-09-21; wording DRAFT, awaiting Brennen's
-sign-off).** Choose **Simplified: gears fixed to the cylinders** with Version 2 and each
+**Fixed gears work for Version 2 too (2026-09-21; wording signed by Brennen 2026-09-21).** Choose **Simplified: gears fixed to the cylinders** with Version 2 and each
 cylinder prints as one piece with its Version 2 drive gears attached — a solid barrel
 with no keyed holes, since the gears are already on. The cylinder must be 30.8 × 54 mm
 (the Version 2 preset); anything else is refused, because the gears sit at fixed heights.

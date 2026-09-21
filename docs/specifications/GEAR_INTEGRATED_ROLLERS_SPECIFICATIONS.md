@@ -25,7 +25,7 @@ false
 Since 2026-09-20 (programme decision D-7) this is a released feature, not a beta: the
 "(BETA — for testing)" tags are gone and the choice is the **Gears** radio group
 (**Standard: print the gears separately** / **Simplified: gears fixed to the
-cylinders**, DRAFT S-M3a/b) inside the **Embosser setup** menu item — see §8. The rules
+cylinders**, S-M3a/b (signed 2026-09-21)) inside the **Embosser setup** menu item — see §8. The rules
 are unchanged:
 
 | Rule | Where it is enforced |
@@ -159,8 +159,8 @@ Research record: `01_SAMPLE_GEOMETRY_AUDIT.md` in the 2026-08-24 development fol
    32 mm). Otherwise S7: *"Integrated gears are matched to the reference roller and
    only fit a 30.8 mm x 52 mm cylinder. Received X mm x Y mm."* Since 2026-09-21 the
    gate reads `embosser_version` (absent or blank → 1) and in Version 2 compares
-   against `gears.reference_barrel(2)` = `version2.V2_BARREL_*` (30.8 × 54) with DRAFT
-   S-G1 (§11.4) — `reference_roller_message(diameter, height, version)`.
+   against `gears.reference_barrel(2)` = `version2.V2_BARREL_*` (30.8 × 54) with S-G1 (signed 2026-09-21)
+    (§11.4) — `reference_roller_message(diameter, height, version)`.
 
 The default barrel spent part of 2026-08-31 at 30.8 × 54 mm (a 1 mm card
 shelf at each end), which made gears on untouched dials warn and reject.
@@ -293,18 +293,18 @@ body count or watertightness. Mechanics in STL_EXPORT_AND_DOWNLOAD_SPECIFICATION
 
 **Since 2026-09-20 (programme phases C1-C2):** the choice is the second of three
 either/or radio groups inside the **Embosser setup** menu item at the top of the form
-(`#embosser-setup-selection`, h2 "Embosser setup" — DRAFT S-M1; UI spec §4.8). The
+(`#embosser-setup-selection`, h2 "Embosser setup" — S-M1 (signed 2026-09-21); UI spec §4.8). The
 old checkbox fieldset after the double-sided item is gone.
 
 | Element | Id | String |
 |---|---|---|
 | Choice fieldset | `gear-rollers-selection` (nested, `aria-describedby="gear-rollers-note"`) | legend `<h3 class="legend-heading">Gears</h3>` |
-| Radios `name="gear_mode"` | `gear_mode_standard` (`value="standard"`, checked) / `gear_mode_fixed` (`value="fixed"`) | DRAFT S-M3a *"Standard: print the gears separately"* / S-M3b *"Simplified: gears fixed to the cylinders"* |
-| Description | `gear-rollers-note` | DRAFT S-M4 (20 words) *"Fixed gears save assembly time and parts, but each cylinder prints much longer and dots fail more often."* |
+| Radios `name="gear_mode"` | `gear_mode_standard` (`value="standard"`, checked) / `gear_mode_fixed` (`value="fixed"`) | S-M3a (signed 2026-09-21) *"Standard: print the gears separately"* / S-M3b *"Simplified: gears fixed to the cylinders"* |
+| Description | `gear-rollers-note` | S-M4 (signed 2026-09-21) (20 words) *"Fixed gears save assembly time and parts, but each cylinder prints much longer and dots fail more often."* |
 | Second note (visible only) | — | S2, signed 2026-08-24, kept whole: *"Adds the top and bottom drive gears to each generated cylinder as one solid piece, matched to the roller assembly. The barrel prints solid while this is on."* |
-| Hardware note | `gear-hardware-note` / `-message` | DRAFT S-M5 (replaces S9′) *"Fixed gears fit only the fixed-gear housing for your version; the standard housing takes the standard cylinders. See Embosser Setup in Help."* ALWAYS visible; `#gear-hardware-link-slot` now holds a link that opens the help modal's Embosser Setup tab. Pinned loosely (contains "fixed-gear housing" / "standard housing") by `tests/e2e/gearRollers.spec.ts` |
+| Hardware note | `gear-hardware-note` / `-message` | S-M5 (signed 2026-09-21) (replaces S9′) *"Fixed gears fit only the fixed-gear housing for your version; the standard housing takes the standard cylinders. See Embosser Setup in Help."* ALWAYS visible; `#gear-hardware-link-slot` now holds a link that opens the help modal's Embosser Setup tab. Pinned loosely (contains "fixed-gear housing" / "standard housing") by `tests/e2e/gearRollers.spec.ts` |
 | Cutout note | `gear-cutout-note` / `-message` | S3, unchanged |
-| Size warning | `gear-size-warning` / `-message` | S7 in Version 1, DRAFT S-G1 in Version 2 (the gate follows `isVersion2()` and compares against `V2_BARREL_*`, phase B6) — the same sentence the server would return |
+| Size warning | `gear-size-warning` / `-message` | S7 in Version 1, S-G1 (signed 2026-09-21) in Version 2 (the gate follows `isVersion2()` and compares against `V2_BARREL_*`, phase B6) — the same sentence the server would return |
 
 `isGearRollersOn()` reads `#gear_mode_fixed.checked` and is the ONLY reader — the wire,
 `updateGearRollersUI()`, pair mode and the filenames all go through it. Retired: the S8
@@ -320,7 +320,7 @@ cylinders-only rule is enforced by the API alone.
 stays on the page as a visible second note, not wired to `aria-describedby`.
 
 **One action, one announcement (Section 12, C9).** The `gear_mode` change listener
-composes DRAFT S-M10 (*"Standard gears selected."* / *"Simplified fixed gears
+composes S-M10 (signed 2026-09-21) (*"Standard gears selected."* / *"Simplified fixed gears
 selected."*) with whatever notes `updateGearRollersUI()` raised (S3, S7) into ONE write,
 deferred by a tick so it lands after the form-wide live-warning refresh that bubbles
 behind it. Likewise S5 (*"Cylinder generated with integrated gears."*) is prepended to
@@ -328,12 +328,12 @@ the ready message rather than announced separately.
 
 **Version 2 (since 2026-09-21, phase B6).** The choice is left exactly as the user set
 it: Version 2 + Simplified is the fused Version 2 roller (§11). The temporary C2 guard
-and its DRAFT S-M13 sentence are retired. Because a fixed-gear choice now survives a
+and its S-M13 (signed 2026-09-21) sentence are retired. Because a fixed-gear choice now survives a
 version change, the version listener makes the same ONE composed, deferred announcement
 the gear listener does — S-V10 plus whatever notes `updateGearRollersUI()` returned (S3
 on the default cutout dial; S-G1 if the barrel was edited off-size) — otherwise the
 form-wide refresh that bubbles behind it re-announced the bare note over S-V10. A fused
-run's ready message carries DRAFT S-G2 alone (§11.6).
+run's ready message carries S-G2 (signed 2026-09-21) alone (§11.6).
 
 ### 8.1 Request assembly, filenames, persistence
 
@@ -511,7 +511,7 @@ angle, and at r 10.0–13.0 everywhere outside the ±20° notch window.
   (`notch_fills` is absent from Version 1).
 - `app/validation.py`: the S-V7 refusal ("Integrated gears are not available in
   Version 2.") is **retired**; the size gate picks the reference barrel by version —
-  30.8 × 52 in Version 1 (S7), **30.8 × 54 in Version 2** with DRAFT S-G1: *"Fixed
+  30.8 × 52 in Version 1 (S7), **30.8 × 54 in Version 2** with S-G1 (signed 2026-09-21): *"Fixed
   gears for the Version 2 embosser fit only a 30.8 mm x 54 mm cylinder. Received {d} mm
   x {h} mm."* Still a REJECTION, for the §5.1 reason: the gears are baked at fixed z.
 - `static/workers/csg-worker-manifold.js`: `loadGearAsset` accepts the four asset names;
@@ -538,7 +538,7 @@ The Gears choice is the same radio group (§8) in both versions. While Version 2
 `updateGearRollersUI()` gates against `V2_BARREL_*` with the S-G1 sentence (a smoke test
 pins the template against `gears.py`); the version change makes ONE composed, deferred
 announcement (S-V10 plus the gear notes) like the gear listener's own. A fused run's ready
-message carries ONE prefix, DRAFT S-G2 *"Cylinder generated with fixed gears for the
+message carries ONE prefix, S-G2 (signed 2026-09-21) *"Cylinder generated with fixed gears for the
 Version 2 embosser."*, in place of S5 and S-V8′ back to back. Filenames need no new rule:
 `Geared_` then `V2_` compose — `Embossing_Cylinder_Geared_V2_{preset}_{name}.stl`,
 `Counter_Cylinder_Geared_V2_…`, `Cylinder_Pair_Geared_V2_…`. Version 1 names, Version 2
@@ -558,8 +558,8 @@ assets (§10).
 | Date | Change |
 |---|---|
 | 2026-09-21 | **Pair mode is universal (programme sub-plan E).** §8.1's pair paragraph: Generate STL builds both cylinders by default and Download STL saves the combined Geared pair file; `isPairModeOn()` and the relabel retired; the frozen single-cylinder names come from Cylinders to Generate. Nothing else changed. |
-| 2026-09-21 | **Version 2 fixed gears — the fused one-piece Version 2 roller (programme sub-plan B, phases B1-B7; decisions D-5, D-6).** New §11: the v8-derived `v2_gears_*` assets and their per-gear fitted axes (§11.1), the transform and frame (§11.2), the D-6 notch fill as an exact 0.05 mm parallel curve capped at 13.95 mm (§11.3), the fused spec / per-version size gate with DRAFT S-G1 / the worker's notch-fill union (§11.4), what the browser exports and the new `v2_gear_roller*` golden pair proved (§11.5), the UI and the composed `_Geared_V2_` names with DRAFT S-G2 (§11.6), and the OpenSCAD follow-on (§11.7). §1, §2, §5, §8 and §9.2 updated to match; the temporary S-M13 guard paragraph in §8 replaced; the "(BETA)" left in the title since 2026-09-20 removed (D-7). Open item: the Version 2 operating axis distance. |
-| 2026-09-20 | **Out of beta, into the Embosser setup menu (programme decisions D-7, D-8; phases C1-C4).** §1 retitled "Feature Rules" (the rules are unchanged). §8 rewritten: the checkbox fieldset is gone; the choice is the **Gears** radio group (`#gear_mode_standard` checked / `#gear_mode_fixed`, DRAFT S-M3a/b, description DRAFT S-M4, S2 kept visible, S-M5 replacing S9′ with a link to the new help tab) inside `#embosser-setup-selection`, read only through `isGearRollersOn()`; one composed, deferred announcement per change (DRAFT S-M10 plus S3/S7); Version 2 no longer hides the choice — a temporary guard resets it to Standard and says so (DRAFT S-M13) until phase B6 ships fixed Version 2 gears. Strings await Brennen's sign-off. |
+| 2026-09-21 | **Version 2 fixed gears — the fused one-piece Version 2 roller (programme sub-plan B, phases B1-B7; decisions D-5, D-6).** New §11: the v8-derived `v2_gears_*` assets and their per-gear fitted axes (§11.1), the transform and frame (§11.2), the D-6 notch fill as an exact 0.05 mm parallel curve capped at 13.95 mm (§11.3), the fused spec / per-version size gate with S-G1 (signed 2026-09-21) / the worker's notch-fill union (§11.4), what the browser exports and the new `v2_gear_roller*` golden pair proved (§11.5), the UI and the composed `_Geared_V2_` names with S-G2 (signed 2026-09-21) (§11.6), and the OpenSCAD follow-on (§11.7). §1, §2, §5, §8 and §9.2 updated to match; the temporary S-M13 guard paragraph in §8 replaced; the "(BETA)" left in the title since 2026-09-20 removed (D-7). Open item: the Version 2 operating axis distance. |
+| 2026-09-20 | **Out of beta, into the Embosser setup menu (programme decisions D-7, D-8; phases C1-C4).** §1 retitled "Feature Rules" (the rules are unchanged). §8 rewritten: the checkbox fieldset is gone; the choice is the **Gears** radio group (`#gear_mode_standard` checked / `#gear_mode_fixed`, S-M3a/b (signed 2026-09-21), description S-M4 (signed 2026-09-21), S2 kept visible, S-M5 replacing S9′ with a link to the new help tab) inside `#embosser-setup-selection`, read only through `isGearRollersOn()`; one composed, deferred announcement per change (S-M10 (signed 2026-09-21) plus S3/S7); Version 2 no longer hides the choice — a temporary guard resets it to Standard and says so (S-M13 (signed 2026-09-21)) until phase B6 ships fixed Version 2 gears. Strings signed off by Brennen 2026-09-21. |
 | 2026-08-31 | **§5 updated again the same day: the default barrel returns to the 52 mm reference size** (Brennen's deployment verdict — "Version 1 is the 52 mm standard with the previously provided gear models"). Enabling gears on untouched dials passes S7 again; the absent-height fallback `gears.DEFAULT_CYLINDER_HEIGHT_MM` follows (54 → 52, still decoupled from the card height). The 1 mm card-shelf barrel (54) is Embosser Version 2 only; the Version 1 `.scad` files keep the 52 mm barrel deliberately (Version 2's own OpenSCAD companion follows the 54 — see EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS.md §12 — and the gears BETA remains the one feature with no Version 2 OpenSCAD counterpart, D-V6). No gear number, gate, asset, or signed string changed; the row below records the one-day 54 state it supersedes. |
 | 2026-08-31 | **§5 notes the default barrel outgrowing the gears.** The app-wide default cylinder is now 30.8 × 54 mm (a 1 mm card shelf at each end), while the reference roller stays 30.8 × 52.0 — the gears are baked at fixed z and cannot follow. Enabling gears on untouched dials therefore shows S7 live, and a generate is rejected, until the height dial is set back to 52; height now tells the gears BETA apart from Embosser Version 2 (54) the way diameter no longer can. No gear number, gate, or asset changed. The absent-height fallback both S7 and the spec read moved with the default (52 → 54, now `gears.DEFAULT_CYLINDER_HEIGHT_MM`, no longer the card height), so an absent-height gear request is rejected rather than quietly passed. Gear golden fixtures re-ran byte-identical. |
 | 2026-08-25 | **§10 rewritten from a tested result.** The MakerWorld exclusion (D-4) was justified here by reasoning about Customizer limits; probing the real product showed the blocker is one step earlier — PMM v1.1.0 accepts no mesh upload at all (no asset panel, no file input, picker refuses STLs, one file at a time). Records the two salvageable findings: our customizer syntax parses correctly there, and the combined-file crop delivery is proven locally (set A exact, set B within 3.8 nm) should uploads ever appear. |

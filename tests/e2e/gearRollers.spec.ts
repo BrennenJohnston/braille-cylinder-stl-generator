@@ -184,7 +184,7 @@ test.describe('Gear-integrated one-piece rollers', () => {
     await expect(fixed).toBeEnabled();
 
     // The group's accessible description is the note, and the note is visible
-    // text (S-M4, DRAFT, 20 words).
+    // text (S-M4, signed 2026-09-21, 20 words).
     expect(
       await page.evaluate(() => document.getElementById('gear-rollers-selection')?.getAttribute('aria-describedby')),
     ).toBe('gear-rollers-note');
@@ -200,7 +200,7 @@ test.describe('Gear-integrated one-piece rollers', () => {
   });
 
   // Loose on purpose: this pins only the facts the note must state, not the
-  // sentence, so a future signed rewording cannot break it. S-M5 (DRAFT,
+  // sentence, so a future signed rewording cannot break it. S-M5 (signed 2026-09-21,
   // 2026-09-20) replaced S9'.
   test('the hardware note warns about the housing before the gear choice is touched', async ({ page }) => {
     await openApp(page);

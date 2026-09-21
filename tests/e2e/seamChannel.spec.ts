@@ -14,7 +14,7 @@
  *      puts a groove at the spec's angle and nowhere else.
  *   4. The live note when the groove does not fit, persistence, and reset.
  *
- * The sentences quoted here are DRAFT (S-C1, S-C2). FLAGGED FOR BRENNEN.
+ * The sentences quoted here (S-C1, S-C2) were signed off by Brennen on 2026-09-21; reword only with his sign-off.
  *
  * @see docs/specifications/SURFACE_DIMENSIONS_SPECIFICATIONS.md
  */
@@ -32,7 +32,7 @@ const CHANNEL_DEPTH_MM = 0.5;
 // embossing plate; the worker places it at -theta, so 181.67 in the file.
 const EMBOSS_CHANNEL_DEG = 181.67;
 
-// DRAFT S-C2 and S-C3 (phase A2). Byte-for-byte the server's sentences.
+// S-C2 and S-C3 (signed 2026-09-21; phase A2). Byte-for-byte the server's sentences.
 const GAP_NOTE = 'The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.';
 const WALL_NOTE = 'The seam channel was left out: the cylinder wall would be thinner than 1.2 mm under it.';
 
@@ -158,7 +158,7 @@ test.describe('Slicer seam channel', () => {
     const toggle = page.locator('#seam_channel_enabled');
     await expect(toggle).toBeVisible();
     await expect(toggle).toBeChecked();
-    // DRAFT S-C1 - FLAGGED FOR BRENNEN.
+    // S-C1 (signed 2026-09-21).
     await expect(toggle).toHaveAccessibleName('Slicer seam channel');
     await expect(toggle).toHaveAccessibleDescription(
       'A shallow groove beside the row markers where the slicer hides its layer seam, keeping it off the dots.',

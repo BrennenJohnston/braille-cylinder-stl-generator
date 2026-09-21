@@ -27,10 +27,10 @@ const S_V3_NOTE =
   'Choose Version 2 only if you are building the Version 2 embosser, which uses keyed gear pegs. Version 1 stays supported.';
 // S-V4 (the prototype notice) was retired on 2026-09-20 (programme decision D-7).
 const S_V5_SIZE_START = 'The Version 2 embosser expects a 30.8 mm x 54 mm cylinder.';
-// S-V8', DRAFT (2026-09-20, D-7): the "(prototype)" tag is gone. FLAGGED FOR BRENNEN.
+// S-V8', signed 2026-09-21 (D-7): the "(prototype)" tag is gone.
 const S_V8_READY = 'Cylinder generated for the Version 2 embosser.';
-// S-G1 and S-G2, DRAFT (2026-09-20 programme, phase B6): the Version 2 fixed
-// gears' size gate and the fused roller's ready prefix. FLAGGED FOR BRENNEN.
+// S-G1 and S-G2, signed 2026-09-21 (2026-09-20 programme, phase B6): the Version 2 fixed
+// gears' size gate and the fused roller's ready prefix.
 // S-M13 (the temporary C2 guard) was retired with this phase.
 const S_G1_SIZE_START = 'Fixed gears for the Version 2 embosser fit only a 30.8 mm x 54 mm cylinder.';
 const S_G2_READY = 'Cylinder generated with fixed gears for the Version 2 embosser.';

@@ -533,8 +533,8 @@ This ensures that when the emboss and counter plates are aligned face-to-face, t
 |----------|-------|
 | Location | Expert Mode → Surface Dimensions → "Slicer Seam Channel" fieldset |
 | Control | `<input type="checkbox" id="seam_channel_enabled" checked>` |
-| Label | `Slicer seam channel` (DRAFT S-C1, unsigned) |
-| Description (`aria-describedby="seam-channel-note"`, 19 words) | "A shallow groove beside the row markers where the slicer hides its layer seam, keeping it off the dots." (DRAFT S-C1) |
+| Label | `Slicer seam channel` (S-C1, signed 2026-09-21) |
+| Description (`aria-describedby="seam-channel-note"`, 19 words) | "A shallow groove beside the row markers where the slicer hides its layer seam, keeping it off the dots." (S-C1 (signed 2026-09-21)) |
 | Default | ON |
 | Persistence | `braille_prefs_seam_channel_enabled` (`'1'`/`'0'`); reset restores ON |
 | Live note | `#seam-channel-warning` / `#seam-channel-message`, shown before Generate when the groove will be left out (S-C2 / S-C3 below), announced once through `#a11y-status` on its hidden-to-shown edge |
@@ -588,7 +588,7 @@ Worked numbers (30.8 mm, 0.4 mm preset, footprint 2.15 mm):
 
 Fit rules (each leaves the groove out and adds one warning to `spec.warnings`; the UI shows the same sentence live):
 
-| Rule | Warning (DRAFT, unsigned) |
+| Rule | Warning (signed 2026-09-21) |
 |------|---------------------------|
 | `free < 1.5 mm` | S-C2: "The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter." |
 | wall under the apex `< 1.2 mm` — against the polygonal cutout's circumradius (`r / cos(π/sides)`), or `wall_thickness − depth` for a barrel hollowed by wall thickness (2 mm when the field is absent); solid barrels (integrated gears, Version 2) skip this rule | S-C3: "The seam channel was left out: the cylinder wall would be thinner than 1.2 mm under it." |

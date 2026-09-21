@@ -222,7 +222,7 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 - The vendored 1:1 gear assets, their packed binary format, and the provenance contract (`gears_manifest.json` sha256s)
 - The canonical sample→program transforms (Rz(180°) for A, identity for B) and the orientation-key evidence
 - Gear metrology: 24 teeth, tip r 16.1093702290795, root r 13.6613702290795, 10 mm thick, blind bores, axis distance 32.0473 mm
-- The two hard gates: cylinders only (S6) and the reference roller only for the chosen version (S7 30.8 × 52.0 mm in Version 1; DRAFT S-G1 30.8 × 54 mm in Version 2)
+- The two hard gates: cylinders only (S6) and the reference roller only for the chosen version (S7 30.8 × 52.0 mm in Version 1; S-G1 (signed 2026-09-21) 30.8 × 54 mm in Version 2)
 - Why the barrel must be forced SOLID, and why an empty `polygon_points` does not do it
 - D-8a's 5 µm raised-arrow weld, and what the hidden weld rings do and do not contribute
 - Acceptance tolerances, the three levels of toggle-off byte-identity, and the MakerWorld deferral

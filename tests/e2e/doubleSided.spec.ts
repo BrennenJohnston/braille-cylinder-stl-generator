@@ -777,7 +777,7 @@ test.describe('Double-Sided Card beta', () => {
 
   // Back of Card parity (2026-09-20 programme, sub-plan D, decision D-11): the
   // back has its own Auto / Manual placement, per-line inputs and per-line
-  // translation dropdowns, mirroring the front. DRAFT strings S-D1..S-D3 are
+  // translation dropdowns, mirroring the front. Strings S-D1..S-D3 are signed (Brennen, 2026-09-21);
   // flagged for Brennen; the pins here move with his sign-off.
   const S_D1_START = 'Back line 1 exceeds';
 

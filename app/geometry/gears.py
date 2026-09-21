@@ -161,8 +161,8 @@ def _format_mm(value: float) -> str:
 def reference_roller_message(diameter: float, height: float, version: int = 1) -> str:
     """
     Version 1: the S7 sentence, signed off by Brennen 2026-08-24 - reword only
-    with his sign-off. Version 2: S-G1, DRAFT (2026-09-20 programme, phase B2)
-    - FLAGGED FOR BRENNEN. Used as the request-level rejection and, for direct
+    with his sign-off. Version 2: S-G1, signed off by Brennen on 2026-09-21 (2026-09-20
+    programme, phase B2); reword only with his sign-off. Used as the request-level rejection and, for direct
     callers that bypass validation, as the spec warning.
     """
     want_diameter, want_height = reference_barrel(version)

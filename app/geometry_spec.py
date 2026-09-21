@@ -1096,7 +1096,7 @@ def _seam_channel_block(
     free = hi - lo
     need = SEAM_CHANNEL_WIDTH_MM + 2.0 * SEAM_CHANNEL_MARGIN_MM
     if free < need:
-        # DRAFT wording S-C2 (2026-09-20 programme, phase A2). FLAGGED FOR BRENNEN.
+        # S-C2, signed off by Brennen (2026-09-21); reword only with his sign-off.
         return None, (
             'The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.'
         )
@@ -1110,7 +1110,7 @@ def _seam_channel_block(
         else:
             bore = radius - (thickness if thickness > 0 else 2.0)
         if bore > 0 and radius - SEAM_CHANNEL_DEPTH_MM - bore < SEAM_CHANNEL_MIN_WALL_MM:
-            # DRAFT wording S-C3 (2026-09-20 programme, phase A2). FLAGGED FOR BRENNEN.
+            # S-C3, signed off by Brennen (2026-09-21); reword only with his sign-off.
             return None, (
                 f'The seam channel was left out: the cylinder wall would be thinner than '
                 f'{SEAM_CHANNEL_MIN_WALL_MM:.1f} mm under it.'

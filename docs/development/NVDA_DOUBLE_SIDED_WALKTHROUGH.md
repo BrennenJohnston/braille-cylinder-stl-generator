@@ -59,8 +59,8 @@ order they arrive in.
 > radio group (Single-sided / Double-sided) inside the **Embosser setup** item
 > at the top of the form, and the Back of Card section is always on the page —
 > greyed out and unavailable until Double-sided is chosen. Steps 1–5 and 23–24
-> describe the new controls; the expected words in them are DRAFT strings
-> awaiting Brennen's sign-off. Steps 6–22 are unchanged.
+> describe the new controls; the expected words in them were signed by
+> Brennen on 2026-09-21. Steps 6–22 are unchanged.
 
 ## Part 1 — Finding the choice while single-sided
 
@@ -244,7 +244,7 @@ and B", then `Shift+Tab` back to "Show Expert Mode" and press `Enter` to close i
 > - "Generating Cylinder A (1 of 2)..."
 > - "Generating Cylinder B (2 of 2)..."
 > - "Both cylinders are ready. Use the Download STL button to save one file with
->   both cylinders spaced for printing on one plate." (DRAFT S-E5, 2026-09-21)
+>   both cylinders spaced for printing on one plate." (S-E5 (signed 2026-09-21), 2026-09-21)
 >
 > **Nothing downloads by itself, and no Save As dialog should appear yet.** Until
 > 2026-08-18 the run started both downloads on its own, which made Chrome ask
@@ -282,7 +282,7 @@ and B", then `Shift+Tab` back to "Show Expert Mode" and press `Enter` to close i
 > any point. The button stays where it is and keeps its name.
 >
 > If instead you hear "The combined file could not be built. Download STL now
-> saves Cylinder A; press it again for Cylinder B." (DRAFT S-E6), press it twice
+> saves Cylinder A; press it again for Cylinder B." (S-E6 (signed 2026-09-21)), press it twice
 > and expect one file each time. Write down which of the two you heard.
 
 ---
@@ -414,4 +414,4 @@ Anything NVDA said that I did not expect at all:
 | 1.3 | 2026-08-18 | Updated after the first run of Parts 2-3. Step 16's third message reworded and a check added that **nothing downloads by itself**: the old automatic pair download made Chrome ask "wants to: Download multiple files", a prompt that names no file and cycles Close/Allow/Block on every Tab, and the run ended in "Download blocked" with neither cylinder saved. Step 19 now presses both download buttons, since that is the only way files are saved. Steps 4 and 8 confirmed passing - the lock note and the back-of-card warning both spoke for the first time. |
 | 1.4 | 2026-08-18 | Steps 15 and 27 note the new single-plate "Download STL" button, which is separate from the pair's Download Cylinder A/B and only exists after a single-plate generation. `#action-btn` no longer renames itself into a download control mid-focus. |
 | 1.6 | 2026-09-21 | **Back of Card parity (programme sub-plan D, 2026-09-21; NOT yet run).** Part 3 gains the back placement toggle and the Manual rows (step 6, new step 6a for the text box). |
-| 1.5 | 2026-09-21 | **One Generate, one Download (programme sub-plan E, 2026-09-21; NOT yet run).** Part 5 now checks the "Cylinders to Generate" radios inside Expert Mode (three options, both first, fixed A/B names); Part 6 runs the pair from the one Generate STL button and saves the combined file from the one Download STL button (DRAFT S-E5 / S-E6 expected wording); step 3 and steps 26–27 no longer expect the removed buttons or the main-form plate group. The "(Beta)" left in the title on 2026-09-20 dropped (D-7). |
+| 1.5 | 2026-09-21 | **One Generate, one Download (programme sub-plan E, 2026-09-21; NOT yet run).** Part 5 now checks the "Cylinders to Generate" radios inside Expert Mode (three options, both first, fixed A/B names); Part 6 runs the pair from the one Generate STL button and saves the combined file from the one Download STL button (S-E5 / S-E6 (signed 2026-09-21) expected wording); step 3 and steps 26–27 no longer expect the removed buttons or the main-form plate group. The "(Beta)" left in the title on 2026-09-20 dropped (D-7). |
