@@ -122,7 +122,7 @@ Choose **Tactile** when a blind user needs to align the cylinders unaided: the
 arrow is felt as a single continuous wedge, nothing like a braille dot, and its
 point tells you which end is up on either plate. Raised-vs-recessed tells you
 which cylinder you are holding. The arrow is deliberately lower than the braille
-dots (0.8 mm vs 1.0 mm) so the dots, not the indicator, take the rolling
+dots (0.5 mm vs 1.0 mm) so the dots, not the indicator, take the rolling
 pressure.
 
 Text capacity is `grid_columns` (default 13) in every mode.
