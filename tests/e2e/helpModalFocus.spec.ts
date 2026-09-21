@@ -43,7 +43,7 @@ import { test, expect, type Page } from '@playwright/test';
  * Contracts pinned:
  *   1. While the dialog is open, focus never reaches content BEHIND it - in EVERY
  *      panel, in both directions. Panel 1 is the smallest; an off-by-one shows up
- *      in the ones with more links, so all seven are walked.
+ *      in the ones with more links, so all eight are walked.
  *   2. Focus is never stuck outside the dialog: a press may pass through `<body>`
  *      (WebKit does this, see `focusWhere`), but two consecutive presses outside
  *      is a failure. This is asserted separately from contract 1 rather than
@@ -51,8 +51,12 @@ import { test, expect, type Page } from '@playwright/test';
  *   3. Escape closes the dialog and returns focus to the control that opened it.
  */
 
-/** Every panel is walked; the count is asserted so a new section cannot skip the test. */
-const HELP_PANEL_COUNT = 7;
+/**
+ * Every panel is walked; the count is asserted so a new section cannot skip
+ * the test. 7 became 8 on 2026-09-20: the Embosser Setup tab (programme
+ * phase C1) joined between How to Use and Cylinders.
+ */
+const HELP_PANEL_COUNT = 8;
 
 /** Enough presses to lap the largest panel's ring several times over. */
 const PRESSES_PER_DIRECTION = 22;
@@ -90,7 +94,7 @@ const focusWhere = () => {
 };
 
 test.describe('Help & Guide dialog keeps focus (F-Q)', () => {
-  test('Tab and Shift+Tab never leave the dialog, in any of the seven panels', async ({ page }) => {
+  test('Tab and Shift+Tab never leave the dialog, in any of the eight panels', async ({ page }) => {
     await openApp(page);
     await openHelp(page);
 
