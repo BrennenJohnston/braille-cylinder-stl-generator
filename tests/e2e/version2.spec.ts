@@ -19,6 +19,7 @@
  */
 
 import { expect, test, type Page } from '@playwright/test';
+import { selectCylinders } from './helpers/cylinders';
 
 // Signed 2026-08-28 by Brennen at the Phase 05 gate. Reword only with his sign-off.
 const S_V1_LEGEND = 'Embosser version';
@@ -53,6 +54,10 @@ async function openApp(page: Page) {
   await page.waitForLoadState('domcontentloaded');
   await page.waitForLoadState('networkidle');
   await page.waitForSelector('#indicator-mode-selection');
+  // Since 2026-09-21 Generate builds both cylinders by default; this spec
+  // exercises one cylinder at a time, so choose Cylinder A (the old default)
+  // under Cylinders to Generate. Pair tests choose 'both' themselves.
+  await selectCylinders(page, 'positive');
 }
 
 /** Record every /geometry_spec REQUEST body without interfering with the run. */
@@ -238,8 +243,9 @@ test.describe('Embosser Version 2', () => {
     await expect(page.locator('#seam_offset_deg')).toHaveValue('0');
 
     // D-V10: A and B are a matched, differently keyed pair, so the pair is the
-    // useful output and the signed A/B labels are reused.
-    await expect(page.locator('#generate-both-btn')).toBeVisible();
+    // useful output - and since 2026-09-21 every run is the pair unless one
+    // cylinder is chosen, so there is no Generate Both button to reveal.
+    expect(await page.locator('#generate-both-btn').count()).toBe(0);
   });
 
   test('going back to Version 1 restores the dials the user had', async ({ page }) => {
@@ -449,7 +455,7 @@ test.describe('Embosser Version 2', () => {
     await expect(page.locator('#a11y-status')).toContainText(S_V8_READY);
     expect(await downloadName(page)).toBe('Embossing_Cylinder_V2_0.4_abc.stl');
 
-    await page.locator('input[name="plate_type"][value="negative"]').check();
+    await selectCylinders(page, 'negative');
     await generate(page, state, 2);
     await page.locator('#download-stl-btn').waitFor({ state: 'visible', timeout: 240_000 });
     expect(await downloadName(page)).toBe('Counter_Cylinder_V2_0.4_abc.stl');
@@ -461,10 +467,11 @@ test.describe('Embosser Version 2', () => {
     await page.locator('#auto-text').fill('abc');
     await selectVersion2(page);
 
+    await selectCylinders(page, 'both');
     const status = page.locator('#pair-status');
     let ready = false;
     for (let attempt = 0; attempt < 8 && !ready; attempt++) {
-      await page.locator('#generate-both-btn').click();
+      await page.locator('#action-btn').click();
       try {
         await expect(status).toContainText('Both cylinders are ready', { timeout: 120_000 });
         ready = true;
@@ -476,8 +483,8 @@ test.describe('Embosser Version 2', () => {
     }
     expect(ready).toBe(true);
 
-    await expect(page.locator('#pair-downloads')).toBeVisible();
-    expect(await downloadName(page, '#download-pair-btn')).toBe('Cylinder_Pair_V2_0.4_abc.stl');
+    await expect(page.locator('#download-stl-btn')).toBeVisible();
+    expect(await downloadName(page)).toBe('Cylinder_Pair_V2_0.4_abc.stl');
   });
 
   test('the choice survives a reload and Reset to defaults undoes it', async ({ page }) => {

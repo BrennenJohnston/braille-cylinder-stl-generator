@@ -22,6 +22,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
+import { selectCylinders } from './helpers/cylinders';
 
 const FIXTURES = path.resolve(__dirname, 'fixtures');
 const BARREL_RADIUS_MM = 15.4;
@@ -42,6 +43,10 @@ async function openApp(page: Page) {
   await page.waitForLoadState('domcontentloaded');
   await page.waitForLoadState('networkidle');
   await page.waitForSelector('#indicator-mode-selection');
+  // Since 2026-09-21 Generate builds both cylinders by default; this spec
+  // exercises one cylinder at a time, so choose Cylinder A (the old default)
+  // under Cylinders to Generate. Pair tests choose 'both' themselves.
+  await selectCylinders(page, 'positive');
 }
 
 /** Reveal Expert Mode and the Surface Dimensions submenu (setup, not the feature under test). */
@@ -222,7 +227,7 @@ test.describe('Slicer seam channel', () => {
     expect(plain.equals(fixture)).toBe(true);
 
     // The counter plate too: mirror angle, and the pre-channel bytes when off.
-    await page.locator('input[name="plate_type"][value="negative"]').check();
+    await selectCylinders(page, 'negative');
     const plainCounter = await generateAndDownload(page, state, 3);
     const counterFixture = fs.readFileSync(path.join(FIXTURES, 'counter_0.4_abc_before_seam_channel.stl'));
     expect(plainCounter.equals(counterFixture)).toBe(true);

@@ -12,6 +12,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
+import { selectCylinders } from './helpers/cylinders';
 
 async function openApp(page: Page) {
   await page.goto('/');
@@ -270,8 +271,8 @@ test.describe('Form column layout', () => {
     await expect(cells).toHaveValue('13');
 
     await cells.fill('9');
-    // Switching plate type used to normalize the dial straight back to the recommendation
-    await page.locator('input[name="plate_type"][value="negative"]').check();
+    // Switching the cylinder used to normalize the dial straight back to the recommendation
+    await selectCylinders(page, 'negative');
     await expect(cells).toHaveValue('9');
     // ...but the recommendation is still surfaced in the note
     await expect(page.locator('#grid_columns_note')).toContainText('Recommended value: 13');

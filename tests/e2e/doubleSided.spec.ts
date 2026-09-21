@@ -22,6 +22,7 @@
 
 import { test, expect, type Page } from '@playwright/test';
 import fs from 'node:fs';
+import { selectCylinders, selectedCylinders } from './helpers/cylinders';
 
 // ---------------------------------------------------------------------------
 // Pre-feature payload snapshots
@@ -115,6 +116,10 @@ async function openApp(page: Page) {
   await page.waitForLoadState('domcontentloaded');
   await page.waitForLoadState('networkidle');
   await page.waitForSelector('#indicator-mode-selection');
+  // Since 2026-09-21 Generate builds both cylinders by default; this spec
+  // exercises one cylinder at a time, so choose Cylinder A (the old default)
+  // under Cylinders to Generate. Pair tests choose 'both' themselves.
+  await selectCylinders(page, 'positive');
 }
 
 /** Capture /geometry_spec payloads, aborting each request so no CSG runs. */
@@ -201,13 +206,13 @@ function watchGeometrySpecRequests(page: Page) {
   return state;
 }
 
-/** The plate radios' visible label text, in [positive, negative] order. */
+/** The Cylinders to Generate radios' visible label text, in [positive, negative] order. */
 function plateLabels(page: Page) {
   return page.evaluate(() =>
     ['positive', 'negative'].map(
       (value) =>
         document
-          .querySelector(`input[name="plate_type"][value="${value}"]`)
+          .querySelector(`input[name="plate_selection"][value="${value}"]`)
           ?.closest('label')
           ?.querySelector('.radio-text')?.textContent ?? '',
     ),
@@ -263,13 +268,6 @@ async function downloadName(page: Page): Promise<string> {
   return download.suggestedFilename();
 }
 
-/** Click one of the double-sided pair buttons and return the offered filename. */
-async function pairDownloadName(page: Page, which: 'a' | 'b'): Promise<string> {
-  const downloadPromise = page.waitForEvent('download');
-  await page.locator(`#download-cylinder-${which}-btn`).click();
-  const download = await downloadPromise;
-  return download.suggestedFilename();
-}
 
 /**
  * Fill the back text and wait for the overflow warning to appear. Under
@@ -303,9 +301,11 @@ async function fillBackUntilOverflow(page: Page, text: string) {
  * failure is rethrown rather than retried.
  */
 async function generateBoth(page: Page) {
+  // One Generate button since 2026-09-21: with 'both' chosen it runs the pair.
+  await selectCylinders(page, 'both');
   const status = page.locator('#pair-status');
   for (let attempt = 0; attempt < 8; attempt++) {
-    await page.locator('#generate-both-btn').click();
+    await page.locator('#action-btn').click();
     try {
       await expect(status).toContainText('Both cylinders are ready', { timeout: 120_000 });
       return;
@@ -375,7 +375,7 @@ test.describe('Double-Sided Card beta', () => {
     // key — no double_sided_enabled, no back_lines, no ds_* anywhere.
     expect(spec.bodies[0]).toEqual(BASELINE_POSITIVE);
 
-    await page.locator('input[name="plate_type"][value="negative"]').check();
+    await selectCylinders(page, 'negative');
     await generate(page, spec, 2);
     expect(spec.bodies[1]).toEqual(BASELINE_NEGATIVE);
   });
@@ -482,7 +482,7 @@ test.describe('Double-Sided Card beta', () => {
   test('Cylinder B payload keeps the front braille for its 1:1 paired recesses', async ({ page }) => {
     await openApp(page);
     await enableBeta(page, 'abc', 'def');
-    await page.locator('input[name="plate_type"][value="negative"]').check();
+    await selectCylinders(page, 'negative');
 
     const spec = await interceptGeometrySpec(page);
     await generate(page, spec, 1);
@@ -513,7 +513,7 @@ test.describe('Double-Sided Card beta', () => {
     expect(await downloadName(page)).toBe('Cylinder_A_0.4_abc.stl');
 
     // Cylinder B: the reverse — back raised, front recessed, recessed arrows.
-    await page.locator('input[name="plate_type"][value="negative"]').check();
+    await selectCylinders(page, 'negative');
     const b = await generateFully(page, responses, 2);
     expect(b.status).toBe(200);
     const bDots = (b.spec?.dots ?? []) as Array<{ is_recess: boolean }>;
@@ -834,24 +834,22 @@ test.describe('Double-Sided Card beta', () => {
     await expect(headings).toHaveCount(0);
   });
 
-  test('the plate radios take the Cylinder A/B names only while the beta is on', async ({ page }) => {
+  test('the Cylinder A/B names are static whatever the card-sides choice', async ({ page }) => {
+    // Since 2026-09-21 every run is a pair unless one cylinder is chosen, so
+    // the signed A/B names (2026-08-17) are plain markup under Cylinders to
+    // Generate and no longer flip with the card-sides choice.
     await openApp(page);
-
-    const original = await plateLabels(page);
-    expect(original).toEqual(['Embossing Plate', 'Universal Counter Plate']);
+    const names = ['Cylinder A — Embossing Plate', 'Cylinder B — Universal Counter Plate'];
+    expect(await plateLabels(page)).toEqual(names);
 
     await chooseDoubleSided(page);
-    expect(await plateLabels(page)).toEqual([
-      'Cylinder A — Embossing Plate',
-      'Cylinder B — Universal Counter Plate',
-    ]);
+    expect(await plateLabels(page)).toEqual(names);
 
-    // Byte-identical on the way back: the training videos show these names.
     await page.locator('#card_sides_single').check();
-    expect(await plateLabels(page)).toEqual(original);
+    expect(await plateLabels(page)).toEqual(names);
   });
 
-  test('Generate Both builds the pair, downloads nothing on its own, and restores the plate', async ({ page }) => {
+  test('Generate builds the pair, downloads nothing on its own, and restores the choice', async ({ page }) => {
     test.setTimeout(300_000);
     await openApp(page);
     const requests = watchGeometrySpecRequests(page);
@@ -859,9 +857,9 @@ test.describe('Double-Sided Card beta', () => {
     page.on('download', (download) => unattendedDownloads.push(download.suggestedFilename()));
 
     await enableBeta(page, 'abc', 'def');
-    // A deliberate non-default choice, to prove the run puts it back.
-    await page.locator('input[name="plate_type"][value="negative"]').check();
 
+    // generateBoth() chooses 'both'; the run switches the choice to A then B
+    // on its way through and must put 'both' back (proved below).
     await generateBoth(page);
 
     // NOTHING may download by itself. Two programmatic downloads from a single
@@ -871,13 +869,10 @@ test.describe('Double-Sided Card beta', () => {
     // ended in "Download blocked" with neither cylinder saved.
     expect(unattendedDownloads).toEqual([]);
 
-    // Each file comes from its own deliberate press. The combined file is
-    // the primary offer, so its button leads the row.
-    await expect(page.locator('#pair-downloads')).toBeVisible();
-    await expect(page.locator('#pair-downloads button').first()).toHaveId('download-pair-btn');
-    await expect(page.locator('#download-pair-btn')).toBeVisible();
-    expect(await pairDownloadName(page, 'a')).toBe('Cylinder_A_0.4_abc.stl');
-    expect(await pairDownloadName(page, 'b')).toBe('Cylinder_B_0.4_abc.stl');
+    // The ONE Download button offers the combined file (D-9); the per-cylinder
+    // files come from choosing that cylinder under Cylinders to Generate.
+    await expect(page.locator('#download-stl-btn')).toBeVisible();
+    expect(await downloadName(page)).toBe('Cylinder_Pair_0.4_abc.stl');
 
     // Identical settings contract: the two bodies differ ONLY in plate_type.
     // Both carry the same lines and back_lines, because Cylinder B needs the
@@ -892,22 +887,22 @@ test.describe('Double-Sided Card beta', () => {
     };
     expect(withoutPlate(aBody)).toEqual(withoutPlate(bBody));
 
-    // The user's own plate selection survives the run.
-    await expect(page.locator('input[name="plate_type"][value="negative"]')).toBeChecked();
+    // The user's own choice survives the run.
+    expect(await selectedCylinders(page)).toBe('both');
   });
 
   test('the combined STL is one file holding both bodies, spaced apart', async ({ page }) => {
     test.setTimeout(300_000);
     await openApp(page);
     await enableBeta(page, 'abc', 'def');
-    await generateBoth(page);
+    const responses = watchGeometrySpec(page);
 
-    // Download through the real buttons and read the bytes: binary STL is an
+    // Download through the real button and read the bytes: binary STL is an
     // 80-byte header, a uint32 triangle count, then 50-byte records with the
     // three vertices at record offsets +12/+24/+36 (X first, little-endian).
-    const readStl = async (buttonId: string) => {
+    const readStl = async () => {
       const downloadPromise = page.waitForEvent('download');
-      await page.locator(`#${buttonId}`).click();
+      await page.locator('#download-stl-btn').click();
       const download = await downloadPromise;
       const buf = fs.readFileSync((await download.path())!);
       const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
@@ -926,10 +921,18 @@ test.describe('Double-Sided Card beta', () => {
       return { name: download.suggestedFilename(), triangles, maxX, minX };
     };
 
-    const a = await readStl('download-cylinder-a-btn');
-    const b = await readStl('download-cylinder-b-btn');
-    const pair = await readStl('download-pair-btn');
+    // Each cylinder on its own (Cylinders to Generate), then the pair.
+    await selectCylinders(page, 'positive');
+    await generateFully(page, responses, 1);
+    const a = await readStl();
+    await selectCylinders(page, 'negative');
+    await generateFully(page, responses, 2);
+    const b = await readStl();
+    await generateBoth(page);
+    const pair = await readStl();
 
+    expect(a.name).toBe('Cylinder_A_0.4_abc.stl');
+    expect(b.name).toBe('Cylinder_B_0.4_abc.stl');
     // Name signed off by Brennen (2026-08-25); change only with his sign-off.
     expect(pair.name).toBe('Cylinder_Pair_0.4_abc.stl');
     // Pure concatenation: every triangle of A and of B, nothing else.

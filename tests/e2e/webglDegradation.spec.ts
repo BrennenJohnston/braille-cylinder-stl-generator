@@ -16,6 +16,7 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { selectCylinders } from './helpers/cylinders';
 
 test.describe('WebGL graceful degradation', () => {
   // WebKit on Windows (Playwright's bundled build) enforces the
@@ -64,6 +65,9 @@ test.describe('WebGL graceful degradation', () => {
   test('shows .webgl-error block when WebGL contexts are unavailable', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('#language-table');
+    // One cylinder: these tests prove the single-plate download state, and
+    // since 2026-09-21 Generate builds both unless one is chosen.
+    await selectCylinders(page, 'positive');
 
     // The viewer pane must surface the degraded-mode notice rather than
     // a 3D canvas or a broken/blank panel.
@@ -75,6 +79,9 @@ test.describe('WebGL graceful degradation', () => {
   test('form remains interactive when WebGL is blocked', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('#language-table');
+    // One cylinder: these tests prove the single-plate download state, and
+    // since 2026-09-21 Generate builds both unless one is chosen.
+    await selectCylinders(page, 'positive');
 
     // Auto-placement mode is the default; the auto-text textarea must be
     // editable even though the 3D preview is disabled.
@@ -106,6 +113,9 @@ test.describe('WebGL graceful degradation', () => {
 
     await page.goto('/');
     await page.waitForSelector('#language-table');
+    // One cylinder: these tests prove the single-plate download state, and
+    // since 2026-09-21 Generate builds both unless one is chosen.
+    await selectCylinders(page, 'positive');
 
     // Confirm degraded-mode is in effect before exercising the generate flow.
     await expect(page.locator('.webgl-error')).toBeVisible({ timeout: 10000 });
@@ -156,6 +166,9 @@ test.describe('WebGL graceful degradation', () => {
   test('Download STL click triggers a download with no WebGL', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('#language-table');
+    // One cylinder: these tests prove the single-plate download state, and
+    // since 2026-09-21 Generate builds both unless one is chosen.
+    await selectCylinders(page, 'positive');
     await expect(page.locator('.webgl-error')).toBeVisible({ timeout: 10000 });
 
     await page.locator('#auto-text').fill('Hi');

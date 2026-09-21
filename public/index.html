@@ -1931,74 +1931,9 @@
             transform: translateY(-2px) scale(1.03);
         }
 
-        /* Double-sided beta pair controls. Same visual language as #action-btn
-           - blue for the action, green for a file that is ready - under their
-           own selectors, so the single-plate button's rules stay untouched.
-           Nothing moves on hover: these share the pinned footer, where a button
-           that shifts under the pointer costs WebKit the click (see the
-           #action-btn note above). The 44px floor is spelled out because the
-           shared button padding lands just under it at the desktop font size. */
-        #generate-both-btn,
-        .pair-downloads button {
-            min-height: 44px;
-            min-width: 44px;
-            font-size: 0.95em;
-            text-align: center;
-            transition: background 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        #generate-both-btn {
-            width: 100%;
-            max-width: 24em;
-            background: var(--btn-primary-bg);
-            color: #fff;
-            border: 2px solid var(--btn-primary-border);
-            box-shadow: 0 2px 8px var(--shadow-light);
-        }
-
-        #generate-both-btn:hover:not(:disabled) {
-            background: var(--btn-primary-hover-bg);
-            border-color: var(--btn-primary-border-hover);
-            box-shadow: 0 4px 12px var(--shadow-medium);
-        }
-
-        #generate-both-btn:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
-        .pair-downloads {
-            width: 100%;
-            max-width: 24em;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 0.6em;
-        }
-
-        .pair-downloads button {
-            flex: 1 1 11em;
-            /* Labels wrap rather than clip - the global button nowrap cut the
-               combined button's signed label off mid-word (found 2026-08-25). */
-            white-space: normal;
-            background: var(--btn-success-bg);
-            color: #fff;
-            border: 2px solid var(--btn-success-border);
-            box-shadow: 0 2px 8px var(--shadow-light);
-        }
-
-        /* The primary offer takes the whole first row, so its long signed
-           label renders on one line at the default width. */
-        #download-pair-btn {
-            flex-basis: 100%;
-        }
-
-        .pair-downloads button:hover {
-            background: var(--btn-success-hover-bg);
-            border-color: var(--btn-success-border-hover);
-            box-shadow: 0 4px 12px var(--shadow-medium);
-        }
-
+        /* The pair's status line (progress, ready, failure). The pair BUTTONS
+           this block used to style left the footer on 2026-09-21 (programme
+           sub-plan E): one Generate, one Download. */
         .pair-status {
             width: 100%;
             text-align: center;
@@ -2025,36 +1960,6 @@
             border: 0;
         }
 
-        [data-theme="high-contrast"] #generate-both-btn {
-            background: #0201fe !important; /* Blue background for generate */
-            color: #fdfe00 !important; /* Yellow text */
-            border: 2px solid #fdfe00 !important; /* Yellow border */
-        }
-
-        [data-theme="high-contrast"] #generate-both-btn:hover:not(:disabled) {
-            background: #0201fe !important;
-            color: #fdfe00 !important;
-            border: 2px solid #02fe05 !important; /* Green border on hover */
-        }
-
-        [data-theme="high-contrast"] #generate-both-btn:disabled {
-            background: #666666 !important;
-            color: #cccccc !important;
-            border: 2px solid #999999 !important;
-            cursor: not-allowed !important;
-        }
-
-        [data-theme="high-contrast"] .pair-downloads button {
-            background: #02fe05 !important; /* Green background for download */
-            color: #000000 !important; /* Black text */
-            border: 2px solid #000000 !important; /* Black border */
-        }
-
-        [data-theme="high-contrast"] .pair-downloads button:hover {
-            background: #02fe05 !important;
-            color: #000000 !important;
-            border: 2px solid #ffff00 !important; /* Yellow border on hover */
-        }
         #error-message {
             color: var(--error-text);
             background: var(--error-bg);
@@ -3756,25 +3661,10 @@
                           </fieldset>
                       </div>
 
-                      <!-- Plate Type Selection moved here -->
-                      <div class="grade-selection">
-                          <fieldset>
-                              <legend class="grade-label"><h2 class="legend-heading">Select Plate to Generate</h2></legend>
-                              <div class="radio-group" role="radiogroup" aria-required="true">
-                                  <label class="radio-option">
-                                      <input type="radio" name="plate_type" value="positive" checked aria-describedby="emboss-plate-desc">
-                                      <span class="radio-text">Embossing Plate</span>
-                                  </label>
-                                  <span id="emboss-plate-desc" class="sr-only">Creates raised braille dots for embossing cards</span>
-                                  <label class="radio-option">
-                                      <input type="radio" name="plate_type" value="negative" aria-describedby="counter-plate-desc">
-                                      <span class="radio-text">Universal Counter Plate</span>
-                                  </label>
-                                  <span id="counter-plate-desc" class="sr-only">Creates recessed dots to support embossing process</span>
-
-                              </div>
-                          </fieldset>
-                      </div>
+                      <!-- The plate selector left the main form on 2026-09-21 (programme
+                           sub-plan E, decision D-8): Generate builds BOTH cylinders by
+                           default, and choosing one lives in Expert Mode under
+                           "Cylinders to Generate", the first submenu. -->
 
                       <!-- Reset Settings menu box -->
                       <div class="grade-selection">
@@ -3811,6 +3701,47 @@
                           <div id="braille-preview" class="braille-preview" style="display: none;" role="region" aria-label="Braille translation preview">
                               <h2 class="preview-heading">Braille Translation Preview:</h2>
                               <div id="preview-content"></div>
+                          </div>
+
+                          <!-- Submenu: Cylinders to Generate (2026-09-21, programme sub-plan E,
+                               decision D-8). FIRST on purpose: it decides what Generate builds.
+                               The radios keep the values the request body and the persistence
+                               key have always used (positive / negative) and add "both", the
+                               default. The two single-plate descriptions and the signed A/B
+                               labels (2026-08-17) are the ones the old selector carried; the
+                               "both" label and its description are DRAFT S-E2 / S-E3 and the
+                               legend DRAFT S-E1 - FLAGGED FOR BRENNEN. -->
+                          <div class="expert-submenu" id="cylinders-to-generate-submenu">
+                              <h3 class="expert-submenu-heading">
+                                  <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-cylinders">
+                                      <span class="expert-submenu-title">Cylinders to Generate</span>
+                                      <span class="expert-submenu-icon" aria-hidden="true">▼</span>
+                                  </button>
+                              </h3>
+                              <div id="expert-panel-cylinders" class="expert-submenu-content" style="display: none;">
+                                  <div class="grade-selection">
+                                      <fieldset>
+                                          <legend class="grade-label">Cylinders to Generate</legend>
+                                          <div class="radio-group" role="radiogroup" aria-required="true">
+                                              <label class="radio-option">
+                                                  <input type="radio" name="plate_selection" value="both" checked aria-describedby="both-plates-desc">
+                                                  <span class="radio-text">Both Cylinder A and B</span>
+                                              </label>
+                                              <span id="both-plates-desc" class="sr-only">Builds both cylinders and downloads them as one file, spaced for one print plate.</span>
+                                              <label class="radio-option">
+                                                  <input type="radio" name="plate_selection" value="positive" aria-describedby="emboss-plate-desc">
+                                                  <span class="radio-text">Cylinder A — Embossing Plate</span>
+                                              </label>
+                                              <span id="emboss-plate-desc" class="sr-only">Creates raised braille dots for embossing cards</span>
+                                              <label class="radio-option">
+                                                  <input type="radio" name="plate_selection" value="negative" aria-describedby="counter-plate-desc">
+                                                  <span class="radio-text">Cylinder B — Universal Counter Plate</span>
+                                              </label>
+                                              <span id="counter-plate-desc" class="sr-only">Creates recessed dots to support embossing process</span>
+                                          </div>
+                                      </fieldset>
+                                  </div>
+                              </div>
                           </div>
 
                           <!-- Submenu: Shape Selection -->
@@ -4279,27 +4210,17 @@
                          WCAG 2.5.3 Label in Name, the visible "Download STL" not
                          being contained in the spoken name. -->
                     <button type="button" id="download-stl-btn" style="display: none;">Download STL</button>
-                    <!-- Pair mode only (either beta - double-sided or gear
-                         rollers): updatePairModeUI() reveals these three and
-                         hides them again the moment the last beta is off. The
-                         visible text is each button's accessible name, so no
-                         aria-label competes with it. -->
-                    <!-- User-facing wording signed off by Brennen (2026-08-17); reword only with his sign-off. -->
-                    <button type="button" id="generate-both-btn" style="display: none;">Generate Both Cylinders (A and B)</button>
-                    <!-- No display:none here on purpose: the region must already be
-                         in the accessibility tree when its text changes, or the
+                    <!-- ONE Generate and ONE Download since 2026-09-21 (programme
+                         sub-plan E, decisions D-8 / D-9): Generate builds both
+                         cylinders unless "Cylinders to Generate" in Expert Mode
+                         names one, and Download saves the combined pair file (or
+                         the single cylinder). The Generate Both / Download
+                         Combined / Download Cylinder A / B buttons are gone; the
+                         pair's progress and its ready sentence still live here.
+                         No display:none on the region on purpose: it must already
+                         be in the accessibility tree when its text changes, or the
                          change is not announced. #pair-status:empty hides it. -->
                     <div id="pair-status" class="pair-status" role="status" aria-live="polite"></div>
-                    <div id="pair-downloads" class="pair-downloads" style="display: none;">
-                        <!-- First on purpose: one file with both cylinders spaced
-                             for a single print plate is the primary offer, the
-                             per-cylinder files the fallback. Label signed off by
-                             Brennen (2026-08-25); reword only with his sign-off. -->
-                        <button type="button" id="download-pair-btn">Download Combined STL (Cylinders A and B)</button>
-                        <!-- User-facing wording signed off by Brennen (2026-08-17); reword only with his sign-off. -->
-                        <button type="button" id="download-cylinder-a-btn">Download Cylinder A</button>
-                        <button type="button" id="download-cylinder-b-btn">Download Cylinder B</button>
-                    </div>
                 </div>
               </form>
             </div>
@@ -5305,14 +5226,28 @@
         // Cylinder B started. Holding the blob lets the pair outlive both runs.
         let lastGeneratedBlob = null;
 
-        // Double-sided beta pair controls. Declared here, before
-        // updateDoubleSidedUI() is defined and long before it first runs, so
-        // that function can show and hide them without a lookup.
-        const generateBothBtn = document.getElementById('generate-both-btn');
+        // The pair run (both cylinders, the default since 2026-09-21): its
+        // status region, the in-flight flag, and the files it built. When the
+        // combined file could not be built, pairFallbackQueue hands out
+        // Cylinder A then Cylinder B from the one Download button (DRAFT S-E6).
         const pairStatus = document.getElementById('pair-status');
-        const pairDownloads = document.getElementById('pair-downloads');
         let pairRunInFlight = false;
         const pairFiles = { positive: null, negative: null, combined: null };
+        let pairFallbackQueue = [];
+
+        // "Cylinders to Generate" (Expert Mode, first submenu; programme
+        // sub-plan E, decision D-8): both | positive | negative. Every read of
+        // the old plate radio goes through these two, so 'both' resolves to
+        // the embossing plate wherever a single plate's wording or settings
+        // are needed (the pair run picks each plate explicitly).
+        function currentPlateSelection() {
+            return document.querySelector('input[name="plate_selection"]:checked')?.value || 'both';
+        }
+
+        function currentPlateType() {
+            const selection = currentPlateSelection();
+            return selection === 'negative' ? 'negative' : 'positive';
+        }
 
         const previewBrailleBtn = document.getElementById('preview-braille-btn');
         const errorDiv = document.getElementById('error-message');
@@ -5562,8 +5497,19 @@
 
         // The download is its own control now, so this is the only place that
         // hands the file over. One file, one deliberate press - it can never
-        // trip the browser's multiple-download prompt.
+        // trip the browser's multiple-download prompt. After a both-cylinder
+        // run (the default) it saves the combined pair file; if that file could
+        // not be built it saves Cylinder A on the first press and Cylinder B on
+        // the next (DRAFT S-E6); after a single-cylinder run, that cylinder.
         downloadStlBtn?.addEventListener('click', () => {
+            if (pairFiles.combined) {
+                downloadPairFile(pairFiles.combined);
+                return;
+            }
+            if (pairFallbackQueue.length) {
+                downloadPairFile(pairFallbackQueue.shift());
+                return;
+            }
             if (!lastGeneratedSTLUrl) return;
             const a = document.createElement('a');
             a.href = lastGeneratedSTLUrl;
@@ -5735,7 +5681,7 @@
         }
 
         function updateGridColumnsForPlateType(preserveValue = false) {
-            const plateType = document.querySelector('input[name="plate_type"]:checked')?.value || 'positive';
+            const plateType = currentPlateType();
             const gridColumnsInput = document.getElementById('grid_columns');
             const gridColumnsLabel = document.getElementById('grid_columns_label');
             const gridColumnsNote = document.getElementById('grid_columns_note');
@@ -5822,8 +5768,8 @@
                 gridColumnsInput.addEventListener('input', () => { gridColumnsDirty = true; });
             }
 
-            // Plate type radio buttons
-            document.querySelectorAll('input[name="plate_type"]').forEach(radio => {
+            // Cylinders to Generate radios (both / A / B)
+            document.querySelectorAll('input[name="plate_selection"]').forEach(radio => {
                 radio.addEventListener('change', function() {
                     updateGridColumnsForPlateType();
                     const combinedShapeSel = document.getElementById('combined-shape-selection');
@@ -7343,21 +7289,11 @@
         // to the tactile seam arrow — the backend hard-rejects double-sided
         // requests with any other style, so this lock is what keeps that error
         // unreachable from the UI.
-        // The A/B names belong to the pair flow — either beta, double-sided or
-        // gear rollers, produces a Cylinder A / Cylinder B pair. The off-state
-        // text is captured from the markup rather than retyped here - turning
-        // the last beta off puts back exactly what shipped, character for character.
-        /* On-state relabel wording signed off by Brennen (2026-08-17); reword only with his sign-off. */
-        const plateRadioLabels = [
-            { value: 'positive', onText: 'Cylinder A — Embossing Plate' },
-            { value: 'negative', onText: 'Cylinder B — Universal Counter Plate' },
-        ].map(entry => {
-            const el = document.querySelector(`input[name="plate_type"][value="${entry.value}"]`)
-                ?.closest('label')?.querySelector('.radio-text') || null;
-            return { ...entry, el, original: el ? el.textContent : '' };
-        }).filter(entry => entry.el);
+        // The Cylinder A / Cylinder B names (signed 2026-08-17) are static
+        // markup in "Cylinders to Generate" since 2026-09-21: every run is a
+        // pair unless one cylinder is chosen, so there is no relabel to do.
 
-        // Deliberately silent, like updatePairModeUI: the card-sides change
+        // Deliberately silent: the card-sides change
         // listener makes the one announcement, and the load-time restore must
         // make none at all.
         function updateDoubleSidedUI() {
@@ -7370,8 +7306,6 @@
             // hidden, so it can never sit inside a closed menu again.
             const backEntry = document.getElementById('back-entry-fieldset');
             if (backEntry) backEntry.disabled = !on;
-
-            updatePairModeUI();
 
             // The heading inside the legend, not the legend itself: writing
             // textContent on the legend would delete the heading element.
@@ -7463,33 +7397,11 @@
             return !!document.getElementById('card_sides_double')?.checked;
         }
 
-        // Either beta produces a Cylinder A / Cylinder B pair: double-sided
-        // pairs the recesses, gear rollers pairs the gear sets (gears_a meshes
-        // with gears_b). The pair controls and the A/B radio names follow the
-        // two toggles together through this one predicate. Reusing the signed
-        // A/B radio labels in gears-only mode confirmed by Brennen (2026-08-25).
-        // Version 2 joins them (D-V10): A and B are a matched, differently
-        // keyed pair, so the pair IS the useful output - the same reasoning
-        // that put the gears-only flow into pair mode on 2026-08-25. It
-        // reuses the signed Cylinder A / Cylinder B labels; no new strings.
-        function isPairModeOn() {
-            return isDoubleSidedOn()
-                || isGearRollersOn()
-                || isVersion2();
-        }
-
-        // Deliberately silent: both beta toggles call this from their own
-        // update functions, each of which already makes its single
-        // announcement (ADA SOP Section 12, C9) - a second voice here would
-        // replace it in the shared status region.
-        function updatePairModeUI() {
-            const on = isPairModeOn();
-            plateRadioLabels.forEach(entry => {
-                entry.el.textContent = on ? entry.onText : entry.original;
-            });
-            if (generateBothBtn) generateBothBtn.style.display = on ? '' : 'none';
-            if (!on) clearPairResults();
-        }
+        // Pair mode is universal since 2026-09-21 (programme sub-plan E,
+        // decision D-9): every run builds Cylinder A and Cylinder B unless one
+        // is chosen under "Cylinders to Generate", whatever the version, gear
+        // or card-sides choice. The old isPairModeOn() / updatePairModeUI()
+        // gate and relabel are retired with the Generate Both button.
 
         function updateGearRollersUI() {
             const on = isGearRollersOn();
@@ -7554,7 +7466,6 @@
             const notes = [cutoutText, sizeText].filter(Boolean).join(' ');
             announceStatus('gear-rollers', notes);
 
-            updatePairModeUI();
             return notes;
         }
 
@@ -7760,7 +7671,7 @@
             announceStatus('v2-size', text);
         }
 
-        // Deliberately silent, like updatePairModeUI: the change listener makes
+        // Deliberately silent: the change listener makes
         // the one announcement (ADA SOP Section 12, C9), and the load-time
         // restore must make none at all - an announcement there spoke over page
         // load in the first NVDA listening run (2026-08-22, POST15_6).
@@ -7819,8 +7730,6 @@
             // one-piece Version 2 roller), not a pair the API refuses. The
             // version change listener's refreshLiveWarnings() re-reads the gear
             // size gate against the new version's barrel.
-
-            updatePairModeUI();
         }
 
         document.querySelectorAll('input[name="embosser_version"]').forEach(radio => {
@@ -8176,10 +8085,12 @@
                 const radio = document.querySelector(`input[name="placement_mode"][value="${savedPlacement}"]`);
                 if (radio) radio.checked = true;
             }
-            // Plate type
+            // Cylinders to Generate. The key predates the "both" option, so an
+            // old saved 'positive' / 'negative' is still honoured as a single
+            // cylinder; anything else leaves the default (both) in place.
             const savedPlate = readPersisted('braille_prefs_plate_type');
-            if (savedPlate === 'positive' || savedPlate === 'negative') {
-                const radio = document.querySelector(`input[name="plate_type"][value="${savedPlate}"]`);
+            if (savedPlate === 'both' || savedPlate === 'positive' || savedPlate === 'negative') {
+                const radio = document.querySelector(`input[name="plate_selection"][value="${savedPlate}"]`);
                 if (radio) radio.checked = true;
             }
             // Indicator shapes (on/off)
@@ -8353,9 +8264,9 @@
             document.querySelectorAll('input[name="placement_mode"]').forEach(r => {
                 r.addEventListener('change', () => persistValue('braille_prefs_placement_mode', document.querySelector('input[name="placement_mode"]:checked').value));
             });
-            // Plate type
-            document.querySelectorAll('input[name="plate_type"]').forEach(r => {
-                r.addEventListener('change', () => persistValue('braille_prefs_plate_type', document.querySelector('input[name="plate_type"]:checked').value));
+            // Cylinders to Generate (both / positive / negative), same key as ever
+            document.querySelectorAll('input[name="plate_selection"]').forEach(r => {
+                r.addEventListener('change', () => persistValue('braille_prefs_plate_type', currentPlateSelection()));
             });
             // Indicator shapes (on/off)
             document.querySelectorAll('input[name="indicator_shapes"]').forEach(r => {
@@ -9625,8 +9536,7 @@
                 // We'll translate the whole text, then wrap to rows based on available cells
             }
 
-            const plateTypeEl = document.querySelector('input[name="plate_type"]:checked');
-            const plateType = plateTypeEl ? plateTypeEl.value : 'positive';
+            const plateType = currentPlateType();
             const languageSelect = document.getElementById('language-table');
             const tableName = languageSelect?.value || DEFAULT_LANGUAGE_TABLE;
 
@@ -10265,9 +10175,17 @@
             }
         }
 
+        // Generate STL, Enter in a field, and a pair run's own steps all come
+        // through here. Both cylinders by default (D-9); one cylinder only when
+        // "Cylinders to Generate" names it.
+        function runGenerate() {
+            if (currentPlateSelection() === 'both') return runGenerateBothCylinders();
+            return runGenerateForCurrentPlate();
+        }
+
         form.onsubmit = (e) => {
             e.preventDefault();
-            runGenerateForCurrentPlate();
+            runGenerate();
         };
 
 
@@ -10299,7 +10217,7 @@
             pairFiles.positive = null;
             pairFiles.negative = null;
             pairFiles.combined = null;
-            if (pairDownloads) pairDownloads.style.display = 'none';
+            pairFallbackQueue = [];
             setPairStatus('');
         }
 
@@ -10379,7 +10297,7 @@
         // that is already checked fires nothing, exactly like a real click on
         // an already-selected option.
         function selectPlateType(value) {
-            const radio = document.querySelector(`input[name="plate_type"][value="${value}"]`);
+            const radio = document.querySelector(`input[name="plate_selection"][value="${value}"]`);
             if (!radio || radio.checked) return;
             radio.checked = true;
             radio.dispatchEvent(new Event('change', { bubbles: true }));
@@ -10396,14 +10314,15 @@
             // the finished first plate reveals this button. The pair is not done
             // and that single file is not what was asked for, so take it back.
             hideDownloadButton();
-            if (generateBothBtn) generateBothBtn.disabled = true;
         }
 
         async function runGenerateBothCylinders() {
             if (pairRunInFlight) return;
-            const pairModeOn = isPairModeOn()
-                && (document.querySelector('input[name="shape_type"]:checked')?.value || 'cylinder') === 'cylinder';
-            if (!pairModeOn) return;
+            // Cylinders only - there is no card shape in the UI, so this is a
+            // guard against a stale saved value, not a reachable branch.
+            if ((document.querySelector('input[name="shape_type"]:checked')?.value || 'cylinder') !== 'cylinder') {
+                return runGenerateForCurrentPlate();
+            }
 
             pairRunInFlight = true;
             // Read the warnings BEFORE the run, not at the end: it switches
@@ -10415,8 +10334,8 @@
             // Disabling a focused button drops focus to the page body, which
             // strands a keyboard user at the top of the document; focus goes
             // back where they left it when the run ends.
-            const startedFromKeyboard = document.activeElement === generateBothBtn;
-            const userPlate = document.querySelector('input[name="plate_type"]:checked')?.value || 'positive';
+            const startedFromKeyboard = document.activeElement === actionBtn;
+            const userPlate = currentPlateSelection();
             // The cell dial refills itself with the recommended value on every
             // plate change unless the user has typed in it this session, so an
             // automated switch could hand Cylinder B a different column count
@@ -10456,7 +10375,10 @@
                     lockGenerateControls();
 
                     if (!generated || !lastGeneratedBlob) {
-                        setPairStatus(`Cylinder ${step.label} could not be generated, so nothing was downloaded. Fix the problem shown in the error message, then press Generate Both Cylinders again.`);
+                        /* DRAFT S-E7 (2026-09-20 programme, sub-plan E) - FLAGGED FOR
+                           BRENNEN: the signed 2026-08-17 sentence named the Generate
+                           Both Cylinders button, which no longer exists. */
+                        setPairStatus(`Cylinder ${step.label} could not be generated, so nothing was downloaded. Fix the problem shown in the error message, then press Generate STL again.`);
                         return;
                     }
                     pairFiles[step.plate] = { blob: lastGeneratedBlob, filename: lastGeneratedFilename };
@@ -10501,20 +10423,23 @@
                 // saved - and the status line telling the user how to recover
                 // was itself never announced, because the Save As dialog the
                 // automatic download opened had taken focus away from the page.
-                // One button press per file never trips any of that.
-                // The combined button offers itself only when the combine
-                // succeeded; a failed combine leaves A and B alone on the row.
-                const pairBtn = document.getElementById('download-pair-btn');
-                if (pairBtn) pairBtn.style.display = pairFiles.combined ? '' : 'none';
-                if (pairDownloads) pairDownloads.style.display = 'flex';
-                /* User-facing wording signed off by Brennen (2026-08-25); reword
-                   only with his sign-off. It replaces his signed 2026-08-18 line,
-                   which named only the A and B buttons and stopped being the whole
-                   story once the combined file became the primary offer. Changes
-                   here and the PAIR_READY pin in completionWarnings.spec.ts must
-                   land in the same commit. */
-                setPairStatus('Both cylinders are ready. Use the Download Combined STL button below to save one file with both cylinders spaced for printing on one plate, or use the Download Cylinder A and Download Cylinder B buttons to save them separately.'
-                    + warningsAtStart);
+                // One button press per file never trips any of that: the ONE
+                // Download button saves the combined file, or - when the
+                // combine failed - Cylinder A on this press and B on the next.
+                /* DRAFT S-E5 and S-E6 (2026-09-20 programme, sub-plan E) -
+                   FLAGGED FOR BRENNEN. S-E5 replaces his signed 2026-08-25 pair
+                   sentence, which named the three pair buttons that left the
+                   footer. Changes here and the PAIR_READY pin in
+                   completionWarnings.spec.ts must land in the same commit. */
+                if (pairFiles.combined) {
+                    pairFallbackQueue = [];
+                    setPairStatus('Both cylinders are ready. Use the Download STL button to save one file with both cylinders spaced for printing on one plate.'
+                        + warningsAtStart);
+                } else {
+                    pairFallbackQueue = [pairFiles.positive, pairFiles.negative];
+                    setPairStatus('The combined file could not be built. Download STL now saves Cylinder A; press it again for Cylinder B.'
+                        + warningsAtStart);
+                }
             } finally {
                 selectPlateType(userPlate);
                 restoreColumns();
@@ -10522,18 +10447,15 @@
                 // Before the button is re-enabled: resetToGenerateState() skips
                 // its work entirely when the button already looks idle, and the
                 // lock left it reading "Generating..." in the generate state.
+                // It also hides the Download button, so the pair's own reveal
+                // comes AFTER it - and only when there is something to save.
                 resetToGenerateState();
-                if (generateBothBtn) {
-                    generateBothBtn.disabled = false;
-                    if (startedFromKeyboard) generateBothBtn.focus();
+                if (downloadStlBtn && (pairFiles.combined || pairFallbackQueue.length)) {
+                    downloadStlBtn.style.display = '';
                 }
+                if (startedFromKeyboard) actionBtn.focus();
             }
         }
-
-        generateBothBtn?.addEventListener('click', runGenerateBothCylinders);
-        document.getElementById('download-pair-btn')?.addEventListener('click', () => downloadPairFile(pairFiles.combined));
-        document.getElementById('download-cylinder-a-btn')?.addEventListener('click', () => downloadPairFile(pairFiles.positive));
-        document.getElementById('download-cylinder-b-btn')?.addEventListener('click', () => downloadPairFile(pairFiles.negative));
 
 
         // Two bodies side by side need roughly twice the viewing distance of
@@ -11692,14 +11614,9 @@
                             <li><strong>Enter your text</strong> in the "Enter Text for Braille Translation" area. Use only the essential information you've selected.</li>
                             <li><strong>Set Placement Mode</strong> to "Auto Placement" (handles line wrapping automatically).</li>
                             <li><strong>Check the braille:</strong> press <strong>Translate to Braille ↓</strong> under the text box. The braille appears in the <strong>Braille (Unicode)</strong> box below, where you can edit individual cells.</li>
-                            <li><strong>Generate the STL:</strong> Click <strong>Generate STL</strong> in the bar pinned at the bottom of this panel — it stays in view no matter how far you scroll — then review the 3D preview.</li>
-                            <li><strong>Download both plates:</strong>
-                                <ul>
-                                    <li>Download the embossing plate STL</li>
-                                    <li>Switch "Select Plate to Generate" to "Universal Counter Plate"</li>
-                                    <li>Download again for the counter plate</li>
-                                </ul>
-                            </li>
+                            <!-- DRAFT S-E4 (2026-09-20 programme, sub-plan E) - FLAGGED FOR BRENNEN. -->
+                            <li><strong>Generate the STL:</strong> press <strong>Generate STL</strong> in the bar pinned at the bottom of this panel — it stays in view no matter how far you scroll. It builds both cylinders; review them in the 3D preview.</li>
+                            <li><strong>Download:</strong> <strong>Download STL</strong> saves one file with both cylinders, spaced for one print plate. For a single cylinder, choose it under Expert Mode, <strong>Cylinders to Generate</strong>.</li>
                         </ol>
 
                         <h4>The Two Translate Buttons</h4>
@@ -11799,6 +11716,11 @@
                                 <tr><th>Submenu</th><th>What It Controls</th></tr>
                             </thead>
                             <tbody>
+                                <!-- DRAFT (2026-09-20 programme, sub-plan E) - FLAGGED FOR BRENNEN. -->
+                                <tr>
+                                    <td><strong>Cylinders to Generate</strong></td>
+                                    <td>Both cylinders (the default, one combined file), or Cylinder A or Cylinder B on its own</td>
+                                </tr>
                                 <tr>
                                     <td><strong>Shape Selection</strong></td>
                                     <td>Output shape, braille dot shape (rounded/cone), and indicator letters on/off</td>
