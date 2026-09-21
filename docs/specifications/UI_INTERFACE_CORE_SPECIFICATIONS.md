@@ -2040,7 +2040,9 @@ deferred by a tick (so the radio's own "selected" is heard first, and so the for
 refresh that bubbles behind the listener cannot overwrite it): DRAFT S-M10 for gears
 (composed with the S3/S7 notes `updateGearRollersUI()` returns), DRAFT S-M11 for the card
 sides (composed with the lock note when turning double-sided on), the signed S-V10 for
-the version (plus DRAFT S-M13 while the temporary Version 2 gear guard trips). Reset
+the version (composed, since 2026-09-21, with the S3/S7/S-G1 notes the gear refresh
+returns — the temporary Version 2 gear guard and its S-M13 sentence are retired now that
+fixed gears work in Version 2). Reset
 restores the defaults through the radio groups' `defaultChecked` sweep.
 
 **Disabled section, not a disclosure.** The Back of Card fieldset (`#back-entry-fieldset`,

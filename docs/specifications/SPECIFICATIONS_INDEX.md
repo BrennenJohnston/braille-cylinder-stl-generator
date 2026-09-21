@@ -200,7 +200,7 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 #### [INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md](./INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md)
 **Status:** ✅ Complete (Created 2026-08-16)
 **Covers:**
-- Double-Sided Card (BETA): the paired Cylinder A / Cylinder B set that embosses both card faces in one pass
+- Double-Sided Card (out of beta since 2026-09-20): the paired Cylinder A / Cylinder B set that embosses both card faces in one pass
 - The interpoint offset standard (1.25, 1.25 mm diagonal; US Patent 5,527,117; NLS Spec 800)
 - The pairing mirror (theta → −theta, seam arrow at 180° as the fixed point) and the back-grid transform
 - Schema vs runtime parameter naming (`double_sided.*_mm` → flat `ds_*` / `interpoint_offset_*`), the three spellings of `back_lines`
@@ -217,11 +217,12 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 #### [GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md](./GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md)
 **Status:** ✅ Complete (Created 2026-08-24)
 **Covers:**
-- Integrated gear rollers (BETA): a cylinder generated as ONE solid with its top and bottom drive gears attached
+- Integrated gear rollers (out of beta since 2026-09-20): a cylinder generated as ONE solid with its top and bottom drive gears attached
+- Version 2 fixed gears (2026-09-21, §11): the fused one-piece Version 2 roller — the v8-derived `v2_gears_*` assets with per-gear measured axes, the D-6 notch fill (an exact 0.05 mm parallel curve capped at 13.95 mm), the per-version size gate, the `_Geared_V2_` names
 - The vendored 1:1 gear assets, their packed binary format, and the provenance contract (`gears_manifest.json` sha256s)
 - The canonical sample→program transforms (Rz(180°) for A, identity for B) and the orientation-key evidence
 - Gear metrology: 24 teeth, tip r 16.1093702290795, root r 13.6613702290795, 10 mm thick, blind bores, axis distance 32.0473 mm
-- The two hard gates: cylinders only (S6) and the reference roller only (S7, 30.8 × 52.0 mm)
+- The two hard gates: cylinders only (S6) and the reference roller only for the chosen version (S7 30.8 × 52.0 mm in Version 1; DRAFT S-G1 30.8 × 54 mm in Version 2)
 - Why the barrel must be forced SOLID, and why an empty `polygon_points` does not do it
 - D-8a's 5 µm raised-arrow weld, and what the hidden weld rings do and do not contribute
 - Acceptance tolerances, the three levels of toggle-off byte-identity, and the MakerWorld deferral
@@ -229,15 +230,16 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 **Key Components:**
 - `app/geometry/gears.py` constants and the reference-roller check
 - `validate_gear_rollers_settings()` in `app/validation.py`
-- `static/assets/gears/gears_{a,b}.bin`, regenerated only by `scripts/derive_gear_assets.py`
-- `#gear_rollers_enabled` toggle with its live cutout and size notes
+- `static/assets/gears/gears_{a,b}.bin`, regenerated only by `scripts/derive_gear_assets.py`; `v2_gears_{a,b}.bin`, only by `scripts/derive_gear_assets_v2.py`
+- The Gears radio group (`gear_mode_standard` / `gear_mode_fixed`) in the Embosser setup menu item, with its live cutout and size notes
 
 ---
 
 #### [EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS.md](./EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS.md)
-**Status:** 🧪 Prototype (Created 2026-08-28)
+**Status:** ✅ Complete (Created 2026-08-28; the prototype tag was dropped 2026-09-20, the 54 mm barrel passed its print test 2026-09-01)
 **Covers:**
-- Embosser Version 2 (PROTOTYPE): a keyed through-cutout at each end of the cylinder, so a gear cannot be seated in the wrong place
+- Embosser Version 2: a keyed through-cutout at each end of the cylinder, so a gear cannot be seated in the wrong place
+- Fused mode (2026-09-21, §13): fixed gears on a Version 2 cylinder — no keyed cutouts, the top-gear notch fill, D-V6 retired, the size gate per version
 - Family R14 - four rounded-rectangle keys (14x14, 18x10, 16x12, 20x8 mm, corner r 0.5) with the long dimension on 90/270 so a flat faces the arrow column
 - The 15-degree phase-safety rule that admits rectangles and rules out pentagons and heptagons
 - Two halves meeting at the mid-plane as ONE through-hole, and the one 2.0 x 45-degree mouth rule at all four ends

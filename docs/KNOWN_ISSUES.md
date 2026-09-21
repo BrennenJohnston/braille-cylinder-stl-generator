@@ -164,8 +164,12 @@ row markers a blind user can feel. Choose it under **Embosser version** in the
 **Embosser setup** item at the top of the page (the "(prototype)" tag and its notice were
 dropped on 2026-09-20; the 54 mm barrel passed its print test on 2026-09-01).
 
-**Fixed gears are not available for Version 2 yet.** Choosing Version 2 puts the Gears
-choice back to Standard and says so; fixed Version 2 gears are planned.
+**Fixed gears work for Version 2 too (2026-09-21; wording DRAFT, awaiting Brennen's
+sign-off).** Choose **Simplified: gears fixed to the cylinders** with Version 2 and each
+cylinder prints as one piece with its Version 2 drive gears attached — a solid barrel
+with no keyed holes, since the gears are already on. The cylinder must be 30.8 × 54 mm
+(the Version 2 preset); anything else is refused, because the gears sit at fixed heights.
+Downloads are named `..._Geared_V2_...`. Not yet print-tested.
 
 **The gears must be re-cut.** The holes are family **R14** — four rounded rectangles,
 14 × 14 mm at Cylinder A's top (the nub end), 18 × 10 at A's bottom, 16 × 12 at B's
