@@ -31,6 +31,17 @@ ASSETS_DIR = REPO_ROOT / 'static' / 'assets' / 'gears'
 MANIFEST_PATH = ASSETS_DIR / 'gears_manifest.json'
 ASSET_NAMES = ('gears_a', 'gears_b')
 
+# Embosser Version 2 fixed gears (2026-09-20 programme, phase B1): the v8 gear
+# set derived by scripts/derive_gear_assets_v2.py, same binary format, its own
+# manifest. The Version 2 barrel is 54 mm, so its gears sit at |z| 27..37 with
+# their 15 mm pegs inside the barrel at |z| 12..27.
+V2_ASSET_NAMES = ('v2_gears_a', 'v2_gears_b')
+V2_MANIFEST_PATH = ASSETS_DIR / 'v2_gears_manifest.json'
+MANIFEST_BY_ASSET = {**dict.fromkeys(ASSET_NAMES, MANIFEST_PATH), **dict.fromkeys(V2_ASSET_NAMES, V2_MANIFEST_PATH)}
+V2_BARREL_FACE_Z_MM = 27.0
+V2_PEG_LENGTH_MM = 15.0
+V2_PEG_SECTION_FROM_END_MM = 3.0
+
 # Phase 01 binary format. The header is 14 bytes, so the float block starts at
 # an offset that is NOT a multiple of 4: numpy.frombuffer accepts that, a
 # browser Float32Array view does not (see the worker phase).
@@ -242,15 +253,16 @@ def browser_stl_path(asset_name):
     return Path(value) if value else None
 
 
-@pytest.mark.parametrize('asset_name', ASSET_NAMES)
+@pytest.mark.parametrize('asset_name', ASSET_NAMES + V2_ASSET_NAMES)
 def test_vendored_asset_is_the_bytes_its_manifest_records(asset_name):
     """
     Provenance: the assets are a 1:1 replication of Brennen's reference gears,
-    and nothing but scripts/derive_gear_assets.py may change them. Pinning the
+    and nothing but scripts/derive_gear_assets.py (Version 1) or
+    scripts/derive_gear_assets_v2.py (Version 2) may change them. Pinning the
     hash makes any silent re-derivation - a different transform, a different
     source file - fail loudly here rather than reach a printer.
     """
-    manifest = json.loads(MANIFEST_PATH.read_text(encoding='utf-8'))
+    manifest = json.loads(MANIFEST_BY_ASSET[asset_name].read_text(encoding='utf-8'))
     recorded = manifest['assets'][f'{asset_name}.bin']
 
     payload = (ASSETS_DIR / f'{asset_name}.bin').read_bytes()
@@ -265,6 +277,98 @@ def test_vendored_asset_is_the_bytes_its_manifest_records(asset_name):
     for source in recorded['sources']:
         assert source['tooth_count'] == TOOTH_COUNT
         assert source['tip_radius_mm'] == pytest.approx(TIP_RADIUS_MM, abs=BOUNDS_TOL_MM)
+
+
+def test_v2_assets_have_distinct_sources():
+    """
+    The four v8 files must be four different files. On 2026-09-20 B2 first
+    arrived as a byte copy of A1; a re-derivation from such a folder would
+    silently give Cylinder B a Cylinder A bottom gear.
+    """
+    manifest = json.loads(V2_MANIFEST_PATH.read_text(encoding='utf-8'))
+    hashes = [source['sha256'] for asset in manifest['assets'].values() for source in asset['sources']]
+    assert len(hashes) == 4
+    assert len(set(hashes)) == 4
+    roles = [source['role'] for asset in manifest['assets'].values() for source in asset['sources']]
+    assert roles == ['A1', 'A2', 'B1', 'B2']
+
+
+def _v2_bodies(asset_name):
+    """The packed set's two gears as (role, mesh), top gear first."""
+    mesh = load_gear_asset(asset_name)
+    bodies = sorted(mesh.split(only_watertight=False), key=lambda body: -body.bounds[1][2])
+    assert len(bodies) == 2
+    suffixes = ('1', '2')
+    prefix = 'A' if asset_name.endswith('_a') else 'B'
+    return [(f'{prefix}{suffix}', body) for suffix, body in zip(suffixes, bodies, strict=True)]
+
+
+@pytest.mark.parametrize('asset_name', V2_ASSET_NAMES)
+def test_v2_peg_outlines_match_the_key_profiles(geometry_stack, asset_name):
+    """
+    Read the packed asset, not the manifest: each peg, sectioned 3 mm in from
+    its free end (past the tapered tip), is the R14 key the cylinder's hole is
+    cut for, with the long side along y so a flat faces the arrow column.
+    app/geometry/version2.py owns the sizes (V2_KEY_PROFILES, width along x,
+    length along y); a peg that does not match them would never enter its hole.
+    """
+    import numpy as np
+
+    from app.geometry import version2
+
+    plate = 'positive' if asset_name.endswith('_a') else 'negative'
+    bottom_key, top_key = version2.KEY_PROFILES_BY_PLATE[plate]
+    expected = {'1': version2.V2_KEY_PROFILES[top_key], '2': version2.V2_KEY_PROFILES[bottom_key]}
+    for role, body in _v2_bodies(asset_name):
+        top = role.endswith('1')
+        free_end = V2_BARREL_FACE_Z_MM - V2_PEG_LENGTH_MM if top else -V2_BARREL_FACE_Z_MM + V2_PEG_LENGTH_MM
+        z = free_end + V2_PEG_SECTION_FROM_END_MM if top else free_end - V2_PEG_SECTION_FROM_END_MM
+        section = body.section(plane_origin=[0.0, 0.0, z], plane_normal=[0.0, 0.0, 1.0])
+        assert section is not None, f'{role}: no peg at z {z}'
+        points = np.asarray(section.vertices)
+        x_extent = float(points[:, 0].max() - points[:, 0].min())
+        y_extent = float(points[:, 1].max() - points[:, 1].min())
+        profile = expected[role[-1]]
+        assert x_extent == pytest.approx(profile['width'], abs=0.05), f'{role} x extent'
+        assert y_extent == pytest.approx(profile['length'], abs=0.05), f'{role} y extent'
+        # And nothing of the peg reaches the barrel wall: the widest R14 key's
+        # half-diagonal is 10.77 mm against a 15.4 mm barrel.
+        assert float(np.hypot(points[:, 0], points[:, 1]).max()) < 11.0
+
+
+@pytest.mark.parametrize('asset_name', V2_ASSET_NAMES)
+def test_v2_features_sit_on_the_arrow_column(geometry_stack, asset_name):
+    """
+    The clocking proof: after the derivation's transform every anti-rotation
+    feature - the notch in each top gear's barrel face, the pin on each bottom
+    gear's - is centred on the 180 degree arrow column, where the cylinder's nub
+    and socket are (version2.V2_ARROW_COLUMN_DEG). Measured by containment at
+    r 11.5 mm, 1.5 mm into the feature, so a file with the wrong clocking or a
+    dropped rotation fails here rather than on a printer.
+    """
+    import numpy as np
+
+    from app.geometry import version2
+
+    for role, body in _v2_bodies(asset_name):
+        top = role.endswith('1')
+        face = V2_BARREL_FACE_Z_MM if top else -V2_BARREL_FACE_Z_MM
+        notch = top
+        # Notches are cut into the top gear from its barrel face (z 27, going
+        # up); pins stand out of the bottom gear's barrel face (z -27, going
+        # up, into the barrel). Both are 1.5 mm above their face.
+        z = face + 1.5
+        angles = np.arange(0.0, 360.0, 0.25)
+        rad = np.radians(angles)
+        points = np.column_stack([11.5 * np.cos(rad), 11.5 * np.sin(rad), np.full_like(rad, z)])
+        inside = body.contains(points)
+        selected = angles[~inside] if notch else angles[inside]
+        assert len(selected) > 0, f'{role}: no {"notch" if notch else "pin"} found'
+        sel = np.radians(selected)
+        centre = math.degrees(math.atan2(np.sin(sel).mean(), np.cos(sel).mean())) % 360.0
+        assert abs(centre - version2.V2_ARROW_COLUMN_DEG) <= 1.0, f'{role} feature at {centre:.2f} deg'
+        # And the feature is a narrow window, not the whole face: under 25 degrees wide.
+        assert len(selected) * 0.25 < 25.0
 
 
 @pytest.mark.parametrize('asset_name', ASSET_NAMES)
