@@ -5540,11 +5540,16 @@
         ['input', 'change'].forEach(eventName => {
             form.addEventListener(eventName, () => {
                 resetToGenerateState();
-                dismissStaleValidationMessage();
-                refreshLiveWarnings();
                 // A finished A/B pair is invalidated by an edit for the same
-                // reason the STL is. Skipped while a pair run is in flight,
-                // because that run changes the plate radio itself.
+                // reason the STL is, and a blocking validation notice stops
+                // being true the moment the settings change. Both are skipped
+                // while a pair run is in flight, because that run changes the
+                // Cylinders to Generate radio itself: its restore of the
+                // user's choice must not wipe the very error it just reported
+                // (found by the sub-plan E closeout, 2026-09-21 - eighteen
+                // single-plate error tests lost their message).
+                if (!pairRunInFlight) dismissStaleValidationMessage();
+                refreshLiveWarnings();
                 if (!pairRunInFlight) clearPairResults();
             });
         });
