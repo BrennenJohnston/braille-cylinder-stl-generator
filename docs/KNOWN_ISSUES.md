@@ -20,9 +20,10 @@ What the finished beta does:
   grade, wrapped across the rows for you with whole words kept together, and warned about
   live while you type if it overruns.
 - The braille preview shows **both sides**, under Front of Card and Back of Card headings.
-- **Generate Both Cylinders (A and B)** builds the whole pair from one press.
-- Each file is then saved by pressing its own button — **Download Cylinder A** and
-  **Download Cylinder B**. Nothing downloads by itself.
+- **Generate STL** builds the whole pair from one press (since 2026-09-21 that is what it
+  does for every cylinder unless one is chosen under Expert Mode → Cylinders to Generate).
+- **Download STL** then saves one file with both cylinders spaced for one print plate.
+  Nothing downloads by itself. (Wording of this pair of lines DRAFT, 2026-09-21.)
 
 It carried a BETA label until 2026-09-20 because it had been proven by one builder on one
 printer with one paper stock, not because anything was known to be wrong with it.

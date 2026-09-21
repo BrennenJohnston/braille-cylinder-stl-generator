@@ -492,9 +492,12 @@ preset IIFE, not inside `applyPersistedSettings()`, because the preset rewrites
 overwritten. Reset to defaults returns Version 1 and 0.110 mm, and **drops the
 snapshot** — otherwise the restore would undo the reset it was called to finish.
 
-Version 2 reveals **Generate Both Cylinders** and reuses the signed Cylinder A /
-Cylinder B labels (D-V10): A and B are a matched, differently keyed pair, so the pair
-is the useful output.
+D-V10 said Version 2 reveals Generate Both Cylinders and reuses the signed Cylinder A /
+Cylinder B labels, because A and B are a matched, differently keyed pair and the pair is
+the useful output. Since 2026-09-21 (programme sub-plan E) that is true of every run:
+Generate STL builds both cylinders unless one is chosen under Expert Mode → Cylinders to
+Generate, the A/B labels are static markup there, and there is no Generate Both button
+(STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md §15).
 
 ---
 
@@ -676,6 +679,7 @@ mode; this section records only what changes on THIS document's side.
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-09-21 | 1.13 | **Pair mode is universal (programme sub-plan E).** §8.2's D-V10 paragraph: no Generate Both button to reveal — every run builds both cylinders unless one is chosen under Cylinders to Generate. Nothing else changed. |
 | 2026-09-21 | 1.12 | **Fixed gears on a Version 2 cylinder — fused mode (programme sub-plan B, phases B1-B7; decision D-6; D-V6 retired).** New §13: no keyed cutouts, the notch fill, the per-version size gate with DRAFT S-G1, the `_Geared_V2_` names and DRAFT S-G2, and where it is pinned. §1's gear rule flipped; §6 gains the fused `gears` block; §7 item 2 rewritten; §8's temporary-guard paragraph replaced (S-M13 retired; the version announcement now composes the gear notes and is deferred); §12 points both missing OpenSCAD features at the follow-on plan. The "(PROTOTYPE)" left in the title since 2026-09-20 removed (D-7). |
 | 2026-09-20 | 1.11 | **The selector joins the Embosser setup menu item, and the prototype tag goes (programme decisions D-7, D-8; phases C1-C4).** §8 rewritten: the version fieldset is nested inside `#embosser-setup-selection` with an h3 legend; the radio labels are "Version 1" / "Version 2" (DRAFT S-V2′); the S-V4 prototype notice is retired and a visible comparison note (DRAFT S-M2) added; S-V3 and S-V5 unchanged. The Gears choice is no longer hidden in Version 2 — a temporary guard resets it to Standard and appends DRAFT S-M13 to the S-V10 announcement until phase B6; the ready-message prefix is DRAFT S-V8′ without "(prototype)". Strings await Brennen's sign-off. |
 | 2026-09-20 | 1.10 | **A card-stock preset chosen after Version 2 no longer returns the barrel to 52 mm.** Both presets carry the Version 1 barrel and `applyThicknessPreset()` wrote it over the Version 2 overrides; the soft S-V5 warning was the only sign, and a 52 mm Version 2 double-sided pair printed from the live site. The preset function now re-asserts `V2_PRESET_OVERRIDES` while Version 2 is on (§8). New e2e pin. |

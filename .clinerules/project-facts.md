@@ -291,6 +291,25 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      2026-09-20 (+8 triangles each, bounds unchanged).
    - Cards never get one.
 
+6f. One Generate / one Download (2026-09-21, sub-plan E of the 2026-09-20
+   programme; D-8, D-9, D-10). Generate STL builds BOTH cylinders unless
+   "Cylinders to Generate" - the FIRST Expert Mode submenu
+   (#cylinders-to-generate-submenu / #expert-panel-cylinders) - names one:
+   radios name="plate_selection" value both (checked) | positive | negative,
+   read ONLY through currentPlateSelection() / currentPlateType() ('both'
+   resolves to positive for single-plate wording). There is NO
+   input[name="plate_type"] radio, NO #generate-both-btn, NO #pair-downloads
+   and NO isPairModeOn()/updatePairModeUI() any more - pair mode is universal.
+   The ONE #download-stl-btn saves the combined Cylinder_Pair_[Geared_][V2_]
+   file after a both run, Cylinder A then B (pairFallbackQueue) after a failed
+   combine, or the single file. Filenames NEVER changed (training videos).
+   Persistence key stays braille_prefs_plate_type (old positive/negative
+   values honoured). Strings S-E1..S-E7 are DRAFT. e2e: single-plate specs
+   choose Cylinder A in openApp() via tests/e2e/helpers/cylinders.ts
+   (selectCylinders - the radio is in the collapsed panel, so check() would
+   refuse it); pair tests choose 'both'. The submenu toggle focuses its first
+   control after 100 ms - wait for it before arrow keys.
+
 ## Settings changes — order of operations
 7. settings.schema.json is the single source of truth. When adding or changing
    any parameter/default: update settings.schema.json FIRST, then

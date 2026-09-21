@@ -110,15 +110,15 @@ You can optionally set `PRODUCTION_DOMAIN` as an environment variable, but it's 
 1. Type your text (up to 4 lines)
 2. Pick a braille translation table and grade
 3. Set your cylinder dimensions — measure your container first
-4. Press **Generate STL**
-5. Press **Download STL** when it appears, then 3D print the file
+4. Press **Generate STL** — it builds both cylinders, A and B
+5. Press **Download STL** when it appears: one file with both cylinders spaced for one
+   print plate. Print it and emboss the card between the two cylinders.
 
-For a double-sided card, turn on **Double-Sided Card (BETA — for testing)** before step 4,
-type the back text into the **Back of Card** box, then press **Generate Both Cylinders
-(A and B)**. That builds both files and reveals two buttons: press **Download Cylinder A**
-to save `Cylinder_A_*.stl`, then **Download Cylinder B** to save `Cylinder_B_*.stl`.
-Neither file downloads on its own — you save each one by pressing its own button. Print
-both cylinders and emboss the card in one pass between them.
+Want just one cylinder? Open **Expert Mode** and choose it under **Cylinders to
+Generate**, the first submenu; Download STL then saves that cylinder on its own. For a
+double-sided card, choose **Double-sided** under **Embosser setup** before step 4 and
+type the back text into the **Back of Card** box. Nothing ever downloads on its own — one
+press of Download STL saves one file.
 
 There's a **Help** button inside the app that walks you through choosing what to include, formatting your text, and measuring containers. For more depth, check the guides below.
 

@@ -128,7 +128,8 @@ Press `H` repeatedly from the top.
 > load, 15 with Expert Mode open, 16 with Double-sided chosen, no level skipped
 > in any state. What NVDA actually reads is still for Brennen to hear.
 
-**Expected: ten, in this order.**
+**Expected: nine, in this order** (ten until 2026-09-21, when "Select Plate to
+Generate" left the main form for Expert Mode).
 
 ```
 h1  Custom Braille STL Generator
@@ -140,16 +141,15 @@ h2  Enter Text for Braille Translation
 h2  Back of Card — Enter Text for Braille Translation
 h2  Row Indicator Style
 h2  Card Thickness
-h2  Select Plate to Generate
 ```
 
 ### 2b — With Expert Mode open
 
 Open Expert Mode, then press `H` from the top again.
 
-**Expected: fifteen** — the ten above plus five at level 3: *Shape Selection*,
-*Braille Spacing*, *Braille Dot Adjustments*, *Surface Dimensions*,
-*Translation Options*.
+**Expected: fifteen** — the nine above plus six at level 3: *Cylinders to
+Generate* (first, since 2026-09-21), *Shape Selection*, *Braille Spacing*,
+*Braille Dot Adjustments*, *Surface Dimensions*, *Translation Options*.
 
 ### 2c — With Double-sided chosen
 
@@ -165,7 +165,9 @@ the Back of Card `h2` was already there, its controls simply become available.
 **No level may be skipped in any state** — never an h1 followed by an h3.
 Verified by probe on 2026-08-23 in all three states: `SKIPPED LEVELS: none`.
 
-**Counts to write down: 6 / 11 / 12, or whatever you actually reach.**
+**Counts to write down: 9 / 15 / 16, or whatever you actually reach** (measured
+2026-09-21 by `build/a11yverify/e_footer/probe.cjs` for the first two states; the
+third follows from 2c).
 
 > **If your run differs from these numbers, that is a finding. Report it — do not
 > adjust the numbers to match.** They came from
@@ -371,3 +373,4 @@ Anything NVDA said that I did not expect at all:
 | 1.2 | 2026-08-23 | **The three questions no probe can answer are ANSWERED, and two are wins.** The six headings **do** tell him what the page is (item C vindicated by ear). The braille field's ~13-word description is **still useful** — nothing he needed was lost going from 72 words. And the tab ring's length **no longer matters** now the skip links work, which CLOSES F-F as addressed by other means; the count never moved and C5 still reads FAIL on its own terms. Also closed since v1.1: **F-P fixed** (`255f725`) for JAWS/VoiceOver despite being inert in NVDA, and **`lang="und-Brai"` KEPT** after investigation — 17 announcements per 30-minute session, but the tag is correct, nothing reads it, the noise is a user-switchable NVDA setting, and removing it risks braille-display users. |
 | 1.1 | 2026-08-23 | **RUN by Brennen** (NVDA 2026.1.1, Chrome Guest, 1,799 utterances captured). Items A-I confirmed audibly: the banner is heard, the six headings read with no chevron glyph, skip link 2 lands on the `h2`, and the braille field's description is down to ~13 words from a 72-word paragraph. **Three defects found that every automated count had passed** - F-Q the Help dialog leaking focus into Chrome's toolbar (fixed, `e62a2bd`), F-R generating and downloading a plate missing the tail of the text under a cheerful "Both cylinders are ready" (fixed, `b642e7a`), and F-S the standing crowding warning on the shipped default (threshold lowered to a provisional 0.45, `ddd7bd8`). **Part 5's F-P prediction was WRONG**: NVDA suppresses a description identical to the accessible name, so the font buttons never said their name twice - the defect is real in the AX tree but inert in NVDA. Part 4's ring-length question and the three judgement questions are **not yet answered in Brennen's words**; F-F stays open. |
 | 1.0 | 2026-08-23 | Created as POST15_7 item G Part 5 — the closing re-listen for the whole A–I programme. Expected counts are measured, not predicted: landmarks **5** and heading outline **6 / 11 / 12 with no skipped levels** from `axprobe.cjs` and `build/a11yverify/post15_7c/headings.cjs` re-run on 2026-08-23 after the banner move; description budget **226 w** from `axprobe.cjs`; tab ring **32** with the first task control at stop **15**. Part 4 states plainly that F-F's number did **not** improve and says what would reopen it. Part 6 is timed but deliberately has no target. |
+| 1.3 | 2026-09-21 | **Heading counts follow sub-plan E (2026-09-21; NOT yet run).** Part 2: nine headings on load (the "Select Plate to Generate" h2 moved into Expert Mode as the first level-3 "Cylinders to Generate"), fifteen with Expert Mode open, sixteen with Double-sided; the counts line says 9 / 15 / 16. |

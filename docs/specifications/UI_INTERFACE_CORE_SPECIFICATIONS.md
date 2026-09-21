@@ -2109,6 +2109,10 @@ Measured after the change, all three themes:
 | `#action-btn`, `#generate-both-btn` | high contrast | 7.94:1 | 16.04:1 (border) |
 | `.pair-downloads button` | high contrast | 15.18:1 | 12.58:1 (fill) |
 
+(`#generate-both-btn` and `.pair-downloads button` left the page on 2026-09-21 — one
+Generate, one Download, programme sub-plan E; their rows stay as the record of the
+measurement. `#action-btn`'s numbers still apply.)
+
 Because `box-sizing: border-box` is global, the added 2 px border does not grow any
 button; it was verified not to clip any label (`scrollWidth`/`scrollHeight` equal
 `clientWidth`/`clientHeight` on every button in every theme).
@@ -2391,8 +2395,8 @@ the one method seven users in ten try first found nothing (audit finding F-A).
 | h2 | Back of Card — Enter Text for Braille Translation | `#back-entry-heading` in the `#back-entry-fieldset` legend (2026-09-20; always in the tree, its controls disabled while single-sided) | always |
 | h2 | Row Indicator Style | `#indicator-mode-selection` | always |
 | h2 | Card Thickness | thickness fieldset | always |
-| h2 | Select Plate to Generate | plate-type fieldset | always |
 | h2 | Braille Translation Preview: | `#braille-preview` | Expert Mode open **and** Preview pressed |
+| h3 | Cylinders to Generate | `#cylinders-to-generate-submenu` (2026-09-21, the FIRST Expert submenu; replaces the main-form "Select Plate to Generate" h2 — programme sub-plan E) | Expert Mode open |
 | h3 | Shape Selection | `.expert-submenu` | Expert Mode open |
 | h3 | Braille Spacing | `.expert-submenu` | Expert Mode open |
 | h3 | Braille Dot Adjustments | `.expert-submenu` | Expert Mode open |
@@ -2413,7 +2417,10 @@ one "Embosser setup" h2 with three always-visible h3s and the Back of Card h2 be
 permanent. Re-measured at the phase C5 accessibility pass
 (`build/a11yverify/setup_menu/probe.cjs`, Chromium, 2026-09-20): **10 on load, 15 with
 Expert Mode open, 16 with Double-sided chosen; no level skipped in any state** (the h3s
-sit under their own h2).
+sit under their own h2). Re-measured at the sub-plan E quick path
+(`build/a11yverify/e_footer/probe.cjs`, Chromium, 2026-09-21), after the "Select Plate to
+Generate" h2 left the main form and the "Cylinders to Generate" h3 joined Expert Mode:
+**9 on load, 15 with Expert Mode open; no level skipped.**
 
 #### Level choice
 
@@ -2721,6 +2728,14 @@ body::-webkit-scrollbar-thumb {
 ### 6.1 Action Button States
 
 The main action button has two states: **Generate** and **Download**.
+
+**Since 2026-09-21 (programme sub-plan E, decisions D-8/D-9) Generate STL builds BOTH
+cylinders by default** and the separate Download STL button saves the combined pair file;
+which cylinders to build is the first Expert Mode submenu, **Cylinders to Generate**
+(`plate_selection` = `both` | `positive` | `negative`). The Generate Both button, the
+three pair download buttons and the plate-radio relabel of 2026-08-17..2026-09-20 are
+gone. Mechanics, strings and the state-machine interaction:
+STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md §8 and §15.
 
 ```javascript
 // Generate state (blue, prompts user to create STL)
@@ -3236,6 +3251,7 @@ Low vision users benefit from enhanced depth perception:
 | 1.0 | 2024-12-06 | Initial specification document |
 | 1.1 | 2024-12-06 | Cross-check verification completed; corrected skip link href from `#main-form` to `#main-content`; updated appendices to match actual implementation |
 | 1.2 | 2024-12-06 | Added CAMERA_SETTINGS global configuration documentation in Section 3.4; expanded camera controls section with detailed instructions for adjusting initial view positions for cards and cylinders |
+| 1.27 | 2026-09-21 | **One Generate, one Download, "Cylinders to Generate" (programme sub-plan E; phases E1–E4).** §4.11 outline: the "Select Plate to Generate" h2 leaves the main form and a "Cylinders to Generate" h3 becomes the first Expert submenu (re-measured 9 / 15, no level skipped); §6.1 records the both-by-default rule and points at STL_EXPORT §8/§15 for the footer. Strings S-E1..S-E7 are DRAFT. |
 | 1.26 | 2026-09-20 | **The Embosser setup menu item (programme decisions D-7, D-8; phases C1–C4).** §4.8 rewritten: the Embosser version fieldset, the Double-Sided Card (BETA) accordion + checkbox and the Integrated Gears (BETA) checkbox are ONE item `#embosser-setup-selection` (h2 "Embosser setup", DRAFT S-M1) holding three nested h3 fieldsets with native radios — version (`embosser_version_1/2`), gears (`gear_mode_standard/fixed`), card sides (`card_sides_single/double`) — each described within the Step 6.8 ceiling, a "Which setup should I choose?" link opening the new Embosser Setup help tab, one composed deferred announcement per change, the same persistence keys as before. The Back of Card fieldset is always in the tree and native-`disabled` while single-sided (no disclosure ARIA). §4.11 outline: h2 Embosser setup + three h3s, permanent Back of Card h2; computed counts 10/15/16 to be re-measured at phase C5. No BETA or prototype text remains. All new strings are DRAFT pending Brennen's sign-off. |
 | 1.3 | 2025-12-08 | Added Section 3.7 (STL Preview Label) to clarify the preview panel's purpose; Added Section 3.8 (Preview Display Settings) documenting new brightness and contrast radio button controls for 3D preview customization |
 | 1.4 | 2025-12-08 | Fixed Expert Toggle button active state contrast ratio: Changed background from `var(--border-focus)` to darker blues (`#1e4976` for light mode, `#1e5a8a` for dark mode) to meet WCAG AA 4.5:1 contrast requirement with white text |

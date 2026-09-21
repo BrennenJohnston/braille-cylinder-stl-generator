@@ -352,13 +352,14 @@ Filenames gain a `Geared_` segment (decision D-5), and only then:
 Toggle-off names are byte-identical to today's, because public training videos show them.
 Persistence uses `braille_prefs_gear_rollers_enabled`, and Reset to defaults clears it.
 
-**Pair mode (2026-08-25).** This toggle alone now reveals Generate Both Cylinders and
-relabels the plate radios to Cylinder A / Cylinder B (`isPairModeOn()` — reuse of the
-signed labels confirmed by Brennen; a gear set only works meshed with its counterpart, so
-the pair is the useful output). The FILENAMES table above is unchanged by that: a
-gears-only pair run downloads the single-sided `Embossing_Cylinder_Geared_*` /
-`Counter_Cylinder_Geared_*` names, plus the combined `Cylinder_Pair_Geared_{preset}_{name}.stl`
-offered first (§7's two-body exemption applies). Both request bodies of the pair run carry
+**Pair mode (2026-08-25; universal since 2026-09-21).** From 2026-08-25 this toggle alone
+revealed Generate Both Cylinders and relabelled the plate radios (`isPairModeOn()`); since
+2026-09-21 (programme sub-plan E) every run builds both cylinders unless one is chosen
+under Expert Mode → Cylinders to Generate, and the ONE Download STL button saves the
+combined `Cylinder_Pair_Geared_{preset}_{name}.stl` (§7's two-body exemption applies) —
+`isPairModeOn()` and the relabel are retired. The FILENAMES table above is unchanged: a
+gears-on single-cylinder run downloads the frozen `Embossing_Cylinder_Geared_*` /
+`Counter_Cylinder_Geared_*` names. Both request bodies of the pair run carry
 `gear_rollers_enabled: 1`, one per plate type — pinned by `tests/e2e/gearRollers.spec.ts`.
 
 ---
@@ -556,6 +557,7 @@ assets (§10).
 
 | Date | Change |
 |---|---|
+| 2026-09-21 | **Pair mode is universal (programme sub-plan E).** §8.1's pair paragraph: Generate STL builds both cylinders by default and Download STL saves the combined Geared pair file; `isPairModeOn()` and the relabel retired; the frozen single-cylinder names come from Cylinders to Generate. Nothing else changed. |
 | 2026-09-21 | **Version 2 fixed gears — the fused one-piece Version 2 roller (programme sub-plan B, phases B1-B7; decisions D-5, D-6).** New §11: the v8-derived `v2_gears_*` assets and their per-gear fitted axes (§11.1), the transform and frame (§11.2), the D-6 notch fill as an exact 0.05 mm parallel curve capped at 13.95 mm (§11.3), the fused spec / per-version size gate with DRAFT S-G1 / the worker's notch-fill union (§11.4), what the browser exports and the new `v2_gear_roller*` golden pair proved (§11.5), the UI and the composed `_Geared_V2_` names with DRAFT S-G2 (§11.6), and the OpenSCAD follow-on (§11.7). §1, §2, §5, §8 and §9.2 updated to match; the temporary S-M13 guard paragraph in §8 replaced; the "(BETA)" left in the title since 2026-09-20 removed (D-7). Open item: the Version 2 operating axis distance. |
 | 2026-09-20 | **Out of beta, into the Embosser setup menu (programme decisions D-7, D-8; phases C1-C4).** §1 retitled "Feature Rules" (the rules are unchanged). §8 rewritten: the checkbox fieldset is gone; the choice is the **Gears** radio group (`#gear_mode_standard` checked / `#gear_mode_fixed`, DRAFT S-M3a/b, description DRAFT S-M4, S2 kept visible, S-M5 replacing S9′ with a link to the new help tab) inside `#embosser-setup-selection`, read only through `isGearRollersOn()`; one composed, deferred announcement per change (DRAFT S-M10 plus S3/S7); Version 2 no longer hides the choice — a temporary guard resets it to Standard and says so (DRAFT S-M13) until phase B6 ships fixed Version 2 gears. Strings await Brennen's sign-off. |
 | 2026-08-31 | **§5 updated again the same day: the default barrel returns to the 52 mm reference size** (Brennen's deployment verdict — "Version 1 is the 52 mm standard with the previously provided gear models"). Enabling gears on untouched dials passes S7 again; the absent-height fallback `gears.DEFAULT_CYLINDER_HEIGHT_MM` follows (54 → 52, still decoupled from the card height). The 1 mm card-shelf barrel (54) is Embosser Version 2 only; the Version 1 `.scad` files keep the 52 mm barrel deliberately (Version 2's own OpenSCAD companion follows the 54 — see EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS.md §12 — and the gears BETA remains the one feature with no Version 2 OpenSCAD counterpart, D-V6). No gear number, gate, asset, or signed string changed; the row below records the one-day 54 state it supersedes. |

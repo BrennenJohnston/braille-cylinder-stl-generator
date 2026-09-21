@@ -143,8 +143,10 @@ Every cylinder carries a shallow **seam channel**: a groove 1 mm wide and 0.5 mm
 2. Set **Placement Mode** to **Auto Placement**
 3. Click **Show Expert Mode**, then click **Preview Braille Translation**
 4. In **Surface Dimensions**, adjust diameter and height for your container
-5. Click **Generate STL**, review the 3D preview, then **Download STL**
-6. Switch to **Universal Counter Plate** and download again
+5. Click **Generate STL** — it builds both cylinders — and review the 3D preview
+6. Click **Download STL**: one file with both cylinders, spaced for one print plate.
+   For a single cylinder, choose it under **Cylinders to Generate** (the first Expert
+   Mode submenu) before you generate.
 
 ### Capitalized Letters Toggle
 
@@ -170,6 +172,7 @@ Access these by clicking **Show Expert Mode**:
 
 | Submenu | Key Settings |
 |---------|--------------|
+| Cylinders to Generate | Both cylinders (the default), or Cylinder A or Cylinder B on its own |
 | Shape Selection | Output shape (cylinder), dot shape (cone/rounded) |
 | Braille Spacing | Cells per row, number of rows, spacing |
 | Surface Dimensions | Diameter, height, wall thickness, polygon sides |
@@ -215,16 +218,18 @@ Double-sided works for cylinders only. It is not available for flat cards.
    headings, **Front of Card** and **Back of Card**, with the braille for each. Read both
    before you generate anything.
 
-5. **Press Generate Both Cylinders (A and B).** One press builds the whole pair from the
-   settings you have dialled in — you do not switch plates and generate twice. A status line
-   reports progress as each cylinder is built.
+5. **Press Generate STL.** One press builds the whole pair from the settings you have
+   dialled in — you do not switch plates and generate twice. A status line reports progress
+   as each cylinder is built.
 
-6. **Save each file with its own button.** When the pair is ready, two buttons appear:
-   **Download Cylinder A** and **Download Cylinder B**. Press each one in turn.
+6. **Press Download STL.** It saves one file with both cylinders, spaced for one print
+   plate (`Cylinder_Pair_*.stl`). To save a cylinder on its own, choose it under
+   **Cylinders to Generate** in Expert Mode and generate again.
 
    **Nothing downloads on its own.** Two automatic downloads from one press made Chrome
    raise a "wants to download multiple files" prompt that names no file and is very hard to
-   get out of with a screen reader — so each cylinder now waits for you to ask for it.
+   get out of with a screen reader — so every file waits for you to ask for it, one press
+   each.
 
 7. **Print both cylinders**, the same way you would print a single one: standing upright,
    in the same material.
@@ -239,8 +244,9 @@ Both files are named from your **front** text.
 
 | File | What it is | What it carries |
 |------|-----------|-----------------|
-| `Cylinder_A_*.stl` | The embossing plate | The **front's** raised dots, plus one recess for every dot on the back, plus raised seam arrows |
-| `Cylinder_B_*.stl` | The counter plate | The **back's** raised dots, plus one recess for every dot on the front, plus recessed seam arrows |
+| `Cylinder_Pair_*.stl` | Both cylinders in one file (what Download STL saves by default) | Cylinder A and Cylinder B side by side, 10 mm apart, ready for one print plate |
+| `Cylinder_A_*.stl` | The embossing plate (choose Cylinder A under Cylinders to Generate) | The **front's** raised dots, plus one recess for every dot on the back, plus raised seam arrows |
+| `Cylinder_B_*.stl` | The counter plate (choose Cylinder B) | The **back's** raised dots, plus one recess for every dot on the front, plus recessed seam arrows |
 
 Every recess on one cylinder is paired one-to-one with a real dot on the other. Single-sided
 counter plates carry a recess at every possible dot position; a double-sided counter plate

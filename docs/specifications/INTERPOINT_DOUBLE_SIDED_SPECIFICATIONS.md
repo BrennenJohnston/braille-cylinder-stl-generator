@@ -771,17 +771,18 @@ STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md §8.
   direct payload; footprint dials stay deliberately absent — the interpoint budget
   leaves no safe adjustment room (§3).
 
-### 7.7 Pair mode is shared with the gears beta (2026-08-25)
+### 7.7 Pair mode is universal (2026-09-21; shared with gears since 2026-08-25)
 
-The Generate Both flow, the Cylinder A/B radio relabel, and the pair download row are no
-longer exclusive to this feature: they follow `isPairModeOn()` — `isDoubleSidedOn()` OR
-`isGearRollersOn()` OR `isVersion2()` (since 2026-09-20 all three read the Embosser setup
-radios; a gear set only works meshed with its counterpart, so a gears-only user needs the
-pair too). What stays double-sided-only: the back text, the tactile lock, the paired 1:1
-recesses, and the `Cylinder_A_`/`Cylinder_B_` FILENAMES — a gears-only pair run keeps the
-frozen `Embossing_Cylinder_Geared_*`/`Counter_Cylinder_Geared_*` names. A pair run now
-also builds a combined two-body file, offered first as `Cylinder_Pair_[Geared_]…` — full
-mechanics in STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md §6/§15.
+The pair run is no longer a mode at all: since 2026-09-21 (programme sub-plan E) **every
+press of Generate STL builds Cylinder A and Cylinder B** unless the first Expert Mode
+submenu, **Cylinders to Generate**, names one of them, and the ONE Download STL button
+saves the combined `Cylinder_Pair_[Geared_][V2_]…` file. `isPairModeOn()`, the Generate
+Both button, the Cylinder A/B radio relabel and the pair download row are retired (the A/B
+labels are static markup in that submenu). What stays double-sided-only is unchanged: the
+back text, the tactile lock, the paired 1:1 recesses, and the `Cylinder_A_`/`Cylinder_B_`
+FILENAMES — a single-sided run keeps the frozen `Embossing_Cylinder_*`/`Counter_Cylinder_*`
+names, with `Geared_` when gears are on. Full mechanics in
+STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md §6/§8/§15.
 
 ---
 
@@ -938,6 +939,7 @@ and separated**. Full record: the research folder's `00_PROJECT_MEMORY.md`, FD-8
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-09-21 | 1.15 | **Pair mode is universal (programme sub-plan E).** §7.7 rewritten: Generate STL builds both cylinders by default, Download STL saves the combined file, a single cylinder is chosen under Expert Mode → Cylinders to Generate; `isPairModeOn()`, Generate Both, the relabel and the pair download row retired. Filenames, wire shape, geometry and the double-sided-only rules untouched. |
 | 2026-09-20 | 1.14 | **Out of beta, into the Embosser setup menu (programme decisions D-7, D-8; phases C1-C4).** Overview and §7.1 rewritten: the "Double-Sided Card (BETA — for testing)" accordion and its `#double_sided_enabled` checkbox are retired; the choice is the **Card sides** radio group (`#card_sides_single` checked / `#card_sides_double`, DRAFT S-M6a/b, description DRAFT S-M7) inside the new `#embosser-setup-selection` item at the top of the form, read only through `isDoubleSidedOn()`. The Back of Card fieldset (`#back-entry-fieldset`, h2 legend) is always in the tree as a sibling of the front entry, native-`disabled` while single-sided and enabled by `updateDoubleSidedUI()`. The 2026-08-16 signed explanation stays visible minus its beta sentence; one composed, deferred announcement per change (DRAFT S-M11 plus the lock note, whose wording is now DRAFT S-M12: "Choose Single-sided to pick visual markers"). §7.5 and §7.7 updated (same persistence key; `isPairModeOn()` reads the three radios). Strings await Brennen's sign-off. |
 | 2026-08-31 | 1.13 | **§7.1 and §7.1's Back of Card block: the item becomes a collapsible menu, and the back gains the front's two-way translation** (Brennen's call). The whole Double-Sided item now opens and closes like an Expert Mode submenu — `#double-sided-menu-toggle` (a real `<h2>`'s sole-child button, APG accordion, reusing `.expert-submenu-*` so tokens, focus ring and behaviour cannot drift) over `#double-sided-menu`; the fieldset keeps the signed heading text as an sr-only legend. The beta being ON forces the menu open (`setDoubleSidedMenuOpen()`), so a reload with the beta persisted lands open; Reset closes it. The Back of Card entry gains `#back-translate-to-braille-btn`, the authoritative `#back-braille-unicode` field and `#back-translate-to-text-btn` — the front's machinery mirrored with separate `backBrailleField*` state, the shared `validateBrailleFieldLines()`, its own sr-only announcer `#back-braille-unicode-live` (the page's 7th permanent `role=status` node; liveRegions.spec pins the count), and the same authority rule: **a non-empty back field IS `back_lines`, padded to `grid_rows`, no liblouis pass; a generate-time problem blocks as `Back of card: …`.** Both back textareas join the front's themed CSS — `#back-text` had no themed rule at all and rendered white in dark mode. **Every 2026-08-16/17 signed string is byte-identical**; the new visible strings are the front's, verbatim, with the group name telling the sides apart. Toggle-off payload untouched (pinned); a new e2e pins the field-wins-on-the-wire contract and the menu contract. |
 | 2026-08-25 | 1.12 | **Pair mode is shared with the Integrated Gears beta** (new §7.7). Generate Both, the Cylinder A/B radio relabel (reuse confirmed by Brennen 2026-08-25), and the pair download row now follow `isPairModeOn()` — either beta. Double-sided keeps exclusively: back text, tactile lock, paired recesses, and the `Cylinder_A_`/`Cylinder_B_` filenames (gears-only runs keep the frozen Geared single-sided names). Pair runs also build a combined two-body `Cylinder_Pair_[Geared_]` file, offered first (mechanics in STL_EXPORT §6/§15); §8's is_watertight prohibition extends to it — it inherits Cylinder A's 3 pinch edges and contains two bodies by design. Wire shape, footprints, thresholds, geometry, and the toggle-off payload untouched. |

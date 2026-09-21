@@ -1,4 +1,4 @@
-# NVDA Walkthrough — Double-Sided Card (Beta)
+# NVDA Walkthrough — Double-Sided Card
 
 **Purpose:** a screen-reader pass over the whole double-sided beta flow, run by
 hand. This is the one check in the
@@ -91,9 +91,9 @@ radio groups, before the front text box).
 text box until you reach the Back of Card heading area.
 
 > **Expect:** you go straight from the front entry controls to the Select
-> Language combo box. You must **not** land on "Back of Card Text" or hear
-> "Generate Both Cylinders" — while the card is single-sided, the Back of Card
-> controls are **unavailable** (disabled) and Tab skips them. If you read the
+> Language combo box. You must **not** land on "Back of Card Text" — while the
+> card is single-sided, the Back of Card controls are **unavailable** (disabled)
+> and Tab skips them. If you read the
 > page with the arrow keys instead, you will find the "Back of Card — Enter Text
 > for Braille Translation" heading and its controls announced as "unavailable".
 
@@ -190,43 +190,50 @@ controls (many do not — that is correct behaviour and not a fail).
 
 ---
 
-## Part 5 — Cylinder A and Cylinder B
+## Part 5 — Cylinders to Generate (Expert Mode)
 
-**Step 13.** `Tab` forward to the Card Thickness radio group, then on to the
-"Select Plate to Generate" radio group.
+Since 2026-09-21 there is no plate selector in the main form: Generate STL builds
+**both** cylinders unless you choose one under Expert Mode. This part checks that
+choice reads correctly; Part 6 runs the default.
 
-> **Expect:** "Cylinder A — Embossing Plate, radio button, checked, 1 of 2",
-> then on `Down arrow`:
-> "Cylinder B — Universal Counter Plate, radio button, checked, 2 of 2"
+**Step 13.** `Tab` forward past the Card Thickness radio group and Reset to the
+"Show Expert Mode" button, press `Enter`, then `Tab` to the first submenu button and
+press `Enter`.
+
+> **Expect:** "Show Expert Mode, button, collapsed" → "expanded"; then
+> "Cylinders to Generate, button, collapsed" → after `Enter`, "expanded", and
+> a moment later focus lands on the first radio:
+> "Cylinders to Generate, grouping" … "Both Cylinder A and B, radio button,
+> checked, 1 of 3" with the description "Builds both cylinders and downloads
+> them as one file, spaced for one print plate."
 >
-> The names must say **Cylinder A** and **Cylinder B**. With the beta off these
-> same radios read "Embossing Plate" and "Universal Counter Plate" — you will
-> check that again in Part 8.
+> On `Down arrow`: "Cylinder A — Embossing Plate, radio button, checked, 2 of 3";
+> again: "Cylinder B — Universal Counter Plate, radio button, checked, 3 of 3".
+> The names must say **Cylinder A** and **Cylinder B** whatever the card-sides
+> choice — they are fixed now.
 
-**Step 14.** Press `Up arrow` to put the selection back on Cylinder A.
+**Step 14.** Press `Up arrow` twice to put the selection back on "Both Cylinder A
+and B", then `Shift+Tab` back to "Show Expert Mode" and press `Enter` to close it.
 
 ---
 
-## Part 6 — Generate Both Cylinders
+## Part 6 — Generate (both cylinders)
 
-**Step 15.** Press `Tab` repeatedly until you reach the bottom action buttons.
+**Step 15.** Press `Tab` repeatedly until you reach the bottom action button.
 
-> **Expect, in this order:**
-> 1. "Generate STL file from entered text, button"
-> 2. "Generate Both Cylinders (A and B), button"
->
-> There is also a **"Download STL"** button since 2026-08-18, but it belongs to
-> the single-plate flow and only exists after you have pressed Generate STL. If
-> you have not, it must not be in the tab order at all. It is not part of the
-> pair flow — the pair has its own Download Cylinder A and B buttons.
+> **Expect:** "Generate STL file from entered text, button" — and nothing else.
+> There is no "Generate Both Cylinders" button any more (2026-09-21): this one
+> button builds the pair. A **"Download STL"** button exists only after a
+> successful run; if you have not generated yet, it must not be in the tab
+> order at all.
 
-**Step 16.** With focus on "Generate Both Cylinders (A and B)", press `Space`.
+**Step 16.** With focus on "Generate STL file from entered text", press `Space`.
 
 > **Expect,** as the run proceeds, each announced on its own without you moving:
 > - "Generating Cylinder A (1 of 2)..."
 > - "Generating Cylinder B (2 of 2)..."
-> - "Both cylinders are ready. Use the Download Cylinder A and Download Cylinder
->   B buttons below to save them."
+> - "Both cylinders are ready. Use the Download STL button to save one file with
+>   both cylinders spaced for printing on one plate." (DRAFT S-E5, 2026-09-21)
 >
 > **Nothing downloads by itself, and no Save As dialog should appear yet.** Until
 > 2026-08-18 the run started both downloads on its own, which made Chrome ask
@@ -248,25 +255,24 @@ controls (many do not — that is correct behaviour and not a fail).
 
 **Step 17.** After the run finishes, check where your focus is.
 
-> **Expect:** still on "Generate Both Cylinders (A and B), button". Focus must
+> **Expect:** still on "Generate STL file from entered text, button". Focus must
 > not have jumped to the top of the page — losing your place after a long
 > operation is the single most disorienting thing a screen-reader user can hit.
 
-**Step 18.** Press `Tab` twice.
+**Step 18.** Press `Tab` once.
 
-> **Expect:**
-> - "Download Cylinder A, button"
-> - "Download Cylinder B, button"
+> **Expect:** "Download STL, button" — one button, and it was not there before
+> the run.
 
-**Step 19.** Press `Enter` on "Download Cylinder A", then `Tab` to "Download
-Cylinder B" and press `Enter` there too.
+**Step 19.** Press `Enter` on "Download STL".
 
-> **Expect:** your browser's normal download announcement each time — **one file
-> per press**, and no "Download multiple files" prompt at any point. Each button
-> stays where it is and keeps its name.
+> **Expect:** your browser's normal download announcement — **one file, named
+> `Cylinder_Pair_…`, for one press**, and no "Download multiple files" prompt at
+> any point. The button stays where it is and keeps its name.
 >
-> Both presses are needed: since 2026-08-18 this is the only way the files are
-> saved, and a Cylinder A without its matching B cannot emboss a card.
+> If instead you hear "The combined file could not be built. Download STL now
+> saves Cylinder A; press it again for Cylinder B." (DRAFT S-E6), press it twice
+> and expect one file each time. Write down which of the two you heard.
 
 ---
 
@@ -316,20 +322,17 @@ Back of Card section.
 > **Expect:** "Visual markers, radio button, checked, 1 of 2" — selectable again,
 > **not** "unavailable", and the "Locked:" note is no longer read with it.
 
-**Step 26.** `Tab` to the "Select Plate to Generate" group.
+**Step 26.** `Tab` on past Card Thickness and Reset.
 
-> **Expect:** "Embossing Plate, radio button" and "Universal Counter Plate,
-> radio button" — the Cylinder A / Cylinder B names must be **gone**.
+> **Expect:** no plate radio group anywhere in the main form (it lives under
+> Expert Mode → Cylinders to Generate since 2026-09-21, and its names are
+> Cylinder A / Cylinder B whatever the card-sides choice).
 
 **Step 27.** `Tab` to the bottom buttons.
 
-> **Expect:** only "Generate STL file from entered text, button". The
-> "Generate Both Cylinders" and both "Download Cylinder" buttons must have
-> disappeared from the tab order completely.
->
-> A "Download STL" button here is **not** a failure if you pressed Generate STL
-> earlier in this session — that one belongs to the single-plate flow. It should
-> disappear as soon as you change any setting.
+> **Expect:** only "Generate STL file from entered text, button". No "Download
+> STL" button: choosing Single-sided changed a setting, and that hides the file
+> from the previous run. Generate again if you want to hear it come back.
 
 ---
 
@@ -399,3 +402,4 @@ Anything NVDA said that I did not expect at all:
 | 1.2 | 2026-08-18 | Corrected step 1 after the first real run: NVDA announces the skip link role-first ("same page link, Skip to main content"), not "Skip to main content, link" as v1.0 predicted, and the link is invisible until focused. Added a general note that role/name order varies and is not a fail. Step 16 now calls out message 1 as the regression-sensitive one, after the live-region defect it exposed was fixed (see UI Interface Core Specifications §4.10). |
 | 1.3 | 2026-08-18 | Updated after the first run of Parts 2-3. Step 16's third message reworded and a check added that **nothing downloads by itself**: the old automatic pair download made Chrome ask "wants to: Download multiple files", a prompt that names no file and cycles Close/Allow/Block on every Tab, and the run ended in "Download blocked" with neither cylinder saved. Step 19 now presses both download buttons, since that is the only way files are saved. Steps 4 and 8 confirmed passing - the lock note and the back-of-card warning both spoke for the first time. |
 | 1.4 | 2026-08-18 | Steps 15 and 27 note the new single-plate "Download STL" button, which is separate from the pair's Download Cylinder A/B and only exists after a single-plate generation. `#action-btn` no longer renames itself into a download control mid-focus. |
+| 1.5 | 2026-09-21 | **One Generate, one Download (programme sub-plan E, 2026-09-21; NOT yet run).** Part 5 now checks the "Cylinders to Generate" radios inside Expert Mode (three options, both first, fixed A/B names); Part 6 runs the pair from the one Generate STL button and saves the combined file from the one Download STL button (DRAFT S-E5 / S-E6 expected wording); step 3 and steps 26–27 no longer expect the removed buttons or the main-form plate group. The "(Beta)" left in the title on 2026-09-20 dropped (D-7). |
