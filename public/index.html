@@ -4102,6 +4102,39 @@
                                       </div>
                                   </div>
 
+                                  <!-- Slicer seam channel (2026-09-20 programme, sub-plan A).
+                                       ON by default (decision D-2): every cylinder gets the
+                                       groove, and NOTHING is added to the request while it is
+                                       on, so an untouched request body stays byte-identical to
+                                       the pre-channel one; only OFF sends seam_channel_enabled: 0.
+                                       The groove's size is print-tuned and lives in
+                                       app/geometry_spec.py (SEAM_CHANNEL_*), not in a dial.
+                                       S-C1 (legend, label and note) is DRAFT - FLAGGED FOR
+                                       BRENNEN. The note is 19 words, under the Step 6.8
+                                       ceiling, and is the checkbox's only description. -->
+                                  <div class="grade-selection" id="seam-channel-selection">
+                                      <fieldset>
+                                          <legend class="grade-label" style="font-size: 1.2em; font-weight: 700;">Slicer Seam Channel</legend>
+                                          <label class="radio-option ds-toggle-option" for="seam_channel_enabled">
+                                              <input type="checkbox" id="seam_channel_enabled" checked
+                                                     aria-describedby="seam-channel-note">
+                                              <span class="radio-text">Slicer seam channel</span>
+                                          </label>
+                                          <div class="grade-note" id="seam-channel-note" style="margin-top: 6px; font-size: 0.85em;">A shallow groove beside the row markers where the slicer hides its layer seam, keeping it off the dots.</div>
+                                          <!-- S-C2 / S-C3 (DRAFT): the server leaves the groove
+                                               out when it does not fit, and says so in the
+                                               spec's warnings; this box says the same words
+                                               BEFORE Generate, computed from the same dials.
+                                               Announced through #a11y-status on the
+                                               hidden-to-shown edge, never from a live region
+                                               of its own (see #tactile-gap-warning). -->
+                                          <div id="seam-channel-warning" class="grade-note inline-warning"
+                                               style="margin-top: 0.6em; display: none;">
+                                              <strong>Note:</strong> <span id="seam-channel-message"></span>
+                                          </div>
+                                      </fieldset>
+                                  </div>
+
                                   <!-- Embosser Version 2 keyed cutouts. Hidden in Version 1,
                                        revealed by updateEmbosserVersionUI(). The dial is
                                        bounded AT THE SOURCE (min/max/step here, not in the
@@ -7521,6 +7554,113 @@
         });
 
         // ---------------------------------------------------------------------
+        // Slicer seam channel (2026-09-20 programme, sub-plan A)
+        // ---------------------------------------------------------------------
+        // A shallow V-groove the full height of the barrel, inside the seam gap
+        // beside the row-indicator column, so a slicer's default "aligned" seam
+        // mode hides every layer's seam there instead of in a dot. ON by default
+        // (decision D-2); the switch is the only thing that turns it off. The
+        // numbers MIRROR app/geometry_spec.py SEAM_CHANNEL_* and its fit rules
+        // (a smoke test diffs them), and the two sentences are the server's own,
+        // word for word, so a user never meets two spellings of one limit.
+        const SEAM_CHANNEL_WIDTH_MM = 1.0;
+        const SEAM_CHANNEL_DEPTH_MM = 0.5;
+        const SEAM_CHANNEL_MARGIN_MM = 0.25;
+        const SEAM_CHANNEL_MIN_WALL_MM = 1.2;
+        // The request never carries a wall thickness, so a barrel without a
+        // polygonal cutout is hollowed by the backend's 2 mm default.
+        const SEAM_CHANNEL_DEFAULT_WALL_MM = 2.0;
+
+        function isSeamChannelOn() {
+            return !!document.getElementById('seam_channel_enabled')?.checked;
+        }
+
+        // Arc from a cell centre to the far edge of its widest dot or recess:
+        // app/geometry_spec.py _seam_channel_footprint, dial for dial.
+        function seamChannelFootprintMm() {
+            const dotSpacing = parseFloat(document.getElementById('dot_spacing')?.value);
+            let widest;
+            if (document.getElementById('double_sided_enabled')?.checked) {
+                const ds = activeDsFootprints();
+                widest = Math.max(ds.ds_dot_base_diameter, ds.ds_bowl_base_diameter);
+            } else {
+                const rounded = document.querySelector('input[name="dot_shape"]:checked')?.value !== 'cone';
+                const emboss = parseFloat(document.getElementById(
+                    rounded ? 'rounded_dot_base_diameter' : 'emboss_dot_base_diameter')?.value);
+                const cone = document.querySelector('input[name="recess_shape"]:checked')?.value === '2';
+                const recess = parseFloat(document.getElementById(
+                    cone ? 'cone_counter_dot_base_diameter' : 'bowl_counter_dot_base_diameter')?.value);
+                widest = Math.max(emboss, recess);
+            }
+            return dotSpacing / 2 + widest / 2;
+        }
+
+        // Says, before Generate, when the server will leave the groove out.
+        // Hidden-to-shown announcement gate, same reason as checkPhysicalFitNow.
+        function updateSeamChannelUI() {
+            const warning = document.getElementById('seam-channel-warning');
+            const message = document.getElementById('seam-channel-message');
+            if (!warning || !message) return;
+            const wasHidden = warning.style.display === 'none';
+
+            let text = '';
+            if (isSeamChannelOn()) {
+                const diameter = parseFloat(document.getElementById('cylinder_diameter_mm')?.value);
+                const cellSpacing = parseFloat(document.getElementById('cell_spacing')?.value);
+                const dotSpacing = parseFloat(document.getElementById('dot_spacing')?.value);
+                const totalColumns = getAvailableColumns() + getReservedMarkerColumns();
+                const footprint = seamChannelFootprintMm();
+                const gap = Math.PI * diameter - (totalColumns - 1) * cellSpacing;
+                let lo;
+                let hi;
+                if (isTactileIndicatorOn()) {
+                    const arrowHalf = parseFloat(document.getElementById('tactile_indicator_width')?.value) / 2
+                        + parseFloat(document.getElementById('tactile_recess_clearance')?.value);
+                    lo = arrowHalf;
+                    hi = gap / 2 - footprint;
+                } else {
+                    lo = -(gap / 2 - footprint);
+                    hi = gap / 2 - dotSpacing / 2;
+                }
+                const free = hi - lo;
+                const need = SEAM_CHANNEL_WIDTH_MM + 2 * SEAM_CHANNEL_MARGIN_MM;
+
+                // A dial that is empty or mid-edit gives NaN; the box stays
+                // quiet rather than guessing, and the server has the last word.
+                if (Number.isFinite(free)) {
+                    /* S-C2 and S-C3, DRAFT (2026-09-20 programme, phase A2) -
+                       FLAGGED FOR BRENNEN. Byte-for-byte the server's sentences. */
+                    if (free < need) {
+                        text = 'The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.';
+                    } else if (!isVersion2() && !isGearRollersOn()) {
+                        const radius = diameter / 2;
+                        const cutoutRadius = parseFloat(document.getElementById('cylinder_polygonal_cutout_radius_mm')?.value);
+                        const sides = parseInt(document.getElementById('cylinder_polygonal_cutout_sides')?.value, 10);
+                        const bore = (cutoutRadius > 0 && sides >= 3)
+                            ? cutoutRadius / Math.cos(Math.PI / sides)
+                            : radius - SEAM_CHANNEL_DEFAULT_WALL_MM;
+                        if (bore > 0 && radius - SEAM_CHANNEL_DEPTH_MM - bore < SEAM_CHANNEL_MIN_WALL_MM) {
+                            text = `The seam channel was left out: the cylinder wall would be thinner than ${SEAM_CHANNEL_MIN_WALL_MM.toFixed(1)} mm under it.`;
+                        }
+                    }
+                }
+            }
+
+            warning.style.display = text ? 'block' : 'none';
+            message.textContent = text;
+            if (text) {
+                if (wasHidden) announceStatus('seam-channel', text);
+            } else {
+                announceStatus('seam-channel', '');
+            }
+        }
+
+        document.getElementById('seam_channel_enabled')?.addEventListener('change', () => {
+            updateSeamChannelUI();
+            resetToGenerateState();
+        });
+
+        // ---------------------------------------------------------------------
         // Embosser Version 2 (keyed gear pegs) PROTOTYPE
         // ---------------------------------------------------------------------
         // A Version 2 cylinder is keyed at both ends instead of bored through,
@@ -7888,6 +8028,7 @@
             // Version 2 sentence is the one left in the live region - in
             // Version 2 the gear toggle is off, so its own call writes ''.
             updateVersion2SizeWarning();
+            updateSeamChannelUI();
             updateCapsWarning();
             updateBrailleFieldStatus();
             updateBackBrailleFieldStatus();
@@ -7998,6 +8139,7 @@
                 'braille_prefs_double_sided_enabled',
                 'braille_prefs_back_text',
                 'braille_prefs_gear_rollers_enabled',
+                'braille_prefs_seam_channel_enabled',
                 'braille_prefs_embosser_version',
                 'braille_prefs_v2_key_clearance_mm'
             ];
@@ -8104,6 +8246,12 @@
             const gearToggleEl = document.getElementById('gear_rollers_enabled');
             if (gearToggleEl && (savedGearRollers === '1' || savedGearRollers === '0')) {
                 gearToggleEl.checked = savedGearRollers === '1';
+            }
+            // Seam channel: nothing saved means the default, ON.
+            const savedSeamChannel = readPersisted('braille_prefs_seam_channel_enabled');
+            const seamChannelEl = document.getElementById('seam_channel_enabled');
+            if (seamChannelEl && (savedSeamChannel === '1' || savedSeamChannel === '0')) {
+                seamChannelEl.checked = savedSeamChannel === '1';
             }
             const savedBackText = readPersisted('braille_prefs_back_text');
             const backTextEl = document.getElementById('back-text');
@@ -8284,6 +8432,10 @@
             if (gearToggle) {
                 gearToggle.addEventListener('change', () => persistValue('braille_prefs_gear_rollers_enabled', gearToggle.checked ? '1' : '0'));
             }
+            const seamChannelToggle = document.getElementById('seam_channel_enabled');
+            if (seamChannelToggle) {
+                seamChannelToggle.addEventListener('change', () => persistValue('braille_prefs_seam_channel_enabled', seamChannelToggle.checked ? '1' : '0'));
+            }
             const backText = document.getElementById('back-text');
             if (backText) {
                 backText.addEventListener('input', () => {
@@ -8367,6 +8519,9 @@
                 setDoubleSidedMenuOpen(false);
                 const gearToggleReset = document.getElementById('gear_rollers_enabled');
                 if (gearToggleReset) gearToggleReset.checked = false;
+                // Seam channel back to its default: on.
+                const seamChannelReset = document.getElementById('seam_channel_enabled');
+                if (seamChannelReset) seamChannelReset.checked = true;
                 // Embosser version back to 1. The radio sweep above already
                 // did that (Version 1 is defaultChecked) and the input sweep
                 // put the clearance dial back to 0.110, so all that is left is
@@ -9857,6 +10012,13 @@
             // gear geometry has no dials to send: it is vendored 1:1 sample data.
             if (gearRollersOn) {
                 settings.gear_rollers_enabled = 1;
+            }
+
+            // Slicer seam channel: ON is the default and adds NOTHING, so an
+            // untouched request body stays byte-identical to the pre-channel
+            // one; only the Expert Mode switch OFF sends the flag.
+            if (!isSeamChannelOn()) {
+                settings.seam_channel_enabled = 0;
             }
 
             // Embosser Version 2 (keyed gear pegs) PROTOTYPE: two flat fields,
@@ -11458,6 +11620,8 @@
                             <li><strong>Print orientation:</strong> Print cylinders standing upright for best dot quality</li>
                             <li><strong>Test fit:</strong> Print a small section first to verify the diameter matches your container</li>
                             <li><strong>Seam placement:</strong> Rotate the seam to the back or between words</li>
+                            <!-- S-C4, DRAFT (2026-09-20 programme, phase A4) - FLAGGED FOR BRENNEN. -->
+                            <li><strong>Slicer seam:</strong> Every cylinder carries a shallow seam channel beside the row markers. Slicers hide the layer seam in it, so no seam painting is needed. Turn it off in Expert Mode if you want a plain surface.</li>
                         </ul>
 
                         <p><button type="button" class="btn-link" onclick="window.switchHelpTab('tab-formatting')">Formatting tips for cylinder text →</button></p>
@@ -11601,7 +11765,7 @@
                                 </tr>
                                 <tr>
                                     <td><strong>Surface Dimensions</strong></td>
-                                    <td>Cylinder diameter, height, polygonal cutout, and seam offset</td>
+                                    <td>Cylinder diameter, height, polygonal cutout, seam offset, and the slicer seam channel switch</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Tactile Indicator Dimensions</strong></td>

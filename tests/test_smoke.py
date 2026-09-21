@@ -796,6 +796,45 @@ def test_schema_and_models_agree_on_seam_channel():
         CardSettings(seam_channel_enabled='on')
 
 
+def test_ui_seam_channel_numbers_and_sentences_match_the_geometry_module():
+    """
+    public/index.html computes the seam channel's fit live, before Generate,
+    from the same numbers app/geometry_spec.py owns, and shows the server's two
+    omission sentences word for word. Cross-file drift is this project's #1
+    historical bug source, so the copies are diffed here rather than trusted.
+    """
+    import re
+    from pathlib import Path
+
+    from app import geometry_spec
+
+    root = Path(__file__).resolve().parents[1]
+    html = (root / 'public' / 'index.html').read_text(encoding='utf-8')
+    module = (root / 'app' / 'geometry_spec.py').read_text(encoding='utf-8')
+
+    for name in (
+        'SEAM_CHANNEL_WIDTH_MM',
+        'SEAM_CHANNEL_DEPTH_MM',
+        'SEAM_CHANNEL_MARGIN_MM',
+        'SEAM_CHANNEL_MIN_WALL_MM',
+    ):
+        match = re.search(rf'const {name} = ([0-9.]+);', html)
+        assert match, f'{name} not found in public/index.html'
+        assert float(match.group(1)) == getattr(geometry_spec, name), f'{name} differs between the UI and the module'
+
+    # The switch ships CHECKED: on is the default in the markup, the schema and
+    # the model alike, and the wire sends the flag only when it is off.
+    assert re.search(r'<input type="checkbox" id="seam_channel_enabled" checked', html)
+    assert 'settings.seam_channel_enabled = 0;' in html
+    assert 'settings.seam_channel_enabled = 1' not in html
+
+    gap_sentence = 'The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.'
+    wall_sentence = 'The seam channel was left out: the cylinder wall would be thinner than '
+    for sentence in (gap_sentence, wall_sentence):
+        assert sentence in html, f'UI is missing the sentence: {sentence}'
+        assert sentence in module, f'geometry_spec is missing the sentence: {sentence}'
+
+
 # =============================================================================
 # PR-8: braille_to_dots() Strict Mode Tests (Defense-in-Depth)
 # =============================================================================
