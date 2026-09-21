@@ -22,6 +22,14 @@ still in the repo but disabled in the UI. See
 already ship as their own tool:
 [braille-wedge-card-openscad](https://github.com/BrennenJohnston/braille-wedge-card-openscad).
 
+### Slicer seam channel
+
+Every cylinder carries a shallow groove (1 mm wide, 0.5 mm deep) the full height of its
+outside, beside the row markers. A slicer's default "Aligned" seam mode hides each layer's
+seam in that groove instead of in a braille dot, so no seam painting is needed; leave the
+seam mode on Aligned. It can be turned off under Expert Mode → Surface Dimensions. Details
+in [SURFACE_DIMENSIONS_SPECIFICATIONS.md](docs/specifications/SURFACE_DIMENSIONS_SPECIFICATIONS.md#26-slicer-seam-channel).
+
 ### Double-sided cards (beta)
 
 Turning on **Double-Sided Card (BETA — for testing)** makes the app generate a matched

@@ -207,6 +207,49 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      named "v7" - that is the gear body's version, not the peg's. No v7 PEG
      ever enters an R14 hole.
 
+6e. Slicer seam channel (2026-09-20, sub-plan A of the 2026-09-20 programme;
+   decisions D-1, D-2, D-13, D-14, D-15) - every cylinder, both plates, ON by
+   default, and the only feature whose DEFAULT changes geometry:
+   - A V-groove 1.0 wide x 0.5 deep (90 degrees) the full height of the OUTER
+     surface, in the seam gap beside the row-indicator column, so a slicer's
+     default "aligned" seam mode hides each layer's seam in it instead of in a
+     dot. Measured in the 2026-09-20 slicing spike (scripts/seam_spike.py):
+     100 % capture on both visual plates and the tactile counter plate, 90.8 %
+     on the tactile emboss plate with the rest on the arrow tips, never a dot.
+     "Back"/"rear" seam mode is unsafe for the emboss plate by geometry, so
+     there is NO export rotation - the guide tells such users to switch to
+     Aligned.
+   - Size is NOT a dial. app/geometry_spec.py owns SEAM_CHANNEL_WIDTH_MM 1.0,
+     DEPTH 0.5, MARGIN 0.25, OVERSHOOT 1.0, LIP 0.5, MIN_WALL 1.2; index.html
+     mirrors four of them and both omission sentences (a smoke test diffs
+     them). Changing the groove needs Brennen's decision AND a new spike.
+   - Flat name seam_channel_enabled (schema seam_channel.enabled, default
+     true / 1); absent means ON. The Expert Mode switch #seam_channel_enabled
+     (Surface Dimensions) is the ONLY thing that sends seam_channel_enabled: 0,
+     and ON adds NOTHING to the request body - an untouched body is
+     byte-identical to a pre-channel one (pinned against the captured
+     tests/e2e/fixtures/*.request.json). Switch OFF reproduces the pre-channel
+     STL byte for byte (tests/e2e/fixtures/*_before_seam_channel.stl).
+   - Placement: signed arc s from the seam centre toward column 0; the free
+     window is what the last cell's dots and column 0's triangle (visual) or
+     the arrow recess and the first cell's dots (tactile) leave of the gap,
+     groove at its middle; theta = pi -/+ s_c/R (positive/negative), so
+     theta_A + theta_B = 2 pi. theta is in the DOT convention: the worker
+     negates EVERY theta it places (dots, markers, channel alike) - never
+     treat this angle differently from a dot's. In the STL the default
+     15-column visual layout has the groove at 181.67 deg (A) / 178.33 (B).
+   - Left out, with a warning (DRAFT S-C2 / S-C3), when the free window is
+     under 1.5 mm or the wall under the apex is under 1.2 mm (polygon
+     circumradius, or wall_thickness - depth for a barrel with no cutout;
+     solid barrels - gears, Version 2 - skip the wall rule). 15 columns tactile
+     never fits; 14 tactile and 15 visual do at 30.8.
+   - CSG order: the groove is cut from the BARE outer cylinder before the bore,
+     the keyed pockets or anything unioned, in both the worker
+     (createSeamChannelManifold) and tests/test_golden.py
+     (_seam_channel_cutter); all six golden pairs regenerated once on
+     2026-09-20 (+8 triangles each, bounds unchanged).
+   - Cards never get one.
+
 ## Settings changes — order of operations
 7. settings.schema.json is the single source of truth. When adding or changing
    any parameter/default: update settings.schema.json FIRST, then

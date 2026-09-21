@@ -710,6 +710,16 @@ if (isCylinder) {
 }
 ```
 
+**Slicer seam channel (2026-09-20):** the groove every cylinder carries sits at
+the spec's `cylinder.seam_channel.theta`, placed by the Manifold worker at
+`-theta` exactly as every dot and marker is; there is NO extra export rotation
+(programme decision D-14 — "rear" seam mode cannot be made safe for the
+embossing plate by any orientation, so exports keep the orientation above and
+the guide tells Back-mode users to switch to Aligned). In the file the groove
+is at 181.67° on the embossing plate and 178.33° on the counter plate for the
+default 15-column visual layout. Geometry and rules:
+SURFACE_DIMENSIONS_SPECIFICATIONS.md §2.6.
+
 ### Combined Pair File (Two-Body Concatenation)
 
 **Source:** `combineBinaryStl(bufA, bufB, xOffsetMm)` in `public/index.html`
@@ -1623,6 +1633,7 @@ idle. After a pair run the action button always reads "Generate STL".
 | 1.5 | 2026-08-16 | **DOUBLE-SIDED NAMING (Phase 09):** When the Double-Sided Card beta is on, downloads are named `Cylinder_A_{preset}_{name}` (positive) / `Cylinder_B_{preset}_{name}` (negative); both take `{name}` from the front text. Single-sided names unchanged. Updated Section 7; covered by tests/e2e/doubleSided.spec.ts. |
 | 2.1 | 2026-08-25 | **§7 listing synced to the shipped 3-argument `buildStlFilename`** on Brennen's direction, resolving the KNOWN DRIFT flag v2.0 raised the same day: the listing now shows the `geared` parameter and the D-5 `Geared_` segment rule; the flag note is removed. Documentation only — no code changed. |
 | 2.0 | 2026-08-25 | **PAIR MODE + COMBINED DOWNLOAD.** Section 15 widened from the double-sided beta to `isPairModeOn()` (either beta — gears-only users need the meshed pair too); §6 gains the *Combined Pair File* subsection (client-side two-body concatenation, DataView-only access, barrel-based 40.8 mm centre offset chosen by Brennen, throw-don't-fallback dial read); §7 gains the `Cylinder_Pair_[Geared_]` name (signed 2026-08-25), the gears-only frozen-names rule, and a **KNOWN DRIFT flag** on the 2-arg `buildStlFilename` listing (code is 3-arg with `geared`; kept pending Brennen's direction); §15 run sequence gains the eager combine + two-body preview step and the new signed completion sentence (PAIR_READY pin updated in the same commit); §8 cross-references the three pair download buttons. The combined file contains TWO bodies by design — never assert watertightness on it. |
+| 2.2 | 2026-09-20 | **Slicer seam channel — no export rotation.** §6 Coordinate System gains one paragraph: the groove every cylinder now carries (SURFACE_DIMENSIONS_SPECIFICATIONS.md §2.6) is placed by the worker at `-theta` like every dot, exports keep their orientation (programme decision D-14), and the in-file angles for the default layout are recorded. Documentation only. |
 | 1.9 | 2026-08-21 | **Documentation only — no behavior change.** Removed the last `templates/index.html` citations (that folder is empty and deprecated). The Source Priority list now names one frontend file; the two `// From templates/index.html - NO FALLBACK` code comments now name `public/index.html`; and Section 4's Worker Initialization source now points at the CSG worker setup inside the `window` `load` handler, flagging the `initCSGWorker()` snippet as illustrative because no function of that name exists in the real code. Part of the templates/ reference sweep (Phase 07b). |
 
 ---
