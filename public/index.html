@@ -3691,7 +3691,7 @@
                                    whether or not the box is visible - that wiring is unaffected. -->
                               <div id="indicator-mode-lock-note" class="grade-note"
                                    style="margin-top: 6px; font-size: 0.85em; display: none;">
-                                  <strong>Locked:</strong> Double-Sided Card is on, so the Row Indicator Style stays on the tactile seam arrow — both cylinders of a double-sided pair need it. Turn the beta off to choose visual markers.
+                                  <strong>Locked:</strong> Double-sided is on, so the Row Indicator Style stays on the tactile seam arrow — both cylinders of a double-sided pair need it. Choose Single-sided to pick visual markers.
                               </div>
                               <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
                                   <strong>Tactile</strong> lets a blind user find the alignment point and tell which end is up by touch: the arrow is one continuous wedge, nothing like a braille dot, and raised-versus-recessed tells you which cylinder you are holding. It also frees the marker cells for text. Both plates of a pair must use the same style. Its dimensions live in the <strong>Tactile Indicator Dimensions</strong> submenu of Expert Mode.
@@ -5434,7 +5434,7 @@
                rather than as a second write to the one live region. */
             announceStatus('stl-ready',
                 (lastGenerationUsedGears ? 'Cylinder generated with integrated gears. ' : '')
-                + (lastGenerationUsedV2 ? 'Cylinder generated for the Version 2 embosser (prototype). ' : '')
+                + (lastGenerationUsedV2 ? 'Cylinder generated for the Version 2 embosser. ' : '')
                 + 'Your STL file is ready. Use the Download STL button to save it.'
                 + outstandingWarningSuffix());
         }
@@ -6984,7 +6984,7 @@
 
         // Live same-surface crowding warning for the double-sided beta,
         // recomputed with the seam-gap warning on every form change. Hidden
-        // whenever the #double_sided_enabled toggle is off. The offset dial
+        // whenever the card is single-sided. The offset dial
         // ids are the flat CardSettings names; absent dials fall back to the
         // 1.25/1.25 mm defaults. The footprints come from the preset package
         // above - so on the 0.4 preset this warning shows whenever the beta
@@ -7010,8 +7010,7 @@
             const warningMsg = document.getElementById('ds-gap-message');
             if (!warningDiv || !warningMsg) return;
 
-            const toggle = document.getElementById('double_sided_enabled');
-            if (!toggle || !toggle.checked) {
+            if (!isDoubleSidedOn()) {
                 warningDiv.style.display = 'none';
                 announceDsGap('');
                 return;
@@ -7346,37 +7345,19 @@
             return { ...entry, el, original: el ? el.textContent : '' };
         }).filter(entry => entry.el);
 
-        // Opens or closes the Double-Sided menu chrome without touching focus.
-        // A user's own click goes through initExpertSubmenus(), which also
-        // moves focus; this exists for the code paths that must not - the
-        // load-time restore, updateDoubleSidedUI()'s on-state guarantee, and
-        // Reset - so it writes the same four things and nothing else.
-        function setDoubleSidedMenuOpen(open) {
-            const toggleBtn = document.getElementById('double-sided-menu-toggle');
-            const menu = document.getElementById('double-sided-menu');
-            if (!toggleBtn || !menu) return;
-            menu.style.display = open ? 'block' : 'none';
-            toggleBtn.setAttribute('aria-expanded', String(open));
-            toggleBtn.classList.toggle('active', open);
-            const icon = toggleBtn.querySelector('.expert-submenu-icon');
-            if (icon) icon.textContent = open ? '▲' : '▼';
-        }
-
+        // Deliberately silent, like updatePairModeUI: the card-sides change
+        // listener makes the one announcement, and the load-time restore must
+        // make none at all.
         function updateDoubleSidedUI() {
-            const toggle = document.getElementById('double_sided_enabled');
-            if (!toggle) return;
-            const on = !!toggle.checked;
+            const on = isDoubleSidedOn();
 
-            // The beta being on means the Back of Card section is showing, and
-            // a showing section must never sit inside a closed menu - this is
-            // what re-opens the menu on a reload with the beta persisted on.
-            // Turning the beta OFF deliberately leaves the menu open: the user
-            // is still looking at the toggle they just pressed.
-            if (on) setDoubleSidedMenuOpen(true);
-
-            const section = document.getElementById('double-sided-section');
-            if (section) section.style.display = on ? '' : 'none';
-            toggle.setAttribute('aria-expanded', String(on));
+            // The Back of Card section is always in the tree (2026-09-20, the
+            // Embosser setup menu): DISABLED with the native attribute while the
+            // card is single-sided - every control inside is inert and read as
+            // unavailable - and enabled here when Double-sided is chosen. Never
+            // hidden, so it can never sit inside a closed menu again.
+            const backEntry = document.getElementById('back-entry-fieldset');
+            if (backEntry) backEntry.disabled = !on;
 
             updatePairModeUI();
 
@@ -7407,26 +7388,38 @@
             const lockNote = document.getElementById('indicator-mode-lock-note');
             if (lockNote) {
                 lockNote.style.display = on ? 'block' : 'none';
-                // Static text, shown once - so unlike the other boxes it never
-                // gets a second in-place write to fall back on, and without
-                // this it is silent every single time.
-                //
-                // Deferred by a tick on purpose. Writing it here, synchronously
-                // inside the change handler, queues this whole sentence ahead of
-                // the checkbox's own "checked, expanded" - so the user waits out
-                // 30 words before hearing whether the box they just pressed is
-                // even ticked. Letting the current task finish first puts the
-                // control's own state back in front.
-                const lockMessage = on
-                    ? lockNote.textContent.replace(/\s+/g, ' ').trim()
-                    : '';
-                setTimeout(() => announceStatus('indicator-mode-lock-note', lockMessage), 0);
+                // Not announced from here: the card-sides change listener reads
+                // this note into its ONE composed announcement, and the other
+                // callers (load restore, reset) are silent by design.
             }
         }
 
-        document.getElementById('double_sided_enabled')?.addEventListener('change', () => {
-            updateDoubleSidedUI();
-            resetToGenerateState();
+        /** The visible lock note's text, for the card-sides announcement. */
+        function indicatorLockMessage() {
+            const lockNote = document.getElementById('indicator-mode-lock-note');
+            return lockNote ? lockNote.textContent.replace(/\s+/g, ' ').trim() : '';
+        }
+
+        // Card sides: one change, ONE announcement (ADA SOP Section 12, C9):
+        // the choice sentence plus, when turning double-sided on, the lock
+        // note that says why the Row Indicator Style just moved. Deferred by
+        // a tick on purpose - written synchronously it would queue ahead of
+        // the radio's own "selected", so the user would wait out the whole
+        // sentence before hearing whether the option they pressed took.
+        document.querySelectorAll('input[name="card_sides"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                updateDoubleSidedUI();
+                const on = isDoubleSidedOn();
+                persistValue('braille_prefs_double_sided_enabled', on ? '1' : '0');
+                resetToGenerateState();
+                refreshLiveWarnings();
+                /* S-M11, DRAFT (2026-09-20 programme, phase C2) - FLAGGED FOR BRENNEN. */
+                const choice = on
+                    ? 'Double-sided card selected. The Back of Card section is now active.'
+                    : 'Single-sided card selected.';
+                const message = on ? `${choice} ${indicatorLockMessage()}` : choice;
+                setTimeout(() => announceStatus('embosser-setup', message), 0);
+            });
         });
 
         // ---------------------------------------------------------------------
@@ -7443,8 +7436,16 @@
         const GEAR_BARREL_HEIGHT_MM = 52.0;
         const GEAR_BARREL_TOLERANCE_MM = 0.001;
 
+        // The Embosser setup menu item (2026-09-20 programme, sub-plan C):
+        // the gear and card-sides choices are either/or radios, read here and
+        // nowhere else, so the wire, the pair flow and the live warnings all
+        // follow one predicate each.
         function isGearRollersOn() {
-            return !!document.getElementById('gear_rollers_enabled')?.checked;
+            return !!document.getElementById('gear_mode_fixed')?.checked;
+        }
+
+        function isDoubleSidedOn() {
+            return !!document.getElementById('card_sides_double')?.checked;
         }
 
         // Either beta produces a Cylinder A / Cylinder B pair: double-sided
@@ -7457,7 +7458,7 @@
         // that put the gears-only flow into pair mode on 2026-08-25. It
         // reuses the signed Cylinder A / Cylinder B labels; no new strings.
         function isPairModeOn() {
-            return !!document.getElementById('double_sided_enabled')?.checked
+            return isDoubleSidedOn()
                 || isGearRollersOn()
                 || isVersion2();
         }
@@ -7521,14 +7522,31 @@
             // can apply at once - an off-size cylinder that also has a cutout -
             // and announceStatus writes a single region, so announcing them
             // separately would let the second silently replace the first.
-            announceStatus('gear-rollers', [cutoutText, sizeText].filter(Boolean).join(' '));
+            const notes = [cutoutText, sizeText].filter(Boolean).join(' ');
+            announceStatus('gear-rollers', notes);
 
             updatePairModeUI();
+            return notes;
         }
 
-        document.getElementById('gear_rollers_enabled')?.addEventListener('change', () => {
-            updateGearRollersUI();
-            resetToGenerateState();
+        // Gears: one change, one announcement. The choice sentence and any note
+        // updateGearRollersUI() raised (S3, S7) travel in ONE write, so an
+        // off-size warning is heard rather than overwritten.
+        document.querySelectorAll('input[name="gear_mode"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                const notes = updateGearRollersUI();
+                persistValue('braille_prefs_gear_rollers_enabled', isGearRollersOn() ? '1' : '0');
+                resetToGenerateState();
+                refreshLiveWarnings();
+                /* S-M10, DRAFT (2026-09-20 programme, phase C2) - FLAGGED FOR BRENNEN. */
+                const choice = isGearRollersOn() ? 'Simplified fixed gears selected.' : 'Standard gears selected.';
+                const message = [choice, notes].filter(Boolean).join(' ');
+                // Deferred by a tick: the form-wide change listener bubbles after
+                // this one and refreshes every live warning, and updateGearRollersUI()
+                // announces its notes on every refresh - written synchronously, this
+                // composed sentence would be overwritten by the bare note.
+                setTimeout(() => announceStatus('embosser-setup', message), 0);
+            });
         });
 
         // ---------------------------------------------------------------------
@@ -7558,7 +7576,7 @@
         function seamChannelFootprintMm() {
             const dotSpacing = parseFloat(document.getElementById('dot_spacing')?.value);
             let widest;
-            if (document.getElementById('double_sided_enabled')?.checked) {
+            if (isDoubleSidedOn()) {
                 const ds = activeDsFootprints();
                 widest = Math.max(ds.ds_dot_base_diameter, ds.ds_bowl_base_diameter);
             } else {
@@ -7717,6 +7735,11 @@
         // the one announcement (ADA SOP Section 12, C9), and the load-time
         // restore must make none at all - an announcement there spoke over page
         // load in the first NVDA listening run (2026-08-22, POST15_6).
+        // Set by updateEmbosserVersionUI() when the temporary Version 2 gear
+        // guard below had to put the gear choice back to Standard, so the
+        // version change listener can say so in its one announcement.
+        let versionGuardResetGears = false;
+
         function updateEmbosserVersionUI() {
             const on = isVersion2();
 
@@ -7765,20 +7788,20 @@
 
             const keyedFieldset = document.getElementById('v2-keyed-cutouts-selection');
             if (keyedFieldset) keyedFieldset.hidden = !on;
-            const prototypeNote = document.getElementById('v2-prototype-note');
-            if (prototypeNote) prototypeNote.hidden = !on;
 
-            // The gears BETA is Version 1 only (D-V6) and the API returns a 400
-            // for the combination, so the toggle is hidden AND unchecked: a
-            // hidden checkbox that stayed on would still be read at generate
-            // time and turn into an error the user cannot see the cause of.
-            const gearSelection = document.getElementById('gear-rollers-selection');
-            if (gearSelection) gearSelection.hidden = on;
-            const gearToggle = document.getElementById('gear_rollers_enabled');
-            if (on && gearToggle?.checked) {
-                gearToggle.checked = false;
+            // TEMPORARY GUARD (2026-09-20 programme, phase C2; removed in phase
+            // B6 when fixed gears for Version 2 ship): the API still refuses
+            // gears together with Version 2, so choosing Version 2 puts the
+            // gear choice back to Standard and the version change listener
+            // says so. The gear choice stays visible - it is a menu item now,
+            // not a beta toggle to hide.
+            versionGuardResetGears = false;
+            if (on && isGearRollersOn()) {
+                const standard = document.getElementById('gear_mode_standard');
+                if (standard) standard.checked = true;
                 persistValue('braille_prefs_gear_rollers_enabled', '0');
                 updateGearRollersUI();
+                versionGuardResetGears = true;
             }
 
             updatePairModeUI();
@@ -7792,8 +7815,11 @@
                 refreshLiveWarnings();
                 // Announced AFTER the refresh, so the selector's own message is
                 // the one left in the single live region rather than a warning
-                // the refresh happened to write on its way through.
-                announceStatus('embosser-version', embosserVersionAnnouncement());
+                // the refresh happened to write on its way through. The
+                // temporary gear guard's sentence rides in the same write
+                // (DRAFT S-M13, phase C2; goes with the guard in phase B6).
+                announceStatus('embosser-version', embosserVersionAnnouncement()
+                    + (versionGuardResetGears ? ' Fixed gears are not available for Version 2 yet, so Standard gears were selected.' : ''));
             });
         });
 
@@ -7908,8 +7934,7 @@
         }
 
         function computeBackOverflow() {
-            const toggle = document.getElementById('double_sided_enabled');
-            if (!toggle || !toggle.checked) {
+            if (!isDoubleSidedOn()) {
                 if (backOverflowTimer) { clearTimeout(backOverflowTimer); backOverflowTimer = null; }
                 backOverflowRun++; // discard any translation still in flight
                 hideBackOverflow();
@@ -8215,15 +8240,17 @@
                 expertToggleBtn.classList.toggle('active', visible);
             }
             // Double-sided beta toggle and back text (hidden storage until Phase 08)
+            // Same keys as the retired checkboxes, so a saved choice carries
+            // over to the Embosser setup radios (2026-09-20).
             const savedDoubleSided = readPersisted('braille_prefs_double_sided_enabled');
-            const dsToggleEl = document.getElementById('double_sided_enabled');
-            if (dsToggleEl && (savedDoubleSided === '1' || savedDoubleSided === '0')) {
-                dsToggleEl.checked = savedDoubleSided === '1';
+            if (savedDoubleSided === '1' || savedDoubleSided === '0') {
+                const sides = document.getElementById(savedDoubleSided === '1' ? 'card_sides_double' : 'card_sides_single');
+                if (sides) sides.checked = true;
             }
             const savedGearRollers = readPersisted('braille_prefs_gear_rollers_enabled');
-            const gearToggleEl = document.getElementById('gear_rollers_enabled');
-            if (gearToggleEl && (savedGearRollers === '1' || savedGearRollers === '0')) {
-                gearToggleEl.checked = savedGearRollers === '1';
+            if (savedGearRollers === '1' || savedGearRollers === '0') {
+                const gears = document.getElementById(savedGearRollers === '1' ? 'gear_mode_fixed' : 'gear_mode_standard');
+                if (gears) gears.checked = true;
             }
             // Seam channel: nothing saved means the default, ON.
             const savedSeamChannel = readPersisted('braille_prefs_seam_channel_enabled');
@@ -8401,15 +8428,8 @@
                     persistValue('braille_prefs_recess_shape', val);
                 });
             });
-            // Double-sided beta toggle and back text (hidden storage until Phase 08)
-            const dsToggle = document.getElementById('double_sided_enabled');
-            if (dsToggle) {
-                dsToggle.addEventListener('change', () => persistValue('braille_prefs_double_sided_enabled', dsToggle.checked ? '1' : '0'));
-            }
-            const gearToggle = document.getElementById('gear_rollers_enabled');
-            if (gearToggle) {
-                gearToggle.addEventListener('change', () => persistValue('braille_prefs_gear_rollers_enabled', gearToggle.checked ? '1' : '0'));
-            }
+            // The card-sides and gear choices persist from their own change
+            // listeners beside updateDoubleSidedUI() / updateGearRollersUI().
             const seamChannelToggle = document.getElementById('seam_channel_enabled');
             if (seamChannelToggle) {
                 seamChannelToggle.addEventListener('change', () => persistValue('braille_prefs_seam_channel_enabled', seamChannelToggle.checked ? '1' : '0'));
@@ -8481,22 +8501,16 @@
                 expertToggleText.textContent = 'Show Expert Mode';
                 expertToggleIcon.textContent = '▼';
                 expertToggleBtn.classList.remove('active');
-                // Double-Sided Card beta back to its default: off, empty back text
-                // (checkboxes are not radio groups, so the defaultChecked sweep
-                // above does not cover the toggle).
-                const dsToggleReset = document.getElementById('double_sided_enabled');
-                if (dsToggleReset) dsToggleReset.checked = false;
+                // Card sides and gears are radio groups now, so the defaultChecked
+                // sweep above already put them back to Single-sided / Standard.
+                // The back text and braille field reset with them: empty and
+                // pristine.
                 const backTextReset = document.getElementById('back-text');
                 if (backTextReset) backTextReset.value = '';
-                // The back braille field and the menu chrome reset with the
-                // beta: field empty and pristine, menu closed.
                 const backBrailleReset = document.getElementById('back-braille-unicode');
                 if (backBrailleReset) backBrailleReset.value = '';
                 backBrailleFieldDirty = false;
                 backBrailleFieldAutoCleared = false;
-                setDoubleSidedMenuOpen(false);
-                const gearToggleReset = document.getElementById('gear_rollers_enabled');
-                if (gearToggleReset) gearToggleReset.checked = false;
                 // Seam channel back to its default: on.
                 const seamChannelReset = document.getElementById('seam_channel_enabled');
                 if (seamChannelReset) seamChannelReset.checked = true;
@@ -9184,7 +9198,7 @@
             // checked AND shape cylinder), so the preview can never disagree with the
             // STL about which mode you are in. With the beta OFF nothing below changes
             // and the preview output stays byte-identical to the single-sided one.
-            const doubleSidedOn = !!document.getElementById('double_sided_enabled')?.checked
+            const doubleSidedOn = isDoubleSidedOn()
                 && (document.querySelector('input[name="shape_type"]:checked')?.value || 'cylinder') === 'cylinder';
 
             if (placementMode === 'manual') {
@@ -9601,7 +9615,7 @@
             // carry text: Cylinder A (positive) needs the front lines for its
             // raised dots and Cylinder B (negative) needs the same front lines
             // to place its 1:1 paired recesses.
-            const doubleSidedOn = !!document.getElementById('double_sided_enabled')?.checked
+            const doubleSidedOn = isDoubleSidedOn()
                 && (document.querySelector('input[name="shape_type"]:checked')?.value || 'cylinder') === 'cylinder';
 
             // The Braille (Unicode) field wins whenever it has content: its lines

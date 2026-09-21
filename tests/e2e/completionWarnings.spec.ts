@@ -90,16 +90,13 @@ const MANIFOLD_MISSING = /Manifold 3D engine which failed to load|never became r
  * which broke the truncation premise rather than the behaviour under test.
  */
 /**
- * The Double-Sided item is a collapsible menu since 2026-08-31, so the toggle
- * inside is hidden until the disclosure opens it. State-aware: re-running a
- * setUp closure must never click an already-open menu shut.
+ * Double-sided is an either/or radio in the Embosser setup menu item since
+ * 2026-09-20 (no accordion, no checkbox). Idempotent: re-running a setUp
+ * closure just re-checks an already-checked radio.
  */
-async function openDoubleSidedMenu(page: Page) {
-  const toggle = page.locator('#double-sided-menu-toggle');
-  if ((await toggle.getAttribute('aria-expanded')) !== 'true') {
-    await toggle.click();
-  }
-  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+async function chooseDoubleSided(page: Page) {
+  await page.locator('#card_sides_double').check();
+  await expect(page.locator('#back-entry-fieldset')).not.toHaveAttribute('disabled');
 }
 
 async function translateToBraille(page: Page) {
@@ -242,8 +239,7 @@ test.describe('Completion messages name outstanding warnings (F-R)', () => {
       await page.locator('#auto-text').fill(OVERFLOWING);
       await page.waitForTimeout(900);
       await translateToBraille(page);
-      await openDoubleSidedMenu(page);
-      await page.locator('#double_sided_enabled').check();
+      await chooseDoubleSided(page);
       await page.locator('#back-text').fill('def');
       await page.waitForTimeout(900);
     };
@@ -281,8 +277,7 @@ test.describe('Completion messages name outstanding warnings (F-R)', () => {
     await openApp(page);
 
     await page.locator('#auto-text').fill(OVERFLOWING);
-    await openDoubleSidedMenu(page);
-    await page.locator('#double_sided_enabled').check();
+    await chooseDoubleSided(page);
     await page.locator('#back-text').fill('def');
     await page.waitForTimeout(900);
 

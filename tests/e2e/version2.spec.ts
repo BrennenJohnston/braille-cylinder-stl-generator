@@ -24,10 +24,12 @@ import { expect, test, type Page } from '@playwright/test';
 const S_V1_LEGEND = 'Embosser version';
 const S_V3_NOTE =
   'Choose Version 2 only if you are building the Version 2 embosser, which uses keyed gear pegs. Version 1 stays supported.';
-const S_V4_PROTOTYPE =
-  'Version 2 is a work-in-progress prototype. Its cylinder size, cutouts and fit may change as testing continues. It fits only gears with R14 pegs; earlier pegs do not enter the holes.';
+// S-V4 (the prototype notice) was retired on 2026-09-20 (programme decision D-7).
 const S_V5_SIZE_START = 'The Version 2 embosser expects a 30.8 mm x 54 mm cylinder.';
-const S_V8_READY = 'Cylinder generated for the Version 2 embosser (prototype).';
+// S-V8', DRAFT (2026-09-20, D-7): the "(prototype)" tag is gone. FLAGGED FOR BRENNEN.
+const S_V8_READY = 'Cylinder generated for the Version 2 embosser.';
+// S-M13, DRAFT (2026-09-20, phase C2; temporary until fixed gears reach Version 2 in phase B6).
+const S_M13_GEAR_GUARD = 'Fixed gears are not available for Version 2 yet, so Standard gears were selected.';
 const S_V10_ON = 'Version 2 selected: keyed gear-peg cutouts, 30.8 mm cylinder.';
 const S_V10_OFF = 'Version 1 selected.';
 
@@ -120,46 +122,47 @@ async function selectVersion2(page: Page) {
   await page.locator('#embosser_version_2').check();
 }
 
-test.describe('Embosser Version 2 (prototype)', () => {
-  test('the selector is the first selection-menu item, defaults to Version 1, and is keyboard-operable', async ({
+test.describe('Embosser Version 2', () => {
+  test('the selector is the first choice of the first menu item, defaults to Version 1, and is keyboard-operable', async ({
     page,
   }) => {
     await openApp(page);
 
-    // In the form's selection menu, directly under "What Does This Program
-    // Do?" — moved out of the site header on 2026-08-31 (Brennen's call).
+    // Since 2026-09-20 the version choice is the first of three inside the
+    // "Embosser setup" menu item, which sits in the form's selection menu
+    // directly under "What Does This Program Do?" (never in the site header).
     expect(
       await page.evaluate(
-        () => !!document.querySelector('header.site-header #embosser-version-selection'),
+        () => !!document.querySelector('header.site-header #embosser-setup-selection'),
       ),
     ).toBe(false);
     expect(
       await page.evaluate(
-        () => !!document.querySelector('#braille-form #embosser-version-selection'),
+        () => !!document.querySelector('#braille-form #embosser-setup-selection #embosser-version-selection'),
       ),
     ).toBe(true);
     expect(
       await page.evaluate(() => {
-        const item = document.querySelector('#embosser-version-selection');
+        const item = document.querySelector('#embosser-setup-selection');
         return item?.previousElementSibling?.classList.contains('info-panel') ?? false;
       }),
     ).toBe(true);
-    // It follows the menu-item rules: a real h2 inside the legend.
-    await expect(page.locator('#embosser-version-selection h2.legend-heading')).toHaveText(
-      S_V1_LEGEND,
+    // It follows the menu-item rules: a real h2 inside the item's legend, and
+    // an h3 inside each choice's legend.
+    await expect(page.locator('#embosser-setup-selection > fieldset > legend h2.legend-heading')).toHaveText(
+      'Embosser setup',
     );
+    await expect(page.locator('#embosser-version-selection h3.legend-heading')).toHaveText(S_V1_LEGEND);
 
     await expect(page.locator('#embosser_version_1')).toBeChecked();
     await expect(page.locator('#embosser_version_2')).not.toBeChecked();
 
     // S-V1 is the group's accessible name; S-V3 is its description.
-    await expect(page.locator('#embosser-version-selection legend')).toHaveText(S_V1_LEGEND);
+    await expect(page.locator('#embosser-version-selection > legend')).toHaveText(S_V1_LEGEND);
     await expect(page.locator('#embosser-version-note')).toHaveText(S_V3_NOTE);
     expect(
       await page.evaluate(() =>
-        document
-          .querySelector('#embosser-version-selection fieldset')
-          ?.getAttribute('aria-describedby'),
+        document.getElementById('embosser-version-selection')?.getAttribute('aria-describedby'),
       ),
     ).toBe('embosser-version-note');
 
@@ -179,23 +182,23 @@ test.describe('Embosser Version 2 (prototype)', () => {
     await openApp(page);
     await openExpertDimensions(page);
 
-    await expect(page.locator('#v2-prototype-note')).toBeHidden();
     await expect(page.locator('#v2-keyed-cutouts-selection')).toBeHidden();
     await expect(page.locator('#gear-rollers-selection')).toBeVisible();
     await expect(page.locator('#cylinder-seam-offset-row')).toBeVisible();
+    // The prototype notice is gone (D-7, 2026-09-20).
+    await expect(page.locator('#v2-prototype-note')).toHaveCount(0);
 
     await selectVersion2(page);
 
     await expect(page.locator('#a11y-status')).toHaveText(S_V10_ON);
-    await expect(page.locator('#v2-prototype-note')).toBeVisible();
-    await expect(page.locator('#v2-prototype-note')).toContainText(S_V4_PROTOTYPE);
     await expect(page.locator('#v2-keyed-cutouts-selection')).toBeVisible();
     await expect(page.locator('#v2_key_clearance_mm')).toHaveValue('0.110');
 
-    // The gears BETA is Version 1 only (D-V6): hidden AND unchecked, because a
-    // hidden checkbox that stayed on would still be read at generate time.
-    await expect(page.locator('#gear-rollers-selection')).toBeHidden();
-    await expect(page.locator('#gear_rollers_enabled')).not.toBeChecked();
+    // The gear choice stays visible - it is a menu item, not a beta toggle to
+    // hide - and stays on Standard (the API still refuses gears with Version 2
+    // until fixed Version 2 gears ship in phase B6).
+    await expect(page.locator('#gear-rollers-selection')).toBeVisible();
+    await expect(page.locator('#gear_mode_standard')).toBeChecked();
 
     // The polygonal cutout and the seam offset are inert when the keyed cutout
     // IS the hole.
@@ -226,7 +229,27 @@ test.describe('Embosser Version 2 (prototype)', () => {
     await expect(page.locator('#cylinder_diameter_mm')).toHaveValue(before);
     await expect(page.locator('#gear-rollers-selection')).toBeVisible();
     await expect(page.locator('#cylinder-seam-offset-row')).toBeVisible();
-    await expect(page.locator('#v2-prototype-note')).toBeHidden();
+  });
+
+  test('choosing Version 2 with fixed gears selected puts the gears back to Standard and says so', async ({ page }) => {
+    // Temporary guard (phase C2 of the 2026-09-20 programme): the API refuses
+    // gears together with Version 2 until phase B6 ships fixed Version 2
+    // gears, so the version change resets the choice and the ONE announcement
+    // carries S-V10 plus S-M13. Remove this test with the guard in B6.
+    await openApp(page);
+    await page.locator('#gear_mode_fixed').check();
+    await expect(page.locator('#gear_mode_fixed')).toBeChecked();
+
+    await selectVersion2(page);
+    await expect(page.locator('#gear_mode_standard')).toBeChecked();
+    await expect(page.locator('#gear_mode_fixed')).not.toBeChecked();
+    await expect(page.locator('#a11y-status')).toHaveText(`${S_V10_ON} ${S_M13_GEAR_GUARD}`);
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_gear_rollers_enabled'))).toBe('0');
+
+    // Without fixed gears selected the version announcement is S-V10 alone.
+    await page.locator('#embosser_version_1').check();
+    await selectVersion2(page);
+    await expect(page.locator('#a11y-status')).toHaveText(S_V10_ON);
   });
 
   test('the size note appears off-size and clears at the preset size', async ({ page }) => {
