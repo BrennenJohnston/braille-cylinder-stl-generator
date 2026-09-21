@@ -5435,13 +5435,18 @@
                sentence is S5, signed 2026-08-24. Reword either only with his
                sign-off. One announcement, not two: announceStatus writes a
                single region, so a second call would overwrite the first. */
-            /* S-V8, signed off by Brennen (2026-08-28). Gears and Version 2
-               cannot both be on - the API refuses the pair - so at most one
-               prefix can ever appear, and it rides in the ready message
-               rather than as a second write to the one live region. */
+            /* S-V8, signed off by Brennen (2026-08-28). Since 2026-09-21
+               (phase B6) gears and Version 2 CAN both be on - the fused
+               one-piece Version 2 roller - and that run gets ONE prefix of its
+               own, S-G2, DRAFT (2026-09-20 programme) - FLAGGED FOR BRENNEN -
+               instead of the two single-feature sentences back to back. Each
+               prefix rides in the ready message rather than as a second write
+               to the one live region. */
+            const fusedVersion2 = lastGenerationUsedGears && lastGenerationUsedV2;
             announceStatus('stl-ready',
-                (lastGenerationUsedGears ? 'Cylinder generated with integrated gears. ' : '')
-                + (lastGenerationUsedV2 ? 'Cylinder generated for the Version 2 embosser. ' : '')
+                (fusedVersion2 ? 'Cylinder generated with fixed gears for the Version 2 embosser. ' : '')
+                + (lastGenerationUsedGears && !fusedVersion2 ? 'Cylinder generated with integrated gears. ' : '')
+                + (lastGenerationUsedV2 && !fusedVersion2 ? 'Cylinder generated for the Version 2 embosser. ' : '')
                 + 'Your STL file is ready. Use the Download STL button to save it.'
                 + outstandingWarningSuffix());
         }
@@ -7439,6 +7444,9 @@
         // 54 mm tall (a 1 mm card shelf at each end), so enabling gears at the
         // defaults shows this warning until the height dial is set back to 52 -
         // the gears are baked at fixed z and cannot follow the barrel.
+        // These are the VERSION 1 numbers; while Version 2 is chosen the gate
+        // in updateGearRollersUI() compares against V2_BARREL_* instead (the
+        // Version 2 fixed gears are baked for the 54 mm barrel, phase B6).
         const GEAR_BARREL_DIAMETER_MM = 30.8;
         const GEAR_BARREL_HEIGHT_MM = 52.0;
         const GEAR_BARREL_TOLERANCE_MM = 0.001;
@@ -7501,26 +7509,40 @@
                 cutoutMessage.textContent = cutoutText;
             }
 
-            // S7: the size gate. Reuses the server's exact signed sentence, so
-            // the warning a user reads here and the error they would get from
-            // the server are the same words.
+            // S7 / S-G1: the size gate. Reuses the server's exact sentence for
+            // the chosen version, so the warning a user reads here and the
+            // error they would get from the server are the same words. Since
+            // 2026-09-21 (phase B6) the Version 2 embosser has its own fixed
+            // gears, baked for the 30.8 x 54 barrel its preset forces onto the
+            // dials, so the gate follows isVersion2() exactly as
+            // app/validation.py's does.
             let sizeText = '';
             const sizeWarning = document.getElementById('gear-size-warning');
             const sizeMessage = document.getElementById('gear-size-message');
             const diameter = parseFloat(document.getElementById('cylinder_diameter_mm')?.value);
             const height = parseFloat(document.getElementById('cylinder_height_mm')?.value);
             if (sizeWarning && sizeMessage) {
+                const forVersion2 = isVersion2();
+                const wantDiameter = forVersion2 ? V2_BARREL_DIAMETER_MM : GEAR_BARREL_DIAMETER_MM;
+                const wantHeight = forVersion2 ? V2_BARREL_HEIGHT_MM : GEAR_BARREL_HEIGHT_MM;
                 const offSize = on
                     && Number.isFinite(diameter)
                     && Number.isFinite(height)
-                    && (Math.abs(diameter - GEAR_BARREL_DIAMETER_MM) > GEAR_BARREL_TOLERANCE_MM
-                        || Math.abs(height - GEAR_BARREL_HEIGHT_MM) > GEAR_BARREL_TOLERANCE_MM);
-                /* S7, signed off by Brennen (2026-08-24); reword only with his sign-off. */
-                sizeText = offSize
-                    ? `Integrated gears are matched to the reference roller and only fit a `
-                      + `${GEAR_BARREL_DIAMETER_MM} mm x ${GEAR_BARREL_HEIGHT_MM} mm cylinder. `
-                      + `Received ${diameter} mm x ${height} mm.`
-                    : '';
+                    && (Math.abs(diameter - wantDiameter) > GEAR_BARREL_TOLERANCE_MM
+                        || Math.abs(height - wantHeight) > GEAR_BARREL_TOLERANCE_MM);
+                /* S7, signed off by Brennen (2026-08-24); reword only with his sign-off.
+                   S-G1 (the Version 2 sentence), DRAFT (2026-09-20 programme,
+                   phase B6) - FLAGGED FOR BRENNEN; it mirrors
+                   gears.reference_roller_message(..., version=2) word for word. */
+                sizeText = !offSize
+                    ? ''
+                    : forVersion2
+                        ? `Fixed gears for the Version 2 embosser fit only a `
+                          + `${wantDiameter} mm x ${wantHeight} mm cylinder. `
+                          + `Received ${diameter} mm x ${height} mm.`
+                        : `Integrated gears are matched to the reference roller and only fit a `
+                          + `${wantDiameter} mm x ${wantHeight} mm cylinder. `
+                          + `Received ${diameter} mm x ${height} mm.`;
                 sizeWarning.style.display = sizeText ? 'block' : 'none';
                 sizeMessage.textContent = sizeText;
             }
@@ -7742,11 +7764,6 @@
         // the one announcement (ADA SOP Section 12, C9), and the load-time
         // restore must make none at all - an announcement there spoke over page
         // load in the first NVDA listening run (2026-08-22, POST15_6).
-        // Set by updateEmbosserVersionUI() when the temporary Version 2 gear
-        // guard below had to put the gear choice back to Standard, so the
-        // version change listener can say so in its one announcement.
-        let versionGuardResetGears = false;
-
         function updateEmbosserVersionUI() {
             const on = isVersion2();
 
@@ -7796,20 +7813,12 @@
             const keyedFieldset = document.getElementById('v2-keyed-cutouts-selection');
             if (keyedFieldset) keyedFieldset.hidden = !on;
 
-            // TEMPORARY GUARD (2026-09-20 programme, phase C2; removed in phase
-            // B6 when fixed gears for Version 2 ship): the API still refuses
-            // gears together with Version 2, so choosing Version 2 puts the
-            // gear choice back to Standard and the version change listener
-            // says so. The gear choice stays visible - it is a menu item now,
-            // not a beta toggle to hide.
-            versionGuardResetGears = false;
-            if (on && isGearRollersOn()) {
-                const standard = document.getElementById('gear_mode_standard');
-                if (standard) standard.checked = true;
-                persistValue('braille_prefs_gear_rollers_enabled', '0');
-                updateGearRollersUI();
-                versionGuardResetGears = true;
-            }
+            // The gear choice is left exactly as the user set it: since
+            // 2026-09-21 (phase B6) the Version 2 embosser has its own fixed
+            // gears, so Version 2 + Simplified is a real product (the fused
+            // one-piece Version 2 roller), not a pair the API refuses. The
+            // version change listener's refreshLiveWarnings() re-reads the gear
+            // size gate against the new version's barrel.
 
             updatePairModeUI();
         }
@@ -7820,13 +7829,16 @@
                 persistValue('braille_prefs_embosser_version', isVersion2() ? '2' : '1');
                 resetToGenerateState();
                 refreshLiveWarnings();
-                // Announced AFTER the refresh, so the selector's own message is
-                // the one left in the single live region rather than a warning
-                // the refresh happened to write on its way through. The
-                // temporary gear guard's sentence rides in the same write
-                // (DRAFT S-M13, phase C2; goes with the guard in phase B6).
-                announceStatus('embosser-version', embosserVersionAnnouncement()
-                    + (versionGuardResetGears ? ' Fixed gears are not available for Version 2 yet, so Standard gears were selected.' : ''));
+                // ONE composed, deferred announcement - the rule the gear and
+                // card-sides listeners follow (phase C2). The form-wide change
+                // listener bubbles after this one and re-announces the gear
+                // notes (S3, S7 / S-G1), so now that a fixed-gear choice
+                // survives a version change (phase B6) a synchronous write
+                // here would be overwritten by the bare note. The version
+                // sentence leads and the notes the refresh raised ride with it.
+                const gearNotes = updateGearRollersUI();
+                const message = [embosserVersionAnnouncement(), gearNotes].filter(Boolean).join(' ');
+                setTimeout(() => announceStatus('embosser-version', message), 0);
             });
         });
 
@@ -8034,9 +8046,10 @@
             checkPhysicalFit();
             checkDoubleSidedGap();
             updateGearRollersUI();
-            // After the gear warning, so that when both could speak the
-            // Version 2 sentence is the one left in the live region - in
-            // Version 2 the gear toggle is off, so its own call writes ''.
+            // After the gear warning, so that when both speak (a Version 2
+            // barrel edited off-size with fixed gears on: S-G1 and S-V5 name
+            // the same 30.8 x 54 limit) the Version 2 sentence is the one left
+            // in the live region; both boxes stay on screen.
             updateVersion2SizeWarning();
             updateSeamChannelUI();
             updateCapsWarning();

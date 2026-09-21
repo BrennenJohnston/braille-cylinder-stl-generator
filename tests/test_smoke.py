@@ -1014,6 +1014,46 @@ def test_ui_version2_numbers_match_the_geometry_module():
         assert float(found.group(1)) == expected, f'{js_name} disagrees with version2.py'
 
 
+def test_ui_version2_gear_size_sentence_matches_the_gears_module():
+    """
+    Fixed gears in Version 2 (2026-09-20 programme, phase B6): the live gear
+    size warning switches to the Version 2 barrel and to the S-G1 sentence
+    while Version 2 is chosen. The UI's template and the server's
+    reference_roller_message(..., version=2) must be the same words and the same
+    numbers, or a user reads one limit live and another in the 400.
+    """
+    import re
+    from pathlib import Path
+
+    from app.geometry import gears, version2
+
+    html = (Path(__file__).resolve().parents[1] / 'public' / 'index.html').read_text(encoding='utf-8')
+
+    # The gate picks the barrel by version, from the pinned constants.
+    assert 'const wantDiameter = forVersion2 ? V2_BARREL_DIAMETER_MM : GEAR_BARREL_DIAMETER_MM;' in html
+    assert 'const wantHeight = forVersion2 ? V2_BARREL_HEIGHT_MM : GEAR_BARREL_HEIGHT_MM;' in html
+
+    template = re.search(
+        r'`Fixed gears for the Version 2 embosser fit only a `\s*\+\s*'
+        r'`\$\{wantDiameter\} mm x \$\{wantHeight\} mm cylinder\. `\s*\+\s*'
+        r'`Received \$\{diameter\} mm x \$\{height\} mm\.`',
+        html,
+    )
+    assert template, 'the S-G1 template was not found in updateGearRollersUI()'
+
+    rendered = (
+        f'Fixed gears for the Version 2 embosser fit only a '
+        f'{version2.V2_BARREL_DIAMETER_MM:g} mm x {version2.V2_BARREL_HEIGHT_MM:g} mm cylinder. '
+        f'Received 30.8 mm x 52 mm.'
+    )
+    assert rendered == gears.reference_roller_message(30.8, 52, version=2)
+    assert gears.reference_barrel(2) == (version2.V2_BARREL_DIAMETER_MM, version2.V2_BARREL_HEIGHT_MM)
+
+    # The temporary C2 guard (S-M13) is gone with the feature it waited for.
+    assert 'versionGuardResetGears' not in html
+    assert 'Fixed gears are not available for Version 2 yet' not in html
+
+
 def test_zero_recess_depth_cuts_no_cylinder_bowls(client):
     """
     Bowl Recess Dot Depth 0 mm means NO recess, not the shipped default.
