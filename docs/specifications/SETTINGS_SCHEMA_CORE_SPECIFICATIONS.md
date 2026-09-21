@@ -118,6 +118,13 @@ This section lists canonical field names, high-level types, and brief rules. See
     was pasted with the English inputs left empty.
 - text.languages: array<string>
   - Optional. Per-line table IDs; falls back to `text.default_language`.
+- text.back_languages: array<string>
+  - Optional (2026-09-21, programme sub-plan D). Per-row table IDs for the BACK face, the
+    mirror of `text.languages`; on the wire it is top-level `back_per_line_language_tables`
+    beside `per_line_language_tables`. Sent only when the back was placed manually, one
+    entry per row; absent for Auto placement and for a hand-filled back braille field.
+    Informational — geometry never reads it. `app/models.py`'s `GenerateBrailleRequest`
+    declares it beside `back_lines`.
 - text.default_language: string
   - Default language table. Defaults to `en-ueb-g2.ctb` (English UEB, contracted / grade 2),
     matching the BANA *Guidelines for Brailling Business Cards* (March 2024), whose worked
@@ -594,6 +601,8 @@ Before completing any task involving settings:
 ---
 
 ## 10. Document History
+
+- 2026-09-21 — `text.back_languages` added beside `text.languages` (programme sub-plan D, Back of Card parity): the back's per-row liblouis tables, `back_per_line_language_tables` on the wire, sent only for a manually placed back; `GenerateBrailleRequest` gains `back_lines` and `back_per_line_language_tables`. Pinned by `tests/test_smoke.py::test_schema_and_request_model_declare_the_back_per_line_tables`.
 
 - 2025-12-06 — Initial creation. Consolidated settings schema across specs; added high-level JSON Schema, normalization and validation rules, and examples.
 - 2025-12-06 — Added Development Guidelines (Section 9); added `cache_version` field to schema; added default values to schema properties.

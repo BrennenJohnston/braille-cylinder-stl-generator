@@ -152,6 +152,16 @@ Options** submenu of Expert Mode; a short note in their old place points there.
 - **Default Mode:** Auto Placement (`checked` on `placement_mode_auto`)
 - **Persistence:** Mode is saved to `localStorage` key `braille_prefs_placement_mode`
 
+**The Back of Card has the same toggle, independently (2026-09-21, programme sub-plan D,
+decision D-11).** Inside `#back-entry-fieldset` the toggle above is repeated
+element-for-element under `name="back_placement_mode"` (`#back_placement_mode_auto`
+checked / `#back_placement_mode_manual`), switching `#back-auto-input-container` (the
+`#back-text` textarea) and `#back-dynamic-line-inputs` (rows `#back_line{i}` with
+`#back_line_lang_{i}` dropdowns, built by `createBackDynamicLineInputs()` beside the
+front's) through `updateBackPlacementUI()`; persisted as `braille_prefs_back_placement_mode`.
+The two sides choose separately: the front's mode never moves the back's. Full mechanics
+in INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §6.1 and §7.4.
+
 ### Mode Switch Handler
 
 **Source:** `public/index.html` (lines 3556-3572)
@@ -1199,7 +1209,7 @@ When the double-sided (interpoint) beta toggle is ON, the `/geometry_spec` reque
 
 The backend validates `back_lines` with the same gates as the front lines (`validate_lines`, `validate_braille_lines`, `validate_line_lengths`); the braille-charset check always runs for `back_lines` (back braille is real geometry on both plates, so there is no counter-plate skip). With the toggle OFF the request is byte-identical to the single-sided one.
 
-The Back of Card source text lives in the `#back-text` textarea inside the Back of Card fieldset, revealed by the `#double_sided_enabled` toggle. Since 2026-08-17 it is **BANA auto-wrapped, not one row per newline**: `banaAutoWrap(backSrc, getAvailableColumns(), grid_rows, tableName)` wraps whole words across the available rows and treats each newline as a forced row break, exactly as the front does in Auto Placement. Because `banaAutoWrap()` always returns exactly `rows` lines, the padded-to-`grid_rows` wire shape is unchanged.
+The Back of Card source text lives in the `#back-text` textarea inside the Back of Card fieldset (always on the page since 2026-09-20, native-disabled until Double-sided is chosen under Embosser setup). Since 2026-09-21 the back also has the front's **Manual Placement**: one `#back_line{i}` input per row with its own `#back_line_lang_{i}` table, translated row by row and held to the cell count (fail closed, DRAFT S-D1), with the tables sent as top-level `back_per_line_language_tables` (`text.back_languages` in the schema) — only for a manually placed back. In **Auto Placement** (the default) the paragraph below applies unchanged. Since 2026-08-17 it is **BANA auto-wrapped, not one row per newline**: `banaAutoWrap(backSrc, getAvailableColumns(), grid_rows, tableName)` wraps whole words across the available rows and treats each newline as a forced row break, exactly as the front does in Auto Placement. Because `banaAutoWrap()` always returns exactly `rows` lines, the padded-to-`grid_rows` wire shape is unchanged.
 
 Back text fails **closed** — the generate handler blocks with an error and sends no request — when the wrap needs more rows than the plate has, when a word cannot be divided per BANA, or when liblouis is unavailable. A live `role="status"` region (`#ds-back-overflow-warning`) runs the same wrap on a 250 ms debounce while the user types, gated on the toggle being on. The exact strings (signed off by Brennen 2026-08-17) and the live-warning wording live in INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §7.4; full geometry semantics belong to that document too.
 
@@ -1393,6 +1403,7 @@ auto warning box) so the two warnings can never disagree.
 | `braille_prefs_grid_columns` | Number of columns | Integer string |
 | `braille_prefs_double_sided_enabled` | Double-sided beta toggle | `"1"` or `"0"` |
 | `braille_prefs_back_text` | Back of Card source text (double-sided beta) | Raw text, newlines = rows |
+| `braille_prefs_back_placement_mode` | Back of Card placement mode (2026-09-21) | `"auto"` or `"manual"` |
 
 ### Persistence Listeners
 
@@ -1926,8 +1937,9 @@ None required. All implementations match the specification exactly.
 
 ---
 
-*Document Version: 1.7*
-*Last Updated: 2026-08-23 - `lang="und-Brai"` on the braille field investigated and KEPT (new note in Section 8 UI Structure). NVDA says "und (not supported)" on every visit - 17 times in a 30-minute walkthrough - and it is kept anyway: the tag is correct, nothing in the code reads it, the announcement is a user-configurable NVDA setting, and removing it would trade a switchable annoyance for an untested risk to braille-display users. Brennen decided after the investigation; the note records that a braille display, not a speech test, is what would settle it. No markup changed.*
+*Document Version: 1.8*
+*Last Updated: 2026-09-21 - Back of Card parity (programme sub-plan D, decision D-11): Section 2 records the back's own placement toggle, Section 8's double-sided subsection the Manual Placement rows with per-line tables (`back_per_line_language_tables` / `text.back_languages`, sent only for a manually placed back), and the Section 11 table the `braille_prefs_back_placement_mode` key. Strings S-D1 and S-D3 are DRAFT.*
+*Previous: 1.7, 2026-08-23 - `lang="und-Brai"` on the braille field investigated and KEPT (new note in Section 8 UI Structure). NVDA says "und (not supported)" on every visit - 17 times in a 30-minute walkthrough - and it is kept anyway: the tag is correct, nothing in the code reads it, the announcement is a user-configurable NVDA setting, and removing it would trade a switchable annoyance for an untested risk to braille-display users. Brennen decided after the investigation; the note records that a braille display, not a speech test, is what would settle it. No markup changed.*
 *Previous: 1.6, 2026-08-22 - Two descriptions stop being spoken in full, and no word of either changed. (1) The language combobox is described by its LAST SENTENCE only - `id="language-help"` moved onto a `<span>` around "Switch to uncontracted (grade 1) only if your reader has asked for it." (13 w), and the BANA rationale before it stays in the same div, visible and unwired. Its dropped opening, "Default: English (UEB), United States - contracted (grade 2)", is exactly what the combobox announces as its selected option, so keeping it wired restated the label. Measured **71 -> 13 words**; it had been spoken 18 times in a 34-minute NVDA session (audit F-D, decision D2 step 2). (2) The **Disabled** capitals radio no longer carries `aria-describedby`, and the orphan `#caps-disabled-desc` span is gone with it: its text duplicated BOTH the live `#caps-warning` and the VISIBLE `.grade-note` beneath the radios, which is unchanged, so nothing left the page (audit F-J, decision D6). `#caps-enabled-desc` is deliberately still wired. The braille-field element table now records that `#braille-unicode-help` is a span around its first sentence, and that this textarea's budget is the ceiling minus `#braille-unicode-status`. Every HTML sample here updated - they would otherwise teach the old markup. Keepers approved by Brennen as drafts before the edit (FD-25). Pattern: `UI_INTERFACE_CORE_SPECIFICATIONS.md` 4.13.*
 *Previous: 1.5, 2026-08-22 - The four per-line language selects no longer carry a screen-reader description (audit F-K; commit 23575ab); descriptions on those selects 4 -> 0, spans in the DOM 4 -> 0, and the sibling `#line{N}-help` deliberately unchanged.*
 *Previous: 1.4, 2026-08-17 — Back of Card text reaches parity with the front: Section 8 now records BANA auto-wrap via the shared `banaAutoWrap()` (newlines = forced row breaks, wire shape unchanged), the three fail-closed blocking paths, and the live `#ds-back-overflow-warning` status region*

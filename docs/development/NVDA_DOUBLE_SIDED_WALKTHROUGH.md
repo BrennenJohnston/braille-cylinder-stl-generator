@@ -126,7 +126,18 @@ radio group and hear its state again.
 
 ## Part 3 — The Back of Card text box
 
-**Step 6.** Press `Tab` once from the checkbox.
+**Step 6.** Press `Tab` once from the radio group.
+
+> **Expect (since 2026-09-21):** "Auto Placement, radio button, checked, 1 of 2" —
+> the back's own placement toggle, the same pair the front has. Press `Down
+> arrow` once: "Manual Placement, radio button, checked, 2 of 2", and `Tab`
+> then lands on "Back Line 1 Translation, combo box" followed by "Back Line 1,
+> edit" with the help "Maximum 50 characters for back line 1" — one such pair
+> per row. Press `Shift+Tab` back to the toggle and `Up arrow` to return to
+> Auto Placement. Write down whether the rows were announced with their
+> "Back Line" names (the front's rows say "Line 1").
+
+**Step 6a.** With Auto Placement selected, press `Tab` once.
 
 > **Expect:** "Back of Card Text, edit, multi line, blank" — then the help text:
 > "Your text is translated with the language selected below and wrapped across
@@ -402,4 +413,5 @@ Anything NVDA said that I did not expect at all:
 | 1.2 | 2026-08-18 | Corrected step 1 after the first real run: NVDA announces the skip link role-first ("same page link, Skip to main content"), not "Skip to main content, link" as v1.0 predicted, and the link is invisible until focused. Added a general note that role/name order varies and is not a fail. Step 16 now calls out message 1 as the regression-sensitive one, after the live-region defect it exposed was fixed (see UI Interface Core Specifications §4.10). |
 | 1.3 | 2026-08-18 | Updated after the first run of Parts 2-3. Step 16's third message reworded and a check added that **nothing downloads by itself**: the old automatic pair download made Chrome ask "wants to: Download multiple files", a prompt that names no file and cycles Close/Allow/Block on every Tab, and the run ended in "Download blocked" with neither cylinder saved. Step 19 now presses both download buttons, since that is the only way files are saved. Steps 4 and 8 confirmed passing - the lock note and the back-of-card warning both spoke for the first time. |
 | 1.4 | 2026-08-18 | Steps 15 and 27 note the new single-plate "Download STL" button, which is separate from the pair's Download Cylinder A/B and only exists after a single-plate generation. `#action-btn` no longer renames itself into a download control mid-focus. |
+| 1.6 | 2026-09-21 | **Back of Card parity (programme sub-plan D, 2026-09-21; NOT yet run).** Part 3 gains the back placement toggle and the Manual rows (step 6, new step 6a for the text box). |
 | 1.5 | 2026-09-21 | **One Generate, one Download (programme sub-plan E, 2026-09-21; NOT yet run).** Part 5 now checks the "Cylinders to Generate" radios inside Expert Mode (three options, both first, fixed A/B names); Part 6 runs the pair from the one Generate STL button and saves the combined file from the one Download STL button (DRAFT S-E5 / S-E6 expected wording); step 3 and steps 26–27 no longer expect the removed buttons or the main-form plate group. The "(Beta)" left in the title on 2026-09-20 dropped (D-7). |

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **The Back of Card now has the front's Manual Placement.** Under the Back of Card heading the same Auto / Manual toggle appears; Manual gives one text box per braille row with its own translation dropdown, so a multilingual back is placed row by row exactly like a multilingual front. Each row is checked against the cell count while you type and again before generating (a row that does not fit blocks with its line named), the Translate to Braille button and the preview read the rows, and the choice is remembered between visits. Auto placement, the default, is unchanged. Wording of the new sentences is draft pending sign-off.
+
 ### Changed
 - **One Generate, one Download: Generate STL now builds both cylinders, and Download STL saves them as one file.** Every embosser needs the pair, so the pair is the default: press Generate STL and Cylinder A then Cylinder B are built from the same settings, then Download STL saves one combined file with both spaced 10 mm apart for a single print plate. To build one cylinder on its own, open Expert Mode and choose it under **Cylinders to Generate**, the new first submenu — the "Select Plate to Generate" box has moved there, with "Both Cylinder A and B" as the default beside the two single choices. The separate Generate Both, Download Combined, Download Cylinder A and Download Cylinder B buttons are gone. Nothing changed in the files themselves or their names (`Cylinder_Pair_…`, `Cylinder_A_…`, `Embossing_Cylinder_…` and the rest are exactly as before), and nothing ever downloads on its own: one press saves one file, and if the combined file cannot be built the Download button saves Cylinder A first and Cylinder B on the next press. Wording of the new sentences is draft pending sign-off.
 

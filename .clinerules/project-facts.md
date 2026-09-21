@@ -95,6 +95,20 @@ translation, Three.js preview. Working branch: develop — never commit to main.
    - Naming in the double-sided flow ONLY: "Cylinder A" = positive plate,
      "Cylinder B" = negative plate, downloads Cylinder_A_/Cylinder_B_*.stl.
      Never rename single-sided labels/filenames (training videos use them).
+   - BACK PARITY (2026-09-21, sub-plan D, D-11): the back has its OWN
+     placement toggle name="back_placement_mode" (Auto checked), rows
+     #back_line{i} + #back_line_lang_{i} (class line-language-select, so
+     syncLineLanguageSelects() fills them; rebuilt with the front's on every
+     grid_rows change), read through backPlacementMode() /
+     getBackDynamicLineValues() / translateBackManualLines(). Manual back
+     rows are held to the cell count (DRAFT S-D1, fail closed) and send
+     back_per_line_language_tables (schema text.back_languages) - ONLY for a
+     manual back; Auto and the back braille field send nothing extra, so
+     their request bodies are byte-identical to before. The overflow box
+     #ds-back-overflow-warning sits OUTSIDE #back-auto-input-container on
+     purpose (manual rows write to it). Persistence
+     braille_prefs_back_placement_mode. GenerateBrailleRequest (no callers)
+     declares back_lines + back_per_line_language_tables.
 
 6c. Gear-integrated one-piece rollers — cylinders only, OUT OF BETA since
    2026-09-20 (D-7): the choice is the "Gears" radio group

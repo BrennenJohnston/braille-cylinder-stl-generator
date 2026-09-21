@@ -18,7 +18,8 @@ What the finished beta does:
   Style to the tactile seam arrow, which both cylinders of a pair need.
 - Back text has the same handling as front text: translated with the same language and
   grade, wrapped across the rows for you with whole words kept together, and warned about
-  live while you type if it overruns.
+  live while you type if it overruns — and, since 2026-09-21, the same Auto / Manual
+  placement choice with a translation dropdown per row (wording DRAFT).
 - The braille preview shows **both sides**, under Front of Card and Back of Card headings.
 - **Generate STL** builds the whole pair from one press (since 2026-09-21 that is what it
   does for every cylinder unless one is chosen under Expert Mode → Cylinders to Generate).

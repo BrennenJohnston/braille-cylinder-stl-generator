@@ -117,7 +117,8 @@ You can optionally set `PRODUCTION_DOMAIN` as an environment variable, but it's 
 Want just one cylinder? Open **Expert Mode** and choose it under **Cylinders to
 Generate**, the first submenu; Download STL then saves that cylinder on its own. For a
 double-sided card, choose **Double-sided** under **Embosser setup** before step 4 and
-type the back text into the **Back of Card** box. Nothing ever downloads on its own — one
+type the back text into the **Back of Card** box — the back has its own Auto / Manual
+placement and per-line translation choices, exactly like the front. Nothing ever downloads on its own — one
 press of Download STL saves one file.
 
 There's a **Help** button inside the app that walks you through choosing what to include, formatting your text, and measuring containers. For more depth, check the guides below.
