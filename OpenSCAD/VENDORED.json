@@ -1,15 +1,15 @@
 {
   "$comment": "Provenance for the vendored OpenSCAD copy. Every file below is copied verbatim from the upstream repository at the recorded tag, except where a note says otherwise. Edit them upstream, never here. Each sha256 is of the bytes this repo ships, which for a file with an 'edited on copy' note is deliberately not the upstream hash; tests/test_vendored_openscad.py fails if any file drifts from its record.",
   "upstream_repo": "https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad",
-  "upstream_tag": "v2.8.0",
-  "upstream_commit": "a96c0ee7e73fa97570f73e04fbace3d59e316415",
+  "upstream_tag": "v2.8.1",
+  "upstream_commit": "a8b16af290beca3f7cbab0f111bfb2c4d8531acb",
   "upstream_release_date": "2026-09-21",
   "vendored_on": "2026-09-21",
   "canonical": "upstream",
   "files": {
     "Braille_Cylinder_STL_Generator.scad": {
       "upstream_path": "makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad",
-      "sha256": "56c2a25321f4ab2e31d4cb8908599e0bc7d47f3b7dc4bbaed17b7777ab2aa32f",
+      "sha256": "39b55d0d7aa57dac3ffada221f9924c6d00b35d8523d0ae94b7397d61bb17e24",
       "note": "The MakerWorld single-file build of the Version 1 model is vendored rather than the dual-file desktop build, so the download is self-contained (no include <presets.scad>). Renamed on copy: this repo ships one file, so the _MakerWorld_v1.5 suffix would only confuse. Upstream renamed this file from _v2 to _v1.5 on 2026-09-01; its _v2 file is now the separate Embosser Version 2 generator, which is NOT vendored here."
     },
     "LICENSE": {
@@ -18,7 +18,7 @@
     },
     "PARAMETER_MAPPING.md": {
       "upstream_path": "docs/PARAMETER_MAPPING.md",
-      "sha256": "ed785c7de595698410d9ba606fe3bad260ebd7bc9557919efc6605bef30b6343",
+      "sha256": "99e55b1a6fabdfe2553db2653a328f57e642d1edd856412c8905da7cfe55f3a9",
       "note": "One sentence edited on copy: upstream says 'this repository contains only the OpenSCAD cylinder generator', which is false here. The hash covers the edited copy, so it still catches later drift."
     },
     "docs/MAKERWORLD_QUICK_START.md": {
@@ -31,7 +31,7 @@
     },
     "docs/OPENSCAD_COORDINATE_SYSTEM_SPECIFICATIONS.md": {
       "upstream_path": "docs/OPENSCAD_COORDINATE_SYSTEM_SPECIFICATIONS.md",
-      "sha256": "8a1068a89340102e2248a80398c7f9977ec32e2924b63b18c83ca9904909027b"
+      "sha256": "ceb6644b1c21b786e4901451d5a6d5d42c3d6636662002014af6d2c4605a5bed"
     },
     "docs/QUICK_START_TESTING.md": {
       "upstream_path": "docs/QUICK_START_TESTING.md",

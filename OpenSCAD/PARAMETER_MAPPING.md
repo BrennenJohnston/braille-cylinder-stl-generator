@@ -348,7 +348,26 @@ and the polygonal cutout are unchanged — only surface features differ.
   lose ~0.13 mm at its edges to the chord sagitta — large next to the 0.2 mm
   nesting margin.
 - **Capacity.** No marker cells, so `actual_grid_columns == grid_columns` and
-  up to 14 text cells fit the default cylinder. `indicators` is ignored.
+  14 text cells fit the default cylinder — but a 90 mm card loaded at the
+  alignment arrow holds only 13 (`CARD_LENGTH_MM`, a Hidden constant; the web
+  app reads its `card_width` field): 14 cells need 92.8 mm, and both plates
+  render a red `TEXT RUNS OFF CARD: 92.8/90mm` badge plus a console NOTE, never
+  a stop. `indicators` is ignored.
+- **Position (web decision D-T6, 2026-09-21).** The arrow sits at the 180°
+  seam-gap centre on both plates, with equal space before the first cell and
+  after the last (`tactile_surface_prism` places it with
+  `place_cylinder_marker(180, …)`; a fixed lead-in before the first cell was
+  tried and reverted the same day). The card need is measured from there:
+  `seam_gap/2 + grid + the cell's dot footprint`. In Tactile mode the slicer
+  seam channel runs down the arrow column at 180° the full height on both
+  plates, and the emboss plate cuts it a second time after the raised arrows
+  are on (`seam_channel_arrow_recut`, over `seam_channel_recut_span` =
+  the arrow chain plus `SEAM_CHANNEL_ARROW_MARGIN_MM` (0.3) at each end, held
+  `SEAM_CHANNEL_RECUT_INSET_MM` (0.05) inside the end faces, with the V's
+  sides carried `tactile_indicator_raise + SEAM_CHANNEL_LIP_MM` past the
+  surface), so each arrow keeps its base half as two ridges and loses its
+  point (web decision D-T7); the counter plate's recesses are deeper than
+  the groove and get no recut. The render's `NOTE:` states the recut span.
 - **Seam-gap guard.** When the gap drops below
   `tactile_indicator_width + 5 mm`, both plates render a red
   `TACTILE GAP TOO SMALL: <gap>mm` extrusion above the cylinder and the desktop

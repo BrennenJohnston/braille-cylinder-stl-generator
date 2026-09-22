@@ -270,7 +270,7 @@ seam_channel = "On"; // [On, Off]
 
 /* [Expert Mode - Braille Spacing] */
 // --- Braille Dimensions ---
-grid_columns = 13; // [1:1:20] Text capacity in braille cells per row (matches the web app default of 13 text cells; in Visual indicator mode, 2 extra marker cells are added when Indicator Letters are On, or 1 extra cell for the always-present alignment triangle when Off — up to 14 text cells fit the default cylinder with Indicator Letters Off. Tactile indicator mode adds no marker cells, so up to 14 text cells fit the default cylinder; 15 leaves too little seam gap for the indicator)
+grid_columns = 13; // [1:1:20] Text capacity in braille cells per row (matches the web app default of 13 text cells; in Visual indicator mode, 2 extra marker cells are added when Indicator Letters are On, or 1 extra cell for the always-present alignment triangle when Off — up to 14 text cells fit the default cylinder with Indicator Letters Off. Tactile indicator mode adds no marker cells, so 14 text cells fit the default cylinder, but a 90 mm card loaded at the alignment arrow holds only 13 - 14 run off its end, and the model says so; 15 leaves too little seam gap for the indicator)
 grid_rows = 4; // [1:1:10] Number of lines of braille
 cell_spacing = 6.5; // [2:0.1:15] Horizontal spacing between cells (mm)
 line_spacing = 10.0; // [5:0.1:25] Vertical spacing between lines (mm)
@@ -509,6 +509,15 @@ ds_on = (double_sided == "On") || (double_sided == "on");
 // Gear-mode gate, mirroring the canonical build. Always false in practice here:
 // `integrated_gears` is hidden from this build's Customizer (see above).
 gears_on = (integrated_gears == "On") || (integrated_gears == "on");
+
+// Gear mode only: grow the RAISED tactile arrow's outline by 5 um. At the
+// default 10 mm indicator length on 10 mm line spacing each arrow's apex
+// touches the next arrow's base exactly, and float32 STL rounding welds that
+// tangency into a non-manifold pinch edge - which would break the watertight
+// one-piece roller. Physically negligible: 2.5% of the recess nesting
+// clearance, far below print accuracy. Off, the outline is untouched, so
+// existing exports keep the tangency they ship with.
+GEAR_ARROW_WELD_MM = 0.005;
 
 // Back-face counterpart of _all_lines, under the same contract: the single
 // source of truth for the back content, so no geometry ever names a Back_Line_N.
@@ -1048,9 +1057,28 @@ pair_center_offset_mm = active_cylinder_diameter_mm + pair_spacing_mm;
 // cell plus 1 mm of margin).
 TACTILE_MIN_GAP_MARGIN = 5.0;
 
-// Slicer seam channel: a V groove the full height of the outer surface, in the
-// seam gap beside the row-indicator column, so a slicer's default "aligned"
-// seam mode hides each layer's seam in it instead of in a braille dot. Mirrors
+// The card a tactile row has to fit, measured from the alignment arrow where
+// its leading edge sits (web decision D-T3, 2026-09-21): the 90 mm business
+// card the web generator carries as card_width. A constant, not a dial - the
+// web app reads its own field.
+CARD_LENGTH_MM = 90;
+
+// Tactile mode's seam channel runs down the arrow column itself (web decision
+// D-T6, 2026-09-21), the full height, and on the emboss plate it is cut a
+// second time after the raised arrows are on, so the V runs through them
+// (D-T7, same day: Brennen's print showed the slicer choosing dots wherever
+// the groove stopped). That recut spans the arrow chain plus this margin at
+// each end and stays the inset inside the end faces, so it can never nick a
+// gear's face. Mirrors the web generator's app/geometry_spec.py values one
+// for one (tests/test_tactile_mode.py diffs them).
+SEAM_CHANNEL_ARROW_MARGIN_MM = 0.3;    // the recut overruns the arrow chain by this much at each end, mm
+SEAM_CHANNEL_RECUT_INSET_MM  = 0.05;   // the recut stays this far inside the end faces, mm
+
+// Slicer seam channel: a V groove along the outer surface - the full height
+// beside the row-indicator column in Visual mode, the full height down the
+// arrow column and through the raised arrows in Tactile mode - so a slicer's
+// default "aligned" seam mode hides each layer's seam in it instead of in a
+// braille dot. Mirrors
 // the web generator's app/geometry_spec.py SEAM_CHANNEL_* one for one
 // (tests/test_seam_channel_scad.py diffs them); changing the groove needs
 // Brennen's decision AND a new slicing spike (web decisions D-13..D-15).
@@ -1116,8 +1144,11 @@ grid_width = (actual_grid_columns - 1) * active_cell_spacing;
 
 // Seam gap: the arc between the last and first cell centers, measured the long
 // way around through the seam. The grid is centered on angle 0, so the middle of
-// this gap is always exactly 180° — where the tactile indicator sits. Warn when
-// the gap can no longer hold the indicator plus a clear zone either side of it.
+// this gap is always exactly 180° - where the tactile indicator sits, on both
+// plates, with equal space either side of it (a fixed lead-in before the first
+// cell was tried and reverted the same day, 2026-09-21, web decision D-T6).
+// Warn when the gap can no longer hold the indicator plus a clear zone either
+// side of it.
 seam_gap_mm = PI * active_cylinder_diameter_mm - grid_width;
 tactile_gap_too_small = tactile_on && (seam_gap_mm < tactile_indicator_width + TACTILE_MIN_GAP_MARGIN);
 
@@ -1230,15 +1261,34 @@ seam_channel_footprint_mm = active_dot_spacing / 2
         ? max(DS_DOT_BASE_DIA / 2, DS_BOWL_DIA / 2)
         : max(use_rounded_dots ? _preset_rounded_dot_base_diameter / 2 : _preset_emboss_dot_base_diameter / 2,
               use_rounded_dots ? _preset_bowl_counter_dot_base_diameter / 2 : _preset_cone_counter_dot_base_diameter / 2));
-seam_channel_lo_mm = tactile_on
-    ? (tactile_indicator_width / 2 + tactile_recess_clearance)        // past the (clearance-grown) arrow recess
-    : -(seam_gap_mm / 2 - seam_channel_footprint_mm);                  // past the last cell's dots
-seam_channel_hi_mm = tactile_on
-    ? (seam_gap_mm / 2 - seam_channel_footprint_mm)                    // before the first cell's dots
-    : (seam_gap_mm / 2 - active_dot_spacing / 2);                      // before column 0's triangle
+// Card fit (web decisions D-T3, D-T4, 2026-09-21): the embosser is loaded with
+// the card's leading edge at the alignment arrow, which sits at the middle of
+// the seam gap, so a tactile row needs half the gap plus the grid plus the last
+// cell's footprint of card. 13 cells at the 0.4mm preset need 89.5 mm and fit
+// a 90 mm card; 14 need 92.8 and lose their last cell at ANY arrow position -
+// which is how this rule was found. A NOTE and a red badge, never a stop: the
+// cylinder itself still holds the row. Mirrors the web generator's
+// tactile_card_need_mm() / tactile_max_cells().
+tactile_card_need_mm = seam_gap_mm / 2 + grid_width + seam_channel_footprint_mm;
+tactile_card_too_long = tactile_on && (tactile_card_need_mm > CARD_LENGTH_MM);
+tactile_card_max_cells = max(0,
+    floor((CARD_LENGTH_MM - PI * active_cylinder_diameter_mm / 2 - seam_channel_footprint_mm) * 2
+          / active_cell_spacing) + 1);
+if (tactile_card_too_long) {
+    echo(str("NOTE: this row needs ", round(tactile_card_need_mm * 10) / 10,
+             " mm of card from the alignment arrow; the card is ", CARD_LENGTH_MM,
+             " mm. Lower grid_columns to ", tactile_card_max_cells, " or fewer."));
+}
+
+// The groove's window, Visual mode: between the last cell's dots and column 0's
+// triangle. Tactile mode has no window - the groove runs down the arrow column
+// itself, the full height, recut through the raised arrows (D-T6, D-T7; the
+// recut's span is computed below the omission notes).
+seam_channel_lo_mm = -(seam_gap_mm / 2 - seam_channel_footprint_mm);   // past the last cell's dots
+seam_channel_hi_mm = seam_gap_mm / 2 - active_dot_spacing / 2;         // before column 0's triangle
 seam_channel_free_mm = seam_channel_hi_mm - seam_channel_lo_mm;
 seam_channel_need_mm = SEAM_CHANNEL_WIDTH_MM + 2 * SEAM_CHANNEL_MARGIN_MM;
-seam_channel_fits = seam_channel_free_mm >= seam_channel_need_mm;
+seam_channel_fits = tactile_on || (seam_channel_free_mm >= seam_channel_need_mm);
 // The wall under the apex: only a polygonal cutout can thin it - this shell
 // has no wall-thickness hollowing (a barrel with no cutout is solid) and gear
 // mode forces the barrel solid. The cutout's vertices reach the circumradius.
@@ -1248,7 +1298,8 @@ seam_channel_bore_mm = (gears_on || active_polygon_cutout_radius_mm <= 0)
 seam_channel_wall_mm = radius - SEAM_CHANNEL_DEPTH_MM - seam_channel_bore_mm;
 seam_channel_wall_ok = (seam_channel_bore_mm <= 0) || (seam_channel_wall_mm >= SEAM_CHANNEL_MIN_WALL_MM);
 seam_channel_present = seam_channel_on && seam_channel_fits && seam_channel_wall_ok;
-seam_channel_s_mm = (seam_channel_lo_mm + seam_channel_hi_mm) / 2;
+// Tactile: 180 on BOTH plates, the arrow column (D-T6).
+seam_channel_s_mm = tactile_on ? 0 : (seam_channel_lo_mm + seam_channel_hi_mm) / 2;
 seam_channel_theta_emboss_deg  = 180 + (seam_channel_s_mm / radius) * 180 / PI;
 seam_channel_theta_counter_deg = 180 - (seam_channel_s_mm / radius) * 180 / PI;
 
@@ -1261,6 +1312,34 @@ if (seam_channel_on && !seam_channel_fits)
 if (seam_channel_on && seam_channel_fits && !seam_channel_wall_ok)
     echo(str("NOTE: The seam channel was left out: the cylinder wall would be thinner than ",
              SEAM_CHANNEL_MIN_WALL_MM, " mm under it."));
+
+// Tactile mode: the emboss plate's groove is cut a SECOND time, after the
+// raised arrows are on, over the arrow chain - [z_from, z_to] about mid-height
+// in the shell's own frame: the outermost arrows' outlines (grown by the
+// gear-mode weld), plus SEAM_CHANNEL_ARROW_MARGIN_MM at each end, held
+// SEAM_CHANNEL_RECUT_INSET_MM inside the end faces - with the V's sides carried
+// tactile_indicator_raise + SEAM_CHANNEL_LIP_MM past the surface, so the
+// arrows' top faces are cut, never touched. The V is 2 mm wide at the top
+// face: each arrow keeps its base half as two ridges and loses its point
+// (D-T7, Brennen's choice - the tested V at every layer). The counter plate's
+// recesses are deeper than the groove, so its single full-height cut already
+// runs through them and it gets no recut. Mirrors the web generator's
+// tactile_arrow_span() / _seam_channel_block(); the tests pin the numbers.
+function tactile_arrow_apex_growth(delta) =
+    delta > 0 ? delta / sin(atan2(tactile_indicator_width / 2, tactile_indicator_length)) : 0;
+function tactile_recut_span(delta) =
+    let (ys = tactile_arrow_y_positions(),
+         inset = active_cylinder_height_mm / 2 - SEAM_CHANNEL_RECUT_INSET_MM)
+    [max(min(ys) - tactile_indicator_length / 2 - delta - SEAM_CHANNEL_ARROW_MARGIN_MM, -inset),
+     min(max(ys) + tactile_indicator_length / 2 + tactile_arrow_apex_growth(delta)
+         + SEAM_CHANNEL_ARROW_MARGIN_MM, inset)];
+seam_channel_recut_span = tactile_on ? tactile_recut_span(gears_on ? GEAR_ARROW_WELD_MM : 0) : undef;
+seam_channel_recut_lip_mm = tactile_indicator_raise + SEAM_CHANNEL_LIP_MM;
+if (tactile_on) {
+    echo(str("NOTE: tactile arrow at 180 deg on both plates; seam channel the full height, ",
+             "recut through the raised arrows over z ", seam_channel_recut_span,
+             " mm about mid-height on the emboss plate."));
+}
 
 // Counter plate recess radii (spherical cap formula to match web generator)
 // For a bowl recess: R = (a² + h²) / (2h) where a = opening radius, h = depth
@@ -1568,10 +1647,12 @@ module tactile_shell_band(r_in, r_out) {
     }
 }
 
-// Radial prism straddling the shell surface at 180° (the seam-gap centre).
-// Passing cyl_radius = radius + span/2 with no overcut makes place_cylinder_marker
-// put the child's origin exactly on the surface, so the prism reaches span/2 both
-// outward and inward from it.
+// Radial prism straddling the shell surface at 180 degrees - the seam-gap
+// centre, the mirror's fixed point, so the arrow and its recess meet at the
+// nip by construction (a lead-in before column 0 was tried and reverted the
+// same day, 2026-09-21, web decision D-T6). Passing cyl_radius = radius +
+// span/2 with no overcut makes place_cylinder_marker put the child's origin
+// exactly on the surface, so the prism reaches span/2 both outward and inward.
 module tactile_surface_prism(y_pos, span) {
     place_cylinder_marker(180, y_pos, radius + span / 2, span, 0)
         translate([0, 0, -span / 2])
@@ -1680,6 +1761,19 @@ module ds_mode_warnings() {
 // The seam channel was left out: warn in 3D, same reasons and same pattern as
 // tactile_gap_warning above, on both plates (one set of settings serves the
 // pair). Wording S-O1 in the OpenSCAD parity plan.
+// A tactile row that would run off the card: red text at slot 8 of the stack,
+// on both plates (the pair is printed from one set of settings). The console
+// carries the same fact as a NOTE (see tactile_card_too_long above).
+module card_fit_warning() {
+    if (tactile_card_too_long) {
+        translate([0, 0, active_cylinder_height_mm/2 + INVALID_TEXT_Z_OFFSET + 8 * INVALID_TEXT_STACK_GAP])
+        color("red")
+        linear_extrude(height = INVALID_TEXT_DEPTH)
+        text(str("TEXT RUNS OFF CARD: ", round(tactile_card_need_mm * 10) / 10, "/", CARD_LENGTH_MM, "mm"),
+             size = INVALID_TEXT_SIZE, halign = "center", valign = "center");
+    }
+}
+
 module seam_channel_warning() {
     if (seam_channel_on && !seam_channel_present) {
         translate([0, 0, active_cylinder_height_mm/2 + INVALID_TEXT_Z_OFFSET + 7 * INVALID_TEXT_STACK_GAP])
@@ -1893,15 +1987,6 @@ GEAR_WELD_RING_R_IN = 8.0;
 GEAR_WELD_RING_R_OUT = 13.0;
 GEAR_WELD_RING_H = 0.1;
 
-// Gear mode only: grow the RAISED tactile arrow's outline by 5 um. At the
-// default 10 mm indicator length on 10 mm line spacing each arrow's apex
-// touches the next arrow's base exactly, and float32 STL rounding welds that
-// tangency into a non-manifold pinch edge - which would break the watertight
-// one-piece roller. Physically negligible: 2.5% of the recess nesting
-// clearance, far below print accuracy. Off, the outline is untouched, so
-// existing exports keep the tangency they ship with.
-GEAR_ARROW_WELD_MM = 0.005;
-
 // The size gate, mirroring the web generator's, which Brennen signed on
 // 2026-08-24 as a HARD STOP covering BOTH dimensions rather than a warning.
 // OpenSCAD cannot test whether an imported file exists, so this is the guard
@@ -1960,14 +2045,31 @@ module gear_set(emboss = is_emboss_plate) {
 // groove's physical angle. It is subtracted from the BARE outer cylinder,
 // before the cutout and before anything is unioned on, so a raised arrow can
 // never be undercut and the gears fill their share back in.
-module seam_channel_cut(theta_deg) {
+module seam_channel_cut(theta_deg,
+                        z_from = -(active_cylinder_height_mm / 2 + SEAM_CHANNEL_OVERSHOOT_MM),
+                        z_to   =   active_cylinder_height_mm / 2 + SEAM_CHANNEL_OVERSHOOT_MM,
+                        lip    =   SEAM_CHANNEL_LIP_MM) {
     half_mouth = (SEAM_CHANNEL_WIDTH_MM / 2)
-                 * (SEAM_CHANNEL_DEPTH_MM + SEAM_CHANNEL_LIP_MM) / SEAM_CHANNEL_DEPTH_MM;
+                 * (SEAM_CHANNEL_DEPTH_MM + lip) / SEAM_CHANNEL_DEPTH_MM;
     r_apex = radius - SEAM_CHANNEL_DEPTH_MM;
-    r_lip  = radius + SEAM_CHANNEL_LIP_MM;
+    r_lip  = radius + lip;
     rotate([0, 0, theta_deg])
-        linear_extrude(height = active_cylinder_height_mm + 2 * SEAM_CHANNEL_OVERSHOOT_MM, center = true)
-            polygon(points = [[r_apex, 0], [r_lip, -half_mouth], [r_lip, half_mouth]]);
+        translate([0, 0, z_from])
+            linear_extrude(height = z_to - z_from)
+                polygon(points = [[r_apex, 0], [r_lip, -half_mouth], [r_lip, half_mouth]]);
+}
+
+// D-T7: the emboss plate's second cut, over the arrow chain, after the raised
+// arrows are on - the same V, its sides carried past the arrows' top faces.
+// Called from the plate module's difference(), after its union, so the
+// arrows are notched; the first cut (in cylinder_shell) already owns the
+// end faces, which is why this one stays inside them.
+module seam_channel_arrow_recut() {
+    if (seam_channel_present && tactile_on && !is_undef(seam_channel_recut_span)) {
+        seam_channel_cut(seam_channel_theta_emboss_deg,
+                         seam_channel_recut_span[0], seam_channel_recut_span[1],
+                         seam_channel_recut_lip_mm);
+    }
 }
 
 module cylinder_shell(cutout_rotate_deg = 0, force_solid = false, channel_theta_deg = undef) {
@@ -2192,6 +2294,7 @@ module cylinder_emboss_plate() {
                 // SEAM CHANNEL LEFT OUT warning (switch On but no room or no
                 // wall for the groove; no-op otherwise).
                 seam_channel_warning();
+                card_fit_warning();
 
                 // TOO MANY LINES warning (see top-level rows_used /
                 // too_many_rows). The dot loop below stops at active_grid_rows,
@@ -2273,6 +2376,10 @@ module cylinder_emboss_plate() {
                 }
             }
 
+            // Tactile: the seam channel's second cut, through the raised arrows
+            // unioned above (D-T7) - see seam_channel_arrow_recut.
+            seam_channel_arrow_recut();
+
             // Double-sided: the seats for the opposing cylinder's back dots.
             // Subtracted last, after the raised dots are unioned in, so a bowl
             // that reaches a neighbouring dot cuts it rather than being buried
@@ -2330,9 +2437,8 @@ module cylinder_counter_plate() {
             }
 
             // Tactile mode: the arrow recess the emboss plate's raised arrow nests
-            // into. It sits at 180°, the fixed point of this plate's mirror /
-            // angle-negation construction, so it needs no mirroring of its own —
-            // it lands on the emboss arrow either way.
+            // into, at 180 - the mirror's own fixed point - so it lands on the
+            // emboss arrow when the pair is in its paired pose.
             if (tactile_on) {
                 tactile_rows_recessed();
             }
@@ -2401,6 +2507,7 @@ module cylinder_counter_plate() {
         ds_mode_warnings();
         tactile_seam_wall_warning();
         seam_channel_warning();
+        card_fit_warning();
     }
 }
 
