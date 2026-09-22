@@ -239,11 +239,11 @@ test.describe('Slicer seam channel', () => {
     expect(counterApex[0]).toBeCloseTo(360 - EMBOSS_CHANNEL_DEG, 1);
   });
 
-  test('in tactile mode the groove runs down the arrow column and stops short of the arrows', async ({ page }) => {
+  test('in tactile mode the groove runs down the arrow column the full height, through the arrows', async ({ page }) => {
     // 13 cells, 4 rows: the arrows sit at +/-15 and +/-5 mm about mid-height,
     // a chain from -20 to +20 mm; the groove (180 degrees, the arrow column)
-    // is cut from each end face to 0.3 mm short of the chain and nowhere
-    // inside it (D-T6, 2026-09-21).
+    // runs the full height and is recut through the raised arrows (D-T6 and
+    // D-T7, 2026-09-21), so its floor exists at every height.
     await openApp(page);
     await page.locator('input[name="indicator_mode"][value="tactile"]').check();
     await expect(page.locator('#grid_columns')).toHaveValue('13');
@@ -267,10 +267,19 @@ test.describe('Slicer seam channel', () => {
       .filter(([x, y]) => Math.abs(Math.hypot(x, y) - (BARREL_RADIUS_MM - CHANNEL_DEPTH_MM)) < 0.05)
       .map(([, , z]) => z - zMid);
     expect(floorZ.length).toBeGreaterThan(0);
-    // The groove floor exists only outside the chain (|z| >= 20.3) ...
-    expect(floorZ.every((z) => Math.abs(z) >= 20.3 - 0.05)).toBe(true);
-    // ... and its ends sit exactly 0.3 mm short of the outermost arrows.
-    expect(Math.min(...floorZ.map(Math.abs))).toBeCloseTo(20.3, 1);
+    // The floor reaches both end faces (its apex line has vertices only on
+    // the caps: the recut shares it, so the chain adds none) ...
+    expect(Math.min(...floorZ)).toBeCloseTo(-26, 0);
+    expect(Math.max(...floorZ)).toBeCloseTo(26, 0);
+    // ... and the recut has notched every raised arrow: nothing stands proud
+    // of the surface on the centre line inside the chain any more (the
+    // arrows' points are gone), while their base corners, 7.4 degrees out,
+    // still do.
+    const proud = vertices
+      .filter(([x, y]) => Math.hypot(x, y) > BARREL_RADIUS_MM + 0.05)
+      .map(([x, y, z]) => ({ off: Math.abs((((Math.atan2(y, x) * 180) / Math.PI + 360) % 360) - 180), z: z - zMid }));
+    expect(proud.some((v) => v.off < 1 && Math.abs(v.z) < 21)).toBe(false);
+    expect(proud.some((v) => v.off > 6 && v.off < 9 && Math.abs(v.z) < 21)).toBe(true);
   });
 
   test('a layout with no room says so before Generate, and the note clears', async ({ page }) => {

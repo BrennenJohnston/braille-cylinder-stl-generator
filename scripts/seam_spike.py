@@ -8,12 +8,12 @@ braille dot or bowl - and does turning the part so the groove faces +Y do the sa
     python scripts/seam_spike.py            # build, slice, report -> build/seam_spike/REPORT.md
     python scripts/seam_spike.py --no-slice # build the STLs only
     python scripts/seam_spike.py --layouts tactile14,tactile13 --channels none,v10 --no-rear \
-        --out build/seam_spike_column       # the 2026-09-21 D-T6 rerun (groove down the arrow column)
+        --out build/seam_spike_through      # the 2026-09-21 D-T7 rerun (full height, recut through the arrows)
 
-2026-09-21 (D-T6): in tactile mode the groove runs down the arrow column itself (180 degrees)
-in two stretches that stop short of the arrow chain, so the tactile placement here is read
-from the spec's own block - angle and stretches - and main() refuses to run if this script
-and the spec disagree about the angle.
+2026-09-21 (D-T6, D-T7): in tactile mode the groove runs down the arrow column itself (180
+degrees) the full height, and the embossing plate recuts it through the raised arrows, so the
+tactile placement here is read from the spec's own block - angle and recut - and main() refuses
+to run if this script and the spec disagree about the angle.
 
 Cylinders are built with the repo's own geometry spec (app.geometry_spec) and the golden
 fixture renderer's helpers (tests/test_golden.py), so dots, bowls and tactile arrows are the
@@ -149,12 +149,12 @@ def channel_placement(layout: str, plate_type: str, settings: CardSettings, chan
 
 
 def channel_cutter(
-    channel: dict, theta: float, radius: float, height: float, segments: list[dict] | None = None
+    channel: dict, theta: float, radius: float, height: float, recut: dict | None = None
 ) -> trimesh.Trimesh:
     """
     Groove cutter: V or rectangle cross-section in the (radial, circumferential)
-    plane, the full height plus the overshoot or - tactile mode, D-T6 - the
-    spec's stretches (z_from/z_to about mid-height).
+    plane, the full height plus the overshoot or - the tactile recut, D-T7 -
+    the spec's arrow span (z_from/z_to about mid-height) with the taller lip.
     """
     width, depth = channel['width'], channel['depth']
     r_out = radius + CHANNEL_LIP_MM
@@ -172,13 +172,10 @@ def channel_cutter(
     c, s = math.cos(theta), math.sin(theta)
     poly = Polygon([(u * c - v * s, u * s + v * c) for u, v in section])
     full = height + 2.0 * CHANNEL_OVERSHOOT_MM
-    spans = [(seg['z_from'], seg['z_to']) for seg in (segments or [])] or [(-full / 2.0, full / 2.0)]
-    prisms = []
-    for z_from, z_to in spans:
-        prism = trimesh.creation.extrude_polygon(poly, height=z_to - z_from)
-        prism.apply_translation([0.0, 0.0, z_from])
-        prisms.append(prism)
-    return trimesh.util.concatenate(prisms) if len(prisms) > 1 else prisms[0]
+    z_from, z_to = (recut['z_from'], recut['z_to']) if recut else (-full / 2.0, full / 2.0)
+    prism = trimesh.creation.extrude_polygon(poly, height=z_to - z_from)
+    prism.apply_translation([0.0, 0.0, z_from])
+    return prism
 
 
 def bore_cutter(spec: dict) -> trimesh.Trimesh:
@@ -227,14 +224,14 @@ def visual_marker_cutter(marker: dict) -> trimesh.Trimesh:
 
 
 def build_cylinder(
-    spec: dict, channel: dict | None, theta_c: float | None, segments: list[dict] | None = None
+    spec: dict, channel: dict | None, theta_c: float | None, recut: dict | None = None
 ) -> trimesh.Trimesh:
     cylinder = spec['cylinder']
     radius, height = cylinder['radius'], cylinder['height']
     shell = trimesh.creation.cylinder(radius=radius, height=height, sections=_DS_SHELL_SECTIONS)
     cutters = [bore_cutter(spec)]
     if channel and theta_c is not None:
-        cutters.append(channel_cutter(channel, theta_c, radius, height, segments))
+        cutters.append(channel_cutter(channel, theta_c, radius, height))
     # Shell stage first (bore + channel), then raised features, then recesses - the worker's order.
     shell = trimesh.boolean.difference([shell, trimesh.boolean.union(cutters, engine='manifold')], engine='manifold')
     raised = [shell]
@@ -249,6 +246,10 @@ def build_cylinder(
             recesses.append(_ds_bowl_cutter(dot))
         else:
             raised.extend(_ds_rounded_dot_meshes(dot))
+    if channel and theta_c is not None and recut:
+        # D-T7: the tactile embossing plate's groove is cut again through the
+        # raised arrows, after they join.
+        recesses.append(channel_cutter(channel, theta_c, radius, height, recut))
     solid = trimesh.boolean.union(raised, engine='manifold')
     if recesses:
         solid = trimesh.boolean.difference(
@@ -436,7 +437,7 @@ def main() -> None:
                 stl = OUT / f'{stem}.stl'
                 if not stl.exists():
                     print(f'[build] {stem}')
-                    mesh = build_cylinder(spec, channel, theta_c, (emitted or {}).get('segments'))
+                    mesh = build_cylinder(spec, channel, theta_c, (emitted or {}).get('arrow_recut'))
                     mesh.export(stl)
                     if channel and not args.no_rear:
                         rotate_to_face_rear(mesh, theta_c).export(OUT / f'{stem}_rear.stl')

@@ -39,8 +39,8 @@
     "manifold3d_version": "3.3.2"
   },
   "expected_properties": {
-    "face_count": 36052,
-    "vertex_count": 18028,
+    "face_count": 36106,
+    "vertex_count": 18055,
     "is_watertight": true,
     "bbox_min": [
       -16.109355926513672,
@@ -52,7 +52,7 @@
       16.109355926513672,
       64.0
     ],
-    "volume": 51223.780402229495,
-    "surface_area": 11393.573236002927
+    "volume": 51190.71610516613,
+    "surface_area": 11401.929124877834
   }
 }

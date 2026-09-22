@@ -372,7 +372,7 @@ def _ds_tactile_arrow_mesh(marker):
     return trimesh.boolean.intersection([prism, band], engine='manifold')
 
 
-def _seam_channel_cutter(channel, radius, height):
+def _seam_channel_cutter(channel, radius, height, recut=None):
     """
     The slicer seam channel's cutter: a V cross-section in the radial /
     circumferential plane, extruded the barrel height plus the overshoot at
@@ -387,24 +387,23 @@ def _seam_channel_cutter(channel, radius, height):
     import trimesh
     from shapely.geometry import Polygon
 
-    width, depth, lip, overshoot = channel['width'], channel['depth'], channel['lip'], channel['overshoot']
+    width, depth, overshoot = channel['width'], channel['depth'], channel['overshoot']
+    # The recut (D-T7, tactile embossing plate) is the same V over the arrow
+    # chain only, its sides carried up past the raised arrows' top faces.
+    lip = recut['lip'] if recut else channel['lip']
     r_out = radius + lip
     half_mouth = (width / 2.0) * (depth + lip) / depth
     section = [(r_out, -half_mouth), (r_out, half_mouth), (radius - depth, 0.0)]
     theta = channel['theta']
     c, s = math.cos(theta), math.sin(theta)
     outline = Polygon([(u * c - v * s, u * s + v * c) for u, v in section])
-    # Full height plus the overshoot, or - tactile mode, D-T6 - the stretches
-    # outside the arrow chain the spec lists (createSeamChannelManifold does
-    # the same).
+    # Full height plus the overshoot, or the recut's own span
+    # (createSeamChannelManifold does the same).
     full = height + 2.0 * overshoot
-    spans = [(seg['z_from'], seg['z_to']) for seg in channel.get('segments', [])] or [(-full / 2.0, full / 2.0)]
-    prisms = []
-    for z_from, z_to in spans:
-        prism = trimesh.creation.extrude_polygon(outline, height=z_to - z_from)
-        prism.apply_translation([0.0, 0.0, z_from])
-        prisms.append(prism)
-    return trimesh.util.concatenate(prisms) if len(prisms) > 1 else prisms[0]
+    z_from, z_to = (recut['z_from'], recut['z_to']) if recut else (-full / 2.0, full / 2.0)
+    prism = trimesh.creation.extrude_polygon(outline, height=z_to - z_from)
+    prism.apply_translation([0.0, 0.0, z_from])
+    return prism
 
 
 def _build_ds_cylinder_mesh(spec, shell=None):
@@ -482,6 +481,10 @@ def _build_ds_cylinder_mesh(spec, shell=None):
             cutters.append(_ds_bowl_cutter(dot))
         else:
             raised.extend(_ds_rounded_dot_meshes(dot))
+    # D-T7: the tactile embossing plate's groove is cut again through the
+    # raised arrows, after they join - the worker's recut, in the same stage.
+    if channel and channel.get('arrow_recut'):
+        cutters.append(_seam_channel_cutter(channel, radius, height, channel['arrow_recut']))
 
     solid = trimesh.boolean.union(raised, engine='manifold')
     # A single-sided EMBOSS plate cuts nothing: its dots and its tactile arrows
@@ -705,7 +708,14 @@ def test_ds_golden_fixture_matches_regenerated_geometry(fixtures_dir, plate_type
             outside_points.append(surface_point(theta, (radius + marker['inner_radius']) / 2.0, y_local))
             inside_points.append(surface_point(theta, marker['inner_radius'] - 0.1, y_local))
         else:
-            inside_points.append(surface_point(theta, (radius + marker['outer_radius']) / 2.0, y_local))
+            # The seam channel is recut through the raised arrow (D-T7), so its
+            # centre line is air: probe 1.2 mm beside it, 3 mm below the
+            # arrow's centre, where the arrow is 1.6 mm wide either side and
+            # the V only 0.75 mm at half the raise.
+            inside_points.append(
+                surface_point(theta + 1.2 / radius, (radius + marker['outer_radius']) / 2.0, y_local - 3.0)
+            )
+            outside_points.append(surface_point(theta, (radius + marker['outer_radius']) / 2.0, y_local))
             outside_points.append(surface_point(theta, marker['outer_radius'] + 0.1, y_local))
 
     assert fixture_mesh.contains(np.array(inside_points)).all()
@@ -1498,10 +1508,16 @@ def test_v2_gear_golden_fixture_is_one_sealed_roller_with_no_void(fixtures_dir, 
         count, _ = tooth_band_phase(roller.vertices, z_low, z_high)
         assert count == _GEAR_TOOTH_COUNT
 
-    # The rim: the 64-gon barrel's vertices sit ON the radius at mid-height.
+    # The rim at mid-height: the only vertices under the surface radius are
+    # the seam channel's own (its V walls meet the arrow recess, and on the
+    # embossing plate the recut arrows, on the 180 degree column), and the
+    # features off that column stand on the radius.
     mid = roller.vertices[np.abs(roller.vertices[:, 2] - version2.V2_BARREL_HEIGHT_MM / 2) < 1.0]
     radial = np.hypot(mid[:, 0], mid[:, 1])
-    assert radial[radial > 15.0].min() == pytest.approx(version2.V2_BARREL_DIAMETER_MM / 2, abs=0.02)
+    off_column = np.abs(np.degrees(np.arctan2(mid[:, 1], mid[:, 0])) % 360.0 - 180.0) > 4.0
+    under = (radial > 15.0) & (radial < version2.V2_BARREL_DIAMETER_MM / 2 - 0.02)
+    assert not (under & off_column).any(), 'the surface is eaten away from the seam channel'
+    assert radial[(radial > 15.0) & off_column].min() == pytest.approx(version2.V2_BARREL_DIAMETER_MM / 2, abs=0.02)
 
     # Solid where the keyed hole and the socket used to be, and inside the
     # notch volume the fill closed (r 12 on the arrow column, 1.5 mm into the
@@ -1590,11 +1606,12 @@ def _seam_channel_fixture(family, plate_type):
 def test_golden_fixture_has_the_seam_channel(fixtures_dir, family, plate_type):
     """
     Air in the groove at the spec's angle and solid wall 2.5 degrees either
-    side of it, near both ends - and, since D-T6 (2026-09-21), solid at
-    mid-height on the embossing plate: every golden is a tactile layout, whose
-    groove runs down the arrow column in two stretches that stop short of the
-    arrow chain, so mid-height sits under a raised arrow there. Both plates of
-    every pair carry it, and the two angles of a pair sum to 360 degrees.
+    side of it, near both ends and at mid-height. Every golden is a tactile
+    layout, whose groove runs down the arrow column the full height (D-T6,
+    D-T7, 2026-09-21): on the embossing plate the V is recut through the
+    raised arrows, so mid-height - inside the chain - is air at the centre
+    line and the arrow still stands beside the notch. Both plates of every
+    pair carry it, and the two angles of a pair sum to 360 degrees.
 
     Only the margin band is probed for solid: the seam centre is the arrow
     RECESS on every counter plate, and on a double-sided pair the far side of
@@ -1622,23 +1639,28 @@ def test_golden_fixture_has_the_seam_channel(fixtures_dir, family, plate_type):
     def point(angle, z):
         return [probe_radius * math.cos(angle), probe_radius * math.sin(angle), z]
 
-    segments = channel.get('segments')
-    if segments:
-        # Tactile: probe inside each stretch (fixture z runs from 0 at the
-        # base; the spec's z_from/z_to are about mid-height) and check the
-        # chain in between is untouched on the embossing plate.
-        heights = [
-            (max(seg['z_from'], -height / 2.0) + min(seg['z_to'], height / 2.0)) / 2.0 + height / 2.0
-            for seg in segments
-        ]
-        if plate_type == 'positive':
-            assert mesh.contains(np.array([point(theta, height / 2.0)])).all(), (
-                f'{fixture_name}: the groove reaches the arrow chain at mid-height'
-            )
+    heights = [2.0, height / 2.0, height - 2.0]
+    if plate_type == 'positive':
+        # The recut: the arrow 3 mm below one arrow's centre is 1.6 mm wide
+        # either side; the V is 0.75 mm wide there at half the raise, so the
+        # arrow survives 1.2 mm off the centre line and is gone on it.
+        recut = channel['arrow_recut']
+        arrow = next(m for m in spec['markers'] if m['type'] == 'cylinder_tactile_arrow')
+        z_arrow = arrow['y'] - 3.0 + height / 2.0
+        assert recut['z_from'] <= arrow['y'] - 3.0 <= recut['z_to']
+        r_half = radius + 0.5 * (float(arrow['outer_radius']) - radius)
+        beside = [r_half * math.cos(theta + 1.2 / radius), r_half * math.sin(theta + 1.2 / radius), z_arrow]
+        centre = [r_half * math.cos(theta), r_half * math.sin(theta), z_arrow]
+        assert mesh.contains(np.array([beside])).all(), f'{fixture_name}: the arrow is gone beside the recut'
+        assert not mesh.contains(np.array([centre])).any(), f'{fixture_name}: the recut missed the arrow'
     else:
-        heights = [2.0, height / 2.0, height - 2.0]
+        assert 'arrow_recut' not in channel
     air = np.array([point(theta, z) for z in heights])
-    solid = np.array([point(angle, z) for z in heights for angle in (theta - side, theta + side)])
+    # The counter plate's arrow recess (4.4 mm wide, deeper than the groove)
+    # straddles the column at mid-height, so its surface is probed at the
+    # ends only; the embossing plate's shell is solid beside the V everywhere.
+    solid_heights = heights if plate_type == 'positive' else [2.0, height - 2.0]
+    solid = np.array([point(angle, z) for z in solid_heights for angle in (theta - side, theta + side)])
     assert not mesh.contains(air).any(), f'{fixture_name}: no groove at {math.degrees(theta):.2f} deg'
     assert mesh.contains(solid).all(), f'{fixture_name}: surface missing beside the groove'
 

@@ -56,14 +56,17 @@ TACTILE_SEAM_THETA = math.pi
 
 # In tactile mode the slicer seam channel runs down the arrow column itself
 # (D-T6) - 180°, the arrow's own angle, so it takes no circumference of its
-# own - from each end face up to the arrow chain, and stops this far short of
-# the nearest arrow outline (the recess outline on the counter plate, mitre and
-# clearance included), so the arrows are untouched. Over the chain the arrows'
-# own corners hold the seam: the 2026-09-21 slicing study's no-groove tactile
-# controls put 0 % of layers in a dot. A stretch shorter than the minimum is
-# not worth a cut and is left out.
+# own - the FULL height, and on the embossing plate it is cut a second time
+# after the raised arrows are on, so the V runs through them (D-T7,
+# 2026-09-21: Brennen's print showed the slicer choosing dots wherever the
+# groove stopped; the arrows' own corners were not enough). That recut spans
+# the arrow chain plus this margin at each end, with the V's sides carried up
+# past the arrows' top faces (lip = raise + SEAM_CHANNEL_LIP_MM), and stays the
+# inset inside the end faces so it can never nick a gear's face. The counter
+# plate's recesses are deeper than the groove, so its single full-height cut
+# already runs through them.
 SEAM_CHANNEL_ARROW_MARGIN_MM = 0.3
-SEAM_CHANNEL_MIN_SEGMENT_MM = 1.0
+SEAM_CHANNEL_RECUT_INSET_MM = 0.05
 
 # Arrow layouts along the cylinder axis. 'per_row' puts one arrow at every
 # braille row centre - the geometry every request got before 2026-09-20, and
@@ -1113,11 +1116,12 @@ def tactile_arrow_span(
 ) -> tuple[float, float]:
     """
     The axial band this plate's arrow outlines occupy, as y_local, grown by
-    SEAM_CHANNEL_ARROW_MARGIN_MM at both ends: where the seam channel must not
-    run (D-T6). The counter plate's recess outline is the arrow grown by the
-    clearance as a mitre, which pushes its apex out by clearance / sin(half the
-    apex angle) - 1.02 mm at the defaults - and its base by the clearance; the
-    raised arrow grows only by the gear-mode weld.
+    SEAM_CHANNEL_ARROW_MARGIN_MM at both ends: the span the seam channel is
+    recut over after the raised arrows are on (D-T7). The counter plate's
+    recess outline is the arrow grown by the clearance as a mitre, which pushes
+    its apex out by clearance / sin(half the apex angle) - 1.02 mm at the
+    defaults - and its base by the clearance; the raised arrow grows only by
+    the gear-mode weld.
     """
     width = float(getattr(settings, 'tactile_indicator_width', 4.0))
     length = float(getattr(settings, 'tactile_indicator_length', 10.0))
@@ -1166,25 +1170,25 @@ def _seam_channel_block(
     radius = diameter / 2.0
     gap = math.pi * diameter - grid_width
     footprint = _seam_channel_footprint(settings, double_sided)
-    segments: list[dict[str, float]] = []
+    arrow_recut: dict[str, float] | None = None
     if tactile_on:
         # D-T6 (2026-09-21): down the arrow column itself - 180 degrees on
         # both plates, the arrow's own angle and the mirror's fixed point - so
-        # the groove takes no circumference of its own. It runs from each end
-        # face up to the arrow chain and stops SEAM_CHANNEL_ARROW_MARGIN_MM
-        # short of it (tactile_arrow_span); the arrows' own corners hold the
-        # seam across the chain. No window to fit: the column always exists.
+        # the groove takes no circumference of its own and there is no window
+        # to fit. D-T7 (same day, after Brennen's print): the FULL height, and
+        # on the embossing plate a second cut over the arrow chain after the
+        # raised arrows are on, with the V's sides carried up past their top
+        # faces, so the seam has a corner at every layer. The counter plate's
+        # recesses are deeper than the groove: one cut runs through them.
         assert arrow_span is not None, 'tactile mode needs the arrow span'
-        span_low, span_high = arrow_span
-        end_low = -height / 2.0 - SEAM_CHANNEL_OVERSHOOT_MM
-        end_high = height / 2.0 + SEAM_CHANNEL_OVERSHOOT_MM
-        if span_low - (-height / 2.0) >= SEAM_CHANNEL_MIN_SEGMENT_MM:
-            segments.append({'z_from': end_low, 'z_to': span_low})
-        if height / 2.0 - span_high >= SEAM_CHANNEL_MIN_SEGMENT_MM:
-            segments.append({'z_from': span_high, 'z_to': end_high})
-        if not segments:
-            # S-C4, DRAFT (2026-09-21) - awaiting Brennen's sign-off.
-            return None, ('The seam channel was left out: the tactile arrows leave no room for it along the cylinder.')
+        if plate_type != 'negative':
+            span_low, span_high = arrow_span
+            inset = height / 2.0 - SEAM_CHANNEL_RECUT_INSET_MM
+            arrow_recut = {
+                'z_from': max(span_low, -inset),
+                'z_to': min(span_high, inset),
+                'lip': float(getattr(settings, 'tactile_indicator_raise', 0.5)) + SEAM_CHANNEL_LIP_MM,
+            }
     else:
         # Between the last cell's dots and column 0's alignment triangle, whose
         # outline is dot_spacing wide.
@@ -1225,11 +1229,11 @@ def _seam_channel_block(
         'overshoot': SEAM_CHANNEL_OVERSHOOT_MM,
         'lip': SEAM_CHANNEL_LIP_MM,
     }
-    if segments:
-        # Tactile only: the stretches to cut, in y_local. Absent, the worker
-        # and the golden renderer cut the full height plus the overshoot, so
-        # a visual-mode spec is byte-identical to before.
-        block['segments'] = segments
+    if arrow_recut is not None:
+        # Tactile embossing plate only: the second cut, in y_local, made after
+        # the raised arrows join. Absent, nothing is recut, so a visual-mode
+        # spec and every counter plate are byte-identical to before.
+        block['arrow_recut'] = arrow_recut
     return block, None
 
 

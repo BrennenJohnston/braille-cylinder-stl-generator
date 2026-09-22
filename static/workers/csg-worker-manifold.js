@@ -1674,10 +1674,16 @@ function cutKeyedCutoutsManifold(barrel, keyed, height) {
  * A malformed block throws: the backend wrote it, so it is a bug, not a
  * request to guess a groove.
  */
-function createSeamChannelManifold(channel, height, radius) {
-    const { theta, width, depth, overshoot, lip, segments } = channel;
+function createSeamChannelManifold(channel, height, radius, recut = null) {
+    const { theta, width, depth, overshoot } = channel;
+    // The recut (D-T7, tactile embossing plate) is the same V over the arrow
+    // chain only, its sides carried up past the raised arrows' top faces.
+    const lip = recut ? recut.lip : channel.lip;
     if (!isFinite(theta) || !(width > 0) || !(depth > 0) || !(lip > 0) || !(overshoot >= 0) || !(radius > 0)) {
         throw new Error(`seam channel: malformed block ${JSON.stringify(channel)}`);
+    }
+    if (recut && (!isFinite(recut.z_from) || !isFinite(recut.z_to) || !(recut.z_to > recut.z_from))) {
+        throw new Error(`seam channel: malformed recut ${JSON.stringify(recut)}`);
     }
 
     const adjustedTheta = -theta;
@@ -1696,34 +1702,16 @@ function createSeamChannelManifold(channel, height, radius) {
     ].map(([u, v]) => [u * c - v * s, u * s + v * c]);
 
     const crossSection = new CrossSection([section], 'Positive');
-    // The full height plus the overshoot at both ends, or - in tactile mode
-    // (D-T6) - the stretches outside the arrow chain the spec lists, from
-    // z_from to z_to in this frame. The full-height case is the pre-segment
-    // extrusion exactly: extrude the length, then shift down by half of it.
-    const spans = (Array.isArray(segments) && segments.length > 0)
-        ? segments.map(({ z_from: zFrom, z_to: zTo }) => {
-            if (!isFinite(zFrom) || !isFinite(zTo) || !(zTo > zFrom)) {
-                throw new Error(`seam channel: malformed segment ${JSON.stringify(channel)}`);
-            }
-            return [zFrom, zTo];
-        })
-        : [[-(height + 2 * overshoot) / 2, (height + 2 * overshoot) / 2]];
-    let result = null;
-    for (const [zFrom, zTo] of spans) {
-        const extruded = Manifold.extrude(crossSection, zTo - zFrom);
-        const placed = extruded.translate([0, 0, zFrom]);
-        extruded.delete();
-        if (result === null) {
-            result = placed;
-        } else {
-            const merged = result.add(placed);
-            result.delete();
-            placed.delete();
-            result = merged;
-        }
-    }
+    // The full height plus the overshoot at both ends (extrude the length,
+    // then shift down by half of it), or the recut's own span in this frame.
+    const [zFrom, zTo] = recut
+        ? [recut.z_from, recut.z_to]
+        : [-(height + 2 * overshoot) / 2, (height + 2 * overshoot) / 2];
+    const extruded = Manifold.extrude(crossSection, zTo - zFrom);
+    const placed = extruded.translate([0, 0, zFrom]);
+    extruded.delete();
     crossSection.delete();
-    return result;
+    return placed;
 }
 
 function createCylinderShellManifold(spec, solid = false, keyed = null) {
@@ -2116,6 +2104,21 @@ function processGeometrySpec(spec, gearAsset = null) {
                 unionedRaised.delete();
                 result = newResult;
                 console.log('Manifold CSG Worker: Added raised tactile indicators');
+            }
+
+            // D-T7 (2026-09-21): in tactile mode the seam channel is cut a
+            // second time over the arrow chain, now that the raised arrows are
+            // on, so the V runs through them and the slicer has a corner at
+            // every layer. The spec carries the span and the taller lip; the
+            // cut never reaches an end face, so a gear's face is untouched.
+            const recut = cylinder?.seam_channel?.arrow_recut;
+            if (isCylinder && recut) {
+                const recutter = createSeamChannelManifold(cylinder.seam_channel, cylinder.height, cylinder.radius, recut);
+                const notched = result.subtract(recutter);
+                result.delete();
+                recutter.delete();
+                result = notched;
+                console.log(`Manifold CSG Worker: recut seam channel through the raised arrows, z ${recut.z_from.toFixed(2)}..${recut.z_to.toFixed(2)} mm`);
             }
         }
 

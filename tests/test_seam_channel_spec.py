@@ -134,47 +134,52 @@ def test_visual_15_columns_worked_numbers():
 
 def test_tactile_14_columns_worked_numbers():
     """
-    Tactile mode since D-T6 (2026-09-21): the groove runs down the arrow column
-    itself - 180 degrees on both plates, the arrow's own angle - from each end
-    face up to the arrow chain. 4 rows on 10 mm spacing put the arrows at
-    +/-15 and +/-5 mm, a chain from -20 to +20; the groove stops 0.3 mm short of
-    it, and 0.2 mm (clearance) + 1.02 mm (the mitred apex) further on the
-    counter plate. The overshoot carries each stretch 1 mm past the end face.
+    Tactile mode since D-T6 / D-T7 (2026-09-21): the groove runs down the
+    arrow column itself - 180 degrees on both plates, the arrow's own angle -
+    the full height, and the embossing plate recuts it through the raised
+    arrows. 4 rows on 10 mm spacing put the arrows at +/-15 and +/-5 mm, a
+    chain from -20 to +20; the recut spans it plus 0.3 mm at each end, with
+    the V's sides carried 0.5 mm past the arrows' 0.5 mm raise. The counter
+    plate's recesses are deeper than the groove, so it gets no recut.
     """
     tactile = {'grid_columns': 14, 'indicator_mode': 'tactile'}
     lines = [FULL_CELL * 14] * 4
     a = channel_of(build_spec('positive', tactile, lines=lines))
     b = channel_of(build_spec('negative', tactile, lines=lines))
     assert a['theta'] == pytest.approx(math.pi) and b['theta'] == pytest.approx(math.pi)
-    assert [(round(s['z_from'], 3), round(s['z_to'], 3)) for s in a['segments']] == [(-27.0, -20.3), (20.3, 27.0)]
-    assert [(round(s['z_from'], 3), round(s['z_to'], 3)) for s in b['segments']] == [(-27.0, -20.5), (21.32, 27.0)]
+    assert set(a) == {'theta', 'width', 'depth', 'overshoot', 'lip', 'arrow_recut'}
+    assert set(b) == {'theta', 'width', 'depth', 'overshoot', 'lip'}
+    recut = a['arrow_recut']
+    assert (round(recut['z_from'], 3), round(recut['z_to'], 3), recut['lip']) == (-20.3, 20.3, 1.0)
 
 
-def test_tactile_groove_never_reaches_an_arrow_outline():
+def test_the_recut_covers_every_raised_arrow():
     """
-    From the emitted markers, not the formula: on every tactile layout each
-    stretch of the groove ends at least the margin short of every arrow's
-    outline (the recess outline on the counter plate), and the groove's angle
-    is the arrows' own.
+    From the emitted markers, not the formula: on every tactile layout the
+    embossing plate's recut spans every raised arrow's outline plus the margin,
+    its lip clears the arrows' raise by the channel lip, it stays inside the
+    end faces, and the groove's angle is the arrows' own.
     """
     margin = geometry_spec.SEAM_CHANNEL_ARROW_MARGIN_MM
     for columns, extra in ((13, {}), (14, {}), (12, {'tactile_indicator_layout': 'three_spaced'})):
-        for plate_type in ('positive', 'negative'):
-            settings = {'grid_columns': columns, 'indicator_mode': 'tactile', **extra}
-            spec = build_spec(plate_type, settings, lines=[FULL_CELL * columns] * 4)
-            groove = channel_of(spec)
-            arrows = [m for m in spec['markers'] if m['type'] == 'cylinder_tactile_arrow']
-            assert arrows and groove['segments']
-            for arrow in arrows:
-                assert groove['theta'] == pytest.approx(arrow['theta'])
-                delta = arrow['outline_delta']
-                apex = delta / math.sin(math.atan2(arrow['width'] / 2.0, arrow['length'])) if delta else 0.0
-                low = arrow['y'] - arrow['length'] / 2.0 - delta
-                high = arrow['y'] + arrow['length'] / 2.0 + apex
-                for segment in groove['segments']:
-                    assert segment['z_to'] <= low - margin + 1e-9 or segment['z_from'] >= high + margin - 1e-9, (
-                        f'{plate_type} {columns} columns: a groove stretch {segment} reaches the arrow at {arrow["y"]}'
-                    )
+        settings = {'grid_columns': columns, 'indicator_mode': 'tactile', **extra}
+        spec = build_spec('positive', settings, lines=[FULL_CELL * columns] * 4)
+        groove = channel_of(spec)
+        recut = groove['arrow_recut']
+        height = spec['cylinder']['height']
+        arrows = [m for m in spec['markers'] if m['type'] == 'cylinder_tactile_arrow']
+        assert arrows
+        assert -height / 2.0 < recut['z_from'] < recut['z_to'] < height / 2.0
+        for arrow in arrows:
+            assert groove['theta'] == pytest.approx(arrow['theta'])
+            assert arrow['is_recess'] is False
+            low = arrow['y'] - arrow['length'] / 2.0 - arrow['outline_delta']
+            high = arrow['y'] + arrow['length'] / 2.0 + arrow['outline_delta']
+            assert recut['z_from'] <= low - margin + 1e-9 and recut['z_to'] >= high + margin - 1e-9, (
+                f'{columns} columns: the recut {recut} misses the arrow at {arrow["y"]}'
+            )
+            raise_mm = float(arrow['outer_radius']) - float(arrow['radius'])
+            assert recut['lip'] == pytest.approx(raise_mm + geometry_spec.SEAM_CHANNEL_LIP_MM)
 
 
 @pytest.mark.parametrize(
@@ -271,8 +276,7 @@ def test_tactile_15_columns_still_gets_its_groove():
     """
     15 columns tactile leaves a 5.761 mm gap - the layout draws the signed
     'needs at least 9 mm' tactile warning - but the groove sits on the arrow
-    column, not in the gap, so it is cut regardless (D-T6). The tactile
-    omission sentence (S-C4) is for a chain that fills the whole height.
+    column, not in the gap, so it is cut regardless (D-T6).
     """
     spec = build_spec('positive', {'grid_columns': 15, 'indicator_mode': 'tactile'}, lines=[FULL_CELL * 15] * 4)
     assert 'seam_channel' in spec['cylinder']
@@ -280,21 +284,22 @@ def test_tactile_15_columns_still_gets_its_groove():
     assert any(w.startswith('Tactile indicator needs a seam gap') for w in spec['warnings'])
 
 
-def test_arrows_covering_the_whole_height_leave_the_groove_out():
+def test_a_short_barrel_keeps_the_recut_inside_its_end_faces():
     """
-    A barrel no taller than its arrow chain has nowhere for the groove: the
-    spec says so with S-C4 (DRAFT) and emits no block. 4 rows on 10 mm spacing
-    with 10 mm arrows span 40 mm; on a 41 mm barrel the stretches left at the
-    ends are under the 1 mm minimum.
+    4 rows on 10 mm spacing with 10 mm arrows span 40 mm; on a 40 mm barrel
+    the chain plus its margin would reach past the end faces, and the recut is
+    clamped SEAM_CHANNEL_RECUT_INSET_MM inside them instead - the full-height
+    cut has already taken the groove there, and a gear face must never be
+    nicked. The groove itself is never left out in tactile mode.
     """
-    short = {'diameter': 30.8, 'height': 41.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0}
+    short = {'diameter': 30.8, 'height': 40.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0}
     spec = build_spec(
         'positive', {'grid_columns': 13, 'indicator_mode': 'tactile'}, cylinder=short, lines=[FULL_CELL * 13] * 4
     )
-    assert 'seam_channel' not in spec['cylinder']
-    assert (
-        'The seam channel was left out: the tactile arrows leave no room for it along the cylinder.' in spec['warnings']
-    )
+    recut = channel_of(spec)['arrow_recut']
+    inset = 20.0 - geometry_spec.SEAM_CHANNEL_RECUT_INSET_MM
+    assert (recut['z_from'], recut['z_to']) == pytest.approx((-inset, inset))
+    assert not any(w.startswith('The seam channel was left out') for w in spec['warnings'])
 
 
 def test_narrow_barrel_visual_has_no_room_and_says_so():
