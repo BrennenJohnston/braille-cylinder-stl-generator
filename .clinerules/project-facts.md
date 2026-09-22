@@ -342,7 +342,8 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      against app/geometry_spec.py) and the visual groove at the PHYSICAL
      angle 180 +/- s/R (emboss +, counter -) - the .scad negates nothing, so
      its 181.67 / 178.33 equals this worker's exported STL. The tactile
-     recut landed in that repo's D-T7 pass (develop, 2026-09-21, see 6g):
+     recut landed in that repo's D-T7 pass (develop 90b0e99, 2026-09-21,
+     pushed; see 6g):
      seam_channel_cut(theta, z_from, z_to, lip) called from the emboss
      plate's difference() by seam_channel_arrow_recut() over
      seam_channel_recut_span, the same two constants (its tests diff them).
@@ -406,7 +407,8 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      counter plate 36.9 % with the rest on the recess arrows' own edges, 0 %
      in a dot on every plate.
    - OpenSCAD: the lead-in parity (T6, a7585cc) was reworked to D-T6
-     (develop eef068a) and then D-T7 (develop, 2026-09-21, pushed): arrow at
+     (develop eef068a) and then D-T7 (develop 90b0e99, 2026-09-21,
+     pushed): arrow at
      180 via place_cylinder_marker(180, ...), card fit from the midpoint,
      seam_channel_arrow_recut() in the emboss plate's difference(),
      GEAR_ARROW_WELD_MM beside gears_on in the V1 file; v2.8.1 and the
