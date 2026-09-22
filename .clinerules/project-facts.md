@@ -411,8 +411,11 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      pushed): arrow at
      180 via place_cylinder_marker(180, ...), card fit from the midpoint,
      seam_channel_arrow_recut() in the emboss plate's difference(),
-     GEAR_ARROW_WELD_MM beside gears_on in the V1 file; v2.8.1 and the
-     re-vendor wait for Brennen's 13-cell tactile print test.
+     GEAR_ARROW_WELD_MM beside gears_on in the V1 file. Brennen's 13-cell
+     tactile print test PASSED (2026-09-21): OpenSCAD v2.8.1 tagged on the
+     release-notes commit a8b16af and pushed, OpenSCAD/ re-vendored from it
+     (c9fe200), S-T1..S-T4 signed as drafted, S-C4 reworded for tactile mode
+     and signed, the 3.5 in card warning kept as is (his call).
 
 ## Settings changes — order of operations
 7. settings.schema.json is the single source of truth. When adding or changing
