@@ -22,25 +22,41 @@ still in the repo but disabled in the UI. See
 already ship as their own tool:
 [braille-wedge-card-openscad](https://github.com/BrennenJohnston/braille-wedge-card-openscad).
 
-### Double-sided cards (beta)
+### Slicer seam channel
 
-Turning on **Double-Sided Card (BETA — for testing)** makes the app generate a matched
-**pair** of cylinders instead of one. Run a card between them and it comes out with braille
-on both faces in a single pass.
+Every cylinder carries a shallow groove (1 mm wide, 0.5 mm deep) the full height of its
+outside: beside the row markers in Visual mode, down the alignment-arrow column and through
+the raised arrows in Tactile mode. A slicer's default "Aligned" seam mode hides each layer's
+seam in that groove instead of in a braille dot, so no seam painting is needed; leave the
+seam mode on Aligned. It can be turned off under Expert Mode → Surface Dimensions. Details
+in [SURFACE_DIMENSIONS_SPECIFICATIONS.md](docs/specifications/SURFACE_DIMENSIONS_SPECIFICATIONS.md#26-slicer-seam-channel).
 
-Turning it on adds a **Back of Card** section for the back text, and locks the Row
+### Embosser setup
+
+The first item on the page, **Embosser setup**, holds three either/or choices that pick
+which of the four released embosser projects your cylinders are made for: the **embosser
+version** (Version 1 prints the most accurate dots; Version 2 adds tactile row markers and
+a simpler assembly for blind users), the **gears** (Standard: printed separately, or
+Simplified: fixed to the cylinders, which saves parts but prints longer and fails dots more
+often), and the **card sides**. A "Which setup should I choose?" link opens the help guide.
+
+### Double-sided cards
+
+Choosing **Double-sided** under Embosser setup makes the app generate a matched **pair** of
+cylinders instead of one. Run a card between them and it comes out with braille on both
+faces in a single pass.
+
+Choosing it enables the **Back of Card** section for the back text, and locks the Row
 Indicator Style to the tactile seam arrow, which both cylinders of a pair need. The back
 text wraps across the rows for you, the braille preview then shows both sides, and the two
 sides sit on grids offset diagonally by 1.25 mm so a dot on one face never lands where a
 dot on the other face already is.
 
 It has been printed and used: in August 2026 two rounds of pairs were printed on a Bambu
-Lab X1C with a 0.4 mm nozzle and embossed real card stock, legible on both faces. It keeps
-the beta label because that is one builder, one printer, and one paper stock — not because
-anything is known to be wrong with it.
+Lab X1C with a 0.4 mm nozzle and embossed real card stock, legible on both faces.
 
 Step-by-step instructions are in
-[Double-Sided Cards (BETA)](docs/guides/CYLINDER_GUIDE.md#double-sided-cards-beta).
+[Double-Sided Cards](docs/guides/CYLINDER_GUIDE.md#double-sided-cards).
 
 ## The device these cylinders go into
 
@@ -56,11 +72,11 @@ Build files, print profiles, and documentation for the device are on
 [MakerWorld](https://makerworld.com/en/models/2881581-custom-braille-card-embosser-hand-operated),
 and [Thingiverse](https://www.thingiverse.com/thing:7365273).
 
-**Embosser Version 2 is a prototype.** A selector at the top of the page switches
-the generator to Version 2, whose cylinders are keyed at both ends so a drive gear
-cannot be seated in the wrong place. Its build files are not published yet, and the
-gears it needs must be cut to the new peg spec — earlier pegs do not fit. Version 1
-stays the default and is fully supported; see
+**Embosser Version 2.** The version choice under Embosser setup switches the
+generator to Version 2, whose cylinders are keyed at both ends so a drive gear
+cannot be seated in the wrong place, and which carries tactile row markers a blind
+user can feel. Its gears must be cut to the R14 peg spec — earlier pegs do not fit.
+Version 1 stays the default and is fully supported; see
 [KNOWN_ISSUES.md](./docs/KNOWN_ISSUES.md).
 
 You can also use the cylinders on their own as tactile labels for jars, bottles,
@@ -95,15 +111,16 @@ You can optionally set `PRODUCTION_DOMAIN` as an environment variable, but it's 
 1. Type your text (up to 4 lines)
 2. Pick a braille translation table and grade
 3. Set your cylinder dimensions — measure your container first
-4. Press **Generate STL**
-5. Press **Download STL** when it appears, then 3D print the file
+4. Press **Generate STL** — it builds both cylinders, A and B
+5. Press **Download STL** when it appears: one file with both cylinders spaced for one
+   print plate. Print it and emboss the card between the two cylinders.
 
-For a double-sided card, turn on **Double-Sided Card (BETA — for testing)** before step 4,
-type the back text into the **Back of Card** box, then press **Generate Both Cylinders
-(A and B)**. That builds both files and reveals two buttons: press **Download Cylinder A**
-to save `Cylinder_A_*.stl`, then **Download Cylinder B** to save `Cylinder_B_*.stl`.
-Neither file downloads on its own — you save each one by pressing its own button. Print
-both cylinders and emboss the card in one pass between them.
+Want just one cylinder? Open **Expert Mode** and choose it under **Cylinders to
+Generate**, the first submenu; Download STL then saves that cylinder on its own. For a
+double-sided card, choose **Double-sided** under **Embosser setup** before step 4 and
+type the back text into the **Back of Card** box — the back has its own Auto / Manual
+placement and per-line translation choices, exactly like the front. Nothing ever downloads on its own — one
+press of Download STL saves one file.
 
 There's a **Help** button inside the app that walks you through choosing what to include, formatting your text, and measuring containers. For more depth, check the guides below.
 

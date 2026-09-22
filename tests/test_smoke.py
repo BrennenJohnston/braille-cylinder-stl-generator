@@ -333,7 +333,7 @@ def test_validation_negative_plate_skips_column_check(client):
 TACTILE_CYLINDER_PARAMS = {'diameter': 60.0, 'height': 40.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0}
 
 
-def _tactile_spec(client, plate_type: str, lines: list[str], **settings_overrides):
+def _tactile_spec(client, plate_type: str, lines: list[str], cylinder_params=None, **settings_overrides):
     settings = {'grid_rows': 4, 'grid_columns': 4, 'indicator_mode': 'tactile'}
     settings.update(settings_overrides)
     payload = {
@@ -342,7 +342,7 @@ def _tactile_spec(client, plate_type: str, lines: list[str], **settings_override
         'shape_type': 'cylinder',
         'grade': 'g1',
         'settings': settings,
-        'cylinder_params': TACTILE_CYLINDER_PARAMS,
+        'cylinder_params': cylinder_params or TACTILE_CYLINDER_PARAMS,
     }
     resp = client.post('/geometry_spec', json=payload, headers={'Content-Type': 'application/json'})
     assert resp.status_code == 200, resp.data
@@ -394,7 +394,9 @@ def test_tactile_arrow_is_raised_on_positive_and_recessed_on_negative(client):
 def test_tactile_arrow_sits_at_the_seam_gap_centre_on_both_plates(client):
     """
     180 degrees is the fixed point of the counter plate's angle-negating mirror,
-    so the arrow and its recess line up without any extra bookkeeping.
+    so the arrow and its recess line up without any extra bookkeeping. (A fixed
+    lead-in before the first cell was tried and reverted on 2026-09-21, D-T6:
+    Brennen wants equal space either side of the arrow.)
     """
     import math
 
@@ -414,16 +416,16 @@ def test_tactile_gap_warning_when_seam_gap_too_small(client):
     Warn (do not fail) when the seam gap can no longer hold the indicator plus a
     clear zone either side, matching the OpenSCAD version.
     """
-    # 14 cells at 6.5 mm on the default 30.75 mm cylinder leaves
-    # 96.6 - 84.5 = 12.1 mm, comfortably over the 4 + 5 mm the arrow needs.
-    # The UI recommends 13 for tactile mode; 14 is still a valid layout, which
-    # is exactly what this case pins.
+    # 13 cells at 6.5 mm on the default 30.75 mm cylinder leaves
+    # 96.6 - 78 = 18.6 mm, comfortably over the 4 + 5 mm the arrow needs, and
+    # the row fits a 90 mm card (13 is the tactile maximum since 2026-09-21,
+    # D-T4; 14 cells would add the card-fit warning, pinned below).
     roomy = {
         'lines': ['', '', '', ''],
         'plate_type': 'negative',
         'shape_type': 'cylinder',
         'grade': 'g1',
-        'settings': {'grid_rows': 4, 'grid_columns': 14, 'cell_spacing': 6.5, 'indicator_mode': 'tactile'},
+        'settings': {'grid_rows': 4, 'grid_columns': 13, 'cell_spacing': 6.5, 'indicator_mode': 'tactile'},
         'cylinder_params': {'diameter': 30.75, 'height': 52.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0},
     }
     resp = client.post('/geometry_spec', json=roomy, headers={'Content-Type': 'application/json'})
@@ -443,6 +445,48 @@ def test_tactile_gap_warning_when_seam_gap_too_small(client):
     assert resp.status_code == 200, resp.data
     warnings = resp.get_json()['warnings']
     assert any('seam gap' in w for w in warnings), warnings
+
+
+def test_tactile_row_that_runs_off_the_card_is_warned_about(client):
+    """
+    D-T4 (2026-09-21): the card's leading edge sits at the arrow, at the middle
+    of the seam gap, so a row needs half the gap + the grid + the last cell's
+    footprint of card. 14 cells on the 0.4 mm families need 92.8 mm and a 90 mm
+    card warns (S-T1, signed); 13 cells need 89.5 and pass; a 100 mm card takes
+    the 14. Visual mode never warns - its alignment is a different procedure.
+    """
+    families = {
+        'use_rounded_dots': 1,
+        'rounded_dot_base_diameter': 1.5,
+        'rounded_dot_base_height': 0.5,
+        'rounded_dot_dome_diameter': 1.0,
+        'rounded_dot_dome_height': 0.5,
+        'recess_shape': 1,
+        'bowl_counter_dot_base_diameter': 1.8,
+        'counter_dot_depth': 0.8,
+    }
+    cylinder = {'diameter': 30.8, 'height': 52.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0}
+
+    def warnings_for(columns, mode='tactile', **extra):
+        payload = {
+            'lines': ['', '', '', ''],
+            'plate_type': 'positive',
+            'shape_type': 'cylinder',
+            'grade': 'g1',
+            'settings': {**families, 'grid_rows': 4, 'grid_columns': columns, 'indicator_mode': mode, **extra},
+            'cylinder_params': cylinder,
+        }
+        resp = client.post('/geometry_spec', json=payload, headers={'Content-Type': 'application/json'})
+        assert resp.status_code == 200, resp.data
+        return resp.get_json()['warnings']
+
+    off_card = warnings_for(14)
+    assert len(off_card) == 1, off_card
+    assert off_card[0].startswith('The last braille cell would run off the card: this layout needs 92.8 mm')
+    assert 'the card is 90 mm. Use 13 cells or fewer.' in off_card[0]
+    assert warnings_for(13) == []
+    assert warnings_for(14, card_width=100) == []
+    assert not any('run off the card' in w for w in warnings_for(15, 'visual'))
 
 
 def test_visual_mode_emits_no_tactile_arrows(client):
@@ -509,6 +553,184 @@ def test_indicator_mode_rejects_unknown_value(client):
     assert 'indicator_mode' in resp.get_json()['error']
 
 
+# ---------------------------------------------------------------------------
+# Tactile arrow layout (2026-09-20): the 0.3 mm card-stock preset marks its
+# cylinders with three fixed arrows instead of one per row, so a blind user
+# can tell the presets apart by touch and a 0.3 mm cylinder will not nest
+# with a 0.4 mm one. See RECESS_INDICATOR_SPECIFICATIONS.md section 4.
+# ---------------------------------------------------------------------------
+
+# The Version 1 standard barrel. The 40 mm test barrel above is too short for
+# the three-arrow layout by design (its fit gate needs 2 x (15 + 5 + 0.2) =
+# 40.4 mm), which the rejection test below relies on.
+STANDARD_CYLINDER_PARAMS = {'diameter': 30.8, 'height': 52.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0}
+THREE_SPACED_ARROW_HEIGHTS = [15.0, 0.0, -15.0]
+
+
+def test_three_spaced_layout_places_three_arrows_at_fixed_heights_on_both_plates(client):
+    """Cylinder A raises them, Cylinder B recesses them, at the same three heights."""
+    import math
+
+    positive = _tactile_spec(
+        client, 'positive', ['⠁', '', '', ''], STANDARD_CYLINDER_PARAMS, tactile_indicator_layout='three_spaced'
+    )['markers']
+    negative = _tactile_spec(
+        client, 'negative', ['', '', '', ''], STANDARD_CYLINDER_PARAMS, tactile_indicator_layout='three_spaced'
+    )['markers']
+
+    for markers in (positive, negative):
+        assert [m['type'] for m in markers] == ['cylinder_tactile_arrow'] * 3
+        assert [m['y'] for m in markers] == pytest.approx(THREE_SPACED_ARROW_HEIGHTS)
+        assert all(m['theta'] == pytest.approx(math.pi) for m in markers)
+
+    assert [m['is_recess'] for m in positive] == [False] * 3
+    assert [m['is_recess'] for m in negative] == [True] * 3
+    # The arrow itself is unchanged: only where it sits moved.
+    assert positive[0]['outer_radius'] == pytest.approx(15.4 + 0.5)
+    assert negative[0]['outline_delta'] == pytest.approx(0.2)
+
+
+def test_three_spaced_layout_ignores_the_row_count_and_the_row_shift(client):
+    """
+    A preset marking, not a row marking: 2 rows, 6 rows and a braille_y_adjust
+    all leave the three arrows exactly where they were (Brennen, 2026-09-20).
+    """
+    # The API accepts at most 4 lines; the remaining rows of a 6-row grid are empty.
+    for rows, lines in ((2, ['⠁', '']), (6, ['⠁', '', '', ''])):
+        markers = _tactile_spec(
+            client, 'positive', lines, STANDARD_CYLINDER_PARAMS, grid_rows=rows, tactile_indicator_layout='three_spaced'
+        )['markers']
+        assert [m['y'] for m in markers] == pytest.approx(THREE_SPACED_ARROW_HEIGHTS), f'{rows} rows'
+
+    shifted = _tactile_spec(
+        client,
+        'positive',
+        ['⠁', '', '', ''],
+        STANDARD_CYLINDER_PARAMS,
+        braille_y_adjust=2.0,
+        tactile_indicator_layout='three_spaced',
+    )['markers']
+    assert [m['y'] for m in shifted] == pytest.approx(THREE_SPACED_ARROW_HEIGHTS)
+
+
+def test_per_row_layout_is_identical_whether_absent_or_explicit(client):
+    """
+    'per_row' is the absent-field fallback, so naming it must change nothing:
+    the whole spec, markers included, is equal to the pre-2026-09-20 output.
+    """
+    for plate_type, lines in (('positive', ['⠁', '', '', '']), ('negative', ['', '', '', ''])):
+        absent = _tactile_spec(client, plate_type, lines, STANDARD_CYLINDER_PARAMS)
+        explicit = _tactile_spec(
+            client, plate_type, lines, STANDARD_CYLINDER_PARAMS, tactile_indicator_layout='per_row'
+        )
+        assert explicit == absent
+        # One arrow per row at the row pitch, exactly as before
+        assert [m['y'] for m in absent['markers']] == pytest.approx([15.0, 5.0, -5.0, -15.0])
+
+
+def test_tactile_indicator_layout_rejects_unknown_value(client):
+    """A typo must be rejected, never quietly read as either layout."""
+    payload = {
+        'lines': ['⠁', '', '', ''],
+        'plate_type': 'positive',
+        'shape_type': 'cylinder',
+        'grade': 'g1',
+        'settings': {
+            'grid_rows': 4,
+            'grid_columns': 4,
+            'indicator_mode': 'tactile',
+            'tactile_indicator_layout': 'three-spaced',
+        },
+        'cylinder_params': STANDARD_CYLINDER_PARAMS,
+    }
+    resp = client.post('/geometry_spec', json=payload, headers={'Content-Type': 'application/json'})
+    assert resp.status_code == 400, resp.data
+    assert 'tactile_indicator_layout' in resp.get_json()['error']
+
+
+def test_three_spaced_layout_rejects_a_barrel_too_short_for_its_outer_arrows(client):
+    """
+    The outer arrows sit 15 mm from mid-height; with the counter recess grown by
+    its clearance, a 10 mm arrow reaches 20.2 mm, so the barrel must be at least
+    40.4 mm tall. A rejection, not a warning: an arrow past the end face is a
+    burr on one plate and a notch in the rim of the other (Brennen, 2026-09-20).
+    """
+    base = {
+        'lines': ['⠁', '', '', ''],
+        'plate_type': 'positive',
+        'shape_type': 'cylinder',
+        'grade': 'g1',
+        'settings': {
+            'grid_rows': 4,
+            'grid_columns': 4,
+            'indicator_mode': 'tactile',
+            'tactile_indicator_layout': 'three_spaced',
+        },
+    }
+
+    too_short = client.post(
+        '/geometry_spec',
+        json={**base, 'cylinder_params': {**TACTILE_CYLINDER_PARAMS, 'height': 40.0}},
+        headers={'Content-Type': 'application/json'},
+    )
+    assert too_short.status_code == 400, too_short.data
+    error = too_short.get_json()['error']
+    assert '40.4 mm' in error and '40 mm' in error
+
+    just_tall_enough = client.post(
+        '/geometry_spec',
+        json={**base, 'cylinder_params': {**TACTILE_CYLINDER_PARAMS, 'height': 40.4}},
+        headers={'Content-Type': 'application/json'},
+    )
+    assert just_tall_enough.status_code == 200, just_tall_enough.data
+    assert [m['y'] for m in just_tall_enough.get_json()['markers']] == pytest.approx(THREE_SPACED_ARROW_HEIGHTS)
+
+    # The dials move the limit with them: a 15 mm arrow with 1 mm clearance
+    # needs 2 x (15 + 7.5 + 1) = 47 mm, so the 52 mm standard barrel still passes.
+    longest = client.post(
+        '/geometry_spec',
+        json={
+            **base,
+            'settings': {**base['settings'], 'tactile_indicator_length': 15.0, 'tactile_recess_clearance': 1.0},
+            'cylinder_params': {**STANDARD_CYLINDER_PARAMS, 'height': 46.0},
+        },
+        headers={'Content-Type': 'application/json'},
+    )
+    assert longest.status_code == 400, longest.data
+    assert '47 mm' in longest.get_json()['error']
+
+
+def test_three_spaced_layout_is_ignored_outside_tactile_mode(client):
+    """Visual mode has no arrows, so the layout (and its fit gate) must not bite."""
+    payload = {
+        'lines': ['⠁', '', '', ''],
+        'plate_type': 'positive',
+        'shape_type': 'cylinder',
+        'grade': 'g1',
+        'settings': {
+            'grid_rows': 4,
+            'grid_columns': 4,
+            'indicator_mode': 'visual',
+            'tactile_indicator_layout': 'three_spaced',
+        },
+        'cylinder_params': TACTILE_CYLINDER_PARAMS,  # 40 mm: would be rejected in tactile mode
+    }
+    resp = client.post('/geometry_spec', json=payload, headers={'Content-Type': 'application/json'})
+    assert resp.status_code == 200, resp.data
+    assert not any(m['type'] == 'cylinder_tactile_arrow' for m in resp.get_json()['markers'])
+
+
+def test_three_spaced_pitch_is_the_signed_15_mm():
+    """
+    Brennen chose 15 mm over the quarter-height points on 2026-09-20: the same
+    40 mm span as the four-row chain, 5 mm gaps, one number for both barrels.
+    """
+    from app import geometry_spec
+
+    assert geometry_spec.TACTILE_THREE_SPACED_PITCH_MM == 15.0
+    assert geometry_spec.TACTILE_ARROW_LAYOUTS == ('per_row', 'three_spaced')
+
+
 def test_tactile_settings_defaults():
     """
     These five numbers are also written into both Card Thickness presets in
@@ -516,6 +738,7 @@ def test_tactile_settings_defaults():
     """
     settings = CardSettings()
     assert settings.indicator_mode == 'visual'
+    assert settings.tactile_indicator_layout == 'per_row'
     assert settings.tactile_indicator_width == 4.0
     assert settings.tactile_indicator_length == 10.0
     assert settings.tactile_indicator_raise == 0.5
@@ -538,6 +761,14 @@ def test_schema_and_models_agree_on_indicator_fields():
 
     assert indicators['indicator_mode']['enum'] == ['visual', 'tactile']
     assert indicators['indicator_mode']['default'] == settings.indicator_mode
+
+    # The arrow layout enum is retyped in the schema, CardSettings and the
+    # validator, the way indicator_mode is; the geometry module's tuple is the
+    # copy the validator reads.
+    from app import geometry_spec
+
+    assert indicators['tactile_indicator_layout']['enum'] == list(geometry_spec.TACTILE_ARROW_LAYOUTS)
+    assert indicators['tactile_indicator_layout']['default'] == settings.tactile_indicator_layout == 'per_row'
 
     for field in (
         'tactile_indicator_width',
@@ -577,6 +808,79 @@ def test_schema_and_models_agree_on_embosser_version_fields():
     assert clearance['default'] == settings.v2_key_clearance_mm == version2.V2_KEY_CLEARANCE_DEFAULT_MM
     assert clearance['minimum'] == version2.V2_KEY_CLEARANCE_MIN_MM
     assert clearance['maximum'] == version2.V2_KEY_CLEARANCE_MAX_MM
+
+
+def test_schema_and_models_agree_on_seam_channel():
+    """
+    The slicer seam channel is ON by default (decision D-2, 2026-09-20): the
+    schema says true, CardSettings says 1, and an absent or blank field means
+    on. Only an explicit 0 turns it off. The groove's size is deliberately not
+    a setting, so the schema object carries the toggle alone.
+    """
+    import json
+    from pathlib import Path
+
+    schema_path = Path(__file__).resolve().parents[1] / 'settings.schema.json'
+    properties = json.loads(schema_path.read_text(encoding='utf-8'))['properties']
+
+    seam_channel = properties['seam_channel']
+    assert seam_channel['additionalProperties'] is False
+    assert list(seam_channel['properties']) == ['enabled']
+    assert seam_channel['properties']['enabled']['type'] == 'boolean'
+    assert seam_channel['properties']['enabled']['default'] is True
+
+    assert CardSettings().seam_channel_enabled == 1
+    assert CardSettings(seam_channel_enabled='').seam_channel_enabled == 1
+    assert CardSettings(seam_channel_enabled=None).seam_channel_enabled == 1
+    assert CardSettings(seam_channel_enabled=0).seam_channel_enabled == 0
+    assert CardSettings(seam_channel_enabled='0').seam_channel_enabled == 0
+    assert CardSettings(seam_channel_enabled='1').seam_channel_enabled == 1
+    assert isinstance(CardSettings(seam_channel_enabled=1.0).seam_channel_enabled, int)
+    with pytest.raises(ValueError):
+        CardSettings(seam_channel_enabled='on')
+
+
+def test_ui_seam_channel_numbers_and_sentences_match_the_geometry_module():
+    """
+    public/index.html computes the seam channel's fit live, before Generate,
+    from the same numbers app/geometry_spec.py owns, and shows the server's two
+    omission sentences word for word. Cross-file drift is this project's #1
+    historical bug source, so the copies are diffed here rather than trusted.
+    """
+    import re
+    from pathlib import Path
+
+    from app import geometry_spec
+
+    root = Path(__file__).resolve().parents[1]
+    html = (root / 'public' / 'index.html').read_text(encoding='utf-8')
+    module = (root / 'app' / 'geometry_spec.py').read_text(encoding='utf-8')
+
+    for name in (
+        'SEAM_CHANNEL_WIDTH_MM',
+        'SEAM_CHANNEL_DEPTH_MM',
+        'SEAM_CHANNEL_MARGIN_MM',
+        'SEAM_CHANNEL_MIN_WALL_MM',
+    ):
+        match = re.search(rf'const {name} = ([0-9.]+);', html)
+        assert match, f'{name} not found in public/index.html'
+        assert float(match.group(1)) == getattr(geometry_spec, name), f'{name} differs between the UI and the module'
+
+    # The switch ships CHECKED: on is the default in the markup, the schema and
+    # the model alike, and the wire sends the flag only when it is off.
+    assert re.search(r'<input type="checkbox" id="seam_channel_enabled" checked', html)
+    assert 'settings.seam_channel_enabled = 0;' in html
+    assert 'settings.seam_channel_enabled = 1' not in html
+
+    gap_sentence = 'The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.'
+    wall_sentence = 'The seam channel was left out: the cylinder wall would be thinner than '
+    # S-T1 (signed off by Brennen, 2026-09-21): the card-fit sentence, up to its first number.
+    card_sentence = 'The last braille cell would run off the card: this layout needs '
+    for sentence in (gap_sentence, wall_sentence, card_sentence):
+        assert sentence in html, f'UI is missing the sentence: {sentence}'
+        assert sentence in module, f'geometry_spec is missing the sentence: {sentence}'
+    assert 'from the alignment arrow and the card is ' in html
+    assert 'from the alignment arrow and the card is ' in module
 
 
 # =============================================================================
@@ -685,6 +989,29 @@ def test_ui_ds_footprints_match_interpoint_packages():
     assert ui_packages == interpoint.DS_FOOTPRINTS_BY_PRESET
 
 
+def test_ui_tactile_arrow_layout_map_matches_the_geometry_module():
+    """
+    public/index.html's TACTILE_ARROW_LAYOUT_BY_PRESET names the layouts
+    app/geometry_spec.py builds: 0.4 -> per_row (one arrow per row, unchanged),
+    0.3 -> three_spaced (the 2026-09-20 preset marking). Diffed here because a
+    misspelt layout in the UI would be rejected by the API on every 0.3 generate.
+    """
+    import re
+    from pathlib import Path
+
+    from app import geometry_spec
+
+    html = (Path(__file__).resolve().parents[1] / 'public' / 'index.html').read_text(encoding='utf-8')
+    match = re.search(r'const TACTILE_ARROW_LAYOUT_BY_PRESET = \{(.*?)\n {8}\};', html, re.DOTALL)
+    assert match, 'TACTILE_ARROW_LAYOUT_BY_PRESET block not found in public/index.html'
+    ui_map = dict(re.findall(r"'(0\.[34])': '(\w+)'", match.group(1)))
+    assert ui_map == {'0.4': 'per_row', '0.3': 'three_spaced'}
+    assert set(ui_map.values()) <= set(geometry_spec.TACTILE_ARROW_LAYOUTS)
+    # The wire carries the field only when it is not the fallback, so a 0.4
+    # request body stays byte-identical to a pre-layout one.
+    assert "if (arrowLayout && arrowLayout !== 'per_row')" in html
+
+
 def test_ui_version2_numbers_match_the_geometry_module():
     """
     public/index.html mirrors four Version 2 numbers that app/geometry/version2.py
@@ -733,6 +1060,80 @@ def test_ui_version2_numbers_match_the_geometry_module():
         found = re.search(rf'const {js_name} = ([0-9.]+);', html)
         assert found, f'{js_name} not found in public/index.html'
         assert float(found.group(1)) == expected, f'{js_name} disagrees with version2.py'
+
+
+def test_ui_version2_gear_size_sentence_matches_the_gears_module():
+    """
+    Fixed gears in Version 2 (2026-09-20 programme, phase B6): the live gear
+    size warning switches to the Version 2 barrel and to the S-G1 sentence
+    while Version 2 is chosen. The UI's template and the server's
+    reference_roller_message(..., version=2) must be the same words and the same
+    numbers, or a user reads one limit live and another in the 400.
+    """
+    import re
+    from pathlib import Path
+
+    from app.geometry import gears, version2
+
+    html = (Path(__file__).resolve().parents[1] / 'public' / 'index.html').read_text(encoding='utf-8')
+
+    # The gate picks the barrel by version, from the pinned constants.
+    assert 'const wantDiameter = forVersion2 ? V2_BARREL_DIAMETER_MM : GEAR_BARREL_DIAMETER_MM;' in html
+    assert 'const wantHeight = forVersion2 ? V2_BARREL_HEIGHT_MM : GEAR_BARREL_HEIGHT_MM;' in html
+
+    template = re.search(
+        r'`Fixed gears for the Version 2 embosser fit only a `\s*\+\s*'
+        r'`\$\{wantDiameter\} mm x \$\{wantHeight\} mm cylinder\. `\s*\+\s*'
+        r'`Received \$\{diameter\} mm x \$\{height\} mm\.`',
+        html,
+    )
+    assert template, 'the S-G1 template was not found in updateGearRollersUI()'
+
+    rendered = (
+        f'Fixed gears for the Version 2 embosser fit only a '
+        f'{version2.V2_BARREL_DIAMETER_MM:g} mm x {version2.V2_BARREL_HEIGHT_MM:g} mm cylinder. '
+        f'Received 30.8 mm x 52 mm.'
+    )
+    assert rendered == gears.reference_roller_message(30.8, 52, version=2)
+    assert gears.reference_barrel(2) == (version2.V2_BARREL_DIAMETER_MM, version2.V2_BARREL_HEIGHT_MM)
+
+    # The temporary C2 guard (S-M13) is gone with the feature it waited for.
+    assert 'versionGuardResetGears' not in html
+    assert 'Fixed gears are not available for Version 2 yet' not in html
+
+
+def test_schema_and_request_model_declare_the_back_per_line_tables():
+    """
+    Back of Card parity (2026-09-20 programme, sub-plan D, D-11): the back's
+    per-line liblouis tables are declared in settings.schema.json as
+    text.back_languages, the mirror of text.languages, and the request model
+    carries them as back_per_line_language_tables beside back_lines. The wire
+    key is what the generate handler sends only for a manually placed back.
+    """
+    import json
+    from dataclasses import fields
+    from pathlib import Path
+
+    from app.models import GenerateBrailleRequest
+
+    root = Path(__file__).resolve().parents[1]
+    schema = json.loads((root / 'settings.schema.json').read_text(encoding='utf-8'))
+    text = schema['properties']['text']['properties']
+    assert text['back_languages']['type'] == 'array'
+    assert text['back_languages']['items'] == text['languages']['items']
+    assert 'back_per_line_language_tables' in text['back_languages']['description']
+
+    names = {f.name for f in fields(GenerateBrailleRequest)}
+    assert {'back_lines', 'back_per_line_language_tables'} <= names
+    parsed = GenerateBrailleRequest.from_request_data(
+        {'back_lines': ['⠁', '', '', ''], 'back_per_line_language_tables': ['en-ueb-g2.ctb'] * 4}
+    )
+    assert parsed.back_lines == ['⠁', '', '', '']
+    assert parsed.back_per_line_language_tables == ['en-ueb-g2.ctb'] * 4
+    assert GenerateBrailleRequest.from_request_data({}).back_per_line_language_tables is None
+
+    html = (root / 'public' / 'index.html').read_text(encoding='utf-8')
+    assert 'specRequestBody.back_per_line_language_tables = backPerLineLanguageTables;' in html
 
 
 def test_zero_recess_depth_cuts_no_cylinder_bowls(client):

@@ -1595,6 +1595,13 @@
         .radio-option:has(input:disabled) .radio-text {
             cursor: not-allowed;
         }
+        /* The Back of Card section is disabled (native attribute) while the
+           card is single-sided. Its controls dim like a locked radio option;
+           the legend is left at full opacity so the heading stays readable
+           (disabled controls are exempt from contrast minimums, SC 1.4.3). */
+        #back-entry-fieldset:disabled > :not(legend) {
+            opacity: 0.6;
+        }
         form {
             display: flex;
             flex-direction: column;
@@ -1924,74 +1931,9 @@
             transform: translateY(-2px) scale(1.03);
         }
 
-        /* Double-sided beta pair controls. Same visual language as #action-btn
-           - blue for the action, green for a file that is ready - under their
-           own selectors, so the single-plate button's rules stay untouched.
-           Nothing moves on hover: these share the pinned footer, where a button
-           that shifts under the pointer costs WebKit the click (see the
-           #action-btn note above). The 44px floor is spelled out because the
-           shared button padding lands just under it at the desktop font size. */
-        #generate-both-btn,
-        .pair-downloads button {
-            min-height: 44px;
-            min-width: 44px;
-            font-size: 0.95em;
-            text-align: center;
-            transition: background 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        #generate-both-btn {
-            width: 100%;
-            max-width: 24em;
-            background: var(--btn-primary-bg);
-            color: #fff;
-            border: 2px solid var(--btn-primary-border);
-            box-shadow: 0 2px 8px var(--shadow-light);
-        }
-
-        #generate-both-btn:hover:not(:disabled) {
-            background: var(--btn-primary-hover-bg);
-            border-color: var(--btn-primary-border-hover);
-            box-shadow: 0 4px 12px var(--shadow-medium);
-        }
-
-        #generate-both-btn:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
-        .pair-downloads {
-            width: 100%;
-            max-width: 24em;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 0.6em;
-        }
-
-        .pair-downloads button {
-            flex: 1 1 11em;
-            /* Labels wrap rather than clip - the global button nowrap cut the
-               combined button's signed label off mid-word (found 2026-08-25). */
-            white-space: normal;
-            background: var(--btn-success-bg);
-            color: #fff;
-            border: 2px solid var(--btn-success-border);
-            box-shadow: 0 2px 8px var(--shadow-light);
-        }
-
-        /* The primary offer takes the whole first row, so its long signed
-           label renders on one line at the default width. */
-        #download-pair-btn {
-            flex-basis: 100%;
-        }
-
-        .pair-downloads button:hover {
-            background: var(--btn-success-hover-bg);
-            border-color: var(--btn-success-border-hover);
-            box-shadow: 0 4px 12px var(--shadow-medium);
-        }
-
+        /* The pair's status line (progress, ready, failure). The pair BUTTONS
+           this block used to style left the footer on 2026-09-21 (programme
+           sub-plan E): one Generate, one Download. */
         .pair-status {
             width: 100%;
             text-align: center;
@@ -2018,36 +1960,6 @@
             border: 0;
         }
 
-        [data-theme="high-contrast"] #generate-both-btn {
-            background: #0201fe !important; /* Blue background for generate */
-            color: #fdfe00 !important; /* Yellow text */
-            border: 2px solid #fdfe00 !important; /* Yellow border */
-        }
-
-        [data-theme="high-contrast"] #generate-both-btn:hover:not(:disabled) {
-            background: #0201fe !important;
-            color: #fdfe00 !important;
-            border: 2px solid #02fe05 !important; /* Green border on hover */
-        }
-
-        [data-theme="high-contrast"] #generate-both-btn:disabled {
-            background: #666666 !important;
-            color: #cccccc !important;
-            border: 2px solid #999999 !important;
-            cursor: not-allowed !important;
-        }
-
-        [data-theme="high-contrast"] .pair-downloads button {
-            background: #02fe05 !important; /* Green background for download */
-            color: #000000 !important; /* Black text */
-            border: 2px solid #000000 !important; /* Black border */
-        }
-
-        [data-theme="high-contrast"] .pair-downloads button:hover {
-            background: #02fe05 !important;
-            color: #000000 !important;
-            border: 2px solid #ffff00 !important; /* Yellow border on hover */
-        }
         #error-message {
             color: var(--error-text);
             background: var(--error-bg);
@@ -3345,62 +3257,141 @@
                       </p>
                   </div>
 
-                      <!-- Embosser version selector (D-V13). Moved out of the site
-                           header and into the form's selection menu, directly under
-                           "What Does This Program Do?", on 2026-08-31 (Brennen's
-                           call) - it is the first choice that shapes everything
-                           below it. Native fieldset + legend + radios, so the
-                           group's accessible name, the roving-arrow keyboard
-                           behaviour and the checked state all come from the
-                           platform: the only ARIA here is aria-describedby, which
-                           has no native equivalent. Version 1 is checked IN THE
-                           MARKUP, so a user who never touches this gets exactly
-                           the app that shipped before Version 2 existed. The ids
-                           are load-bearing: updateEmbosserVersionUI() finds the
-                           radios by name="embosser_version", the prototype notice
-                           by #v2-prototype-note and the size warning by
-                           #v2-size-warning; persistence stores
-                           braille_prefs_embosser_version. The radios are still
-                           read by id and never submitted - sitting inside the
-                           form changes nothing on the wire. -->
-                      <div class="grade-selection" id="embosser-version-selection">
-                          <fieldset aria-describedby="embosser-version-note">
-                              <!-- S-V1, signed off by Brennen (2026-08-28); reword only with
-                                   his sign-off. The heading is semantics only (the menu-item
-                                   rule): it inherits the legend's own type so nothing moves. -->
-                              <legend class="grade-label"><h2 class="legend-heading">Embosser version</h2></legend>
-                              <div class="radio-group">
-                                  <!-- S-V2, signed off by Brennen (2026-08-28). -->
-                                  <label class="radio-option" for="embosser_version_1">
-                                      <input type="radio" name="embosser_version" id="embosser_version_1" value="1" checked>
-                                      <span class="radio-text">Version 1</span>
-                                  </label>
-                                  <label class="radio-option" for="embosser_version_2">
-                                      <input type="radio" name="embosser_version" id="embosser_version_2" value="2">
-                                      <span class="radio-text">Version 2 (prototype)</span>
-                                  </label>
-                              </div>
-                              <!-- S-V3, signed off by Brennen (2026-08-28). 17 words, under
-                                   the ADA SOP Step 6.8 ceiling of 25. -->
-                              <div class="grade-note" id="embosser-version-note" style="margin-top: 6px; font-size: 0.85em;">Choose Version 2 only if you are building the Version 2 embosser, which uses keyed gear pegs. Version 1 stays supported.</div>
-                              <!-- S-V4, signed off by Brennen (2026-08-28) WITH the R14
-                                   sentence added; reword only with his sign-off. 31 words,
-                                   DELIBERATELY over the Step 6.8 ceiling of 25 - he chose the
-                                   stronger warning knowing the cost, and it is allowed because
-                                   this notice is VISIBLE rather than describedby-only. Recorded
-                                   as a finding at the Phase 08 accessibility check; do not trim
-                                   or split it. `hidden` rather than display:none so the
-                                   accessibility tree and the CSS agree with one attribute. -->
-                              <div id="v2-prototype-note" class="grade-note inline-warning" style="margin-top: 0.6em;" hidden>
-                                  <strong>Prototype:</strong> Version 2 is a work-in-progress prototype. Its cylinder size, cutouts and fit may change as testing continues. It fits only gears with R14 pegs; earlier pegs do not enter the holes.
-                              </div>
-                              <!-- S-V5, signed off by Brennen (2026-08-28). The server emits
-                                   this exact sentence into spec.warnings, so the words a user
-                                   reads here and the words the spec carries are the same. -->
-                              <div id="v2-size-warning" class="grade-note inline-warning"
-                                   style="margin-top: 0.6em; display: none;">
-                                  <strong>Warning:</strong> <span id="v2-size-message"></span>
-                              </div>
+                      <!-- Embosser setup (2026-09-20 programme, sub-plan C; decisions
+                           D-7, D-8). ONE menu item at the top of the form holds the three
+                           either/or choices that used to be three toggles in three places:
+                           embosser version, gears, card sides. The version radios keep
+                           their ids (embosser_version_1/2); the gear and sides choices are
+                           NEW radios (gear_mode, card_sides) that replace the
+                           #gear_rollers_enabled and #double_sided_enabled checkboxes.
+                           updateEmbosserVersionUI(), updateGearRollersUI() and
+                           updateDoubleSidedUI() read them through isVersion2(),
+                           isGearRollersOn() and isDoubleSidedOn(); the persistence keys are
+                           unchanged so saved choices carry over. Nested fieldsets: the
+                           outer one names the menu item, each inner one names its choice,
+                           and every inner legend carries an h3 under the item's h2
+                           (UI spec 4.11). The "(BETA - for testing)" tags and the Version 2
+                           "(prototype)" tag and notice are gone (D-7).
+                           Strings S-M1..S-M8 were signed off by Brennen (2026-09-21); reword only with his sign-off; S-V1, S-V3,
+                           S-V5, S2, S3, S7 and the 2026-08-16 double-sided sentence stay
+                           as signed. -->
+                      <div class="grade-selection" id="embosser-setup-selection">
+                          <fieldset id="embosser-setup-fieldset">
+                              <!-- S-M1, signed 2026-09-21. Heading semantics only (the menu-item rule). -->
+                              <legend class="grade-label"><h2 class="legend-heading">Embosser setup</h2></legend>
+
+                              <!-- Choice 1: the embosser version. S-V1 legend text kept, one
+                                   heading level down. S-V2 labels lose "(prototype)" (D-7).
+                                   S-V3 stays the group's description, verbatim (17 words);
+                                   S-M2 is a VISIBLE second note, not wired to describedby. -->
+                              <fieldset id="embosser-version-selection" aria-describedby="embosser-version-note" style="margin-top: 0.6em;">
+                                  <legend class="grade-label"><h3 class="legend-heading">Embosser version</h3></legend>
+                                  <div class="radio-group">
+                                      <label class="radio-option" for="embosser_version_1">
+                                          <input type="radio" name="embosser_version" id="embosser_version_1" value="1" checked>
+                                          <span class="radio-text">Version 1</span>
+                                      </label>
+                                      <label class="radio-option" for="embosser_version_2">
+                                          <input type="radio" name="embosser_version" id="embosser_version_2" value="2">
+                                          <span class="radio-text">Version 2</span>
+                                      </label>
+                                  </div>
+                                  <!-- S-V3, signed off by Brennen (2026-08-28). -->
+                                  <div class="grade-note" id="embosser-version-note" style="margin-top: 6px; font-size: 0.85em;">Choose Version 2 only if you are building the Version 2 embosser, which uses keyed gear pegs. Version 1 stays supported.</div>
+                                  <!-- S-M2, signed 2026-09-21 (21 words, visible only). -->
+                                  <div class="grade-note" id="embosser-version-compare" style="margin-top: 4px; font-size: 0.85em;">Version 1 prints the most accurate braille dots. Version 2 adds tactile row markers and a simpler assembly for blind users.</div>
+                                  <!-- S-V5, signed off by Brennen (2026-08-28). The server emits
+                                       this exact sentence into spec.warnings, so the words a user
+                                       reads here and the words the spec carries are the same. -->
+                                  <div id="v2-size-warning" class="grade-note inline-warning"
+                                       style="margin-top: 0.6em; display: none;">
+                                      <strong>Warning:</strong> <span id="v2-size-message"></span>
+                                  </div>
+                              </fieldset>
+
+                              <!-- Choice 2: the gears. Replaces the "Integrated Gears (BETA)"
+                                   checkbox. S-M3a/b labels and the S-M4 description are
+                                   signed 2026-09-21; S2 (signed 2026-08-24) stays as a visible note so
+                                   no signed sentence leaves the page; S-M5 replaces S9'.
+                                   #gear-cutout-note (S3) and #gear-size-warning (S7) are
+                                   unchanged and still found by updateGearRollersUI(). -->
+                              <fieldset id="gear-rollers-selection" aria-describedby="gear-rollers-note" style="margin-top: 0.8em;">
+                                  <legend class="grade-label"><h3 class="legend-heading">Gears</h3></legend>
+                                  <div class="radio-group">
+                                      <label class="radio-option" for="gear_mode_standard">
+                                          <input type="radio" name="gear_mode" id="gear_mode_standard" value="standard" checked>
+                                          <span class="radio-text">Standard: print the gears separately</span>
+                                      </label>
+                                      <label class="radio-option" for="gear_mode_fixed">
+                                          <input type="radio" name="gear_mode" id="gear_mode_fixed" value="fixed">
+                                          <span class="radio-text">Simplified: gears fixed to the cylinders</span>
+                                      </label>
+                                  </div>
+                                  <!-- S-M4, signed 2026-09-21 (20 words). -->
+                                  <div class="grade-note" id="gear-rollers-note" style="margin-top: 6px; font-size: 0.85em;">Fixed gears save assembly time and parts, but each cylinder prints much longer and dots fail more often.</div>
+                                  <!-- S2, signed off by Brennen (2026-08-24); visible only. -->
+                                  <div class="grade-note" style="margin-top: 4px; font-size: 0.85em;">Adds the top and bottom drive gears to each generated cylinder as one solid piece, matched to the roller assembly. The barrel prints solid while this is on.</div>
+                                  <!-- S-M5, signed 2026-09-21, replaces S9'. Always shown: the warning must be
+                                       read BEFORE someone chooses fixed gears. The link opens the
+                                       Embosser Setup help tab. -->
+                                  <div id="gear-hardware-note" class="grade-note inline-warning"
+                                       style="margin-top: 0.6em;">
+                                      <strong>Important:</strong> <span id="gear-hardware-message">Fixed gears fit only the fixed-gear housing for your version; the standard housing takes the standard cylinders. See Embosser Setup in Help.</span>
+                                      <span id="gear-hardware-link-slot"> <button type="button" class="btn-link" onclick="window.openHelpModal('setup')">Open Embosser Setup help →</button></span>
+                                  </div>
+                                  <!-- S3, signed off by Brennen (2026-08-24). Shown only when a
+                                       polygonal cutout is set AND fixed gears are chosen. Announced
+                                       through #a11y-status - see that region's note. -->
+                                  <div id="gear-cutout-note" class="grade-note inline-warning"
+                                       style="margin-top: 0.6em; display: none;">
+                                      <strong>Note:</strong> <span id="gear-cutout-message"></span>
+                                  </div>
+                                  <!-- S7, signed off by Brennen (2026-08-24). The gears only fit
+                                       the reference roller, and the request is REJECTED otherwise,
+                                       so say it here rather than letting the user meet a 400. -->
+                                  <div id="gear-size-warning" class="grade-note inline-warning"
+                                       style="margin-top: 0.6em; display: none;">
+                                      <strong>Warning:</strong> <span id="gear-size-message"></span>
+                                  </div>
+                              </fieldset>
+
+                              <!-- Choice 3: the card sides. Replaces the "Double-Sided Card
+                                   (BETA)" accordion and checkbox. S-M6a/b labels and the S-M7
+                                   description are signed 2026-09-21; the 2026-08-16 signed sentence stays
+                                   visible minus its "This is a beta for testing" clause (D-7).
+                                   #ds-gap-warning moved here from the old menu; its id and
+                                   ARIA are load-bearing for checkDoubleSidedGap(). -->
+                              <fieldset id="card-sides-selection" aria-describedby="double-sided-note" style="margin-top: 0.8em;">
+                                  <legend class="grade-label"><h3 class="legend-heading">Card sides</h3></legend>
+                                  <div class="radio-group">
+                                      <label class="radio-option" for="card_sides_single">
+                                          <input type="radio" name="card_sides" id="card_sides_single" value="single" checked>
+                                          <span class="radio-text">Single-sided</span>
+                                      </label>
+                                      <label class="radio-option" for="card_sides_double">
+                                          <input type="radio" name="card_sides" id="card_sides_double" value="double">
+                                          <span class="radio-text">Double-sided</span>
+                                      </label>
+                                  </div>
+                                  <!-- S-M7, signed 2026-09-21 (16 words). -->
+                                  <div class="grade-note" id="double-sided-note" style="margin-top: 6px; font-size: 0.85em;">Double-sided embosses both faces of the card in one pass and uses the tactile row markers.</div>
+                                  <!-- User-facing wording signed off by Brennen (2026-08-16); visible only. -->
+                                  <div class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
+                                      Embosses both sides of the card in one pass: <strong>Cylinder A</strong> (the embossing plate) carries the front's raised dots plus recesses for the back, and <strong>Cylinder B</strong> (the counter plate) carries the back's raised dots plus recesses for the front, offset diagonally by 1.25 mm so the two sides never collide. Turning this on shows the Back of Card section below and locks the Row Indicator Style to the tactile seam arrow. Generate each cylinder with the same settings.
+                                  </div>
+                                  <!-- Live same-surface crowding warning (the ids and ARIA are
+                                       load-bearing for checkDoubleSidedGap()). Announced through
+                                       #a11y-status - see that region's note. -->
+                                  <div id="ds-gap-warning" class="grade-note inline-warning"
+                                       style="margin-top: 0.6em; display: none;">
+                                      <strong>Warning:</strong> <span id="ds-gap-message"></span>
+                                  </div>
+                              </fieldset>
+
+                              <!-- S-M8, signed 2026-09-21. Opens the help modal on the Embosser Setup tab. -->
+                              <p style="margin: 0.8em 0 0;">
+                                  <button type="button" class="btn-link" onclick="window.openHelpModal('setup')">Which setup should I choose? →</button>
+                              </p>
                           </fieldset>
                       </div>
 
@@ -3484,54 +3475,39 @@
                           </fieldset>
                       </div>
 
-                      <!-- Double-Sided Card (interpoint) beta: toggle + Back of Card entry.
-                           The checkbox and textarea are the Phase 07 plumbing controls and
-                           their ids are load-bearing: the generate handler reads
-                           #double_sided_enabled.checked and #back-text.value (one row per
-                           newline), persistence stores braille_prefs_double_sided_enabled /
-                           braille_prefs_back_text, and checkDoubleSidedGap() finds the
-                           toggle and #ds-gap-warning by id.
-                           Since 2026-08-31 the whole item is a collapsible menu (Brennen's
-                           call): the disclosure button reuses the Expert Mode submenu
-                           pattern - initExpertSubmenus() wires anything carrying
-                           .expert-submenu-toggle - and setDoubleSidedMenuOpen() opens it
-                           whenever the beta is on, so the revealed Back of Card section
-                           can never sit inside a closed menu. The button carries the
-                           section's h2; the fieldset keeps the same signed text as an
-                           sr-only legend so the group keeps its accessible name. -->
-                      <div class="expert-submenu" id="double-sided-selection">
-                          <h2 class="expert-submenu-heading">
-                              <!-- Signed heading wording (2026-08-16) reused verbatim as the button title. -->
-                              <button type="button" id="double-sided-menu-toggle" class="expert-submenu-toggle"
-                                      aria-expanded="false" aria-controls="double-sided-menu">
-                                  <span class="expert-submenu-title">Double-Sided Card (BETA — for testing)</span>
-                                  <span class="expert-submenu-icon" aria-hidden="true">▼</span>
-                              </button>
-                          </h2>
-                          <div id="double-sided-menu" class="expert-submenu-content" style="display: none;">
-                          <fieldset>
+                      <!-- Back of Card (2026-09-20 programme, sub-plan C; full parity with
+                           the front is sub-plan D). Always in the tree, one level with the
+                           front entry, and DISABLED with the native attribute while the card
+                           is single-sided - every control inside is inert and announced as
+                           unavailable - so the section is never hidden inside a closed menu
+                           again. updateDoubleSidedUI() enables it when Double-sided is chosen.
+                           The legend keeps the signed 2026-08-16 text as this section's h2.
+                           The ids inside are load-bearing: the generate handler reads
+                           #back-text.value, persistence stores braille_prefs_back_text, the
+                           back braille field is wired by wireBackBrailleField(), and
+                           computeBackOverflow() finds #ds-back-overflow-warning by id. -->
+                      <div class="line-input-group" id="double-sided-section">
+                          <fieldset class="line-input-fieldset" id="back-entry-fieldset" disabled>
                               <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
-                              <legend class="sr-only">Double-Sided Card (BETA — for testing)</legend>
-                              <label class="radio-option ds-toggle-option" for="double_sided_enabled">
-                                  <input type="checkbox" id="double_sided_enabled"
-                                         aria-expanded="false" aria-controls="double-sided-section"
-                                         aria-describedby="double-sided-note">
-                                  <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
-                                  <span class="radio-text">Emboss both sides of the card (interpoint)</span>
-                              </label>
-                              <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
-                              <!-- ADA SOP Step 6.8: the id sits on the BETA WARNING sentence, not the div.
-                                   Every word of the 2026-08-16 signed-off note is still here and still
-                                   visible; only the describedby wiring narrowed (audit F-D). -->
-                              <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
-                                  Embosses both sides of the card in one pass: <strong>Cylinder A</strong> (the embossing plate) carries the front's raised dots plus recesses for the back, and <strong>Cylinder B</strong> (the counter plate) carries the back's raised dots plus recesses for the front, offset diagonally by 1.25 mm so the two sides never collide. Turning this on shows the Back of Card section below and locks the Row Indicator Style to the tactile seam arrow. Generate each cylinder with the same settings. <span id="double-sided-note">This is a beta for testing — proofread both sides and check every braille surface before use.</span>
+                              <legend class="grade-label"><h2 class="legend-heading" id="back-entry-heading">Back of Card — Enter Text for Braille Translation</h2></legend>
+                              <!-- Back placement toggle (2026-09-21, programme sub-plan D, decision
+                                   D-11): the front's toggle element-for-element, under its own radio
+                                   name, so the two sides choose independently. Auto is the default,
+                                   as it is for the front. -->
+                              <div class="line-input-mode-toggle" style="margin-bottom: 0.8em; display: flex; align-items: center; gap: 1em;">
+                                  <span class="line-label" style="margin: 0;">Placement Mode:</span>
+                                  <label style="display: inline-flex; align-items: center; gap: 0.4em;">
+                                      <input type="radio" name="back_placement_mode" value="auto" id="back_placement_mode_auto" checked>
+                                      Auto Placement
+                                  </label>
+                                  <label style="display: inline-flex; align-items: center; gap: 0.4em;">
+                                      <input type="radio" name="back_placement_mode" value="manual" id="back_placement_mode_manual">
+                                      Manual Placement
+                                  </label>
                               </div>
-                          </fieldset>
-                          <div id="double-sided-section" style="display: none;">
-                              <div class="line-input-group" style="margin-top: 0.8em;">
-                                  <fieldset class="line-input-fieldset">
-                                      <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
-                                      <legend class="grade-label">Back of Card — Enter Text for Braille Translation</legend>
+                              <!-- Back auto placement: the wrapped textarea (shown in Auto, hidden in
+                                   Manual by updateBackPlacementUI(), exactly as #auto-input-container). -->
+                              <div id="back-auto-input-container">
                                       <!-- Label wording signed off by Brennen (2026-08-16). Placeholder
                                            replaced with his sign-off (2026-08-17): BANA auto-wrap made
                                            "each line becomes one braille row" untrue, since one typed
@@ -3543,12 +3519,27 @@
                                            with his sign-off. Replaces the 2026-08-16 note, which said "there is
                                            no automatic wrapping here yet, so press Enter where each row should
                                            end" - false since the back text gained BANA auto-wrap. -->
-                                      <div id="back-text-help" class="grade-note" style="margin-top: 0.6em; font-size: 0.85em;">
-                                          Your text is translated with the language selected below and wrapped across the braille rows for you, keeping whole words together. Press Enter only where you want to force the start of a new row. The back has the same number of rows and cells per row as the front.
+                                      <!-- ADA SOP Step 6.8: the describedby id sits on the FIRST
+                                           SENTENCE only (22 words) - the same pure sentence split
+                                           the front field uses (UI spec 4.13). Every word of the
+                                           2026-08-17 signed note is still here and still visible.
+                                           Measured 2026-09-20 at 50 words once the Back of Card
+                                           section stopped being display:none (it is disabled, not
+                                           hidden, since the Embosser setup menu). -->
+                                      <div class="grade-note" style="margin-top: 0.6em; font-size: 0.85em;">
+                                          <span id="back-text-help">Your text is translated with the language selected below and wrapped across the braille rows for you, keeping whole words together.</span> Press Enter only where you want to force the start of a new row. The back has the same number of rows and cells per row as the front.
                                       </div>
+                              </div>
+                              <!-- Back manual placement: one row per braille row with its own
+                                   translation dropdown, built by createBackDynamicLineInputs() from
+                                   grid_rows exactly as #dynamic-line-inputs is (2026-09-21, D-11). -->
+                              <div id="back-dynamic-line-inputs" style="display: none;">
+                                  <!-- Back line inputs will be dynamically generated here based on grid_rows value -->
+                              </div>
                                       <!-- Live back-text overflow warning. Same job, same shape, and the same
                                            run-id guard as the front's #auto-overflow-warning; both ids are
-                                           load-bearing for computeBackOverflow(). -->
+                                           load-bearing for computeBackOverflow(). In Manual placement the
+                                           same box carries the per-line sentences instead. -->
                                       <!-- Announced through #a11y-status, not from here: this box is
                                            hidden between messages, so a live region on it cannot fire
                                            on first appearance. Leaving one here as well would let some
@@ -3564,6 +3555,9 @@
                                            group name is what tells the two apart. -->
                                       <div class="translate-row">
                                           <button type="button" id="back-translate-to-braille-btn" class="btn-translate">Translate to Braille ↓</button>
+                                      </div>
+                                      <div class="grade-note" style="margin-top: 0.6em; font-size: 0.85em;">
+                                          Capital letters are translated by default (each adds a capital-indicator cell). To save cells you can disable capitalization in Expert Mode, where number-sign options also live.
                                       </div>
                                       <!-- Editable Unicode braille field for the BACK: the authoritative
                                            back_lines whenever non-empty, exactly as the front field is
@@ -3589,81 +3583,6 @@
                                       </div>
                                   </fieldset>
                               </div>
-                              <!-- Live same-surface crowding warning (Phase 06 hook, moved here
-                                   from after the Row Indicator Style fieldset; the ids and ARIA
-                                   attributes are load-bearing for checkDoubleSidedGap()). -->
-                              <!-- Announced through #a11y-status - see that region's note. -->
-                              <div id="ds-gap-warning" class="grade-note inline-warning"
-                                   style="margin-top: 0.6em; display: none;">
-                                  <strong>Warning:</strong> <span id="ds-gap-message"></span>
-                              </div>
-                          </div>
-                          </div>
-                      </div>
-
-                      <!-- Gear-Integrated Rollers (BETA): the cylinder ships with its
-                           top and bottom drive gears as one solid piece. The checkbox id is
-                           load-bearing: the generate handler reads
-                           #gear_rollers_enabled.checked, persistence stores
-                           braille_prefs_gear_rollers_enabled, and updateGearRollersUI()
-                           finds the toggle, #gear-cutout-note and #gear-size-warning by id.
-                           No card branch here on purpose: Output Shape offers only Cylinder,
-                           so a card can never be selected in this UI. The API keeps its own
-                           cylinders-only gate for direct callers. -->
-                      <div class="grade-selection" id="gear-rollers-selection">
-                          <fieldset>
-                              <!-- S8, signed off by Brennen (2026-08-25); reword only with his
-                                   sign-off. Follows the double-sided beta's legend template
-                                   word for word, with this feature's name substituted. -->
-                              <legend class="grade-label"><h2 class="legend-heading">Integrated Gears (BETA — for testing)</h2></legend>
-                              <!-- S1, signed off by Brennen (2026-08-24); reword only with his sign-off. -->
-                              <label class="radio-option ds-toggle-option" for="gear_rollers_enabled">
-                                  <input type="checkbox" id="gear_rollers_enabled"
-                                         aria-describedby="gear-rollers-note">
-                                  <span class="radio-text">Generate with integrated gears (BETA — for testing)</span>
-                              </label>
-                              <!-- S2, signed off by Brennen (2026-08-24); reword only with his
-                                   sign-off. ADA SOP Step 6.8: the whole note is 28 words, over
-                                   the 25-word ceiling, so the describedby id sits on the FIRST
-                                   SENTENCE only (20 words) - the same pure sentence split the
-                                   A-I programme's item F used. Not one word was rewritten and
-                                   nothing left the page; the second sentence is still read by
-                                   anyone moving through the content. -->
-                              <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
-                                  <span id="gear-rollers-note">Adds the top and bottom drive gears to each generated cylinder as one solid piece, matched to the roller assembly.</span> The barrel prints solid while this is on.
-                              </div>
-                              <!-- S9, signed off by Brennen (2026-08-25) and RE-SIGNED
-                   2026-08-28 as S9': "version 2" now names the KEYED-PEG
-                   embosser, which these gears do not fit either, so the
-                   sentence names the housing they DO fit. Wording AND the
-                                   always-visible choice; reword only with his sign-off.
-                                   Always shown, not gated on the toggle: the warning must
-                                   be read BEFORE someone decides to turn gears on for a
-                                   version 1 embosser. -->
-                              <div id="gear-hardware-note" class="grade-note inline-warning"
-                                   style="margin-top: 0.6em;">
-                                  <strong>Important:</strong> <span id="gear-hardware-message">Integrated gears fit only the one-piece geared-roller housing. They do not fit the Version 1 or Version 2 embosser bodies.</span>
-                                  <!-- Link to the version 2 build files goes here once
-                                       Brennen publishes them - keep the span so the note
-                                       text does not move when the link lands. -->
-                                  <span id="gear-hardware-link-slot"></span>
-                              </div>
-                              <!-- S3, signed off by Brennen (2026-08-24). Shown only when a
-                                   polygonal cutout is set AND the toggle is on. Announced
-                                   through #a11y-status - see that region's note. -->
-                              <div id="gear-cutout-note" class="grade-note inline-warning"
-                                   style="margin-top: 0.6em; display: none;">
-                                  <strong>Note:</strong> <span id="gear-cutout-message"></span>
-                              </div>
-                              <!-- S7, signed off by Brennen (2026-08-24). The gears only fit
-                                   the reference roller, and the request is REJECTED otherwise,
-                                   so say it here rather than letting the user meet a 400. -->
-                              <div id="gear-size-warning" class="grade-note inline-warning"
-                                   style="margin-top: 0.6em; display: none;">
-                                  <strong>Warning:</strong> <span id="gear-size-message"></span>
-                              </div>
-                          </fieldset>
-                      </div>
 
                       <!-- Language Selection -->
                       <div class="grade-selection">
@@ -3713,7 +3632,7 @@
                                    whether or not the box is visible - that wiring is unaffected. -->
                               <div id="indicator-mode-lock-note" class="grade-note"
                                    style="margin-top: 6px; font-size: 0.85em; display: none;">
-                                  <strong>Locked:</strong> Double-Sided Card is on, so the Row Indicator Style stays on the tactile seam arrow — both cylinders of a double-sided pair need it. Turn the beta off to choose visual markers.
+                                  <strong>Locked:</strong> Double-sided is on, so the Row Indicator Style stays on the tactile seam arrow — both cylinders of a double-sided pair need it. Choose Single-sided to pick visual markers.
                               </div>
                               <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
                                   <strong>Tactile</strong> lets a blind user find the alignment point and tell which end is up by touch: the arrow is one continuous wedge, nothing like a braille dot, and raised-versus-recessed tells you which cylinder you are holding. It also frees the marker cells for text. Both plates of a pair must use the same style. Its dimensions live in the <strong>Tactile Indicator Dimensions</strong> submenu of Expert Mode.
@@ -3722,6 +3641,13 @@
                               <div id="tactile-gap-warning" class="grade-note inline-warning"
                                    style="margin-top: 0.6em; display: none;">
                                   <strong>Warning:</strong> <span id="tactile-gap-message"></span>
+                              </div>
+                              <!-- A tactile row that would run off the card (the card's leading
+                                   edge sits at the alignment arrow). Announced through #a11y-status
+                                   on the hidden-to-shown edge, like the box above. -->
+                              <div id="card-fit-warning" class="grade-note inline-warning"
+                                   style="margin-top: 0.6em; display: none;">
+                                  <strong>Warning:</strong> <span id="card-fit-message"></span>
                               </div>
                           </fieldset>
                       </div>
@@ -3753,12 +3679,12 @@
                                       <input type="radio" name="card_thickness_preset" value="0.4" checked aria-describedby="thickness-04-desc">
                                       <span class="radio-text">0.4mm</span>
                                   </label>
-                                  <span id="thickness-04-desc" class="sr-only">Preset settings optimized for embossing 0.4mm card stock</span>
+                                  <span id="thickness-04-desc" class="sr-only">Preset settings optimized for embossing 0.4mm card stock. In the tactile style its cylinders carry one seam arrow per row.</span>
                                   <label class="radio-option">
                                       <input type="radio" name="card_thickness_preset" value="0.3" aria-describedby="thickness-03-desc">
                                       <span class="radio-text">0.3mm</span>
                                   </label>
-                                  <span id="thickness-03-desc" class="sr-only">Preset settings optimized for embossing 0.3mm card stock</span>
+                                  <span id="thickness-03-desc" class="sr-only">Preset settings optimized for embossing 0.3mm card stock. In the tactile style its cylinders carry three evenly spaced seam arrows, so the preset can be felt.</span>
                                   <label class="radio-option">
                                       <input type="radio" name="card_thickness_preset" value="custom" aria-describedby="thickness-custom-desc">
                                       <span class="radio-text">Custom</span>
@@ -3771,25 +3697,10 @@
                           </fieldset>
                       </div>
 
-                      <!-- Plate Type Selection moved here -->
-                      <div class="grade-selection">
-                          <fieldset>
-                              <legend class="grade-label"><h2 class="legend-heading">Select Plate to Generate</h2></legend>
-                              <div class="radio-group" role="radiogroup" aria-required="true">
-                                  <label class="radio-option">
-                                      <input type="radio" name="plate_type" value="positive" checked aria-describedby="emboss-plate-desc">
-                                      <span class="radio-text">Embossing Plate</span>
-                                  </label>
-                                  <span id="emboss-plate-desc" class="sr-only">Creates raised braille dots for embossing cards</span>
-                                  <label class="radio-option">
-                                      <input type="radio" name="plate_type" value="negative" aria-describedby="counter-plate-desc">
-                                      <span class="radio-text">Universal Counter Plate</span>
-                                  </label>
-                                  <span id="counter-plate-desc" class="sr-only">Creates recessed dots to support embossing process</span>
-
-                              </div>
-                          </fieldset>
-                      </div>
+                      <!-- The plate selector left the main form on 2026-09-21 (programme
+                           sub-plan E, decision D-8): Generate builds BOTH cylinders by
+                           default, and choosing one lives in Expert Mode under
+                           "Cylinders to Generate", the first submenu. -->
 
                       <!-- Reset Settings menu box -->
                       <div class="grade-selection">
@@ -3826,6 +3737,47 @@
                           <div id="braille-preview" class="braille-preview" style="display: none;" role="region" aria-label="Braille translation preview">
                               <h2 class="preview-heading">Braille Translation Preview:</h2>
                               <div id="preview-content"></div>
+                          </div>
+
+                          <!-- Submenu: Cylinders to Generate (2026-09-21, programme sub-plan E,
+                               decision D-8). FIRST on purpose: it decides what Generate builds.
+                               The radios keep the values the request body and the persistence
+                               key have always used (positive / negative) and add "both", the
+                               default. The two single-plate descriptions and the signed A/B
+                               labels (2026-08-17) are the ones the old selector carried; the
+                               "both" label and its description are S-E2 / S-E3 (signed 2026-09-21) and the
+                               legend S-E1 (signed 2026-09-21). -->
+                          <div class="expert-submenu" id="cylinders-to-generate-submenu">
+                              <h3 class="expert-submenu-heading">
+                                  <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-cylinders">
+                                      <span class="expert-submenu-title">Cylinders to Generate</span>
+                                      <span class="expert-submenu-icon" aria-hidden="true">▼</span>
+                                  </button>
+                              </h3>
+                              <div id="expert-panel-cylinders" class="expert-submenu-content" style="display: none;">
+                                  <div class="grade-selection">
+                                      <fieldset>
+                                          <legend class="grade-label">Cylinders to Generate</legend>
+                                          <div class="radio-group" role="radiogroup" aria-required="true">
+                                              <label class="radio-option">
+                                                  <input type="radio" name="plate_selection" value="both" checked aria-describedby="both-plates-desc">
+                                                  <span class="radio-text">Both Cylinder A and B</span>
+                                              </label>
+                                              <span id="both-plates-desc" class="sr-only">Builds both cylinders and downloads them as one file, spaced for one print plate.</span>
+                                              <label class="radio-option">
+                                                  <input type="radio" name="plate_selection" value="positive" aria-describedby="emboss-plate-desc">
+                                                  <span class="radio-text">Cylinder A — Embossing Plate</span>
+                                              </label>
+                                              <span id="emboss-plate-desc" class="sr-only">Creates raised braille dots for embossing cards</span>
+                                              <label class="radio-option">
+                                                  <input type="radio" name="plate_selection" value="negative" aria-describedby="counter-plate-desc">
+                                                  <span class="radio-text">Cylinder B — Universal Counter Plate</span>
+                                              </label>
+                                              <span id="counter-plate-desc" class="sr-only">Creates recessed dots to support embossing process</span>
+                                          </div>
+                                      </fieldset>
+                                  </div>
+                              </div>
                           </div>
 
                           <!-- Submenu: Shape Selection -->
@@ -4102,6 +4054,38 @@
                                       </div>
                                   </div>
 
+                                  <!-- Slicer seam channel (2026-09-20 programme, sub-plan A).
+                                       ON by default (decision D-2): every cylinder gets the
+                                       groove, and NOTHING is added to the request while it is
+                                       on, so an untouched request body stays byte-identical to
+                                       the pre-channel one; only OFF sends seam_channel_enabled: 0.
+                                       The groove's size is print-tuned and lives in
+                                       app/geometry_spec.py (SEAM_CHANNEL_*), not in a dial.
+                                       S-C1 (legend, label and note) is signed 2026-09-21. The note is 19 words, under the Step 6.8
+                                       ceiling, and is the checkbox's only description. -->
+                                  <div class="grade-selection" id="seam-channel-selection">
+                                      <fieldset>
+                                          <legend class="grade-label" style="font-size: 1.2em; font-weight: 700;">Slicer Seam Channel</legend>
+                                          <label class="radio-option ds-toggle-option" for="seam_channel_enabled">
+                                              <input type="checkbox" id="seam_channel_enabled" checked
+                                                     aria-describedby="seam-channel-note">
+                                              <span class="radio-text">Slicer seam channel</span>
+                                          </label>
+                                          <div class="grade-note" id="seam-channel-note" style="margin-top: 6px; font-size: 0.85em;">A shallow groove beside the row markers where the slicer hides its layer seam, keeping it off the dots.</div>
+                                          <!-- S-C2 / S-C3 (signed 2026-09-21): the server leaves the groove
+                                               out when it does not fit, and says so in the
+                                               spec's warnings; this box says the same words
+                                               BEFORE Generate, computed from the same dials.
+                                               Announced through #a11y-status on the
+                                               hidden-to-shown edge, never from a live region
+                                               of its own (see #tactile-gap-warning). -->
+                                          <div id="seam-channel-warning" class="grade-note inline-warning"
+                                               style="margin-top: 0.6em; display: none;">
+                                              <strong>Note:</strong> <span id="seam-channel-message"></span>
+                                          </div>
+                                      </fieldset>
+                                  </div>
+
                                   <!-- Embosser Version 2 keyed cutouts. Hidden in Version 1,
                                        revealed by updateEmbosserVersionUI(). The dial is
                                        bounded AT THE SOURCE (min/max/step here, not in the
@@ -4261,27 +4245,17 @@
                          WCAG 2.5.3 Label in Name, the visible "Download STL" not
                          being contained in the spoken name. -->
                     <button type="button" id="download-stl-btn" style="display: none;">Download STL</button>
-                    <!-- Pair mode only (either beta - double-sided or gear
-                         rollers): updatePairModeUI() reveals these three and
-                         hides them again the moment the last beta is off. The
-                         visible text is each button's accessible name, so no
-                         aria-label competes with it. -->
-                    <!-- User-facing wording signed off by Brennen (2026-08-17); reword only with his sign-off. -->
-                    <button type="button" id="generate-both-btn" style="display: none;">Generate Both Cylinders (A and B)</button>
-                    <!-- No display:none here on purpose: the region must already be
-                         in the accessibility tree when its text changes, or the
+                    <!-- ONE Generate and ONE Download since 2026-09-21 (programme
+                         sub-plan E, decisions D-8 / D-9): Generate builds both
+                         cylinders unless "Cylinders to Generate" in Expert Mode
+                         names one, and Download saves the combined pair file (or
+                         the single cylinder). The Generate Both / Download
+                         Combined / Download Cylinder A / B buttons are gone; the
+                         pair's progress and its ready sentence still live here.
+                         No display:none on the region on purpose: it must already
+                         be in the accessibility tree when its text changes, or the
                          change is not announced. #pair-status:empty hides it. -->
                     <div id="pair-status" class="pair-status" role="status" aria-live="polite"></div>
-                    <div id="pair-downloads" class="pair-downloads" style="display: none;">
-                        <!-- First on purpose: one file with both cylinders spaced
-                             for a single print plate is the primary offer, the
-                             per-cylinder files the fallback. Label signed off by
-                             Brennen (2026-08-25); reword only with his sign-off. -->
-                        <button type="button" id="download-pair-btn">Download Combined STL (Cylinders A and B)</button>
-                        <!-- User-facing wording signed off by Brennen (2026-08-17); reword only with his sign-off. -->
-                        <button type="button" id="download-cylinder-a-btn">Download Cylinder A</button>
-                        <button type="button" id="download-cylinder-b-btn">Download Cylinder B</button>
-                    </div>
                 </div>
               </form>
             </div>
@@ -5287,14 +5261,28 @@
         // Cylinder B started. Holding the blob lets the pair outlive both runs.
         let lastGeneratedBlob = null;
 
-        // Double-sided beta pair controls. Declared here, before
-        // updateDoubleSidedUI() is defined and long before it first runs, so
-        // that function can show and hide them without a lookup.
-        const generateBothBtn = document.getElementById('generate-both-btn');
+        // The pair run (both cylinders, the default since 2026-09-21): its
+        // status region, the in-flight flag, and the files it built. When the
+        // combined file could not be built, pairFallbackQueue hands out
+        // Cylinder A then Cylinder B from the one Download button (S-E6 (signed 2026-09-21)).
         const pairStatus = document.getElementById('pair-status');
-        const pairDownloads = document.getElementById('pair-downloads');
         let pairRunInFlight = false;
         const pairFiles = { positive: null, negative: null, combined: null };
+        let pairFallbackQueue = [];
+
+        // "Cylinders to Generate" (Expert Mode, first submenu; programme
+        // sub-plan E, decision D-8): both | positive | negative. Every read of
+        // the old plate radio goes through these two, so 'both' resolves to
+        // the embossing plate wherever a single plate's wording or settings
+        // are needed (the pair run picks each plate explicitly).
+        function currentPlateSelection() {
+            return document.querySelector('input[name="plate_selection"]:checked')?.value || 'both';
+        }
+
+        function currentPlateType() {
+            const selection = currentPlateSelection();
+            return selection === 'negative' ? 'negative' : 'positive';
+        }
 
         const previewBrailleBtn = document.getElementById('preview-braille-btn');
         const errorDiv = document.getElementById('error-message');
@@ -5417,13 +5405,18 @@
                sentence is S5, signed 2026-08-24. Reword either only with his
                sign-off. One announcement, not two: announceStatus writes a
                single region, so a second call would overwrite the first. */
-            /* S-V8, signed off by Brennen (2026-08-28). Gears and Version 2
-               cannot both be on - the API refuses the pair - so at most one
-               prefix can ever appear, and it rides in the ready message
-               rather than as a second write to the one live region. */
+            /* S-V8, signed off by Brennen (2026-08-28). Since 2026-09-21
+               (phase B6) gears and Version 2 CAN both be on - the fused
+               one-piece Version 2 roller - and that run gets ONE prefix of its
+               own, S-G2, signed off by Brennen (2026-09-21); reword only with his sign-off -
+               instead of the two single-feature sentences back to back. Each
+               prefix rides in the ready message rather than as a second write
+               to the one live region. */
+            const fusedVersion2 = lastGenerationUsedGears && lastGenerationUsedV2;
             announceStatus('stl-ready',
-                (lastGenerationUsedGears ? 'Cylinder generated with integrated gears. ' : '')
-                + (lastGenerationUsedV2 ? 'Cylinder generated for the Version 2 embosser (prototype). ' : '')
+                (fusedVersion2 ? 'Cylinder generated with fixed gears for the Version 2 embosser. ' : '')
+                + (lastGenerationUsedGears && !fusedVersion2 ? 'Cylinder generated with integrated gears. ' : '')
+                + (lastGenerationUsedV2 && !fusedVersion2 ? 'Cylinder generated for the Version 2 embosser. ' : '')
                 + 'Your STL file is ready. Use the Download STL button to save it.'
                 + outstandingWarningSuffix());
         }
@@ -5539,8 +5532,19 @@
 
         // The download is its own control now, so this is the only place that
         // hands the file over. One file, one deliberate press - it can never
-        // trip the browser's multiple-download prompt.
+        // trip the browser's multiple-download prompt. After a both-cylinder
+        // run (the default) it saves the combined pair file; if that file could
+        // not be built it saves Cylinder A on the first press and Cylinder B on
+        // the next (S-E6 (signed 2026-09-21)); after a single-cylinder run, that cylinder.
         downloadStlBtn?.addEventListener('click', () => {
+            if (pairFiles.combined) {
+                downloadPairFile(pairFiles.combined);
+                return;
+            }
+            if (pairFallbackQueue.length) {
+                downloadPairFile(pairFallbackQueue.shift());
+                return;
+            }
             if (!lastGeneratedSTLUrl) return;
             const a = document.createElement('a');
             a.href = lastGeneratedSTLUrl;
@@ -5571,11 +5575,16 @@
         ['input', 'change'].forEach(eventName => {
             form.addEventListener(eventName, () => {
                 resetToGenerateState();
-                dismissStaleValidationMessage();
-                refreshLiveWarnings();
                 // A finished A/B pair is invalidated by an edit for the same
-                // reason the STL is. Skipped while a pair run is in flight,
-                // because that run changes the plate radio itself.
+                // reason the STL is, and a blocking validation notice stops
+                // being true the moment the settings change. Both are skipped
+                // while a pair run is in flight, because that run changes the
+                // Cylinders to Generate radio itself: its restore of the
+                // user's choice must not wipe the very error it just reported
+                // (found by the sub-plan E closeout, 2026-09-21 - eighteen
+                // single-plate error tests lost their message).
+                if (!pairRunInFlight) dismissStaleValidationMessage();
+                refreshLiveWarnings();
                 if (!pairRunInFlight) clearPairResults();
             });
         });
@@ -5712,7 +5721,7 @@
         }
 
         function updateGridColumnsForPlateType(preserveValue = false) {
-            const plateType = document.querySelector('input[name="plate_type"]:checked')?.value || 'positive';
+            const plateType = currentPlateType();
             const gridColumnsInput = document.getElementById('grid_columns');
             const gridColumnsLabel = document.getElementById('grid_columns_label');
             const gridColumnsNote = document.getElementById('grid_columns_note');
@@ -5737,15 +5746,19 @@
             // 14 text cells + the triangle = 15 total again, the same seam
             // footprint (raised from 13 on 2026-08-22, FD-20 — supersedes the
             // 2026-07-31 both-states-13 choice; a 13-cell phone number still
-            // fits either way). Tactile mode reserves no marker columns, so its
-            // 14 text cells are 14 total.
+            // fits either way). Tactile mode reserves no marker columns, but
+            // since 2026-09-21 (D-T4) the 90 mm card caps it at 13 text cells:
+            // the card is loaded with its leading edge at the alignment arrow,
+            // which sits at the middle of the seam gap, and 14 cells need
+            // 92.8 mm of card from there.
             // Note wording is FD-20c-shaped: availability is text cells only,
             // and marker columns never appear in what the user reads or hears.
             let explanation;
             let recommended;
             if (tactile) {
-                explanation = 'Tactile seam arrow: no cells are reserved for markers, so every cell in the row is available for text — 14 usable text cells at the recommended value.';
-                recommended = '14';
+                // S-T3, signed off by Brennen (2026-09-21); reword only with his sign-off.
+                explanation = 'Tactile seam arrow: no cells are reserved for markers, so every cell in the row is available for text — 13 text cells is the most that fits a 90 mm card measured from the alignment arrow.';
+                recommended = '13';
             } else if (plateType === 'positive') {
                 explanation = indicatorOn
                     ? 'This counts braille cells for your text only. The indicator letter and alignment triangle take their own space at the end of the row and are never part of this count — with them present, 13 text cells is the most that fits.'
@@ -5799,8 +5812,8 @@
                 gridColumnsInput.addEventListener('input', () => { gridColumnsDirty = true; });
             }
 
-            // Plate type radio buttons
-            document.querySelectorAll('input[name="plate_type"]').forEach(radio => {
+            // Cylinders to Generate radios (both / A / B)
+            document.querySelectorAll('input[name="plate_selection"]').forEach(radio => {
                 radio.addEventListener('change', function() {
                     updateGridColumnsForPlateType();
                     const combinedShapeSel = document.getElementById('combined-shape-selection');
@@ -6055,6 +6068,79 @@
             });
         }
 
+        // The BACK's per-line rows (2026-09-21, programme sub-plan D, D-11): the
+        // front's builder mirrored under back_ ids. The selects carry the shared
+        // line-language-select class, so syncLineLanguageSelects() fills them
+        // with the front's. Row labels S-D2 (signed 2026-09-21).
+        function createBackDynamicLineInputs(numLines) {
+            const container = document.getElementById('back-dynamic-line-inputs');
+            if (!container) return;
+            container.innerHTML = '';
+
+            for (let i = 1; i <= numLines; i++) {
+                const lineDiv = document.createElement('div');
+                lineDiv.className = 'line-input';
+                lineDiv.innerHTML = `
+                    <div class="line-translation-row">
+                        <label for="back_line_lang_${i}" class="line-label">Back Line ${i} Translation</label>
+                        <select id="back_line_lang_${i}" name="back_line_lang_${i}" class="language-select line-language-select"></select>
+                    </div>
+                    <div class="line-text-row">
+                        <label for="back_line${i}" class="line-label">Back Line ${i}</label>
+                        <input type="text" id="back_line${i}" name="back_line${i}" placeholder="Enter English text here..." maxlength="50" aria-describedby="back_line${i}-help" autocomplete="off">
+                        <span id="back_line${i}-help" class="sr-only">Maximum 50 characters for back line ${i}</span>
+                    </div>
+                `;
+                container.appendChild(lineDiv);
+                // A pristine back braille field mirrors a translation, so an edit
+                // to its source clears it - the same rule #back-text follows.
+                lineDiv.querySelector(`#back_line${i}`).addEventListener('input', onBackSourceTextChangedForBackBrailleField);
+            }
+
+            syncLineLanguageSelects();
+        }
+
+        function getBackDynamicLineValues() {
+            const gridRows = parseInt(document.getElementById('grid_rows').value) || 4;
+            const lines = [];
+            for (let i = 1; i <= gridRows; i++) {
+                const input = document.getElementById(`back_line${i}`);
+                lines.push(input ? input.value : '');
+            }
+            return lines;
+        }
+
+        function backPlacementMode() {
+            return document.querySelector('input[name="back_placement_mode"]:checked')?.value || 'auto';
+        }
+
+        // Translate the back's manual rows one by one with their own tables - the
+        // front's manual branch, mirrored. Returns the braille rows (padded to
+        // grid_rows), the tables, and the first failure, if any.
+        async function translateBackManualLines() {
+            const tableName = document.getElementById('language-table')?.value || DEFAULT_LANGUAGE_TABLE;
+            const rows = parseInt(document.getElementById('grid_rows').value) || 4;
+            const lines = getBackDynamicLineValues();
+            const brailleLines = [];
+            const tables = new Array(rows).fill(tableName);
+            for (let i = 0; i < rows; i++) {
+                const line = (lines[i] || '').trim();
+                if (!line) {
+                    brailleLines.push('');
+                    continue;
+                }
+                const perLineTable = document.getElementById(`back_line_lang_${i + 1}`)?.value || tableName;
+                tables[i] = perLineTable;
+                try {
+                    brailleLines.push(await translateWithLiblouis(applyCapitalizationSetting(line), 'g2', perLineTable));
+                } catch (error) {
+                    log.error(`Failed to translate back line ${i + 1}:`, error);
+                    return { brailleLines, tables, failedLine: i + 1, error };
+                }
+            }
+            return { brailleLines, tables, failedLine: null, error: null };
+        }
+
         // Function to collect all dynamic line values
         function getDynamicLineValues() {
             const gridRows = parseInt(document.getElementById('grid_rows').value) || 4;
@@ -6078,6 +6164,7 @@
                         gridRowsInput.value = safeLines;
                     }
                     createDynamicLineInputs(safeLines);
+                    createBackDynamicLineInputs(safeLines);
                     resetToGenerateState();
                 });
             }
@@ -6477,6 +6564,17 @@
         async function translateIntoBackBrailleField() {
             const tableName = document.getElementById('language-table')?.value || DEFAULT_LANGUAGE_TABLE;
             const rows = parseInt(document.getElementById('grid_rows').value) || 4;
+            if (backPlacementMode() === 'manual') {
+                if (getBackDynamicLineValues().every(line => !line.trim())) {
+                    /* S-D3 (signed 2026-09-21; 2026-09-20 programme, sub-plan D). */
+                    return { error: 'Enter text in at least one Back Line first, then press Translate to Braille.' };
+                }
+                const manual = await translateBackManualLines();
+                if (manual.failedLine) {
+                    return { error: `Back line ${manual.failedLine} could not be translated: ${manual.error?.message || manual.error}` };
+                }
+                return { lines: manual.brailleLines, warnings: [] };
+            }
             const src = (document.getElementById('back-text')?.value || '').trim();
             if (!src) return { error: 'Enter text in the Back of Card Text box first, then press Translate to Braille.' };
             const wrap = await banaAutoWrap(src, getAvailableColumns(), rows, tableName);
@@ -6649,6 +6747,7 @@
         const gridRowsEl = document.getElementById('grid_rows');
         if (gridRowsEl) gridRowsEl.value = '4';
         createDynamicLineInputs(4);
+        createBackDynamicLineInputs(4);
         wireStaticFormListeners();
         addGridRowsListener();
 
@@ -6670,7 +6769,8 @@
         // app/geometry_spec.py and the OpenSCAD version.
         const TACTILE_MIN_GAP_MARGIN_MM = 5.0;
 
-        // Row Indicator Style: tactile puts one arrow per row in the seam gap
+        // Row Indicator Style: tactile puts arrows in the seam gap (one per row,
+        // or three fixed ones on the 0.3 preset - see TACTILE_ARROW_LAYOUT_BY_PRESET)
         // instead of markers in the first cells of the row.
         function isTactileIndicatorOn() {
             return document.querySelector('input[name="indicator_mode"]:checked')?.value === 'tactile';
@@ -6944,9 +7044,35 @@
             return DS_FOOTPRINTS[key] || DS_FOOTPRINTS['0.4'];
         }
 
+        // Tactile seam-arrow layout, keyed by the card-stock preset (2026-09-20):
+        // the 0.4 preset keeps one arrow per row, the 0.3 preset marks its
+        // cylinders with three fixed arrows (mid-height and 15 mm either side)
+        // so a blind user can tell the presets apart by touch, and a 0.3 mm
+        // cylinder will not nest with a 0.4 mm one. Keep in lockstep with
+        // app/geometry_spec.py TACTILE_ARROW_LAYOUTS (a smoke test diffs the two).
+        const TACTILE_ARROW_LAYOUT_BY_PRESET = {
+            '0.4': 'per_row',
+            '0.3': 'three_spaced'
+        };
+
+        // The preset the arrows follow. 'custom' has no arrow layout of its own,
+        // so it follows the preset last CHOSEN (0.4 or 0.3), remembered under its
+        // own key: the auto-detection that flips the radio to Custom also
+        // overwrites braille_prefs_thickness_preset with 'custom', so that key
+        // cannot say what was chosen. Nudging a dial on a 0.3 pair therefore
+        // keeps its three arrows, now and after a reload (Brennen, 2026-09-20).
+        // Nothing chosen yet falls back to '0.4', the load default.
+        function activeArrowLayoutPreset() {
+            const key = document.querySelector('input[name="card_thickness_preset"]:checked')?.value;
+            if (TACTILE_ARROW_LAYOUT_BY_PRESET[key]) return key;
+            let chosen = null;
+            try { chosen = localStorage.getItem('braille_prefs_thickness_preset_chosen'); } catch (e) { /* fall through */ }
+            return TACTILE_ARROW_LAYOUT_BY_PRESET[chosen] ? chosen : '0.4';
+        }
+
         // Live same-surface crowding warning for the double-sided beta,
         // recomputed with the seam-gap warning on every form change. Hidden
-        // whenever the #double_sided_enabled toggle is off. The offset dial
+        // whenever the card is single-sided. The offset dial
         // ids are the flat CardSettings names; absent dials fall back to the
         // 1.25/1.25 mm defaults. The footprints come from the preset package
         // above - so on the 0.4 preset this warning shows whenever the beta
@@ -6972,8 +7098,7 @@
             const warningMsg = document.getElementById('ds-gap-message');
             if (!warningDiv || !warningMsg) return;
 
-            const toggle = document.getElementById('double_sided_enabled');
-            if (!toggle || !toggle.checked) {
+            if (!isDoubleSidedOn()) {
                 warningDiv.style.display = 'none';
                 announceDsGap('');
                 return;
@@ -7269,6 +7394,26 @@
 
         placementRadios.forEach(r => r.addEventListener('change', updatePlacementUI));
 
+        // The back's own switch (D-11): one container or the other, the shared
+        // selects synced on the way into Manual, the STL invalidated. The live
+        // back overflow follows the mode through refreshLiveWarnings().
+        function updateBackPlacementUI() {
+            const autoBack = document.getElementById('back-auto-input-container');
+            const manualBack = document.getElementById('back-dynamic-line-inputs');
+            if (!autoBack || !manualBack) return;
+            if (backPlacementMode() === 'auto') {
+                autoBack.style.display = '';
+                manualBack.style.display = 'none';
+            } else {
+                autoBack.style.display = 'none';
+                manualBack.style.display = '';
+                syncLineLanguageSelects();
+            }
+            resetToGenerateState();
+        }
+
+        document.querySelectorAll('input[name="back_placement_mode"]').forEach(r => r.addEventListener('change', updateBackPlacementUI));
+
         // Row Indicator Style changes the number of marker columns, so it changes
         // text capacity, wrapping, and the seam gap the arrow needs.
         document.querySelectorAll('input[name="indicator_mode"]').forEach(radio => {
@@ -7294,53 +7439,23 @@
         // to the tactile seam arrow — the backend hard-rejects double-sided
         // requests with any other style, so this lock is what keeps that error
         // unreachable from the UI.
-        // The A/B names belong to the pair flow — either beta, double-sided or
-        // gear rollers, produces a Cylinder A / Cylinder B pair. The off-state
-        // text is captured from the markup rather than retyped here - turning
-        // the last beta off puts back exactly what shipped, character for character.
-        /* On-state relabel wording signed off by Brennen (2026-08-17); reword only with his sign-off. */
-        const plateRadioLabels = [
-            { value: 'positive', onText: 'Cylinder A — Embossing Plate' },
-            { value: 'negative', onText: 'Cylinder B — Universal Counter Plate' },
-        ].map(entry => {
-            const el = document.querySelector(`input[name="plate_type"][value="${entry.value}"]`)
-                ?.closest('label')?.querySelector('.radio-text') || null;
-            return { ...entry, el, original: el ? el.textContent : '' };
-        }).filter(entry => entry.el);
+        // The Cylinder A / Cylinder B names (signed 2026-08-17) are static
+        // markup in "Cylinders to Generate" since 2026-09-21: every run is a
+        // pair unless one cylinder is chosen, so there is no relabel to do.
 
-        // Opens or closes the Double-Sided menu chrome without touching focus.
-        // A user's own click goes through initExpertSubmenus(), which also
-        // moves focus; this exists for the code paths that must not - the
-        // load-time restore, updateDoubleSidedUI()'s on-state guarantee, and
-        // Reset - so it writes the same four things and nothing else.
-        function setDoubleSidedMenuOpen(open) {
-            const toggleBtn = document.getElementById('double-sided-menu-toggle');
-            const menu = document.getElementById('double-sided-menu');
-            if (!toggleBtn || !menu) return;
-            menu.style.display = open ? 'block' : 'none';
-            toggleBtn.setAttribute('aria-expanded', String(open));
-            toggleBtn.classList.toggle('active', open);
-            const icon = toggleBtn.querySelector('.expert-submenu-icon');
-            if (icon) icon.textContent = open ? '▲' : '▼';
-        }
-
+        // Deliberately silent: the card-sides change
+        // listener makes the one announcement, and the load-time restore must
+        // make none at all.
         function updateDoubleSidedUI() {
-            const toggle = document.getElementById('double_sided_enabled');
-            if (!toggle) return;
-            const on = !!toggle.checked;
+            const on = isDoubleSidedOn();
 
-            // The beta being on means the Back of Card section is showing, and
-            // a showing section must never sit inside a closed menu - this is
-            // what re-opens the menu on a reload with the beta persisted on.
-            // Turning the beta OFF deliberately leaves the menu open: the user
-            // is still looking at the toggle they just pressed.
-            if (on) setDoubleSidedMenuOpen(true);
-
-            const section = document.getElementById('double-sided-section');
-            if (section) section.style.display = on ? '' : 'none';
-            toggle.setAttribute('aria-expanded', String(on));
-
-            updatePairModeUI();
+            // The Back of Card section is always in the tree (2026-09-20, the
+            // Embosser setup menu): DISABLED with the native attribute while the
+            // card is single-sided - every control inside is inert and read as
+            // unavailable - and enabled here when Double-sided is chosen. Never
+            // hidden, so it can never sit inside a closed menu again.
+            const backEntry = document.getElementById('back-entry-fieldset');
+            if (backEntry) backEntry.disabled = !on;
 
             // The heading inside the legend, not the legend itself: writing
             // textContent on the legend would delete the heading element.
@@ -7369,26 +7484,38 @@
             const lockNote = document.getElementById('indicator-mode-lock-note');
             if (lockNote) {
                 lockNote.style.display = on ? 'block' : 'none';
-                // Static text, shown once - so unlike the other boxes it never
-                // gets a second in-place write to fall back on, and without
-                // this it is silent every single time.
-                //
-                // Deferred by a tick on purpose. Writing it here, synchronously
-                // inside the change handler, queues this whole sentence ahead of
-                // the checkbox's own "checked, expanded" - so the user waits out
-                // 30 words before hearing whether the box they just pressed is
-                // even ticked. Letting the current task finish first puts the
-                // control's own state back in front.
-                const lockMessage = on
-                    ? lockNote.textContent.replace(/\s+/g, ' ').trim()
-                    : '';
-                setTimeout(() => announceStatus('indicator-mode-lock-note', lockMessage), 0);
+                // Not announced from here: the card-sides change listener reads
+                // this note into its ONE composed announcement, and the other
+                // callers (load restore, reset) are silent by design.
             }
         }
 
-        document.getElementById('double_sided_enabled')?.addEventListener('change', () => {
-            updateDoubleSidedUI();
-            resetToGenerateState();
+        /** The visible lock note's text, for the card-sides announcement. */
+        function indicatorLockMessage() {
+            const lockNote = document.getElementById('indicator-mode-lock-note');
+            return lockNote ? lockNote.textContent.replace(/\s+/g, ' ').trim() : '';
+        }
+
+        // Card sides: one change, ONE announcement (ADA SOP Section 12, C9):
+        // the choice sentence plus, when turning double-sided on, the lock
+        // note that says why the Row Indicator Style just moved. Deferred by
+        // a tick on purpose - written synchronously it would queue ahead of
+        // the radio's own "selected", so the user would wait out the whole
+        // sentence before hearing whether the option they pressed took.
+        document.querySelectorAll('input[name="card_sides"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                updateDoubleSidedUI();
+                const on = isDoubleSidedOn();
+                persistValue('braille_prefs_double_sided_enabled', on ? '1' : '0');
+                resetToGenerateState();
+                refreshLiveWarnings();
+                /* S-M11, signed off by Brennen (2026-09-21); reword only with his sign-off. */
+                const choice = on
+                    ? 'Double-sided card selected. The Back of Card section is now active.'
+                    : 'Single-sided card selected.';
+                const message = on ? `${choice} ${indicatorLockMessage()}` : choice;
+                setTimeout(() => announceStatus('embosser-setup', message), 0);
+            });
         });
 
         // ---------------------------------------------------------------------
@@ -7397,45 +7524,34 @@
         // The reference roller the vendored gears were measured against. The
         // server rejects anything else while gears are on (app/geometry/gears.py
         // owns these numbers), so the UI says so live rather than letting a
-        // generate turn into a 400. Since 2026-08-31 the default cylinder is
-        // 54 mm tall (a 1 mm card shelf at each end), so enabling gears at the
-        // defaults shows this warning until the height dial is set back to 52 -
-        // the gears are baked at fixed z and cannot follow the barrel.
+        // generate turn into a 400. The default cylinder is the 52 mm Version 1
+        // standard again (it spent part of 2026-08-31 at 54), so gears on
+        // untouched dials pass; the warning appears once the height dial is
+        // moved - the gears are baked at fixed z and cannot follow the barrel.
+        // These are the VERSION 1 numbers; while Version 2 is chosen the gate
+        // in updateGearRollersUI() compares against V2_BARREL_* instead (the
+        // Version 2 fixed gears are baked for the 54 mm barrel, phase B6).
         const GEAR_BARREL_DIAMETER_MM = 30.8;
         const GEAR_BARREL_HEIGHT_MM = 52.0;
         const GEAR_BARREL_TOLERANCE_MM = 0.001;
 
+        // The Embosser setup menu item (2026-09-20 programme, sub-plan C):
+        // the gear and card-sides choices are either/or radios, read here and
+        // nowhere else, so the wire, the pair flow and the live warnings all
+        // follow one predicate each.
         function isGearRollersOn() {
-            return !!document.getElementById('gear_rollers_enabled')?.checked;
+            return !!document.getElementById('gear_mode_fixed')?.checked;
         }
 
-        // Either beta produces a Cylinder A / Cylinder B pair: double-sided
-        // pairs the recesses, gear rollers pairs the gear sets (gears_a meshes
-        // with gears_b). The pair controls and the A/B radio names follow the
-        // two toggles together through this one predicate. Reusing the signed
-        // A/B radio labels in gears-only mode confirmed by Brennen (2026-08-25).
-        // Version 2 joins them (D-V10): A and B are a matched, differently
-        // keyed pair, so the pair IS the useful output - the same reasoning
-        // that put the gears-only flow into pair mode on 2026-08-25. It
-        // reuses the signed Cylinder A / Cylinder B labels; no new strings.
-        function isPairModeOn() {
-            return !!document.getElementById('double_sided_enabled')?.checked
-                || isGearRollersOn()
-                || isVersion2();
+        function isDoubleSidedOn() {
+            return !!document.getElementById('card_sides_double')?.checked;
         }
 
-        // Deliberately silent: both beta toggles call this from their own
-        // update functions, each of which already makes its single
-        // announcement (ADA SOP Section 12, C9) - a second voice here would
-        // replace it in the shared status region.
-        function updatePairModeUI() {
-            const on = isPairModeOn();
-            plateRadioLabels.forEach(entry => {
-                entry.el.textContent = on ? entry.onText : entry.original;
-            });
-            if (generateBothBtn) generateBothBtn.style.display = on ? '' : 'none';
-            if (!on) clearPairResults();
-        }
+        // Pair mode is universal since 2026-09-21 (programme sub-plan E,
+        // decision D-9): every run builds Cylinder A and Cylinder B unless one
+        // is chosen under "Cylinders to Generate", whatever the version, gear
+        // or card-sides choice. The old isPairModeOn() / updatePairModeUI()
+        // gate and relabel are retired with the Generate Both button.
 
         function updateGearRollersUI() {
             const on = isGearRollersOn();
@@ -7455,26 +7571,39 @@
                 cutoutMessage.textContent = cutoutText;
             }
 
-            // S7: the size gate. Reuses the server's exact signed sentence, so
-            // the warning a user reads here and the error they would get from
-            // the server are the same words.
+            // S7 / S-G1: the size gate. Reuses the server's exact sentence for
+            // the chosen version, so the warning a user reads here and the
+            // error they would get from the server are the same words. Since
+            // 2026-09-21 (phase B6) the Version 2 embosser has its own fixed
+            // gears, baked for the 30.8 x 54 barrel its preset forces onto the
+            // dials, so the gate follows isVersion2() exactly as
+            // app/validation.py's does.
             let sizeText = '';
             const sizeWarning = document.getElementById('gear-size-warning');
             const sizeMessage = document.getElementById('gear-size-message');
             const diameter = parseFloat(document.getElementById('cylinder_diameter_mm')?.value);
             const height = parseFloat(document.getElementById('cylinder_height_mm')?.value);
             if (sizeWarning && sizeMessage) {
+                const forVersion2 = isVersion2();
+                const wantDiameter = forVersion2 ? V2_BARREL_DIAMETER_MM : GEAR_BARREL_DIAMETER_MM;
+                const wantHeight = forVersion2 ? V2_BARREL_HEIGHT_MM : GEAR_BARREL_HEIGHT_MM;
                 const offSize = on
                     && Number.isFinite(diameter)
                     && Number.isFinite(height)
-                    && (Math.abs(diameter - GEAR_BARREL_DIAMETER_MM) > GEAR_BARREL_TOLERANCE_MM
-                        || Math.abs(height - GEAR_BARREL_HEIGHT_MM) > GEAR_BARREL_TOLERANCE_MM);
-                /* S7, signed off by Brennen (2026-08-24); reword only with his sign-off. */
-                sizeText = offSize
-                    ? `Integrated gears are matched to the reference roller and only fit a `
-                      + `${GEAR_BARREL_DIAMETER_MM} mm x ${GEAR_BARREL_HEIGHT_MM} mm cylinder. `
-                      + `Received ${diameter} mm x ${height} mm.`
-                    : '';
+                    && (Math.abs(diameter - wantDiameter) > GEAR_BARREL_TOLERANCE_MM
+                        || Math.abs(height - wantHeight) > GEAR_BARREL_TOLERANCE_MM);
+                /* S7, signed off by Brennen (2026-08-24); reword only with his sign-off.
+                   S-G1 (the Version 2 sentence), signed off by Brennen (2026-09-21); reword only with his sign-off; it mirrors
+                   gears.reference_roller_message(..., version=2) word for word. */
+                sizeText = !offSize
+                    ? ''
+                    : forVersion2
+                        ? `Fixed gears for the Version 2 embosser fit only a `
+                          + `${wantDiameter} mm x ${wantHeight} mm cylinder. `
+                          + `Received ${diameter} mm x ${height} mm.`
+                        : `Integrated gears are matched to the reference roller and only fit a `
+                          + `${wantDiameter} mm x ${wantHeight} mm cylinder. `
+                          + `Received ${diameter} mm x ${height} mm.`;
                 sizeWarning.style.display = sizeText ? 'block' : 'none';
                 sizeMessage.textContent = sizeText;
             }
@@ -7483,13 +7612,177 @@
             // can apply at once - an off-size cylinder that also has a cutout -
             // and announceStatus writes a single region, so announcing them
             // separately would let the second silently replace the first.
-            announceStatus('gear-rollers', [cutoutText, sizeText].filter(Boolean).join(' '));
+            const notes = [cutoutText, sizeText].filter(Boolean).join(' ');
+            announceStatus('gear-rollers', notes);
 
-            updatePairModeUI();
+            return notes;
         }
 
-        document.getElementById('gear_rollers_enabled')?.addEventListener('change', () => {
-            updateGearRollersUI();
+        // Gears: one change, one announcement. The choice sentence and any note
+        // updateGearRollersUI() raised (S3, S7) travel in ONE write, so an
+        // off-size warning is heard rather than overwritten.
+        document.querySelectorAll('input[name="gear_mode"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                const notes = updateGearRollersUI();
+                persistValue('braille_prefs_gear_rollers_enabled', isGearRollersOn() ? '1' : '0');
+                resetToGenerateState();
+                refreshLiveWarnings();
+                /* S-M10, signed off by Brennen (2026-09-21); reword only with his sign-off. */
+                const choice = isGearRollersOn() ? 'Simplified fixed gears selected.' : 'Standard gears selected.';
+                const message = [choice, notes].filter(Boolean).join(' ');
+                // Deferred by a tick: the form-wide change listener bubbles after
+                // this one and refreshes every live warning, and updateGearRollersUI()
+                // announces its notes on every refresh - written synchronously, this
+                // composed sentence would be overwritten by the bare note.
+                setTimeout(() => announceStatus('embosser-setup', message), 0);
+            });
+        });
+
+        // ---------------------------------------------------------------------
+        // Slicer seam channel (2026-09-20 programme, sub-plan A)
+        // ---------------------------------------------------------------------
+        // A shallow V-groove the full height of the barrel, inside the seam gap
+        // beside the row-indicator column, so a slicer's default "aligned" seam
+        // mode hides every layer's seam there instead of in a dot. ON by default
+        // (decision D-2); the switch is the only thing that turns it off. The
+        // numbers MIRROR app/geometry_spec.py SEAM_CHANNEL_* and its fit rules
+        // (a smoke test diffs them), and the two sentences are the server's own,
+        // word for word, so a user never meets two spellings of one limit.
+        const SEAM_CHANNEL_WIDTH_MM = 1.0;
+        const SEAM_CHANNEL_DEPTH_MM = 0.5;
+        const SEAM_CHANNEL_MARGIN_MM = 0.25;
+        const SEAM_CHANNEL_MIN_WALL_MM = 1.2;
+        // The request never carries a wall thickness, so a barrel without a
+        // polygonal cutout is hollowed by the backend's 2 mm default.
+        const SEAM_CHANNEL_DEFAULT_WALL_MM = 2.0;
+
+        function isSeamChannelOn() {
+            return !!document.getElementById('seam_channel_enabled')?.checked;
+        }
+
+        // Arc from a cell centre to the far edge of its widest dot or recess:
+        // app/geometry_spec.py _seam_channel_footprint, dial for dial.
+        function seamChannelFootprintMm() {
+            const dotSpacing = parseFloat(document.getElementById('dot_spacing')?.value);
+            let widest;
+            if (isDoubleSidedOn()) {
+                const ds = activeDsFootprints();
+                widest = Math.max(ds.ds_dot_base_diameter, ds.ds_bowl_base_diameter);
+            } else {
+                const rounded = document.querySelector('input[name="dot_shape"]:checked')?.value !== 'cone';
+                const emboss = parseFloat(document.getElementById(
+                    rounded ? 'rounded_dot_base_diameter' : 'emboss_dot_base_diameter')?.value);
+                const cone = document.querySelector('input[name="recess_shape"]:checked')?.value === '2';
+                const recess = parseFloat(document.getElementById(
+                    cone ? 'cone_counter_dot_base_diameter' : 'bowl_counter_dot_base_diameter')?.value);
+                widest = Math.max(emboss, recess);
+            }
+            return dotSpacing / 2 + widest / 2;
+        }
+
+        // Says, before Generate, when the server will leave the groove out.
+        // Hidden-to-shown announcement gate, same reason as checkPhysicalFitNow.
+        function updateSeamChannelUI() {
+            const warning = document.getElementById('seam-channel-warning');
+            const message = document.getElementById('seam-channel-message');
+            if (!warning || !message) return;
+            const wasHidden = warning.style.display === 'none';
+
+            let text = '';
+            if (isSeamChannelOn()) {
+                const diameter = parseFloat(document.getElementById('cylinder_diameter_mm')?.value);
+                const cellSpacing = parseFloat(document.getElementById('cell_spacing')?.value);
+                const dotSpacing = parseFloat(document.getElementById('dot_spacing')?.value);
+                const totalColumns = getAvailableColumns() + getReservedMarkerColumns();
+                const footprint = seamChannelFootprintMm();
+                const gap = Math.PI * diameter - (totalColumns - 1) * cellSpacing;
+                // Tactile mode (D-T6, 2026-09-21): the groove runs down the
+                // arrow column itself, outside the arrow chain, so there is no
+                // window to fit - only the wall rule below applies. Visual:
+                // between the last cell's dots and column 0's triangle.
+                let free = Infinity;
+                if (!isTactileIndicatorOn()) {
+                    const lo = -(gap / 2 - footprint);
+                    const hi = gap / 2 - dotSpacing / 2;
+                    free = hi - lo;
+                }
+                const need = SEAM_CHANNEL_WIDTH_MM + 2 * SEAM_CHANNEL_MARGIN_MM;
+
+                // A dial that is empty or mid-edit gives NaN; the box stays
+                // quiet rather than guessing, and the server has the last word.
+                if (Number.isFinite(free)) {
+                    /* S-C2 and S-C3, signed off by Brennen (2026-09-21); reword only with his sign-off. Byte-for-byte the server's sentences. */
+                    if (free < need) {
+                        text = 'The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.';
+                    } else if (!isVersion2() && !isGearRollersOn()) {
+                        const radius = diameter / 2;
+                        const cutoutRadius = parseFloat(document.getElementById('cylinder_polygonal_cutout_radius_mm')?.value);
+                        const sides = parseInt(document.getElementById('cylinder_polygonal_cutout_sides')?.value, 10);
+                        const bore = (cutoutRadius > 0 && sides >= 3)
+                            ? cutoutRadius / Math.cos(Math.PI / sides)
+                            : radius - SEAM_CHANNEL_DEFAULT_WALL_MM;
+                        if (bore > 0 && radius - SEAM_CHANNEL_DEPTH_MM - bore < SEAM_CHANNEL_MIN_WALL_MM) {
+                            text = `The seam channel was left out: the cylinder wall would be thinner than ${SEAM_CHANNEL_MIN_WALL_MM.toFixed(1)} mm under it.`;
+                        }
+                    }
+                }
+            }
+
+            warning.style.display = text ? 'block' : 'none';
+            message.textContent = text;
+            if (text) {
+                if (wasHidden) announceStatus('seam-channel', text);
+            } else {
+                announceStatus('seam-channel', '');
+            }
+        }
+
+        // Says, before Generate, when a tactile row would run off the card. The
+        // card's leading edge sits at the alignment arrow (D-T3), which sits at
+        // the middle of the seam gap, so a row needs half the gap + the grid +
+        // the last cell's footprint of card: mirrors app/geometry_spec.py
+        // tactile_card_need_mm / tactile_max_cells and shows the server's
+        // sentence word for word. Tactile only - the visual markers are aligned
+        // by a different procedure. Hidden-to-shown announcement gate, same as
+        // the boxes above.
+        function updateCardFitUI() {
+            const warning = document.getElementById('card-fit-warning');
+            const message = document.getElementById('card-fit-message');
+            if (!warning || !message) return;
+            const wasHidden = warning.style.display === 'none';
+
+            let text = '';
+            const shapeType = document.querySelector('input[name="shape_type"]:checked')?.value || 'cylinder';
+            if (shapeType === 'cylinder' && isTactileIndicatorOn()) {
+                const diameter = parseFloat(document.getElementById('cylinder_diameter_mm')?.value);
+                const cellSpacing = parseFloat(document.getElementById('cell_spacing')?.value);
+                const totalColumns = getAvailableColumns() + getReservedMarkerColumns();
+                const footprint = seamChannelFootprintMm();
+                const gridWidth = (totalColumns - 1) * cellSpacing;
+                const halfGap = (Math.PI * diameter - gridWidth) / 2;
+                const cardLength = parseFloat(document.getElementById('card_width')?.value);
+                const need = halfGap + gridWidth + footprint;
+                if (Number.isFinite(need) && Number.isFinite(cardLength) && need > cardLength) {
+                    // need(n) = pi * D / 2 + (n - 1) * cell / 2 + footprint
+                    const room = cardLength - (Math.PI * diameter) / 2 - footprint;
+                    const maxCells = room < 0 ? 0 : Math.floor((room * 2) / cellSpacing) + 1;
+                    /* S-T1, signed off by Brennen (2026-09-21); reword only with his sign-off. Byte-for-byte the server's sentence. */
+                    text = `The last braille cell would run off the card: this layout needs ${need.toFixed(1)} mm of card ` +
+                        `from the alignment arrow and the card is ${cardLength.toFixed(0)} mm. Use ${maxCells} cells or fewer.`;
+                }
+            }
+
+            warning.style.display = text ? 'block' : 'none';
+            message.textContent = text;
+            if (text) {
+                if (wasHidden) announceStatus('card-fit', text);
+            } else {
+                announceStatus('card-fit', '');
+            }
+        }
+
+        document.getElementById('seam_channel_enabled')?.addEventListener('change', () => {
+            updateSeamChannelUI();
             resetToGenerateState();
         });
 
@@ -7568,7 +7861,7 @@
             announceStatus('v2-size', text);
         }
 
-        // Deliberately silent, like updatePairModeUI: the change listener makes
+        // Deliberately silent: the change listener makes
         // the one announcement (ADA SOP Section 12, C9), and the load-time
         // restore must make none at all - an announcement there spoke over page
         // load in the first NVDA listening run (2026-08-22, POST15_6).
@@ -7620,23 +7913,13 @@
 
             const keyedFieldset = document.getElementById('v2-keyed-cutouts-selection');
             if (keyedFieldset) keyedFieldset.hidden = !on;
-            const prototypeNote = document.getElementById('v2-prototype-note');
-            if (prototypeNote) prototypeNote.hidden = !on;
 
-            // The gears BETA is Version 1 only (D-V6) and the API returns a 400
-            // for the combination, so the toggle is hidden AND unchecked: a
-            // hidden checkbox that stayed on would still be read at generate
-            // time and turn into an error the user cannot see the cause of.
-            const gearSelection = document.getElementById('gear-rollers-selection');
-            if (gearSelection) gearSelection.hidden = on;
-            const gearToggle = document.getElementById('gear_rollers_enabled');
-            if (on && gearToggle?.checked) {
-                gearToggle.checked = false;
-                persistValue('braille_prefs_gear_rollers_enabled', '0');
-                updateGearRollersUI();
-            }
-
-            updatePairModeUI();
+            // The gear choice is left exactly as the user set it: since
+            // 2026-09-21 (phase B6) the Version 2 embosser has its own fixed
+            // gears, so Version 2 + Simplified is a real product (the fused
+            // one-piece Version 2 roller), not a pair the API refuses. The
+            // version change listener's refreshLiveWarnings() re-reads the gear
+            // size gate against the new version's barrel.
         }
 
         document.querySelectorAll('input[name="embosser_version"]').forEach(radio => {
@@ -7645,10 +7928,16 @@
                 persistValue('braille_prefs_embosser_version', isVersion2() ? '2' : '1');
                 resetToGenerateState();
                 refreshLiveWarnings();
-                // Announced AFTER the refresh, so the selector's own message is
-                // the one left in the single live region rather than a warning
-                // the refresh happened to write on its way through.
-                announceStatus('embosser-version', embosserVersionAnnouncement());
+                // ONE composed, deferred announcement - the rule the gear and
+                // card-sides listeners follow (phase C2). The form-wide change
+                // listener bubbles after this one and re-announces the gear
+                // notes (S3, S7 / S-G1), so now that a fixed-gear choice
+                // survives a version change (phase B6) a synchronous write
+                // here would be overwritten by the bare note. The version
+                // sentence leads and the notes the refresh raised ride with it.
+                const gearNotes = updateGearRollersUI();
+                const message = [embosserVersionAnnouncement(), gearNotes].filter(Boolean).join(' ');
+                setTimeout(() => announceStatus('embosser-version', message), 0);
             });
         });
 
@@ -7763,8 +8052,7 @@
         }
 
         function computeBackOverflow() {
-            const toggle = document.getElementById('double_sided_enabled');
-            if (!toggle || !toggle.checked) {
+            if (!isDoubleSidedOn()) {
                 if (backOverflowTimer) { clearTimeout(backOverflowTimer); backOverflowTimer = null; }
                 backOverflowRun++; // discard any translation still in flight
                 hideBackOverflow();
@@ -7782,8 +8070,9 @@
             const warningDiv = document.getElementById('ds-back-overflow-warning');
             const warningMsg = document.getElementById('ds-back-overflow-message');
             if (!warningDiv || !warningMsg) return;
-            const src = (document.getElementById('back-text')?.value || '').trim();
-            if (!src) {
+            const manualBack = backPlacementMode() === 'manual';
+            const src = manualBack ? '' : (document.getElementById('back-text')?.value || '').trim();
+            if (!manualBack && !src) {
                 hideBackOverflow();
                 return;
             }
@@ -7792,10 +8081,40 @@
                 const tableName = languageSelect?.value || DEFAULT_LANGUAGE_TABLE;
                 const cols = getAvailableColumns();
                 const rows = parseInt(document.getElementById('grid_rows').value) || 4;
+
+                const messages = [];
+                if (manualBack) {
+                    // Manual placement (D-11): each back row against the cell
+                    // count, the front's checkCylinderOverflowNow() mirrored,
+                    // written in the signed per-line sentence.
+                    const lines = getBackDynamicLineValues();
+                    for (let i = 0; i < lines.length; i++) {
+                        const line = (lines[i] || '').trim();
+                        if (!line) continue;
+                        const perLineTable = document.getElementById(`back_line_lang_${i + 1}`)?.value || tableName;
+                        const braille = await translateWithLiblouis(applyCapitalizationSetting(line), 'g2', perLineTable);
+                        if (braille.length > cols) {
+                            messages.push(`Back line ${i + 1} ("${line}") needs ${braille.length} cells but ${cols} are available.`);
+                        }
+                    }
+                    if (runId !== backOverflowRun) return;
+                    if (messages.length) {
+                        const wasHidden = warningDiv.hidden;
+                        warningMsg.textContent = messages.join(' ');
+                        warningDiv.hidden = false;
+                        if (wasHidden) {
+                            announceStatus('ds-back-overflow-warning',
+                                warningDiv.textContent.replace(/\s+/g, ' ').trim());
+                        }
+                    } else {
+                        hideBackOverflow();
+                    }
+                    return;
+                }
+
                 const wrap = await banaAutoWrap(src, cols, rows, tableName);
                 if (runId !== backOverflowRun) return; // superseded by newer input
 
-                const messages = [];
                 if (wrap.error) {
                     messages.push(...(wrap.warnings || []));
                 } else if (wrap.rowsNeeded > rows || !wrap.rowsNeededIsExact) {
@@ -7857,10 +8176,13 @@
             checkPhysicalFit();
             checkDoubleSidedGap();
             updateGearRollersUI();
-            // After the gear warning, so that when both could speak the
-            // Version 2 sentence is the one left in the live region - in
-            // Version 2 the gear toggle is off, so its own call writes ''.
+            // After the gear warning, so that when both speak (a Version 2
+            // barrel edited off-size with fixed gears on: S-G1 and S-V5 name
+            // the same 30.8 x 54 limit) the Version 2 sentence is the one left
+            // in the live region; both boxes stay on screen.
             updateVersion2SizeWarning();
+            updateSeamChannelUI();
+            updateCardFitUI();
             updateCapsWarning();
             updateBrailleFieldStatus();
             updateBackBrailleFieldStatus();
@@ -7885,6 +8207,7 @@
 
         // Initialize placement UI
         updatePlacementUI();
+        updateBackPlacementUI();
 
         // Persistence: save and restore user settings
         function persistValue(key, value) {
@@ -7927,6 +8250,7 @@
                 'braille_prefs_dot_shape',
                 'braille_prefs_combined_shape',
                 'braille_prefs_placement_mode',
+                'braille_prefs_back_placement_mode',
                 'braille_prefs_indicator_shapes',
                 'braille_prefs_indicator_mode',
                 'braille_prefs_tactile_indicator_width',
@@ -7971,6 +8295,7 @@
                 'braille_prefs_double_sided_enabled',
                 'braille_prefs_back_text',
                 'braille_prefs_gear_rollers_enabled',
+                'braille_prefs_seam_channel_enabled',
                 'braille_prefs_embosser_version',
                 'braille_prefs_v2_key_clearance_mm'
             ];
@@ -7984,10 +8309,12 @@
                 const radio = document.querySelector(`input[name="placement_mode"][value="${savedPlacement}"]`);
                 if (radio) radio.checked = true;
             }
-            // Plate type
+            // Cylinders to Generate. The key predates the "both" option, so an
+            // old saved 'positive' / 'negative' is still honoured as a single
+            // cylinder; anything else leaves the default (both) in place.
             const savedPlate = readPersisted('braille_prefs_plate_type');
-            if (savedPlate === 'positive' || savedPlate === 'negative') {
-                const radio = document.querySelector(`input[name="plate_type"][value="${savedPlate}"]`);
+            if (savedPlate === 'both' || savedPlate === 'positive' || savedPlate === 'negative') {
+                const radio = document.querySelector(`input[name="plate_selection"][value="${savedPlate}"]`);
                 if (radio) radio.checked = true;
             }
             // Indicator shapes (on/off)
@@ -8068,15 +8395,28 @@
                 expertToggleBtn.classList.toggle('active', visible);
             }
             // Double-sided beta toggle and back text (hidden storage until Phase 08)
+            // Same keys as the retired checkboxes, so a saved choice carries
+            // over to the Embosser setup radios (2026-09-20).
             const savedDoubleSided = readPersisted('braille_prefs_double_sided_enabled');
-            const dsToggleEl = document.getElementById('double_sided_enabled');
-            if (dsToggleEl && (savedDoubleSided === '1' || savedDoubleSided === '0')) {
-                dsToggleEl.checked = savedDoubleSided === '1';
+            if (savedDoubleSided === '1' || savedDoubleSided === '0') {
+                const sides = document.getElementById(savedDoubleSided === '1' ? 'card_sides_double' : 'card_sides_single');
+                if (sides) sides.checked = true;
             }
             const savedGearRollers = readPersisted('braille_prefs_gear_rollers_enabled');
-            const gearToggleEl = document.getElementById('gear_rollers_enabled');
-            if (gearToggleEl && (savedGearRollers === '1' || savedGearRollers === '0')) {
-                gearToggleEl.checked = savedGearRollers === '1';
+            if (savedGearRollers === '1' || savedGearRollers === '0') {
+                const gears = document.getElementById(savedGearRollers === '1' ? 'gear_mode_fixed' : 'gear_mode_standard');
+                if (gears) gears.checked = true;
+            }
+            // Seam channel: nothing saved means the default, ON.
+            const savedSeamChannel = readPersisted('braille_prefs_seam_channel_enabled');
+            const seamChannelEl = document.getElementById('seam_channel_enabled');
+            if (seamChannelEl && (savedSeamChannel === '1' || savedSeamChannel === '0')) {
+                seamChannelEl.checked = savedSeamChannel === '1';
+            }
+            const savedBackPlacement = readPersisted('braille_prefs_back_placement_mode');
+            if (savedBackPlacement === 'auto' || savedBackPlacement === 'manual') {
+                const radio = document.querySelector(`input[name="back_placement_mode"][value="${savedBackPlacement}"]`);
+                if (radio) radio.checked = true;
             }
             const savedBackText = readPersisted('braille_prefs_back_text');
             const backTextEl = document.getElementById('back-text');
@@ -8153,9 +8493,13 @@
             document.querySelectorAll('input[name="placement_mode"]').forEach(r => {
                 r.addEventListener('change', () => persistValue('braille_prefs_placement_mode', document.querySelector('input[name="placement_mode"]:checked').value));
             });
-            // Plate type
-            document.querySelectorAll('input[name="plate_type"]').forEach(r => {
-                r.addEventListener('change', () => persistValue('braille_prefs_plate_type', document.querySelector('input[name="plate_type"]:checked').value));
+            // Back placement mode (auto/manual), independent of the front's
+            document.querySelectorAll('input[name="back_placement_mode"]').forEach(r => {
+                r.addEventListener('change', () => persistValue('braille_prefs_back_placement_mode', backPlacementMode()));
+            });
+            // Cylinders to Generate (both / positive / negative), same key as ever
+            document.querySelectorAll('input[name="plate_selection"]').forEach(r => {
+                r.addEventListener('change', () => persistValue('braille_prefs_plate_type', currentPlateSelection()));
             });
             // Indicator shapes (on/off)
             document.querySelectorAll('input[name="indicator_shapes"]').forEach(r => {
@@ -8248,14 +8592,11 @@
                     persistValue('braille_prefs_recess_shape', val);
                 });
             });
-            // Double-sided beta toggle and back text (hidden storage until Phase 08)
-            const dsToggle = document.getElementById('double_sided_enabled');
-            if (dsToggle) {
-                dsToggle.addEventListener('change', () => persistValue('braille_prefs_double_sided_enabled', dsToggle.checked ? '1' : '0'));
-            }
-            const gearToggle = document.getElementById('gear_rollers_enabled');
-            if (gearToggle) {
-                gearToggle.addEventListener('change', () => persistValue('braille_prefs_gear_rollers_enabled', gearToggle.checked ? '1' : '0'));
+            // The card-sides and gear choices persist from their own change
+            // listeners beside updateDoubleSidedUI() / updateGearRollersUI().
+            const seamChannelToggle = document.getElementById('seam_channel_enabled');
+            if (seamChannelToggle) {
+                seamChannelToggle.addEventListener('change', () => persistValue('braille_prefs_seam_channel_enabled', seamChannelToggle.checked ? '1' : '0'));
             }
             const backText = document.getElementById('back-text');
             if (backText) {
@@ -8271,6 +8612,7 @@
         try { wirePersistenceListeners(); } catch (e) { log.error('Persistence listeners failed to wire; settings will not be saved:', e); }
         // After restoring persisted settings, update placement UI to reflect restored mode
         try { updatePlacementUI(); } catch (e) { log.error('Placement UI failed to initialise:', e); }
+        try { updateBackPlacementUI(); } catch (e) { log.error('Back placement UI failed to initialise:', e); }
         // Restored double-sided state fires no events either: reveal the Back of
         // Card section and apply the tactile lock by hand when it came back on.
         // The try stays so a throw here cannot stop page startup; the catch says
@@ -8301,6 +8643,7 @@
                 // Reset thickness preset to default (0.4mm)
                 try {
                     localStorage.setItem('braille_prefs_thickness_preset', '0.4');
+                    localStorage.setItem('braille_prefs_thickness_preset_chosen', '0.4');
                     const thicknessRadio = document.querySelector('input[name="card_thickness_preset"][value="0.4"]');
                     if (thicknessRadio) thicknessRadio.checked = true;
                 } catch (e) { log.debug('Could not reset the saved thickness preset:', e); }
@@ -8323,22 +8666,19 @@
                 expertToggleText.textContent = 'Show Expert Mode';
                 expertToggleIcon.textContent = '▼';
                 expertToggleBtn.classList.remove('active');
-                // Double-Sided Card beta back to its default: off, empty back text
-                // (checkboxes are not radio groups, so the defaultChecked sweep
-                // above does not cover the toggle).
-                const dsToggleReset = document.getElementById('double_sided_enabled');
-                if (dsToggleReset) dsToggleReset.checked = false;
+                // Card sides and gears are radio groups now, so the defaultChecked
+                // sweep above already put them back to Single-sided / Standard.
+                // The back text and braille field reset with them: empty and
+                // pristine.
                 const backTextReset = document.getElementById('back-text');
                 if (backTextReset) backTextReset.value = '';
-                // The back braille field and the menu chrome reset with the
-                // beta: field empty and pristine, menu closed.
                 const backBrailleReset = document.getElementById('back-braille-unicode');
                 if (backBrailleReset) backBrailleReset.value = '';
                 backBrailleFieldDirty = false;
                 backBrailleFieldAutoCleared = false;
-                setDoubleSidedMenuOpen(false);
-                const gearToggleReset = document.getElementById('gear_rollers_enabled');
-                if (gearToggleReset) gearToggleReset.checked = false;
+                // Seam channel back to its default: on.
+                const seamChannelReset = document.getElementById('seam_channel_enabled');
+                if (seamChannelReset) seamChannelReset.checked = true;
                 // Embosser version back to 1. The radio sweep above already
                 // did that (Version 1 is defaultChecked) and the input sweep
                 // put the clearance dial back to 0.110, so all that is left is
@@ -8349,6 +8689,12 @@
                 version1DialSnapshot = null;
                 try { updateEmbosserVersionUI(); } catch (e) { log.error('Embosser version UI failed to refresh after reset to defaults:', e); }
                 try { updateDoubleSidedUI(); } catch (e) { log.error('Double-sided UI failed to refresh after reset to defaults:', e); }
+                // The radio sweep puts both placement toggles back to Auto; the
+                // containers only follow through their own refreshers (the
+                // front's was missing until 2026-09-21, leaving the manual rows
+                // on screen after a reset).
+                try { updatePlacementUI(); } catch (e) { log.error('Placement UI failed to refresh after reset to defaults:', e); }
+                try { updateBackPlacementUI(); } catch (e) { log.error('Back placement UI failed to refresh after reset to defaults:', e); }
                 try { updateGearRollersUI(); } catch (e) { log.error('Gear roller UI failed to refresh after reset to defaults:', e); }
                 updateShapeSettings();
                 clearGridColumnsDirty();
@@ -8382,7 +8728,7 @@
             '0.4': {
                 // Braille Spacing. grid_columns is intentionally absent: the text-cell
                 // dial is owned by updateGridColumnsForPlateType(), which reasserts the
-                // per-mode recommendation (13 visual / 14 tactile) after a preset is applied.
+                // per-mode recommendation (13 in both modes since 2026-09-21) after a preset is applied.
                 grid_rows: 4,
                 cell_spacing: 6.5,
                 line_spacing: 10.0,
@@ -8569,8 +8915,24 @@
                 }
             });
 
+            // Embosser Version 2 forces its barrel ON TOP of the card-stock preset
+            // (D-V4), but both presets carry the Version 1 barrel (30.8 x 52), so a
+            // preset chosen AFTER Version 2 quietly put the height back to 52 with
+            // only the soft S-V5 warning to show for it - a 52 mm Version 2
+            // cylinder was printed from the live site on 2026-09-20 that way.
+            // Re-assert the overrides here, exactly as updateEmbosserVersionUI()
+            // applies them. On the silent load-time restore the version radio is
+            // still Version 1, so this is a no-op there and the version restore
+            // that runs afterwards applies the overrides as before.
+            if (isVersion2()) {
+                Object.entries(V2_PRESET_OVERRIDES).forEach(([id, value]) => setAndPersistDial(id, value));
+            }
+
             // Persist the selected preset
             try { localStorage.setItem('braille_prefs_thickness_preset', presetKey); } catch (e) { log.debug('Could not save the selected thickness preset:', e); }
+            // Remembered separately from the radio state above, which the
+            // auto-detection overwrites with 'custom'; see activeArrowLayoutPreset.
+            try { localStorage.setItem('braille_prefs_thickness_preset_chosen', presetKey); } catch (e) { log.debug('Could not save the chosen thickness preset:', e); }
 
             // Update related UI elements. A preset supersedes any hand-typed cell
             // count, so the dial goes back to auto-filling from the recommendation.
@@ -8996,6 +9358,12 @@
             // Reset button state when previewing (user is making changes)
             resetToGenerateState();
 
+            // The preview is built as an HTML string; anything that came from
+            // the user goes through this before it is interpolated.
+            const escapeHtml = (value) => String(value)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
             const languageSelect = document.getElementById('language-table');
             const tableName = languageSelect.value;
 
@@ -9007,7 +9375,7 @@
             // checked AND shape cylinder), so the preview can never disagree with the
             // STL about which mode you are in. With the beta OFF nothing below changes
             // and the preview output stays byte-identical to the single-sided one.
-            const doubleSidedOn = !!document.getElementById('double_sided_enabled')?.checked
+            const doubleSidedOn = isDoubleSidedOn()
                 && (document.querySelector('input[name="shape_type"]:checked')?.value || 'cylinder') === 'cylinder';
 
             if (placementMode === 'manual') {
@@ -9023,14 +9391,17 @@
                             const perLineTable = (document.getElementById(`line_lang_${i+1}`)?.value) || tableName;
                             const braille = await translateWithLiblouis(applyCapitalizationSetting(lines[i].trim()), 'g2', perLineTable);
                             const shorthand = brailleToComputerShorthand(braille);
+                            // The typed text is escaped before it joins this HTML
+                            // string (2026-09-21): braille and shorthand come from
+                            // fixed alphabets, the source text does not.
                             previewHTML += `<div class="preview-line-success">
-                                <div><strong>Line ${i + 1}:</strong> "${lines[i].trim()}" → "${braille}"</div>
+                                <div><strong>Line ${i + 1}:</strong> "${escapeHtml(lines[i].trim())}" → "${braille}"</div>
                                 <div class="preview-subline">Computer shorthand: "${shorthand}"</div>
                             </div>`;
                         } catch (error) {
                             log.error('Translation failed for line', i + 1, ':', error);
                             previewHTML += `<div class="preview-line-error">
-                                <strong>Line ${i + 1}:</strong> "${lines[i].trim()}" → Error: ${error.message}
+                                <strong>Line ${i + 1}:</strong> "${escapeHtml(lines[i].trim())}" → Error: ${escapeHtml(error.message)}
                             </div>`;
                         }
                     }
@@ -9083,7 +9454,33 @@
             if (doubleSidedOn) {
                 const backSrc = String(document.getElementById('back-text')?.value || '').trim();
                 let backHTML = '';
-                if (!backSrc) {
+                if (backPlacementMode() === 'manual') {
+                    // Manual placement for the back (D-11): one line per row, the
+                    // same per-line tables generation uses. Braille and shorthand
+                    // only are interpolated, never the raw text.
+                    const manual = await translateBackManualLines();
+                    const backLines = getBackDynamicLineValues();
+                    if (backLines.every(line => !line.trim())) {
+                        /* S-D3 (signed 2026-09-21; 2026-09-20 programme, sub-plan D). */
+                        backHTML = `<div class="preview-line-success">
+                            <div>No back of card text yet. Type it in the Back Line boxes above and preview again.</div>
+                        </div>`;
+                    } else {
+                        for (let i = 0; i < backLines.length; i++) {
+                            if (!backLines[i].trim()) continue;
+                            if (manual.failedLine === i + 1) {
+                                backHTML += `<div class="preview-line-error"><strong>Line ${i + 1}:</strong> Error: could not be translated.</div>`;
+                                break;
+                            }
+                            const braille = manual.brailleLines[i] || '';
+                            const shorthand = braille ? brailleToComputerShorthand(braille) : '';
+                            backHTML += `<div class="preview-line-success">
+                                <div><strong>Line ${i + 1}:</strong> "${braille}"</div>
+                                <div class="preview-subline">${shorthand ? `Computer shorthand: "${shorthand}"` : ''}</div>
+                            </div>`;
+                        }
+                    }
+                } else if (!backSrc) {
                     /* User-facing wording signed off by Brennen (2026-08-17); reword only with
                        his sign-off. */
                     backHTML = `<div class="preview-line-success">
@@ -9414,8 +9811,7 @@
                 // We'll translate the whole text, then wrap to rows based on available cells
             }
 
-            const plateTypeEl = document.querySelector('input[name="plate_type"]:checked');
-            const plateType = plateTypeEl ? plateTypeEl.value : 'positive';
+            const plateType = currentPlateType();
             const languageSelect = document.getElementById('language-table');
             const tableName = languageSelect?.value || DEFAULT_LANGUAGE_TABLE;
 
@@ -9424,7 +9820,7 @@
             // carry text: Cylinder A (positive) needs the front lines for its
             // raised dots and Cylinder B (negative) needs the same front lines
             // to place its 1:1 paired recesses.
-            const doubleSidedOn = !!document.getElementById('double_sided_enabled')?.checked
+            const doubleSidedOn = isDoubleSidedOn()
                 && (document.querySelector('input[name="shape_type"]:checked')?.value || 'cylinder') === 'cylinder';
 
             // The Braille (Unicode) field wins whenever it has content: its lines
@@ -9632,6 +10028,11 @@
             // still hard row breaks - so both sides of the card wrap by one set of
             // rules. Every failure blocks generation: wrong braille must never emboss.
             let backBrailleLines = null;
+            // The back's per-line tables travel only when they carry information:
+            // Manual placement for the back (D-11). Auto placement and the back
+            // braille field use the master table, as they always have, and send
+            // nothing - the double-sided request body is unchanged for them.
+            let backPerLineLanguageTables = null;
             if (doubleSidedOn) {
                 const backRows = parseInt(document.getElementById('grid_rows').value) || 4;
                 // The back Braille (Unicode) field wins whenever it has content:
@@ -9656,6 +10057,39 @@
                         timestamp: new Date().toISOString(),
                         source: 'back-braille-unicode-field',
                         edited: backBrailleFieldDirty,
+                        brailleLines: backBrailleLines,
+                    }, null, 2));
+                } else if (backPlacementMode() === 'manual') {
+                    // Manual placement for the back (D-11): the front's per-line
+                    // branch mirrored - each row with its own table, each row
+                    // held to the cell count, every failure blocking.
+                    const manual = await translateBackManualLines();
+                    if (manual.failedLine) {
+                        /* User-facing wording signed off by Brennen (2026-08-17), reused here
+                           for a per-line failure; reword only with his sign-off. */
+                        errorText.textContent = 'Back text could not be translated to braille. Please check the text and try again. The STL file was not generated to prevent producing incorrect braille.';
+                        errorDiv.style.display = 'flex';
+                        errorDiv.className = 'error-message';
+                        resetToGenerateState();
+                        return false;
+                    }
+                    const backCols = getAvailableColumns();
+                    for (let i = 0; i < manual.brailleLines.length; i++) {
+                        if (manual.brailleLines[i].length > backCols) {
+                            /* S-D1 (signed 2026-09-21; 2026-09-20 programme, sub-plan D). */
+                            errorText.textContent = `Back line ${i + 1} exceeds ${backCols} cells. Shorten it or use Auto Placement for the back.`;
+                            errorDiv.style.display = 'flex';
+                            errorDiv.className = 'error-message';
+                            resetToGenerateState();
+                            return false;
+                        }
+                    }
+                    backBrailleLines = manual.brailleLines;
+                    backPerLineLanguageTables = manual.tables;
+                    log.debug('Back translation receipt:', JSON.stringify({
+                        timestamp: new Date().toISOString(),
+                        source: 'back-manual-lines',
+                        perLineLanguageTables: backPerLineLanguageTables,
                         brailleLines: backBrailleLines,
                     }, null, 2));
                 } else {
@@ -9771,6 +10205,17 @@
                 tactile_recess_extra_depth: document.getElementById('tactile_recess_extra_depth')?.value || '0.2'
             };
 
+            // Tactile arrow layout (2026-09-20): sent ONLY when the row indicator
+            // style is tactile and the preset the arrows follow is 0.3, so every
+            // 0.4 request body stays byte-identical to a pre-layout one. The
+            // backend's absent-field fallback is per_row, the 0.4 layout.
+            if (isTactileIndicatorOn()) {
+                const arrowLayout = TACTILE_ARROW_LAYOUT_BY_PRESET[activeArrowLayoutPreset()];
+                if (arrowLayout && arrowLayout !== 'per_row') {
+                    settings.tactile_indicator_layout = arrowLayout;
+                }
+            }
+
             const gearRollersOn = isGearRollersOn();
 
             // Double-sided beta settings ride inside `settings` under the FLAT
@@ -9802,6 +10247,13 @@
             // gear geometry has no dials to send: it is vendored 1:1 sample data.
             if (gearRollersOn) {
                 settings.gear_rollers_enabled = 1;
+            }
+
+            // Slicer seam channel: ON is the default and adds NOTHING, so an
+            // untouched request body stays byte-identical to the pre-channel
+            // one; only the Expert Mode switch OFF sends the flag.
+            if (!isSeamChannelOn()) {
+                settings.seam_channel_enabled = 0;
             }
 
             // Embosser Version 2 (keyed gear pegs) PROTOTYPE: two flat fields,
@@ -9983,7 +10435,8 @@
                     cylinderParams: cylinderParams,
                     perLineLanguageTables: perLineLanguageTables,
                     settings: settings,
-                    backLines: backBrailleLines
+                    backLines: backBrailleLines,
+                    backPerLineLanguageTables: backPerLineLanguageTables
                 });
 
                 // Hide loading message
@@ -10036,9 +10489,17 @@
             }
         }
 
+        // Generate STL, Enter in a field, and a pair run's own steps all come
+        // through here. Both cylinders by default (D-9); one cylinder only when
+        // "Cylinders to Generate" names it.
+        function runGenerate() {
+            if (currentPlateSelection() === 'both') return runGenerateBothCylinders();
+            return runGenerateForCurrentPlate();
+        }
+
         form.onsubmit = (e) => {
             e.preventDefault();
-            runGenerateForCurrentPlate();
+            runGenerate();
         };
 
 
@@ -10070,7 +10531,7 @@
             pairFiles.positive = null;
             pairFiles.negative = null;
             pairFiles.combined = null;
-            if (pairDownloads) pairDownloads.style.display = 'none';
+            pairFallbackQueue = [];
             setPairStatus('');
         }
 
@@ -10150,7 +10611,7 @@
         // that is already checked fires nothing, exactly like a real click on
         // an already-selected option.
         function selectPlateType(value) {
-            const radio = document.querySelector(`input[name="plate_type"][value="${value}"]`);
+            const radio = document.querySelector(`input[name="plate_selection"][value="${value}"]`);
             if (!radio || radio.checked) return;
             radio.checked = true;
             radio.dispatchEvent(new Event('change', { bubbles: true }));
@@ -10167,14 +10628,15 @@
             // the finished first plate reveals this button. The pair is not done
             // and that single file is not what was asked for, so take it back.
             hideDownloadButton();
-            if (generateBothBtn) generateBothBtn.disabled = true;
         }
 
         async function runGenerateBothCylinders() {
             if (pairRunInFlight) return;
-            const pairModeOn = isPairModeOn()
-                && (document.querySelector('input[name="shape_type"]:checked')?.value || 'cylinder') === 'cylinder';
-            if (!pairModeOn) return;
+            // Cylinders only - there is no card shape in the UI, so this is a
+            // guard against a stale saved value, not a reachable branch.
+            if ((document.querySelector('input[name="shape_type"]:checked')?.value || 'cylinder') !== 'cylinder') {
+                return runGenerateForCurrentPlate();
+            }
 
             pairRunInFlight = true;
             // Read the warnings BEFORE the run, not at the end: it switches
@@ -10186,8 +10648,8 @@
             // Disabling a focused button drops focus to the page body, which
             // strands a keyboard user at the top of the document; focus goes
             // back where they left it when the run ends.
-            const startedFromKeyboard = document.activeElement === generateBothBtn;
-            const userPlate = document.querySelector('input[name="plate_type"]:checked')?.value || 'positive';
+            const startedFromKeyboard = document.activeElement === actionBtn;
+            const userPlate = currentPlateSelection();
             // The cell dial refills itself with the recommended value on every
             // plate change unless the user has typed in it this session, so an
             // automated switch could hand Cylinder B a different column count
@@ -10227,7 +10689,9 @@
                     lockGenerateControls();
 
                     if (!generated || !lastGeneratedBlob) {
-                        setPairStatus(`Cylinder ${step.label} could not be generated, so nothing was downloaded. Fix the problem shown in the error message, then press Generate Both Cylinders again.`);
+                        /* S-E7 (signed 2026-09-21; 2026-09-20 programme, sub-plan E): the signed 2026-08-17 sentence named the Generate
+                           Both Cylinders button, which no longer exists. */
+                        setPairStatus(`Cylinder ${step.label} could not be generated, so nothing was downloaded. Fix the problem shown in the error message, then press Generate STL again.`);
                         return;
                     }
                     pairFiles[step.plate] = { blob: lastGeneratedBlob, filename: lastGeneratedFilename };
@@ -10272,20 +10736,22 @@
                 // saved - and the status line telling the user how to recover
                 // was itself never announced, because the Save As dialog the
                 // automatic download opened had taken focus away from the page.
-                // One button press per file never trips any of that.
-                // The combined button offers itself only when the combine
-                // succeeded; a failed combine leaves A and B alone on the row.
-                const pairBtn = document.getElementById('download-pair-btn');
-                if (pairBtn) pairBtn.style.display = pairFiles.combined ? '' : 'none';
-                if (pairDownloads) pairDownloads.style.display = 'flex';
-                /* User-facing wording signed off by Brennen (2026-08-25); reword
-                   only with his sign-off. It replaces his signed 2026-08-18 line,
-                   which named only the A and B buttons and stopped being the whole
-                   story once the combined file became the primary offer. Changes
-                   here and the PAIR_READY pin in completionWarnings.spec.ts must
-                   land in the same commit. */
-                setPairStatus('Both cylinders are ready. Use the Download Combined STL button below to save one file with both cylinders spaced for printing on one plate, or use the Download Cylinder A and Download Cylinder B buttons to save them separately.'
-                    + warningsAtStart);
+                // One button press per file never trips any of that: the ONE
+                // Download button saves the combined file, or - when the
+                // combine failed - Cylinder A on this press and B on the next.
+                /* S-E5 and S-E6 (signed 2026-09-21; 2026-09-20 programme, sub-plan E). S-E5 replaces his signed 2026-08-25 pair
+                   sentence, which named the three pair buttons that left the
+                   footer. Changes here and the PAIR_READY pin in
+                   completionWarnings.spec.ts must land in the same commit. */
+                if (pairFiles.combined) {
+                    pairFallbackQueue = [];
+                    setPairStatus('Both cylinders are ready. Use the Download STL button to save one file with both cylinders spaced for printing on one plate.'
+                        + warningsAtStart);
+                } else {
+                    pairFallbackQueue = [pairFiles.positive, pairFiles.negative];
+                    setPairStatus('The combined file could not be built. Download STL now saves Cylinder A; press it again for Cylinder B.'
+                        + warningsAtStart);
+                }
             } finally {
                 selectPlateType(userPlate);
                 restoreColumns();
@@ -10293,18 +10759,15 @@
                 // Before the button is re-enabled: resetToGenerateState() skips
                 // its work entirely when the button already looks idle, and the
                 // lock left it reading "Generating..." in the generate state.
+                // It also hides the Download button, so the pair's own reveal
+                // comes AFTER it - and only when there is something to save.
                 resetToGenerateState();
-                if (generateBothBtn) {
-                    generateBothBtn.disabled = false;
-                    if (startedFromKeyboard) generateBothBtn.focus();
+                if (downloadStlBtn && (pairFiles.combined || pairFallbackQueue.length)) {
+                    downloadStlBtn.style.display = '';
                 }
+                if (startedFromKeyboard) actionBtn.focus();
             }
         }
-
-        generateBothBtn?.addEventListener('click', runGenerateBothCylinders);
-        document.getElementById('download-pair-btn')?.addEventListener('click', () => downloadPairFile(pairFiles.combined));
-        document.getElementById('download-cylinder-a-btn')?.addEventListener('click', () => downloadPairFile(pairFiles.positive));
-        document.getElementById('download-cylinder-b-btn')?.addEventListener('click', () => downloadPairFile(pairFiles.negative));
 
 
         // Two bodies side by side need roughly twice the viewing distance of
@@ -10933,7 +11396,7 @@
          * @returns {Promise<ArrayBuffer>} Binary STL data
          */
         async function generateSTLClientSide(params) {
-            const { lines, originalLines, placementMode, plateType, shapeType, cylinderParams, perLineLanguageTables, settings, backLines } = params;
+            const { lines, originalLines, placementMode, plateType, shapeType, cylinderParams, perLineLanguageTables, settings, backLines, backPerLineLanguageTables } = params;
 
             // Determine which worker to use based on shape type
             // Per specification: NO FALLBACK between workers
@@ -10990,6 +11453,12 @@
             // double-sided beta is off, keeping the payload byte-identical.
             if (backLines) {
                 specRequestBody.back_lines = backLines;
+            }
+            // Informational mirror of per_line_language_tables for the back
+            // (settings.schema.json text.back_languages); present only when the
+            // back was placed manually (D-11).
+            if (backPerLineLanguageTables) {
+                specRequestBody.back_per_line_language_tables = backPerLineLanguageTables;
             }
             const specResponse = await fetch('/geometry_spec', {
                 method: 'POST',
@@ -11275,6 +11744,7 @@
                     <button class="help-tab" role="tab" aria-selected="true" aria-controls="helpPanelWhatToInclude" id="tab-whattoinclude" tabindex="0">What to Include</button>
                     <button class="help-tab" role="tab" aria-selected="false" aria-controls="helpPanelFormatting" id="tab-formatting" tabindex="-1">Formatting</button>
                     <button class="help-tab" role="tab" aria-selected="false" aria-controls="helpPanelHowToUse" id="tab-howtouse" tabindex="-1">How to Use</button>
+                    <button class="help-tab" role="tab" aria-selected="false" aria-controls="helpPanelSetup" id="tab-setup" tabindex="-1">Embosser Setup</button>
                     <button class="help-tab" role="tab" aria-selected="false" aria-controls="helpPanelCylinder" id="tab-cylinder" tabindex="-1">Cylinders</button>
                     <button class="help-tab" role="tab" aria-selected="false" aria-controls="helpPanelExpertMode" id="tab-expertmode" tabindex="-1">Expert Mode</button>
                     <button class="help-tab" role="tab" aria-selected="false" aria-controls="helpPanelExamples" id="tab-examples" tabindex="-1">Examples</button>
@@ -11362,6 +11832,40 @@
                     </div>
 
                     <!-- Cylinder Guide Panel -->
+                    <!-- Embosser Setup Panel (2026-09-20 programme, sub-plan C). S-M9, signed 2026-09-21. Opened by the "Which setup should I choose?"
+                         link in the Embosser setup menu item and by the gear hardware note. -->
+                    <div class="help-panel" role="tabpanel" aria-labelledby="tab-setup" id="helpPanelSetup" hidden>
+                        <h3>Embosser Setup Guide</h3>
+
+                        <p>The <strong>Embosser setup</strong> item at the top of the page has three either/or choices. Together they pick which of the four released embosser projects your cylinders are made for.</p>
+
+                        <h4>The four projects</h4>
+                        <table class="help-table">
+                            <thead>
+                                <tr><th>Setup</th><th>What you get</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><strong>Version 1, Standard gears</strong></td><td>The most accurate braille dots. The drive gears print separately and are pushed onto each cylinder. Not blind-user friendly: the row markers are visual letters and triangles.</td></tr>
+                                <tr><td><strong>Version 1, Simplified gears</strong></td><td>The same cylinders with the gears fixed on as one piece, so there are fewer parts to assemble. Each cylinder prints much longer and dots fail more often.</td></tr>
+                                <tr><td><strong>Version 2, Standard gears</strong></td><td>Tactile row markers a blind user can feel, keyed gear pegs that fit only their own hole, and a simpler assembly. The gears print separately.</td></tr>
+                                <tr><td><strong>Version 2, Simplified gears</strong></td><td>Version 2 with the gears fixed on as one piece: the simplest assembly, the longest print, and the highest chance of a failed dot.</td></tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Double-sided cards</h4>
+                        <p>Choosing <strong>Double-sided</strong> makes a matched pair of cylinders that emboss both faces of the card in one pass. It opens the Back of Card section and uses the tactile row markers, which both cylinders of a pair need. It works with every version and gear choice.</p>
+
+                        <h4>Build files</h4>
+                        <ul>
+                            <li><a href="https://www.printables.com/model/1742352-custom-braille-card-embosser-hand-operated" target="_blank" rel="noopener noreferrer">Printables</a></li>
+                            <li><a href="https://makerworld.com/en/models/2881581-custom-braille-card-embosser-hand-operated" target="_blank" rel="noopener noreferrer">MakerWorld</a></li>
+                            <li><a href="https://www.thingiverse.com/thing:7365273" target="_blank" rel="noopener noreferrer">Thingiverse</a></li>
+                            <li><a href="https://github.com/BrennenJohnston/braille-cylinder-stl-generator/blob/main/docs/guides/CYLINDER_GUIDE.md" target="_blank" rel="noopener noreferrer">Cylinder guide</a></li>
+                        </ul>
+
+                        <p><button type="button" class="btn-link" onclick="window.switchHelpTab('tab-cylinder')">Cylinder printing tips →</button></p>
+                    </div>
+
                     <div class="help-panel" role="tabpanel" aria-labelledby="tab-cylinder" id="helpPanelCylinder" hidden>
                         <h3>Cylinder Guide</h3>
 
@@ -11395,6 +11899,7 @@
                             <li>By default, each row holds <strong>13 braille cells of text</strong> (2 additional cells are reserved for the indicator letter and the triangle alignment indicator). With indicator letters turned off, up to <strong>14 cells</strong> are available — the alignment triangles are always included.</li>
                             <li>Cells are spaced 6.5mm apart, so the default 13-cell layout needs about 91mm of circumference — the default 30.8mm-diameter cylinder (about 96.8mm around) fits it with room for the seam gap.</li>
                             <li>A larger diameter gives more circumference, which adds margin around the seam rather than more cells per row.</li>
+                            <li>In the <strong>Tactile seam arrow</strong> style, the 0.4mm card thickness preset places one arrow per row and the 0.3mm preset places three evenly spaced arrows, so you can feel which preset a cylinder was made for — and a 0.3mm cylinder will not nest with a 0.4mm one.</li>
                         </ul>
 
                         <h4>Tips for Best Results</h4>
@@ -11402,6 +11907,8 @@
                             <li><strong>Print orientation:</strong> Print cylinders standing upright for best dot quality</li>
                             <li><strong>Test fit:</strong> Print a small section first to verify the diameter matches your container</li>
                             <li><strong>Seam placement:</strong> Rotate the seam to the back or between words</li>
+                            <!-- S-C4, reworded for tactile mode and signed off by Brennen (2026-09-21); reword only with his sign-off. -->
+                            <li><strong>Slicer seam:</strong> Every cylinder carries a shallow seam channel where slicers hide the layer seam: beside the row markers in Visual mode, down the alignment-arrow column in Tactile mode. No seam painting is needed. Turn it off in Expert Mode if you want a plain surface.</li>
                         </ul>
 
                         <p><button type="button" class="btn-link" onclick="window.switchHelpTab('tab-formatting')">Formatting tips for cylinder text →</button></p>
@@ -11424,14 +11931,9 @@
                             <li><strong>Enter your text</strong> in the "Enter Text for Braille Translation" area. Use only the essential information you've selected.</li>
                             <li><strong>Set Placement Mode</strong> to "Auto Placement" (handles line wrapping automatically).</li>
                             <li><strong>Check the braille:</strong> press <strong>Translate to Braille ↓</strong> under the text box. The braille appears in the <strong>Braille (Unicode)</strong> box below, where you can edit individual cells.</li>
-                            <li><strong>Generate the STL:</strong> Click <strong>Generate STL</strong> in the bar pinned at the bottom of this panel — it stays in view no matter how far you scroll — then review the 3D preview.</li>
-                            <li><strong>Download both plates:</strong>
-                                <ul>
-                                    <li>Download the embossing plate STL</li>
-                                    <li>Switch "Select Plate to Generate" to "Universal Counter Plate"</li>
-                                    <li>Download again for the counter plate</li>
-                                </ul>
-                            </li>
+                            <!-- S-E4 (signed 2026-09-21; 2026-09-20 programme, sub-plan E). -->
+                            <li><strong>Generate the STL:</strong> press <strong>Generate STL</strong> in the bar pinned at the bottom of this panel — it stays in view no matter how far you scroll. It builds both cylinders; review them in the 3D preview.</li>
+                            <li><strong>Download:</strong> <strong>Download STL</strong> saves one file with both cylinders, spaced for one print plate. For a single cylinder, choose it under Expert Mode, <strong>Cylinders to Generate</strong>.</li>
                         </ol>
 
                         <h4>The Two Translate Buttons</h4>
@@ -11531,6 +12033,11 @@
                                 <tr><th>Submenu</th><th>What It Controls</th></tr>
                             </thead>
                             <tbody>
+                                <!-- signed off by Brennen (2026-09-21); reword only with his sign-off. -->
+                                <tr>
+                                    <td><strong>Cylinders to Generate</strong></td>
+                                    <td>Both cylinders (the default, one combined file), or Cylinder A or Cylinder B on its own</td>
+                                </tr>
                                 <tr>
                                     <td><strong>Shape Selection</strong></td>
                                     <td>Output shape, braille dot shape (rounded/cone), and indicator letters on/off</td>
@@ -11545,7 +12052,7 @@
                                 </tr>
                                 <tr>
                                     <td><strong>Surface Dimensions</strong></td>
-                                    <td>Cylinder diameter, height, polygonal cutout, and seam offset</td>
+                                    <td>Cylinder diameter, height, polygonal cutout, seam offset, and the slicer seam channel switch</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Tactile Indicator Dimensions</strong></td>

@@ -1,4 +1,4 @@
-# Embosser Version 2 — Keyed Gear-Peg Cutouts (PROTOTYPE) — Specifications
+# Embosser Version 2 — Keyed Gear-Peg Cutouts — Specifications
 
 ## Overview
 
@@ -38,7 +38,7 @@ owns the gear constants.
 | Cylinders only | `validate_embosser_version_settings()` in `app/validation.py` |
 | The version is an exact integer | same function: `2.5` is refused, not rounded to Version 2 |
 | The clearance stays inside 0.0–0.5 mm | same function, and the dial is bounded at the source |
-| Integrated gears are Version 1 only | same function refuses the combination; the UI hides and unchecks the toggle |
+| Fixed gears are available in Version 2 too (since 2026-09-21, sub-plan B) | the old refusal is retired; `validate_gear_rollers_settings()` gates the size PER VERSION (30.8 × 54 here, S-G1 (signed 2026-09-21)) — §13 and the gear spec §11 |
 | The barrel is solid while Version 2 is on | `app/geometry_spec.py` sets `cylinder.solid`; the worker's `keyed` branch forces it |
 | The size is a WARNING, never a rejection | `version2.v2_size_message()`, carried in `spec['warnings']` |
 | Existing golden fixtures never change | Phase 07 re-ran the double-sided and gear pairs; git reported them byte-identical |
@@ -341,6 +341,20 @@ at all.
 A saved polygonal cutout is **dropped with a warning** (S-V14) rather than refusing the
 request, so a stored cutout radius cannot lock a user out of the prototype.
 
+**With fixed gears also on (fused mode, §13)** the `keyed_cutouts` block above is NOT
+emitted at all; instead `spec['gears']` carries the Version 2 set and one notch fill:
+
+```jsonc
+{
+  "asset": "v2_gears_a",                    // or v2_gears_b
+  "weld_rings": [ { "z_center": -27.0, "r_in": 8.0, "r_out": 13.0, "height": 0.1 },
+                  { "z_center":  27.0, "r_in": 8.0, "r_out": 13.0, "height": 0.1 } ],
+  "notch_fills": [ { "gear": "A1", "shape": "triangle",
+                     "profile": [ … CCW points, r <= 13.95 ],
+                     "z_from": 26.95, "z_to": 30.2 } ]
+}
+```
+
 ---
 
 ## 7. CSG Order in the Worker
@@ -353,7 +367,9 @@ Version 2 adds one cut and one union at points that cannot disturb it:
    mouth chamfers *while the barrel is still a bare cylinder and the boolean is
    cheapest*. `keyed` never falls through to wall-thickness hollowing: the keyed hole
    IS the bore, so a hollow barrel would open into the key pockets.
-2. **Gears** — Version 1 only; refused in combination with Version 2.
+2. **Gears** — in fused mode (§13) the Version 2 gear set, the weld rings and the
+   notch-fill prism join here, exactly where Version 1 gears do; the barrel arrives solid
+   and un-keyed.
 3. **The nub** — `createNubManifold()`, unioned immediately after the base, inside the
    RAISED stage.
 4. Raised dots (union) → raised markers (union) → recess dots (subtract) → markers
@@ -379,12 +395,20 @@ and never submitted, so nothing changes on the wire. The group name, the arrow-k
 behaviour and the checked state all come from the platform; the only ARIA is
 `aria-describedby`, which has no native equivalent.
 
+**Since 2026-09-20 (programme decisions D-7, D-8; phases C1-C2)** the selector is the
+FIRST of three either/or choices inside the **Embosser setup** menu item
+(`#embosser-setup-selection`, legend h2 "Embosser setup" — S-M1 (signed 2026-09-21)), which is the
+form's first item; the gears and the card sides are the other two (UI spec §4.8). The
+version fieldset is nested inside it, its legend one level down (`<h3
+class="legend-heading">`), and the "(prototype)" tag and the prototype notice are gone.
+
 | Element | id | Carries |
 |---|---|---|
-| Fieldset | `embosser-version-selection` | legend S-V1 "Embosser version" |
-| Radios | `embosser_version_1` (checked), `embosser_version_2` | S-V2 |
+| Fieldset (nested) | `embosser-version-selection` | legend S-V1 "Embosser version" as an h3 |
+| Radios | `embosser_version_1` (checked), `embosser_version_2` | S-V2 — labels "Version 1" / "Version 2" (S-V2 (signed 2026-09-21)′: the "(prototype)" suffix dropped, D-7) |
 | Selector note | `embosser-version-note` | S-V3, the fieldset's `aria-describedby` |
-| Prototype notice | `v2-prototype-note` | S-V4 |
+| Comparison note (visible only) | `embosser-version-compare` | S-M2 (signed 2026-09-21) *"Version 1 prints the most accurate braille dots. Version 2 adds tactile row markers and a simpler assembly for blind users."* |
+| ~~Prototype notice~~ | ~~`v2-prototype-note`~~ | S-V4 retired 2026-09-20 (D-7) |
 | Size warning | `v2-size-warning` / `v2-size-message` | S-V5, the server's sentence verbatim |
 | Clearance fieldset | `v2-keyed-cutouts-selection` | Expert Mode, hidden in Version 1 |
 | Clearance dial | `v2_key_clearance_mm` | S-V9 label and help |
@@ -392,9 +416,26 @@ behaviour and the checked state all come from the platform; the only ARIA is
 
 **Selecting Version 2** snapshots five cylinder dials, applies `V2_PRESET_OVERRIDES`
 (`cylinder_diameter_mm` 30.8, `cylinder_height_mm` 54, `seam_offset_deg` 0) on top of
-the Card Thickness preset, hides the three inert rows, hides **and unchecks** the gears
-toggle, reveals the clearance dial and the prototype notice, joins pair mode, and
-announces S-V10 once. **Selecting Version 1** restores the snapshot exactly.
+the Card Thickness preset, hides the three inert rows, reveals the clearance dial, joins
+pair mode, and announces S-V10 once — composed, since 2026-09-21, with whatever notes the
+gear refresh returned (S3, S7 / S-G1) and deferred by a tick, the rule the gear and
+card-sides listeners follow (see below). **Selecting Version 1** restores the snapshot
+exactly.
+
+**A card-stock preset chosen after Version 2 re-asserts the overrides (2026-09-20).**
+Both `THICKNESS_PRESETS` entries carry the Version 1 barrel (`cylinder_height_mm` 52,
+diameter 30.8, seam offset 0), and `applyThicknessPreset()` writes every preset dial.
+Until 2026-09-20 nothing re-applied `V2_PRESET_OVERRIDES` afterwards, so the natural
+top-to-bottom order — version first, card stock later — quietly returned the barrel to
+52 mm with only the soft S-V5 warning showing (D-V15 makes the size a warning, not a
+rejection), and a 52 mm Version 2 double-sided pair was printed from the live site.
+`applyThicknessPreset()` now re-applies `V2_PRESET_OVERRIDES` through `setAndPersistDial`
+whenever `isVersion2()` is true, before the live warnings refresh. On the silent load-time
+restore the version radio is still Version 1, so that path is a no-op and the version
+restore that follows applies the overrides as before. The Version 1 snapshot is untouched:
+switching back still restores the dials the user had. Pinned by
+`tests/e2e/version2.spec.ts` ("a card stock chosen after Version 2 keeps the 54 mm barrel
+on the dial and on the wire").
 
 The Card Thickness presets themselves are untouched, but `checkPresetMatch()` **skips
 the three dials Version 2 forces** while Version 2 is on. Without that skip the preset
@@ -402,9 +443,15 @@ re-detected "custom" the moment any dial was touched, which renamed downloads to
 `…_V2_Custom_…` and persisted a card stock the user never chose. In Version 1 the skip
 list is empty.
 
-**Integrated gears are Version 1 only** (D-V6). The toggle is hidden *and* unchecked,
-because a hidden checkbox that stayed on would still be read at generate time and turn
-into a 400 the user cannot see the cause of.
+**Fixed gears work in Version 2 since 2026-09-21** (sub-plan B; D-V6 retired). The Gears
+choice is left exactly as the user set it across a version change; the temporary guard
+and its S-M13 sentence are gone. While Version 2 is chosen `updateGearRollersUI()` gates
+the barrel against `V2_BARREL_*` with S-G1 (signed 2026-09-21) (a smoke test pins the template against
+`gears.py`), and a fused run's ready message is S-G2 (signed 2026-09-21) *"Cylinder generated with fixed
+gears for the Version 2 embosser."* in place of S5 and S-V8′ together. Because a
+fixed-gear choice now survives the version change, the version listener defers and
+composes its one announcement — without that, the form-wide refresh that bubbles behind
+it re-announced the bare S3 note over S-V10 (found by the e2e test, 2026-09-21).
 
 ### 8.1 One fewer braille cell in visual mode — RETIRED 2026-08-29
 
@@ -445,9 +492,12 @@ preset IIFE, not inside `applyPersistedSettings()`, because the preset rewrites
 overwritten. Reset to defaults returns Version 1 and 0.110 mm, and **drops the
 snapshot** — otherwise the restore would undo the reset it was called to finish.
 
-Version 2 reveals **Generate Both Cylinders** and reuses the signed Cylinder A /
-Cylinder B labels (D-V10): A and B are a matched, differently keyed pair, so the pair
-is the useful output.
+D-V10 said Version 2 reveals Generate Both Cylinders and reuses the signed Cylinder A /
+Cylinder B labels, because A and B are a matched, differently keyed pair and the pair is
+the useful output. Since 2026-09-21 (programme sub-plan E) that is true of every run:
+Generate STL builds both cylinders unless one is chosen under Expert Mode → Cylinders to
+Generate, the A/B labels are static markup there, and there is no Generate Both button
+(STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md §15).
 
 ---
 
@@ -572,12 +622,45 @@ Since 2026-08-31 the file carries the **30.8 × 54 barrel** (the card shelf, Ver
 alone), the **interpoint (double-sided) option** ported from the Version 1 file, and a
 **4-rows-per-face text input** — `Line_1–4` / `Back_Line_1–4`, `grid_rows` capped at 4 —
 the Version 2 embosser's standard, where the Version 1 file keeps its ten fields.
-Integrated gears remain excluded (D-V6): the gears BETA is the one feature with no
-Version 2 OpenSCAD counterpart. Verified by `tests/test_embosser_v2_scad.py` in that
+Fixed Version 2 gears (§13) and the slicer seam channel have no OpenSCAD counterpart
+yet — both are in the follow-on OpenSCAD-parity plan (programme plan §11); the desktop
+Version 2 file would take `assets/v2_gears_{a,b}.stl` derived from the web `.bin`s, and
+MakerWorld cannot ship assets. Verified by `tests/test_embosser_v2_scad.py` in that
 repo — 23 tests, including a cross-repo mirror against `app/geometry/version2.py`.
 
 The file is not part of a released version yet and there is no MakerWorld listing for
 it.
+
+---
+
+## 13. Fused Mode — Fixed Gears on a Version 2 Cylinder (since 2026-09-21)
+
+**Version 2 + Simplified gears** generates ONE solid roller with the Version 2 drive
+gears attached: `GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md` §11 is the owner of that
+mode; this section records only what changes on THIS document's side.
+
+- **The keyed cutouts are not cut** (decision D-6). `app/geometry_spec.py` emits
+  `cylinder.solid = True` and NO `keyed_cutouts` block; the four holes, the mouth
+  chamfers, the nub and the socket all stay out — a peg buried in solid material needs
+  no key, and the nub's notch is already occupied by the gear that carries it.
+- **The two top-gear notches are filled.** `version2.notch_fill_block(plate_type, height)`
+  emits the measured notch outline (`V2_GEAR_ANTIROT`) grown by `V2_NOTCH_FILL_GROWTH_MM`
+  0.05 as an EXACT parallel curve (never a mitre — it pushes A's apex 0.10 mm out), from
+  `height/2 − 0.05` to `height/2 + depth + 0.05`, capped at `V2_NOTCH_FILL_MAX_RADIUS_MM`
+  13.95 and asserted at import to sit below the mating tip circle (15.938 mm at the
+  Version 1 operating distance; the Version 2 distance is an open item). It rides in
+  `spec['gears']['notch_fills']` and joins the worker's gear stage.
+- **D-V6 is retired.** `validate_embosser_version_settings()` no longer refuses gears
+  with Version 2; `validate_gear_rollers_settings()` picks the reference barrel by
+  version — 30.8 × 54 here — and rejects with S-G1 (signed 2026-09-21). The S-V5 size WARNING still
+  applies to the same dials, so an off-size fused request shows both sentences.
+- **Naming** composes without a new rule: `Embossing_Cylinder_Geared_V2_{preset}_{name}.stl`
+  and the `Counter_` / `Cylinder_Pair_` forms. The ready message is S-G2 (signed 2026-09-21) alone.
+- **Pinned** by `tests/test_version2_fused.py`, the fused section of
+  `tests/test_version2_spec.py`, `tests/test_version2_validation.py`, the
+  `v2_gear_roller{A,B}_golden` pair, and `tests/e2e/version2.spec.ts`.
+- **Version 2 without gears is byte-identical** to before (the v2 golden pair did not
+  change), and so is Version 1 gear mode.
 
 ---
 
@@ -596,6 +679,10 @@ it.
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-09-21 | 1.13 | **Pair mode is universal (programme sub-plan E).** §8.2's D-V10 paragraph: no Generate Both button to reveal — every run builds both cylinders unless one is chosen under Cylinders to Generate. Nothing else changed. |
+| 2026-09-21 | 1.12 | **Fixed gears on a Version 2 cylinder — fused mode (programme sub-plan B, phases B1-B7; decision D-6; D-V6 retired).** New §13: no keyed cutouts, the notch fill, the per-version size gate with S-G1 (signed 2026-09-21), the `_Geared_V2_` names and S-G2 (signed 2026-09-21), and where it is pinned. §1's gear rule flipped; §6 gains the fused `gears` block; §7 item 2 rewritten; §8's temporary-guard paragraph replaced (S-M13 retired; the version announcement now composes the gear notes and is deferred); §12 points both missing OpenSCAD features at the follow-on plan. The "(PROTOTYPE)" left in the title since 2026-09-20 removed (D-7). |
+| 2026-09-20 | 1.11 | **The selector joins the Embosser setup menu item, and the prototype tag goes (programme decisions D-7, D-8; phases C1-C4).** §8 rewritten: the version fieldset is nested inside `#embosser-setup-selection` with an h3 legend; the radio labels are "Version 1" / "Version 2" (S-V2 (signed 2026-09-21)′); the S-V4 prototype notice is retired and a visible comparison note (S-M2 (signed 2026-09-21)) added; S-V3 and S-V5 unchanged. The Gears choice is no longer hidden in Version 2 — a temporary guard resets it to Standard and appends S-M13 (signed 2026-09-21) to the S-V10 announcement until phase B6; the ready-message prefix is S-V8 (signed 2026-09-21)′ without "(prototype)". Strings signed off by Brennen 2026-09-21. |
+| 2026-09-20 | 1.10 | **A card-stock preset chosen after Version 2 no longer returns the barrel to 52 mm.** Both presets carry the Version 1 barrel and `applyThicknessPreset()` wrote it over the Version 2 overrides; the soft S-V5 warning was the only sign, and a 52 mm Version 2 double-sided pair printed from the live site. The preset function now re-asserts `V2_PRESET_OVERRIDES` while Version 2 is on (§8). New e2e pin. |
 | 2026-09-01 | 1.9 | **The 54 mm print test is passed.** Brennen confirmed it the same day v1.8 recorded the inspection, completing the claim that row deliberately left half-made: the 30.8 × 54 pair printed from the OpenSCAD Version 2 file has now passed the print test, not merely inspection. Labels in both repos say so. The remaining MakerWorld gates are unchanged and his: sign the listing draft's DRAFT blocks, shoot and approve the five photos, confirm the print-orientation advice. |
 | 2026-09-01 | 1.8 | **54 mm print-inspected, the wording revisions signed, and the MakerWorld package completed.** Both cylinders printed from the OpenSCAD Version 2 file (30.8 × 54) passed Brennen's inspection, so the "not print-tested at 54" flags are cleared in both repos (an embossing run at 54 is not yet reported). He signed the 2026-08-31 wording revisions the same day (the `.scad` header, the S-V11 clearance-tab figures, the 4-row instructions) — the sign-off tags in the file now record it. MakerWorld de-muddle: the Version 1 file is renamed `_v1.5` (his rename, byte-pure, history preserved), `makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad` is now the **Embosser Version 2 upload** — a byte-identical copy of the canonical file, guarded by `test_the_makerworld_copy_is_byte_identical` — and `docs/MAKERWORLD_V2_LISTING_DRAFT.md` holds the listing text (S-V12 title and S-V13 status verbatim; the description/media blocks remain DRAFT awaiting his sign-off). KNOWN_ISSUES' stale "30.5 × 52" aside corrected to 30.8 × 54. |
 | 2026-08-31 | 1.7 | **§12's companion file catches up to the app** (Brennen's direction, same day as v1.6): `Braille_Cylinder_STL_Generator_EmbosserV2.scad` in braille-stl-generator-openscad now renders the **30.8 × 54** barrel and trims text input to the Version 2 standard **4 rows per face** (`Line_1–4` / `Back_Line_1–4`, `grid_rows` capped at 4; Version 1 keeps its ten). Interpoint was already ported; integrated gears stay excluded (D-V6) — deliberately the one feature with no Version 2 OpenSCAD counterpart. Two lagging comments corrected to shipped facts: the S-V11 tab comment now quotes the 0.110 clearance (wording had stayed at 0.075; the dial was already 0.110) and the header records both plates' nubs. That repo's `test_embosser_v2_scad.py` grew to 23 tests (two new source guards pin the 4-row input and the 54 barrel); scad-check clean, renders inspected. All wording edits inside signed blocks flagged for Brennen's review. Not print-tested at 54. |

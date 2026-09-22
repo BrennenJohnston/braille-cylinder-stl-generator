@@ -118,6 +118,13 @@ This section lists canonical field names, high-level types, and brief rules. See
     was pasted with the English inputs left empty.
 - text.languages: array<string>
   - Optional. Per-line table IDs; falls back to `text.default_language`.
+- text.back_languages: array<string>
+  - Optional (2026-09-21, programme sub-plan D). Per-row table IDs for the BACK face, the
+    mirror of `text.languages`; on the wire it is top-level `back_per_line_language_tables`
+    beside `per_line_language_tables`. Sent only when the back was placed manually, one
+    entry per row; absent for Auto placement and for a hand-filled back braille field.
+    Informational — geometry never reads it. `app/models.py`'s `GenerateBrailleRequest`
+    declares it beside `back_lines`.
 - text.default_language: string
   - Default language table. Defaults to `en-ueb-g2.ctb` (English UEB, contracted / grade 2),
     matching the BANA *Guidelines for Brailling Business Cards* (March 2024), whose worked
@@ -228,7 +235,17 @@ here must land in `settings.schema.json`, `app/models.py`, the HTML input defaul
 - indicators.tactile_recess_clearance: number, 0–1 (default: 0.2) — counter recess outline margin
 - indicators.tactile_recess_extra_depth: number, 0–1 (default: 0.2) — counter recess depth beyond the raise
 
-All eleven fields appear **flat** in the runtime settings payload under the same names
+Tactile arrow layout (2026-09-20) — where along the axis the arrows sit, the Card
+Thickness preset's tactile marking (RECESS_INDICATOR_SPECIFICATIONS.md §4):
+- indicators.tactile_indicator_layout: string enum `per_row` | `three_spaced` (default:
+  `per_row`) — `per_row` is one arrow per braille row, unchanged from before and the
+  absent-field fallback (the 0.4 mm preset); `three_spaced` is exactly three arrows at
+  mid-height and ±15 mm, whatever the row count (the 0.3 mm preset). The UI sends it only
+  for the 0.3 preset in tactile mode. A typo is rejected (HTTP 400), and so is a
+  `three_spaced` cylinder too short for its outer arrows
+  (`height < 2 × (15 + tactile_indicator_length / 2 + tactile_recess_clearance)`).
+
+All twelve fields appear **flat** in the runtime settings payload under the same names
 (`indicator_mode`, `tactile_indicator_width`, …), matching the OpenSCAD parameter names.
 `indicators.enabled` is the one exception: its runtime name is `indicator_shapes` (0 or 1).
 
@@ -241,7 +258,7 @@ Reserved marker columns per row. The UI dial counts TEXT cells only; the payload
 it leaves, `π × diameter − (total − 1) × cell_spacing`: at the defaults (30.75 mm
 diameter, so a 96.61 mm circumference, and 6.5 mm cell spacing) that is 5.6 mm at 15
 total columns and 12.1 mm at 14.
-- indicator_mode = "tactile": 0 columns — the indicator sits in the seam gap — 14 text cells recommended at defaults (14 total, leaving 12.1 mm against the 9.0 mm the arrow and its clear zone need; 15 total leaves only 5.6 mm and is still too many for tactile)
+- indicator_mode = "tactile": 0 columns — the indicator sits in the seam gap — 13 text cells recommended at defaults since 2026-09-21 (13 total, leaving 18.6 mm; 14 would still clear the arrow at 12.1 mm but run off a 90 mm card loaded at the arrow, and the app warns) against the 9.0 mm the arrow and its clear zone need; 15 total leaves only 5.6 mm and is still too many for tactile)
 - indicator_shapes = 1 (On): 2 marker columns reserved per row (letter + triangle) — 13 text cells at defaults (13 + 2 = 15 total, 5.6 mm gap)
 - indicator_shapes = 0 (Off): 1 marker column reserved per row (triangle only) — 13 text cells at defaults (13 + 1 = 14 total, 12.1 mm gap)
 
@@ -584,6 +601,8 @@ Before completing any task involving settings:
 ---
 
 ## 10. Document History
+
+- 2026-09-21 — `text.back_languages` added beside `text.languages` (programme sub-plan D, Back of Card parity): the back's per-row liblouis tables, `back_per_line_language_tables` on the wire, sent only for a manually placed back; `GenerateBrailleRequest` gains `back_lines` and `back_per_line_language_tables`. Pinned by `tests/test_smoke.py::test_schema_and_request_model_declare_the_back_per_line_tables`.
 
 - 2025-12-06 — Initial creation. Consolidated settings schema across specs; added high-level JSON Schema, normalization and validation rules, and examples.
 - 2025-12-06 — Added Development Guidelines (Section 9); added `cache_version` field to schema; added default values to schema properties.

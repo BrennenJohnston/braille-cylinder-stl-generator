@@ -331,6 +331,20 @@ module y_up_to_z_up() {
 // openscad_point = [x, z, -y]  (Z-up)
 ```
 
+**The angle-sign trap (learned porting the seam channel, 2026-09-21).** A
+geometry spec can carry an angle in a convention of its own. The web
+generator's `geometry_spec.py` emits every cylinder angle `theta` in its "dot
+convention", and its Manifold worker negates *every* theta it places — dots,
+markers and the seam channel alike — so the physical angle in the exported STL
+is `−theta`. The `.scad` files work in physical angles directly (dots at
+`start_angle = −grid_angle / 2`, the counter plate mirrored with
+`mirror([0, 1, 0])`). So when a feature is defined by an angle, port the
+**physical** angle and prove it on an exported STL (histogram the vertex angles
+at the feature's radius on the end caps) — never copy the spec's number. The
+seam channel: spec theta 178.33° on the embossing plate became `180 + s/R` =
+181.67° here, and `180 − s/R` = 178.33° on the counter plate; see
+`OPENSCAD_COORDINATE_SYSTEM_SPECIFICATIONS.md` §3.6.
+
 ### Step 3.2: Geometry Primitives
 
 Match web generator geometry exactly:

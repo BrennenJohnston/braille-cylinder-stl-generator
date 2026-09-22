@@ -19,15 +19,24 @@
  */
 
 import { expect, test, type Page } from '@playwright/test';
+import { selectCylinders } from './helpers/cylinders';
 
 // Signed 2026-08-28 by Brennen at the Phase 05 gate. Reword only with his sign-off.
 const S_V1_LEGEND = 'Embosser version';
 const S_V3_NOTE =
   'Choose Version 2 only if you are building the Version 2 embosser, which uses keyed gear pegs. Version 1 stays supported.';
-const S_V4_PROTOTYPE =
-  'Version 2 is a work-in-progress prototype. Its cylinder size, cutouts and fit may change as testing continues. It fits only gears with R14 pegs; earlier pegs do not enter the holes.';
+// S-V4 (the prototype notice) was retired on 2026-09-20 (programme decision D-7).
 const S_V5_SIZE_START = 'The Version 2 embosser expects a 30.8 mm x 54 mm cylinder.';
-const S_V8_READY = 'Cylinder generated for the Version 2 embosser (prototype).';
+// S-V8', signed 2026-09-21 (D-7): the "(prototype)" tag is gone.
+const S_V8_READY = 'Cylinder generated for the Version 2 embosser.';
+// S-G1 and S-G2, signed 2026-09-21 (2026-09-20 programme, phase B6): the Version 2 fixed
+// gears' size gate and the fused roller's ready prefix.
+// S-M13 (the temporary C2 guard) was retired with this phase.
+const S_G1_SIZE_START = 'Fixed gears for the Version 2 embosser fit only a 30.8 mm x 54 mm cylinder.';
+const S_G2_READY = 'Cylinder generated with fixed gears for the Version 2 embosser.';
+const S5_GEARS_READY = 'Cylinder generated with integrated gears.';
+// S3, signed 2026-08-24: raised by the gear refresh while a cutout radius is dialled.
+const S3_CUTOUT_NOTE = 'The polygonal cutout is not used while integrated gears are on.';
 const S_V10_ON = 'Version 2 selected: keyed gear-peg cutouts, 30.8 mm cylinder.';
 const S_V10_OFF = 'Version 1 selected.';
 
@@ -45,6 +54,10 @@ async function openApp(page: Page) {
   await page.waitForLoadState('domcontentloaded');
   await page.waitForLoadState('networkidle');
   await page.waitForSelector('#indicator-mode-selection');
+  // Since 2026-09-21 Generate builds both cylinders by default; this spec
+  // exercises one cylinder at a time, so choose Cylinder A (the old default)
+  // under Cylinders to Generate. Pair tests choose 'both' themselves.
+  await selectCylinders(page, 'positive');
 }
 
 /** Record every /geometry_spec REQUEST body without interfering with the run. */
@@ -120,46 +133,67 @@ async function selectVersion2(page: Page) {
   await page.locator('#embosser_version_2').check();
 }
 
-test.describe('Embosser Version 2 (prototype)', () => {
-  test('the selector is the first selection-menu item, defaults to Version 1, and is keyboard-operable', async ({
+/** Triangle count and z extent of a downloaded binary STL, read from the stream. */
+async function stlBounds(download: { createReadStream(): Promise<NodeJS.ReadableStream> }) {
+  const stream = await download.createReadStream();
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  const data = Buffer.concat(chunks);
+  const triangles = data.readUInt32LE(80);
+  let zMin = Infinity;
+  let zMax = -Infinity;
+  for (let i = 0; i < triangles; i++) {
+    const base = 84 + i * 50 + 12;
+    for (let v = 0; v < 3; v++) {
+      const z = data.readFloatLE(base + v * 12 + 8);
+      if (z < zMin) zMin = z;
+      if (z > zMax) zMax = z;
+    }
+  }
+  return { triangles, zMin, zMax };
+}
+
+test.describe('Embosser Version 2', () => {
+  test('the selector is the first choice of the first menu item, defaults to Version 1, and is keyboard-operable', async ({
     page,
   }) => {
     await openApp(page);
 
-    // In the form's selection menu, directly under "What Does This Program
-    // Do?" — moved out of the site header on 2026-08-31 (Brennen's call).
+    // Since 2026-09-20 the version choice is the first of three inside the
+    // "Embosser setup" menu item, which sits in the form's selection menu
+    // directly under "What Does This Program Do?" (never in the site header).
     expect(
       await page.evaluate(
-        () => !!document.querySelector('header.site-header #embosser-version-selection'),
+        () => !!document.querySelector('header.site-header #embosser-setup-selection'),
       ),
     ).toBe(false);
     expect(
       await page.evaluate(
-        () => !!document.querySelector('#braille-form #embosser-version-selection'),
+        () => !!document.querySelector('#braille-form #embosser-setup-selection #embosser-version-selection'),
       ),
     ).toBe(true);
     expect(
       await page.evaluate(() => {
-        const item = document.querySelector('#embosser-version-selection');
+        const item = document.querySelector('#embosser-setup-selection');
         return item?.previousElementSibling?.classList.contains('info-panel') ?? false;
       }),
     ).toBe(true);
-    // It follows the menu-item rules: a real h2 inside the legend.
-    await expect(page.locator('#embosser-version-selection h2.legend-heading')).toHaveText(
-      S_V1_LEGEND,
+    // It follows the menu-item rules: a real h2 inside the item's legend, and
+    // an h3 inside each choice's legend.
+    await expect(page.locator('#embosser-setup-selection > fieldset > legend h2.legend-heading')).toHaveText(
+      'Embosser setup',
     );
+    await expect(page.locator('#embosser-version-selection h3.legend-heading')).toHaveText(S_V1_LEGEND);
 
     await expect(page.locator('#embosser_version_1')).toBeChecked();
     await expect(page.locator('#embosser_version_2')).not.toBeChecked();
 
     // S-V1 is the group's accessible name; S-V3 is its description.
-    await expect(page.locator('#embosser-version-selection legend')).toHaveText(S_V1_LEGEND);
+    await expect(page.locator('#embosser-version-selection > legend')).toHaveText(S_V1_LEGEND);
     await expect(page.locator('#embosser-version-note')).toHaveText(S_V3_NOTE);
     expect(
       await page.evaluate(() =>
-        document
-          .querySelector('#embosser-version-selection fieldset')
-          ?.getAttribute('aria-describedby'),
+        document.getElementById('embosser-version-selection')?.getAttribute('aria-describedby'),
       ),
     ).toBe('embosser-version-note');
 
@@ -179,23 +213,23 @@ test.describe('Embosser Version 2 (prototype)', () => {
     await openApp(page);
     await openExpertDimensions(page);
 
-    await expect(page.locator('#v2-prototype-note')).toBeHidden();
     await expect(page.locator('#v2-keyed-cutouts-selection')).toBeHidden();
     await expect(page.locator('#gear-rollers-selection')).toBeVisible();
     await expect(page.locator('#cylinder-seam-offset-row')).toBeVisible();
+    // The prototype notice is gone (D-7, 2026-09-20).
+    await expect(page.locator('#v2-prototype-note')).toHaveCount(0);
 
     await selectVersion2(page);
 
     await expect(page.locator('#a11y-status')).toHaveText(S_V10_ON);
-    await expect(page.locator('#v2-prototype-note')).toBeVisible();
-    await expect(page.locator('#v2-prototype-note')).toContainText(S_V4_PROTOTYPE);
     await expect(page.locator('#v2-keyed-cutouts-selection')).toBeVisible();
     await expect(page.locator('#v2_key_clearance_mm')).toHaveValue('0.110');
 
-    // The gears BETA is Version 1 only (D-V6): hidden AND unchecked, because a
-    // hidden checkbox that stayed on would still be read at generate time.
-    await expect(page.locator('#gear-rollers-selection')).toBeHidden();
-    await expect(page.locator('#gear_rollers_enabled')).not.toBeChecked();
+    // The gear choice stays visible - it is a menu item, not a beta toggle to
+    // hide - and stays on Standard (the API still refuses gears with Version 2
+    // until fixed Version 2 gears ship in phase B6).
+    await expect(page.locator('#gear-rollers-selection')).toBeVisible();
+    await expect(page.locator('#gear_mode_standard')).toBeChecked();
 
     // The polygonal cutout and the seam offset are inert when the keyed cutout
     // IS the hole.
@@ -209,8 +243,9 @@ test.describe('Embosser Version 2 (prototype)', () => {
     await expect(page.locator('#seam_offset_deg')).toHaveValue('0');
 
     // D-V10: A and B are a matched, differently keyed pair, so the pair is the
-    // useful output and the signed A/B labels are reused.
-    await expect(page.locator('#generate-both-btn')).toBeVisible();
+    // useful output - and since 2026-09-21 every run is the pair unless one
+    // cylinder is chosen, so there is no Generate Both button to reveal.
+    expect(await page.locator('#generate-both-btn').count()).toBe(0);
   });
 
   test('going back to Version 1 restores the dials the user had', async ({ page }) => {
@@ -226,7 +261,89 @@ test.describe('Embosser Version 2 (prototype)', () => {
     await expect(page.locator('#cylinder_diameter_mm')).toHaveValue(before);
     await expect(page.locator('#gear-rollers-selection')).toBeVisible();
     await expect(page.locator('#cylinder-seam-offset-row')).toBeVisible();
-    await expect(page.locator('#v2-prototype-note')).toBeHidden();
+  });
+
+  test('choosing Version 2 leaves a fixed-gear choice alone and announces the version with the gear notes', async ({
+    page,
+  }) => {
+    // Since phase B6 of the 2026-09-20 programme the Version 2 embosser has
+    // its own fixed gears, so the C2 guard that reset the choice (S-M13) is
+    // gone: the saved preference survives, and the ONE announcement is S-V10
+    // with the notes the gear refresh raised (S3 on the default cutout dial),
+    // composed and deferred exactly as the gear listener's own is.
+    await openApp(page);
+    await page.locator('#gear_mode_fixed').check();
+    await expect(page.locator('#gear_mode_fixed')).toBeChecked();
+
+    await selectVersion2(page);
+    await expect(page.locator('#gear_mode_fixed')).toBeChecked();
+    await expect(page.locator('#gear_mode_standard')).not.toBeChecked();
+    await expect(page.locator('#a11y-status')).toHaveText(`${S_V10_ON} ${S3_CUTOUT_NOTE}`);
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_gear_rollers_enabled'))).toBe('1');
+    // The preset barrel is already the fixed gears' 30.8 x 54, so no size note.
+    await expect(page.locator('#gear-size-warning')).toBeHidden();
+  });
+
+  test('the Version 2 gear size note uses the Version 2 barrel and its own sentence', async ({ page }) => {
+    await openApp(page);
+    await openExpertDimensions(page);
+    await selectVersion2(page);
+    await page.locator('#gear_mode_fixed').check();
+    await expect(page.locator('#gear-size-warning')).toBeHidden();
+
+    // 52 is the VERSION 1 gear barrel: right for Version 1 gears, off-size here.
+    await setDial(page, 'cylinder_height_mm', '52');
+    await expect(page.locator('#gear-size-warning')).toBeVisible();
+    await expect(page.locator('#gear-size-message')).toContainText(S_G1_SIZE_START);
+    await expect(page.locator('#gear-size-message')).toContainText('Received 30.8 mm x 52 mm.');
+    // S-V5 names the same limit and, written last, is what the live region holds.
+    await expect(page.locator('#v2-size-warning')).toBeVisible();
+    await expect(page.locator('#a11y-status')).toContainText(S_V5_SIZE_START);
+
+    await setDial(page, 'cylinder_height_mm', V2_HEIGHT);
+    await expect(page.locator('#gear-size-warning')).toBeHidden();
+    await expect(page.locator('#v2-size-warning')).toBeHidden();
+  });
+
+  test('Version 2 with Simplified gears is accepted and exports one fused roller', async ({ page }) => {
+    test.slow();
+    await openApp(page);
+    await page.locator('#auto-text').fill('abc');
+    await selectVersion2(page);
+    await page.locator('#gear_mode_fixed').check();
+    await expect(page.locator('#gear_mode_fixed')).toBeChecked();
+    await expect(page.locator('#embosser_version_2')).toBeChecked();
+
+    const state = watchGeometrySpecRequests(page);
+    const statuses: number[] = [];
+    page.on('response', (response) => {
+      if (response.url().includes('/geometry_spec')) statuses.push(response.status());
+    });
+    await generate(page, state, 1);
+    await page.locator('#download-stl-btn').waitFor({ state: 'visible', timeout: 240_000 });
+
+    // Both keys on the wire, and the API accepts the pair (the S-V7 gate is retired).
+    const settings = (state.bodies[0] as { settings: Record<string, unknown> }).settings;
+    expect(settings.embosser_version).toBe(2);
+    expect(settings.gear_rollers_enabled).toBe(1);
+    expect(statuses[0]).toBe(200);
+
+    // ONE prefix for the fused run, not the two single-feature sentences.
+    const status = page.locator('#a11y-status');
+    await expect(status).toContainText(S_G2_READY);
+    await expect(status).not.toContainText(S5_GEARS_READY);
+    await expect(status).not.toContainText(S_V8_READY);
+
+    // Geared_ then V2_: the two segments compose without a new rule.
+    const downloadPromise = page.waitForEvent('download');
+    await page.locator('#download-stl-btn').click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toBe('Embossing_Cylinder_Geared_V2_0.4_abc.stl');
+
+    // The fused roller: the 54 mm barrel plus a 10 mm gear at each end.
+    const { triangles, zMin, zMax } = await stlBounds(download);
+    expect(triangles).toBeGreaterThan(1000);
+    expect(zMax - zMin).toBeCloseTo(74, 2);
   });
 
   test('the size note appears off-size and clears at the preset size', async ({ page }) => {
@@ -338,7 +455,7 @@ test.describe('Embosser Version 2 (prototype)', () => {
     await expect(page.locator('#a11y-status')).toContainText(S_V8_READY);
     expect(await downloadName(page)).toBe('Embossing_Cylinder_V2_0.4_abc.stl');
 
-    await page.locator('input[name="plate_type"][value="negative"]').check();
+    await selectCylinders(page, 'negative');
     await generate(page, state, 2);
     await page.locator('#download-stl-btn').waitFor({ state: 'visible', timeout: 240_000 });
     expect(await downloadName(page)).toBe('Counter_Cylinder_V2_0.4_abc.stl');
@@ -350,10 +467,11 @@ test.describe('Embosser Version 2 (prototype)', () => {
     await page.locator('#auto-text').fill('abc');
     await selectVersion2(page);
 
+    await selectCylinders(page, 'both');
     const status = page.locator('#pair-status');
     let ready = false;
     for (let attempt = 0; attempt < 8 && !ready; attempt++) {
-      await page.locator('#generate-both-btn').click();
+      await page.locator('#action-btn').click();
       try {
         await expect(status).toContainText('Both cylinders are ready', { timeout: 120_000 });
         ready = true;
@@ -365,8 +483,8 @@ test.describe('Embosser Version 2 (prototype)', () => {
     }
     expect(ready).toBe(true);
 
-    await expect(page.locator('#pair-downloads')).toBeVisible();
-    expect(await downloadName(page, '#download-pair-btn')).toBe('Cylinder_Pair_V2_0.4_abc.stl');
+    await expect(page.locator('#download-stl-btn')).toBeVisible();
+    expect(await downloadName(page)).toBe('Cylinder_Pair_V2_0.4_abc.stl');
   });
 
   test('the choice survives a reload and Reset to defaults undoes it', async ({ page }) => {
@@ -405,5 +523,38 @@ test.describe('Embosser Version 2 (prototype)', () => {
     // card stock the user never chose.
     await setDial(page, 'cylinder_height_mm', V2_HEIGHT);
     await expect(page.locator('input[name="card_thickness_preset"][value="0.4"]')).toBeChecked();
+  });
+
+  test('a card stock chosen after Version 2 keeps the 54 mm barrel on the dial and on the wire', async ({ page }) => {
+    // Both card-stock presets carry the Version 1 barrel (30.8 x 52). Choosing
+    // a preset AFTER Version 2 used to write that 52 back onto the dial, and
+    // the size gate is a warning, not a rejection (D-V15) - so a 52 mm
+    // Version 2 cylinder was printed from the live site on 2026-09-20. This is
+    // the natural order for anyone working down the form: version first,
+    // card stock later.
+    await openApp(page);
+    await page.locator('#auto-text').fill('abc');
+    await openExpertDimensions(page);
+    await selectVersion2(page);
+    await expect(page.locator('#cylinder_height_mm')).toHaveValue(V2_HEIGHT);
+
+    // The preset toast lands in #error-text, which generate() reads on slow
+    // runs, so clear it before generating.
+    await page.locator('input[name="card_thickness_preset"][value="0.3"]').check();
+    await page.evaluate(() => { const t = document.getElementById('error-text'); if (t) t.textContent = ''; });
+    await expect(page.locator('#cylinder_height_mm')).toHaveValue(V2_HEIGHT);
+    await expect(page.locator('#cylinder_diameter_mm')).toHaveValue(V2_DIAMETER);
+    await expect(page.locator('#v2-size-warning')).toBeHidden();
+
+    const state = watchGeometrySpecRequests(page);
+    await generate(page, state, 1);
+    const cylinder = (state.bodies[0] as { cylinder_params: Record<string, string> }).cylinder_params;
+    expect(Number(cylinder.height_mm)).toBe(54);
+    expect(Number(cylinder.diameter_mm)).toBe(30.8);
+
+    // And back to Version 1 still restores the dials the user had before
+    // Version 2 (the snapshot, not the preset).
+    await page.locator('#embosser_version_1').check();
+    await expect(page.locator('#cylinder_height_mm')).toHaveValue('52');
   });
 });

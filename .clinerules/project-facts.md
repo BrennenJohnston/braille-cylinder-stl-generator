@@ -66,8 +66,14 @@ translation, Three.js preview. Working branch: develop — never commit to main.
 
    Never "fix" one layer to match the other on your own — the preset numbers
    are print-tuned and the schema numbers are the absent-field fallback.
-6b. Double-sided (interpoint) BETA — cylinders only, toggle default OFF, and
-   toggle-off behavior must stay byte-identical to single-sided:
+6b. Double-sided (interpoint) — cylinders only, OUT OF BETA since 2026-09-20
+   (D-7): the choice is the "Card sides" radio group (`card_sides_single`
+   checked / `card_sides_double`) inside the "Embosser setup" menu item at the
+   top of the form, read ONLY through isDoubleSidedOn(); the old
+   `#double_sided_enabled` checkbox and its accordion are gone; the Back of
+   Card fieldset (`#back-entry-fieldset`) is always in the tree and
+   native-disabled while single-sided. Single-sided behavior must stay
+   byte-identical to before the feature:
    - interpoint offset default (1.25, 1.25) mm diagonal, range 1.15–1.35 each
      (settings double_sided.interpoint_offset_x_mm/_y_mm → flat runtime
      interpoint_offset_x/_y; interpoint.py calls the y number offset_z).
@@ -89,21 +95,48 @@ translation, Three.js preview. Working branch: develop — never commit to main.
    - Naming in the double-sided flow ONLY: "Cylinder A" = positive plate,
      "Cylinder B" = negative plate, downloads Cylinder_A_/Cylinder_B_*.stl.
      Never rename single-sided labels/filenames (training videos use them).
+   - BACK PARITY (2026-09-21, sub-plan D, D-11): the back has its OWN
+     placement toggle name="back_placement_mode" (Auto checked), rows
+     #back_line{i} + #back_line_lang_{i} (class line-language-select, so
+     syncLineLanguageSelects() fills them; rebuilt with the front's on every
+     grid_rows change), read through backPlacementMode() /
+     getBackDynamicLineValues() / translateBackManualLines(). Manual back
+     rows are held to the cell count (S-D1 (signed 2026-09-21), fail closed) and send
+     back_per_line_language_tables (schema text.back_languages) - ONLY for a
+     manual back; Auto and the back braille field send nothing extra, so
+     their request bodies are byte-identical to before. The overflow box
+     #ds-back-overflow-warning sits OUTSIDE #back-auto-input-container on
+     purpose (manual rows write to it). Persistence
+     braille_prefs_back_placement_mode. GenerateBrailleRequest (no callers)
+     declares back_lines + back_per_line_language_tables.
 
-6c. Gear-integrated one-piece rollers BETA — cylinders only, toggle default
-   OFF, and toggle-off must stay byte-identical (proved at three levels: the
-   geometry spec, the worker STL, and the request body).
+6c. Gear-integrated one-piece rollers — cylinders only, OUT OF BETA since
+   2026-09-20 (D-7): the choice is the "Gears" radio group
+   (`gear_mode_standard` checked / `gear_mode_fixed`) inside the "Embosser
+   setup" menu item, read ONLY through isGearRollersOn(); the old
+   `#gear_rollers_enabled` checkbox fieldset is gone. Standard (the old OFF)
+   must stay byte-identical (proved at three levels: the geometry spec, the
+   worker STL, and the request body).
    - Flat name gear_rollers_enabled (schema gear_rollers.enabled), int 0/1.
    - The gears are VENDORED 1:1 replica data at static/assets/gears/
      gears_{a,b}.bin — NEVER hand-edit them, and regenerate ONLY via
      scripts/derive_gear_assets.py (the manifest's sha256s are pinned by a
      test). 24 teeth, tip r 16.1093702290795, 10 mm thick, gears at z -36..-26
-     and +26..+36 in the browser frame. app/geometry/gears.py owns every gear
+     and +26..+36 in the browser frame. The VERSION 2 set lives beside them as
+     v2_gears_{a,b}.bin + v2_gears_manifest.json (derived from the v8 Version 2
+     gear STLs by scripts/derive_gear_assets_v2.py ONLY, since 2026-09-21;
+     same rule, same pin test): same teeth and tip radius, bodies at
+     z -37..-27 / +27..+37 with the 15 mm pegs INSIDE the barrel, every axis
+     MEASURED per gear (they differ by up to 0.005 mm - recorded, never
+     averaged), A set Rz(180), B set identity, every notch/pin on the 180
+     column. app/geometry/gears.py owns every gear
      constant, the way app/geometry/interpoint.py owns the DS ones — both
      app/validation.py and app/geometry_spec.py read it, so it is the ONE place
      these numbers live.
-   - The cylinder size is FIXED while gears are on: 30.8 x 52.0 mm, +/- 0.001,
-     or the request is REJECTED (S7). The gears are baked at fixed z and do not
+   - The cylinder size is FIXED while gears are on: 30.8 x 52.0 mm in
+     Version 1 (S7) and 30.8 x 54.0 mm in Version 2 (S-G1 (signed 2026-09-21); the gate
+     reads embosser_version and gears.reference_barrel(version)), +/- 0.001,
+     or the request is REJECTED. The gears are baked at fixed z and do not
      move with the barrel — a 51 mm barrel exports as THREE loose bodies and
      still reports watertight, and a 62 mm one swallows the teeth. Never
      "relax" this to a warning. The default barrel returned to 52 later on
@@ -117,17 +150,23 @@ translation, Three.js preview. Working branch: develop — never commit to main.
    - Weld rings r 8.0-13.0 x 0.1 mm at z +/-height/2 (computed, never
      hardcoded); raised tactile arrows grow by 0.005 mm in gear mode only
      (D-8a). CSG order is unchanged: gears join the RAISED stage, recesses
-     still cut last.
+     still cut last. In FUSED Version 2 mode the gear stage also unions the
+     two notch fills (spec gears.notch_fills, see 6d) after the rings.
    - Naming: a `Geared_` segment is inserted ONLY when gears are on
      (Embossing_Cylinder_Geared_{preset}_{name}.stl). Toggle-off names never
      change — training videos use them.
    - There is NO card shape in the UI (one radio, value="cylinder"), so do not
      add UI branches for one; the cylinders-only rule lives in the API.
 
-6d. Embosser Version 2 keyed cutouts PROTOTYPE - cylinders only, selector
-   default Version 1, and Version 1 must stay byte-identical (proved at FIVE
-   levels: settings, geometry spec, HTTP, golden fixtures, and a real-browser
-   `fc /b` of both the request body and the exported STL).
+6d. Embosser Version 2 keyed cutouts - cylinders only, selector default
+   Version 1, and Version 1 must stay byte-identical (proved at FIVE levels:
+   settings, geometry spec, HTTP, golden fixtures, and a real-browser `fc /b`
+   of both the request body and the exported STL). Since 2026-09-20 (D-7,
+   D-8) the "(prototype)" tag and the prototype notice are gone and the
+   version radios (`embosser_version_1/2`, ids unchanged) are the FIRST of
+   three choices inside the "Embosser setup" menu item
+   (`#embosser-setup-selection`, the form's first item), whose legend is the
+   page's h2 while each choice's legend is an h3.
    - Flat names `embosser_version` (int enum 1|2, schema `embosser_version`)
      and `v2_key_clearance_mm` (schema `version_2.key_clearance_mm`). The
      version is parsed as an EXACT integer - 2.5 is refused, not rounded.
@@ -148,15 +187,22 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      2026-08-31 (was 52) - the 1 mm card shelf at each end, VERSION 2's ALONE
      since the same day (the project default returned to the 52 mm Version 1
      standard; V2_PRESET_OVERRIDES is what carries a V2 cylinder to 54).
+     TRAP (found by a 52 mm V2 print from the live site, 2026-09-20): BOTH
+     card-stock presets carry cylinder_height_mm 52, so a preset chosen
+     AFTER Version 2 used to put the barrel back to 52 with only the soft
+     S-V5 warning; applyThicknessPreset() now re-asserts
+     V2_PRESET_OVERRIDES whenever isVersion2() - keep that when the version
+     handling is reworked.
      54 print test PASSED (Brennen, 2026-09-01) — both cylinders printed
      from the OpenSCAD V2 file. Version 2 and the gears BETA share ⌀30.8 but the
      HEIGHT now tells them apart (V2 54, gears and the V1 default 52) - and
      so does the version. Version 2 has its own OpenSCAD companion (since
      2026-08-31 also at 30.8 x 54 with 4 text rows per face):
      Braille_Cylinder_STL_Generator_EmbosserV2.scad in the OpenSCAD repo -
-     self-contained, interpoint included, gears excluded (D-V6), NOT vendored
-     into this repo. The V1 .scad files stay 52 and untouched; the gears BETA
-     is the one feature with no Version 2 OpenSCAD counterpart.
+     self-contained, interpoint included, and since OpenSCAD v2.8.0
+     (2026-09-21) with its own [Integrated Gears] switch for the fused
+     Version 2 roller (D-V6 retired); NOT vendored into this repo. The V1
+     .scad files stay 52 and untouched.
    - Clearance 0.110 default, range 0.0-0.5, input step 0.005. Applied OUTWARD
      to the four holes ONLY. TWO printed rounds bracketed it on 2026-08-29:
      too loose at 0.15, too tight at 0.075. NOT the midpoint 0.1125 - an
@@ -188,8 +234,27 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      c = 0.1525 - a guard rail, NOT dead code. seam_offset never turns any of
      them.
    - The barrel is SOLID while Version 2 is on; the keyed hole is the bore.
-   - Gears BETA is Version 1 ONLY - the UI hides and unchecks the toggle and
-     the API refuses the combination.
+   - FIXED GEARS WORK IN VERSION 2 since 2026-09-21 (sub-plan B; the S-V7
+     refusal and the C2 guard/S-M13 are RETIRED). Version 2 + gears = the
+     FUSED roller: barrel SOLID, NO keyed_cutouts block (no holes, chamfers,
+     nub or socket - D-6), spec['gears'] = {asset v2_gears_a|b, weld_rings,
+     notch_fills: [ONE prism]}. The notch fill is the measured top-gear notch
+     grown 0.05 as an EXACT parallel_curve (a mitre pushes A's apex 0.10 out),
+     z height/2-0.05 .. height/2+depth+0.05, capped at
+     V2_NOTCH_FILL_MAX_RADIUS_MM 13.95 < 15.938 (mating tip circle at the V1
+     operating distance; the V2 distance is an OPEN item). Without it a
+     solid barrel seals an undrainable void; the D-6 acceptance is ONE body
+     from mesh.split(only_watertight=False). Golden pair
+     tests/fixtures/v2_gear_roller{A,B}_golden.* (regenerate only via
+     python -m tests.test_golden). Filenames compose: _Geared_V2_. Ready
+     message S-G2 (signed 2026-09-21) replaces S5 + S-V8' for a fused run. The version
+     change listener now makes ONE composed DEFERRED announcement (S-V10 +
+     gear notes) - keep the deferral: the form-wide change listener bubbles
+     after it and re-announces the bare gear note. OpenSCAD counterpart since
+     v2.8.0 (2026-09-21): `[Integrated Gears]` in the EmbosserV2 file -
+     gear_set_v2 imports assets/v2_gears_{a,b}.stl, the same weld rings and
+     notch fill, the same hard 30.8 x 54 gate with the S-G1 sentence; its
+     MakerWorld copy hides the switch (no assets there).
    - Naming: a `V2_` segment is inserted ONLY when Version 2 is on
      (Embossing_Cylinder_V2_{preset}_{name}.stl). Version 1 names never change.
    - Version 2 recommends the SAME cell counts as Version 1. The one-fewer
@@ -200,6 +265,157 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      (14x14, 18x10, 16x12, 20x8, every corner r 0.500). Their STLs are still
      named "v7" - that is the gear body's version, not the peg's. No v7 PEG
      ever enters an R14 hole.
+
+6e. Slicer seam channel (2026-09-20, sub-plan A of the 2026-09-20 programme;
+   decisions D-1, D-2, D-13, D-14, D-15) - every cylinder, both plates, ON by
+   default, and the only feature whose DEFAULT changes geometry:
+   - A V-groove 1.0 wide x 0.5 deep (90 degrees) the full height of the OUTER
+     surface, in the seam gap beside the row-indicator column, so a slicer's
+     default "aligned" seam mode hides each layer's seam in it instead of in a
+     dot. Measured in the 2026-09-20 slicing spike (scripts/seam_spike.py):
+     100 % capture on both visual plates and the tactile counter plate, 90.8 %
+     on the tactile emboss plate with the rest on the arrow tips, never a dot.
+     "Back"/"rear" seam mode is unsafe for the emboss plate by geometry, so
+     there is NO export rotation - the guide tells such users to switch to
+     Aligned.
+   - Size is NOT a dial. app/geometry_spec.py owns SEAM_CHANNEL_WIDTH_MM 1.0,
+     DEPTH 0.5, MARGIN 0.25, OVERSHOOT 1.0, LIP 0.5, MIN_WALL 1.2; index.html
+     mirrors four of them and both omission sentences (a smoke test diffs
+     them). Changing the groove needs Brennen's decision AND a new spike.
+   - Flat name seam_channel_enabled (schema seam_channel.enabled, default
+     true / 1); absent means ON. The Expert Mode switch #seam_channel_enabled
+     (Surface Dimensions) is the ONLY thing that sends seam_channel_enabled: 0,
+     and ON adds NOTHING to the request body - an untouched body is
+     byte-identical to a pre-channel one (pinned against the captured
+     tests/e2e/fixtures/*.request.json). Switch OFF reproduces the pre-channel
+     STL byte for byte (tests/e2e/fixtures/*_before_seam_channel.stl).
+   - Placement, VISUAL mode: signed arc s from the seam centre toward column
+     0; the free window is what the last cell's dots and column 0's triangle
+     leave of the gap, groove at its middle; theta = pi -/+ s_c/R
+     (positive/negative), so theta_A + theta_B = 2 pi. theta is in the DOT
+     convention: the worker negates EVERY theta it places (dots, markers,
+     channel alike) - never treat this angle differently from a dot's. In the
+     STL the default 15-column visual layout has the groove at 181.67 deg (A)
+     / 178.33 (B).
+   - Placement, TACTILE mode (D-T6 + D-T7, 2026-09-21, Brennen's calls after
+     two prints): the groove runs down the ARROW COLUMN itself, theta = pi on
+     BOTH plates, the FULL height (the same shell-stage cut as visual mode),
+     and on the EMBOSSING plate it is cut a SECOND time after the raised
+     arrows join - block key `arrow_recut` {z_from, z_to, lip}: the arrow
+     chain from tactile_arrow_span() (outermost arrow +/- length/2, grown by
+     the gear weld in gear mode) +/- SEAM_CHANNEL_ARROW_MARGIN_MM 0.3, clamped
+     SEAM_CHANNEL_RECUT_INSET_MM 0.05 inside the end faces (a gear face is
+     never nicked), lip = tactile_indicator_raise + SEAM_CHANNEL_LIP_MM so the
+     V clears the arrows' top faces. 13 cells, 4 rows, 0.4 preset: z -20.3..
+     20.3, lip 1.0. The V is 2 mm wide at an arrow's top face, so each raised
+     arrow keeps its base half as two ridges and LOSES ITS POINT - Brennen's
+     choice (the tested V at every layer) over a 1 mm straight-walled slot;
+     a tactile-shape decision, never change the recut on your own. The
+     counter plate's recesses (0.7 deep) are deeper than the groove (0.5), so
+     its single cut runs through them and it gets NO recut. There is no
+     window to fit and nothing can leave the groove out in tactile mode (the
+     D-T6 stretches and the S-C4 "no room" sentence are RETIRED). The worker
+     subtracts the recut right after the raised markers join; the golden
+     renderer adds it to its difference. History: D-T6's two stretches that
+     stopped 0.3 short of the chain were printed by Brennen the same day and
+     the slicer put seams in dots wherever the groove stopped - the arrows'
+     corners were NOT enough, and the slicing study's metric had not
+     predicted it. The rerun (build/seam_spike_through): emboss 100 % in the
+     groove, counter 36.9 % (the rest on the recess edges), 0 % in a dot.
+   - Left out, with a warning (S-C2 / S-C3 (signed 2026-09-21)), when the
+     visual free window is under 1.5 mm or the wall under the apex is under
+     1.2 mm (polygon circumradius, or wall_thickness - depth for a barrel
+     with no cutout; solid barrels - gears, Version 2 - skip the wall rule).
+     15 visual fits at 30.8; every tactile layout gets its groove (15 columns
+     tactile trips the seam-GAP warning, not the channel's).
+   - CSG order: the groove is cut from the BARE outer cylinder before the bore,
+     the keyed pockets or anything unioned, in both the worker
+     (createSeamChannelManifold, one full-height prism; the tactile
+     recut is the same function with the block's `arrow_recut`, subtracted
+     after the raised markers) and tests/test_golden.py
+     (_seam_channel_cutter); all six golden pairs regenerated once on
+     2026-09-20 (+8 triangles each, bounds unchanged), all eight again on
+     2026-09-21 (D-T6, then D-T7).
+   - Cards never get one.
+   - OpenSCAD parity since v2.8.0 (2026-09-21): `seam_channel` switch in both
+     .scad files with the same six constants (a test in that repo diffs them
+     against app/geometry_spec.py) and the visual groove at the PHYSICAL
+     angle 180 +/- s/R (emboss +, counter -) - the .scad negates nothing, so
+     its 181.67 / 178.33 equals this worker's exported STL. The tactile
+     recut landed in that repo's D-T7 pass (develop 90b0e99, 2026-09-21,
+     pushed; see 6g):
+     seam_channel_cut(theta, z_from, z_to, lip) called from the emboss
+     plate's difference() by seam_channel_arrow_recut() over
+     seam_channel_recut_span, the same two constants (its tests diff them).
+
+6f. One Generate / one Download (2026-09-21, sub-plan E of the 2026-09-20
+   programme; D-8, D-9, D-10). Generate STL builds BOTH cylinders unless
+   "Cylinders to Generate" - the FIRST Expert Mode submenu
+   (#cylinders-to-generate-submenu / #expert-panel-cylinders) - names one:
+   radios name="plate_selection" value both (checked) | positive | negative,
+   read ONLY through currentPlateSelection() / currentPlateType() ('both'
+   resolves to positive for single-plate wording). There is NO
+   input[name="plate_type"] radio, NO #generate-both-btn, NO #pair-downloads
+   and NO isPairModeOn()/updatePairModeUI() any more - pair mode is universal.
+   The ONE #download-stl-btn saves the combined Cylinder_Pair_[Geared_][V2_]
+   file after a both run, Cylinder A then B (pairFallbackQueue) after a failed
+   combine, or the single file. Filenames NEVER changed (training videos).
+   Persistence key stays braille_prefs_plate_type (old positive/negative
+   values honoured). Strings S-E1..S-E7 signed 2026-09-21. e2e: single-plate specs
+   choose Cylinder A in openApp() via tests/e2e/helpers/cylinders.ts
+   (selectCylinders - the radio is in the collapsed panel, so check() would
+   refuse it); pair tests choose 'both'. The submenu toggle focuses its first
+   control after 100 ms - wait for it before arrow keys.
+
+6g. Tactile arrow position and card fit (2026-09-21, decisions D-T1..D-T6
+   after Brennen's printed 14-cell card ran out of paper at the end of every
+   row while its start lay blank; plan 05_TACTILE_LEAD_IN_PLAN.md in the
+   2026_09_20 research folder):
+   - The arrow sits at the SEAM-GAP MIDPOINT, TACTILE_SEAM_THETA = pi, on
+     both plates - equal space either side of it, last cell to arrow and
+     arrow to first cell (D-T6). A fixed lead-in before column 0 (D-T1,
+     "Option A") was built, pushed and REVERTED the same day: Brennen's test
+     of the Vercel build showed the groove beside the arrows and a large
+     trailing space after the last cell, and he asked for the groove centred
+     on the arrows and the spacing back to even. Never re-shift the arrow on
+     your own.
+   - The card, not the cylinder, bounds a tactile row. The embosser is loaded
+     with the card's leading edge AT the alignment arrow (D-T3), so a row
+     needs gap/2 + grid + footprint of card (footprint = dot_spacing/2 + the
+     widest dot or bowl radius, the seam channel's number; 2.15 at the 0.4
+     preset): 13 cells need 89.5 mm of a 90 mm card, 14 need 92.8 (92.9 with
+     the default dot families) and lose their last cell at ANY arrow
+     position. app/geometry_spec.py tactile_card_need_mm / tactile_max_cells
+     (max = floor((card - pi*D/2 - footprint) * 2 / cell) + 1) own it;
+     index.html updateCardFitUI mirrors the arithmetic. Warning S-T1 (signed 2026-09-21)
+     from card_width in spec warnings and the live #card-fit-warning box;
+     tactile recommendation 13 (S-T3, signed 2026-09-21); the dial stays free to 14 with
+     the warning, never a rejection. Visual mode is NOT checked (different
+     alignment procedure). NOTE: a US 3.5 in card (88.9 mm) now warns at 13
+     cells (max 12) - reported to Brennen 2026-09-21, not decided.
+   - All eight golden pairs regenerated 2026-09-21 (twice: the lead-in, then
+     D-T6); the fixture settings declare card_width 100 because the generator
+     refuses a spec with warnings and the fixtures are 14-column geometry
+     references.
+   - interpoint.arrow_zone_margins(arrow_arc_mm=0.0) keeps its parameter
+     (negative refused); the arrow is at pi, so callers pass nothing.
+   - The seam channel in tactile mode runs down the arrow column the full
+     height and is recut through the raised arrows (6e, D-T7). The slicing
+     study reran on it (scripts/seam_spike.py --layouts tactile14,tactile13
+     --channels none,v10 --no-rear --out build/seam_spike_through): emboss
+     plate 100 % of layers in the groove (every seam at 180.0-180.02 deg),
+     counter plate 36.9 % with the rest on the recess arrows' own edges, 0 %
+     in a dot on every plate.
+   - OpenSCAD: the lead-in parity (T6, a7585cc) was reworked to D-T6
+     (develop eef068a) and then D-T7 (develop 90b0e99, 2026-09-21,
+     pushed): arrow at
+     180 via place_cylinder_marker(180, ...), card fit from the midpoint,
+     seam_channel_arrow_recut() in the emboss plate's difference(),
+     GEAR_ARROW_WELD_MM beside gears_on in the V1 file. Brennen's 13-cell
+     tactile print test PASSED (2026-09-21): OpenSCAD v2.8.1 tagged on the
+     release-notes commit a8b16af and pushed, OpenSCAD/ re-vendored from it
+     (c9fe200), S-T1..S-T4 signed as drafted, S-C4 reworded for tactile mode
+     and signed, the 3.5 in card warning kept as is (his call).
 
 ## Settings changes — order of operations
 7. settings.schema.json is the single source of truth. When adding or changing

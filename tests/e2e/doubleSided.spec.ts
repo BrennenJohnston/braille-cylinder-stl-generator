@@ -22,6 +22,7 @@
 
 import { test, expect, type Page } from '@playwright/test';
 import fs from 'node:fs';
+import { selectCylinders, selectedCylinders } from './helpers/cylinders';
 
 // ---------------------------------------------------------------------------
 // Pre-feature payload snapshots
@@ -31,8 +32,10 @@ import fs from 'node:fs';
 // fresh profile) and proven byte-identical to the post-feature off-state by
 // fc /b in Phases 07 and 08. The toggle-off payload must deep-equal these:
 // any added key (double_sided_enabled, back_lines, ds_*) is a regression.
+// One value has moved since the capture: grid_columns, 14 -> 13 on 2026-09-21
+// (D-T4, the tactile recommendation on a 90 mm card); the key set is unchanged.
 const BASELINE_SETTINGS = {
-  grid_columns: '14',
+  grid_columns: '13',
   grid_rows: '4',
   cell_spacing: '6.5',
   line_spacing: '10',
@@ -115,6 +118,10 @@ async function openApp(page: Page) {
   await page.waitForLoadState('domcontentloaded');
   await page.waitForLoadState('networkidle');
   await page.waitForSelector('#indicator-mode-selection');
+  // Since 2026-09-21 Generate builds both cylinders by default; this spec
+  // exercises one cylinder at a time, so choose Cylinder A (the old default)
+  // under Cylinders to Generate. Pair tests choose 'both' themselves.
+  await selectCylinders(page, 'positive');
 }
 
 /** Capture /geometry_spec payloads, aborting each request so no CSG runs. */
@@ -201,13 +208,13 @@ function watchGeometrySpecRequests(page: Page) {
   return state;
 }
 
-/** The plate radios' visible label text, in [positive, negative] order. */
+/** The Cylinders to Generate radios' visible label text, in [positive, negative] order. */
 function plateLabels(page: Page) {
   return page.evaluate(() =>
     ['positive', 'negative'].map(
       (value) =>
         document
-          .querySelector(`input[name="plate_type"][value="${value}"]`)
+          .querySelector(`input[name="plate_selection"][value="${value}"]`)
           ?.closest('label')
           ?.querySelector('.radio-text')?.textContent ?? '',
     ),
@@ -263,13 +270,6 @@ async function downloadName(page: Page): Promise<string> {
   return download.suggestedFilename();
 }
 
-/** Click one of the double-sided pair buttons and return the offered filename. */
-async function pairDownloadName(page: Page, which: 'a' | 'b'): Promise<string> {
-  const downloadPromise = page.waitForEvent('download');
-  await page.locator(`#download-cylinder-${which}-btn`).click();
-  const download = await downloadPromise;
-  return download.suggestedFilename();
-}
 
 /**
  * Fill the back text and wait for the overflow warning to appear. Under
@@ -303,9 +303,11 @@ async function fillBackUntilOverflow(page: Page, text: string) {
  * failure is rethrown rather than retried.
  */
 async function generateBoth(page: Page) {
+  // One Generate button since 2026-09-21: with 'both' chosen it runs the pair.
+  await selectCylinders(page, 'both');
   const status = page.locator('#pair-status');
   for (let attempt = 0; attempt < 8; attempt++) {
-    await page.locator('#generate-both-btn').click();
+    await page.locator('#action-btn').click();
     try {
       await expect(status).toContainText('Both cylinders are ready', { timeout: 120_000 });
       return;
@@ -345,23 +347,19 @@ async function previewBraille(page: Page, settled: () => Promise<void>) {
 }
 
 /**
- * The Double-Sided item is a collapsible menu since 2026-08-31, so the toggle
- * inside is hidden until the disclosure button opens it. State-aware like the
- * expert accordions: an already-open menu is never clicked shut.
+ * Double-sided is an either/or radio inside the "Embosser setup" menu item
+ * since 2026-09-20 (no accordion, no checkbox): choosing it enables the
+ * always-present Back of Card fieldset. Idempotent.
  */
-async function openDoubleSidedMenu(page: Page) {
-  const toggle = page.locator('#double-sided-menu-toggle');
-  if ((await toggle.getAttribute('aria-expanded')) !== 'true') {
-    await toggle.click();
-  }
-  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+async function chooseDoubleSided(page: Page) {
+  await page.locator('#card_sides_double').check();
+  await expect(page.locator('#back-entry-fieldset')).not.toHaveAttribute('disabled');
 }
 
-/** Turn the beta on through the real UI and fill both sides of the card. */
+/** Turn double-sided on through the real UI and fill both sides of the card. */
 async function enableBeta(page: Page, frontText: string, backText: string) {
   await page.locator('#auto-text').fill(frontText);
-  await openDoubleSidedMenu(page);
-  await page.locator('#double_sided_enabled').check();
+  await chooseDoubleSided(page);
   await page.locator('#back-text').fill(backText);
 }
 
@@ -379,33 +377,37 @@ test.describe('Double-Sided Card beta', () => {
     // key — no double_sided_enabled, no back_lines, no ds_* anywhere.
     expect(spec.bodies[0]).toEqual(BASELINE_POSITIVE);
 
-    await page.locator('input[name="plate_type"][value="negative"]').check();
+    await selectCylinders(page, 'negative');
     await generate(page, spec, 2);
     expect(spec.bodies[1]).toEqual(BASELINE_NEGATIVE);
   });
 
-  test('toggle on locks the Row Indicator Style to tactile and restores it off', async ({ page }) => {
+  test('choosing Double-sided locks the Row Indicator Style to tactile and Single-sided restores it', async ({ page }) => {
     await openApp(page);
-    await openDoubleSidedMenu(page);
-    const toggle = page.locator('#double_sided_enabled');
+    const double = page.locator('#card_sides_double');
+    const single = page.locator('#card_sides_single');
+    const backEntry = page.locator('#back-entry-fieldset');
     const visual = page.locator('input[name="indicator_mode"][value="visual"]');
     const tactile = page.locator('input[name="indicator_mode"][value="tactile"]');
 
+    await expect(single).toBeChecked();
     await expect(visual).toBeChecked();
-    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    // Always in the tree, disabled until Double-sided (2026-09-20).
+    await expect(backEntry).toBeVisible();
+    await expect(backEntry).toHaveAttribute('disabled', '');
+    await expect(page.locator('#back-text')).toBeDisabled();
     await expect(page.locator('#front-entry-legend')).toHaveText('Enter Text for Braille Translation');
 
-    await toggle.check();
-    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    await expect(page.locator('#double-sided-section')).toBeVisible();
+    await double.check();
+    await expect(backEntry).not.toHaveAttribute('disabled');
+    await expect(page.locator('#back-text')).toBeEnabled();
     await expect(tactile).toBeChecked();
     await expect(visual).toBeDisabled();
     await expect(page.locator('#indicator-mode-lock-note')).toBeVisible();
     await expect(page.locator('#front-entry-legend')).toHaveText('Front of Card — Enter Text for Braille Translation');
 
-    await toggle.uncheck();
-    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    await expect(page.locator('#double-sided-section')).toBeHidden();
+    await single.check();
+    await expect(backEntry).toHaveAttribute('disabled', '');
     await expect(visual).toBeEnabled();
     await expect(page.locator('#indicator-mode-lock-note')).toBeHidden();
     // The tactile selection is deliberately kept (no surprise snap-back).
@@ -413,35 +415,22 @@ test.describe('Double-Sided Card beta', () => {
     await expect(page.locator('#front-entry-legend')).toHaveText('Enter Text for Braille Translation');
   });
 
-  test('the menu is closed on load, opens on click, and reopens with the beta persisted on', async ({ page }) => {
+  test('the Back of Card section is always present, and the choice survives a reload', async ({ page }) => {
     await openApp(page);
-    const menuToggle = page.locator('#double-sided-menu-toggle');
-    const menu = page.locator('#double-sided-menu');
 
-    // Closed by default, like the Expert Mode accordions whose pattern it reuses.
-    await expect(menuToggle).toHaveAttribute('aria-expanded', 'false');
-    await expect(menu).toBeHidden();
-    await expect(page.locator('#double_sided_enabled')).toBeHidden();
+    // No accordion any more (2026-09-20): the section is a sibling of the
+    // front entry, headed by its own h2, and simply disabled while single-sided.
+    await expect(page.locator('#double-sided-menu-toggle')).toHaveCount(0);
+    await expect(page.locator('#back-entry-heading')).toHaveText('Back of Card — Enter Text for Braille Translation');
+    await expect(page.locator('#back-entry-fieldset')).toHaveAttribute('disabled', '');
 
-    await menuToggle.click();
-    await expect(menuToggle).toHaveAttribute('aria-expanded', 'true');
-    await expect(menu).toBeVisible();
-    await expect(page.locator('#double_sided_enabled')).toBeVisible();
-
-    // Click shut again: the beta stays available, just folded away.
-    await menuToggle.click();
-    await expect(menuToggle).toHaveAttribute('aria-expanded', 'false');
-    await expect(menu).toBeHidden();
-
-    // With the beta persisted on, a reload must land with the menu open — the
-    // revealed Back of Card section can never sit inside a closed menu.
-    await openDoubleSidedMenu(page);
-    await page.locator('#double_sided_enabled').check();
+    await chooseDoubleSided(page);
     await page.reload();
     await page.waitForLoadState('networkidle');
-    await expect(page.locator('#double_sided_enabled')).toBeChecked();
-    await expect(menuToggle).toHaveAttribute('aria-expanded', 'true');
-    await expect(page.locator('#double-sided-section')).toBeVisible();
+    await expect(page.locator('#card_sides_double')).toBeChecked();
+    await expect(page.locator('#back-entry-fieldset')).not.toHaveAttribute('disabled');
+    // A load restore is not a user action and must announce nothing.
+    await expect(page.locator('#a11y-status')).toHaveText('');
   });
 
   test('Cylinder A payload carries translated back_lines and the flat double-sided settings', async ({ page }) => {
@@ -495,7 +484,7 @@ test.describe('Double-Sided Card beta', () => {
   test('Cylinder B payload keeps the front braille for its 1:1 paired recesses', async ({ page }) => {
     await openApp(page);
     await enableBeta(page, 'abc', 'def');
-    await page.locator('input[name="plate_type"][value="negative"]').check();
+    await selectCylinders(page, 'negative');
 
     const spec = await interceptGeometrySpec(page);
     await generate(page, spec, 1);
@@ -526,7 +515,7 @@ test.describe('Double-Sided Card beta', () => {
     expect(await downloadName(page)).toBe('Cylinder_A_0.4_abc.stl');
 
     // Cylinder B: the reverse — back raised, front recessed, recessed arrows.
-    await page.locator('input[name="plate_type"][value="negative"]').check();
+    await selectCylinders(page, 'negative');
     const b = await generateFully(page, responses, 2);
     expect(b.status).toBe(200);
     const bDots = (b.spec?.dots ?? []) as Array<{ is_recess: boolean }>;
@@ -552,8 +541,7 @@ test.describe('Double-Sided Card beta', () => {
 
   test('the live gap warning follows the card-stock preset package and the offsets', async ({ page }) => {
     await openApp(page);
-    await openDoubleSidedMenu(page);
-    await page.locator('#double_sided_enabled').check();
+    await chooseDoubleSided(page);
 
     const warning = page.locator('#ds-gap-warning');
     const message = page.locator('#ds-gap-message');
@@ -672,47 +660,50 @@ test.describe('Double-Sided Card beta', () => {
     expect((await post(payload({ ds_dot_base_diameter: 1.5, ds_bowl_base_diameter: 1.8 }))).status()).toBe(400);
   });
 
-  test('the beta toggle is reachable and operable by keyboard only', async ({ page }) => {
+  test('the card-sides choice is reachable and operable by keyboard only', async ({ page }) => {
     await openApp(page);
 
-    // The item is a collapsible menu since 2026-08-31: walk the tab order to
-    // its disclosure button first — the toggle inside is not tabbable while
-    // the menu is shut.
+    // Walk the tab order to the card-sides radio group (2026-09-20: inside
+    // the Embosser setup menu item; a radio group is one tab stop).
     let reached = false;
     for (let i = 0; i < 80; i++) {
       await page.keyboard.press('Tab');
       const id = await page.evaluate(() => document.activeElement?.id ?? '');
-      if (id === 'double-sided-menu-toggle') {
+      if (id === 'card_sides_single') {
         reached = true;
         break;
       }
     }
-    expect(reached, 'Tab never reached #double-sided-menu-toggle').toBe(true);
+    expect(reached, 'Tab never reached #card_sides_single').toBe(true);
 
-    await page.keyboard.press('Enter');
-    await expect(page.locator('#double-sided-menu-toggle')).toHaveAttribute('aria-expanded', 'true');
+    // Arrow keys move within the group and carry the selection with them.
+    await page.keyboard.press('ArrowDown');
+    await expect(page.locator('#card_sides_double')).toBeFocused();
+    await expect(page.locator('#card_sides_double')).toBeChecked();
+    await expect(page.locator('#back-entry-fieldset')).not.toHaveAttribute('disabled');
 
-    // Opening moves focus to the menu's first control — the beta toggle —
-    // exactly as the Expert Mode accordions it reuses do.
-    await expect(page.locator('#double_sided_enabled')).toBeFocused();
-
-    await page.keyboard.press('Space');
-    await expect(page.locator('#double_sided_enabled')).toBeChecked();
-    await expect(page.locator('#double_sided_enabled')).toHaveAttribute('aria-expanded', 'true');
-    await expect(page.locator('#double-sided-section')).toBeVisible();
-
-    // The revealed section is next in the tab order and typeable.
-    await page.keyboard.press('Tab');
-    expect(await page.evaluate(() => document.activeElement?.id ?? '')).toBe('back-text');
+    // The enabled Back of Card section is reachable and typeable: walk on to
+    // its text box (the tactile lock changes what sits between, so count
+    // arrivals rather than tab presses).
+    let arrived = false;
+    for (let i = 0; i < 80; i++) {
+      await page.keyboard.press('Tab');
+      if ((await page.evaluate(() => document.activeElement?.id ?? '')) === 'back-text') {
+        arrived = true;
+        break;
+      }
+    }
+    expect(arrived, 'Tab never reached #back-text').toBe(true);
     await page.keyboard.type('def');
     await expect(page.locator('#back-text')).toHaveValue('def');
 
-    // Back to the toggle; Space turns the beta off again.
-    await page.keyboard.press('Shift+Tab');
-    expect(await page.evaluate(() => document.activeElement?.id ?? '')).toBe('double_sided_enabled');
-    await page.keyboard.press('Space');
-    await expect(page.locator('#double_sided_enabled')).not.toBeChecked();
-    await expect(page.locator('#double-sided-section')).toBeHidden();
+    // Back to the group; ArrowUp returns to Single-sided and disables the
+    // section again - its controls leave the tab order with it.
+    await page.locator('#card_sides_double').focus();
+    await page.keyboard.press('ArrowUp');
+    await expect(page.locator('#card_sides_single')).toBeChecked();
+    await expect(page.locator('#back-entry-fieldset')).toHaveAttribute('disabled', '');
+    await expect(page.locator('#back-text')).toBeDisabled();
   });
 
   // -------------------------------------------------------------------------
@@ -786,6 +777,156 @@ test.describe('Double-Sided Card beta', () => {
     await expect(page.locator('#back-text')).toHaveValue('def');
   });
 
+  // Back of Card parity (2026-09-20 programme, sub-plan D, decision D-11): the
+  // back has its own Auto / Manual placement, per-line inputs and per-line
+  // translation dropdowns, mirroring the front. Strings S-D1..S-D3 are signed (Brennen, 2026-09-21);
+  // flagged for Brennen; the pins here move with his sign-off.
+  const S_D1_START = 'Back line 1 exceeds';
+
+  /** Choose Manual placement for the back and fill its rows (the section must be enabled). */
+  async function fillBackManualLines(page: Page, lines: string[]) {
+    await page.locator('#back_placement_mode_manual').check();
+    await expect(page.locator('#back-dynamic-line-inputs')).toBeVisible();
+    for (let i = 0; i < lines.length; i++) {
+      await page.locator(`#back_line${i + 1}`).fill(lines[i]);
+    }
+  }
+
+  /** The value of the first master-table option that differs from the default. */
+  async function anotherLanguageTable(page: Page): Promise<string> {
+    const value = await page.evaluate(() => {
+      const master = document.getElementById('language-table') as HTMLSelectElement;
+      const other = Array.from(master.options).find((o) => o.value && o.value !== master.value);
+      return other?.value ?? null;
+    });
+    if (!value) throw new Error('no second language table to choose');
+    return value;
+  }
+
+  test('the back has its own placement toggle, Auto by default, and Manual reveals per-line rows', async ({
+    page,
+  }) => {
+    await openApp(page);
+    // Disabled with the section while single-sided, like every other back control.
+    await expect(page.locator('#back_placement_mode_auto')).toBeDisabled();
+    await chooseDoubleSided(page);
+    await expect(page.locator('#back_placement_mode_auto')).toBeEnabled();
+    await expect(page.locator('#back_placement_mode_auto')).toBeChecked();
+    await expect(page.locator('#back-auto-input-container')).toBeVisible();
+    await expect(page.locator('#back-dynamic-line-inputs')).toBeHidden();
+
+    await page.locator('#back_placement_mode_manual').check();
+    await expect(page.locator('#back-auto-input-container')).toBeHidden();
+    await expect(page.locator('#back-dynamic-line-inputs')).toBeVisible();
+    // One row per braille row, each with its own translation dropdown filled
+    // from the master list, and the front's choice untouched.
+    await expect(page.locator('#back-dynamic-line-inputs input[type="text"]')).toHaveCount(4);
+    await expect(page.locator('#back-dynamic-line-inputs select.line-language-select')).toHaveCount(4);
+    expect(await page.locator('#back_line_lang_1 option').count()).toBeGreaterThan(1);
+    await expect(page.locator('#placement_mode_auto')).toBeChecked();
+  });
+
+  test('manual back lines reach the wire translated per line with their own tables', async ({ page }) => {
+    await openApp(page);
+    await enableBeta(page, 'abc', '');
+    await fillBackManualLines(page, ['def', 'ghi']);
+    const other = await anotherLanguageTable(page);
+    await page.locator('#back_line_lang_2').selectOption(other);
+
+    const spec = await interceptGeometrySpec(page);
+    await generate(page, spec, 1);
+    const body = spec.bodies[0] as Record<string, unknown>;
+    const back = body.back_lines as string[];
+    const settings = body.settings as Record<string, unknown>;
+    const rows = Number(settings.grid_rows);
+
+    // One braille row per typed line, padded to grid_rows, nothing else.
+    expect(back).toHaveLength(rows);
+    expect(back[0]).toMatch(/^[⠀-⣿]+$/);
+    expect(back[1]).toMatch(/^[⠀-⣿]+$/);
+    expect(back.slice(2)).toEqual(Array(rows - 2).fill(''));
+
+    // The per-line tables travel beside the front's, one per row, the chosen
+    // table on row 2 and the master table elsewhere.
+    const tables = body.back_per_line_language_tables as string[];
+    expect(tables).toHaveLength(rows);
+    expect(tables[1]).toBe(other);
+    expect(tables[0]).toBe(await page.locator('#language-table').inputValue());
+    expect(body.per_line_language_tables).toHaveLength(rows);
+  });
+
+  test('Auto placement for the back sends no per-line tables, and the back field still wins', async ({ page }) => {
+    await openApp(page);
+    await enableBeta(page, 'abc', 'def');
+    const spec = await interceptGeometrySpec(page);
+    await generate(page, spec, 1);
+    expect('back_per_line_language_tables' in (spec.bodies[0] as Record<string, unknown>)).toBe(false);
+
+    // Manual rows typed, but hand-entered braille in the back field outranks them.
+    await fillBackManualLines(page, ['def']);
+    const handBraille = '⠭⠽⠵';
+    const field = page.locator('#back-braille-unicode');
+    for (let attempt = 0; attempt < 5; attempt++) {
+      await field.fill(handBraille);
+      if ((await field.inputValue()) === handBraille) break;
+    }
+    await expect(field).toHaveValue(handBraille);
+    await generate(page, spec, 2);
+    const body = spec.bodies[1] as Record<string, unknown>;
+    expect((body.back_lines as string[])[0]).toBe(handBraille);
+    expect('back_per_line_language_tables' in body).toBe(false);
+  });
+
+  test('an overflowing manual back line blocks generation and names the line', async ({ page }) => {
+    await openApp(page);
+    await enableBeta(page, 'abc', '');
+    await page.locator('#back_placement_mode_manual').check();
+    await expect(page.locator('#back-dynamic-line-inputs')).toBeVisible();
+
+    // The live warning names it first, in the signed per-line sentence. Filled
+    // with the same retry loop fillBackUntilOverflow() uses: the live check is
+    // a debounced liblouis call that is skipped while the worker is still
+    // starting, which Firefox under parallel load does hit.
+    const tooLong = 'this back line is far too long to fit on one braille row';
+    const warning = page.locator('#ds-back-overflow-warning');
+    let shown = false;
+    for (let attempt = 0; attempt < 12 && !shown; attempt++) {
+      await page.locator('#back_line1').fill('');
+      await page.locator('#back_line1').fill(tooLong);
+      shown = await expect(warning).toBeVisible({ timeout: 3000 }).then(() => true, () => false);
+    }
+    expect(shown).toBe(true);
+    await expect(page.locator('#ds-back-overflow-message')).toContainText('Back line 1');
+    await expect(page.locator('#ds-back-overflow-message')).toContainText('are available');
+
+    const spec = await interceptGeometrySpec(page);
+    await page.locator('#action-btn').click();
+    await expect(page.locator('#error-text')).toContainText(S_D1_START, { timeout: 15_000 });
+    expect(spec.bodies).toHaveLength(0);
+
+    // Shortening it clears the warning and lets the request through.
+    await page.locator('#back_line1').fill('def');
+    await expect(page.locator('#ds-back-overflow-warning')).toBeHidden();
+    await generate(page, spec, 1);
+    expect((spec.bodies[0] as Record<string, unknown>).back_lines).toBeTruthy();
+  });
+
+  test('the back placement choice survives a reload and Reset restores Auto', async ({ page }) => {
+    await openApp(page);
+    await chooseDoubleSided(page);
+    await page.locator('#back_placement_mode_manual').check();
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_back_placement_mode'))).toBe('manual');
+
+    await page.reload();
+    await page.waitForSelector('#indicator-mode-selection');
+    await expect(page.locator('#back_placement_mode_manual')).toBeChecked();
+    await expect(page.locator('#back-dynamic-line-inputs')).toBeVisible();
+
+    await page.locator('#reset-defaults-btn').click();
+    await expect(page.locator('#back_placement_mode_auto')).toBeChecked();
+    await expect(page.locator('#back-dynamic-line-inputs')).toBeHidden();
+  });
+
   test('the back-of-card overflow warning appears, clears, and goes with the toggle', async ({ page }) => {
     await openApp(page);
     await enableBeta(page, 'abc', 'def');
@@ -813,7 +954,7 @@ test.describe('Double-Sided Card beta', () => {
 
     // And turning the beta off takes it away even while it is showing.
     await fillBackUntilOverflow(page, tooLong);
-    await page.locator('#double_sided_enabled').uncheck();
+    await page.locator('#card_sides_single').check();
     await expect(warning).toBeHidden();
   });
 
@@ -833,7 +974,7 @@ test.describe('Double-Sided Card beta', () => {
     // are what let a screen-reader user jump between the sides with the H key.
     await expect(headings).toHaveText(['Front of Card', 'Back of Card']);
 
-    await page.locator('#double_sided_enabled').uncheck();
+    await page.locator('#card_sides_single').check();
     // The panel still holds the two-sided render, so "contains the front
     // braille" would pass on stale content. The headings vanishing is what
     // proves this press re-rendered with the beta off.
@@ -845,25 +986,22 @@ test.describe('Double-Sided Card beta', () => {
     await expect(headings).toHaveCount(0);
   });
 
-  test('the plate radios take the Cylinder A/B names only while the beta is on', async ({ page }) => {
+  test('the Cylinder A/B names are static whatever the card-sides choice', async ({ page }) => {
+    // Since 2026-09-21 every run is a pair unless one cylinder is chosen, so
+    // the signed A/B names (2026-08-17) are plain markup under Cylinders to
+    // Generate and no longer flip with the card-sides choice.
     await openApp(page);
+    const names = ['Cylinder A — Embossing Plate', 'Cylinder B — Universal Counter Plate'];
+    expect(await plateLabels(page)).toEqual(names);
 
-    const original = await plateLabels(page);
-    expect(original).toEqual(['Embossing Plate', 'Universal Counter Plate']);
+    await chooseDoubleSided(page);
+    expect(await plateLabels(page)).toEqual(names);
 
-    await openDoubleSidedMenu(page);
-    await page.locator('#double_sided_enabled').check();
-    expect(await plateLabels(page)).toEqual([
-      'Cylinder A — Embossing Plate',
-      'Cylinder B — Universal Counter Plate',
-    ]);
-
-    // Byte-identical on the way back: the training videos show these names.
-    await page.locator('#double_sided_enabled').uncheck();
-    expect(await plateLabels(page)).toEqual(original);
+    await page.locator('#card_sides_single').check();
+    expect(await plateLabels(page)).toEqual(names);
   });
 
-  test('Generate Both builds the pair, downloads nothing on its own, and restores the plate', async ({ page }) => {
+  test('Generate builds the pair, downloads nothing on its own, and restores the choice', async ({ page }) => {
     test.setTimeout(300_000);
     await openApp(page);
     const requests = watchGeometrySpecRequests(page);
@@ -871,9 +1009,9 @@ test.describe('Double-Sided Card beta', () => {
     page.on('download', (download) => unattendedDownloads.push(download.suggestedFilename()));
 
     await enableBeta(page, 'abc', 'def');
-    // A deliberate non-default choice, to prove the run puts it back.
-    await page.locator('input[name="plate_type"][value="negative"]').check();
 
+    // generateBoth() chooses 'both'; the run switches the choice to A then B
+    // on its way through and must put 'both' back (proved below).
     await generateBoth(page);
 
     // NOTHING may download by itself. Two programmatic downloads from a single
@@ -883,13 +1021,10 @@ test.describe('Double-Sided Card beta', () => {
     // ended in "Download blocked" with neither cylinder saved.
     expect(unattendedDownloads).toEqual([]);
 
-    // Each file comes from its own deliberate press. The combined file is
-    // the primary offer, so its button leads the row.
-    await expect(page.locator('#pair-downloads')).toBeVisible();
-    await expect(page.locator('#pair-downloads button').first()).toHaveId('download-pair-btn');
-    await expect(page.locator('#download-pair-btn')).toBeVisible();
-    expect(await pairDownloadName(page, 'a')).toBe('Cylinder_A_0.4_abc.stl');
-    expect(await pairDownloadName(page, 'b')).toBe('Cylinder_B_0.4_abc.stl');
+    // The ONE Download button offers the combined file (D-9); the per-cylinder
+    // files come from choosing that cylinder under Cylinders to Generate.
+    await expect(page.locator('#download-stl-btn')).toBeVisible();
+    expect(await downloadName(page)).toBe('Cylinder_Pair_0.4_abc.stl');
 
     // Identical settings contract: the two bodies differ ONLY in plate_type.
     // Both carry the same lines and back_lines, because Cylinder B needs the
@@ -904,22 +1039,22 @@ test.describe('Double-Sided Card beta', () => {
     };
     expect(withoutPlate(aBody)).toEqual(withoutPlate(bBody));
 
-    // The user's own plate selection survives the run.
-    await expect(page.locator('input[name="plate_type"][value="negative"]')).toBeChecked();
+    // The user's own choice survives the run.
+    expect(await selectedCylinders(page)).toBe('both');
   });
 
   test('the combined STL is one file holding both bodies, spaced apart', async ({ page }) => {
     test.setTimeout(300_000);
     await openApp(page);
     await enableBeta(page, 'abc', 'def');
-    await generateBoth(page);
+    const responses = watchGeometrySpec(page);
 
-    // Download through the real buttons and read the bytes: binary STL is an
+    // Download through the real button and read the bytes: binary STL is an
     // 80-byte header, a uint32 triangle count, then 50-byte records with the
     // three vertices at record offsets +12/+24/+36 (X first, little-endian).
-    const readStl = async (buttonId: string) => {
+    const readStl = async () => {
       const downloadPromise = page.waitForEvent('download');
-      await page.locator(`#${buttonId}`).click();
+      await page.locator('#download-stl-btn').click();
       const download = await downloadPromise;
       const buf = fs.readFileSync((await download.path())!);
       const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
@@ -938,10 +1073,18 @@ test.describe('Double-Sided Card beta', () => {
       return { name: download.suggestedFilename(), triangles, maxX, minX };
     };
 
-    const a = await readStl('download-cylinder-a-btn');
-    const b = await readStl('download-cylinder-b-btn');
-    const pair = await readStl('download-pair-btn');
+    // Each cylinder on its own (Cylinders to Generate), then the pair.
+    await selectCylinders(page, 'positive');
+    await generateFully(page, responses, 1);
+    const a = await readStl();
+    await selectCylinders(page, 'negative');
+    await generateFully(page, responses, 2);
+    const b = await readStl();
+    await generateBoth(page);
+    const pair = await readStl();
 
+    expect(a.name).toBe('Cylinder_A_0.4_abc.stl');
+    expect(b.name).toBe('Cylinder_B_0.4_abc.stl');
     // Name signed off by Brennen (2026-08-25); change only with his sign-off.
     expect(pair.name).toBe('Cylinder_Pair_0.4_abc.stl');
     // Pure concatenation: every triangle of A and of B, nothing else.
@@ -996,8 +1139,9 @@ test.describe('Double-Sided Card beta', () => {
       '#a11y-status must never be display:none',
     ).not.toBe('none');
 
-    await openDoubleSidedMenu(page);
-    await page.locator('#double_sided_enabled').check();
-    await expect(live).toContainText('Locked: Double-Sided Card is on');
+    await chooseDoubleSided(page);
+    // ONE composed announcement (S-M11 + the lock note), deferred by a tick.
+    await expect(live).toContainText('Double-sided card selected.');
+    await expect(live).toContainText('Locked: Double-sided is on');
   });
 });

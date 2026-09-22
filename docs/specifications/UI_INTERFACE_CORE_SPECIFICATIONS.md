@@ -2012,40 +2012,66 @@ Accessibility requirements:
 - Each button disables itself and shows "Translating…" while the worker runs, then restores
   its label in a `finally` block so a worker failure can never leave it stuck.
 
-### 4.8 Double-Sided Card Beta: Disclosure Checkbox and Locked Radio Option
+### 4.8 The Embosser Setup Menu Item: Three Either/Or Choices, a Disabled Section, and a Locked Radio Option
 
-The Double-Sided Card beta toggle (`#double_sided_enabled`) introduces two patterns —
-and since 2026-08-31 the whole item sits inside a third:
+**Rewritten 2026-09-20 (programme decisions D-7, D-8; phases C1–C2).** The three
+feature toggles that used to sit in three places — the Embosser version fieldset, the
+"Double-Sided Card (BETA — for testing)" accordion with its checkbox, and the
+"Integrated Gears (BETA — for testing)" checkbox fieldset — are ONE menu item at the top
+of the form, `#embosser-setup-selection`: a `.grade-selection` whose `<fieldset>` legend
+carries `<h2 class="legend-heading">Embosser setup</h2>` (S-M1 (signed 2026-09-21)) and holds three
+nested fieldsets, each with an `<h3 class="legend-heading">` legend, native radios in the
+stock `.radio-group` / `.radio-option` layout (44 px targets, arrow-key movement and the
+checked state all from the platform), and one `.grade-note` as the fieldset's
+`aria-describedby` (each inside the Step 6.8 ceiling):
 
-**Collapsible menu (2026-08-31).** The entire Double-Sided item folds away behind
-`#double-sided-menu-toggle`, an APG accordion header button that is the sole child of a
-real `<h2 class="expert-submenu-heading">` and reuses the `.expert-submenu-*` classes,
-so `initExpertSubmenus()` wires it with the same aria-expanded / `.active` / chevron /
-focus-on-open behaviour as the Expert Mode accordions. The fieldset inside keeps the
-signed heading text as an **sr-only legend**, so the checkbox's group name is unchanged.
-`setDoubleSidedMenuOpen()` (no focus, no announcement) keeps one invariant: **the beta
-being on forces the menu open** — a revealed Back of Card section never sits inside a
-closed menu, including after a reload with the beta persisted. Reset closes it; turning
-the beta off leaves it open, since the user is still looking at the toggle.
+| Choice | Fieldset id | Radios (`name`) | Default | Read by |
+|---|---|---|---|---|
+| Embosser version | `embosser-version-selection` | `embosser_version_1` / `embosser_version_2` (`embosser_version`) | Version 1 | `isVersion2()` |
+| Gears | `gear-rollers-selection` | `gear_mode_standard` / `gear_mode_fixed` (`gear_mode`) | Standard | `isGearRollersOn()` |
+| Card sides | `card-sides-selection` | `card_sides_single` / `card_sides_double` (`card_sides`) | Single-sided | `isDoubleSidedOn()` |
 
-**Disclosure checkbox.** The toggle is a real `<input type="checkbox">` (not a button):
-checking it changes what generation produces, so its on/off state is the semantic, and it
-additionally discloses the Back of Card section. It carries `aria-expanded` (mirrored to
-the checkbox state by `updateDoubleSidedUI()`) and `aria-controls="double-sided-section"`;
-ARIA 1.2 permits `aria-expanded` on the checkbox role and the W3C Nu validator accepts it.
-The wrapping label uses `.ds-toggle-option` for an explicit 44 px minimum hit target. While
-on, the front entry legend `#front-entry-legend` is relabeled "Front of Card — …" and
-restored verbatim when off, so the toggle-off page is exactly today's page.
+A closing `.btn-link` "Which setup should I choose?" (S-M8 (signed 2026-09-21)) opens the help modal on
+the new **Embosser Setup** tab (`#tab-setup` / `#helpPanelSetup`, S-M9 (signed 2026-09-21)). No BETA or
+"(prototype)" text remains on the page; the Version 2 prototype notice is gone. Each radio
+group's change listener persists under the SAME localStorage key the old control used,
+resets the generate state, refreshes the live warnings, and makes ONE announcement
+deferred by a tick (so the radio's own "selected" is heard first, and so the form-wide
+refresh that bubbles behind the listener cannot overwrite it): S-M10 (signed 2026-09-21) for gears
+(composed with the S3/S7 notes `updateGearRollersUI()` returns), S-M11 (signed 2026-09-21) for the card
+sides (composed with the lock note when turning double-sided on), the signed S-V10 for
+the version (composed, since 2026-09-21, with the S3/S7/S-G1 notes the gear refresh
+returns — the temporary Version 2 gear guard and its S-M13 sentence are retired now that
+fixed gears work in Version 2). Reset
+restores the defaults through the radio groups' `defaultChecked` sweep.
 
-**Locked radio option.** While the beta is on, the Row Indicator Style is forced to
+**Disabled section, not a disclosure.** The Back of Card fieldset (`#back-entry-fieldset`,
+inside `#double-sided-section`, a `.line-input-group` sibling directly after the front
+entry) is always in the tree and carries the native `disabled` attribute while the card is
+single-sided; `updateDoubleSidedUI()` sets `disabled = !isDoubleSidedOn()`. Native
+`disabled` on a fieldset makes every control inside inert, drops them from the tab order
+and announces them as unavailable, with no ARIA to keep in step; the controls dim through
+`#back-entry-fieldset:disabled > :not(legend) { opacity: 0.6 }` (the locked-radio
+convention below) while the legend — the section's permanent `<h2>` — stays readable. The
+old `aria-expanded` / `aria-controls` on a checkbox, the sr-only legend, the accordion and
+`setDoubleSidedMenuOpen()` are retired. While double-sided, the front entry heading
+`#front-entry-heading` is relabeled "Front of Card — …" and restored verbatim when
+single-sided, exactly as before. (Playwright's `toBeDisabled()` does not recognise the
+attribute on the `<fieldset>` element itself; the specs assert
+`toHaveAttribute('disabled', '')` on it and `toBeDisabled()` on `#back-text`.)
+
+**Locked radio option.** While double-sided, the Row Indicator Style is forced to
 "Tactile seam arrow" (the backend hard-rejects double-sided requests with any other style).
 The "Visual markers" radio gets the native `disabled` attribute — announced by screen
 readers, skipped by arrow-key navigation, and exempt from contrast minimums (WCAG SC 1.4.3)
 — while staying visible, dimmed via `opacity` so every theme keeps its own token colors. A
 visible explanation (`#indicator-mode-lock-note`, `role="status"` `aria-live="polite"`) appears
 next to the group, and `updateDoubleSidedUI()` appends its id to the disabled radio's
-`aria-describedby` so the reason travels with the option; both are removed when the beta
-turns off. Native `disabled` was chosen over `aria-disabled` because the repository's
+`aria-describedby` so the reason travels with the option; both are removed when
+Single-sided is chosen again. Since 2026-09-20 the note's text is S-M12 (signed 2026-09-21) ("Locked:
+Double-sided is on, … Choose Single-sided to pick visual markers.") and it is no longer
+announced on its own: the card-sides change listener reads it into its one composed
+announcement. Native `disabled` was chosen over `aria-disabled` because the repository's
 existing convention for unavailable controls is the native attribute, and it needs no
 keyboard interception to keep the lock honest.
 
@@ -2082,6 +2108,10 @@ Measured after the change, all three themes:
 | `.pair-downloads button` | dark | 6.50:1 | 6.76:1 (border) |
 | `#action-btn`, `#generate-both-btn` | high contrast | 7.94:1 | 16.04:1 (border) |
 | `.pair-downloads button` | high contrast | 15.18:1 | 12.58:1 (fill) |
+
+(`#generate-both-btn` and `.pair-downloads button` left the page on 2026-09-21 — one
+Generate, one Download, programme sub-plan E; their rows stay as the record of the
+measurement. `#action-btn`'s numbers still apply.)
 
 Because `box-sizing: border-box` is global, the added 2 px border does not grow any
 button; it was verified not to clip any label (`scrollWidth`/`scrollHeight` equal
@@ -2357,14 +2387,16 @@ the one method seven users in ten try first found nothing (audit finding F-A).
 | Level | Heading | Where it lives | Visible when |
 |-------|---------|----------------|--------------|
 | h1 | Custom Braille STL Generator | `.title-section` | always |
-| h2 | Embosser version | `#embosser-version-selection` legend (2026-08-31, moved from the header) | always |
+| h2 | Embosser setup | `#embosser-setup-selection` legend (2026-09-20, replaces the three items below it) | always |
+| h3 | Embosser version | nested `#embosser-version-selection` legend (2026-09-20; an h2 of its own from 2026-08-31 until then) | always |
+| h3 | Gears | nested `#gear-rollers-selection` legend (2026-09-20; was the h2 "Integrated Gears (BETA — for testing)" from 2026-08-24) | always |
+| h3 | Card sides | nested `#card-sides-selection` legend (2026-09-20; was the h2 accordion header "Double-Sided Card (BETA — for testing)") | always |
 | h2 | Enter Text for Braille Translation | `legend#front-entry-legend` | always |
-| h2 | Double-Sided Card (BETA — for testing) | accordion header button `#double-sided-menu-toggle` (2026-08-31) | always |
-| h2 | Integrated Gears (BETA — for testing) | gears beta fieldset (2026-08-24; missing from this table until 2026-08-31) | always |
+| h2 | Back of Card — Enter Text for Braille Translation | `#back-entry-heading` in the `#back-entry-fieldset` legend (2026-09-20; always in the tree, its controls disabled while single-sided) | always |
 | h2 | Row Indicator Style | `#indicator-mode-selection` | always |
 | h2 | Card Thickness | thickness fieldset | always |
-| h2 | Select Plate to Generate | plate-type fieldset | always |
 | h2 | Braille Translation Preview: | `#braille-preview` | Expert Mode open **and** Preview pressed |
+| h3 | Cylinders to Generate | `#cylinders-to-generate-submenu` (2026-09-21, the FIRST Expert submenu; replaces the main-form "Select Plate to Generate" h2 — programme sub-plan E) | Expert Mode open |
 | h3 | Shape Selection | `.expert-submenu` | Expert Mode open |
 | h3 | Braille Spacing | `.expert-submenu` | Expert Mode open |
 | h3 | Braille Dot Adjustments | `.expert-submenu` | Expert Mode open |
@@ -2380,7 +2412,15 @@ reveals the sixth accordion); the Integrated Gears h2 then joined on 2026-08-24 
 this section being re-measured, and the Embosser version h2 joined on 2026-08-31.
 Re-measured 2026-08-31 (`build/a11yverify/ui_pass_2026_08_31/headings.cjs`): **8 on
 load, 13 with Expert Mode open, 14 with the double-sided beta on as well.** **No level
-is skipped in any of the three states.**
+is skipped in any of the three states.** On 2026-09-20 the three feature items became
+one "Embosser setup" h2 with three always-visible h3s and the Back of Card h2 became
+permanent. Re-measured at the phase C5 accessibility pass
+(`build/a11yverify/setup_menu/probe.cjs`, Chromium, 2026-09-20): **10 on load, 15 with
+Expert Mode open, 16 with Double-sided chosen; no level skipped in any state** (the h3s
+sit under their own h2). Re-measured at the sub-plan E quick path
+(`build/a11yverify/e_footer/probe.cjs`, Chromium, 2026-09-21), after the "Select Plate to
+Generate" h2 left the main form and the "Cylinders to Generate" h3 joined Expert Mode:
+**9 on load, 15 with Expert Mode open; no level skipped.**
 
 #### Level choice
 
@@ -2688,6 +2728,14 @@ body::-webkit-scrollbar-thumb {
 ### 6.1 Action Button States
 
 The main action button has two states: **Generate** and **Download**.
+
+**Since 2026-09-21 (programme sub-plan E, decisions D-8/D-9) Generate STL builds BOTH
+cylinders by default** and the separate Download STL button saves the combined pair file;
+which cylinders to build is the first Expert Mode submenu, **Cylinders to Generate**
+(`plate_selection` = `both` | `positive` | `negative`). The Generate Both button, the
+three pair download buttons and the plate-radio relabel of 2026-08-17..2026-09-20 are
+gone. Mechanics, strings and the state-machine interaction:
+STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md §8 and §15.
 
 ```javascript
 // Generate state (blue, prompts user to create STL)
@@ -3203,6 +3251,8 @@ Low vision users benefit from enhanced depth perception:
 | 1.0 | 2024-12-06 | Initial specification document |
 | 1.1 | 2024-12-06 | Cross-check verification completed; corrected skip link href from `#main-form` to `#main-content`; updated appendices to match actual implementation |
 | 1.2 | 2024-12-06 | Added CAMERA_SETTINGS global configuration documentation in Section 3.4; expanded camera controls section with detailed instructions for adjusting initial view positions for cards and cylinders |
+| 1.27 | 2026-09-21 | **One Generate, one Download, "Cylinders to Generate" (programme sub-plan E; phases E1–E4).** §4.11 outline: the "Select Plate to Generate" h2 leaves the main form and a "Cylinders to Generate" h3 becomes the first Expert submenu (re-measured 9 / 15, no level skipped); §6.1 records the both-by-default rule and points at STL_EXPORT §8/§15 for the footer. Strings S-E1..S-E7 signed 2026-09-21. |
+| 1.26 | 2026-09-20 | **The Embosser setup menu item (programme decisions D-7, D-8; phases C1–C4).** §4.8 rewritten: the Embosser version fieldset, the Double-Sided Card (BETA) accordion + checkbox and the Integrated Gears (BETA) checkbox are ONE item `#embosser-setup-selection` (h2 "Embosser setup", S-M1 (signed 2026-09-21)) holding three nested h3 fieldsets with native radios — version (`embosser_version_1/2`), gears (`gear_mode_standard/fixed`), card sides (`card_sides_single/double`) — each described within the Step 6.8 ceiling, a "Which setup should I choose?" link opening the new Embosser Setup help tab, one composed deferred announcement per change, the same persistence keys as before. The Back of Card fieldset is always in the tree and native-`disabled` while single-sided (no disclosure ARIA). §4.11 outline: h2 Embosser setup + three h3s, permanent Back of Card h2; computed counts 10/15/16 to be re-measured at phase C5. No BETA or prototype text remains. All new strings are DRAFT pending Brennen's sign-off. |
 | 1.3 | 2025-12-08 | Added Section 3.7 (STL Preview Label) to clarify the preview panel's purpose; Added Section 3.8 (Preview Display Settings) documenting new brightness and contrast radio button controls for 3D preview customization |
 | 1.4 | 2025-12-08 | Fixed Expert Toggle button active state contrast ratio: Changed background from `var(--border-focus)` to darker blues (`#1e4976` for light mode, `#1e5a8a` for dark mode) to meet WCAG AA 4.5:1 contrast requirement with white text |
 | 1.5 | 2025-12-08 | **UI Enhancement:** (1) Moved STL Preview Label to top of preview panel as overlay with z-index for visibility; (2) Changed Brightness and Contrast controls from radio buttons to click-through toggle buttons (like Theme toggle) that cycle through levels 1→2→3→4→5→1 on each click |

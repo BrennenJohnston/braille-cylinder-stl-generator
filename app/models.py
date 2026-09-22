@@ -108,6 +108,13 @@ class GenerateBrailleRequest:
     # Optional metadata
     original_lines: list[str] | None = None
     per_line_language_tables: list[str] | None = None
+    # Double-sided: the back face's braille (top-level back_lines on the wire,
+    # text.back_lines in settings.schema.json) and, when the back was placed
+    # manually (2026-09-21, programme sub-plan D), the liblouis table used for
+    # each back row - the mirror of per_line_language_tables
+    # (text.back_languages). Informational: geometry never reads the tables.
+    back_lines: list[str] | None = None
+    back_per_line_language_tables: list[str] | None = None
 
     @staticmethod
     def from_request_data(data: dict) -> 'GenerateBrailleRequest':
@@ -145,6 +152,8 @@ class GenerateBrailleRequest:
             cylinder_params=data.get('cylinder_params'),
             original_lines=data.get('original_lines'),
             per_line_language_tables=data.get('per_line_language_tables'),
+            back_lines=data.get('back_lines'),
+            back_per_line_language_tables=data.get('back_per_line_language_tables'),
         )
 
 
@@ -268,6 +277,12 @@ class CardSettings:
             # The gear geometry itself has no dials: it is vendored 1:1 sample
             # data (static/assets/gears/), so there is nothing else to default.
             'gear_rollers_enabled': 0,
+            # Slicer seam channel. Flat runtime name for the settings.schema.json
+            # "seam_channel" object; 1 = on, the default since 2026-09-20, so an
+            # absent field means every cylinder gets the groove. Only the Expert
+            # Mode switch sends 0. The groove's size is not a dial - it lives in
+            # app/geometry_spec.py (SEAM_CHANNEL_*) because it is print-tuned.
+            'seam_channel_enabled': 1,
             # Embosser Version 2 (keyed gear pegs) PROTOTYPE. Flat runtime name
             # for the settings.schema.json "embosser_version" field; 1 = today's
             # hardware, which leaves every existing code path exactly as it is.
@@ -300,6 +315,15 @@ class CardSettings:
         indicator_mode = str(kwargs.get('indicator_mode') or 'visual').strip().lower()
         self.indicator_mode = indicator_mode if indicator_mode in ('visual', 'tactile') else 'visual'
 
+        # Tactile arrow layout, the same kind of string enum. 'per_row' is the
+        # one-arrow-per-row geometry every request got before 2026-09-20;
+        # 'three_spaced' is the 0.3 mm card-stock preset's three fixed arrows.
+        # Anything unrecognized falls back to per_row so a bad value can never
+        # silently change a pair's marking; app/validation.py rejects typos on
+        # the request route before this runs.
+        layout = str(kwargs.get('tactile_indicator_layout') or 'per_row').strip().lower()
+        self.tactile_indicator_layout = layout if layout in ('per_row', 'three_spaced') else 'per_row'
+
         # Ensure attributes that represent counts are integers
         self.grid_columns = int(self.grid_columns)
         self.grid_rows = int(self.grid_rows)
@@ -309,6 +333,8 @@ class CardSettings:
         self.double_sided_enabled = int(self.double_sided_enabled)
         # Gear beta toggle, normalized the same way and for the same reason.
         self.gear_rollers_enabled = int(self.gear_rollers_enabled)
+        # Seam channel toggle, the same way.
+        self.seam_channel_enabled = int(self.seam_channel_enabled)
         # Embosser hardware version. An enum, not a measurement, so it is cast
         # back to int after the loop above floats it; the clearance beside it
         # stays a float. Validation of the allowed values is app/validation.py's

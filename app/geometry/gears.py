@@ -60,6 +60,46 @@ DEFAULT_CYLINDER_HEIGHT_MM = 52.0
 # B's teeth are clocked to mesh with A's at the sample pose.
 GEAR_ASSET_BY_PLATE = {'positive': 'gears_a', 'negative': 'gears_b'}
 
+# Embosser Version 2 fixed gears (2026-09-20 programme, sub-plan B): the v8
+# Version 2 gear set, vendored as static/assets/gears/v2_gears_a.bin and
+# v2_gears_b.bin and regenerated only by scripts/derive_gear_assets_v2.py
+# (research folder 01_V2_GEAR_AUDIT.md). Same tooth count, tip radius and
+# 10 mm thickness as the Version 1 set; the 15 mm keyed pegs sit inside the
+# barrel and the gear bodies sit at |z| 27..37 around the 54 mm Version 2
+# barrel. Its reference size is read from app/geometry/version2.py, the one
+# place every Version 2 number lives - never retyped here.
+V2_GEAR_ASSET_BY_PLATE = {'positive': 'v2_gears_a', 'negative': 'v2_gears_b'}
+SUPPORTED_VERSIONS = (1, 2)
+
+
+def _require_version(version: int) -> int:
+    if version not in SUPPORTED_VERSIONS:
+        raise ValueError(f'unknown embosser version {version!r}; known: {SUPPORTED_VERSIONS}')
+    return version
+
+
+def gear_asset_for(plate_type: str, version: int = 1) -> str:
+    """The vendored gear set this plate carries for this embosser version."""
+    table = GEAR_ASSET_BY_PLATE if _require_version(version) == 1 else V2_GEAR_ASSET_BY_PLATE
+    if plate_type not in table:
+        raise ValueError(f'unknown plate type {plate_type!r}; known: {sorted(table)}')
+    return table[plate_type]
+
+
+def reference_barrel(version: int = 1) -> tuple[float, float]:
+    """
+    (diameter, height) the vendored gears of this version were measured against.
+
+    Version 2's size comes from app/geometry/version2.py, imported here rather
+    than at module level because that module imports _format_mm from this one.
+    """
+    if _require_version(version) == 1:
+        return GEAR_BARREL_DIAMETER_MM, GEAR_BARREL_HEIGHT_MM
+    from app.geometry import version2
+
+    return version2.V2_BARREL_DIAMETER_MM, version2.V2_BARREL_HEIGHT_MM
+
+
 # Hidden weld ring at each gear/barrel interface (audit section 5). The gear
 # meets the barrel on an exactly coincident face, which the project's
 # printability rules forbid and float32 STL rounding can turn into a pinch
@@ -95,11 +135,12 @@ def cylinder_dimensions(cylinder_params: dict) -> tuple[float, float]:
     return diameter, height
 
 
-def matches_reference_roller(diameter: float, height: float) -> bool:
-    """True when this cylinder is the one the vendored gears were measured against."""
+def matches_reference_roller(diameter: float, height: float, version: int = 1) -> bool:
+    """True when this cylinder is the one this version's vendored gears were measured against."""
+    want_diameter, want_height = reference_barrel(version)
     return (
-        abs(diameter - GEAR_BARREL_DIAMETER_MM) <= GEAR_BARREL_TOLERANCE_MM
-        and abs(height - GEAR_BARREL_HEIGHT_MM) <= GEAR_BARREL_TOLERANCE_MM
+        abs(diameter - want_diameter) <= GEAR_BARREL_TOLERANCE_MM
+        and abs(height - want_height) <= GEAR_BARREL_TOLERANCE_MM
     )
 
 
@@ -117,16 +158,23 @@ def _format_mm(value: float) -> str:
     return text if text else '0'
 
 
-def reference_roller_message(diameter: float, height: float) -> str:
+def reference_roller_message(diameter: float, height: float, version: int = 1) -> str:
     """
-    The S7 sentence, signed off by Brennen 2026-08-24 - reword only with his
-    sign-off. Used as the request-level rejection and, for direct callers that
-    bypass validation, as the spec warning.
+    Version 1: the S7 sentence, signed off by Brennen 2026-08-24 - reword only
+    with his sign-off. Version 2: S-G1, signed off by Brennen on 2026-09-21 (2026-09-20
+    programme, phase B2); reword only with his sign-off. Used as the request-level rejection and, for direct
+    callers that bypass validation, as the spec warning.
     """
+    want_diameter, want_height = reference_barrel(version)
+    received = f'Received {_format_mm(diameter)} mm x {_format_mm(height)} mm.'
+    if version == 1:
+        return (
+            f'Integrated gears are matched to the reference roller and only fit a '
+            f'{_format_mm(want_diameter)} mm x {_format_mm(want_height)} mm cylinder. {received}'
+        )
     return (
-        f'Integrated gears are matched to the reference roller and only fit a '
-        f'{_format_mm(GEAR_BARREL_DIAMETER_MM)} mm x {_format_mm(GEAR_BARREL_HEIGHT_MM)} mm cylinder. '
-        f'Received {_format_mm(diameter)} mm x {_format_mm(height)} mm.'
+        f'Fixed gears for the Version 2 embosser fit only a '
+        f'{_format_mm(want_diameter)} mm x {_format_mm(want_height)} mm cylinder. {received}'
     )
 
 

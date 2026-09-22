@@ -15,7 +15,7 @@ Two halves, and the second matters as much as the first:
 These need no mesh library - they read the dict the worker will act on.
 
 The Version 2 sentences quoted here are DRAFT: Brennen deferred the strings to
-their phase gates on 2026-08-28. FLAGGED FOR BRENNEN.
+their phase gates on 2026-08-28.
 """
 
 import copy
@@ -57,6 +57,12 @@ VERSION_ONE_VALUES = [
 
 # S-V14, new in this phase, and S-V5. Both DRAFT.
 CUTOUT_WARNING = 'The polygonal cutout is not used in Version 2.'
+
+# S-T1 (signed off by Brennen, 2026-09-21): a 14-cell tactile row does not fit a 90 mm card,
+# and every 14-column layout in this module says so. The card-fit check
+# (D-T3, D-T4; the arrow sits at the gap midpoint, D-T6) put the sentence
+# here; 13 cells is the tactile maximum.
+CARD_FIT_WARNING = 'The last braille cell would run off the card: this layout needs 92.9 mm of card from the alignment arrow and the card is 90 mm. Use 13 cells or fewer.'
 SIZE_WARNING_START = 'The Version 2 embosser expects a 30.8 mm x 54 mm cylinder.'
 
 
@@ -121,6 +127,79 @@ def test_version_one_carries_no_new_keys(off):
     spec = build_spec(settings=off)
     assert 'keyed_cutouts' not in spec
     assert 'solid' not in spec['cylinder']
+
+
+# --- fused Version 2: fixed gears (2026-09-20 programme, sub-plan B, phase B3) ---
+
+
+def fused_spec(plate_type='positive', cylinder=None, settings=None):
+    return v2_spec(plate_type, cylinder=cylinder, settings={'gear_rollers_enabled': 1, **(settings or {})})
+
+
+@pytest.mark.parametrize('plate_type, asset', [('positive', 'v2_gears_a'), ('negative', 'v2_gears_b')])
+def test_fused_version_two_is_a_solid_barrel_with_its_own_gears_and_a_notch_fill(plate_type, asset):
+    """
+    Decision D-6: with fixed gears the Version 2 barrel is solid and carries NO
+    keyed holes, countersinks, nub or socket; the gears come from the v8 asset
+    pair, weld on at +/- height/2, and the top gear's notch is filled.
+    """
+    spec = fused_spec(plate_type)
+    assert spec['cylinder']['solid'] is True
+    assert spec['cylinder']['polygon_points'] == []
+    assert 'keyed_cutouts' not in spec
+    assert spec['warnings'] == [CARD_FIT_WARNING]
+    gears = spec['gears']
+    assert gears['asset'] == asset
+    assert [ring['z_center'] for ring in gears['weld_rings']] == [-27.0, 27.0]
+    (fill,) = gears['notch_fills']
+    assert fill['gear'] == ('A1' if plate_type == 'positive' else 'B1')
+    assert fill['z_from'] == pytest.approx(27.0 - version2.V2_NOTCH_FILL_OVERLAP_MM)
+    assert fill['z_to'] == pytest.approx(27.0 + 3.15 + version2.V2_NOTCH_FILL_OVERLAP_MM)
+    assert all(set(point) == {'x', 'y'} for point in fill['profile'])
+
+
+def test_version_two_without_gears_is_byte_identical_to_before():
+    """Fixed gears off: the keyed spec of 2026-09-20, key for key, and no gears block."""
+    for plate_type in ('positive', 'negative'):
+        plain = v2_spec(plate_type)
+        explicit_off = v2_spec(plate_type, settings={'gear_rollers_enabled': 0})
+        assert plain == explicit_off
+        assert 'gears' not in plain
+        assert 'keyed_cutouts' in plain
+
+
+def test_version_one_gear_mode_carries_no_notch_fill_and_the_version_one_asset():
+    """The Version 1 one-piece roller is untouched by the fused Version 2 work."""
+    settings = {'grid_columns': 14, 'indicator_mode': 'tactile', 'gear_rollers_enabled': 1}
+    cylinder = {'diameter': 30.8, 'height': 52.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0}
+    spec = build_spec('positive', settings, cylinder)
+    assert spec['gears']['asset'] == 'gears_a'
+    assert 'notch_fills' not in spec['gears']
+    assert 'solid' not in spec['cylinder']
+    assert spec['warnings'] == [CARD_FIT_WARNING]
+
+
+def test_fused_version_two_at_the_version_one_height_warns_with_the_version_two_sentence():
+    """
+    Direct callers bypass validation: a fused Version 2 spec on the 52 mm
+    Version 1 barrel carries the S-G1 warning (signed 2026-09-21), and a Version 1 gear spec
+    on the 54 mm barrel carries S7 - each version answers for its own gears.
+    """
+    fused = fused_spec(cylinder={**V2_CYLINDER, 'height': 52.0})
+    # Two notes, each its own: the gears' S-G1 and the barrel's soft S-V5.
+    assert fused['warnings'] == [
+        'Fixed gears for the Version 2 embosser fit only a 30.8 mm x 54 mm cylinder. Received 30.8 mm x 52 mm.',
+        'The Version 2 embosser expects a 30.8 mm x 54 mm cylinder. Received 30.8 mm x 52 mm.',
+        CARD_FIT_WARNING,
+    ]
+    assert not any('reference roller' in warning for warning in fused['warnings'])
+    settings = {'grid_columns': 14, 'indicator_mode': 'tactile', 'gear_rollers_enabled': 1}
+    tall = build_spec('positive', settings, {**V2_CYLINDER, 'height': 54.0})
+    assert tall['warnings'] == [
+        'Integrated gears are matched to the reference roller and only fit a 30.8 mm x 52 mm cylinder. '
+        'Received 30.8 mm x 54 mm.',
+        CARD_FIT_WARNING,
+    ]
 
 
 # --- what Version 2 emits ---------------------------------------------------
@@ -194,7 +273,8 @@ def test_the_clearance_flows_into_the_profiles(clearance):
 
 
 def test_the_preset_size_warns_about_nothing():
-    assert v2_spec()['warnings'] == []
+    """Nothing about the SIZE: the one warning is the 14-cell card fit."""
+    assert v2_spec()['warnings'] == [CARD_FIT_WARNING]
 
 
 def test_an_off_size_cylinder_warns_but_is_still_built():

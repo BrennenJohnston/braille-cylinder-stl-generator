@@ -12,8 +12,8 @@ Two things are proved here, and the second matters as much as the first:
 
 The isolation half is the gear beta's proof pattern re-run for Version 2.
 
-Every user-facing sentence quoted below is DRAFT. Brennen deferred the Version
-2 strings to their phase gates on 2026-08-28, so these are FLAGGED FOR BRENNEN
+Every user-facing sentence quoted below is signed 2026-09-21. Brennen deferred the Version
+2 strings to their phase gates on 2026-08-28, so these are
 and not yet signed.
 """
 
@@ -29,9 +29,13 @@ from app.validation import ValidationError, validate_embosser_version_settings
 FIXTURES_DIR = Path(__file__).parent / 'fixtures'
 PRE_BETA_FIXTURES = ['card_positive_small', 'card_counter_small', 'cylinder_positive_small', 'cylinder_counter_small']
 
-# S-V6 and S-V7, DRAFT. The route must quote whichever wording is signed.
+# S-V6, signed 2026-08-28. S-V7 ("Integrated gears are not available in
+# Version 2.") was RETIRED on 2026-09-21: Version 2 has its own fixed gears
+# (2026-09-20 programme, sub-plan B) and the gear gate answers per version.
 CYLINDER_ONLY_MESSAGE = 'Version 2 is only available for cylinders.'
-NO_GEARS_MESSAGE = 'Integrated gears are not available in Version 2.'
+RETIRED_NO_GEARS_MESSAGE = 'Integrated gears are not available in Version 2.'
+# S-G1, signed 2026-09-21 (phase B2).
+V2_GEAR_SIZE_MESSAGE_START = 'Fixed gears for the Version 2 embosser fit only a 30.8 mm x 54 mm cylinder.'
 
 # Values that all mean "the user did not ask for Version 2". CardSettings reads
 # None and '' as "use the default", so validation has to as well, or an empty
@@ -175,37 +179,52 @@ def test_an_in_range_clearance_is_accepted_by_the_route(client, clearance):
     assert post_spec(client, payload).status_code == 200
 
 
-def test_gears_with_version_two_name_the_real_conflict(client):
+def test_gears_with_version_two_are_accepted_at_the_version_two_barrel(client):
     """
-    Both betas on must report the incompatibility, not the cylinder size.
-
-    Since 2026-08-30 both presets are 30.8, so at the preset size the two gates
-    agree about the cylinder and the ordering does not show here. It still has
-    to hold - see the off-size case below, which is where it bites.
+    S-V7 retired (2026-09-21): fixed gears and Version 2 are one machine now.
+    At the Version 2 barrel (30.8 x 54, CYLINDER_PAYLOAD) the request is built,
+    and the old refusal sentence is gone from the route.
     """
     payload = with_settings(CYLINDER_PAYLOAD, embosser_version=2, gear_rollers_enabled=1)
     response = post_spec(client, payload)
-    assert response.status_code == 400
-    assert NO_GEARS_MESSAGE in response.get_json()['error']
+    assert response.status_code == 200, response.get_json()
+    assert RETIRED_NO_GEARS_MESSAGE not in response.get_data(as_text=True)
+    spec = response.get_json()
+    assert spec['gears']['asset'] == 'v2_gears_a'
+    assert 'keyed_cutouts' not in spec
 
 
-def test_gears_with_version_two_name_the_conflict_even_off_size(client):
+def test_gears_with_version_two_off_size_are_refused_with_the_version_two_sentence(client):
     """
-    The ordering proof, on a cylinder the gear gate really would reject.
-
-    Version 2's gate must answer first, or the user is sent off resizing a
-    cylinder when the real problem is that they asked for two different
-    machines at once. This used to be provable at the preset size, because the
-    two presets were 30.5 and 30.8; they agree now, so the case has to be built
-    rather than assumed.
+    The size gate answers per version: an off-size Version 2 cylinder with
+    fixed gears is refused with S-G1 (the 54 mm barrel), never with the Version
+    1 sentence about the 52 mm reference roller.
     """
     payload = copy.deepcopy(CYLINDER_PAYLOAD)
     payload['cylinder_params']['diameter'] = 30.5
     response = post_spec(client, with_settings(payload, embosser_version=2, gear_rollers_enabled=1))
     assert response.status_code == 400
     error = response.get_json()['error']
-    assert NO_GEARS_MESSAGE in error
-    assert 'reference roller' not in error, 'the gear size gate answered first'
+    assert error.startswith(V2_GEAR_SIZE_MESSAGE_START)
+    assert 'Received 30.5 mm x 54 mm.' in error
+    assert 'reference roller' not in error
+    assert RETIRED_NO_GEARS_MESSAGE not in error
+
+
+def test_a_version_one_height_is_off_size_for_version_two_gears(client):
+    """52 mm is the Version 1 gear barrel; with Version 2 gears it is refused, and vice versa."""
+    payload = copy.deepcopy(CYLINDER_PAYLOAD)
+    payload['cylinder_params']['height'] = 52.0
+    response = post_spec(client, with_settings(payload, embosser_version=2, gear_rollers_enabled=1))
+    assert response.status_code == 400
+    assert 'Received 30.8 mm x 52 mm.' in response.get_json()['error']
+
+    payload['cylinder_params']['height'] = 54.0
+    response = post_spec(client, with_settings(payload, embosser_version=1, gear_rollers_enabled=1))
+    assert response.status_code == 400
+    error = response.get_json()['error']
+    assert 'Integrated gears are matched to the reference roller' in error
+    assert 'Received 30.8 mm x 54 mm.' in error
 
 
 def test_gears_without_version_two_still_answer_for_themselves(client):

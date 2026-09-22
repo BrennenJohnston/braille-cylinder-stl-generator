@@ -73,10 +73,10 @@ Each row holds a fixed number of braille cells in this app:
 
 - **13 text cells per row** by default (2 additional cells are reserved for the indicator letter and the triangle alignment indicator, for 15 columns in total)
 - **13 text cells per row** when Indicator Letters is turned off (the alignment triangle is always included, for 14 columns in total)
-- **14 text cells per row** in Tactile indicator mode (no marker cells; the arrow sits in the seam gap)
+- **13 text cells per row** in Tactile indicator mode (no marker cells; the arrow sits at the middle of the seam gap, and 13 is what a 90 mm card holds measured from it)
 - Cells are spaced 6.5mm center-to-center
 
-The cylinder's circumference determines whether that layout fits physically. What matters is the seam gap the columns leave — the arc between the last cell of a row and the first, measured the long way round. On the default 30.75mm-diameter cylinder (~96.6mm circumference) that gap is 5.6mm at 15 columns and 12.1mm at 14. Visual mode needs the gap to clear one cell's dot footprint (4.5mm at the default dot sizes) so the last cell cannot touch the first; Tactile mode needs room for the arrow plus a 5mm clear zone, which is why 14 columns is its ceiling. A larger diameter adds margin around the seam rather than more cells per row. The app warns live when the dialed columns no longer leave enough gap.
+The cylinder's circumference determines whether that layout fits physically. What matters is the seam gap the columns leave — the arc between the last cell of a row and the first, measured the long way round. On the default 30.75mm-diameter cylinder (~96.6mm circumference) that gap is 5.6mm at 15 columns and 12.1mm at 14. Visual mode needs the gap to clear one cell's dot footprint (4.5mm at the default dot sizes) so the last cell cannot touch the first; Tactile mode needs room for the arrow plus a 5mm clear zone, so 14 columns still fit the cylinder — but the card is the tighter limit: it is loaded with its leading edge at the alignment arrow, which sits at the middle of the seam gap, and 14 cells need about 93mm of a 90mm card, so the last cell would run off the end. That is why Tactile recommends 13, and the app warns when a layout would run off the card. A larger diameter adds margin around the seam rather than more cells per row. The app warns live when the dialed columns no longer leave enough gap.
 
 **Phone number tip:** a 10-digit phone number formatted per BANA guidance (`206.616.7678`) translates to exactly 13 cells — one number sign, ten digits, two periods. UEB keeps numeric mode across the periods, so only one number sign is needed. That is why every mode's default row holds at least 13 cells, so the number fits on one line. A hyphenated number needs three number signs and runs to 15 cells, which does not fit — split it after a period and start the next row with the remaining digits; the translator adds a new number sign (`⠼`) automatically (e.g., `⠼⠃⠚⠋⠲⠋⠁⠋⠲` then `⠼⠛⠋⠛⠓`).
 
@@ -121,6 +121,14 @@ Cylinders have a "seam" — a gap where the cylinder opens. The seam offset rota
 - Rotate the seam to the back
 - If text wraps around completely, place seam between words
 
+### Slicer Seam (the layer seam)
+
+Every cylinder carries a shallow **seam channel**: a groove 1 mm wide and 0.5 mm deep running the full height of the outside, in the gap beside the row markers, on both cylinders. Your slicer's default seam mode ("Aligned" in Bambu Studio and PrusaSlicer) hides each layer's seam in that groove instead of in a braille dot, so **no seam painting is needed**.
+
+- Leave the seam mode on **Aligned**. If your saved profile says **Back** or **Rear**, switch it to Aligned once: those modes put the seam at the rear-most point of every layer, which on the embossing cylinder lands on a raised dot no matter how the part is turned.
+- The channel is on by default. To print a plain barrel instead, turn off **Slicer seam channel** under Expert Mode → Surface Dimensions.
+- If the app says the channel was left out (a very narrow seam gap, or a cutout that would leave less than 1.2 mm of wall under the groove), paint the seam over the row markers as before.
+
 ### Material Considerations
 
 - PLA works well for most applications
@@ -135,8 +143,10 @@ Cylinders have a "seam" — a gap where the cylinder opens. The seam offset rota
 2. Set **Placement Mode** to **Auto Placement**
 3. Click **Show Expert Mode**, then click **Preview Braille Translation**
 4. In **Surface Dimensions**, adjust diameter and height for your container
-5. Click **Generate STL**, review the 3D preview, then **Download STL**
-6. Switch to **Universal Counter Plate** and download again
+5. Click **Generate STL** — it builds both cylinders — and review the 3D preview
+6. Click **Download STL**: one file with both cylinders, spaced for one print plate.
+   For a single cylinder, choose it under **Cylinders to Generate** (the first Expert
+   Mode submenu) before you generate.
 
 ### Capitalized Letters Toggle
 
@@ -162,32 +172,36 @@ Access these by clicking **Show Expert Mode**:
 
 | Submenu | Key Settings |
 |---------|--------------|
+| Cylinders to Generate | Both cylinders (the default), or Cylinder A or Cylinder B on its own |
 | Shape Selection | Output shape (cylinder), dot shape (cone/rounded) |
 | Braille Spacing | Cells per row, number of rows, spacing |
 | Surface Dimensions | Diameter, height, wall thickness, polygon sides |
 
-## Double-Sided Cards (BETA)
+## Double-Sided Cards
 
-Normally the app makes one cylinder that embosses braille on one face of a card. With the
-**Double-Sided Card** beta turned on it makes a matched **pair** of cylinders instead, and a
-card run between them comes out with braille on **both** faces in a single pass.
+Normally the app makes one cylinder that embosses braille on one face of a card. With
+**Double-sided** chosen it makes a matched **pair** of cylinders instead, and a card run
+between them comes out with braille on **both** faces in a single pass.
 
-This is a beta. It has been printed and used — see [Is it ready to
-use?](#is-it-ready-to-use) below — but proofread both sides and feel every braille surface
-before you give a card to anyone.
+It has been printed and used — see [Is it ready to use?](#is-it-ready-to-use) below — but
+as with any braille, proofread both sides and feel every braille surface before you give a
+card to anyone.
 
 Double-sided works for cylinders only. It is not available for flat cards.
 
 ### Steps
 
-1. **Turn on the toggle.** Under the text box, tick **Double-Sided Card (BETA — for
-   testing)**. Two things happen straight away: a **Back of Card** section appears below,
-   and the **Row Indicator Style** locks to the tactile seam arrow.
+1. **Choose Double-sided.** Under **Embosser setup** at the top of the page, in the
+   **Card sides** choice, pick **Double-sided** (the page starts on Single-sided). Two
+   things happen straight away: the **Back of Card** section below the front text becomes
+   active (it is always on the page, greyed out until now), and the **Row Indicator
+   Style** locks to the tactile seam arrow.
 
    The lock is deliberate. Visual row markers spend a braille cell per row on a printed
    letter, and on a pair each cylinder would need its own markers on a surface the other
    cylinder is pressing against. The tactile seam arrow sits in the seam gap instead, where
-   both cylinders of a pair can carry it. To choose visual markers again, turn the beta off.
+   both cylinders of a pair can carry it. To choose visual markers again, pick
+   Single-sided.
 
 2. **Type the front text** as you normally would, in the main text box.
 
@@ -195,8 +209,8 @@ Double-sided works for cylinders only. It is not available for flat cards.
    language and grade as the front, and it wraps across the rows for you, keeping whole
    words together. Press Enter only where you want to force the start of a new row.
 
-   The back holds exactly as much as the front: 14 cells per row and 4 rows in tactile mode,
-   so 56 cells a side and 112 for the card. Turning the beta on does not shrink either side.
+   The back holds exactly as much as the front: 13 cells per row and 4 rows in tactile mode,
+   so 52 cells a side and 104 for the card. Turning the beta on does not shrink either side.
    If the back text runs past that, a warning appears under the box while you type and tells
    you how much is over.
 
@@ -204,16 +218,18 @@ Double-sided works for cylinders only. It is not available for flat cards.
    headings, **Front of Card** and **Back of Card**, with the braille for each. Read both
    before you generate anything.
 
-5. **Press Generate Both Cylinders (A and B).** One press builds the whole pair from the
-   settings you have dialled in — you do not switch plates and generate twice. A status line
-   reports progress as each cylinder is built.
+5. **Press Generate STL.** One press builds the whole pair from the settings you have
+   dialled in — you do not switch plates and generate twice. A status line reports progress
+   as each cylinder is built.
 
-6. **Save each file with its own button.** When the pair is ready, two buttons appear:
-   **Download Cylinder A** and **Download Cylinder B**. Press each one in turn.
+6. **Press Download STL.** It saves one file with both cylinders, spaced for one print
+   plate (`Cylinder_Pair_*.stl`). To save a cylinder on its own, choose it under
+   **Cylinders to Generate** in Expert Mode and generate again.
 
    **Nothing downloads on its own.** Two automatic downloads from one press made Chrome
    raise a "wants to download multiple files" prompt that names no file and is very hard to
-   get out of with a screen reader — so each cylinder now waits for you to ask for it.
+   get out of with a screen reader — so every file waits for you to ask for it, one press
+   each.
 
 7. **Print both cylinders**, the same way you would print a single one: standing upright,
    in the same material.
@@ -228,8 +244,9 @@ Both files are named from your **front** text.
 
 | File | What it is | What it carries |
 |------|-----------|-----------------|
-| `Cylinder_A_*.stl` | The embossing plate | The **front's** raised dots, plus one recess for every dot on the back, plus raised seam arrows |
-| `Cylinder_B_*.stl` | The counter plate | The **back's** raised dots, plus one recess for every dot on the front, plus recessed seam arrows |
+| `Cylinder_Pair_*.stl` | Both cylinders in one file (what Download STL saves by default) | Cylinder A and Cylinder B side by side, 10 mm apart, ready for one print plate |
+| `Cylinder_A_*.stl` | The embossing plate (choose Cylinder A under Cylinders to Generate) | The **front's** raised dots, plus one recess for every dot on the back, plus raised seam arrows |
+| `Cylinder_B_*.stl` | The counter plate (choose Cylinder B) | The **back's** raised dots, plus one recess for every dot on the front, plus recessed seam arrows |
 
 Every recess on one cylinder is paired one-to-one with a real dot on the other. Single-sided
 counter plates carry a recess at every possible dot position; a double-sided counter plate
@@ -261,8 +278,8 @@ were printed on a Bambu Lab X1C with a 0.4 mm nozzle and used to emboss real car
 braille came out legible on both faces. That is why the sizes above are final and have no
 tuning dials.
 
-It keeps the BETA label because it has been proven by one builder, on one printer, with one
-paper stock — not because anything is known to be wrong with it.
+It carried a BETA label until September 2026 because it had been proven by one builder, on
+one printer, with one paper stock — not because anything was known to be wrong with it.
 
 One thing the app cannot do for you: **the two cylinders must stay within about 1.0 degree
 of each other as they turn.** Further out of phase than that and a front dot can meet the
@@ -402,5 +419,5 @@ Braille translation powered by [liblouis](https://liblouis.io/).
 
 ---
 
-*Document Version: 1.2*
-*Last Updated: August 2026*
+*Document Version: 1.3*
+*Last Updated: September 2026 (the slicer seam channel: no seam painting needed; keep the slicer on Aligned)*

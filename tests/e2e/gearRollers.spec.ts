@@ -24,6 +24,7 @@
 
 import { expect, test, type Page } from '@playwright/test';
 import fs from 'node:fs';
+import { selectCylinders } from './helpers/cylinders';
 
 // Signed strings. The UI must quote them exactly; rewording is Brennen's call.
 const CUTOUT_NOTE = 'The polygonal cutout is not used while integrated gears are on.';
@@ -49,6 +50,10 @@ async function openApp(page: Page) {
   await page.waitForLoadState('domcontentloaded');
   await page.waitForLoadState('networkidle');
   await page.waitForSelector('#indicator-mode-selection');
+  // Since 2026-09-21 Generate builds both cylinders by default; this spec
+  // exercises one cylinder at a time, so choose Cylinder A (the old default)
+  // under Cylinders to Generate. Pair tests choose 'both' themselves.
+  await selectCylinders(page, 'positive');
 }
 
 /** Record every /geometry_spec REQUEST body without interfering with the run. */
@@ -114,13 +119,13 @@ async function setDial(page: Page, id: string, value: string) {
   }, [id, value]);
 }
 
+/**
+ * Gears are an either/or radio in the Embosser setup menu item since
+ * 2026-09-20: "Simplified: gears fixed to the cylinders" is the old toggle's
+ * ON, "Standard: print the gears separately" its OFF.
+ */
 async function setGearToggle(page: Page, on: boolean) {
-  const toggle = page.locator('#gear_rollers_enabled');
-  if (on) {
-    await toggle.check();
-  } else {
-    await toggle.uncheck();
-  }
+  await page.locator(on ? '#gear_mode_fixed' : '#gear_mode_standard').check();
 }
 
 /** The plate radios' visible label text, in [positive, negative] order. */
@@ -129,20 +134,13 @@ function plateLabels(page: Page) {
     ['positive', 'negative'].map(
       (value) =>
         document
-          .querySelector(`input[name="plate_type"][value="${value}"]`)
+          .querySelector(`input[name="plate_selection"][value="${value}"]`)
           ?.closest('label')
           ?.querySelector('.radio-text')?.textContent ?? '',
     ),
   );
 }
 
-/** Click one of the pair download buttons and return the offered filename. */
-async function pairDownloadName(page: Page, which: 'a' | 'b'): Promise<string> {
-  const downloadPromise = page.waitForEvent('download');
-  await page.locator(`#download-cylinder-${which}-btn`).click();
-  const download = await downloadPromise;
-  return download.suggestedFilename();
-}
 
 /**
  * Press Generate Both and wait for the pair to finish. The first press can land
@@ -152,9 +150,11 @@ async function pairDownloadName(page: Page, which: 'a' | 'b'): Promise<string> {
  * failure is rethrown rather than retried.
  */
 async function generateBoth(page: Page) {
+  // One Generate button since 2026-09-21: with 'both' chosen it runs the pair.
+  await selectCylinders(page, 'both');
   const status = page.locator('#pair-status');
   for (let attempt = 0; attempt < 8; attempt++) {
-    await page.locator('#generate-both-btn').click();
+    await page.locator('#action-btn').click();
     try {
       await expect(status).toContainText('Both cylinders are ready', { timeout: 120_000 });
       return;
@@ -167,46 +167,54 @@ async function generateBoth(page: Page) {
   throw new Error('Generate Both never reported a finished pair');
 }
 
-test.describe('Gear-integrated one-piece rollers (BETA)', () => {
+test.describe('Gear-integrated one-piece rollers', () => {
   // Same rationale as the other generation specs: the Manifold worker plus a
   // 30,000-triangle gear asset makes a real run slow, and Firefox slower.
   test.describe.configure({ timeout: 300_000 });
 
-  test('the toggle is present, off by default, and keyboard-operable', async ({ page }) => {
+  test('the gear choice is present, Standard by default, and keyboard-operable', async ({ page }) => {
     await openApp(page);
 
-    const toggle = page.locator('#gear_rollers_enabled');
-    await expect(toggle).toHaveCount(1);
-    await expect(toggle).not.toBeChecked();
-    await expect(toggle).toBeEnabled();
+    const standard = page.locator('#gear_mode_standard');
+    const fixed = page.locator('#gear_mode_fixed');
+    await expect(standard).toHaveCount(1);
+    await expect(fixed).toHaveCount(1);
+    await expect(standard).toBeChecked();
+    await expect(fixed).not.toBeChecked();
+    await expect(fixed).toBeEnabled();
 
-    // Its accessible description is the note, and the note is visible text.
-    await expect(toggle).toHaveAttribute('aria-describedby', 'gear-rollers-note');
+    // The group's accessible description is the note, and the note is visible
+    // text (S-M4, signed 2026-09-21, 20 words).
+    expect(
+      await page.evaluate(() => document.getElementById('gear-rollers-selection')?.getAttribute('aria-describedby')),
+    ).toBe('gear-rollers-note');
     await expect(page.locator('#gear-rollers-note')).toBeVisible();
 
-    await toggle.focus();
-    await page.keyboard.press('Space');
-    await expect(toggle).toBeChecked();
-    await page.keyboard.press('Space');
-    await expect(toggle).not.toBeChecked();
+    // Arrow keys move within the radio group and carry the selection.
+    await standard.focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(fixed).toBeFocused();
+    await expect(fixed).toBeChecked();
+    await page.keyboard.press('ArrowUp');
+    await expect(standard).toBeChecked();
   });
 
   // Loose on purpose: this pins only the facts the note must state, not the
-  // sentence, so a future signed rewording cannot break it. The S9 wording
-  // was signed off by Brennen 2026-08-25.
-  test('the hardware note warns about version 1 before the toggle is touched', async ({ page }) => {
+  // sentence, so a future signed rewording cannot break it. S-M5 (signed 2026-09-21,
+  // 2026-09-20) replaced S9'.
+  test('the hardware note warns about the housing before the gear choice is touched', async ({ page }) => {
     await openApp(page);
 
     const note = page.locator('#gear-hardware-note');
     await expect(note).toBeVisible();
-    // S9' (re-signed 2026-08-28): the note names the housing the geared
-    // rollers DO fit, and rules out both embosser bodies by name.
-    await expect(note).toContainText('one-piece geared-roller housing');
-    await expect(note).toContainText('Version 1 or Version 2 embosser bodies');
+    // S-M5: fixed gears fit only the fixed-gear housing for the version; the
+    // standard housing takes the standard cylinders.
+    await expect(note).toContainText('fixed-gear housing');
+    await expect(note).toContainText('standard housing');
 
-    // Visible with the toggle OFF - the warning has to be readable before
-    // anyone decides to turn gears on for the wrong embosser body.
-    await expect(page.locator('#gear_rollers_enabled')).not.toBeChecked();
+    // Visible with Standard selected - the warning has to be readable before
+    // anyone decides on fixed gears for the wrong housing.
+    await expect(page.locator('#gear_mode_fixed')).not.toBeChecked();
   });
 
   test('the cutout note appears only when a cutout is set AND the toggle is on', async ({ page }) => {
@@ -323,7 +331,7 @@ test.describe('Gear-integrated one-piece rollers (BETA)', () => {
     await page.locator('#auto-text').fill('abc');
     await setGearToggle(page, true);
     await setDial(page, 'cylinder_height_mm', REFERENCE_HEIGHT_MM);
-    await page.locator('input[name="plate_type"][value="negative"]').check();
+    await selectCylinders(page, 'negative');
 
     const state = watchGeometrySpecRequests(page);
     await generate(page, state, 1);
@@ -335,38 +343,32 @@ test.describe('Gear-integrated one-piece rollers (BETA)', () => {
   test('the toggle survives a reload and is cleared by reset to defaults', async ({ page }) => {
     await openApp(page);
     await setGearToggle(page, true);
-    await expect(page.locator('#gear_rollers_enabled')).toBeChecked();
+    await expect(page.locator('#gear_mode_fixed')).toBeChecked();
 
     await page.reload();
     await page.waitForLoadState('networkidle');
-    await expect(page.locator('#gear_rollers_enabled')).toBeChecked();
+    await expect(page.locator('#gear_mode_fixed')).toBeChecked();
 
     await page.locator('#reset-defaults-btn').click();
-    await expect(page.locator('#gear_rollers_enabled')).not.toBeChecked();
+    await expect(page.locator('#gear_mode_fixed')).not.toBeChecked();
     await expect(page.locator('#gear-cutout-note')).toBeHidden();
   });
 
-  test('gear mode alone reveals Generate Both and the Cylinder A/B names', async ({ page }) => {
+  test('the gear choice reveals no extra buttons: the pair is every run since 2026-09-21', async ({ page }) => {
     await openApp(page);
 
-    const generateBothBtn = page.locator('#generate-both-btn');
-    await expect(generateBothBtn).toBeHidden();
-    const original = await plateLabels(page);
-    expect(original).toEqual(['Embossing Plate', 'Universal Counter Plate']);
+    // One Generate and one Download whatever the gear choice; the signed
+    // Cylinder A/B names are static markup under Cylinders to Generate.
+    const names = ['Cylinder A — Embossing Plate', 'Cylinder B — Universal Counter Plate'];
+    expect(await page.locator('#generate-both-btn').count()).toBe(0);
+    expect(await plateLabels(page)).toEqual(names);
 
-    // A geared roller only works as a meshed A/B pair, so the pair controls
-    // follow this toggle exactly as they follow the double-sided one.
     await setGearToggle(page, true);
-    await expect(generateBothBtn).toBeVisible();
-    expect(await plateLabels(page)).toEqual([
-      'Cylinder A — Embossing Plate',
-      'Cylinder B — Universal Counter Plate',
-    ]);
+    expect(await page.locator('#generate-both-btn').count()).toBe(0);
+    expect(await plateLabels(page)).toEqual(names);
 
-    // Byte-identical on the way back: the training videos show these names.
     await setGearToggle(page, false);
-    await expect(generateBothBtn).toBeHidden();
-    expect(await plateLabels(page)).toEqual(original);
+    expect(await plateLabels(page)).toEqual(names);
   });
 
   test('Generate Both with gears only keeps the single-sided Geared names and pairs the gear sets', async ({ page }) => {
@@ -384,11 +386,10 @@ test.describe('Gear-integrated one-piece rollers (BETA)', () => {
     // Same rule as the double-sided pair: nothing downloads by itself.
     expect(unattendedDownloads).toEqual([]);
 
-    // Double-sided is OFF, so the single-sided filenames stand — the pair
-    // buttons hand out the same files two solo generates would have produced.
-    await expect(page.locator('#pair-downloads')).toBeVisible();
-    expect(await pairDownloadName(page, 'a')).toBe('Embossing_Cylinder_Geared_0.4_abc.stl');
-    expect(await pairDownloadName(page, 'b')).toBe('Counter_Cylinder_Geared_0.4_abc.stl');
+    // Double-sided is OFF, so the pair file carries the single-sided Geared
+    // name; the ONE Download button offers it.
+    await expect(page.locator('#download-stl-btn')).toBeVisible();
+    expect(await downloadName(page)).toBe('Cylinder_Pair_Geared_0.4_abc.stl');
 
     // The run asked for both plates with gears on — which is what makes the
     // backend hand Cylinder A the gears_a asset and Cylinder B gears_b.
@@ -405,11 +406,11 @@ test.describe('Gear-integrated one-piece rollers (BETA)', () => {
     await page.locator('#auto-text').fill('abc');
     await setGearToggle(page, true);
     await setDial(page, 'cylinder_height_mm', REFERENCE_HEIGHT_MM);
-    await generateBoth(page);
+    const state = watchGeometrySpecRequests(page);
 
-    const triangleCount = async (buttonId: string) => {
+    const triangleCount = async () => {
       const downloadPromise = page.waitForEvent('download');
-      await page.locator(`#${buttonId}`).click();
+      await page.locator('#download-stl-btn').click();
       const download = await downloadPromise;
       const buf = fs.readFileSync((await download.path())!);
       const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
@@ -418,9 +419,20 @@ test.describe('Gear-integrated one-piece rollers (BETA)', () => {
       return { name: download.suggestedFilename(), triangles };
     };
 
-    const a = await triangleCount('download-cylinder-a-btn');
-    const b = await triangleCount('download-cylinder-b-btn');
-    const pair = await triangleCount('download-pair-btn');
+    // Each cylinder on its own (Cylinders to Generate), then the pair.
+    await selectCylinders(page, 'positive');
+    await generate(page, state, 1);
+    await page.locator('#download-stl-btn').waitFor({ state: 'visible', timeout: 240_000 });
+    const a = await triangleCount();
+    await selectCylinders(page, 'negative');
+    await generate(page, state, 2);
+    await page.locator('#download-stl-btn').waitFor({ state: 'visible', timeout: 240_000 });
+    const b = await triangleCount();
+    await generateBoth(page);
+    const pair = await triangleCount();
+
+    expect(a.name).toBe('Embossing_Cylinder_Geared_0.4_abc.stl');
+    expect(b.name).toBe('Counter_Cylinder_Geared_0.4_abc.stl');
 
     // Name signed off by Brennen (2026-08-25); change only with his sign-off.
     expect(pair.name).toBe('Cylinder_Pair_Geared_0.4_abc.stl');

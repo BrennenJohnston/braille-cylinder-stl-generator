@@ -1,0 +1,212 @@
+{
+  "note": "Derived 1:1 from Brennen's v8 Version 2 gear STLs; regenerate only via scripts/derive_gear_assets_v2.py",
+  "derived": "2026-09-21",
+  "frame": "Browser worker cylinder frame: axis at x=y=0, barrel centred on z=0 (the 54 mm Version 2 barrel spans z -27..+27; gear bodies +27..+37 and -37..-27; the 15 mm pegs sit inside the barrel at |z| 12..27). Millimeters, Z-up.",
+  "format": {
+    "magic": "BCGR1\\x00",
+    "byte_order": "little-endian",
+    "layout": "magic[6] + uint32 vertCount + uint32 triCount + float32[3*vertCount] + uint32[3*triCount]",
+    "header_bytes": 14
+  },
+  "transform": {
+    "source": "01_V2_GEAR_AUDIT.md (2026-09-20 programme, phase B1)",
+    "rule": "each gear is centred on its OWN least-squares tip-band axis (recorded per source); A set: p = Rz(180) * (p_source - axis) + (0, 0, -27); B set: p = (p_source - axis) + (0, 0, -27)",
+    "constants": {
+      "a_rotation_z_deg": 180.0,
+      "b_rotation_z_deg": 0.0,
+      "z_shift_mm": -27.0,
+      "arrow_column_deg": 180.0
+    }
+  },
+  "gear_metrology": {
+    "tooth_count": 24,
+    "tip_radius_mm": 16.1093702290795,
+    "gear_thickness_mm": 10.0,
+    "peg_length_mm": 15.0,
+    "root_radius_min_mm": 13.65
+  },
+  "assets": {
+    "v2_gears_a.bin": {
+      "sources": [
+        {
+          "role": "A1",
+          "file": "A1 Gear v8 (0.2 Layer Height).stl",
+          "sha256": "1d32bac6219fd6bb52a0f169a1bb876c354d469e10e891f13b1639f5c1a7e707",
+          "axis_fit_source_frame_mm": [
+            -15.045,
+            -0.0
+          ],
+          "vert_count": 8355,
+          "tri_count": 16710,
+          "tooth_count": 24,
+          "tip_radius_mm": 16.109371,
+          "z_span_mm": [
+            12.0,
+            37.0
+          ],
+          "peg_outline_mm": [
+            14.0,
+            14.0
+          ],
+          "root_radius_mm": 13.6613,
+          "feature": {
+            "kind": "notch",
+            "angle_deg": 180.0,
+            "half_width_deg_at_r11_5": 7.125,
+            "half_width_mm_at_r11_5": 1.4264,
+            "inner_radius_mm": 9.95,
+            "outer_radius_mm": 14.55,
+            "depth_mm": 3.15
+          }
+        },
+        {
+          "role": "A2",
+          "file": "A2 Gear v8 (0.2 Layer Height).stl",
+          "sha256": "180fa32297daebb75bcc74eccbf394e8c6d9e7b00c53a68457109593c746dcab",
+          "axis_fit_source_frame_mm": [
+            -15.05,
+            0.0
+          ],
+          "vert_count": 8343,
+          "tri_count": 16686,
+          "tooth_count": 24,
+          "tip_radius_mm": 16.109371,
+          "z_span_mm": [
+            -37.0,
+            -12.0
+          ],
+          "peg_outline_mm": [
+            10.0,
+            18.0
+          ],
+          "root_radius_mm": 13.6613,
+          "feature": {
+            "kind": "pin",
+            "angle_deg": 180.0,
+            "half_width_deg_at_r11_5": 7.125,
+            "half_width_mm_at_r11_5": 1.4264,
+            "inner_radius_mm": 9.95,
+            "outer_radius_mm": 13.85,
+            "height_mm": 2.95
+          }
+        }
+      ],
+      "vert_count": 16698,
+      "tri_count": 33396,
+      "byte_size": 601142,
+      "bounds_mm": {
+        "min": [
+          -16.109356,
+          -16.109356,
+          -37.0
+        ],
+        "max": [
+          16.109358,
+          16.109356,
+          37.0
+        ]
+      },
+      "body_volumes_mm3": [
+        8280.876634,
+        8414.587101
+      ],
+      "volume_mm3": 16695.463735,
+      "bodies_watertight": [
+        true,
+        true
+      ],
+      "sha256": "ec260f1186e02861a907fb5dc2fab260552acee88c90917b968a8b074680de79"
+    },
+    "v2_gears_b.bin": {
+      "sources": [
+        {
+          "role": "B1",
+          "file": "B1 Gear v8 (0.2 Layer Height).stl",
+          "sha256": "e48e83ba66fbe84ce208ea2e2387ee306c35376de4db68745c3fbd4d3b324110",
+          "axis_fit_source_frame_mm": [
+            15.0517,
+            -0.0054
+          ],
+          "vert_count": 8343,
+          "tri_count": 16686,
+          "tooth_count": 24,
+          "tip_radius_mm": 16.109371,
+          "z_span_mm": [
+            12.0,
+            37.0
+          ],
+          "peg_outline_mm": [
+            12.0,
+            16.0
+          ],
+          "root_radius_mm": 13.6613,
+          "feature": {
+            "kind": "notch",
+            "angle_deg": 179.875,
+            "half_width_deg_at_r11_5": 8.25,
+            "half_width_mm_at_r11_5": 1.6502,
+            "inner_radius_mm": 9.85,
+            "outer_radius_mm": 13.1,
+            "depth_mm": 3.15
+          }
+        },
+        {
+          "role": "B2",
+          "file": "B2 Gear v8 (0.2 Layer Height).stl",
+          "sha256": "36c526b74b771ffb03a30d1e812bce57bcf50182cbe1db61a078888c7bfd1d67",
+          "axis_fit_source_frame_mm": [
+            15.0498,
+            -0.0004
+          ],
+          "vert_count": 8282,
+          "tri_count": 16564,
+          "tooth_count": 24,
+          "tip_radius_mm": 16.109372,
+          "z_span_mm": [
+            -37.0,
+            -12.0
+          ],
+          "peg_outline_mm": [
+            8.0,
+            20.0
+          ],
+          "root_radius_mm": 13.6613,
+          "feature": {
+            "kind": "pin",
+            "angle_deg": 180.0,
+            "half_width_deg_at_r11_5": 7.375,
+            "half_width_mm_at_r11_5": 1.4762,
+            "inner_radius_mm": 10.05,
+            "outer_radius_mm": 13.0,
+            "height_mm": 2.95
+          }
+        }
+      ],
+      "vert_count": 16625,
+      "tri_count": 33250,
+      "byte_size": 598514,
+      "bounds_mm": {
+        "min": [
+          -16.108776,
+          -16.108776,
+          -37.0
+        ],
+        "max": [
+          16.108776,
+          16.108774,
+          37.0
+        ]
+      },
+      "body_volumes_mm3": [
+        9090.11423,
+        8740.726499
+      ],
+      "volume_mm3": 17830.840729,
+      "bodies_watertight": [
+        true,
+        true
+      ],
+      "sha256": "0d8383b13e86e0b222c583d41b712fb879f960c0f0a89327e090c9d7a73523a9"
+    }
+  }
+}

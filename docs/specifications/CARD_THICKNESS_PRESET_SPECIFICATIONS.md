@@ -570,13 +570,41 @@ the last persisted preset, then '0.4'. Source-of-truth pairing:
 preset the crowding warning shows whenever the beta is on — by design; see
 INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §3, §7.3, §7.5.
 
+### Tactile Seam-Arrow Layout Follows the Preset (2026-09-20)
+
+The preset also decides how the tactile seam arrows are laid out along the
+cylinder, so a blind user can tell a 0.3 mm pair from a 0.4 mm pair by touch and
+the two cannot be nested by mistake. `TACTILE_ARROW_LAYOUT_BY_PRESET` in
+`public/index.html` maps `'0.4'` to `per_row` (one arrow per braille row, the
+behaviour every cylinder has always had) and `'0.3'` to `three_spaced` (exactly
+three arrows at mid-height and ±15 mm, whatever the row count). The generate
+handler sends `tactile_indicator_layout` **only** when the row indicator style is
+tactile and the resolved preset is 0.3; a 0.4 request body is byte-identical to
+before, and the backend's absent-field fallback is `per_row`.
+
+`Custom` follows the preset last *chosen*, read from a dedicated key
+`braille_prefs_thickness_preset_chosen` (written by `applyThicknessPreset`),
+because the auto-detection that flips the radio to Custom overwrites
+`braille_prefs_thickness_preset` with `'custom'` — so nudging a dial on a 0.3 pair
+keeps its three arrows, before and after a reload. Resolver:
+`activeArrowLayoutPreset()`. Source-of-truth pairing: `app/geometry_spec.py`
+`TACTILE_ARROW_LAYOUTS`, diffed against the UI by
+`tests/test_smoke.py::test_ui_tactile_arrow_layout_map_matches_the_geometry_module`.
+Geometry, fit rule and rationale: RECESS_INDICATOR_SPECIFICATIONS.md §4.
+
 ## 6. LocalStorage Persistence
 
 ### Keys Stored
 
 1. **Preset Selection**:
    - Key: `braille_prefs_thickness_preset`
-   - Value: `"0.4"` or `"0.3"`
+   - Value: `"0.4"`, `"0.3"` or `"custom"` (the auto-detection writes `"custom"`)
+
+1b. **Preset Last Chosen** (2026-09-20):
+   - Key: `braille_prefs_thickness_preset_chosen`
+   - Value: `"0.4"` or `"0.3"` — written by `applyThicknessPreset` only, never
+     `"custom"`; what the tactile seam-arrow layout follows while the radio is
+     on Custom. Reset to `"0.4"` by Reset All Preferences.
 
 2. **Individual Parameters** (26 keys):
    - Format: `braille_prefs_{parameter_name}`

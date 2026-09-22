@@ -5,8 +5,8 @@
 > | | |
 > |---|---|
 > | **Canonical repo** | [BrennenJohnston/braille-cylinder-stl-generator-openscad](https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad) |
-> | **Vendored from** | tag `v2.7.0` (commit `5d73d82`, released 2026-08-23) |
-> | **Copied on** | 2026-08-23 |
+> | **Vendored from** | tag `v2.8.1` (commit `a8b16af`, released 2026-09-21) |
+> | **Copied on** | 2026-09-21 |
 > | **Machine-readable provenance** | [`VENDORED.json`](VENDORED.json) |
 >
 > The standalone repo **is** the active home for this program: it holds the
@@ -31,10 +31,14 @@ plates for cylindrical objects.
 The vendored `.scad` is the upstream **MakerWorld single-file build**: the
 desktop generator with `presets.scad` inlined, so it is one self-contained file
 with no `include <...>`. Upstream that file is named
-`makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2.scad`; it is renamed
-here because this folder ships exactly one file and the suffix would only
-confuse. The geometry body is byte-identical to the upstream dual-file desktop
-build — upstream CI (`tests/test_makerworld_sync.py`) enforces that.
+`makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad` — the
+**Version 1** model's build; it is renamed here because this folder ships
+exactly one file and the suffix would only confuse. The geometry body is
+byte-identical to the upstream dual-file desktop build — upstream CI
+(`tests/test_makerworld_sync.py`) enforces that. Upstream's separate
+**Embosser Version 2** generator (`Braille_Cylinder_STL_Generator_EmbosserV2.scad`,
+keyed gear pegs, 30.8 × 54 mm, optional fixed gears) is not vendored here;
+get it from the canonical repo.
 
 Practical consequence: this single file also uploads directly to MakerWorld's
 Parametric Model Maker. See [`docs/MAKERWORLD_QUICK_START.md`](docs/MAKERWORLD_QUICK_START.md).
@@ -118,7 +122,7 @@ Choose **Tactile** when a blind user needs to align the cylinders unaided: the
 arrow is felt as a single continuous wedge, nothing like a braille dot, and its
 point tells you which end is up on either plate. Raised-vs-recessed tells you
 which cylinder you are holding. The arrow is deliberately lower than the braille
-dots (0.8 mm vs 1.0 mm) so the dots, not the indicator, take the rolling
+dots (0.5 mm vs 1.0 mm) so the dots, not the indicator, take the rolling
 pressure.
 
 Text capacity is `grid_columns` (default 13) in every mode.
@@ -132,6 +136,12 @@ or `Cone` (frustum cone dots with matching cone recesses).
 `0.3mm` (thinner paper, smaller dots), or `Custom` to use your own values. The
 presets set 21 parameters at once, matching the web app's Card Thickness
 dropdown. They deliberately do **not** touch `grid_columns` / `grid_rows`.
+
+**Slicer seam channel** (upstream 2.8.0) — every cylinder carries a shallow V
+groove, 1.0 × 0.5 mm, beside the row markers, where a slicer's default *Aligned*
+seam mode hides each layer's seam instead of in a dot, so no seam painting is
+needed. `seam_channel` under **[Expert Mode - Cylinder Dimensions]**, On by
+default; `Off` gives a plain surface. The same size and angle as this web app.
 
 **Parametric control** — cylinder dimensions, braille spacing, per-shape dot
 dimensions, counter recess dimensions, and positioning adjustments all map to
@@ -147,6 +157,7 @@ Defaults match the web app's 0.4 mm paper thickness preset:
 | Cylinder height | 52 mm |
 | Polygonal cutout | 13 mm radius, 12 points |
 | Seam offset | 0° |
+| Slicer seam channel | On (1.0 × 0.5 mm V groove; a constant, not a dial) |
 | Cells per row | 13 (text capacity) |
 | Rows | 4 |
 | Cell / line / dot spacing | 6.5 / 10.0 / 2.5 mm |
@@ -161,6 +172,8 @@ Defaults match the web app's 0.4 mm paper thickness preset:
 - **Perimeters:** 3–4.
 - **Orientation:** print upright, as oriented in the preview.
 - **Speed:** slow the outer walls (≤ 30 mm/s) for smoother dots.
+- **Seam:** leave the slicer's seam mode on *Aligned* — the seam channel catches
+  it. A profile set to *Back* / *Rear* ignores the groove; switch it once.
 
 ## Documentation
 

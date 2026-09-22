@@ -8,6 +8,7 @@ ensuring security, correctness, and helpful error messages.
 from typing import Any
 
 from app.geometry import gears, interpoint, version2
+from app.geometry_spec import TACTILE_ARROW_LAYOUTS, TACTILE_THREE_SPACED_PITCH_MM
 from app.utils import get_logger
 
 # Configure logging
@@ -204,6 +205,16 @@ def validate_settings(settings_data: Any) -> bool:
             raise ValidationError(
                 "Setting 'indicator_mode' must be 'visual' or 'tactile'",
                 {'key': 'indicator_mode', 'value': mode, 'valid_options': ['visual', 'tactile']},
+            )
+
+    # tactile_indicator_layout is the other string enum, checked the same way: a
+    # typo must be rejected, never quietly read as one layout or the other.
+    if 'tactile_indicator_layout' in settings_data:
+        layout = settings_data['tactile_indicator_layout']
+        if str(layout).strip().lower() not in TACTILE_ARROW_LAYOUTS:
+            raise ValidationError(
+                "Setting 'tactile_indicator_layout' must be 'per_row' or 'three_spaced'",
+                {'key': 'tactile_indicator_layout', 'value': layout, 'valid_options': list(TACTILE_ARROW_LAYOUTS)},
             )
 
     for key, value in settings_data.items():
@@ -461,8 +472,10 @@ def validate_embosser_version_settings(settings_data: dict, shape_type: str, cyl
     would either weld the gear into the cylinder or throw away the margin that
     stops a peg entering the wrong hole, and nothing downstream re-checks it.
 
-    Gate 3: integrated gears and Version 2 are different hardware and cannot be
-    combined (S-V7). The gears BETA builds the Version 1 one-piece roller.
+    Gate 3 (S-V7, gears refused with Version 2) was RETIRED on 2026-09-21:
+    Version 2 has its own vendored fixed-gear set (2026-09-20 programme,
+    sub-plan B), and validate_gear_rollers_settings gates the cylinder size
+    per version - 30.8 x 52 for Version 1, 30.8 x 54 for Version 2.
 
     Deliberately NOT a gate: the cylinder size. D-V15 makes the Version 2
     barrel a soft preset - it has been found by printing, 30.1 -> 30.5 on
@@ -553,22 +566,10 @@ def validate_embosser_version_settings(settings_data: dict, shape_type: str, cyl
             },
         )
 
-    # Read exactly the way the gear gate reads its own flag, so the two can
-    # never disagree about what "gears are on" means.
-    gears_raw = settings_data.get('gear_rollers_enabled', 0)
-    if gears_raw is not None and gears_raw != '':
-        try:
-            gears_enabled = int(float(gears_raw))
-        except (TypeError, ValueError) as e:
-            raise ValidationError(
-                "Setting 'gear_rollers.enabled' must be 0 or 1",
-                {'key': 'gear_rollers_enabled', 'value': gears_raw},
-            ) from e
-        if gears_enabled == 1:
-            raise ValidationError(
-                'Integrated gears are not available in Version 2.',
-                {'key': 'gear_rollers_enabled', 'embosser_version': version},
-            )
+    # Gate 3 (S-V7, "Integrated gears are not available in Version 2.") was
+    # RETIRED on 2026-09-21 (2026-09-20 programme, phase B3): Version 2 has
+    # its own vendored fixed-gear set now, and validate_gear_rollers_settings
+    # below gates the size per version instead.
 
     return True
 
@@ -645,18 +646,78 @@ def validate_gear_rollers_settings(settings_data: dict, shape_type: str, cylinde
             {'key': 'cylinder_params', 'value': cylinder_params},
         ) from e
 
-    if not gears.matches_reference_roller(diameter, height):
+    # Which gear set, and so which reference barrel: Version 1's 30.8 x 52 or
+    # Version 2's 30.8 x 54 (2026-09-21, phase B3). The version is read the way
+    # validate_embosser_version_settings reads it - that gate runs first and
+    # has already refused anything that is not 1 or 2, so junk cannot reach
+    # here; an absent or blank field is Version 1.
+    version_raw = settings_data.get('embosser_version', 1)
+    version = 1 if version_raw is None or version_raw == '' else int(float(version_raw))
+    required_diameter, required_height = gears.reference_barrel(version)
+    if not gears.matches_reference_roller(diameter, height, version):
         raise ValidationError(
-            gears.reference_roller_message(diameter, height),
+            gears.reference_roller_message(diameter, height, version),
             {
                 'key': 'gear_rollers_enabled',
+                'embosser_version': version,
                 'diameter_mm': diameter,
                 'height_mm': height,
-                'required_diameter_mm': gears.GEAR_BARREL_DIAMETER_MM,
-                'required_height_mm': gears.GEAR_BARREL_HEIGHT_MM,
+                'required_diameter_mm': required_diameter,
+                'required_height_mm': required_height,
             },
         )
 
+    return True
+
+
+def validate_tactile_arrow_fit(settings_data: dict, shape_type: str, cylinder_params: dict) -> bool:
+    """
+    Reject a three_spaced tactile layout whose outer arrows would run past the
+    barrel ends.
+
+    Skipped unless the shape is a cylinder, the row indicator style is tactile
+    and tactile_indicator_layout is three_spaced, so every other request is
+    validated exactly as it was before the layout existed. The per-row layout
+    is not measured here: it follows the braille rows, which have never had a
+    fit gate of their own.
+
+    The outer arrows sit TACTILE_THREE_SPACED_PITCH_MM from mid-height. The
+    larger of the two outlines is the counter plate's recess, grown by the
+    clearance, and both plates of a pair must pass or fail together, so that is
+    the outline measured for both. An arrow past the end face would print as a
+    burr on the emboss plate and a notch in the rim of the counter plate, so
+    this is a rejection, not a warning (Brennen, 2026-09-20). The 52 mm and
+    54 mm barrels clear it at every dial setting: the 15 mm maximum indicator
+    length and 1 mm maximum clearance need 45 mm.
+    """
+    if str(shape_type).strip().lower() != 'cylinder':
+        return True
+    if str(settings_data.get('indicator_mode', 'visual')).strip().lower() != 'tactile':
+        return True
+    if str(settings_data.get('tactile_indicator_layout', 'per_row')).strip().lower() != 'three_spaced':
+        return True
+
+    length = _double_sided_number(
+        settings_data, 'tactile_indicator_length', 'indicators.tactile_indicator_length', 10.0
+    )
+    clearance = _double_sided_number(
+        settings_data, 'tactile_recess_clearance', 'indicators.tactile_recess_clearance', 0.2
+    )
+    _, height = gears.cylinder_dimensions(cylinder_params)
+    minimum_height = 2.0 * (TACTILE_THREE_SPACED_PITCH_MM + length / 2.0 + clearance)
+    if height + 1e-9 < minimum_height:
+        raise ValidationError(
+            f'The three-arrow tactile layout used by the 0.3 mm card thickness preset needs a cylinder at least '
+            f'{gears._format_mm(minimum_height)} mm tall so its outer arrows stay on the barrel; this cylinder is '
+            f'{gears._format_mm(height)} mm. Use a taller cylinder, shorten the indicator length, or choose the '
+            f'0.4 mm preset.',
+            {
+                'key': 'cylinder_height_mm',
+                'value': height,
+                'minimum': minimum_height,
+                'tactile_indicator_layout': 'three_spaced',
+            },
+        )
     return True
 
 

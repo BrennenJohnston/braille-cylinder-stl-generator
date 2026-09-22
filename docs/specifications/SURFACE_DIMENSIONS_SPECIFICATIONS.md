@@ -26,6 +26,7 @@ This document specifies all Surface Dimensions controls available in the applica
    - 2.3 [Polygonal Cutout Circumscribed Radius](#23-polygonal-cutout-circumscribed-radius)
    - 2.4 [Polygonal Cutout Points](#24-polygonal-cutout-points)
    - 2.5 [Seam Offset](#25-seam-offset)
+   - 2.6 [Slicer Seam Channel](#26-slicer-seam-channel)
 3. [Plate Dimensions](#3-plate-dimensions)
    - 3.1 [Plate Width](#31-plate-width)
    - 3.2 [Plate Height](#32-plate-height)
@@ -521,6 +522,103 @@ for i in range(polygonal_cutout_sides):
 | Negative (Counter) | Clockwise | `cutout_align_theta = seam_offset_rad` |
 
 This ensures that when the emboss and counter plates are aligned face-to-face, their polygon cutouts match up correctly.
+
+### 2.6 Slicer Seam Channel
+
+**Since 2026-09-20 (programme decisions D-1, D-2, D-13, D-14, D-15).** Every cylinder carries a shallow V-groove along its OUTER surface, on both plates: the full height beside the row-indicator column in visual mode, and since 2026-09-21 (D-T6, D-T7) the full height down the tactile arrow column itself in tactile mode, cut through the raised arrows on the embossing plate. A slicer's default "aligned" seam mode snaps each layer's seam into a concave corner, and on a smooth barrel the only corners are where dots and bowls meet the surface; a layer seam inside a dot ruins that dot on paper. The groove is a better corner, so the seam never needs painting.
+
+#### UI Element
+
+| Property | Value |
+|----------|-------|
+| Location | Expert Mode → Surface Dimensions → "Slicer Seam Channel" fieldset |
+| Control | `<input type="checkbox" id="seam_channel_enabled" checked>` |
+| Label | `Slicer seam channel` (S-C1, signed 2026-09-21) |
+| Description (`aria-describedby="seam-channel-note"`, 19 words) | "A shallow groove beside the row markers where the slicer hides its layer seam, keeping it off the dots." (S-C1 (signed 2026-09-21)) |
+| Default | ON |
+| Persistence | `braille_prefs_seam_channel_enabled` (`'1'`/`'0'`); reset restores ON |
+| Live note | `#seam-channel-warning` / `#seam-channel-message`, shown before Generate when the groove will be left out (S-C2 / S-C3 below), announced once through `#a11y-status` on its hidden-to-shown edge |
+
+#### Wire
+
+| Switch | Request body |
+|--------|--------------|
+| ON (default) | Nothing is added. An untouched request body is byte-identical to a pre-channel one (pinned by `tests/e2e/seamChannel.spec.ts` against the captured `tests/e2e/fixtures/*.request.json`). |
+| OFF | `settings.seam_channel_enabled: 0` and nothing else. |
+
+Schema: `settings.schema.json` → `seam_channel.enabled` (boolean, default `true`). Model: `app/models.py` → flat `seam_channel_enabled`, default `1`; an absent or blank field means ON.
+
+#### Geometry (constants, not dials)
+
+The groove is print-tuned, so its size lives in `app/geometry_spec.py` and nowhere a user can edit:
+
+| Constant | Value | Meaning |
+|----------|-------|---------|
+| `SEAM_CHANNEL_WIDTH_MM` | 1.0 mm | mouth width at the surface (a 90° V) |
+| `SEAM_CHANNEL_DEPTH_MM` | 0.5 mm | apex depth below the surface |
+| `SEAM_CHANNEL_MARGIN_MM` | 0.25 mm | clear surface kept either side of the mouth |
+| `SEAM_CHANNEL_OVERSHOOT_MM` | 1.0 mm | the cutter runs this far past both end faces |
+| `SEAM_CHANNEL_LIP_MM` | 0.5 mm | the cutter's mouth starts this far outside the surface, so the mouth is cut rather than touched |
+| `SEAM_CHANNEL_MIN_WALL_MM` | 1.2 mm | FDM minimum wall left under the apex |
+
+Documented safe ranges (a change needs Brennen's decision and a new slicing spike): width 0.8–1.6 mm, depth 0.3–0.8 mm. The 2026-09-20 spike (`scripts/seam_spike.py`, PrusaSlicer 0.2 mm layers, first outer-wall seam per layer) measured: in aligned mode the 1.0 × 0.5 groove captured 100 % of layers on both visual plates and on the tactile counter plate, and 90.8 % on the tactile embossing plate with every escaped layer on a raised arrow tip and none in a dot; 1.2 × 0.6 and sharper or deeper profiles captured the same. Without a groove, 18–24 % of layers landed in a dot or bowl. "Back"/"rear" seam mode cannot be made safe for the embossing plate by any export orientation (a raised dot within about 20° of the rear always out-reaches the channel floor), so exports are NOT rotated (D-14) and users whose profile says Back switch it to Aligned once.
+
+Placement, as signed arc `s` along the surface from the seam centre, positive toward column 0 (`R` = radius):
+
+```
+gap       = π · diameter − (grid_columns_total − 1) · cell_spacing
+footprint = dot_spacing / 2 + max(active dot base radius, active recess mouth radius)
+            (double-sided: the ds_* package's dot and bowl radii; the SAME number on both plates)
+visual :  lo = −(gap/2 − footprint)                  hi = gap/2 − dot_spacing/2        (column 0's triangle)
+tactile:  NO window (D-T6, 2026-09-21). The groove runs down the arrow column itself: theta = π on BOTH plates,
+          the FULL height (the same cut as visual mode, from the bare shell). On the EMBOSSING plate it is cut a
+          second time after the raised arrows are on (D-T7, same day, after Brennen's print: wherever the groove
+          stopped, the slicer chose a dot): `arrow_recut = {z_from, z_to, lip}`, the same V over the arrow chain
+          only — tactile_arrow_span(): the outermost row centres ∓ length/2, grown by the gear weld (0.005) in gear
+          mode, ∓ SEAM_CHANNEL_ARROW_MARGIN_MM (0.3) — clamped SEAM_CHANNEL_RECUT_INSET_MM (0.05) inside the end
+          faces (a gear face is never nicked), with lip = tactile_indicator_raise + SEAM_CHANNEL_LIP_MM so the V's
+          sides clear the arrows' top faces. 13 cells, 4 rows, 52 mm, 0.4 preset: z_from −20.3, z_to 20.3, lip 1.0.
+          The counter plate's recesses are deeper (0.7 mm) than the groove (0.5), so its single cut already runs
+          through them and it gets no recut.
+visual:   free = hi − lo ;  need = SEAM_CHANNEL_WIDTH_MM + 2 · SEAM_CHANNEL_MARGIN_MM = 1.5 mm
+          s_c = (lo + hi) / 2
+          theta = π − s_c / R  (positive plate)      theta = π + s_c / R  (negative plate)
+```
+
+**What the recut does to a raised arrow (D-T7, Brennen's choice: the tested V at every layer).** The V is 1 mm wide at the surface and its sides keep their 45° slope through the arrow's 0.5 mm raise, so it is 2 mm wide at the arrow's top face — the arrow's own width at its centre line. Each arrow keeps its base half as two ridges and loses its point: above the surface the arrow ends at its centre line (a hair above it where the V wall, the arrow side and the top facet meet). The counter plate's recess is unchanged, so the notched arrow still nests in it. This is a tactile-shape change and was decided by Brennen on 2026-09-21; never widen, deepen or shorten the recut on your own.
+
+`theta` is emitted in the SAME convention as every dot's `theta` in the spec (column 0 at +grid_angle/2 on the positive plate, seam centre at π, the counter plate mirrored), so `theta_A + theta_B = 2π`. The Manifold worker negates every theta it places — dots, markers and this channel alike — which is what puts the groove beside column 0 in the STL; the Python golden renderer uses theta as emitted. Neither may treat this angle differently from a dot's.
+
+**Rerun through the arrows (2026-09-21, D-T7):** `scripts/seam_spike.py --layouts tactile14,tactile13 --channels none,v10 --no-rear --out build/seam_spike_through` — PrusaSlicer aligned mode, 260 layers per file, the groove at 180° the full height and recut through the raised arrows. Embossing plate: 100 % of layers in the groove at 13 and at 14 cells, every seam between 180.00° and 180.02°. Counter plate: 36.9 % within 0.8 mm of arc of 180°, the rest on the recess arrows' own edges (170.7°–189.3°), where the deeper recess interrupts the groove; 0 % in a dot or bowl on every plate, with or without the groove. The D-T6 rerun (`build/seam_spike_column`, two stretches outside the chain: 60 % / 37 %, 0 % in a dot by this metric) is superseded — Brennen's Bambu Studio print of that build put seams in dots wherever the groove stopped, which this metric did not predict; the print, not the study, is the evidence. The script reads the tactile angle and recut from the spec's own block and refuses to run if it and the spec disagree about the angle.
+
+Worked numbers (30.8 mm, 0.4 mm preset, footprint 2.15 mm):
+
+| Layout | gap | free | Result |
+|--------|-----|------|--------|
+| 15 columns, visual | 5.761 | 2.361 | s_c 0.450 → 178.33° (A) / 181.67° (B); in the STL 181.67° (A) / 178.33° (B) |
+| 14 columns, tactile | 12.261 | — | θ = 180° on both plates, the full height; embossing plate recut z −20.3..20.3 with lip 1.0 (4 rows, 52 mm, raise 0.5); counter plate no recut |
+| 13 columns, tactile | 18.761 | — | the same — the arrow column does not move with the cell count (D-T6, D-T7) |
+| 14 columns, double-sided (0.4 package) | 12.261 | — | the same (tactile is locked on while double-sided) |
+| 15 columns, tactile | 5.761 | — | the same groove; the seam-GAP warning speaks, not the channel's |
+
+Fit rules (each leaves the groove out and adds one warning to `spec.warnings`; the UI shows the same sentence live):
+
+| Rule | Warning (signed 2026-09-21) |
+|------|---------------------------|
+| `free < 1.5 mm` | S-C2: "The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter." |
+| wall under the apex `< 1.2 mm` — against the polygonal cutout's circumradius (`r / cos(π/sides)`), or `wall_thickness − depth` for a barrel hollowed by wall thickness (2 mm when the field is absent); solid barrels (integrated gears, Version 2) skip this rule | S-C3: "The seam channel was left out: the cylinder wall would be thinner than 1.2 mm under it." |
+
+At the default 13.0 mm cutout (12-gon, circumradius 13.459) the wall under the apex is 15.4 − 0.5 − 13.459 = 1.441 mm; a 13.25 mm inscribed cutout (circumradius 13.717) already breaks 1.2.
+
+Spec block, emitted only when the groove fits: `cylinder.seam_channel = {theta, width, depth, overshoot, lip}`, plus `arrow_recut: {z_from, z_to, lip}` on the tactile embossing plate only (absent = no second cut). With the switch off, or the groove left out, the spec is byte-identical to the pre-channel spec apart from the omission warning.
+
+#### Worker and golden renderer
+
+`static/workers/csg-worker-manifold.js` → `createSeamChannelManifold()` builds the V in the radial/circumferential plane, extrudes it `height + 2 · overshoot` along the axis and subtracts it from the bare outer cylinder BEFORE the bore, the keyed pockets or the solid branch, so every barrel kind gets the same groove and nothing added later can be undercut. `tests/test_golden.py` → `_seam_channel_cutter()` does the same in `_build_ds_cylinder_mesh`; all six golden fixtures were regenerated once on 2026-09-20 (each gained exactly 8 triangles and lost the groove's 12.4–12.8 mm³, bounds unchanged). Proof from a real browser export: apex vertices at 181.67° (A) / 178.33° (B), nothing else at that radius on the end caps.
+
+`processGeometrySpec()` subtracts the recut — the same V with the recut's lip over its span — right after the raised tactile arrows are unioned, before the recess dots and markers are cut; `_build_ds_cylinder_mesh` adds it to the same difference. Order among the subtractions does not matter; what matters is that the recut comes AFTER the arrows join (the shell-stage cut alone would be filled back by their embedded base) and never reaches an end face (a gear's face would be nicked).
+
+Cards never get a channel.
 
 ---
 
@@ -1056,6 +1154,10 @@ self.counter_dot_depth = max(0.0, min(depth, self.card_thickness - self.epsilon_
 |------|--------|
 | 2026-08-31 | Cylinder height default 52 → 54 mm: the barrel now carries a 1 mm shelf past each edge of the 52 mm card so a slightly mis-rolled card cannot ruffle over the ends. Braille rows remain centered (the layout centers itself in the height). Cylinder height no longer falls back to `card_height` anywhere — the absent-field default is 54, owned by `app/geometry/gears.py` (`DEFAULT_CYLINDER_HEIGHT_MM`). |
 | 2026-08-31 | **Cylinder height default returns to 52 mm — the 54 mm card-shelf barrel is Embosser Version 2 only** (Brennen's deployment verdict, same day). 52 is the Version 1 standard barrel, the height every previously shipped V1 gear model pairs with; the one-day 54 default made the integrated-gears BETA warn/reject on untouched dials. The decoupling from `card_height` stays: the absent-field fallback is 52, still owned by `gears.DEFAULT_CYLINDER_HEIGHT_MM`, and Version 2 still forces 30.8 × 54 via its preset overrides. Both card-stock presets carry 52 again. |
+| 2026-09-20 | **Slicer seam channel (new §2.6).** Every cylinder now carries a V 1.0 × 0.5 mm groove the full height of its outer surface, in the seam gap beside the row-indicator column, on both plates, so a slicer's default "aligned" seam mode hides each layer's seam there instead of in a dot. ON by default; Expert Mode switch `#seam_channel_enabled` turns it off and is the only thing that sends `seam_channel_enabled: 0`. Constants in `app/geometry_spec.py` (`SEAM_CHANNEL_*`), placement and fit rules with worked numbers, the two DRAFT omission warnings S-C2/S-C3, the worker cut, the regenerated goldens and the slicing-spike evidence are all in §2.6. Decisions D-1, D-2, D-13, D-14 (no export rotation), D-15 (groove size). |
+| 2026-09-21 | **§2.6: the tactile groove moves behind the arrow.** With the tactile arrow at a fixed lead-in before column 0 (RECESS_INDICATOR_SPECIFICATIONS.md v3.9, D-T1), the lead-in side keeps only its 1 mm margin, so in tactile mode the window is now between the last cell's dots (the back grid's, an interpoint offset closer, when double-sided) and the arrow recess; the visual window is unchanged. Worked numbers: 14 tactile 190.05° / 169.95°, 13 tactile the same, double-sided 187.72° / 172.28°. The slicing study reran on the new side (`scripts/seam_spike.py --layouts tactile14,tactile13 --channels none,v10 --no-rear --out build/seam_spike_leadin`, PrusaSlicer, aligned mode): counter plate 100 % of layers in the groove at both 13 and 14 cells, embossing plate 90.8 % with every escaped layer on a raised arrow tip and 0 % in any dot — the same figures as the 2026-09-20 study on the old side. All eight golden pairs regenerated. |
+| 2026-09-21 | **§2.6: in tactile mode the groove runs down the arrow column itself (D-T6).** Brennen's test of the "behind the arrow" build showed the groove beside the arrows and a large trailing space; he asked for it centred on the arrows and the spacing back to even (the arrow returned to the seam-gap midpoint, RECESS_INDICATOR_SPECIFICATIONS.md v3.10). Tactile placement is now θ = 180° on both plates as two stretches (`segments`) that stop 0.3 mm (`SEAM_CHANNEL_ARROW_MARGIN_MM`) short of the arrow chain reported by `tactile_arrow_span()`; a stretch under 1.0 mm (`SEAM_CHANNEL_MIN_SEGMENT_MM`) is dropped and no stretch at all leaves the groove out with S-C4 (DRAFT). The worker and the golden renderer cut one prism per stretch. The slicing study reran on the column (`build/seam_spike_column`): 0 % of layers in a dot on every plate, 60 % / 37 % within 0.8 mm of 180°, the rest on the arrows' own edges. The visual groove is unchanged. All eight golden pairs regenerated. |
+| 2026-09-21 | **§2.6: the tactile groove runs the full height and is recut through the raised arrows (D-T7).** Brennen's print of the D-T6 build: wherever the groove stopped short of the arrow chain the slicer chose a braille dot or bowl. His instruction: extend the channel through the triangles and between them along the axis; his choice for the cut through each raised arrow: the same V, its sides continued (2 mm wide at the top face — each arrow keeps its base half as two ridges and loses its point). Tactile placement is now θ = 180° on both plates the full height (no `segments`; S-C4 retired — nothing can leave the groove out in tactile mode), plus `arrow_recut = {z_from, z_to, lip}` on the embossing plate: the chain plus 0.3 mm at each end (`SEAM_CHANNEL_ARROW_MARGIN_MM`), clamped 0.05 mm inside the end faces (`SEAM_CHANNEL_RECUT_INSET_MM`, new), lip = raise + 0.5. The worker and the golden renderer subtract it after the raised arrows join. The slicing study reran (`build/seam_spike_through`): embossing plate 100 % in the groove, counter plate 36.9 % with the rest on the recess edges, 0 % in a dot. All eight golden pairs regenerated. |
 
 ### 8.3 Polygon Point Validation (csg-worker.js)
 
@@ -1340,8 +1442,9 @@ first_row_center_y = height - space_above - dot_spacing
 
 ---
 
-*Document Version: 1.4*
-*Last Updated: 2026-08-22*
+*Document Version: 1.6*
+*Last Updated: 2026-09-20*
+*Revision Notes (1.6, 2026-09-20): New §2.6 Slicer Seam Channel and a Document History row — the groove every cylinder carries since 2026-09-20, its Expert Mode switch, wire, constants, placement and fit rules, worker cut and golden regeneration. The Table of Contents gained the 2.6 entry. No other section changed.*
 *Revision Notes: Added detailed debug logging information and troubleshooting checklist for cylinder dot positioning (Section 10.7)*
 *Revision Notes (1.2, 2026-08-21): Documentation only — the Source Files Referenced line named `templates/index.html`, an empty deprecated folder; it now names `public/index.html`. Part of the templates/ reference sweep (Phase 07b).*
 *Revision Notes (1.3, 2026-08-22): Documentation only — the HTML Implementation sample in Section 1 showed the accordion chevron as a bare `<span class="expert-submenu-icon">`, which is no longer what ships. All six live chevrons gained `aria-hidden="true"` so the decorative `▼` stops being read as part of the toggle's accessible name (POST15_7 audit finding F-B; UI_INTERFACE_CORE_SPECIFICATIONS.md v1.20 §4.5). The sample is updated to match so it is not copied into a new submenu without the attribute. No dimension, formula or measurement changed.*

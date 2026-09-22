@@ -29,6 +29,11 @@
           "description": "BETA, double-sided mode only: the braille for the BACK face of the card. Same Unicode braille rule as 'lines'. Ignored unless double_sided.enabled is true."
         },
         "languages": { "type": "array", "items": { "type": "string" } },
+        "back_languages": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Double-sided only: the liblouis table used for each BACK row, the mirror of 'languages' (on the wire: top-level back_per_line_language_tables beside per_line_language_tables). Sent only when the back was placed manually, one entry per row; absent for Auto placement and for a hand-filled back braille field, which use the master table. Informational: geometry never reads it."
+        },
         "default_language": { "type": "string", "default": "en-ueb-g2.ctb" },
         "original_lines": { "type": "array", "items": { "type": "string" } },
         "auto_wrap": { "type": "boolean" }
@@ -150,6 +155,12 @@
           "default": "visual",
           "description": "Cylinder only. visual = recessed triangle (plus optional letter square) in marker cells at the start of each row. tactile = raised arrow on the emboss plate and a matching recess on the counter plate, centred in the seam gap at 180 degrees with the apex toward the cylinder top; removes the marker columns and ignores 'enabled'."
         },
+        "tactile_indicator_layout": {
+          "type": "string",
+          "enum": ["per_row", "three_spaced"],
+          "default": "per_row",
+          "description": "Tactile only. per_row = one arrow per braille row at the row centres: the 0.4 mm card-stock preset, and the absent-field fallback, so every existing request is unchanged. three_spaced = exactly three arrows, at mid-height and 15 mm above and below it, whatever the row count: the 0.3 mm card-stock preset's marking (2026-09-20), so a blind user can tell the two presets apart by touch, and a 0.3 mm cylinder will not nest with a 0.4 mm one. The UI sends this only for the 0.3 preset in tactile mode. The request is rejected when the outer arrows would run past the barrel ends: cylinder height must be at least 2 x (15 + tactile_indicator_length / 2 + tactile_recess_clearance)."
+        },
         "tactile_indicator_width": { "type": "number", "minimum": 2, "maximum": 10, "default": 4.0, "description": "Tactile only: indicator width measured around the cylinder (mm)" },
         "tactile_indicator_length": { "type": "number", "minimum": 2, "maximum": 15, "default": 10.0, "description": "Tactile only: indicator length measured along the cylinder axis (mm)" },
         "tactile_indicator_raise": { "type": "number", "minimum": 0, "maximum": 2, "default": 0.5, "description": "Tactile only: how far the emboss plate's arrow stands proud of the surface (mm). Keep below the braille dot height so the dots carry the rolling pressure." },
@@ -196,6 +207,15 @@
       "additionalProperties": false,
       "properties": {
         "enabled": { "type": "boolean", "default": false, "description": "BETA feature toggle, default false. false preserves today's behavior exactly - no geometry, warnings, or output files change. true adds the integrated top and bottom gears to generated CYLINDERS as one solid piece (cards reject it), forces the barrel solid (no polygonal cutout), and uses the vendored 1:1 gear assets in static/assets/gears/." }
+      }
+    },
+
+    "seam_channel": {
+      "type": "object",
+      "description": "Slicer seam channel: a shallow V-groove, 1.0 mm wide x 0.5 mm deep at 90 degrees, cut the full height of every cylinder's OUTER surface inside the seam gap beside the row-indicator column, on both plates. In a slicer's default 'aligned' seam mode each layer's seam snaps into the groove instead of into a braille dot, so no seam painting is needed (2026-09-20 slicing spike: 100 % of layers captured on both visual plates and the tactile counter plate, 90.8 % on the tactile embossing plate with the rest on the raised arrow tips, never a dot). Width, depth and side margin are constants in app/geometry_spec.py (SEAM_CHANNEL_*), not dials: the groove is print-tuned and its safe ranges live in SURFACE_DIMENSIONS_SPECIFICATIONS.md. Cylinders only; cards never get one. It is left out, with a warning, when the seam gap has less than 1.5 mm of free surface at the cell count and diameter, or when the polygonal cutout would leave less than 1.2 mm of wall under it. Solid barrels (integrated gears, Version 2) skip the wall rule.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": true, "description": "Default true: every cylinder gets the channel. false restores the plain barrel exactly as it was before 2026-09-20 - no geometry, warning or output-file change apart from the missing groove. The Expert Mode switch is the only thing that sends false; an absent field means true." }
       }
     },
 

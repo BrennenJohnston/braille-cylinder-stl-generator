@@ -5,7 +5,9 @@
  * version: one raised arrow per row on the embossing plate, a matching recess on
  * the counter plate, both centred in the seam gap. It removes the marker cells,
  * which changes text capacity - so the payload sent to /geometry_spec is what
- * these tests assert on.
+ * these tests assert on. Since 2026-09-20 the 0.3 mm card thickness preset
+ * marks its cylinders with three fixed arrows instead (tactile_indicator_layout
+ * 'three_spaced'); the 0.4 preset sends nothing and keeps one arrow per row.
  *
  * @see docs/specifications/RECESS_INDICATOR_SPECIFICATIONS.md
  */
@@ -121,25 +123,27 @@ test.describe('Row Indicator Style', () => {
     await expect(warning).toBeHidden();
 
     await page.locator('input[name="indicator_mode"][value="tactile"]').check();
-    await expect(page.locator('#grid_columns')).toHaveValue('14');
+    await expect(page.locator('#grid_columns')).toHaveValue('13');
     await expect(warning).toBeHidden();
+    await expect(page.locator('#card-fit-warning')).toBeHidden();
   });
 
   test('tactile mode frees the marker columns and sends the tactile parameters', async ({ page }) => {
     await openApp(page);
 
     await page.locator('input[name="indicator_mode"][value="tactile"]').check();
-    // The dial normalizes to the recommended tactile capacity
-    await expect(page.locator('#grid_columns')).toHaveValue('14');
+    // The dial normalizes to the recommended tactile capacity: 13 since the
+    // card-fit check of 2026-09-21 (D-T4) - the most a 90 mm card holds.
+    await expect(page.locator('#grid_columns')).toHaveValue('13');
 
     const spec = await interceptGeometrySpec(page);
-    await fillBraille(page, '\u2801'.repeat(14));
+    await fillBraille(page, '\u2801'.repeat(13));
     await generate(page, spec);
 
     const settings = spec.body?.settings as Record<string, unknown>;
     expect(settings.indicator_mode).toBe('tactile');
     // No marker columns: the dial value passes through untouched
-    expect(settings.grid_columns).toBe('14');
+    expect(settings.grid_columns).toBe('13');
     // Compared numerically: the Card Thickness preset owns these dials, so the
     // string the input happens to hold ("4" vs "4.0") is not part of the contract.
     expect(Number(settings.tactile_indicator_width)).toBe(4.0);
@@ -147,6 +151,61 @@ test.describe('Row Indicator Style', () => {
     expect(Number(settings.tactile_indicator_raise)).toBe(0.5);
     expect(Number(settings.tactile_recess_clearance)).toBe(0.2);
     expect(Number(settings.tactile_recess_extra_depth)).toBe(0.2);
+  });
+
+  test('the 0.4 preset sends no arrow layout and the 0.3 preset sends three_spaced', async ({ page }) => {
+    await openApp(page);
+    await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+
+    const spec = await interceptGeometrySpec(page);
+    await fillBraille(page, '⠁'.repeat(13));
+    await generate(page, spec);
+    // 0.4, the load default: the field is absent, so this request body is
+    // byte-identical to one from before the layout existed (the backend's
+    // absent-field fallback is per_row, one arrow per row).
+    expect(spec.body?.settings).not.toHaveProperty('tactile_indicator_layout');
+
+    // The 0.3 preset's marking: three fixed arrows. The preset toast lands in
+    // #error-text, which generate() reads on slow runs, so clear it first.
+    await page.locator('input[name="card_thickness_preset"][value="0.3"]').check();
+    await page.evaluate(() => { const t = document.getElementById('error-text'); if (t) t.textContent = ''; });
+    spec.called = false;
+    await generate(page, spec);
+    const settings03 = spec.body?.settings as Record<string, unknown>;
+    expect(settings03.tactile_indicator_layout).toBe('three_spaced');
+  });
+
+  test('a Custom preset follows the card stock last chosen for its arrows', async ({ page }) => {
+    // What a previous session leaves behind after a dial nudge on a 0.3 pair:
+    // the radio state says Custom (the auto-detection persisted it) while the
+    // separate "chosen" key still says 0.3. Seeded before any page script runs,
+    // so restoreThicknessPreset() takes its Custom branch and applies no preset.
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem('braille_prefs_thickness_preset', 'custom');
+        localStorage.setItem('braille_prefs_thickness_preset_chosen', '0.3');
+      } catch { /* private mode */ }
+    });
+    await openApp(page);
+    await expect(page.locator('input[name="card_thickness_preset"][value="custom"]')).toBeChecked();
+
+    await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+    const spec = await interceptGeometrySpec(page);
+    await fillBraille(page, '⠁'.repeat(13));
+    await generate(page, spec);
+    const settings = spec.body?.settings as Record<string, unknown>;
+    expect(settings.tactile_indicator_layout).toBe('three_spaced');
+  });
+
+  test('visual mode never sends an arrow layout, whatever the preset', async ({ page }) => {
+    await openApp(page);
+    await page.locator('input[name="card_thickness_preset"][value="0.3"]').check();
+    await page.evaluate(() => { const t = document.getElementById('error-text'); if (t) t.textContent = ''; });
+
+    const spec = await interceptGeometrySpec(page);
+    await fillBraille(page, '⠁'.repeat(13));
+    await generate(page, spec);
+    expect(spec.body?.settings).not.toHaveProperty('tactile_indicator_layout');
   });
 
   test('an emptied tactile dial falls back to the current default, not a stale one', async ({ page }) => {
@@ -166,7 +225,7 @@ test.describe('Row Indicator Style', () => {
     await page.locator('#tactile_indicator_raise').fill('');
 
     const spec = await interceptGeometrySpec(page);
-    await fillBraille(page, '\u2801'.repeat(14));
+    await fillBraille(page, '\u2801'.repeat(13));
     await generate(page, spec);
 
     const settings = spec.body?.settings as Record<string, unknown>;
@@ -174,7 +233,7 @@ test.describe('Row Indicator Style', () => {
     expect(Number(settings.tactile_indicator_raise)).toBe(0.5);
   });
 
-  test('tactile mode accepts a 14-cell row that visual mode rejects', async ({ page }) => {
+  test('tactile mode recommends 13 cells and warns that 14 run off the card', async ({ page }) => {
     await openApp(page);
 
     const fourteenCells = '\u2801'.repeat(14);
@@ -184,17 +243,40 @@ test.describe('Row Indicator Style', () => {
     await page.locator('#action-btn').click();
     await expect(page.locator('#error-text')).toContainText('the maximum is 13', { timeout: 15_000 });
 
-    // Tactile mode frees both marker columns, so its recommended 14 text cells
-    // take the row without touching the dial.
+    // Tactile mode frees both marker columns, but since the card-fit check of
+    // 2026-09-21 (D-T4) it recommends 13: the card's leading edge sits at the
+    // alignment arrow, and 14 cells need 92.8 mm of a 90 mm card. The row is
+    // still blocked at the dial's 13.
     await page.locator('input[name="indicator_mode"][value="tactile"]').check();
-    await expect(page.locator('#grid_columns')).toHaveValue('14');
+    await expect(page.locator('#grid_columns')).toHaveValue('13');
     await expect(page.locator('#tactile-gap-warning')).toBeHidden();
+    await expect(page.locator('#card-fit-warning')).toBeHidden();
+
+    // Raising the dial to 14 lets the row through with the card-fit warning
+    // (S-T1, signed) on screen - a warning, never a rejection.
+    await page.evaluate(() => {
+      const panel = document.getElementById('expert-settings');
+      if (panel) panel.style.display = 'block';
+      const spacing = document.getElementById('expert-panel-spacing');
+      if (spacing) { spacing.style.display = 'block'; spacing.hidden = false; }
+    });
+    await page.locator('#grid_columns').fill('14');
+    await page.locator('#grid_columns').dispatchEvent('input');
+    await expect(page.locator('#card-fit-warning')).toBeVisible();
+    await expect(page.locator('#card-fit-message')).toContainText(
+      'The last braille cell would run off the card: this layout needs 92.8 mm of card from the alignment arrow and the card is 90 mm. Use 13 cells or fewer.',
+    );
 
     const spec = await interceptGeometrySpec(page);
     await generate(page, spec);
 
     expect((spec.body?.lines as string[])[0]).toBe(fourteenCells);
     expect((spec.body?.settings as Record<string, unknown>).grid_columns).toBe('14');
+
+    // Back at 13 the warning clears.
+    await page.locator('#grid_columns').fill('13');
+    await page.locator('#grid_columns').dispatchEvent('input');
+    await expect(page.locator('#card-fit-warning')).toBeHidden();
   });
 
   test('warns when the seam gap can no longer hold the indicator', async ({ page }) => {
@@ -218,7 +300,7 @@ test.describe('Row Indicator Style', () => {
     await expect(page.locator('#tactile-gap-message')).toContainText('seam gap');
 
     // Back to a layout that fits
-    await page.locator('#grid_columns').fill('14');
+    await page.locator('#grid_columns').fill('13');
     await expect(warning).toBeHidden();
   });
 

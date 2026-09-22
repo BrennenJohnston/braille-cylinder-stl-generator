@@ -167,7 +167,11 @@ async function loadGearAsset(assetName) {
     if (gearAssetCache.has(assetName)) {
         return gearAssetCache.get(assetName);
     }
-    if (assetName !== 'gears_a' && assetName !== 'gears_b') {
+    // Version 1's pair, and since 2026-09-21 the Embosser Version 2 fixed-gear
+    // pair (v2_gears_*, derived by scripts/derive_gear_assets_v2.py). The spec
+    // names one of these four and nothing else is fetched.
+    const KNOWN_GEAR_ASSETS = ['gears_a', 'gears_b', 'v2_gears_a', 'v2_gears_b'];
+    if (!KNOWN_GEAR_ASSETS.includes(assetName)) {
         throw new Error(`Gear asset name not recognized: ${assetName}`);
     }
 
@@ -1651,8 +1655,67 @@ function cutKeyedCutoutsManifold(barrel, keyed, height) {
 /**
  * Create cylinder shell with polygonal cutout using Manifold
  */
+/**
+ * Slicer seam channel: a V-groove the full height of the barrel's OUTER
+ * surface, inside the seam gap beside the row-indicator column, so a slicer's
+ * default "aligned" seam mode hides every layer's seam in it instead of in a
+ * dot (2026-09-20 programme, decisions D-1, D-2, D-13..D-15). The spec block
+ * (app/geometry_spec.py, SEAM_CHANNEL_*) gives the mouth width, the apex depth,
+ * how far the cutter overshoots both end faces, and the lip it starts outside
+ * the surface so the mouth cuts clean.
+ *
+ * theta is in the SAME convention as every dot's theta in the spec, and this
+ * cutter is placed at -theta exactly as every dot and marker is: that global
+ * negation is what puts the groove beside column 0 (see the dots at
+ * adjustedTheta above). The cross-section is built in the radial /
+ * circumferential plane and extruded along the barrel axis, the shape the
+ * slicing spike proved (scripts/seam_spike.py, channel_cutter).
+ *
+ * A malformed block throws: the backend wrote it, so it is a bug, not a
+ * request to guess a groove.
+ */
+function createSeamChannelManifold(channel, height, radius, recut = null) {
+    const { theta, width, depth, overshoot } = channel;
+    // The recut (D-T7, tactile embossing plate) is the same V over the arrow
+    // chain only, its sides carried up past the raised arrows' top faces.
+    const lip = recut ? recut.lip : channel.lip;
+    if (!isFinite(theta) || !(width > 0) || !(depth > 0) || !(lip > 0) || !(overshoot >= 0) || !(radius > 0)) {
+        throw new Error(`seam channel: malformed block ${JSON.stringify(channel)}`);
+    }
+    if (recut && (!isFinite(recut.z_from) || !isFinite(recut.z_to) || !(recut.z_to > recut.z_from))) {
+        throw new Error(`seam channel: malformed recut ${JSON.stringify(recut)}`);
+    }
+
+    const adjustedTheta = -theta;
+    const rOut = radius + lip;
+    // The V is a 90 degree groove of `width` at the surface; extend its sides
+    // outward to the lip so the mouth is cut, not merely touched.
+    const halfMouth = (width / 2) * (depth + lip) / depth;
+    const c = Math.cos(adjustedTheta);
+    const s = Math.sin(adjustedTheta);
+    // Local (u radial-out, v circumferential), wound counter-clockwise, rotated
+    // into world XY at the adjusted angle.
+    const section = [
+        [rOut, -halfMouth],
+        [rOut, halfMouth],
+        [radius - depth, 0],
+    ].map(([u, v]) => [u * c - v * s, u * s + v * c]);
+
+    const crossSection = new CrossSection([section], 'Positive');
+    // The full height plus the overshoot at both ends (extrude the length,
+    // then shift down by half of it), or the recut's own span in this frame.
+    const [zFrom, zTo] = recut
+        ? [recut.z_from, recut.z_to]
+        : [-(height + 2 * overshoot) / 2, (height + 2 * overshoot) / 2];
+    const extruded = Manifold.extrude(crossSection, zTo - zFrom);
+    const placed = extruded.translate([0, 0, zFrom]);
+    extruded.delete();
+    crossSection.delete();
+    return placed;
+}
+
 function createCylinderShellManifold(spec, solid = false, keyed = null) {
-    const { radius, height, thickness, polygon_points } = spec;
+    const { radius, height, thickness, polygon_points, seam_channel: seamChannel } = spec;
 
     const validRadius = (radius > 0) ? radius : 30;
     const validHeight = (height > 0) ? height : 80;
@@ -1660,7 +1723,21 @@ function createCylinderShellManifold(spec, solid = false, keyed = null) {
 
     try {
         // Create outer cylinder
-        const outer = createManifoldCylinder(validHeight, validRadius, CYLINDER_SHELL_SEGMENTS);
+        let outer = createManifoldCylinder(validHeight, validRadius, CYLINDER_SHELL_SEGMENTS);
+
+        // Seam channel first, while the barrel is a bare cylinder: it is an
+        // outer-surface cut, so taking it before the bore, the keyed pockets or
+        // anything unioned later gives the same solid whichever branch follows,
+        // and a raised arrow or dot can never be undercut by it. Absent block,
+        // absent cut - the pre-channel bytes exactly.
+        if (seamChannel) {
+            const channel = createSeamChannelManifold(seamChannel, validHeight, validRadius);
+            const grooved = outer.subtract(channel);
+            outer.delete();
+            channel.delete();
+            outer = grooved;
+            console.log(`Manifold CSG Worker: cut seam channel at ${(-seamChannel.theta * 180 / Math.PI).toFixed(2)} deg (${seamChannel.width} x ${seamChannel.depth} mm)`);
+        }
 
         // Decision D-2, gear mode only: a one-piece roller is SOLID, like the
         // reference part. An empty polygon_points list does not say that on its
@@ -1956,6 +2033,20 @@ function processGeometrySpec(spec, gearAsset = null) {
             for (const ring of gears.weld_rings || []) {
                 gearParts.push(createWeldRingManifold(ring));
             }
+            // Fused Version 2 (2026-09-21, decision D-6): each top gear keeps an
+            // anti-rotation notch in its barrel face, and a solid barrel over
+            // it would seal a void nothing can drain. The spec carries the
+            // notch's outline grown 0.05 mm (app/geometry/version2.py
+            // notch_fill_block) as a plain prism from just inside the barrel
+            // face to just past the notch floor; it joins the gear stage so
+            // the CSG order is unchanged. The profile is a simple CCW loop,
+            // like the nub's, so the same cross-section rule applies.
+            for (const fill of gears.notch_fills || []) {
+                if (!(fill.z_to > fill.z_from)) {
+                    throw new Error(`Version 2 notch fill ${fill.gear}: z_to ${fill.z_to} must be above z_from ${fill.z_from}`);
+                }
+                gearParts.push(keyedPrismManifold(fill.profile, fill.z_from, fill.z_to - fill.z_from, `notch fill ${fill.gear}`));
+            }
             const unionedGears = batchUnionManifold(gearParts);
             if (!unionedGears) {
                 throw new Error('Gear union produced no geometry');
@@ -1964,7 +2055,7 @@ function processGeometrySpec(spec, gearAsset = null) {
             result.delete();
             unionedGears.delete();
             result = withGears;
-            console.log(`Manifold CSG Worker: Added gear set ${gears.asset} with ${gears.weld_rings?.length || 0} weld rings`);
+            console.log(`Manifold CSG Worker: Added gear set ${gears.asset} with ${gears.weld_rings?.length || 0} weld rings and ${gears.notch_fills?.length || 0} notch fills`);
         }
 
         // Embosser Version 2: the key nub is the only thing Version 2 ADDS to the
@@ -2013,6 +2104,21 @@ function processGeometrySpec(spec, gearAsset = null) {
                 unionedRaised.delete();
                 result = newResult;
                 console.log('Manifold CSG Worker: Added raised tactile indicators');
+            }
+
+            // D-T7 (2026-09-21): in tactile mode the seam channel is cut a
+            // second time over the arrow chain, now that the raised arrows are
+            // on, so the V runs through them and the slicer has a corner at
+            // every layer. The spec carries the span and the taller lip; the
+            // cut never reaches an end face, so a gear's face is untouched.
+            const recut = cylinder?.seam_channel?.arrow_recut;
+            if (isCylinder && recut) {
+                const recutter = createSeamChannelManifold(cylinder.seam_channel, cylinder.height, cylinder.radius, recut);
+                const notched = result.subtract(recutter);
+                result.delete();
+                recutter.delete();
+                result = notched;
+                console.log(`Manifold CSG Worker: recut seam channel through the raised arrows, z ${recut.z_from.toFixed(2)}..${recut.z_to.toFixed(2)} mm`);
             }
         }
 

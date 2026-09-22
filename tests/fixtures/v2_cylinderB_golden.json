@@ -3,7 +3,7 @@
   "fixture_name": "v2_cylinderB_golden",
   "plate_type": "negative",
   "generation": {
-    "note": "Rendered by tests/test_golden.py generate_v2_golden_fixtures() from extract_cylinder_geometry_spec called directly with embosser_version=2 and no back_lines, so this pair is a SINGLE-SIDED Version 2 cylinder. The barrel comes from tests/test_version2_keyed.build_v2_cylinder, the same builder the acceptance harness measures. Z-up, theta as emitted, base of the barrel reseated to z=0 - which puts Cylinder A nub at z 54..57 and leaves Cylinder B at z 0..54.",
+    "note": "Rendered by tests/test_golden.py generate_v2_golden_fixtures() from extract_cylinder_geometry_spec called directly with embosser_version=2 and no back_lines, so this pair is a SINGLE-SIDED Version 2 cylinder. The barrel comes from tests/test_version2_keyed.build_v2_cylinder, the same builder the acceptance harness measures. Z-up, theta as emitted, base of the barrel reseated to z=0 - which puts Cylinder A nub at z 54..57 and leaves Cylinder B at z 0..54. Since 2026-09-20 the barrel also carries the slicer seam channel (V 1.0 x 0.5 mm, cut from the keyed shell before anything joins).",
     "cylinder_diameter_note": "ds_cylinder*_golden uses 30.75 mm; this pair uses 30.8 mm because that is the Version 2 preset barrel (D-V4), which walked back on 2026-08-30 to the size Version 1 has always used and so now matches gear_roller*_golden. Any other size makes app/geometry_spec.py emit the S-V5 size note, and a spec carrying warnings is refused by the generator above - so these fixtures exist only at the preset size.",
     "grid_columns_note": "ds_cylinder*_golden and gear_roller*_golden use 14 columns; this pair uses 3, the width its own braille line occupies. Single-sided mode restores the universal counter grid, so 14 columns would put 336 bowls on Cylinder B and make the fixture 13.01 MB against 2.88 MB here. The counter grid is Version 1 geometry pinned by cylinder_counter_small.stl; nothing this pair exists to prove depends on it.",
     "key_profiles": {
@@ -17,6 +17,7 @@
       ""
     ],
     "settings": {
+      "card_width": 100.0,
       "grid_columns": 3,
       "grid_rows": 4,
       "indicator_mode": "tactile",
@@ -37,16 +38,16 @@
       "wall_thickness": 2.0,
       "seam_offset_deg": 355.0
     },
-    "generated": "2026-08-28",
+    "generated": "2026-09-20",
     "trimesh_version": "4.10.1",
     "manifold3d_version": "3.3.2"
   },
   "expected_properties": {
-    "face_count": 60932,
-    "vertex_count": 30466,
+    "face_count": 60972,
+    "vertex_count": 30486,
     "is_watertight": true,
     "bbox_min": [
-      -15.399999618530273,
+      -15.3765869140625,
       -15.399999618530273,
       0.0
     ],
@@ -55,7 +56,7 @@
       15.399999618530273,
       57.0
     ],
-    "volume": 29919.406520399247,
-    "surface_area": 9656.148810344666
+    "volume": 29916.10578150322,
+    "surface_area": 9659.015540835688
   }
 }

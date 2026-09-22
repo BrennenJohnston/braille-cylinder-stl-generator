@@ -461,14 +461,19 @@ def arrow_zone_margins(
     radius: float = CYLINDER_RADIUS_MM,
     arrow_width: float = TACTILE_ARROW_WIDTH_MM,
     recess_clearance: float = TACTILE_RECESS_CLEARANCE_MM,
+    arrow_arc_mm: float = 0.0,
 ) -> dict[str, Any]:
     """
     How close the shifted back grid comes to the tactile row arrow.
 
-    The arrow sits in the seam gap at theta = pi. Shifting the back grid by the
-    interpoint offset moves it towards the arrow on one side and away on the
-    other; this reports both sides, on both cylinders, from feature edge to
-    arrow edge.
+    The arrow sits in the seam gap at theta = pi (TACTILE_SEAM_THETA; a
+    lead-in before column 0 was tried and reverted on 2026-09-21, D-T6), or
+    `arrow_arc_mm` toward column 0 from there - the RIGHT of Cylinder A's
+    arrow seen from outside - should a caller ever place it off-centre.
+    Shifting the back grid by the interpoint offset moves it towards the arrow
+    on one side and away on the other; this reports both sides, on both
+    cylinders, from feature edge to arrow edge. geometry_spec passes nothing
+    today (this module cannot import it - geometry_spec imports this one).
 
     On Cylinder A the neighbouring feature is a back-side recess and the arrow
     is raised at its nominal width. On Cylinder B the feature is a raised back
@@ -481,6 +486,8 @@ def arrow_zone_margins(
     """
     if direction not in (-1, 1):
         raise ValueError(f'direction must be -1 or +1, got {direction!r}')
+    if arrow_arc_mm < 0:
+        raise ValueError(f'arrow_arc_mm is measured toward column 0 and cannot be negative, got {arrow_arc_mm!r}')
 
     grid_width = (cols - 1) * cell_pitch
     half_circumference = math.pi * radius
@@ -492,8 +499,11 @@ def arrow_zone_margins(
         # The full back grid is the front grid mirrored (which maps it onto
         # itself) and then translated, so its outermost dot columns sit here.
         back_x = sign * outermost + direction * offset_x
-        to_arrow_centre = half_circumference - abs(back_x)
         theta_a_deg = math.degrees(-back_x / radius) % 360.0
+        # The arrow moved toward column 0 (theta below pi on A, the right side),
+        # so that side's features are arrow_arc_mm closer and the other's
+        # arrow_arc_mm further.
+        to_arrow_centre = half_circumference - abs(back_x) + (arrow_arc_mm if theta_a_deg > 180.0 else -arrow_arc_mm)
         sides.append(
             {
                 'card_frame_sign': sign,
@@ -510,6 +520,7 @@ def arrow_zone_margins(
     tight = min(sides, key=lambda side: min(side['recess_edge_margin_on_a_mm'], side['dot_edge_margin_on_b_mm']))
     return {
         'direction': direction,
+        'arrow_arc_mm': arrow_arc_mm,
         'seam_gap_mm': seam_gap,
         'sides': sides,
         'tight_side_of_arrow_on_a': tight['side_of_arrow_on_a'],

@@ -678,6 +678,81 @@ def _wire_points(points: list[tuple[float, float]]) -> list[dict]:
     return [{'x': round(x, 6), 'y': round(y, 6)} for x, y in points]
 
 
+# ---------------------------------------------------------------------------
+# Fused Version 2 rollers (2026-09-20 programme, sub-plan B, decision D-6)
+#
+# With fixed gears the barrel is SOLID: no keyed holes, no countersinks, no nub,
+# no socket - the pegs sit buried in solid barrel and the gears weld on through
+# the same r 8..13 rings Version 1 uses. One thing is left over: each TOP gear
+# (A1, B1) still carries the anti-rotation NOTCH cut into its barrel-facing face,
+# and a solid barrel face over an open notch seals a void nothing can drain. So
+# the notch is filled by hidden material: its measured outline grown outward by
+# V2_NOTCH_FILL_GROWTH_MM as an exact parallel curve (a mitre would push the A
+# triangle's sharp apex out by growth / sin(30 deg) = 0.10 mm, twice the
+# growth), extruded from just inside the barrel face to just past the notch
+# floor, and unioned in the gear stage. The bottom gears' PINS need nothing:
+# they are solid material standing into a solid barrel.
+#
+# The fill's outer edge must never reach the other roller: at the Version 1
+# operating distance of 32.0473 mm the mating gear's tip circle passes
+# 32.0473 - 16.1093702290795 = 15.938 mm from this axis, so the cap below keeps
+# 1.99 mm clear. The Version 2 operating distance is NOT yet known (open item,
+# 01_V2_GEAR_AUDIT.md section 7); on the A gear the notch is open air past the
+# 13.66 root circle anyway, so nothing beyond it needs filling.
+V2_NOTCH_FILL_GROWTH_MM = 0.05
+V2_NOTCH_FILL_MAX_RADIUS_MM = 13.95
+V2_NOTCH_FILL_OVERLAP_MM = 0.05
+V1_OPERATING_AXIS_DISTANCE_MM = 32.0473
+GEAR_TIP_RADIUS_MM = 16.1093702290795
+MATING_TIP_CIRCLE_RADIUS_MM = V1_OPERATING_AXIS_DISTANCE_MM - GEAR_TIP_RADIUS_MM
+assert V2_NOTCH_FILL_MAX_RADIUS_MM < MATING_TIP_CIRCLE_RADIUS_MM, 'the notch fill would reach the other roller'
+
+
+def notch_fill_outline(plate_type: str) -> list[tuple[float, float]]:
+    """
+    The hidden fill for this plate's top-gear notch, CCW: the measured notch
+    outline (V2_GEAR_ANTIROT, gear v7.2 = v8) grown by V2_NOTCH_FILL_GROWTH_MM as
+    an exact parallel curve, so it overlaps the notch walls by that much on every
+    face and its sharp apex becomes a 0.05 mm arc rather than a 0.10 mm spike.
+    """
+    if plate_type not in ANTIROT_BY_PLATE:
+        raise ValueError(f'unknown plate type {plate_type!r}; known: {sorted(ANTIROT_BY_PLATE)}')
+    notch = V2_GEAR_ANTIROT[ANTIROT_BY_PLATE[plate_type]['nub']]
+    if notch['kind'] != 'notch':
+        raise ValueError(f'{notch["gear"]} carries a {notch["kind"]}, not a notch')
+    if notch['shape'] == 'triangle':
+        outline = nub_triangle(notch['inner_radius'], notch['outer_radius'], notch['half_width'], V2_ARROW_COLUMN_DEG)
+    else:
+        outline = radial_rectangle(notch['inner_radius'], notch['outer_radius'], notch['half_width'], 0.0)
+    grown = parallel_curve(outline, V2_NOTCH_FILL_GROWTH_MM)
+    reach = max(math.hypot(x, y) for x, y in grown)
+    if reach > V2_NOTCH_FILL_MAX_RADIUS_MM:
+        raise ValueError(
+            f'{notch["gear"]} notch fill reaches r {reach:.4f}, past the {V2_NOTCH_FILL_MAX_RADIUS_MM} cap'
+        )
+    return grown
+
+
+def notch_fill_block(plate_type: str, height: float) -> dict:
+    """
+    The fill as the worker reads it: one prism, profile on the wire, z_from just
+    inside the barrel's top face to z_to just past the notch floor inside the
+    gear (overlapping both solids by V2_NOTCH_FILL_OVERLAP_MM so no two share an
+    exact plane). Computed from THIS cylinder's height, like the socket.
+    """
+    if height <= 0:
+        raise ValueError(f'Version 2 cylinder height must be positive, got {height}')
+    notch = V2_GEAR_ANTIROT[ANTIROT_BY_PLATE[plate_type]['nub']]
+    half_height = height / 2.0
+    return {
+        'gear': notch['gear'],
+        'shape': notch['shape'],
+        'profile': _wire_points(notch_fill_outline(plate_type)),
+        'z_from': half_height - V2_NOTCH_FILL_OVERLAP_MM,
+        'z_to': half_height + notch['depth'] + V2_NOTCH_FILL_OVERLAP_MM,
+    }
+
+
 def nub_block(plate_type: str) -> dict:
     """
     One plate's anti-rotation nub, standing proud of its TOP face.

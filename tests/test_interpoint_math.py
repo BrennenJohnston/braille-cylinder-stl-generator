@@ -113,7 +113,11 @@ def test_worst_case_lattice_is_every_dot_of_every_cell():
 
 
 def test_mirror_fixes_the_grid_centre_and_the_seam_arrow():
-    """theta -> -theta holds 0 and pi still; pi is where the tactile arrow sits."""
+    """
+    theta -> -theta holds 0 and pi still; pi is the seam-gap centre the arrow
+    sits on (D-T6, 2026-09-21), and any pair of angles pi -/+ s/R are each
+    other's mirror about it.
+    """
     assert ip.mirror_theta(0.0) == 0.0
     assert math.cos(ip.mirror_theta(math.pi)) == pytest.approx(math.cos(math.pi), abs=1e-12)
     assert math.sin(ip.mirror_theta(math.pi)) == pytest.approx(math.sin(math.pi), abs=1e-12)
@@ -283,6 +287,30 @@ def test_d3_sign_variants_report_their_arrow_zone_margins():
 def test_arrow_zone_margins_reject_a_direction_that_is_not_a_sign():
     with pytest.raises(ValueError):
         ip.arrow_zone_margins(direction=2)
+
+
+def test_arrow_zone_margins_follow_an_arrow_moved_toward_column_0():
+    """
+    arrow_zone_margins() can report an arrow moved toward column 0 - the RIGHT
+    of Cylinder A's arrow, seen from outside - so the right side's back features
+    come exactly the arc closer and the left side's go the arc further. The
+    shipped arrow sits at the seam-gap centre (arc 0, the default); the
+    parameter exists for layouts that move it, and is refused when negative.
+    """
+    centred = ip.arrow_zone_margins()
+    assert centred['arrow_arc_mm'] == 0.0
+    arc = 0.95
+    shifted = ip.arrow_zone_margins(arrow_arc_mm=arc)
+    assert shifted['arrow_arc_mm'] == arc
+    for before, after in zip(centred['sides'], shifted['sides'], strict=True):
+        assert after['side_of_arrow_on_a'] == before['side_of_arrow_on_a']
+        sign = 1.0 if after['side_of_arrow_on_a'] == 'left' else -1.0
+        for key in ('centre_to_arrow_centre_mm', 'recess_edge_margin_on_a_mm', 'dot_edge_margin_on_b_mm'):
+            assert after[key] == pytest.approx(before[key] + sign * arc, abs=1e-9)
+    assert shifted['tight_side_of_arrow_on_a'] == 'left'
+    assert shifted['tight_margin_mm'] > centred['tight_margin_mm']
+    with pytest.raises(ValueError):
+        ip.arrow_zone_margins(arrow_arc_mm=-0.1)
 
 
 # -----------------------------------------------------------------------------
@@ -540,7 +568,12 @@ PRE_DOUBLE_SIDED_CYLINDER_PARAMS = {
     'polygonal_cutout_radius_mm': 6.0,
     'polygonal_cutout_sides': 3,
 }
-PRE_DOUBLE_SIDED_SETTINGS = {'grid_rows': 2, 'grid_columns': 3}
+# The slicer seam channel (2026-09-20) is ON by default for every cylinder and
+# adds cylinder.seam_channel to a spec; it is the one deliberate default-on
+# change since this snapshot was taken, so it is switched off here. The
+# snapshot itself is untouched, and tests/test_seam_channel_spec.py proves the
+# switch off changes nothing but that key.
+PRE_DOUBLE_SIDED_SETTINGS = {'grid_rows': 2, 'grid_columns': 3, 'seam_channel_enabled': 0}
 PRE_DOUBLE_SIDED_LINES = ['⠁⠃', '⠉', '', '']
 PRE_DOUBLE_SIDED_ORIGINAL_LINES = ['ab', 'c', '', '']
 

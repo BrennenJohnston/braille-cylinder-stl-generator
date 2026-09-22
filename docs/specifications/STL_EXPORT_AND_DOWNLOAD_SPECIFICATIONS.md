@@ -39,7 +39,7 @@ This document specifies the STL export and download system in the Braille Card a
 12. [Error Handling](#12-error-handling)
 13. [Performance Characteristics](#13-performance-characteristics)
 14. [Cross-Implementation Consistency](#14-cross-implementation-consistency)
-15. [Paired Generation — Generate Both Cylinders (Double-Sided Beta)](#15-paired-generation--generate-both-cylinders-double-sided-beta)
+15. [Paired Generation — Both Cylinders by Default](#15-paired-generation--both-cylinders-by-default)
 
 ---
 
@@ -710,6 +710,16 @@ if (isCylinder) {
 }
 ```
 
+**Slicer seam channel (2026-09-20):** the groove every cylinder carries sits at
+the spec's `cylinder.seam_channel.theta`, placed by the Manifold worker at
+`-theta` exactly as every dot and marker is; there is NO extra export rotation
+(programme decision D-14 — "rear" seam mode cannot be made safe for the
+embossing plate by any orientation, so exports keep the orientation above and
+the guide tells Back-mode users to switch to Aligned). In the file the groove
+is at 181.67° on the embossing plate and 178.33° on the counter plate for the
+default 15-column visual layout. Geometry and rules:
+SURFACE_DIMENSIONS_SPECIFICATIONS.md §2.6.
+
 ### Combined Pair File (Two-Body Concatenation)
 
 **Source:** `combineBinaryStl(bufA, bufB, xOffsetMm)` in `public/index.html`
@@ -831,7 +841,10 @@ Cylinder_Pair_Geared_{preset}_{name}.stl    // pair run, gears on
 ```
 
 `{preset}` and `{name}` reuse `getThicknessPresetSegment()` and `deriveStlNameSegment()`,
-so the combined file sorts beside the A and B files it contains.
+so the combined file sorts beside the A and B files it contains. Since 2026-09-21 this is
+the file the ONE **Download STL** button saves after the default both-cylinder run (§15);
+the single-cylinder names above are what it saves when one cylinder is chosen under
+Expert Mode → Cylinders to Generate. No name changed (programme decision D-10).
 
 ### Examples
 
@@ -867,9 +880,12 @@ so the combined file sorts beside the A and B files it contains.
 | `#download-stl-btn` | **Hidden** | — | — | — | Not in the tab order |
 | `#download-stl-btn` | **Offered** | "Download STL" | — | Yes | Download the built file |
 
-Pair mode adds three more download buttons (`#download-pair-btn`,
-`#download-cylinder-a-btn`, `#download-cylinder-b-btn`) with their own show/hide rules —
-documented with the rest of the pair flow in Section 15.
+Since 2026-09-21 there is no second download control: after the default both-cylinder
+run the same `#download-stl-btn` is **Offered** with the combined pair file behind it (or,
+when the combine failed, Cylinder A on the first press and Cylinder B on the next — S-E6 (signed 2026-09-21)
+), and the pair's progress and ready sentence live in `#pair-status`. The three pair
+download buttons and the Generate Both button of 2026-08-17..2026-09-20 are gone —
+Section 15.
 
 `#action-btn` never carries `data-state="download"` any more. The `download-state`
 class survives only on the historical `#action-btn.download-state` rules; the new
@@ -1410,106 +1426,112 @@ async function test_geometry_consistency() {
 
 ---
 
-## 15. Paired Generation — Generate Both Cylinders (Pair Mode)
+## 15. Paired Generation — Both Cylinders by Default
 
-Added 2026-08-17 for the Double-Sided Card beta; widened 2026-08-25 to **pair mode**:
-the flow applies while `isPairModeOn()` is true — the Double-Sided checkbox OR the
-Integrated Gears toggle (either beta, shape `cylinder`). A gear set only works meshed
-with its counterpart (gears_a with gears_b), so a gears-only user needs the pair exactly
-as a double-sided user does. With both betas off, nothing in this section exists on the
-page and the single-plate flow of Sections 7 and 8 is unchanged.
+Added 2026-08-17 for the Double-Sided Card beta as a separate **Generate Both** button;
+widened 2026-08-25 to pair mode (double-sided OR gears OR, from 2026-08-28, Version 2);
+**universal since 2026-09-21** (programme sub-plan E, decisions D-8, D-9, D-10): every
+press of **Generate STL** builds Cylinder A and Cylinder B unless **Cylinders to
+Generate** — the FIRST Expert Mode submenu — names one of them, and the ONE **Download
+STL** button saves the combined file. `isPairModeOn()`, `updatePairModeUI()` and the
+plate-radio relabel are retired: A and B are the useful output for every embosser, and
+the two-step "switch the plate radio and generate again" flow is what this section
+exists to remove.
 
 ### Why it exists
 
-A double-sided pair only works if both cylinders come from **one** set of settings. In the
-two-step flow the user generates Cylinder A, switches the plate radio, and generates
-Cylinder B — and anything they touch in between produces a pair that cannot emboss the
-same card. Generate Both removes that window: one press runs the whole pipeline twice with
-nothing editable between the runs.
+A pair only works if both cylinders come from **one** set of settings. In the old two-step
+flow the user generated Cylinder A, switched the plate radio, and generated Cylinder B —
+and anything they touched in between produced a pair that cannot emboss the same card.
+One press runs the whole pipeline twice with nothing editable between the runs.
 
-### The control
+### The controls
 
 | Element | Id | Shown | Notes |
 |---|---|---|---|
-| Generate Both Cylinders (A and B) | `#generate-both-btn` | Pair mode only | `<button type="button">` in the pinned `.action-footer`, min 44 × 44 px, named by its visible text |
+| Cylinders to Generate | `#cylinders-to-generate-submenu` → `#expert-panel-cylinders` | Expert Mode open | The first submenu (h3 like the others). Radios `name="plate_selection"`: `both` (checked; label S-E2 (signed 2026-09-21) *"Both Cylinder A and B"*, sr-only description S-E3 (signed 2026-09-21)), `positive` (*"Cylinder A — Embossing Plate"*), `negative` (*"Cylinder B — Universal Counter Plate"*) — the A/B labels signed 2026-08-17, now static markup. Legend S-E1 (signed 2026-09-21). The old main-form "Select Plate to Generate" fieldset is gone |
+| Generate STL | `#action-btn` | always | Unchanged control; `runGenerate()` sends it to `runGenerateBothCylinders()` when `both` is chosen, else `runGenerateForCurrentPlate()` |
 | Pair status line | `#pair-status` | While a run is in flight and after it ends | `role="status" aria-live="polite"`, visible text — sighted and screen-reader users get the same progress |
-| Download Combined STL (Cylinders A and B) | `#download-pair-btn` | After a successful combine | FIRST inside `#pair-downloads` (the one-plate print is the primary offer); label signed off 2026-08-25; hidden when the combine failed, leaving A and B alone on the row |
-| Download Cylinder A / B | `#download-cylinder-a-btn`, `#download-cylinder-b-btn` | After both cylinders are built | Inside `#pair-downloads`; each saves its own file on click |
+| Download STL | `#download-stl-btn` | After a successful run | Saves the combined `Cylinder_Pair_…` file after a both run; Cylinder A then Cylinder B (one press each) when the combine failed; the single file after a single-cylinder run |
 
-While pair mode is on, the plate radios are relabelled **Cylinder A — Embossing Plate** and
-**Cylinder B — Universal Counter Plate** (reuse in gears-only mode confirmed by Brennen
-2026-08-25). The radio `value`s (`positive` / `negative`) and the `aria-describedby`
-descriptions are untouched, and the off-state label text is captured from the markup at
-load, so turning both betas off restores the single-sided labels character for character.
-`updatePairModeUI()` owns the relabel, the button visibility, and clearing stale pair
-results; it is deliberately silent — each beta's own update function makes the single
-announcement.
+`currentPlateSelection()` returns `both | positive | negative` and `currentPlateType()`
+resolves `both` to `positive` wherever a single plate's wording or settings are needed
+(the cell-count note, the single-plate request). The persistence key is the old
+`braille_prefs_plate_type`; a saved `positive` / `negative` from before 2026-09-21 is
+still honoured as that single cylinder, anything else leaves the default `both`.
 
 ### Run sequence
 
-1. Remember the user's plate selection and the Number of Available Braille Cells value.
+1. Remember the user's choice (`both` in the default flow) and the Number of Available
+   Braille Cells value.
 2. Select the **positive** radio with a real `change` event, so persistence, the cell dial,
    and the shape settings react exactly as they do to a click. A radio that is already
    checked fires nothing, matching a real click on an already-selected option.
-3. Restore the cell dial (see *Identical settings* below), lock both generate controls,
+3. Restore the cell dial (see *Identical settings* below), lock the generate control,
    announce `Generating Cylinder A (1 of 2)...`.
 4. Run `runGenerateForCurrentPlate()` to completion and keep the resulting blob.
 5. Repeat steps 2–4 for **negative** with `Generating Cylinder B (2 of 2)...`.
 6. **Eagerly combine** the two retained blobs into the pair file (§6, *Combined Pair
    File*) — at completion rather than on click, so a corrupt buffer surfaces here, where
-   A and B stay usable, instead of as a dead button press later. A combine failure is
-   logged, leaves `pairFiles.combined` null, and hides `#download-pair-btn`. On success
-   the pair is also presented in the 3D preview: two centred bodies, A screen-left,
-   B screen-right, centres `pairXOffsetMm()` apart.
-7. Reveal the download controls and announce
-   `Both cylinders are ready. Use the Download Combined STL button below to save one file with both cylinders spaced for printing on one plate, or use the Download Cylinder A and Download Cylinder B buttons to save them separately.`
-   (signed off 2026-08-25, replacing the 2026-08-18 sentence; pinned as `PAIR_READY` in
-   `tests/e2e/completionWarnings.spec.ts` — the sentence and the pin change in one commit).
-   **Nothing downloads on its own** — see *Downloads* below.
-8. In a `finally` block: restore the user's plate selection and cell dial, unlock the
-   controls, reset the action button, and return focus to Generate Both if the run was
-   started from the keyboard.
+   A and B stay usable, instead of as a dead button press later. On success the pair is
+   also presented in the 3D preview: two centred bodies, A screen-left, B screen-right,
+   centres `pairXOffsetMm()` apart.
+7. Announce the result in `#pair-status`. Combine succeeded — S-E5 (signed 2026-09-21):
+   `Both cylinders are ready. Use the Download STL button to save one file with both cylinders spaced for printing on one plate.`
+   (replaces the sentence signed 2026-08-25, which named the three pair buttons; pinned as
+   `PAIR_READY` in `tests/e2e/completionWarnings.spec.ts` — the sentence and the pin change
+   in one commit). Combine failed — S-E6 (signed 2026-09-21):
+   `The combined file could not be built. Download STL now saves Cylinder A; press it again for Cylinder B.`
+   and `pairFallbackQueue` holds A then B for the Download button. **Nothing downloads on
+   its own** — see *Downloads* below.
+8. In a `finally` block: restore the user's choice and the cell dial, reset the action
+   button (`resetToGenerateState()`, which also hides the Download button), THEN reveal
+   `#download-stl-btn` when there is something to save, and return focus to Generate STL
+   if the run was started from the keyboard.
 
 `runGenerateForCurrentPlate()` is the former `form.onsubmit` body, extracted unchanged so
 the single-plate path and the paired path are the same code in the same order. It returns
-`true` only when an STL was built; **every** early exit returns `false`.
+`true` only when an STL was built; **every** early exit returns `false`. Both the button
+and Enter in a field submit through `runGenerate()`, so the two entrances cannot drift.
 
 ### Identical settings — the safety contract
 
 Both runs read the same DOM, so all settings match by construction, with one exception
 that had to be handled explicitly:
 
-> Changing the plate type re-fills `#grid_columns` with the recommended value unless the
-> user has typed in that field this session (`updateGridColumnsForPlateType`). Left alone,
-> a mid-run plate switch could hand Cylinder B a different column count from Cylinder A.
+> Changing the cylinder choice re-fills `#grid_columns` with the recommended value unless
+> the user has typed in that field this session (`updateGridColumnsForPlateType`). Left
+> alone, a mid-run switch could hand Cylinder B a different column count from Cylinder A.
 > The pair runner captures the dial before the run and restores it after every switch,
 > including the final restore.
 
-Verified in Chromium and Firefox: the two `/geometry_spec` request bodies of a pair run
-differ in **exactly one key**, `plate_type` (`positive` vs `negative`). `settings`,
-`lines`, `back_lines`, `cylinder_params`, `original_lines`, `per_line_language_tables`,
-`placement_mode`, `grade`, and `shape_type` are byte-identical. Both bodies carry the front
-braille in `lines` and the back braille in `back_lines`, as Section 3 requires.
+Verified in Chromium and Firefox: with Double-sided chosen the two `/geometry_spec`
+request bodies of a pair run differ in **exactly one key**, `plate_type` (`positive` vs
+`negative`); `settings`, `lines`, `back_lines`, `cylinder_params`, `original_lines`,
+`per_line_language_tables`, `placement_mode`, `grade`, and `shape_type` are byte-identical
+(pinned by `tests/e2e/doubleSided.spec.ts`). Single-sided, the universal counter plate
+carries no text of its own, so only `settings` and `cylinder_params` are identical there
+(pinned by `tests/e2e/cylindersToGenerate.spec.ts`).
 
 ### Failure behaviour
 
 A failure on Cylinder A aborts the run and downloads nothing — a Cylinder B with no
 matching A embosses the two sides of a card out of register, which is worse than no file.
-The status line reads `Cylinder A could not be generated, so nothing was downloaded. Fix
-the problem shown in the error message, then press Generate Both Cylinders again.` (same
-sentence with `Cylinder B` for a second-plate failure), and the underlying reason is in the
-existing `#error-message` overlay, unchanged.
+The status line reads (S-E7 (signed 2026-09-21), replacing the 2026-08-17 sentence that named the
+Generate Both button) `Cylinder A could not be generated, so nothing was downloaded. Fix
+the problem shown in the error message, then press Generate STL again.` (same sentence
+with `Cylinder B` for a second-plate failure), the underlying reason is in the existing
+`#error-message` overlay, and the Download button stays hidden.
 
 ### Downloads
 
-**Nothing downloads automatically. Each file is saved by pressing its own button** —
-`Download Combined STL (Cylinders A and B)` first, then `Download Cylinder A` and
-`Download Cylinder B` — which appear when the run finishes. One gesture still saves one
-file, so the combined button complies with the no-auto-download rationale unchanged.
-Names follow Section 7 exactly: `Cylinder_Pair_{preset}_{name}.stl` (with `Geared_`
-inserted when gears are on), `Cylinder_A_{preset}_{name}.stl` and
-`Cylinder_B_{preset}_{name}.stl` — in a gears-only pair run the A/B buttons save the
-frozen single-sided `Embossing_Cylinder_Geared_*` / `Counter_Cylinder_Geared_*` names.
+**Nothing downloads automatically. One press of Download STL saves one file** — the
+combined `Cylinder_Pair_{preset}_{name}.stl` (with `Geared_` and/or `V2_` inserted as §7
+says) after a both run; after a failed combine, Cylinder A on the first press and
+Cylinder B on the next; after a single-cylinder run, that cylinder under its Section 7
+name (`Cylinder_A_` / `Cylinder_B_` double-sided, the frozen `Embossing_Cylinder_` /
+`Counter_Cylinder_` names otherwise). To get one cylinder's file, choose it under
+Cylinders to Generate and press Generate STL.
 
 **Why, changed 2026-08-18.** The original design started both downloads itself and kept
 the buttons as a fallback. Two programmatic downloads from a single user gesture is
@@ -1527,39 +1549,43 @@ the buttons below"* — was itself never announced, because the Save As dialog o
 first automatic download had taken focus off the page before the message was written.
 
 One download per user gesture never triggers the prompt, so the failure mode is removed
-rather than mitigated. This costs one extra keypress and is the only path that works
-unaided for a blind user. Verified 2026-08-18: a full `Generate Both` run fires **0**
-automatic downloads, both buttons appear, focus stays on `Generate Both Cylinders`, and
-pressing `Download Cylinder A` yields exactly one file.
+rather than mitigated. The 2026-09-21 footer keeps that rule with one button instead of
+three: the combined file is one press, and the fallback hands out A and B one press each.
 
-Any edit to the form clears the pair download controls, for the same reason the action
-button reverts to Generate: the cylinders behind those buttons were built to settings that
-are no longer on screen.
+Any edit to the form clears the pair results (`clearPairResults()`, from the form-wide
+`input`/`change` delegation, skipped while a run is in flight) for the same reason the
+action button reverts to Generate: the cylinders behind the button were built to settings
+that are no longer on screen.
 
 ### Interaction with the button state machine (Section 8)
 
 The pair run drives the shipped state machine rather than replacing it. Each plate switch
 and each finished plate re-enables `#action-btn` on the way past, so the runner re-asserts
 the lock (disabled, "Generating...") immediately afterwards — with no `await` between, so
-no click can land in the gap. `resetToGenerateState()` is called at the end **before** the
-button is re-enabled, because it skips its work entirely when the button already looks
-idle. After a pair run the action button always reads "Generate STL".
+no click can land in the gap. `setToDownloadState()` returns early while
+`pairRunInFlight`, so neither single run offers its file or announces the single-plate
+ready sentence mid-pair. `resetToGenerateState()` is called at the end **before** the
+Download button is revealed, because it hides that button and skips its other work when
+the action button already looks idle. After a pair run the action button always reads
+"Generate STL".
 
 ### Accessibility notes
 
-- Keyboard: Tab reaches Generate Both from the action button; both Enter and Space run it;
-  focus is returned to the button after the run instead of being dropped to `<body>` by the
-  disable.
+- Keyboard: Generate STL is the same button it always was; Enter and Space run it; focus
+  is returned to it after the run instead of being dropped to `<body>` by the disable.
+  The Cylinders to Generate radios are arrow-key operable inside their group; the submenu
+  toggle moves focus to the first radio when it opens.
 - `#pair-status` is the only progress channel that persists across both runs; the
-  `#error-message` overlay continues to carry the per-plate progress and errors.
-- The new controls reuse `--btn-primary-bg` and `--btn-success-bg`, the tokens the shipped
-  action button already uses. **Known pre-existing issue, not introduced here:** white text
-  on `--btn-success-bg` measures 3.76:1 (dark) / 2.54:1 (light) and white on the
-  `--btn-primary-bg` gradient measures 4.06:1 falling to 2.28:1 across the gradient — both
-  under the 4.5:1 text threshold. axe-core flags the shipped "Download STL" button with the
-  same 3.76:1 finding, and misses the gradient buttons entirely because a `background-image`
-  defeats its sampling (which is why Lighthouse still reports 100). Fixing it means changing
-  shared design tokens app-wide; that decision belongs to the accessibility phase, not here.
+  `#error-message` overlay continues to carry the per-plate progress and errors. The
+  status-node count on the page is unchanged (7).
+- Measured at the sub-plan E quick path (`build/a11yverify/e_footer/probe.cjs`,
+  2026-09-21): Nu source and rendered 0/0, Lighthouse accessibility 100 desktop and
+  mobile, the three radio targets 621 × 44 px, the "both" description 14 words, heading
+  outline 9 on load / 15 with Expert Mode open with no level skipped.
+- The **Known pre-existing issue** recorded here on 2026-08-25 (white text on
+  `--btn-success-bg` and on the `--btn-primary-bg` gradient under 4.5:1) still applies to
+  the shipped Download STL and Generate STL buttons; the pair buttons that shared those
+  tokens are gone.
 
 ---
 
@@ -1623,6 +1649,8 @@ idle. After a pair run the action button always reads "Generate STL".
 | 1.5 | 2026-08-16 | **DOUBLE-SIDED NAMING (Phase 09):** When the Double-Sided Card beta is on, downloads are named `Cylinder_A_{preset}_{name}` (positive) / `Cylinder_B_{preset}_{name}` (negative); both take `{name}` from the front text. Single-sided names unchanged. Updated Section 7; covered by tests/e2e/doubleSided.spec.ts. |
 | 2.1 | 2026-08-25 | **§7 listing synced to the shipped 3-argument `buildStlFilename`** on Brennen's direction, resolving the KNOWN DRIFT flag v2.0 raised the same day: the listing now shows the `geared` parameter and the D-5 `Geared_` segment rule; the flag note is removed. Documentation only — no code changed. |
 | 2.0 | 2026-08-25 | **PAIR MODE + COMBINED DOWNLOAD.** Section 15 widened from the double-sided beta to `isPairModeOn()` (either beta — gears-only users need the meshed pair too); §6 gains the *Combined Pair File* subsection (client-side two-body concatenation, DataView-only access, barrel-based 40.8 mm centre offset chosen by Brennen, throw-don't-fallback dial read); §7 gains the `Cylinder_Pair_[Geared_]` name (signed 2026-08-25), the gears-only frozen-names rule, and a **KNOWN DRIFT flag** on the 2-arg `buildStlFilename` listing (code is 3-arg with `geared`; kept pending Brennen's direction); §15 run sequence gains the eager combine + two-body preview step and the new signed completion sentence (PAIR_READY pin updated in the same commit); §8 cross-references the three pair download buttons. The combined file contains TWO bodies by design — never assert watertightness on it. |
+| 2.3 | 2026-09-21 | **ONE Generate, ONE Download, "Cylinders to Generate" in Expert Mode (programme sub-plan E, decisions D-8, D-9, D-10; phases E1–E4).** §15 rewritten: the pair run is universal — Generate STL builds both cylinders unless the first Expert submenu names one; the Generate Both button, the three pair download buttons and the plate-radio relabel are retired; `#download-stl-btn` saves the combined file (or A then B after a failed combine, S-E6 (signed 2026-09-21)); S-E5 (signed 2026-09-21) replaces the signed 2026-08-25 ready sentence (PAIR_READY pin moved in the same commit) and S-E7 (signed 2026-09-21) the failure sentence; the identical-settings contract distinguishes double-sided (whole body) from single-sided (settings + cylinder). §8 cross-reference and §7 combined-name note updated. Filenames unchanged. |
+| 2.2 | 2026-09-20 | **Slicer seam channel — no export rotation.** §6 Coordinate System gains one paragraph: the groove every cylinder now carries (SURFACE_DIMENSIONS_SPECIFICATIONS.md §2.6) is placed by the worker at `-theta` like every dot, exports keep their orientation (programme decision D-14), and the in-file angles for the default layout are recorded. Documentation only. |
 | 1.9 | 2026-08-21 | **Documentation only — no behavior change.** Removed the last `templates/index.html` citations (that folder is empty and deprecated). The Source Priority list now names one frontend file; the two `// From templates/index.html - NO FALLBACK` code comments now name `public/index.html`; and Section 4's Worker Initialization source now points at the CSG worker setup inside the `window` `load` handler, flagging the `initCSGWorker()` snippet as illustrative because no function of that name exists in the real code. Part of the templates/ reference sweep (Phase 07b). |
 
 ---
