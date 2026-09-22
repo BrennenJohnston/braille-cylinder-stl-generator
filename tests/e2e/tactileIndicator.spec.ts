@@ -253,7 +253,7 @@ test.describe('Row Indicator Style', () => {
     await expect(page.locator('#card-fit-warning')).toBeHidden();
 
     // Raising the dial to 14 lets the row through with the card-fit warning
-    // (S-T1, DRAFT) on screen - a warning, never a rejection.
+    // (S-T1, signed) on screen - a warning, never a rejection.
     await page.evaluate(() => {
       const panel = document.getElementById('expert-settings');
       if (panel) panel.style.display = 'block';

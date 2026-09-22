@@ -612,7 +612,7 @@ When `card_need > card_width` (the settings field, default 90 mm) the layout is 
 
 - **Backend:** `tactile_card_need_mm()` / `tactile_max_cells()` in `app/geometry_spec.py`; the sentence joins `spec['warnings']`.
 - **Frontend:** `updateCardFitUI()` shows the same sentence live in `#card-fit-warning` / `#card-fit-message`, recomputed with the other live warnings and announced once through `#a11y-status` on its hidden-to-shown edge.
-- **Sentence (S-T1, DRAFT 2026-09-21, awaiting Brennen's sign-off):** "The last braille cell would run off the card: this layout needs {need} mm of card from the alignment arrow and the card is {card} mm. Use {max_cells} cells or fewer."
+- **Sentence (S-T1, signed off by Brennen 2026-09-21):** "The last braille cell would run off the card: this layout needs {need} mm of card from the alignment arrow and the card is {card} mm. Use {max_cells} cells or fewer."
 - **Golden fixtures** are 14-column geometry references, not 90 mm card rows; their settings declare a 100 mm card so the generator's no-warnings rule holds.
 - Visual mode never gets this check: its markers are aligned by a different procedure.
 

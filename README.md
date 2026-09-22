@@ -25,7 +25,8 @@ already ship as their own tool:
 ### Slicer seam channel
 
 Every cylinder carries a shallow groove (1 mm wide, 0.5 mm deep) the full height of its
-outside, beside the row markers. A slicer's default "Aligned" seam mode hides each layer's
+outside: beside the row markers in Visual mode, down the alignment-arrow column and through
+the raised arrows in Tactile mode. A slicer's default "Aligned" seam mode hides each layer's
 seam in that groove instead of in a braille dot, so no seam painting is needed; leave the
 seam mode on Aligned. It can be turned off under Expert Mode → Surface Dimensions. Details
 in [SURFACE_DIMENSIONS_SPECIFICATIONS.md](docs/specifications/SURFACE_DIMENSIONS_SPECIFICATIONS.md#26-slicer-seam-channel).

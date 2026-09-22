@@ -5756,7 +5756,7 @@
             let explanation;
             let recommended;
             if (tactile) {
-                // S-T3, DRAFT (2026-09-21) - awaiting Brennen's sign-off.
+                // S-T3, signed off by Brennen (2026-09-21); reword only with his sign-off.
                 explanation = 'Tactile seam arrow: no cells are reserved for markers, so every cell in the row is available for text — 13 text cells is the most that fits a 90 mm card measured from the alignment arrow.';
                 recommended = '13';
             } else if (plateType === 'positive') {
@@ -7766,7 +7766,7 @@
                     // need(n) = pi * D / 2 + (n - 1) * cell / 2 + footprint
                     const room = cardLength - (Math.PI * diameter) / 2 - footprint;
                     const maxCells = room < 0 ? 0 : Math.floor((room * 2) / cellSpacing) + 1;
-                    /* S-T1, DRAFT (2026-09-21) - awaiting Brennen's sign-off. Byte-for-byte the server's sentence. */
+                    /* S-T1, signed off by Brennen (2026-09-21); reword only with his sign-off. Byte-for-byte the server's sentence. */
                     text = `The last braille cell would run off the card: this layout needs ${need.toFixed(1)} mm of card ` +
                         `from the alignment arrow and the card is ${cardLength.toFixed(0)} mm. Use ${maxCells} cells or fewer.`;
                 }
@@ -11907,8 +11907,8 @@
                             <li><strong>Print orientation:</strong> Print cylinders standing upright for best dot quality</li>
                             <li><strong>Test fit:</strong> Print a small section first to verify the diameter matches your container</li>
                             <li><strong>Seam placement:</strong> Rotate the seam to the back or between words</li>
-                            <!-- S-C4, signed off by Brennen (2026-09-21); reword only with his sign-off. -->
-                            <li><strong>Slicer seam:</strong> Every cylinder carries a shallow seam channel beside the row markers. Slicers hide the layer seam in it, so no seam painting is needed. Turn it off in Expert Mode if you want a plain surface.</li>
+                            <!-- S-C4, reworded for tactile mode and signed off by Brennen (2026-09-21); reword only with his sign-off. -->
+                            <li><strong>Slicer seam:</strong> Every cylinder carries a shallow seam channel where slicers hide the layer seam: beside the row markers in Visual mode, down the alignment-arrow column in Tactile mode. No seam painting is needed. Turn it off in Expert Mode if you want a plain surface.</li>
                         </ul>
 
                         <p><button type="button" class="btn-link" onclick="window.switchHelpTab('tab-formatting')">Formatting tips for cylinder text →</button></p>

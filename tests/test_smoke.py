@@ -452,7 +452,7 @@ def test_tactile_row_that_runs_off_the_card_is_warned_about(client):
     D-T4 (2026-09-21): the card's leading edge sits at the arrow, at the middle
     of the seam gap, so a row needs half the gap + the grid + the last cell's
     footprint of card. 14 cells on the 0.4 mm families need 92.8 mm and a 90 mm
-    card warns (S-T1, DRAFT); 13 cells need 89.5 and pass; a 100 mm card takes
+    card warns (S-T1, signed); 13 cells need 89.5 and pass; a 100 mm card takes
     the 14. Visual mode never warns - its alignment is a different procedure.
     """
     families = {
@@ -874,7 +874,7 @@ def test_ui_seam_channel_numbers_and_sentences_match_the_geometry_module():
 
     gap_sentence = 'The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.'
     wall_sentence = 'The seam channel was left out: the cylinder wall would be thinner than '
-    # S-T1 (DRAFT, 2026-09-21): the card-fit sentence, up to its first number.
+    # S-T1 (signed off by Brennen, 2026-09-21): the card-fit sentence, up to its first number.
     card_sentence = 'The last braille cell would run off the card: this layout needs '
     for sentence in (gap_sentence, wall_sentence, card_sentence):
         assert sentence in html, f'UI is missing the sentence: {sentence}'

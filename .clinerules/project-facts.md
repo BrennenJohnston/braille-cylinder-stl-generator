@@ -387,9 +387,9 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      the default dot families) and lose their last cell at ANY arrow
      position. app/geometry_spec.py tactile_card_need_mm / tactile_max_cells
      (max = floor((card - pi*D/2 - footprint) * 2 / cell) + 1) own it;
-     index.html updateCardFitUI mirrors the arithmetic. Warning S-T1 (DRAFT)
+     index.html updateCardFitUI mirrors the arithmetic. Warning S-T1 (signed 2026-09-21)
      from card_width in spec warnings and the live #card-fit-warning box;
-     tactile recommendation 13 (S-T3, DRAFT); the dial stays free to 14 with
+     tactile recommendation 13 (S-T3, signed 2026-09-21); the dial stays free to 14 with
      the warning, never a rejection. Visual mode is NOT checked (different
      alignment procedure). NOTE: a US 3.5 in card (88.9 mm) now warns at 13
      cells (max 12) - reported to Brennen 2026-09-21, not decided.

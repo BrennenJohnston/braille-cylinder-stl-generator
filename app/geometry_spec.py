@@ -712,7 +712,7 @@ def extract_cylinder_geometry_spec(
         card_length_mm = float(getattr(settings, 'card_width', 90.0))
         card_need_mm = tactile_card_need_mm(settings, double_sided, grid_width, seam_gap_mm)
         if card_need_mm > card_length_mm:
-            # S-T1, DRAFT (2026-09-21) - awaiting Brennen's sign-off.
+            # S-T1, signed off by Brennen (2026-09-21); reword only with his sign-off.
             warning = (
                 f'The last braille cell would run off the card: this layout needs '
                 f'{card_need_mm:.1f} mm of card from the alignment arrow and the card is '
