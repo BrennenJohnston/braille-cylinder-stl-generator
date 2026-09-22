@@ -297,23 +297,31 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      channel alike) - never treat this angle differently from a dot's. In the
      STL the default 15-column visual layout has the groove at 181.67 deg (A)
      / 178.33 (B).
-   - Placement, TACTILE mode (D-T6, 2026-09-21, Brennen's call after testing
-     the one-day "behind the arrow" placement): the groove runs down the
-     ARROW COLUMN itself, theta = pi on BOTH plates, as TWO stretches that
-     stop SEAM_CHANNEL_ARROW_MARGIN_MM 0.3 short of the arrow chain (block
-     key `segments`: [{z_from, z_to}] about mid-height, each from the end
-     face + overshoot to the chain, emitted in tactile mode only; a stretch
-     under SEAM_CHANNEL_MIN_SEGMENT_MM 1.0 is dropped). The chain's extent
-     comes from tactile_arrow_span(): the outermost row's arrow +/- length/2,
-     grown by the recess clearance (counter) or the gear weld (emboss, gear
-     mode) - the mitred recess APEX grows by clearance/sin(atan((w/2)/l)) =
-     1.02 mm, not by the clearance. 13 cells, 4 rows, 0.4 preset: emboss
-     (-27, -20.3) + (20.3, 27), counter (-27, -20.5) + (21.32, 27). There is
-     no window to fit, so the gap rule never speaks in tactile mode; when the
-     arrows reach both end faces the groove is left out with S-C4 (DRAFT).
-     The groove never runs UNDER a raised arrow (a 0.3 mm tunnel and tip
-     notches); across the chain the arrows' own corners hold the seam (the
-     slicing study: 0 % of layers in a dot).
+   - Placement, TACTILE mode (D-T6 + D-T7, 2026-09-21, Brennen's calls after
+     two prints): the groove runs down the ARROW COLUMN itself, theta = pi on
+     BOTH plates, the FULL height (the same shell-stage cut as visual mode),
+     and on the EMBOSSING plate it is cut a SECOND time after the raised
+     arrows join - block key `arrow_recut` {z_from, z_to, lip}: the arrow
+     chain from tactile_arrow_span() (outermost arrow +/- length/2, grown by
+     the gear weld in gear mode) +/- SEAM_CHANNEL_ARROW_MARGIN_MM 0.3, clamped
+     SEAM_CHANNEL_RECUT_INSET_MM 0.05 inside the end faces (a gear face is
+     never nicked), lip = tactile_indicator_raise + SEAM_CHANNEL_LIP_MM so the
+     V clears the arrows' top faces. 13 cells, 4 rows, 0.4 preset: z -20.3..
+     20.3, lip 1.0. The V is 2 mm wide at an arrow's top face, so each raised
+     arrow keeps its base half as two ridges and LOSES ITS POINT - Brennen's
+     choice (the tested V at every layer) over a 1 mm straight-walled slot;
+     a tactile-shape decision, never change the recut on your own. The
+     counter plate's recesses (0.7 deep) are deeper than the groove (0.5), so
+     its single cut runs through them and it gets NO recut. There is no
+     window to fit and nothing can leave the groove out in tactile mode (the
+     D-T6 stretches and the S-C4 "no room" sentence are RETIRED). The worker
+     subtracts the recut right after the raised markers join; the golden
+     renderer adds it to its difference. History: D-T6's two stretches that
+     stopped 0.3 short of the chain were printed by Brennen the same day and
+     the slicer put seams in dots wherever the groove stopped - the arrows'
+     corners were NOT enough, and the slicing study's metric had not
+     predicted it. The rerun (build/seam_spike_through): emboss 100 % in the
+     groove, counter 36.9 % (the rest on the recess edges), 0 % in a dot.
    - Left out, with a warning (S-C2 / S-C3 (signed 2026-09-21)), when the
      visual free window is under 1.5 mm or the wall under the apex is under
      1.2 mm (polygon circumradius, or wall_thickness - depth for a barrel
@@ -322,22 +330,22 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      tactile trips the seam-GAP warning, not the channel's).
    - CSG order: the groove is cut from the BARE outer cylinder before the bore,
      the keyed pockets or anything unioned, in both the worker
-     (createSeamChannelManifold - one prism per stretch when `segments` is
-     present, else one full-height prism) and tests/test_golden.py
+     (createSeamChannelManifold, one full-height prism; the tactile
+     recut is the same function with the block's `arrow_recut`, subtracted
+     after the raised markers) and tests/test_golden.py
      (_seam_channel_cutter); all six golden pairs regenerated once on
      2026-09-20 (+8 triangles each, bounds unchanged), all eight again on
-     2026-09-21 (D-T6).
+     2026-09-21 (D-T6, then D-T7).
    - Cards never get one.
    - OpenSCAD parity since v2.8.0 (2026-09-21): `seam_channel` switch in both
      .scad files with the same six constants (a test in that repo diffs them
      against app/geometry_spec.py) and the visual groove at the PHYSICAL
      angle 180 +/- s/R (emboss +, counter -) - the .scad negates nothing, so
      its 181.67 / 178.33 equals this worker's exported STL. The tactile
-     stretches on the arrow column landed in that repo's D-T6 pass
-     (develop eef068a, 2026-09-21): seam_channel_cuts(theta, stretches),
-     per-plate seam_channel_stretches_emboss/_counter, the same two
-     constants (its tests diff them), S-C4 NOTE + "SEAM CHANNEL LEFT OUT:
-     arrows" badge (DRAFT).
+     recut landed in that repo's D-T7 pass (develop, 2026-09-21, see 6g):
+     seam_channel_cut(theta, z_from, z_to, lip) called from the emboss
+     plate's difference() by seam_channel_arrow_recut() over
+     seam_channel_recut_span, the same two constants (its tests diff them).
 
 6f. One Generate / one Download (2026-09-21, sub-plan E of the 2026-09-20
    programme; D-8, D-9, D-10). Generate STL builds BOTH cylinders unless
@@ -390,16 +398,18 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      references.
    - interpoint.arrow_zone_margins(arrow_arc_mm=0.0) keeps its parameter
      (negative refused); the arrow is at pi, so callers pass nothing.
-   - The seam channel in tactile mode runs down the arrow column in two
-     stretches (6e). The slicing study reran on it (scripts/seam_spike.py
-     --layouts tactile14,tactile13 --channels none,v10 --no-rear --out
-     build/seam_spike_column): 0 % of layers in a dot on every plate, groove
-     or not; 60 % (emboss) / 37 % (counter) of layers within 0.8 mm of arc
-     of 180 deg, the rest on the arrows' own edges.
-   - OpenSCAD: the lead-in parity (T6, a7585cc) was reworked to D-T6 in
-     that repo's develop eef068a (2026-09-21, pushed): arrow at 180 via
-     place_cylinder_marker(180, ...), card fit from the midpoint,
-     GEAR_ARROW_WELD_MM moved beside gears_on in the V1 file; v2.8.1 and the
+   - The seam channel in tactile mode runs down the arrow column the full
+     height and is recut through the raised arrows (6e, D-T7). The slicing
+     study reran on it (scripts/seam_spike.py --layouts tactile14,tactile13
+     --channels none,v10 --no-rear --out build/seam_spike_through): emboss
+     plate 100 % of layers in the groove (every seam at 180.0-180.02 deg),
+     counter plate 36.9 % with the rest on the recess arrows' own edges, 0 %
+     in a dot on every plate.
+   - OpenSCAD: the lead-in parity (T6, a7585cc) was reworked to D-T6
+     (develop eef068a) and then D-T7 (develop, 2026-09-21, pushed): arrow at
+     180 via place_cylinder_marker(180, ...), card fit from the midpoint,
+     seam_channel_arrow_recut() in the emboss plate's difference(),
+     GEAR_ARROW_WELD_MM beside gears_on in the V1 file; v2.8.1 and the
      re-vendor wait for Brennen's 13-cell tactile print test.
 
 ## Settings changes — order of operations
