@@ -358,17 +358,18 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      .scad files with the same six constants (a test in that repo diffs them
      against app/geometry_spec.py) and the visual groove at the PHYSICAL
      angle 180 +/- s/R (emboss +, counter -) - the .scad negates nothing, so
-     its 181.67 / 178.33 equals this worker's exported STL. The tactile
-     recut landed in that repo's D-T7 pass (develop 90b0e99, 2026-09-21,
-     pushed; see 6g):
-     seam_channel_cut(theta, z_from, z_to, lip) called from the emboss
-     plate's difference() by seam_channel_arrow_recut() over
-     seam_channel_recut_span, the same two constants (its tests diff them).
-     D-T8 PARITY IS OWED (2026-09-22): that repo still recuts through the
-     arrows, and its tests/test_tactile_mode.py cross-check reads the two
-     recut constants from this repo's app/geometry_spec.py, where they no
-     longer exist - it fails against a sibling checkout until the detour is
-     ported there.
+     its 181.67 / 178.33 equals this worker's exported STL. D-T8 parity since
+     v2.8.2 (2026-09-23, develop ba2d6db + release notes 75a19f5, tagged and
+     pushed on Brennen's word; see 6g): seam_channel_detour_path is
+     _tactile_detour_path() ported line for line (seam_detour_* functions,
+     angles in degrees), physical angle 180 - asin(x / radius), cut by
+     seam_channel_path_cut() - hulled cones, SEAM_CHANNEL_CONE_FN 32, a new
+     $fn case 6 - in cylinder_shell / cylinder_shell_v2 from the bare
+     barrel; the D-T7 recut and its two constants are gone there too. Its
+     tests diff the three SEAM_CHANNEL_DETOUR_* constants and the cone count
+     against this repo, cross-check S-C5, and render the groove floor against
+     THIS repo's own path (sibling checkout; skipped without it) to 0.01 mm
+     both ways - V1, V2, gears, three arrows.
 
 6f. One Generate / one Download (2026-09-21, sub-plan E of the 2026-09-20
    programme; D-8, D-9, D-10). Generate STL builds BOTH cylinders unless
@@ -439,7 +440,9 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      tactile print test PASSED (2026-09-21): OpenSCAD v2.8.1 tagged on the
      release-notes commit a8b16af and pushed, OpenSCAD/ re-vendored from it
      (c9fe200), S-T1..S-T4 signed as drafted, S-C4 reworded for tactile mode
-     and signed, the 3.5 in card warning kept as is (his call).
+     and signed, the 3.5 in card warning kept as is (his call). D-T8 followed
+     on 2026-09-23 as OpenSCAD v2.8.2 (tag on 75a19f5), re-vendored the same
+     day - the recut replaced by the detour round the raised arrows (6e).
 
 ## Settings changes — order of operations
 7. settings.schema.json is the single source of truth. When adding or changing
