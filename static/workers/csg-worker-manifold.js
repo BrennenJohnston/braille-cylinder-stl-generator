@@ -1671,19 +1671,22 @@ function cutKeyedCutoutsManifold(barrel, keyed, height) {
  * circumferential plane and extruded along the barrel axis, the shape the
  * slicing spike proved (scripts/seam_spike.py, channel_cutter).
  *
+ * The tactile embossing plate's block also carries a `path` (D-T8,
+ * 2026-09-22): the groove's centre line as (theta, z) points stepping round
+ * the raised arrows, and the same V is swept along it instead - see
+ * createSeamChannelPathManifold. Both are cut from the bare barrel, before the
+ * arrows join, so the arrows stay whole.
+ *
  * A malformed block throws: the backend wrote it, so it is a bug, not a
  * request to guess a groove.
  */
-function createSeamChannelManifold(channel, height, radius, recut = null) {
-    const { theta, width, depth, overshoot } = channel;
-    // The recut (D-T7, tactile embossing plate) is the same V over the arrow
-    // chain only, its sides carried up past the raised arrows' top faces.
-    const lip = recut ? recut.lip : channel.lip;
+function createSeamChannelManifold(channel, height, radius) {
+    const { theta, width, depth, overshoot, lip, path } = channel;
     if (!isFinite(theta) || !(width > 0) || !(depth > 0) || !(lip > 0) || !(overshoot >= 0) || !(radius > 0)) {
         throw new Error(`seam channel: malformed block ${JSON.stringify(channel)}`);
     }
-    if (recut && (!isFinite(recut.z_from) || !isFinite(recut.z_to) || !(recut.z_to > recut.z_from))) {
-        throw new Error(`seam channel: malformed recut ${JSON.stringify(recut)}`);
+    if (path !== undefined) {
+        return createSeamChannelPathManifold(channel, radius);
     }
 
     const adjustedTheta = -theta;
@@ -1702,16 +1705,61 @@ function createSeamChannelManifold(channel, height, radius, recut = null) {
     ].map(([u, v]) => [u * c - v * s, u * s + v * c]);
 
     const crossSection = new CrossSection([section], 'Positive');
-    // The full height plus the overshoot at both ends (extrude the length,
-    // then shift down by half of it), or the recut's own span in this frame.
-    const [zFrom, zTo] = recut
-        ? [recut.z_from, recut.z_to]
-        : [-(height + 2 * overshoot) / 2, (height + 2 * overshoot) / 2];
-    const extruded = Manifold.extrude(crossSection, zTo - zFrom);
-    const placed = extruded.translate([0, 0, zFrom]);
+    // The full height plus the overshoot at both ends: extrude the length,
+    // then shift down by half of it.
+    const length = height + 2 * overshoot;
+    const extruded = Manifold.extrude(crossSection, length);
+    const placed = extruded.translate([0, 0, -length / 2]);
     extruded.delete();
     crossSection.delete();
     return placed;
+}
+
+// Cones the tactile path is swept with. A multiple of 4, so every cone has a
+// vertex straight across the barrel and a straight run keeps the exact V of
+// the straight prism. Mirrors _SEAM_CHANNEL_CONE_SECTIONS in tests/test_golden.py.
+const SEAM_CHANNEL_CONE_SEGMENTS = 32;
+
+/**
+ * The seam channel's V swept along the spec's `path` (D-T8): a cone at every
+ * point - apex `depth` under the surface, axis radial, sides at the V's slope,
+ * mouth carried `lip` past the surface - hulled with the next one, so each
+ * hull is the V along one step and consecutive hulls overlap by a whole cone.
+ * The spec sets the points (app/geometry_spec.py _tactile_detour_path); this
+ * only places them, at -theta like every dot.
+ */
+function createSeamChannelPathManifold(channel, radius) {
+    const { width, depth, lip, path } = channel;
+    if (!Array.isArray(path) || path.length < 2 || !path.every((point) => isFinite(point?.theta) && isFinite(point?.z))) {
+        throw new Error(`seam channel: malformed path ${JSON.stringify(path)}`);
+    }
+
+    const coneHeight = depth + lip;
+    const mouth = (width / 2) * (depth + lip) / depth;
+    const cones = path.map(({ theta, z }) => {
+        const adjustedTheta = -theta;
+        // Base at local z = 0, apex at coneHeight; the Y turn points the apex
+        // along -X, and the Z turn aims that radially inward at the angle.
+        const cone = Manifold.cylinder(coneHeight, mouth, 0, SEAM_CHANNEL_CONE_SEGMENTS, false);
+        const inward = cone.rotate(0, -90, 0);
+        cone.delete();
+        const aimed = inward.rotate(0, 0, adjustedTheta * 180 / Math.PI);
+        inward.delete();
+        const placed = aimed.translate([
+            (radius + lip) * Math.cos(adjustedTheta),
+            (radius + lip) * Math.sin(adjustedTheta),
+            z,
+        ]);
+        aimed.delete();
+        return placed;
+    });
+
+    const steps = [];
+    for (let i = 1; i < cones.length; i++) {
+        steps.push(Manifold.hull([cones[i - 1], cones[i]]));
+    }
+    cones.forEach((cone) => cone.delete());
+    return batchUnionManifold(steps);
 }
 
 function createCylinderShellManifold(spec, solid = false, keyed = null) {
@@ -1736,7 +1784,8 @@ function createCylinderShellManifold(spec, solid = false, keyed = null) {
             outer.delete();
             channel.delete();
             outer = grooved;
-            console.log(`Manifold CSG Worker: cut seam channel at ${(-seamChannel.theta * 180 / Math.PI).toFixed(2)} deg (${seamChannel.width} x ${seamChannel.depth} mm)`);
+            const route = seamChannel.path ? `, round the raised arrows through ${seamChannel.path.length} points` : '';
+            console.log(`Manifold CSG Worker: cut seam channel at ${(-seamChannel.theta * 180 / Math.PI).toFixed(2)} deg (${seamChannel.width} x ${seamChannel.depth} mm${route})`);
         }
 
         // Decision D-2, gear mode only: a one-piece roller is SOLID, like the
@@ -2104,21 +2153,6 @@ function processGeometrySpec(spec, gearAsset = null) {
                 unionedRaised.delete();
                 result = newResult;
                 console.log('Manifold CSG Worker: Added raised tactile indicators');
-            }
-
-            // D-T7 (2026-09-21): in tactile mode the seam channel is cut a
-            // second time over the arrow chain, now that the raised arrows are
-            // on, so the V runs through them and the slicer has a corner at
-            // every layer. The spec carries the span and the taller lip; the
-            // cut never reaches an end face, so a gear's face is untouched.
-            const recut = cylinder?.seam_channel?.arrow_recut;
-            if (isCylinder && recut) {
-                const recutter = createSeamChannelManifold(cylinder.seam_channel, cylinder.height, cylinder.radius, recut);
-                const notched = result.subtract(recutter);
-                result.delete();
-                recutter.delete();
-                result = notched;
-                console.log(`Manifold CSG Worker: recut seam channel through the raised arrows, z ${recut.z_from.toFixed(2)}..${recut.z_to.toFixed(2)} mm`);
             }
         }
 

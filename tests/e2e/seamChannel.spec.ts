@@ -239,11 +239,13 @@ test.describe('Slicer seam channel', () => {
     expect(counterApex[0]).toBeCloseTo(360 - EMBOSS_CHANNEL_DEG, 1);
   });
 
-  test('in tactile mode the groove runs down the arrow column the full height, through the arrows', async ({ page }) => {
+  test('in tactile mode the groove runs down the arrow column and steps round the raised arrows', async ({ page }) => {
     // 13 cells, 4 rows: the arrows sit at +/-15 and +/-5 mm about mid-height,
-    // a chain from -20 to +20 mm; the groove (180 degrees, the arrow column)
-    // runs the full height and is recut through the raised arrows (D-T6 and
-    // D-T7, 2026-09-21), so its floor exists at every height.
+    // a chain from -20 to +20 mm touching tip to base. The groove (180
+    // degrees, the arrow column) runs the full height, and on this embossing
+    // plate it steps round every raised arrow on the first-cell side (D-T8,
+    // 2026-09-22) - up to 10.3 degrees off the column, above 180 in the file
+    // because the worker negates theta - so the arrows stay whole.
     await openApp(page);
     await page.locator('input[name="indicator_mode"][value="tactile"]').check();
     await expect(page.locator('#grid_columns')).toHaveValue('13');
@@ -263,22 +265,28 @@ test.describe('Slicer seam channel', () => {
       if (z > zMax) zMax = z;
     }
     const zMid = (zMax + zMin) / 2;
-    const floorZ = vertices
+    const angleOf = (x: number, y: number) => (((Math.atan2(y, x) * 180) / Math.PI) + 360) % 360;
+    const floor = vertices
       .filter(([x, y]) => Math.abs(Math.hypot(x, y) - (BARREL_RADIUS_MM - CHANNEL_DEPTH_MM)) < 0.05)
-      .map(([, , z]) => z - zMid);
-    expect(floorZ.length).toBeGreaterThan(0);
-    // The floor reaches both end faces (its apex line has vertices only on
-    // the caps: the recut shares it, so the chain adds none) ...
-    expect(Math.min(...floorZ)).toBeCloseTo(-26, 0);
-    expect(Math.max(...floorZ)).toBeCloseTo(26, 0);
-    // ... and the recut has notched every raised arrow: nothing stands proud
-    // of the surface on the centre line inside the chain any more (the
-    // arrows' points are gone), while their base corners, 7.4 degrees out,
-    // still do.
+      .map(([x, y, z]) => ({ angle: angleOf(x, y), z: z - zMid }));
+    expect(floor.length).toBeGreaterThan(0);
+    // The floor reaches both end faces ...
+    expect(Math.min(...floor.map((f) => f.z))).toBeCloseTo(-26, 0);
+    expect(Math.max(...floor.map((f) => f.z))).toBeCloseTo(26, 0);
+    // ... and inside the chain it runs round the arrows on the first-cell
+    // side, never on their centre line.
+    const inChain = floor.filter((f) => Math.abs(f.z) < 20);
+    expect(inChain.length).toBeGreaterThan(0);
+    expect(inChain.every((f) => f.angle > 182 && f.angle < 191)).toBe(true);
+    // Every raised arrow is whole: its point still stands proud on the
+    // centre line (the D-T7 recut took all four), and its base corners,
+    // 7.4 degrees out, do too.
     const proud = vertices
       .filter(([x, y]) => Math.hypot(x, y) > BARREL_RADIUS_MM + 0.05)
-      .map(([x, y, z]) => ({ off: Math.abs((((Math.atan2(y, x) * 180) / Math.PI + 360) % 360) - 180), z: z - zMid }));
-    expect(proud.some((v) => v.off < 1 && Math.abs(v.z) < 21)).toBe(false);
+      .map(([x, y, z]) => ({ off: Math.abs(angleOf(x, y) - 180), z: z - zMid }));
+    for (const tip of [20, 10, 0, -10]) {
+      expect(proud.some((v) => v.off < 0.5 && Math.abs(v.z - tip) < 0.1)).toBe(true);
+    }
     expect(proud.some((v) => v.off > 6 && v.off < 9 && Math.abs(v.z) < 21)).toBe(true);
   });
 
@@ -293,10 +301,11 @@ test.describe('Slicer seam channel', () => {
       }
     });
 
-    // Tactile mode (D-T6, 2026-09-21): the groove runs down the arrow column
-    // itself, so it needs no room in the seam gap. 15 cells leave a 5.8 mm gap
-    // and raise the signed tactile-gap warning, but the channel note stays
-    // silent.
+    // Tactile mode (D-T8, 2026-09-22): the embossing plate's groove steps
+    // round the raised arrows on the first-cell side, which needs 3.5 mm
+    // beside the arrow column. 13 cells leave 7.2 mm; 15 leave 0.7 mm - the
+    // arrows already overlap the dots and the signed tactile-gap warning
+    // speaks - so the channel note says S-C2 as well.
     await page.locator('input[name="indicator_mode"][value="tactile"]').check();
     await expect(page.locator('#grid_columns')).toHaveValue('13');
     await expect(page.locator('#seam-channel-warning')).toBeHidden();
@@ -304,14 +313,15 @@ test.describe('Slicer seam channel', () => {
     await page.locator('#grid_columns').fill('15');
     await page.locator('#grid_columns').dispatchEvent('input');
     await expect(page.locator('#tactile-gap-warning')).toBeVisible();
-    await expect(page.locator('#seam-channel-warning')).toBeHidden();
+    await expect(page.locator('#seam-channel-warning')).toBeVisible();
+    await expect(page.locator('#seam-channel-message')).toHaveText(GAP_NOTE);
 
     await page.locator('#grid_columns').fill('13');
     await page.locator('#grid_columns').dispatchEvent('input');
     await expect(page.locator('#tactile-gap-warning')).toBeHidden();
     await expect(page.locator('#seam-channel-warning')).toBeHidden();
-    // Visual mode again for the wall case below, which is the only omission
-    // the groove has left in tactile mode too - but here it must fire alone.
+    // Visual mode again for the wall case below, where the channel note must
+    // fire alone: no tactile or card-fit note beside it in the live region.
     await page.locator('input[name="indicator_mode"][value="visual"]').check();
 
     // A cutout that leaves under 1.2 mm of wall under the groove raises the
