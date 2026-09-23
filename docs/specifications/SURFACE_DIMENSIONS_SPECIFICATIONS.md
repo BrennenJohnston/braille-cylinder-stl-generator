@@ -598,12 +598,16 @@ tactile:  The groove runs down the arrow column itself (D-T6, 2026-09-21): theta
           SEAM_CHANNEL_DETOUR_STEP_MM (1.0) so each chord stays within 0.005 mm of the barrel.
           free = gap/2 − footprint (the first-cell side's room)
           need = tactile_indicator_width / 2 + SEAM_CHANNEL_WIDTH_MM + 2 · SEAM_CHANNEL_MARGIN_MM = 3.5 mm
+          The rule is nominal, in the tangent plane. On the surface the path reaches R·asin(x / R) plus the
+          outside-chord bulge, about 0.016 mm beyond b + d at the defaults, so exactly at the limit (14 cells
+          on a 30.5 mm barrel: free 3.509) the flat beside the first cell's dots is 0.243 mm, not 0.25 - far
+          below print resolution, and the UI mirrors the same simple rule.
 visual:   free = hi − lo ;  need = SEAM_CHANNEL_WIDTH_MM + 2 · SEAM_CHANNEL_MARGIN_MM = 1.5 mm
           s_c = (lo + hi) / 2
           theta = π − s_c / R  (positive plate)      theta = π + s_c / R  (negative plate)
 ```
 
-**The raised arrows stay whole (D-T8, 2026-09-22, Brennen's decisions).** From D-T7 until 2026-09-22 the embossing plate's groove was recut through the raised arrows (`arrow_recut`): each arrow kept its base half as two ridges and lost its point, and Brennen's testing showed that changed the arrow's feel and made it less distinguishable to a blind user. He chose the detour above on four counts, each from options put to him: the first-cell side (the only side with room in every supported layout — 14-cell double-sided leaves 4.3 mm there and 2.9 on the last-cell side), 0.25 mm of flat between the arrow and the groove (the channel's own margin, so the arrow's edge and 0.5 mm raise feel exactly as before), the 45° slant rather than a run along the base, and leaving the groove out with S-C2 where the detour has no room rather than falling back to the recut. The groove's size and the arrow are unchanged; the counter plate's recess is unchanged, so the arrow still nests. These are tactile-shape decisions: never move the detour to the other side, narrow its margin or cut an arrow again on your own.
+**The raised arrows stay whole (D-T8, 2026-09-22, Brennen's decisions).** From D-T7 until 2026-09-22 the embossing plate's groove was recut through the raised arrows (`arrow_recut`): each arrow kept its base half as two ridges and lost its point, and Brennen's testing showed that changed the arrow's feel and made it less distinguishable to a blind user. He chose the detour above on four counts, each from options put to him: the first-cell side (the only side with room in every supported layout — at 14 cells double-sided the nearest dot edge is 4.28 mm from the column there, 4.181 by the room rule's footprint, and 2.93 on the last-cell side), 0.25 mm of flat between the arrow and the groove (the channel's own margin, so the arrow's edge and 0.5 mm raise feel exactly as before), the 45° slant rather than a run along the base, and leaving the groove out with S-C2 where the detour has no room rather than falling back to the recut. The groove's size and the arrow are unchanged; the counter plate's recess is unchanged, so the arrow still nests. These are tactile-shape decisions: never move the detour to the other side, narrow its margin or cut an arrow again on your own.
 
 `theta` is emitted in the SAME convention as every dot's `theta` in the spec (column 0 at +grid_angle/2 on the positive plate, seam centre at π, the counter plate mirrored), so `theta_A + theta_B = 2π`. The Manifold worker negates every theta it places — dots, markers and this channel alike — which is what puts the groove beside column 0 in the STL; the Python golden renderer uses theta as emitted. Neither may treat this angle differently from a dot's.
 
@@ -618,7 +622,7 @@ Worked numbers (30.8 mm, 0.4 mm preset, footprint 2.15 mm):
 | 15 columns, visual | 5.761 | 2.361 | s_c 0.450 → 178.33° (A) / 181.67° (B); in the STL 181.67° (A) / 178.33° (B) |
 | 14 columns, tactile | 12.261 | 3.981 (need 3.5) | θ = 180° on both plates, the full height; the embossing plate's path leaves the column at z −23.061, reaches 2.75 mm out at each base corner, zig-zags 1.147 mm from the column at each join and is back at z 21.061 (4 rows, 52 mm); counter plate straight |
 | 13 columns, tactile | 18.761 | 7.231 | the same — the arrow column does not move with the cell count (D-T6) |
-| 14 columns, double-sided (0.4 package) | 12.261 | 4.181 | the same (tactile is locked on while double-sided); the back grid moves toward the last-cell side, 2.9 mm from the column there, which is why the detour takes the first-cell side |
+| 14 columns, double-sided (0.4 package) | 12.261 | 4.181 | the same (tactile is locked on while double-sided); the back grid moves toward the last-cell side, 2.93 mm from the column there (4.28 on the first-cell side, measured to the nearest dot edge), which is why the detour takes the first-cell side |
 | 15 columns, tactile | 5.761 | 0.731 | **left out on both plates, S-C2** — the arrows themselves already overlap the dots and the seam-GAP warning speaks too |
 
 Fit rules (each leaves the groove out and adds one warning to `spec.warnings`; the UI shows the same sentence live):
