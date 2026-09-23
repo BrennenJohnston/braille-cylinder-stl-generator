@@ -38,10 +38,10 @@
     "liblouis": "^0.4.0",
     "manifold-3d": "^3.5.1",
     "three-bvh-csg": "^0.0.18",
-    "three-mesh-bvh": "^0.9.13"
+    "three-mesh-bvh": "^0.9.14"
   },
   "devDependencies": {
-    "@playwright/test": "^1.62.0",
-    "vitest": "^4.1.10"
+    "@playwright/test": "^1.62.1",
+    "vitest": "^4.1.11"
   }
 }
