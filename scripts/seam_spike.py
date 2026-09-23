@@ -149,9 +149,14 @@ def channel_placement(layout: str, plate_type: str, settings: CardSettings, chan
         lo = -(gap / 2.0 - footprint)
         hi = gap / 2.0 - settings.dot_spacing / 2.0
     else:
-        # D-T6 (2026-09-21): down the arrow column itself, outside the arrow
-        # chain - no window to fit. The stretches come from the spec's block.
-        return {'gap_mm': gap, 'free_mm': math.inf, 'need_mm': 0.0, 'fits': True, 's_c_mm': 0.0, 'theta': math.pi}
+        # D-T6 / D-T8: down the arrow column itself, and on the embossing plate
+        # round the raised arrows on the first-cell side - the spec's own path.
+        # The room that detour needs is the spec's tactile rule, mirrored here
+        # so a layout the app leaves the groove out of is skipped, not sliced.
+        free = gap / 2.0 - footprint
+        width = channel['width'] if channel else 0.0
+        need = settings.tactile_indicator_width / 2.0 + width + 2.0 * CHANNEL_MARGIN_MM
+        return {'gap_mm': gap, 'free_mm': free, 'need_mm': need, 'fits': free >= need, 's_c_mm': 0.0, 'theta': math.pi}
     free = hi - lo
     width = channel['width'] if channel else 0.0
     need = width + 2.0 * CHANNEL_MARGIN_MM
@@ -443,6 +448,11 @@ def main() -> None:
                     raise SystemExit(
                         f'{layout} {plate_type}: spike places the groove at {math.degrees(theta_c):.3f} deg, '
                         f'the spec at {math.degrees(emitted["theta"]):.3f} deg - mirror the spec first'
+                    )
+                if channel and name == 'v10' and (emitted is not None) != placement['fits']:
+                    raise SystemExit(
+                        f'{layout} {plate_type}: the spike and the spec disagree about whether the groove fits '
+                        f'(spike {placement["fits"]}, spec {emitted is not None}) - mirror the spec first'
                     )
                 if channel and not placement['fits']:
                     print(
