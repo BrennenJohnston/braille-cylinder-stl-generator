@@ -874,11 +874,18 @@ def test_ui_seam_channel_numbers_and_sentences_match_the_geometry_module():
 
     gap_sentence = 'The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.'
     wall_sentence = 'The seam channel was left out: the cylinder wall would be thinner than '
+    # S-C5 (signed off by Brennen, 2026-09-23): the tactile no-room sentence. The
+    # module splits it over two string literals, so each half is diffed.
+    room_sentence_head = 'The seam channel was left out: there is not enough room for it beside the alignment arrows. '
+    room_sentence_tail = 'Reduce the number of braille cells, increase the cylinder diameter, or narrow the indicator.'
     # S-T1 (signed off by Brennen, 2026-09-21): the card-fit sentence, up to its first number.
     card_sentence = 'The last braille cell would run off the card: this layout needs '
-    for sentence in (gap_sentence, wall_sentence, card_sentence):
+    for sentence in (gap_sentence, wall_sentence, room_sentence_head, room_sentence_tail, card_sentence):
         assert sentence in html, f'UI is missing the sentence: {sentence}'
         assert sentence in module, f'geometry_spec is missing the sentence: {sentence}'
+    # The UI carries S-C5 as ONE literal, so a drift inside it cannot hide
+    # between the module's two halves.
+    assert room_sentence_head + room_sentence_tail in html
     assert 'from the alignment arrow and the card is ' in html
     assert 'from the alignment arrow and the card is ' in module
 

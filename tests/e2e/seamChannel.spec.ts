@@ -32,9 +32,13 @@ const CHANNEL_DEPTH_MM = 0.5;
 // embossing plate; the worker places it at -theta, so 181.67 in the file.
 const EMBOSS_CHANNEL_DEG = 181.67;
 
-// S-C2 and S-C3 (signed 2026-09-21; phase A2). Byte-for-byte the server's sentences.
+// S-C2 and S-C3 (signed 2026-09-21; phase A2) and S-C5 (signed 2026-09-23, the
+// tactile no-room sentence). Byte-for-byte the server's sentences.
 const GAP_NOTE = 'The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.';
 const WALL_NOTE = 'The seam channel was left out: the cylinder wall would be thinner than 1.2 mm under it.';
+const ROOM_NOTE =
+  'The seam channel was left out: there is not enough room for it beside the alignment arrows. ' +
+  'Reduce the number of braille cells, increase the cylinder diameter, or narrow the indicator.';
 
 const TRANSIENT_ERRORS = /Manifold 3D engine|not initialized|Translating|Generating|STL generation failed|Translation failed/;
 
@@ -305,7 +309,7 @@ test.describe('Slicer seam channel', () => {
     // round the raised arrows on the first-cell side, which needs 3.5 mm
     // beside the arrow column. 13 cells leave 7.2 mm; 15 leave 0.7 mm - the
     // arrows already overlap the dots and the signed tactile-gap warning
-    // speaks - so the channel note says S-C2 as well.
+    // speaks - so the channel note says why, in S-C5.
     await page.locator('input[name="indicator_mode"][value="tactile"]').check();
     await expect(page.locator('#grid_columns')).toHaveValue('13');
     await expect(page.locator('#seam-channel-warning')).toBeHidden();
@@ -314,7 +318,7 @@ test.describe('Slicer seam channel', () => {
     await page.locator('#grid_columns').dispatchEvent('input');
     await expect(page.locator('#tactile-gap-warning')).toBeVisible();
     await expect(page.locator('#seam-channel-warning')).toBeVisible();
-    await expect(page.locator('#seam-channel-message')).toHaveText(GAP_NOTE);
+    await expect(page.locator('#seam-channel-message')).toHaveText(ROOM_NOTE);
 
     await page.locator('#grid_columns').fill('13');
     await page.locator('#grid_columns').dispatchEvent('input');
@@ -323,6 +327,15 @@ test.describe('Slicer seam channel', () => {
     // Visual mode again for the wall case below, where the channel note must
     // fire alone: no tactile or card-fit note beside it in the live region.
     await page.locator('input[name="indicator_mode"][value="visual"]').check();
+
+    // Visual mode keeps S-C2, its own cause: 15 text cells plus the two marker
+    // columns leave the seam gap no window for the groove.
+    await page.locator('#grid_columns').fill('15');
+    await page.locator('#grid_columns').dispatchEvent('input');
+    await expect(page.locator('#seam-channel-message')).toHaveText(GAP_NOTE);
+    await page.locator('#grid_columns').fill('13');
+    await page.locator('#grid_columns').dispatchEvent('input');
+    await expect(page.locator('#seam-channel-warning')).toBeHidden();
 
     // A cutout that leaves under 1.2 mm of wall under the groove raises the
     // channel note ALONE, so it is what the live region carries.

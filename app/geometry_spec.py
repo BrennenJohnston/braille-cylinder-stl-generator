@@ -1286,6 +1286,14 @@ def _seam_channel_block(
             + SEAM_CHANNEL_WIDTH_MM
             + 2.0 * SEAM_CHANNEL_MARGIN_MM
         )
+        if free < need:
+            # S-C5, signed off by Brennen (2026-09-23): it names the room beside
+            # the arrows, because the arrow width can cause this as well as the
+            # cell count and diameter. Reword only with his sign-off.
+            return None, (
+                'The seam channel was left out: there is not enough room for it beside the alignment arrows. '
+                'Reduce the number of braille cells, increase the cylinder diameter, or narrow the indicator.'
+            )
     else:
         # Between the last cell's dots and column 0's alignment triangle, whose
         # outline is dot_spacing wide.
@@ -1293,11 +1301,11 @@ def _seam_channel_block(
         hi = gap / 2.0 - float(settings.dot_spacing) / 2.0
         free = hi - lo
         need = SEAM_CHANNEL_WIDTH_MM + 2.0 * SEAM_CHANNEL_MARGIN_MM
-    if free < need:
-        # S-C2, signed off by Brennen (2026-09-21); reword only with his sign-off.
-        return None, (
-            'The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.'
-        )
+        if free < need:
+            # S-C2, signed off by Brennen (2026-09-21); reword only with his sign-off.
+            return None, (
+                'The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.'
+            )
 
     if not solid:
         # The worker's shell is either the polygonal cutout (thinnest at the

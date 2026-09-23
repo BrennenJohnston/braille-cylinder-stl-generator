@@ -317,15 +317,20 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      (each lost its point); Brennen's testing found that made the triangle
      less distinguishable to a blind user, and he chose the side, the 0.25
      margin, the 45 deg slant (a run along the base leaves layers with no V)
-     and leave-out-with-S-C2 over falling back to the recut. Tactile-shape
+     and leave-out-with-a-note over falling back to the recut. Tactile-shape
      decisions: never cut an arrow again, or move or narrow the detour, on
      your own. D-T6's two stretches that stopped short of the chain were
      printed and the slicer put seams in dots wherever the groove stopped -
      a groove at EVERY layer is what matters. The rerun
      (build/seam_spike_detour): emboss 90.8 % in the groove (93.1 % with
      three arrows), the rest on the arrows' own tips (the six layers under
-     each tip), counter 36.9 %, 0 % in a dot everywhere.
-   - Left out, with a warning (S-C2 / S-C3 (signed 2026-09-21)), when the
+     each tip), counter 36.9 %, 0 % in a dot everywhere. Brennen found the
+     tip seams ACCEPTABLE IN PRINT (2026-09-23).
+   - Left out, with a warning (S-C2 / S-C3, signed 2026-09-21; S-C5, signed
+     2026-09-23 - the TACTILE sentence, "...there is not enough room for it
+     beside the alignment arrows. Reduce the number of braille cells, increase
+     the cylinder diameter, or narrow the indicator.", because the arrow width
+     can cause it too; visual keeps S-C2), when the
      free room is short - visual: the window under 1.5 mm; tactile (D-T8):
      the first-cell side's gap/2 - footprint under tactile_indicator_width/2
      + 1.5 (3.5 at defaults), on BOTH plates so they keep or lose it together

@@ -17,7 +17,8 @@ tests read the dict the worker acts on; they need no mesh library.
   3. Off: with the switch off (or the channel left out) the spec is
      byte-identical to the one built before the channel existed.
 
-The warning sentences quoted here (S-C2, S-C3) were signed off by Brennen on 2026-09-21; reword only with his sign-off.
+The warning sentences quoted here (S-C2, S-C3) were signed off by Brennen on 2026-09-21, and S-C5 on
+2026-09-23; reword only with his sign-off.
 """
 
 import copy
@@ -73,6 +74,12 @@ V1_CYLINDER = {
 # Wording signed off by Brennen (2026-09-21), phase A2; reword only with his sign-off.
 GAP_WARNING = 'The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.'
 WALL_WARNING = 'The seam channel was left out: the cylinder wall would be thinner than 1.2 mm under it.'
+# S-C5 (Brennen, 2026-09-23): the tactile no-room sentence names its cause, since
+# the arrow width can cause it as well as the cell count and the diameter.
+ROOM_WARNING = (
+    'The seam channel was left out: there is not enough room for it beside the alignment arrows. '
+    'Reduce the number of braille cells, increase the cylinder diameter, or narrow the indicator.'
+)
 
 
 def build_spec(plate_type='positive', settings=None, cylinder=None, lines=None, back_lines=None):
@@ -366,11 +373,13 @@ def test_tactile_15_columns_has_no_room_for_the_detour(plate_type):
     side of it = 3.5 mm before the first cell's dots. 15 columns leave 5.761 mm
     of gap - 0.731 mm from the column to the dots, the arrows themselves
     already overlap them and the signed tactile-gap warning speaks - so both
-    plates leave the groove out and say so with S-C2, the visual-mode sentence.
+    plates leave the groove out and say why with S-C5, never the visual
+    sentence S-C2.
     """
     spec = build_spec(plate_type, {'grid_columns': 15, 'indicator_mode': 'tactile'}, lines=[FULL_CELL * 15] * 4)
     assert 'seam_channel' not in spec['cylinder']
-    assert GAP_WARNING in spec['warnings']
+    assert ROOM_WARNING in spec['warnings']
+    assert GAP_WARNING not in spec['warnings']
     assert any(w.startswith('Tactile indicator needs a seam gap') for w in spec['warnings'])
 
 
@@ -378,16 +387,17 @@ def test_the_tactile_room_rule_worked_numbers():
     """
     The first-cell side's room is gap/2 - footprint, against arrow width/2 +
     1.0 + 2 x 0.25. 14 cells at 30.8 mm leave 3.981 mm: room for the 3.5 mm a
-    4 mm arrow needs, not for the 4.1 mm a 5.2 mm one does. 30.4 mm leaves
-    14 cells only 3.352 mm.
+    4 mm arrow needs, not for the 4.1 mm a 5.2 mm one does - the case S-C5 was
+    reworded for, where neither the cell count nor the diameter is the cause.
+    30.4 mm leaves 14 cells only 3.352 mm.
     """
     tactile = {'grid_columns': 14, 'indicator_mode': 'tactile'}
     lines = [FULL_CELL * 14] * 4
     assert 'seam_channel' in build_spec('positive', tactile, lines=lines)['cylinder']
     wide = build_spec('positive', {**tactile, 'tactile_indicator_width': 5.2}, lines=lines)
-    assert 'seam_channel' not in wide['cylinder'] and GAP_WARNING in wide['warnings']
+    assert 'seam_channel' not in wide['cylinder'] and ROOM_WARNING in wide['warnings']
     narrow = build_spec('negative', tactile, cylinder={**V1_CYLINDER, 'diameter': 30.4}, lines=lines)
-    assert 'seam_channel' not in narrow['cylinder'] and GAP_WARNING in narrow['warnings']
+    assert 'seam_channel' not in narrow['cylinder'] and ROOM_WARNING in narrow['warnings']
 
 
 def test_narrow_barrel_visual_has_no_room_and_says_so():

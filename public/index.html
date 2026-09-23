@@ -7718,9 +7718,11 @@
                 // A dial that is empty or mid-edit gives NaN; the box stays
                 // quiet rather than guessing, and the server has the last word.
                 if (Number.isFinite(free) && Number.isFinite(need)) {
-                    /* S-C2 and S-C3, signed off by Brennen (2026-09-21); reword only with his sign-off. Byte-for-byte the server's sentences. */
+                    /* S-C2 and S-C3, signed off by Brennen (2026-09-21), and S-C5, signed off by him 2026-09-23; reword only with his sign-off. Byte-for-byte the server's sentences. */
                     if (free < need) {
-                        text = 'The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.';
+                        text = isTactileIndicatorOn()
+                            ? 'The seam channel was left out: there is not enough room for it beside the alignment arrows. Reduce the number of braille cells, increase the cylinder diameter, or narrow the indicator.'
+                            : 'The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.';
                     } else if (!isVersion2() && !isGearRollersOn()) {
                         const radius = diameter / 2;
                         const cutoutRadius = parseFloat(document.getElementById('cylinder_polygonal_cutout_radius_mm')?.value);
