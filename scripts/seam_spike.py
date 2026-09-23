@@ -9,11 +9,15 @@ braille dot or bowl - and does turning the part so the groove faces +Y do the sa
     python scripts/seam_spike.py --no-slice # build the STLs only
     python scripts/seam_spike.py --layouts tactile14,tactile13 --channels none,v10 --no-rear \
         --out build/seam_spike_through      # the 2026-09-21 D-T7 rerun (full height, recut through the arrows)
+    python scripts/seam_spike.py --layouts tactile13,tactile14,tactile12x3 --channels none,v10 --no-rear \
+        --out build/seam_spike_detour       # the 2026-09-22 D-T8 rerun (round the raised arrows)
 
 2026-09-21 (D-T6, D-T7): in tactile mode the groove runs down the arrow column itself (180
-degrees) the full height, and the embossing plate recuts it through the raised arrows, so the
-tactile placement here is read from the spec's own block - angle and recut - and main() refuses
-to run if this script and the spec disagree about the angle.
+degrees) the full height. 2026-09-22 (D-T8): on the embossing plate it steps round the raised
+arrows on the first-cell side instead of being recut through them, so the tactile groove here is
+the spec's own block - angle and path, cut with the golden renderer's cutter - "in channel" is
+measured against the path's angle at each layer's height, and main() refuses to run if this
+script and the spec disagree about the angle.
 
 Cylinders are built with the repo's own geometry spec (app.geometry_spec) and the golden
 fixture renderer's helpers (tests/test_golden.py), so dots, bowls and tactile arrows are the
@@ -50,6 +54,7 @@ from tests.test_golden import (  # noqa: E402
     _ds_bowl_cutter,
     _ds_rounded_dot_meshes,
     _ds_tactile_arrow_mesh,
+    _seam_channel_cutter,
     _stabilize_for_stl,
 )
 
@@ -90,7 +95,12 @@ LAYOUTS = {
     # The tactile recommendation since 2026-09-21 (D-T4): 14 fit the cylinder
     # but run off a 90 mm card loaded at the arrow.
     'tactile13': ('tactile', 13, 13),
+    # The 0.3 mm preset's marking: three separated arrows (2026-09-20), so the
+    # D-T8 groove returns to the column between them.
+    'tactile12x3': ('tactile', 12, 12),
 }
+# Settings only some layouts carry, on top of BASE_SETTINGS.
+LAYOUT_SETTINGS = {'tactile12x3': {'tactile_indicator_layout': 'three_spaced'}}
 # Plan A2 constants (D-4): V 1.2 x 0.6 first, 1.0 x 0.5 as the fallback, a rectangle for contrast.
 CHANNELS = {
     'none': None,
@@ -107,7 +117,9 @@ SLICE_CENTER = (127.0, 77.0)
 
 def settings_for(layout: str) -> CardSettings:
     mode, columns, _ = LAYOUTS[layout]
-    return CardSettings(**{**BASE_SETTINGS, 'grid_columns': columns, 'indicator_mode': mode})
+    return CardSettings(
+        **{**BASE_SETTINGS, 'grid_columns': columns, 'indicator_mode': mode, **LAYOUT_SETTINGS.get(layout, {})}
+    )
 
 
 def lines_for(layout: str) -> list[str]:
@@ -137,9 +149,14 @@ def channel_placement(layout: str, plate_type: str, settings: CardSettings, chan
         lo = -(gap / 2.0 - footprint)
         hi = gap / 2.0 - settings.dot_spacing / 2.0
     else:
-        # D-T6 (2026-09-21): down the arrow column itself, outside the arrow
-        # chain - no window to fit. The stretches come from the spec's block.
-        return {'gap_mm': gap, 'free_mm': math.inf, 'need_mm': 0.0, 'fits': True, 's_c_mm': 0.0, 'theta': math.pi}
+        # D-T6 / D-T8: down the arrow column itself, and on the embossing plate
+        # round the raised arrows on the first-cell side - the spec's own path.
+        # The room that detour needs is the spec's tactile rule, mirrored here
+        # so a layout the app leaves the groove out of is skipped, not sliced.
+        free = gap / 2.0 - footprint
+        width = channel['width'] if channel else 0.0
+        need = settings.tactile_indicator_width / 2.0 + width + 2.0 * CHANNEL_MARGIN_MM
+        return {'gap_mm': gap, 'free_mm': free, 'need_mm': need, 'fits': free >= need, 's_c_mm': 0.0, 'theta': math.pi}
     free = hi - lo
     width = channel['width'] if channel else 0.0
     need = width + 2.0 * CHANNEL_MARGIN_MM
@@ -148,13 +165,10 @@ def channel_placement(layout: str, plate_type: str, settings: CardSettings, chan
     return {'gap_mm': gap, 'free_mm': free, 'need_mm': need, 'fits': free >= need, 's_c_mm': s_c, 'theta': theta}
 
 
-def channel_cutter(
-    channel: dict, theta: float, radius: float, height: float, recut: dict | None = None
-) -> trimesh.Trimesh:
+def channel_cutter(channel: dict, theta: float, radius: float, height: float) -> trimesh.Trimesh:
     """
     Groove cutter: V or rectangle cross-section in the (radial, circumferential)
-    plane, the full height plus the overshoot or - the tactile recut, D-T7 -
-    the spec's arrow span (z_from/z_to about mid-height) with the taller lip.
+    plane, the full height plus the overshoot.
     """
     width, depth = channel['width'], channel['depth']
     r_out = radius + CHANNEL_LIP_MM
@@ -172,9 +186,8 @@ def channel_cutter(
     c, s = math.cos(theta), math.sin(theta)
     poly = Polygon([(u * c - v * s, u * s + v * c) for u, v in section])
     full = height + 2.0 * CHANNEL_OVERSHOOT_MM
-    z_from, z_to = (recut['z_from'], recut['z_to']) if recut else (-full / 2.0, full / 2.0)
-    prism = trimesh.creation.extrude_polygon(poly, height=z_to - z_from)
-    prism.apply_translation([0.0, 0.0, z_from])
+    prism = trimesh.creation.extrude_polygon(poly, height=full)
+    prism.apply_translation([0.0, 0.0, -full / 2.0])
     return prism
 
 
@@ -224,13 +237,16 @@ def visual_marker_cutter(marker: dict) -> trimesh.Trimesh:
 
 
 def build_cylinder(
-    spec: dict, channel: dict | None, theta_c: float | None, recut: dict | None = None
+    spec: dict, channel: dict | None, theta_c: float | None, detour: dict | None = None
 ) -> trimesh.Trimesh:
+    """`detour` is the spec's own seam_channel block when it carries a path (D-T8): cut instead of a straight groove."""
     cylinder = spec['cylinder']
     radius, height = cylinder['radius'], cylinder['height']
     shell = trimesh.creation.cylinder(radius=radius, height=height, sections=_DS_SHELL_SECTIONS)
     cutters = [bore_cutter(spec)]
-    if channel and theta_c is not None:
+    if detour is not None:
+        cutters.append(_seam_channel_cutter(detour, radius, height))
+    elif channel and theta_c is not None:
         cutters.append(channel_cutter(channel, theta_c, radius, height))
     # Shell stage first (bore + channel), then raised features, then recesses - the worker's order.
     shell = trimesh.boolean.difference([shell, trimesh.boolean.union(cutters, engine='manifold')], engine='manifold')
@@ -246,10 +262,6 @@ def build_cylinder(
             recesses.append(_ds_bowl_cutter(dot))
         else:
             raised.extend(_ds_rounded_dot_meshes(dot))
-    if channel and theta_c is not None and recut:
-        # D-T7: the tactile embossing plate's groove is cut again through the
-        # raised arrows, after they join.
-        recesses.append(channel_cutter(channel, theta_c, radius, height, recut))
     solid = trimesh.boolean.union(raised, engine='manifold')
     if recesses:
         solid = trimesh.boolean.difference(
@@ -371,6 +383,15 @@ def angular_error_deg(a: float, b: float) -> float:
     return abs((a - b + 180.0) % 360.0 - 180.0)
 
 
+def groove_angle_at(detour: dict | None, theta_c: float, height: float):
+    """The groove's angle (deg) at a layer's height above the bed: the column, or the detour path's there (D-T8)."""
+    if detour is None:
+        return lambda z: math.degrees(theta_c)
+    heights = [point['z'] + height / 2.0 for point in detour['path']]
+    angles = [point['theta'] for point in detour['path']]
+    return lambda z: math.degrees(float(np.interp(z, heights, angles)))
+
+
 def dot_windows(spec: dict) -> list[tuple[float, float, float]]:
     """(z_from_base, theta_deg, half_width_deg) for every dot or bowl footprint."""
     radius = spec['cylinder']['radius']
@@ -428,16 +449,29 @@ def main() -> None:
                         f'{layout} {plate_type}: spike places the groove at {math.degrees(theta_c):.3f} deg, '
                         f'the spec at {math.degrees(emitted["theta"]):.3f} deg - mirror the spec first'
                     )
+                if channel and name == 'v10' and (emitted is not None) != placement['fits']:
+                    raise SystemExit(
+                        f'{layout} {plate_type}: the spike and the spec disagree about whether the groove fits '
+                        f'(spike {placement["fits"]}, spec {emitted is not None}) - mirror the spec first'
+                    )
                 if channel and not placement['fits']:
                     print(
                         f'[skip] {layout} {plate_type} {name}: free {placement["free_mm"]:.2f} < need {placement["need_mm"]:.2f}'
                     )
                     continue
+                # D-T8: the tactile embossing plate's groove is the spec's own
+                # path round the raised arrows. Only the shipped groove (v10)
+                # has one; any other profile would run under the arrows.
+                has_path = emitted is not None and 'path' in emitted
+                if channel and has_path and name != 'v10':
+                    print(f'[skip] {layout} {plate_type} {name}: only the shipped groove steps round the arrows')
+                    continue
+                detour = emitted if channel and has_path else None
                 stem = f'{layout}_{plate_type}_{name}'
                 stl = OUT / f'{stem}.stl'
                 if not stl.exists():
                     print(f'[build] {stem}')
-                    mesh = build_cylinder(spec, channel, theta_c, (emitted or {}).get('arrow_recut'))
+                    mesh = build_cylinder(spec, channel, theta_c, detour)
                     mesh.export(stl)
                     if channel and not args.no_rear:
                         rotate_to_face_rear(mesh, theta_c).export(OUT / f'{stem}_rear.stl')
@@ -462,13 +496,15 @@ def main() -> None:
                     # Every later outer-wall path start on a layer is a path break
                     # (one per dot bump), reported beside the seams, never mixed in.
                     path_breaks = len(outer_wall_seams(gcode, radius, first_per_layer=False)) - layers
+                    # The rear variant is the whole part turned: the groove and
+                    # the dot windows are in the unturned frame.
+                    shift = 0.0 if seam_mode == 'aligned' else math.degrees(math.pi / 2.0 - theta_c)
                     if channel:
                         tol = math.degrees((channel['width'] / 2.0 + SEAM_TOLERANCE_MM) / radius)
-                        in_channel = sum(angular_error_deg(t, math.degrees(target)) <= tol for _, t in seams)
+                        groove = groove_angle_at(detour, theta_c, spec['cylinder']['height'])
+                        in_channel = sum(angular_error_deg(t, groove(z) + shift) <= tol for z, t in seams)
                     else:
                         in_channel = 0
-                    # dot windows are in the unrotated frame; undo the rear rotation for that count
-                    shift = 0.0 if seam_mode == 'aligned' else math.degrees(math.pi / 2.0 - theta_c)
                     in_dot = sum(seam_in_a_dot(z, (t - shift) % 360.0, windows) for z, t in seams)
                     spread = sorted(t for _, t in seams)
                     rows.append(
@@ -497,7 +533,8 @@ def main() -> None:
         '',
         'PrusaSlicer console, built-in defaults with a 0.4 mm nozzle, 0.45 mm walls, 3 perimeters, 0.2 mm layers.',
         'One seam per layer: the start of the outer wall\'s FIRST external-perimeter path. "in channel" = that start',
-        f'within half the channel width + {SEAM_TOLERANCE_MM} mm of arc of the channel angle; "in a dot" = inside a dot or',
+        f'within half the channel width + {SEAM_TOLERANCE_MM} mm of arc of the channel angle (on a tactile embossing plate, the',
+        'angle of the groove\'s path round the arrows at that layer\'s height, D-T8); "in a dot" = inside a dot or',
         'bowl footprint (+0.2 mm) at that height. "path breaks" = later outer-wall path starts on the same layers (the',
         'slicer prints each dot bump as its own path; they are not seam choices). Acceptance (plan A0): >= 95 % in',
         'channel in aligned mode on both plates.',

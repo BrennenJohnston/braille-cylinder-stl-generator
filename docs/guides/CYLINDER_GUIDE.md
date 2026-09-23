@@ -123,7 +123,7 @@ Cylinders have a "seam" — a gap where the cylinder opens. The seam offset rota
 
 ### Slicer Seam (the layer seam)
 
-Every cylinder carries a shallow **seam channel**: a groove 1 mm wide and 0.5 mm deep running the full height of the outside, in the gap beside the row markers, on both cylinders. Your slicer's default seam mode ("Aligned" in Bambu Studio and PrusaSlicer) hides each layer's seam in that groove instead of in a braille dot, so **no seam painting is needed**.
+Every cylinder carries a shallow **seam channel**: a groove 1 mm wide and 0.5 mm deep running the full height of the outside on both cylinders: in the gap beside the row markers in Visual mode, or down the alignment-arrow column in Tactile mode, where on the embossing cylinder it steps around each raised arrow so the arrows stay whole. Your slicer's default seam mode ("Aligned" in Bambu Studio and PrusaSlicer) hides each layer's seam in that groove instead of in a braille dot, so **no seam painting is needed**.
 
 - Leave the seam mode on **Aligned**. If your saved profile says **Back** or **Rear**, switch it to Aligned once: those modes put the seam at the rear-most point of every layer, which on the embossing cylinder lands on a raised dot no matter how the part is turned.
 - The channel is on by default. To print a plain barrel instead, turn off **Slicer seam channel** under Expert Mode → Surface Dimensions.

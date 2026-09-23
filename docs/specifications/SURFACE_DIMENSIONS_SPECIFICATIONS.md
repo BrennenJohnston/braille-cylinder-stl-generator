@@ -525,7 +525,7 @@ This ensures that when the emboss and counter plates are aligned face-to-face, t
 
 ### 2.6 Slicer Seam Channel
 
-**Since 2026-09-20 (programme decisions D-1, D-2, D-13, D-14, D-15).** Every cylinder carries a shallow V-groove along its OUTER surface, on both plates: the full height beside the row-indicator column in visual mode, and since 2026-09-21 (D-T6, D-T7) the full height down the tactile arrow column itself in tactile mode, cut through the raised arrows on the embossing plate. A slicer's default "aligned" seam mode snaps each layer's seam into a concave corner, and on a smooth barrel the only corners are where dots and bowls meet the surface; a layer seam inside a dot ruins that dot on paper. The groove is a better corner, so the seam never needs painting.
+**Since 2026-09-20 (programme decisions D-1, D-2, D-13, D-14, D-15).** Every cylinder carries a shallow V-groove along its OUTER surface, on both plates: the full height beside the row-indicator column in visual mode, and since 2026-09-21 (D-T6, D-T7) the full height down the tactile arrow column itself in tactile mode, where on the embossing plate it steps round each raised arrow on the first-cell side instead of cutting through it (D-T8, 2026-09-22). A slicer's default "aligned" seam mode snaps each layer's seam into a concave corner, and on a smooth barrel the only corners are where dots and bowls meet the surface; a layer seam inside a dot ruins that dot on paper. The groove is a better corner, so the seam never needs painting.
 
 #### UI Element
 
@@ -537,7 +537,7 @@ This ensures that when the emboss and counter plates are aligned face-to-face, t
 | Description (`aria-describedby="seam-channel-note"`, 19 words) | "A shallow groove beside the row markers where the slicer hides its layer seam, keeping it off the dots." (S-C1 (signed 2026-09-21)) |
 | Default | ON |
 | Persistence | `braille_prefs_seam_channel_enabled` (`'1'`/`'0'`); reset restores ON |
-| Live note | `#seam-channel-warning` / `#seam-channel-message`, shown before Generate when the groove will be left out (S-C2 / S-C3 below), announced once through `#a11y-status` on its hidden-to-shown edge |
+| Live note | `#seam-channel-warning` / `#seam-channel-message`, shown before Generate when the groove will be left out (S-C2 / S-C3 / S-C5 below), announced once through `#a11y-status` on its hidden-to-shown edge |
 
 #### Wire
 
@@ -570,53 +570,78 @@ gap       = π · diameter − (grid_columns_total − 1) · cell_spacing
 footprint = dot_spacing / 2 + max(active dot base radius, active recess mouth radius)
             (double-sided: the ds_* package's dot and bowl radii; the SAME number on both plates)
 visual :  lo = −(gap/2 − footprint)                  hi = gap/2 − dot_spacing/2        (column 0's triangle)
-tactile:  NO window (D-T6, 2026-09-21). The groove runs down the arrow column itself: theta = π on BOTH plates,
-          the FULL height (the same cut as visual mode, from the bare shell). On the EMBOSSING plate it is cut a
-          second time after the raised arrows are on (D-T7, same day, after Brennen's print: wherever the groove
-          stopped, the slicer chose a dot): `arrow_recut = {z_from, z_to, lip}`, the same V over the arrow chain
-          only — tactile_arrow_span(): the outermost row centres ∓ length/2, grown by the gear weld (0.005) in gear
-          mode, ∓ SEAM_CHANNEL_ARROW_MARGIN_MM (0.3) — clamped SEAM_CHANNEL_RECUT_INSET_MM (0.05) inside the end
-          faces (a gear face is never nicked), with lip = tactile_indicator_raise + SEAM_CHANNEL_LIP_MM so the V's
-          sides clear the arrows' top faces. 13 cells, 4 rows, 52 mm, 0.4 preset: z_from −20.3, z_to 20.3, lip 1.0.
-          The counter plate's recesses are deeper (0.7 mm) than the groove (0.5), so its single cut already runs
-          through them and it gets no recut.
+tactile:  The groove runs down the arrow column itself (D-T6, 2026-09-21): theta = π on BOTH plates, the FULL
+          height (D-T7, same day, after Brennen's print: wherever the groove stopped, the slicer chose a dot).
+          COUNTER plate: straight, the same cut as visual mode - its recesses are deeper (0.7 mm) than the groove
+          (0.5), so the cut runs through them. EMBOSSING plate (D-T8, 2026-09-22): the groove steps round every
+          raised arrow on the FIRST-CELL side (theta below π in the spec, the side toward column 0) instead of
+          running through it, so the arrows stay whole. Worked in the arrows' tangent plane at 180°, x across the
+          column (negative toward the first cell), its centre line keeps d = SEAM_CHANNEL_WIDTH_MM / 2 +
+          SEAM_CHANNEL_MARGIN_MM = 0.75 mm from each raised outline (grown by the gear weld, 0.005, in gear
+          mode) and never slants more than SEAM_CHANNEL_DETOUR_SLANT_DEG (45°) off the axis. Round one arrow of
+          half-base b, base z_b and tip z_t, with γ = 45°:
+            leaves the centre at z_b − (d + b·cos γ) / sin γ     (3.061 mm below the base at the defaults)
+            slants at γ to the circle of radius d about the base corner, rounds it (widest: b + d = 2.75 mm)
+            runs parallel to the long side, rounds the circle of radius d about the tip
+            slants back at γ to the centre at z_t + d / sin γ    (1.061 mm above the tip)
+          (an arrow whose side is flatter than γ - short and wide - goes straight from its base corner's circle
+          back to the centre, its tip already clear). With several arrows the centre line is the lower envelope
+          of the one-arrow lines: the line nearest the column that clears them all. The per-row arrows touch tip
+          to base, so there it zig-zags - up each arrow's side, then out at γ to the next arrow's base corner,
+          1.147 mm from the column at its nearest (1.913 mm below each join) - and is on the column only below
+          the chain and above it; the 0.3 preset's three arrows are 5 mm apart, so between them it returns to
+          the column for 0.878 mm. The slant, not a run along the base, is what keeps a V on every printed layer
+          (a groove running across a layer leaves only a shallow flat step there). Emitted as `path`: (theta,
+          z) points from the overshoot below the bottom face to the overshoot above the top one, theta = π +
+          asin(x / R), the round corners as chords of at most SEAM_CHANNEL_DETOUR_ARC_STEP_DEG (7.5°) set
+          outside the circle, and every sideways stretch split into pieces of at most
+          SEAM_CHANNEL_DETOUR_STEP_MM (1.0) so each chord stays within 0.005 mm of the barrel.
+          free = gap/2 − footprint (the first-cell side's room)
+          need = tactile_indicator_width / 2 + SEAM_CHANNEL_WIDTH_MM + 2 · SEAM_CHANNEL_MARGIN_MM = 3.5 mm
+          The rule is nominal, in the tangent plane. On the surface the path reaches R·asin(x / R) plus the
+          outside-chord bulge, about 0.016 mm beyond b + d at the defaults, so exactly at the limit (14 cells
+          on a 30.5 mm barrel: free 3.509) the flat beside the first cell's dots is 0.243 mm, not 0.25 - far
+          below print resolution, and the UI mirrors the same simple rule.
 visual:   free = hi − lo ;  need = SEAM_CHANNEL_WIDTH_MM + 2 · SEAM_CHANNEL_MARGIN_MM = 1.5 mm
           s_c = (lo + hi) / 2
           theta = π − s_c / R  (positive plate)      theta = π + s_c / R  (negative plate)
 ```
 
-**What the recut does to a raised arrow (D-T7, Brennen's choice: the tested V at every layer).** The V is 1 mm wide at the surface and its sides keep their 45° slope through the arrow's 0.5 mm raise, so it is 2 mm wide at the arrow's top face — the arrow's own width at its centre line. Each arrow keeps its base half as two ridges and loses its point: above the surface the arrow ends at its centre line (a hair above it where the V wall, the arrow side and the top facet meet). The counter plate's recess is unchanged, so the notched arrow still nests in it. This is a tactile-shape change and was decided by Brennen on 2026-09-21; never widen, deepen or shorten the recut on your own.
+**The raised arrows stay whole (D-T8, 2026-09-22, Brennen's decisions).** From D-T7 until 2026-09-22 the embossing plate's groove was recut through the raised arrows (`arrow_recut`): each arrow kept its base half as two ridges and lost its point, and Brennen's testing showed that changed the arrow's feel and made it less distinguishable to a blind user. He chose the detour above on four counts, each from options put to him: the first-cell side (the only side with room in every supported layout — at 14 cells double-sided the nearest dot edge is 4.28 mm from the column there, 4.181 by the room rule's footprint, and 2.93 on the last-cell side), 0.25 mm of flat between the arrow and the groove (the channel's own margin, so the arrow's edge and 0.5 mm raise feel exactly as before), the 45° slant rather than a run along the base, and leaving the groove out with a note where the detour has no room rather than falling back to the recut (S-C2 at first; since 2026-09-23 its own sentence S-C5, which names the cause — the arrow width can bring it on as well as the cell count and diameter). The groove's size and the arrow are unchanged; the counter plate's recess is unchanged, so the arrow still nests. These are tactile-shape decisions: never move the detour to the other side, narrow its margin or cut an arrow again on your own.
 
 `theta` is emitted in the SAME convention as every dot's `theta` in the spec (column 0 at +grid_angle/2 on the positive plate, seam centre at π, the counter plate mirrored), so `theta_A + theta_B = 2π`. The Manifold worker negates every theta it places — dots, markers and this channel alike — which is what puts the groove beside column 0 in the STL; the Python golden renderer uses theta as emitted. Neither may treat this angle differently from a dot's.
 
-**Rerun through the arrows (2026-09-21, D-T7):** `scripts/seam_spike.py --layouts tactile14,tactile13 --channels none,v10 --no-rear --out build/seam_spike_through` — PrusaSlicer aligned mode, 260 layers per file, the groove at 180° the full height and recut through the raised arrows. Embossing plate: 100 % of layers in the groove at 13 and at 14 cells, every seam between 180.00° and 180.02°. Counter plate: 36.9 % within 0.8 mm of arc of 180°, the rest on the recess arrows' own edges (170.7°–189.3°), where the deeper recess interrupts the groove; 0 % in a dot or bowl on every plate, with or without the groove. The D-T6 rerun (`build/seam_spike_column`, two stretches outside the chain: 60 % / 37 %, 0 % in a dot by this metric) is superseded — Brennen's Bambu Studio print of that build put seams in dots wherever the groove stopped, which this metric did not predict; the print, not the study, is the evidence. The script reads the tactile angle and recut from the spec's own block and refuses to run if it and the spec disagree about the angle.
+**Rerun round the arrows (2026-09-22, D-T8):** `scripts/seam_spike.py --layouts tactile13,tactile14,tactile12x3 --channels none,v10 --no-rear --out build/seam_spike_detour` — PrusaSlicer aligned mode, 260 layers per file; the embossing plate cut with the spec's own `path` through the golden renderer's cutter, and "in channel" measured against the path's angle at each layer's height. Embossing plate: 90.8 % of layers in the groove at 13 and at 14 cells (per-row chain), 93.1 % with the 0.3 preset's three arrows (`tactile12x3`); every other layer is one of the six just under an arrow's tip, where the seam sits on the arrow's own point at 180.0° — the price of the whole arrow, the same 90.8 % the 2026-09-20 spike measured with the arrows untouched. Counter plate unchanged: 36.9 % in the groove (52.7 % with three arrows), the rest on the recess arrows' own edges. **0 % in a dot or bowl on every plate** (without the groove, the three-arrow layout put 14.2 % / 10.0 % of layers in one). The print is the evidence (see the D-T6 note below), and it passed: Brennen tested this build on development and found the seams on the arrow tips acceptable in print (2026-09-23).
+
+**Rerun through the arrows (2026-09-21, D-T7, superseded by D-T8):** `build/seam_spike_through` — the groove at 180° the full height and recut through the raised arrows. Embossing plate: 100 % of layers in the groove at 13 and at 14 cells, every seam between 180.00° and 180.02°. Counter plate: 36.9 % within 0.8 mm of arc of 180°, the rest on the recess arrows' own edges (170.7°–189.3°), where the deeper recess interrupts the groove; 0 % in a dot or bowl on every plate, with or without the groove. The D-T6 rerun (`build/seam_spike_column`, two stretches outside the chain: 60 % / 37 %, 0 % in a dot by this metric) is superseded — Brennen's Bambu Studio print of that build put seams in dots wherever the groove stopped, which this metric did not predict; the print, not the study, is the evidence. The script reads the tactile angle and path from the spec's own block and refuses to run if it and the spec disagree about the angle.
 
 Worked numbers (30.8 mm, 0.4 mm preset, footprint 2.15 mm):
 
 | Layout | gap | free | Result |
 |--------|-----|------|--------|
 | 15 columns, visual | 5.761 | 2.361 | s_c 0.450 → 178.33° (A) / 181.67° (B); in the STL 181.67° (A) / 178.33° (B) |
-| 14 columns, tactile | 12.261 | — | θ = 180° on both plates, the full height; embossing plate recut z −20.3..20.3 with lip 1.0 (4 rows, 52 mm, raise 0.5); counter plate no recut |
-| 13 columns, tactile | 18.761 | — | the same — the arrow column does not move with the cell count (D-T6, D-T7) |
-| 14 columns, double-sided (0.4 package) | 12.261 | — | the same (tactile is locked on while double-sided) |
-| 15 columns, tactile | 5.761 | — | the same groove; the seam-GAP warning speaks, not the channel's |
+| 14 columns, tactile | 12.261 | 3.981 (need 3.5) | θ = 180° on both plates, the full height; the embossing plate's path leaves the column at z −23.061, reaches 2.75 mm out at each base corner, zig-zags 1.147 mm from the column at each join and is back at z 21.061 (4 rows, 52 mm); counter plate straight |
+| 13 columns, tactile | 18.761 | 7.231 | the same — the arrow column does not move with the cell count (D-T6) |
+| 14 columns, double-sided (0.4 package) | 12.261 | 4.181 | the same (tactile is locked on while double-sided); the back grid moves toward the last-cell side, 2.93 mm from the column there (4.28 on the first-cell side, measured to the nearest dot edge), which is why the detour takes the first-cell side |
+| 15 columns, tactile | 5.761 | 0.731 | **left out on both plates, S-C5** — the arrows themselves already overlap the dots and the seam-GAP warning speaks too |
 
 Fit rules (each leaves the groove out and adds one warning to `spec.warnings`; the UI shows the same sentence live):
 
-| Rule | Warning (signed 2026-09-21) |
+| Rule | Warning (S-C2 and S-C3 signed 2026-09-21, S-C5 signed 2026-09-23) |
 |------|---------------------------|
-| `free < 1.5 mm` | S-C2: "The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter." |
+| visual: `free < 1.5 mm` | S-C2: "The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter." |
+| tactile (D-T8): the first-cell side's `gap/2 − footprint` under `tactile_indicator_width/2 + 1.5 mm` — the room the embossing plate's detour needs, applied to both plates so they keep or lose the groove together | S-C5: "The seam channel was left out: there is not enough room for it beside the alignment arrows. Reduce the number of braille cells, increase the cylinder diameter, or narrow the indicator." — its own sentence because the arrow width can cause it too, where S-C2 would blame only the cell count and diameter |
 | wall under the apex `< 1.2 mm` — against the polygonal cutout's circumradius (`r / cos(π/sides)`), or `wall_thickness − depth` for a barrel hollowed by wall thickness (2 mm when the field is absent); solid barrels (integrated gears, Version 2) skip this rule | S-C3: "The seam channel was left out: the cylinder wall would be thinner than 1.2 mm under it." |
 
 At the default 13.0 mm cutout (12-gon, circumradius 13.459) the wall under the apex is 15.4 − 0.5 − 13.459 = 1.441 mm; a 13.25 mm inscribed cutout (circumradius 13.717) already breaks 1.2.
 
-Spec block, emitted only when the groove fits: `cylinder.seam_channel = {theta, width, depth, overshoot, lip}`, plus `arrow_recut: {z_from, z_to, lip}` on the tactile embossing plate only (absent = no second cut). With the switch off, or the groove left out, the spec is byte-identical to the pre-channel spec apart from the omission warning.
+Spec block, emitted only when the groove fits: `cylinder.seam_channel = {theta, width, depth, overshoot, lip}`, plus `path: [{theta, z}, …]` on the tactile embossing plate only (absent = the straight full-height groove, so every visual-mode spec and every counter plate is unchanged by D-T8). With the switch off, or the groove left out, the spec is byte-identical to the pre-channel spec apart from the omission warning.
 
 #### Worker and golden renderer
 
 `static/workers/csg-worker-manifold.js` → `createSeamChannelManifold()` builds the V in the radial/circumferential plane, extrudes it `height + 2 · overshoot` along the axis and subtracts it from the bare outer cylinder BEFORE the bore, the keyed pockets or the solid branch, so every barrel kind gets the same groove and nothing added later can be undercut. `tests/test_golden.py` → `_seam_channel_cutter()` does the same in `_build_ds_cylinder_mesh`; all six golden fixtures were regenerated once on 2026-09-20 (each gained exactly 8 triangles and lost the groove's 12.4–12.8 mm³, bounds unchanged). Proof from a real browser export: apex vertices at 181.67° (A) / 178.33° (B), nothing else at that radius on the end caps.
 
-`processGeometrySpec()` subtracts the recut — the same V with the recut's lip over its span — right after the raised tactile arrows are unioned, before the recess dots and markers are cut; `_build_ds_cylinder_mesh` adds it to the same difference. Order among the subtractions does not matter; what matters is that the recut comes AFTER the arrows join (the shell-stage cut alone would be filled back by their embedded base) and never reaches an end face (a gear's face would be nicked).
+A block with a `path` (D-T8) goes to `createSeamChannelPathManifold()` instead: a cone at every point — apex `depth` under the surface, axis radial, sides at the V's slope, mouth carried `lip` past the surface, 32 segments so a straight run keeps the exact V — hulled with the next one, and the hulls unioned, which sweeps the same V along the path. It is cut in the same shell stage, from the bare barrel: the path never comes within 0.25 mm of an arrow's outline, so the arrows' embedded base cannot fill it back and nothing has to be cut after they join (the D-T7 recut stage is gone, and with it `SEAM_CHANNEL_ARROW_MARGIN_MM`, `SEAM_CHANNEL_RECUT_INSET_MM` and `tactile_arrow_span()`). `_seam_channel_path_cutter()` in `tests/test_golden.py` is the same construction with manifold3d; the four embossing-plate golden fixtures were regenerated on 2026-09-22 and the four counter-plate ones are byte-identical.
 
 Cards never get a channel.
 
@@ -1158,6 +1183,8 @@ self.counter_dot_depth = max(0.0, min(depth, self.card_thickness - self.epsilon_
 | 2026-09-21 | **§2.6: the tactile groove moves behind the arrow.** With the tactile arrow at a fixed lead-in before column 0 (RECESS_INDICATOR_SPECIFICATIONS.md v3.9, D-T1), the lead-in side keeps only its 1 mm margin, so in tactile mode the window is now between the last cell's dots (the back grid's, an interpoint offset closer, when double-sided) and the arrow recess; the visual window is unchanged. Worked numbers: 14 tactile 190.05° / 169.95°, 13 tactile the same, double-sided 187.72° / 172.28°. The slicing study reran on the new side (`scripts/seam_spike.py --layouts tactile14,tactile13 --channels none,v10 --no-rear --out build/seam_spike_leadin`, PrusaSlicer, aligned mode): counter plate 100 % of layers in the groove at both 13 and 14 cells, embossing plate 90.8 % with every escaped layer on a raised arrow tip and 0 % in any dot — the same figures as the 2026-09-20 study on the old side. All eight golden pairs regenerated. |
 | 2026-09-21 | **§2.6: in tactile mode the groove runs down the arrow column itself (D-T6).** Brennen's test of the "behind the arrow" build showed the groove beside the arrows and a large trailing space; he asked for it centred on the arrows and the spacing back to even (the arrow returned to the seam-gap midpoint, RECESS_INDICATOR_SPECIFICATIONS.md v3.10). Tactile placement is now θ = 180° on both plates as two stretches (`segments`) that stop 0.3 mm (`SEAM_CHANNEL_ARROW_MARGIN_MM`) short of the arrow chain reported by `tactile_arrow_span()`; a stretch under 1.0 mm (`SEAM_CHANNEL_MIN_SEGMENT_MM`) is dropped and no stretch at all leaves the groove out with S-C4 (DRAFT). The worker and the golden renderer cut one prism per stretch. The slicing study reran on the column (`build/seam_spike_column`): 0 % of layers in a dot on every plate, 60 % / 37 % within 0.8 mm of 180°, the rest on the arrows' own edges. The visual groove is unchanged. All eight golden pairs regenerated. |
 | 2026-09-21 | **§2.6: the tactile groove runs the full height and is recut through the raised arrows (D-T7).** Brennen's print of the D-T6 build: wherever the groove stopped short of the arrow chain the slicer chose a braille dot or bowl. His instruction: extend the channel through the triangles and between them along the axis; his choice for the cut through each raised arrow: the same V, its sides continued (2 mm wide at the top face — each arrow keeps its base half as two ridges and loses its point). Tactile placement is now θ = 180° on both plates the full height (no `segments`; S-C4 retired — nothing can leave the groove out in tactile mode), plus `arrow_recut = {z_from, z_to, lip}` on the embossing plate: the chain plus 0.3 mm at each end (`SEAM_CHANNEL_ARROW_MARGIN_MM`), clamped 0.05 mm inside the end faces (`SEAM_CHANNEL_RECUT_INSET_MM`, new), lip = raise + 0.5. The worker and the golden renderer subtract it after the raised arrows join. The slicing study reran (`build/seam_spike_through`): embossing plate 100 % in the groove, counter plate 36.9 % with the rest on the recess edges, 0 % in a dot. All eight golden pairs regenerated. |
+| 2026-09-22 | **§2.6: on the embossing plate the tactile groove steps round the raised arrows instead of through them (D-T8).** Brennen's testing of the D-T7 build: the V through each raised arrow changed its feel and made the triangle less distinguishable to a blind user; he asked for the channel to stay on the arrow column, follow the outline of each triangle and return to the centre between them. His choices, from options put to him: the first-cell side, 0.25 mm of flat between arrow and groove, a 45° slant (`SEAM_CHANNEL_DETOUR_SLANT_DEG`, new) rather than a run along the base, and the groove left out with S-C2 when the first-cell side has no room (now also a tactile rule: `gap/2 − footprint` against `tactile_indicator_width/2 + 1.5`, both plates, mirrored live by `updateSeamChannelUI()`; 15 tactile cells now lose the groove). The embossing plate's block carries `path` instead of `arrow_recut`; the recut stage, `SEAM_CHANNEL_ARROW_MARGIN_MM`, `SEAM_CHANNEL_RECUT_INSET_MM` and `tactile_arrow_span()` are gone; the counter plate and visual mode are unchanged. The slicing study reran (`build/seam_spike_detour`): embossing plate 90.8 % in the groove (93.1 % with three arrows), the rest on the arrow tips, counter plate unchanged, 0 % in a dot. The four embossing-plate golden fixtures regenerated; the four counter-plate fixtures are byte-identical. |
+| 2026-09-23 | **§2.6: the tactile no-room note names its cause (S-C5); the arrow tips accepted in print.** In Tactile mode the arrow width can leave the detour no room as well as the cell count and diameter, so S-C2 ("…at this cell count and diameter") could name the wrong cause. Brennen chose a sentence of its own, signed: "The seam channel was left out: there is not enough room for it beside the alignment arrows. Reduce the number of braille cells, increase the cylinder diameter, or narrow the indicator." — on both plates, live in `updateSeamChannelUI()`; Visual mode keeps S-C2. He also found D-T8's seams on the raised arrow tips (the six layers under each tip) acceptable in print. |
 
 ### 8.3 Polygon Point Validation (csg-worker.js)
 

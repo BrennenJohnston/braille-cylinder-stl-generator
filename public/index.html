@@ -7696,24 +7696,33 @@
                 const totalColumns = getAvailableColumns() + getReservedMarkerColumns();
                 const footprint = seamChannelFootprintMm();
                 const gap = Math.PI * diameter - (totalColumns - 1) * cellSpacing;
-                // Tactile mode (D-T6, 2026-09-21): the groove runs down the
-                // arrow column itself, outside the arrow chain, so there is no
-                // window to fit - only the wall rule below applies. Visual:
-                // between the last cell's dots and column 0's triangle.
-                let free = Infinity;
-                if (!isTactileIndicatorOn()) {
+                // Tactile mode (D-T6, D-T8): the groove runs down the arrow
+                // column itself and, on the embossing plate, steps round the
+                // raised arrows on the first-cell side, so that side needs half
+                // an arrow, the groove and a margin either side of it before
+                // the first cell's dots. Visual: between the last cell's dots
+                // and column 0's triangle.
+                let free;
+                let need;
+                if (isTactileIndicatorOn()) {
+                    const indicatorWidth = parseFloat(document.getElementById('tactile_indicator_width')?.value);
+                    free = gap / 2 - footprint;
+                    need = indicatorWidth / 2 + SEAM_CHANNEL_WIDTH_MM + 2 * SEAM_CHANNEL_MARGIN_MM;
+                } else {
                     const lo = -(gap / 2 - footprint);
                     const hi = gap / 2 - dotSpacing / 2;
                     free = hi - lo;
+                    need = SEAM_CHANNEL_WIDTH_MM + 2 * SEAM_CHANNEL_MARGIN_MM;
                 }
-                const need = SEAM_CHANNEL_WIDTH_MM + 2 * SEAM_CHANNEL_MARGIN_MM;
 
                 // A dial that is empty or mid-edit gives NaN; the box stays
                 // quiet rather than guessing, and the server has the last word.
-                if (Number.isFinite(free)) {
-                    /* S-C2 and S-C3, signed off by Brennen (2026-09-21); reword only with his sign-off. Byte-for-byte the server's sentences. */
+                if (Number.isFinite(free) && Number.isFinite(need)) {
+                    /* S-C2 and S-C3, signed off by Brennen (2026-09-21), and S-C5, signed off by him 2026-09-23; reword only with his sign-off. Byte-for-byte the server's sentences. */
                     if (free < need) {
-                        text = 'The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.';
+                        text = isTactileIndicatorOn()
+                            ? 'The seam channel was left out: there is not enough room for it beside the alignment arrows. Reduce the number of braille cells, increase the cylinder diameter, or narrow the indicator.'
+                            : 'The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.';
                     } else if (!isVersion2() && !isGearRollersOn()) {
                         const radius = diameter / 2;
                         const cutoutRadius = parseFloat(document.getElementById('cylinder_polygonal_cutout_radius_mm')?.value);
@@ -11906,7 +11915,8 @@
                         <ul>
                             <li><strong>Print orientation:</strong> Print cylinders standing upright for best dot quality</li>
                             <li><strong>Test fit:</strong> Print a small section first to verify the diameter matches your container</li>
-                            <li><strong>Seam placement:</strong> Rotate the seam to the back or between words</li>
+                            <!-- Seam placement bullet reworded and signed off by Brennen (2026-09-21); reword only with his sign-off. -->
+                            <li><strong>Seam placement:</strong> Leave your slicer's seam mode on Aligned; the seam channel does the rest</li>
                             <!-- S-C4, reworded for tactile mode and signed off by Brennen (2026-09-21); reword only with his sign-off. -->
                             <li><strong>Slicer seam:</strong> Every cylinder carries a shallow seam channel where slicers hide the layer seam: beside the row markers in Visual mode, down the alignment-arrow column in Tactile mode. No seam painting is needed. Turn it off in Expert Mode if you want a plain surface.</li>
                         </ul>

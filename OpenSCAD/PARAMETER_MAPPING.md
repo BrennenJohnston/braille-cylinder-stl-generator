@@ -360,14 +360,21 @@ and the polygonal cutout are unchanged — only surface features differ.
   tried and reverted the same day). The card need is measured from there:
   `seam_gap/2 + grid + the cell's dot footprint`. In Tactile mode the slicer
   seam channel runs down the arrow column at 180° the full height on both
-  plates, and the emboss plate cuts it a second time after the raised arrows
-  are on (`seam_channel_arrow_recut`, over `seam_channel_recut_span` =
-  the arrow chain plus `SEAM_CHANNEL_ARROW_MARGIN_MM` (0.3) at each end, held
-  `SEAM_CHANNEL_RECUT_INSET_MM` (0.05) inside the end faces, with the V's
-  sides carried `tactile_indicator_raise + SEAM_CHANNEL_LIP_MM` past the
-  surface), so each arrow keeps its base half as two ridges and loses its
-  point (web decision D-T7); the counter plate's recesses are deeper than
-  the groove and get no recut. The render's `NOTE:` states the recut span.
+  plates, and on the emboss plate it steps round each raised arrow on the
+  first-cell side (web decision D-T8, 2026-09-22): `seam_channel_detour_path`,
+  the web generator's `_tactile_detour_path()` ported line for line, keeps
+  the groove's centre line `SEAM_CHANNEL_WIDTH_MM / 2 + SEAM_CHANNEL_MARGIN_MM`
+  (0.75 mm) from each arrow and slants at most
+  `SEAM_CHANNEL_DETOUR_SLANT_DEG` (45°) off the axis, and
+  `seam_channel_path_cut()` sweeps the V along it from the bare barrel, so
+  the arrows keep their points. The counter plate's recesses are deeper than
+  the groove, so its straight cut runs through them. When the first-cell
+  side lacks the room (`seam_gap/2 − footprint` under
+  `tactile_indicator_width/2 + 1.5 mm`) both plates leave the groove out
+  with the signed S-C5 NOTE. The render's `NOTE:` states where the groove
+  leaves and rejoins the column and how far it swings. (2.8.1 recut the V
+  through the raised arrows instead - web decision D-T7 - which took each
+  arrow's point.)
 - **Seam-gap guard.** When the gap drops below
   `tactile_indicator_width + 5 mm`, both plates render a red
   `TACTILE GAP TOO SMALL: <gap>mm` extrusion above the cylinder and the desktop

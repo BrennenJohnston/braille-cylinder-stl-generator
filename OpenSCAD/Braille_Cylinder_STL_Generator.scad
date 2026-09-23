@@ -1064,19 +1064,26 @@ TACTILE_MIN_GAP_MARGIN = 5.0;
 CARD_LENGTH_MM = 90;
 
 // Tactile mode's seam channel runs down the arrow column itself (web decision
-// D-T6, 2026-09-21), the full height, and on the emboss plate it is cut a
-// second time after the raised arrows are on, so the V runs through them
-// (D-T7, same day: Brennen's print showed the slicer choosing dots wherever
-// the groove stopped). That recut spans the arrow chain plus this margin at
-// each end and stays the inset inside the end faces, so it can never nick a
-// gear's face. Mirrors the web generator's app/geometry_spec.py values one
-// for one (tests/test_tactile_mode.py diffs them).
-SEAM_CHANNEL_ARROW_MARGIN_MM = 0.3;    // the recut overruns the arrow chain by this much at each end, mm
-SEAM_CHANNEL_RECUT_INSET_MM  = 0.05;   // the recut stays this far inside the end faces, mm
+// D-T6, 2026-09-21), the full height (D-T7: Brennen's print showed the slicer
+// choosing dots wherever the groove stopped), and on the emboss plate it steps
+// round each raised arrow on the first-cell side instead of running through
+// it (D-T8, 2026-09-22: the V through the arrow took its point and made the
+// triangle less distinguishable by touch). It leaves the column at this slant
+// from the axis, rounds the base corner, runs beside the long side and rounds
+// the tip back to the column, its mouth SEAM_CHANNEL_MARGIN_MM clear of the
+// arrow; the slant, not a run along the base, keeps a V on every printed
+// layer. The round corners are chords of at most the arc step, set outside
+// the circle, and a sideways stretch is split into pieces no longer than the
+// step so each chord stays on the barrel. Mirrors the web generator's
+// app/geometry_spec.py values one for one (tests/test_tactile_mode.py diffs
+// them).
+SEAM_CHANNEL_DETOUR_SLANT_DEG    = 45;    // slant off the axis on the way round an arrow, degrees
+SEAM_CHANNEL_DETOUR_ARC_STEP_DEG = 7.5;   // largest arc a round corner's chord spans, degrees
+SEAM_CHANNEL_DETOUR_STEP_MM      = 1.0;   // longest sideways piece of the path, mm
 
 // Slicer seam channel: a V groove along the outer surface - the full height
 // beside the row-indicator column in Visual mode, the full height down the
-// arrow column and through the raised arrows in Tactile mode - so a slicer's
+// arrow column and round the raised arrows in Tactile mode - so a slicer's
 // default "aligned" seam mode hides each layer's seam in it instead of in a
 // braille dot. Mirrors
 // the web generator's app/geometry_spec.py SEAM_CHANNEL_* one for one
@@ -1282,13 +1289,17 @@ if (tactile_card_too_long) {
 
 // The groove's window, Visual mode: between the last cell's dots and column 0's
 // triangle. Tactile mode has no window - the groove runs down the arrow column
-// itself, the full height, recut through the raised arrows (D-T6, D-T7; the
-// recut's span is computed below the omission notes).
+// itself, the full height - but on the emboss plate it steps round the raised
+// arrows on the first-cell side (D-T8; the path is computed below the omission
+// notes), which needs half an arrow, the groove and a margin either side of it
+// before the first cell's dots. Both plates keep or lose the groove together.
 seam_channel_lo_mm = -(seam_gap_mm / 2 - seam_channel_footprint_mm);   // past the last cell's dots
 seam_channel_hi_mm = seam_gap_mm / 2 - active_dot_spacing / 2;         // before column 0's triangle
-seam_channel_free_mm = seam_channel_hi_mm - seam_channel_lo_mm;
-seam_channel_need_mm = SEAM_CHANNEL_WIDTH_MM + 2 * SEAM_CHANNEL_MARGIN_MM;
-seam_channel_fits = tactile_on || (seam_channel_free_mm >= seam_channel_need_mm);
+seam_channel_free_mm = tactile_on ? seam_gap_mm / 2 - seam_channel_footprint_mm
+                                  : seam_channel_hi_mm - seam_channel_lo_mm;
+seam_channel_need_mm = (tactile_on ? tactile_indicator_width / 2 : 0)
+                       + SEAM_CHANNEL_WIDTH_MM + 2 * SEAM_CHANNEL_MARGIN_MM;
+seam_channel_fits = seam_channel_free_mm >= seam_channel_need_mm;
 // The wall under the apex: only a polygonal cutout can thin it - this shell
 // has no wall-thickness hollowing (a barrel with no cutout is solid) and gear
 // mode forces the barrel solid. The cutout's vertices reach the circumradius.
@@ -1303,42 +1314,137 @@ seam_channel_s_mm = tactile_on ? 0 : (seam_channel_lo_mm + seam_channel_hi_mm) /
 seam_channel_theta_emboss_deg  = 180 + (seam_channel_s_mm / radius) * 180 / PI;
 seam_channel_theta_counter_deg = 180 - (seam_channel_s_mm / radius) * 180 / PI;
 
-// The console copies of the two omission sentences, S-C2 and S-C3 - the web
+// The console copies of the omission sentences, S-C2, S-C3 and S-C5 - the web
 // generator's own words, quoted verbatim and pinned by the tests; keep them
-// identical. "NOTE:", never "WARNING:" - scripts\scad-check.ps1 fails on
-// that token.
-if (seam_channel_on && !seam_channel_fits)
+// identical. S-C5 (signed 2026-09-23) is Tactile mode's: it names the room
+// beside the arrows, because the arrow width can take it as well as the cell
+// count and diameter. "NOTE:", never "WARNING:" - scripts\scad-check.ps1 fails
+// on that token.
+if (seam_channel_on && !seam_channel_fits && !tactile_on)
     echo("NOTE: The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.");
+if (seam_channel_on && !seam_channel_fits && tactile_on)
+    echo("NOTE: The seam channel was left out: there is not enough room for it beside the alignment arrows. Reduce the number of braille cells, increase the cylinder diameter, or narrow the indicator.");
 if (seam_channel_on && seam_channel_fits && !seam_channel_wall_ok)
     echo(str("NOTE: The seam channel was left out: the cylinder wall would be thinner than ",
              SEAM_CHANNEL_MIN_WALL_MM, " mm under it."));
 
-// Tactile mode: the emboss plate's groove is cut a SECOND time, after the
-// raised arrows are on, over the arrow chain - [z_from, z_to] about mid-height
-// in the shell's own frame: the outermost arrows' outlines (grown by the
-// gear-mode weld), plus SEAM_CHANNEL_ARROW_MARGIN_MM at each end, held
-// SEAM_CHANNEL_RECUT_INSET_MM inside the end faces - with the V's sides carried
-// tactile_indicator_raise + SEAM_CHANNEL_LIP_MM past the surface, so the
-// arrows' top faces are cut, never touched. The V is 2 mm wide at the top
-// face: each arrow keeps its base half as two ridges and loses its point
-// (D-T7, Brennen's choice - the tested V at every layer). The counter plate's
-// recesses are deeper than the groove, so its single full-height cut already
-// runs through them and it gets no recut. Mirrors the web generator's
-// tactile_arrow_span() / _seam_channel_block(); the tests pin the numbers.
-function tactile_arrow_apex_growth(delta) =
-    delta > 0 ? delta / sin(atan2(tactile_indicator_width / 2, tactile_indicator_length)) : 0;
-function tactile_recut_span(delta) =
-    let (ys = tactile_arrow_y_positions(),
-         inset = active_cylinder_height_mm / 2 - SEAM_CHANNEL_RECUT_INSET_MM)
-    [max(min(ys) - tactile_indicator_length / 2 - delta - SEAM_CHANNEL_ARROW_MARGIN_MM, -inset),
-     min(max(ys) + tactile_indicator_length / 2 + tactile_arrow_apex_growth(delta)
-         + SEAM_CHANNEL_ARROW_MARGIN_MM, inset)];
-seam_channel_recut_span = tactile_on ? tactile_recut_span(gears_on ? GEAR_ARROW_WELD_MM : 0) : undef;
-seam_channel_recut_lip_mm = tactile_indicator_raise + SEAM_CHANNEL_LIP_MM;
+// Tactile mode, the emboss plate: the groove's centre line round the raised
+// arrows (D-T8), the web generator's _tactile_detour_path() ported line for
+// line. Points are [z, x] in the arrows' tangent plane at 180 degrees - z
+// about mid-height, x across the column, NEGATIVE toward the first braille
+// cell - where the raised outline is exactly tactile_raised()'s triangle,
+// grown by the gear-mode weld as a mitre. Round one arrow the line keeps
+// SEAM_CHANNEL_WIDTH_MM / 2 + SEAM_CHANNEL_MARGIN_MM from the outline and slants
+// at most SEAM_CHANNEL_DETOUR_SLANT_DEG off the axis; with several arrows it is
+// the lower envelope of the one-arrow lines, so the per-row arrows, which touch
+// tip to base, get a zig-zag from each side out to the next arrow's corner. A
+// point's physical angle is 180 - asin(x / radius): above 180, the first-cell
+// side, as the Visual groove's 181.67 is. The counter plate's recesses are
+// deeper than the groove, so its straight cut already runs through them.
+
+// Round the circle of radius r about (cx, cz) from angle a0 to a1: both ends on
+// the circle and a vertex per arc step between them, pushed out so each chord
+// touches the circle instead of cutting inside it.
+function seam_detour_arc(cx, cz, r, a0, a1) =
+    abs(a1 - a0) < 1e-9 ? [[cz + r * sin(a0), cx + r * cos(a0)]]
+    : let (n = ceil(abs(a1 - a0) / SEAM_CHANNEL_DETOUR_ARC_STEP_DEG),
+           step = (a1 - a0) / n,
+           outer = r / cos(step / 2))
+      concat([[cz + r * sin(a0), cx + r * cos(a0)]],
+             [for (k = [0 : n - 1]) let (a = a0 + step * (k + 0.5)) [cz + outer * sin(a), cx + outer * cos(a)]],
+             [[cz + r * sin(a1), cx + r * cos(a1)]]);
+
+// One arrow's line, x <= 0 and 0 at both ends: a slant in to the circle of
+// radius d about the base corner, round it, parallel to the long side, round
+// the tip and a slant back. A short, wide arrow whose side is flatter than the
+// slant is left straight from its base corner: its tip is already clear.
+function seam_detour_one(base, tip, half_base, d, slant) =
+    let (side = atan2(half_base, tip - base))
+    concat([[base - (d + half_base * cos(slant)) / sin(slant), 0]],
+           side <= slant
+               ? concat(seam_detour_arc(-half_base, base, d, 180 + slant, 180 - side),
+                        seam_detour_arc(0, tip, d, 180 - side, 180 - slant),
+                        [[tip + d / sin(slant), 0]])
+               : concat(seam_detour_arc(-half_base, base, d, 180 + slant, 180 - slant),
+                        [[base + (d + half_base * cos(slant)) / sin(slant), 0]]));
+
+// A line's x at height z, 0 outside its span.
+function seam_detour_x_at(line, z) =
+    let (hits = [for (i = [0 : len(line) - 2])
+                     if (line[i][0] <= z && z <= line[i + 1][0])
+                         line[i][1] + (line[i + 1][1] - line[i][1]) * (z - line[i][0]) / (line[i + 1][0] - line[i][0])])
+    len(hits) > 0 ? hits[0] : 0;
+
+// Ascending, duplicates dropped.
+function seam_detour_sort(v) =
+    len(v) <= 1 ? v
+    : let (pivot = v[floor(len(v) / 2)])
+      concat(seam_detour_sort([for (x = v) if (x < pivot) x]), [pivot],
+             seam_detour_sort([for (x = v) if (x > pivot) x]));
+
+// The lower envelope of the lines over [z_lo, z_hi], sampled at every vertex
+// and every crossing - where it can bend.
+function seam_detour_envelope(lines, z_lo, z_hi) =
+    let (zs = seam_detour_sort(concat([z_lo, z_hi],
+                                      [for (line = lines) for (p = line) if (p[0] > z_lo && p[0] < z_hi) p[0]])),
+         crossings = [for (i = [0 : len(zs) - 2])
+                          for (a = [0 : len(lines) - 1])
+                              for (b = [0 : len(lines) - 1])
+                                  if (b > a)
+                                      let (d0 = seam_detour_x_at(lines[a], zs[i]) - seam_detour_x_at(lines[b], zs[i]),
+                                           d1 = seam_detour_x_at(lines[a], zs[i + 1]) - seam_detour_x_at(lines[b], zs[i + 1]))
+                                      if (d0 * d1 < 0)
+                                          zs[i] + (zs[i + 1] - zs[i]) * d0 / (d0 - d1)])
+    [for (z = seam_detour_sort(concat(zs, crossings)))
+         [z, min(concat([0], [for (line = lines) seam_detour_x_at(line, z)]))]];
+
+// Drop every vertex collinear with the last one kept and the next.
+function seam_detour_kept(env, i = 1, kept = []) =
+    let (k = len(kept) == 0 ? [env[0]] : kept)
+    i >= len(env) - 1 ? concat(k, [env[len(env) - 1]])
+    : let (b = k[len(k) - 1], h = env[i], a = env[i + 1],
+           cross = (h[0] - b[0]) * (a[1] - b[1]) - (h[1] - b[1]) * (a[0] - b[0]))
+      seam_detour_kept(env, i + 1, abs(cross) > 1e-12 ? concat(k, [h]) : k);
+
+// Split every sideways piece longer than the step, so its chord stays on the
+// barrel; a piece along the column is exact as it is.
+function seam_detour_subdivide(c) =
+    concat([for (i = [0 : len(c) - 2])
+                let (p = c[i], q = c[i + 1],
+                     n = q[1] != p[1] ? ceil(norm(q - p) / SEAM_CHANNEL_DETOUR_STEP_MM) : 1)
+                for (k = [0 : n - 1]) p + (q - p) * k / n],
+           [c[len(c) - 1]]);
+
+// The path as [physical angle, z about mid-height] points, bottom to top,
+// from the overshoot below the bottom face to the overshoot above the top one;
+// undef when the plate cuts no detour.
+seam_channel_detour_path = (tactile_on && seam_channel_present)
+    ? let (w = tactile_indicator_width,
+           l = tactile_indicator_length,
+           delta = gears_on ? GEAR_ARROW_WELD_MM : 0,
+           half_base = w / 2 + delta * (sqrt(w * w / 4 + l * l) + w / 2) / l,
+           tip_growth = delta > 0 ? delta / sin(atan2(w / 2, l)) : 0,
+           d = SEAM_CHANNEL_WIDTH_MM / 2 + SEAM_CHANNEL_MARGIN_MM,
+           end = active_cylinder_height_mm / 2 + SEAM_CHANNEL_OVERSHOOT_MM,
+           lines = [for (y = tactile_arrow_y_positions())
+                        seam_detour_one(y - l / 2 - delta, y + l / 2 + tip_growth, half_base, d,
+                                        SEAM_CHANNEL_DETOUR_SLANT_DEG)])
+      [for (p = seam_detour_subdivide(seam_detour_kept(seam_detour_envelope(lines, -end, end))))
+           [180 - asin(p[1] / radius), p[0]]]
+    : undef;
 if (tactile_on) {
-    echo(str("NOTE: tactile arrow at 180 deg on both plates; seam channel the full height, ",
-             "recut through the raised arrows over z ", seam_channel_recut_span,
-             " mm about mid-height on the emboss plate."));
+    if (is_undef(seam_channel_detour_path)) {
+        echo("NOTE: tactile arrow at 180 deg on both plates.");
+    } else {
+        // Where the groove leaves and rejoins the column, and how far it swings.
+        off = [for (i = [0 : len(seam_channel_detour_path) - 1]) if (seam_channel_detour_path[i][0] != 180) i];
+        last = len(seam_channel_detour_path) - 1;
+        echo(str("NOTE: tactile arrow at 180 deg on both plates; seam channel the full height, round the raised ",
+                 "arrows on the emboss plate's first-cell side, off the column over z ",
+                 [seam_channel_detour_path[max(0, off[0] - 1)][1],
+                  seam_channel_detour_path[min(last, off[len(off) - 1] + 1)][1]],
+                 " mm about mid-height and out to ", max([for (p = seam_channel_detour_path) p[0]]), " deg."));
+    }
 }
 
 // Counter plate recess radii (spherical cap formula to match web generator)
@@ -1381,7 +1487,7 @@ function get_dot_pattern(char) =
 // =============================================================================
 //
 // Every curved-surface primitive below picks its $fn from exactly one source
-// based on what kind of surface it is. The five sources are intentionally
+// based on what kind of surface it is. The six sources are intentionally
 // segregated (not competing) — pick whichever matches your geometry class:
 //
 //   1. CYLINDER_SHELL_FN = 64   — the outer cylinder shell, and any band
@@ -1410,6 +1516,12 @@ function get_dot_pattern(char) =
 //
 //   5. global $fn = 32 (default) — anything not in cases 1–4 (mainly 2D
 //      shapes inside linear_extrude, where curvature isn't expressed).
+//
+//   6. SEAM_CHANNEL_CONE_FN = 32 — the cones the tactile seam channel is
+//      swept with round the raised arrows (D-T8). Fixed, like case 1, to the
+//      web worker's SEAM_CHANNEL_CONE_SEGMENTS so both generators cut the same
+//      groove, and a multiple of 4 so each cone has a vertex straight across
+//      the barrel and a straight run keeps the exact V of the straight cut.
 //
 // If you add a new curved primitive, pick the case that matches and pass
 // its constant explicitly. Do not rely on the global $fn for any visible
@@ -1443,6 +1555,9 @@ INDICATOR_OVERCUT = 0.05;
 // prism; 64 segments gives near-cylindrical appearance at modest cost.
 // Keep in sync with the web preview's three.js shell segments.
 CYLINDER_SHELL_FN = 64;
+
+// The tactile seam channel's sweep cones ($fn TESSELLATION POLICY case 6).
+SEAM_CHANNEL_CONE_FN = 32;
 
 // -----------------------------------------------------------------------------
 // RAISED-DOT BASE EMBED
@@ -1781,7 +1896,8 @@ module seam_channel_warning() {
         linear_extrude(height = INVALID_TEXT_DEPTH)
         text(seam_channel_fits
                  ? str("SEAM CHANNEL LEFT OUT: wall ", round(seam_channel_wall_mm * 100) / 100, "mm")
-                 : str("SEAM CHANNEL LEFT OUT: gap ", round(seam_channel_free_mm * 10) / 10, "mm"),
+                 : str("SEAM CHANNEL LEFT OUT: ", tactile_on ? "room " : "gap ",
+                       round(seam_channel_free_mm * 10) / 10, "mm"),
              size = INVALID_TEXT_SIZE, halign = "center", valign = "center");
     }
 }
@@ -2059,26 +2175,45 @@ module seam_channel_cut(theta_deg,
                 polygon(points = [[r_apex, 0], [r_lip, -half_mouth], [r_lip, half_mouth]]);
 }
 
-// D-T7: the emboss plate's second cut, over the arrow chain, after the raised
-// arrows are on - the same V, its sides carried past the arrows' top faces.
-// Called from the plate module's difference(), after its union, so the
-// arrows are notched; the first cut (in cylinder_shell) already owns the
-// end faces, which is why this one stays inside them.
-module seam_channel_arrow_recut() {
-    if (seam_channel_present && tactile_on && !is_undef(seam_channel_recut_span)) {
-        seam_channel_cut(seam_channel_theta_emboss_deg,
-                         seam_channel_recut_span[0], seam_channel_recut_span[1],
-                         seam_channel_recut_lip_mm);
-    }
+// D-T8: the same V swept along the emboss plate's path round the raised arrows,
+// the web worker's createSeamChannelPathManifold - a cone at every point (apex
+// SEAM_CHANNEL_DEPTH_MM under the surface, axis radial, sides at the V's slope,
+// mouth carried SEAM_CHANNEL_LIP_MM past the surface) hulled with the next, so
+// each hull is the V along one step and consecutive hulls overlap by a whole
+// cone. Cut from the BARE barrel in cylinder_shell like the straight groove:
+// the path keeps SEAM_CHANNEL_MARGIN_MM clear of every arrow, so the arrows
+// unioned on afterwards can neither fill it back nor be cut by it.
+module seam_channel_path_cut(path) {
+    mouth = (SEAM_CHANNEL_WIDTH_MM / 2) * (SEAM_CHANNEL_DEPTH_MM + SEAM_CHANNEL_LIP_MM) / SEAM_CHANNEL_DEPTH_MM;
+    for (i = [0 : len(path) - 2])
+        hull() {
+            seam_channel_cone(path[i], mouth);
+            seam_channel_cone(path[i + 1], mouth);
+        }
 }
 
-module cylinder_shell(cutout_rotate_deg = 0, force_solid = false, channel_theta_deg = undef) {
+// One sweep cone at [physical angle, z about mid-height]: built apex-down along
+// +Z, laid along +X by the Y turn, its apex moved to the groove floor.
+module seam_channel_cone(point, mouth) {
+    translate([0, 0, point[1]])
+        rotate([0, 0, point[0]])
+            translate([radius - SEAM_CHANNEL_DEPTH_MM, 0, 0])
+                rotate([0, 90, 0])
+                    cylinder(h = SEAM_CHANNEL_DEPTH_MM + SEAM_CHANNEL_LIP_MM, r1 = 0, r2 = mouth,
+                             $fn = SEAM_CHANNEL_CONE_FN);
+}
+
+module cylinder_shell(cutout_rotate_deg = 0, force_solid = false, channel_theta_deg = undef,
+                      channel_path = undef) {
     difference() {
         // Outer cylinder (see $fn TESSELLATION POLICY: case 1)
         cylinder(h = active_cylinder_height_mm, r = active_cylinder_diameter_mm / 2, center = true, $fn = CYLINDER_SHELL_FN);
 
-        // Slicer seam channel, cut first while the barrel is still bare.
-        if (seam_channel_present && !is_undef(channel_theta_deg)) {
+        // Slicer seam channel, cut first while the barrel is still bare: the
+        // tactile emboss plate's path round the arrows, or the straight groove.
+        if (seam_channel_present && !is_undef(channel_path)) {
+            seam_channel_path_cut(channel_path);
+        } else if (seam_channel_present && !is_undef(channel_theta_deg)) {
             seam_channel_cut(channel_theta_deg);
         }
         
@@ -2257,7 +2392,8 @@ module cylinder_emboss_plate() {
             union() {
                 // Base cylinder
                 cylinder_shell(cutout_rotate_deg = -active_seam_offset_degrees, force_solid = gears_on,
-                               channel_theta_deg = seam_channel_theta_emboss_deg);
+                               channel_theta_deg = seam_channel_theta_emboss_deg,
+                               channel_path = seam_channel_detour_path);
 
                 // Integrated gears (BETA): the top and bottom drive gears, so
                 // this plate exports as one solid roller.
@@ -2375,10 +2511,6 @@ module cylinder_emboss_plate() {
                     place_row_indicators(y_pos, INDICATOR_TRIANGLE_DEPTH_EMBOSS, INDICATOR_RECT_DEPTH_EMBOSS);
                 }
             }
-
-            // Tactile: the seam channel's second cut, through the raised arrows
-            // unioned above (D-T7) - see seam_channel_arrow_recut.
-            seam_channel_arrow_recut();
 
             // Double-sided: the seats for the opposing cylinder's back dots.
             // Subtracted last, after the raised dots are unioned in, so a bowl

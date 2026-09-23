@@ -8,6 +8,7 @@ CSG workers.
 
 from __future__ import annotations
 
+import itertools
 import logging
 import math
 from collections.abc import Callable
@@ -56,17 +57,23 @@ TACTILE_SEAM_THETA = math.pi
 
 # In tactile mode the slicer seam channel runs down the arrow column itself
 # (D-T6) - 180°, the arrow's own angle, so it takes no circumference of its
-# own - the FULL height, and on the embossing plate it is cut a second time
-# after the raised arrows are on, so the V runs through them (D-T7,
-# 2026-09-21: Brennen's print showed the slicer choosing dots wherever the
-# groove stopped; the arrows' own corners were not enough). That recut spans
-# the arrow chain plus this margin at each end, with the V's sides carried up
-# past the arrows' top faces (lip = raise + SEAM_CHANNEL_LIP_MM), and stays the
-# inset inside the end faces so it can never nick a gear's face. The counter
-# plate's recesses are deeper than the groove, so its single full-height cut
-# already runs through them.
-SEAM_CHANNEL_ARROW_MARGIN_MM = 0.3
-SEAM_CHANNEL_RECUT_INSET_MM = 0.05
+# own - the FULL height (D-T7: Brennen's print showed the slicer choosing dots
+# wherever the groove stopped). On the embossing plate it steps round each
+# raised arrow on the first-cell side instead of running through it (D-T8,
+# 2026-09-22: the V through the arrow took its point and made the triangle
+# less distinguishable by touch): it leaves the centre line at this
+# slant from the axis, rounds the base corner, runs beside the long side and
+# rounds the tip back to the centre, its mouth SEAM_CHANNEL_MARGIN_MM clear of
+# the arrow. The slant, not a run along the base, keeps a sharp V on every
+# printed layer. The counter plate's recesses are deeper than the groove, so
+# its straight cut already runs through them.
+SEAM_CHANNEL_DETOUR_SLANT_DEG = 45.0
+# The rounded corners are drawn as chords of at most this angle, set outside
+# the circle so the groove never comes nearer an arrow than it should, and a
+# sideways stretch is split into pieces no longer than this, so a piece's chord
+# stays within 0.005 mm of the barrel surface.
+SEAM_CHANNEL_DETOUR_ARC_STEP_DEG = 7.5
+SEAM_CHANNEL_DETOUR_STEP_MM = 1.0
 
 # Arrow layouts along the cylinder axis. 'per_row' puts one arrow at every
 # braille row centre - the geometry every request got before 2026-09-20, and
@@ -749,9 +756,9 @@ def extract_cylinder_geometry_spec(
             thickness,
             polygon_points,
             solid=gear_rollers or embosser_v2,
-            arrow_span=(
-                tactile_arrow_span(settings, height, first_row_center_y, plate_type == 'negative', gear_rollers)
-                if tactile_on
+            detour_path=(
+                _tactile_detour_path(settings, radius, height, first_row_center_y, gear_rollers)
+                if tactile_on and plate_type != 'negative'
                 else None
             ),
         )
@@ -1111,29 +1118,123 @@ def tactile_max_cells(settings: Any, double_sided: bool, card_length_mm: float, 
     return int(room * 2.0 // cell) + 1
 
 
-def tactile_arrow_span(
-    settings: Any, height: float, first_row_center_y: float, is_recess: bool, gear_rollers: bool
-) -> tuple[float, float]:
+def _tactile_detour_path(
+    settings: Any, radius: float, height: float, first_row_center_y: float, gear_rollers: bool
+) -> list[dict[str, float]]:
     """
-    The axial band this plate's arrow outlines occupy, as y_local, grown by
-    SEAM_CHANNEL_ARROW_MARGIN_MM at both ends: the span the seam channel is
-    recut over after the raised arrows are on (D-T7). The counter plate's
-    recess outline is the arrow grown by the clearance as a mitre, which pushes
-    its apex out by clearance / sin(half the apex angle) - 1.02 mm at the
-    defaults - and its base by the clearance; the raised arrow grows only by
-    the gear-mode weld.
+    The tactile embossing plate's groove centre line (D-T8), bottom to top, as
+    points on the barrel surface: theta in this spec's dot convention and z as
+    y_local, from SEAM_CHANNEL_OVERSHOOT_MM below the bottom face to as far
+    above the top one.
+
+    Worked in the arrows' tangent plane at 180°, where the raised outline is
+    exactly the worker's triangle: x across the column, negative toward the
+    first braille cell (theta below pi on this plate), z along the axis. Round
+    one arrow the line keeps SEAM_CHANNEL_WIDTH_MM / 2 + SEAM_CHANNEL_MARGIN_MM
+    from the outline and never slants more than SEAM_CHANNEL_DETOUR_SLANT_DEG
+    off the axis. With several arrows it is the lower envelope of the
+    one-arrow lines - the line nearest the centre that clears them all - so
+    between the per-row arrows, which touch tip to base, it zig-zags from one
+    arrow's side out to the next arrow's corner instead of reaching the centre.
     """
     width = float(getattr(settings, 'tactile_indicator_width', 4.0))
     length = float(getattr(settings, 'tactile_indicator_length', 10.0))
-    if is_recess:
-        delta = float(getattr(settings, 'tactile_recess_clearance', 0.2))
+    delta = gears.GEAR_ARROW_WELD_MM if gear_rollers else 0.0
+    # The raised outline as the worker's offsetPolygonMiter grows it: the base
+    # drops by delta and the mitred corners spread, the tip rises by delta over
+    # the sine of half the apex angle.
+    half_base = width / 2.0 + delta * (math.hypot(width / 2.0, length) + width / 2.0) / length
+    tip_growth = delta / math.sin(math.atan2(width / 2.0, length)) if delta else 0.0
+    clearance = SEAM_CHANNEL_WIDTH_MM / 2.0 + SEAM_CHANNEL_MARGIN_MM
+    slant = math.radians(SEAM_CHANNEL_DETOUR_SLANT_DEG)
+    end = height / 2.0 + SEAM_CHANNEL_OVERSHOOT_MM
+
+    lines = [
+        _one_arrow_detour(y - length / 2.0 - delta, y + length / 2.0 + tip_growth, half_base, clearance, slant)
+        for y in tactile_arrow_y_positions(settings, height, first_row_center_y)
+    ]
+    centre_line = _lower_envelope(lines, -end, end)
+    points: list[tuple[float, float]] = []
+    for (z0, x0), (z1, x1) in itertools.pairwise(centre_line):
+        pieces = math.ceil(math.hypot(z1 - z0, x1 - x0) / SEAM_CHANNEL_DETOUR_STEP_MM) if x1 != x0 else 1
+        points.extend((z0 + (z1 - z0) * k / pieces, x0 + (x1 - x0) * k / pieces) for k in range(pieces))
+    points.append(centre_line[-1])
+    return [{'theta': TACTILE_SEAM_THETA + math.asin(x / radius), 'z': z} for z, x in points]
+
+
+def _one_arrow_detour(
+    base: float, tip: float, half_base: float, clearance: float, slant: float
+) -> list[tuple[float, float]]:
+    """
+    The groove centre line round one arrow as (z, x), x <= 0 and 0 at both
+    ends: a slant in to the circle of radius `clearance` about the base corner,
+    round it, parallel to the long side, round the tip and a slant back to the
+    centre. A short, wide arrow whose side is flatter than the slant is left
+    straight from its base corner: its tip is already clear of that line.
+    """
+    side = math.atan2(half_base, tip - base)
+    line = [(base - (clearance + half_base * math.cos(slant)) / math.sin(slant), 0.0)]
+    if side <= slant:
+        line += _circumscribed_arc(-half_base, base, clearance, math.pi + slant, math.pi - side)
+        line += _circumscribed_arc(0.0, tip, clearance, math.pi - side, math.pi - slant)
+        line.append((tip + clearance / math.sin(slant), 0.0))
     else:
-        delta = gears.GEAR_ARROW_WELD_MM if gear_rollers else 0.0
-    apex_growth = delta / math.sin(math.atan2(width / 2.0, length)) if delta else 0.0
-    ys = tactile_arrow_y_positions(settings, height, first_row_center_y)
-    low = min(ys) - length / 2.0 - delta - SEAM_CHANNEL_ARROW_MARGIN_MM
-    high = max(ys) + length / 2.0 + apex_growth + SEAM_CHANNEL_ARROW_MARGIN_MM
-    return low, high
+        line += _circumscribed_arc(-half_base, base, clearance, math.pi + slant, math.pi - slant)
+        line.append((base + (clearance + half_base * math.cos(slant)) / math.sin(slant), 0.0))
+    return line
+
+
+def _circumscribed_arc(
+    centre_x: float, centre_z: float, radius: float, start: float, stop: float
+) -> list[tuple[float, float]]:
+    """
+    (z, x) points round a circle from angle `start` to `stop`: both ends on the
+    circle and one vertex per SEAM_CHANNEL_DETOUR_ARC_STEP_DEG between them,
+    pushed out so every chord touches the circle instead of cutting inside it.
+    """
+    ends = [(centre_z + radius * math.sin(a), centre_x + radius * math.cos(a)) for a in (start, stop)]
+    if abs(stop - start) < 1e-12:
+        return ends[:1]
+    pieces = math.ceil(abs(math.degrees(stop - start)) / SEAM_CHANNEL_DETOUR_ARC_STEP_DEG)
+    step = (stop - start) / pieces
+    outer = radius / math.cos(step / 2.0)
+    between = [
+        (centre_z + outer * math.sin(start + step * (k + 0.5)), centre_x + outer * math.cos(start + step * (k + 0.5)))
+        for k in range(pieces)
+    ]
+    return [ends[0], *between, ends[1]]
+
+
+def _lower_envelope(lines: list[list[tuple[float, float]]], z_lo: float, z_hi: float) -> list[tuple[float, float]]:
+    """
+    The pointwise minimum of piecewise-linear (z, x) lines, each 0 outside its
+    own span, over [z_lo, z_hi]: sampled at every vertex and every crossing,
+    where it can bend, and with the collinear vertices dropped.
+    """
+
+    def x_at(line: list[tuple[float, float]], z: float) -> float:
+        for (za, xa), (zb, xb) in itertools.pairwise(line):
+            if za <= z <= zb:
+                return xa + (xb - xa) * (z - za) / (zb - za)
+        return 0.0
+
+    zs = sorted({z_lo, z_hi, *(z for line in lines for z, _ in line if z_lo < z < z_hi)})
+    crossings = []
+    for z0, z1 in itertools.pairwise(zs):
+        for first, second in itertools.combinations(lines, 2):
+            d0 = x_at(first, z0) - x_at(second, z0)
+            d1 = x_at(first, z1) - x_at(second, z1)
+            if d0 * d1 < 0:
+                crossings.append(z0 + (z1 - z0) * d0 / (d0 - d1))
+    envelope = [(z, min([0.0, *(x_at(line, z) for line in lines)])) for z in sorted({*zs, *crossings})]
+
+    kept = [envelope[0]]
+    for here, after in itertools.pairwise(envelope[1:]):
+        before = kept[-1]
+        if abs((here[0] - before[0]) * (after[1] - before[1]) - (here[1] - before[1]) * (after[0] - before[0])) > 1e-12:
+            kept.append(here)
+    kept.append(envelope[-1])
+    return kept
 
 
 def _seam_channel_block(
@@ -1147,7 +1248,7 @@ def _seam_channel_block(
     thickness: float,
     polygon_points: list[dict[str, float]],
     solid: bool,
-    arrow_span: tuple[float, float] | None = None,
+    detour_path: list[dict[str, float]] | None = None,
 ) -> tuple[dict[str, Any] | None, str | None]:
     """
     Place the seam channel, or say why it was left out.
@@ -1156,7 +1257,9 @@ def _seam_channel_block(
     not. Positions are signed arcs `s` along the surface from the seam centre,
     positive toward column 0 (the row-indicator column in visual mode); the free
     window [lo, hi] is what is left of the seam gap after the features either
-    side of it, and the groove sits at its middle so both margins are equal.
+    side of it, and the groove sits at its middle so both margins are equal. In
+    tactile mode the groove is on the arrow column and the room that counts is
+    the first-cell side's, where the embossing plate's detour runs.
 
     The emitted `theta` is in the SAME convention as every dot's `theta` in this
     spec: column 0 sits at +grid_angle/2 on the positive plate and at
@@ -1170,25 +1273,27 @@ def _seam_channel_block(
     radius = diameter / 2.0
     gap = math.pi * diameter - grid_width
     footprint = _seam_channel_footprint(settings, double_sided)
-    arrow_recut: dict[str, float] | None = None
     if tactile_on:
-        # D-T6 (2026-09-21): down the arrow column itself - 180 degrees on
-        # both plates, the arrow's own angle and the mirror's fixed point - so
-        # the groove takes no circumference of its own and there is no window
-        # to fit. D-T7 (same day, after Brennen's print): the FULL height, and
-        # on the embossing plate a second cut over the arrow chain after the
-        # raised arrows are on, with the V's sides carried up past their top
-        # faces, so the seam has a corner at every layer. The counter plate's
-        # recesses are deeper than the groove: one cut runs through them.
-        assert arrow_span is not None, 'tactile mode needs the arrow span'
-        if plate_type != 'negative':
-            span_low, span_high = arrow_span
-            inset = height / 2.0 - SEAM_CHANNEL_RECUT_INSET_MM
-            arrow_recut = {
-                'z_from': max(span_low, -inset),
-                'z_to': min(span_high, inset),
-                'lip': float(getattr(settings, 'tactile_indicator_raise', 0.5)) + SEAM_CHANNEL_LIP_MM,
-            }
+        # Down the arrow column itself (D-T6): 180 degrees on both plates, the
+        # arrow's own angle and the mirror's fixed point. On the embossing plate
+        # it steps round the raised arrows on the first-cell side (D-T8), which
+        # needs half an arrow, the groove and a margin either side of it before
+        # the first cell's dots. The counter plate keeps or loses its groove
+        # with the embossing plate's, so the one sentence is true of both.
+        free = gap / 2.0 - footprint
+        need = (
+            float(getattr(settings, 'tactile_indicator_width', 4.0)) / 2.0
+            + SEAM_CHANNEL_WIDTH_MM
+            + 2.0 * SEAM_CHANNEL_MARGIN_MM
+        )
+        if free < need:
+            # S-C5, signed off by Brennen (2026-09-23): it names the room beside
+            # the arrows, because the arrow width can cause this as well as the
+            # cell count and diameter. Reword only with his sign-off.
+            return None, (
+                'The seam channel was left out: there is not enough room for it beside the alignment arrows. '
+                'Reduce the number of braille cells, increase the cylinder diameter, or narrow the indicator.'
+            )
     else:
         # Between the last cell's dots and column 0's alignment triangle, whose
         # outline is dot_spacing wide.
@@ -1229,11 +1334,12 @@ def _seam_channel_block(
         'overshoot': SEAM_CHANNEL_OVERSHOOT_MM,
         'lip': SEAM_CHANNEL_LIP_MM,
     }
-    if arrow_recut is not None:
-        # Tactile embossing plate only: the second cut, in y_local, made after
-        # the raised arrows join. Absent, nothing is recut, so a visual-mode
-        # spec and every counter plate are byte-identical to before.
-        block['arrow_recut'] = arrow_recut
+    if detour_path is not None:
+        # Tactile embossing plate only: the centre line round the raised
+        # arrows, cut in the same shell stage as the straight groove. Absent,
+        # the groove is the straight full-height cut, so a visual-mode spec
+        # and every counter plate are byte-identical to before.
+        block['path'] = detour_path
     return block, None
 
 

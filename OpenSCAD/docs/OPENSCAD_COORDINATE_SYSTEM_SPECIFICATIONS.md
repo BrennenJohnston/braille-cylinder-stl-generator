@@ -8,6 +8,7 @@
 | 2026-09-21 | 1.2 | Section 3.6: the tactile arrow's lead-in (195.0° / 165.0° at 13 cells) and the groove behind it (169.95° / 190.05°) |
 | 2026-09-21 | 1.3 | Section 3.6: the lead-in reverted (web decision D-T6) — the arrow at 180° on both plates, the tactile groove down the arrow column at 180° in two stretches |
 | 2026-09-21 | 1.4 | Section 3.6: the tactile groove the full height, recut through the raised arrows on the emboss plate (web decision D-T7) |
+| 2026-09-23 | 1.5 | Section 3.6: on the emboss plate the tactile groove steps round the raised arrows on the first-cell side (web decision D-T8) — the path's physical angles, above 180° |
 
 ---
 
@@ -190,10 +191,11 @@ rotate([0, 0, theta_deg])
 ```
 
 `z_from` / `z_to` default to the full height plus the overshoot and `lip` to
-`SEAM_CHANNEL_LIP_MM` — the first cut, in the shell, both modes. In Tactile mode
-`seam_channel_arrow_recut()` calls it again from the emboss plate's
-`difference()`, after the raised arrows are unioned, over the arrow chain with
-`lip = tactile_indicator_raise + SEAM_CHANNEL_LIP_MM`.
+`SEAM_CHANNEL_LIP_MM` — the one cut, in the shell. On the Tactile emboss plate
+the shell cuts `seam_channel_path_cut(seam_channel_detour_path)` instead: the
+same V swept along the path round the raised arrows (web decision D-T8), as a
+hull of consecutive 32-segment cones, each apex `SEAM_CHANNEL_DEPTH_MM` under
+the surface with its axis radial.
 
 `theta_deg` is a **physical** angle in this file's frame — the `atan2(y, x)` of
 the groove floor in the exported STL:
@@ -208,14 +210,18 @@ middle of the free window between the last cell's dots and column 0's marker
 (Visual), or 0 in Tactile mode: since 2026-09-21 (web decisions D-T6 and
 D-T7, after a lead-in placement and then a groove in two stretches were each
 tried and reverted the same day) the groove runs down the arrow column itself
-— the arrow sits at 180° on both plates — the full height, and on the emboss
-plate it is cut a second time through the raised arrows over
-`seam_channel_recut_span` = the arrow chain plus 0.3 mm at each end
-(`[-20.3, 20.3]` about mid-height at the defaults), held 0.05 mm inside the
-end faces, with the V's sides carried past the arrows' top faces. The
-counter plate's recesses are deeper than the groove, so its single cut
-already runs through them. The render's `NOTE:` states the span. The two
-plates mirror: their angles sum to 360°.
+— the arrow sits at 180° on both plates — the full height. Since 2026-09-23
+(D-T8, replacing D-T7's recut through the raised arrows) the emboss plate's
+groove steps round each raised arrow on the first-cell side: a path point at
+`x` mm across the arrows' tangent plane (negative toward the first cell) sits
+at the physical angle `180 − asin(x / radius)`, above 180° — the side the
+Visual groove's 181.67° is on — swinging out to 190.29° at the base corners
+and leaving the column over z `[-23.06, 21.06]` about mid-height at the
+defaults. The web worker places the same path at its spec's `-theta`, which is
+the same physical angle. The counter plate's recesses are deeper than the
+groove, so its straight cut already runs through them. The render's `NOTE:`
+states the span and the swing. At the ends the two plates mirror: their
+angles sum to 360°.
 
 **Why the web spec's number is not the same number.** The web generator's
 `app/geometry_spec.py` emits `seam_channel.theta` in its *dot convention* —

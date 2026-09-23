@@ -8,13 +8,17 @@ tests read the dict the worker acts on; they need no mesh library.
 
   1. Placement: the groove sits in the middle of the free window between the
      features either side of the seam gap, and the two plates mirror exactly.
-  2. Fit: the groove is left out, with a warning, when the window is narrower
-     than the groove plus its margins, or when the wall under it would be
-     thinner than the FDM minimum.
+     In tactile mode it runs down the arrow column, and on the embossing plate
+     it steps round every raised arrow on the first-cell side (D-T8).
+  2. Fit: the groove is left out, with a warning, when the window - in
+     tactile mode, the first-cell side of the arrow column - is narrower than
+     the groove plus its margins, or when the wall under it would be thinner
+     than the FDM minimum.
   3. Off: with the switch off (or the channel left out) the spec is
      byte-identical to the one built before the channel existed.
 
-The warning sentences quoted here (S-C2, S-C3) were signed off by Brennen on 2026-09-21; reword only with his sign-off.
+The warning sentences quoted here (S-C2, S-C3) were signed off by Brennen on 2026-09-21, and S-C5 on
+2026-09-23; reword only with his sign-off.
 """
 
 import copy
@@ -70,6 +74,12 @@ V1_CYLINDER = {
 # Wording signed off by Brennen (2026-09-21), phase A2; reword only with his sign-off.
 GAP_WARNING = 'The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.'
 WALL_WARNING = 'The seam channel was left out: the cylinder wall would be thinner than 1.2 mm under it.'
+# S-C5 (Brennen, 2026-09-23): the tactile no-room sentence names its cause, since
+# the arrow width can cause it as well as the cell count and the diameter.
+ROOM_WARNING = (
+    'The seam channel was left out: there is not enough room for it beside the alignment arrows. '
+    'Reduce the number of braille cells, increase the cylinder diameter, or narrow the indicator.'
+)
 
 
 def build_spec(plate_type='positive', settings=None, cylinder=None, lines=None, back_lines=None):
@@ -132,54 +142,128 @@ def test_visual_15_columns_worked_numbers():
     assert math.degrees(channel_of(build_spec('negative'))['theta']) == pytest.approx(181.674, abs=0.005)
 
 
+def detour_of(spec):
+    """The embossing plate's groove centre line as (x, z): x across the arrow column, negative toward the first cell."""
+    radius = spec['cylinder']['radius']
+    return [(radius * math.sin(point['theta'] - math.pi), point['z']) for point in channel_of(spec)['path']]
+
+
+def arrow_outline(arrow):
+    """A raised arrow's outline in its tangent plane, grown by its outline_delta as the worker's mitre grows it."""
+    half, length, delta = arrow['width'] / 2.0, arrow['length'], arrow['outline_delta']
+    half_base = half + delta * (math.hypot(half, length) + half) / length
+    tip = length / 2.0 + delta / math.sin(math.atan2(half, length))
+    return [
+        (-half_base, arrow['y'] - length / 2.0 - delta),
+        (half_base, arrow['y'] - length / 2.0 - delta),
+        (0.0, arrow['y'] + tip),
+    ]
+
+
+def distance_to_segment(p, a, b):
+    ax, az = a
+    dx, dz = b[0] - ax, b[1] - az
+    t = max(0.0, min(1.0, ((p[0] - ax) * dx + (p[1] - az) * dz) / (dx * dx + dz * dz)))
+    return math.hypot(p[0] - ax - t * dx, p[1] - az - t * dz)
+
+
+def closest_approach(line, outline):
+    """Smallest distance between a polyline and a triangle's edges, walked in 2 um steps."""
+    edges = list(zip(outline, outline[1:] + outline[:1]))
+    closest = math.inf
+    for a, b in zip(line, line[1:]):
+        steps = max(1, math.ceil(math.hypot(b[0] - a[0], b[1] - a[1]) / 0.002))
+        for k in range(steps + 1):
+            p = (a[0] + (b[0] - a[0]) * k / steps, a[1] + (b[1] - a[1]) * k / steps)
+            closest = min(closest, min(distance_to_segment(p, *edge) for edge in edges))
+    return closest
+
+
 def test_tactile_14_columns_worked_numbers():
     """
-    Tactile mode since D-T6 / D-T7 (2026-09-21): the groove runs down the
-    arrow column itself - 180 degrees on both plates, the arrow's own angle -
-    the full height, and the embossing plate recuts it through the raised
-    arrows. 4 rows on 10 mm spacing put the arrows at +/-15 and +/-5 mm, a
-    chain from -20 to +20; the recut spans it plus 0.3 mm at each end, with
-    the V's sides carried 0.5 mm past the arrows' 0.5 mm raise. The counter
-    plate's recesses are deeper than the groove, so it gets no recut.
+    Tactile mode since D-T6 / D-T7 / D-T8: the groove runs down the arrow
+    column itself - 180 degrees on both plates, the arrow's own angle - the
+    full height, and on the embossing plate it steps round the raised arrows
+    on the first-cell side instead of cutting through them. 4 rows on 10 mm
+    spacing put the 4 x 10 mm arrows at +/-15 and +/-5 mm, a chain touching
+    tip to base from -20 to +20. The centre line keeps 0.75 mm (half the
+    groove and its 0.25 margin) from the arrows and slants at 45 degrees: it
+    leaves the centre 3.061 mm below the bottom base, rounds each base corner
+    2.75 mm out, runs up each side, zig-zags out to the next corner 1.15 mm
+    short of each join, and is back on the centre 1.061 mm above the top tip.
+    The counter plate's recesses are deeper than the groove, so its groove
+    stays straight.
     """
     tactile = {'grid_columns': 14, 'indicator_mode': 'tactile'}
     lines = [FULL_CELL * 14] * 4
-    a = channel_of(build_spec('positive', tactile, lines=lines))
+    a = build_spec('positive', tactile, lines=lines)
     b = channel_of(build_spec('negative', tactile, lines=lines))
-    assert a['theta'] == pytest.approx(math.pi) and b['theta'] == pytest.approx(math.pi)
-    assert set(a) == {'theta', 'width', 'depth', 'overshoot', 'lip', 'arrow_recut'}
+    assert channel_of(a)['theta'] == pytest.approx(math.pi) and b['theta'] == pytest.approx(math.pi)
+    assert set(channel_of(a)) == {'theta', 'width', 'depth', 'overshoot', 'lip', 'path'}
     assert set(b) == {'theta', 'width', 'depth', 'overshoot', 'lip'}
-    recut = a['arrow_recut']
-    assert (round(recut['z_from'], 3), round(recut['z_to'], 3), recut['lip']) == (-20.3, 20.3, 1.0)
+
+    line = detour_of(a)
+    assert line[0] == (0.0, -27.0) and line[-1] == (0.0, 27.0)
+    centred = [z for x, z in line if x == 0.0]
+    assert max(z for z in centred if z < 0) == pytest.approx(-23.061, abs=1e-3)
+    assert min(z for z in centred if z > 0) == pytest.approx(21.061, abs=1e-3)
+    assert min(x for x, _ in line) == pytest.approx(-2.75, abs=0.01)
+    joins = [x for x, z in line if any(abs(z - (join - 1.913)) < 1e-3 for join in (-10.0, 0.0, 10.0))]
+    assert joins == pytest.approx([-1.147] * 3, abs=1e-3)
 
 
-def test_the_recut_covers_every_raised_arrow():
+@pytest.mark.parametrize(
+    'settings, cylinder',
+    [
+        ({'grid_columns': 13}, None),
+        ({'grid_columns': 14}, None),
+        ({'grid_columns': 12, 'tactile_indicator_layout': 'three_spaced'}, None),
+        ({'grid_columns': 13, 'gear_rollers_enabled': 1}, None),
+        ({'grid_columns': 13, 'embosser_version': 2}, {**V1_CYLINDER, 'height': 54.0}),
+        ({'grid_columns': 13, 'tactile_indicator_length': 15.0}, None),
+        ({'grid_columns': 13, 'tactile_indicator_width': 10.0, 'tactile_indicator_length': 3.0}, None),
+        ({'grid_columns': 13}, {'diameter': 30.8, 'height': 40.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0}),
+        ({**DS_04, 'grid_columns': 14}, None),
+    ],
+    ids=[
+        'per-row13',
+        'per-row14',
+        'three-spaced',
+        'gears',
+        'version2',
+        'overlapping-arrows',
+        'short-wide-arrows',
+        'barrel-40mm',
+        'double-sided14',
+    ],
+)
+def test_the_detour_clears_every_raised_arrow(settings, cylinder):
     """
     From the emitted markers, not the formula: on every tactile layout the
-    embossing plate's recut spans every raised arrow's outline plus the margin,
-    its lip clears the arrows' raise by the channel lip, it stays inside the
-    end faces, and the groove's angle is the arrows' own.
+    embossing plate's groove centre line keeps half the groove plus its margin
+    from every raised arrow's outline (grown by the gear weld where there is
+    one), stays on the first-cell side, never slants more than 45 degrees,
+    and runs from the overshoot below the bottom face to the overshoot above
+    the top one. (Where the chain reaches an end face, as on the 40 mm barrel,
+    the groove leaves that face already stepping round the end arrow.)
     """
-    margin = geometry_spec.SEAM_CHANNEL_ARROW_MARGIN_MM
-    for columns, extra in ((13, {}), (14, {}), (12, {'tactile_indicator_layout': 'three_spaced'})):
-        settings = {'grid_columns': columns, 'indicator_mode': 'tactile', **extra}
-        spec = build_spec('positive', settings, lines=[FULL_CELL * columns] * 4)
-        groove = channel_of(spec)
-        recut = groove['arrow_recut']
-        height = spec['cylinder']['height']
-        arrows = [m for m in spec['markers'] if m['type'] == 'cylinder_tactile_arrow']
-        assert arrows
-        assert -height / 2.0 < recut['z_from'] < recut['z_to'] < height / 2.0
-        for arrow in arrows:
-            assert groove['theta'] == pytest.approx(arrow['theta'])
-            assert arrow['is_recess'] is False
-            low = arrow['y'] - arrow['length'] / 2.0 - arrow['outline_delta']
-            high = arrow['y'] + arrow['length'] / 2.0 + arrow['outline_delta']
-            assert recut['z_from'] <= low - margin + 1e-9 and recut['z_to'] >= high + margin - 1e-9, (
-                f'{columns} columns: the recut {recut} misses the arrow at {arrow["y"]}'
-            )
-            raise_mm = float(arrow['outer_radius']) - float(arrow['radius'])
-            assert recut['lip'] == pytest.approx(raise_mm + geometry_spec.SEAM_CHANNEL_LIP_MM)
+    back = BACK_LINES if settings.get('double_sided_enabled') else None
+    spec = build_spec('positive', {'indicator_mode': 'tactile', **settings}, cylinder, [FULL_CELL * 14] * 4, back)
+    line = detour_of(spec)
+    end = spec['cylinder']['height'] / 2.0 + geometry_spec.SEAM_CHANNEL_OVERSHOOT_MM
+    assert (line[0][1], line[-1][1]) == pytest.approx((-end, end))
+    assert all(z1 > z0 for (_, z0), (_, z1) in zip(line, line[1:]))
+    assert all(x <= 0.0 for x, _ in line)
+    slant = math.tan(math.radians(geometry_spec.SEAM_CHANNEL_DETOUR_SLANT_DEG))
+    assert all(abs(x1 - x0) <= slant * (z1 - z0) + 1e-9 for (x0, z0), (x1, z1) in zip(line, line[1:]))
+
+    clear = geometry_spec.SEAM_CHANNEL_WIDTH_MM / 2.0 + geometry_spec.SEAM_CHANNEL_MARGIN_MM
+    arrows = [m for m in spec['markers'] if m['type'] == 'cylinder_tactile_arrow']
+    assert arrows and not any(arrow['is_recess'] for arrow in arrows)
+    for arrow in arrows:
+        assert closest_approach(line, arrow_outline(arrow)) >= clear - 1e-6, (
+            f'the groove crowds the arrow at {arrow["y"]}'
+        )
 
 
 @pytest.mark.parametrize(
@@ -220,26 +304,35 @@ def test_the_groove_keeps_its_margin_from_every_dot_and_marker(settings, lines, 
     """
     From the emitted coordinates, not the formula: the nearest edge of any dot,
     triangle or arrow is at least half the mouth plus the margin from the
-    groove's centre line, on both plates and in every layout.
+    groove's centre line, on both plates and in every layout - including the
+    embossing plate's detour round the tactile arrows, measured along it.
     """
     back = BACK_LINES if settings.get('double_sided_enabled') else None
     spec = build_spec(plate_type, settings, lines=lines, back_lines=back)
     radius = spec['cylinder']['radius']
-    theta_c = channel_of(spec)['theta']
+    channel = channel_of(spec)
+    theta_c = channel['theta']
     clear = geometry_spec.SEAM_CHANNEL_WIDTH_MM / 2.0 + geometry_spec.SEAM_CHANNEL_MARGIN_MM
+    # Arc along the surface from the column, and height: the detour's own
+    # points, or the straight groove's two ends.
+    if 'path' in channel:
+        groove = [(radius * (point['theta'] - theta_c), point['z']) for point in channel['path']]
+    else:
+        groove = [(0.0, -spec['cylinder']['height']), (0.0, spec['cylinder']['height'])]
 
     assert spec['dots'], 'the layout must put dots on the plate for this to prove anything'
     for dot in spec['dots']:
         params = dot['params']
         feature_radius = params.get('bowl_radius') or params.get('recess_radius') or params.get('base_radius')
-        arc = radius * angular_distance(dot['theta'], theta_c)
-        assert arc - feature_radius >= clear - 1e-9, f'dot at {math.degrees(dot["theta"]):.2f} deg crowds the groove'
+        arc = radius * ((dot['theta'] - theta_c + math.pi) % (2 * math.pi) - math.pi)
+        gap = min(distance_to_segment((arc, dot['y']), a, b) for a, b in zip(groove, groove[1:]))
+        assert gap - feature_radius >= clear - 1e-9, f'dot at {math.degrees(dot["theta"]):.2f} deg crowds the groove'
 
     for marker in spec['markers']:
         arc = radius * angular_distance(marker['theta'], theta_c)
         if marker['type'] == 'cylinder_tactile_arrow':
-            # Tactile mode (D-T6): the groove shares the arrow's column and keeps
-            # clear of it along the AXIS instead - test_tactile_groove_never_reaches_an_arrow_outline.
+            # Tactile mode: the groove shares the arrow's column and steps
+            # round the raised arrows - test_the_detour_clears_every_raised_arrow.
             continue
         elif marker['type'] == 'cylinder_triangle':
             half = marker['size'] / 2.0
@@ -272,34 +365,39 @@ def test_double_sided_uses_its_own_package_for_the_footprint():
 # ---------------------------------------------------------------------------
 
 
-def test_tactile_15_columns_still_gets_its_groove():
+@pytest.mark.parametrize('plate_type', ['positive', 'negative'])
+def test_tactile_15_columns_has_no_room_for_the_detour(plate_type):
     """
-    15 columns tactile leaves a 5.761 mm gap - the layout draws the signed
-    'needs at least 9 mm' tactile warning - but the groove sits on the arrow
-    column, not in the gap, so it is cut regardless (D-T6).
+    D-T8: the embossing plate's groove steps round the arrows on the
+    first-cell side, which needs half an arrow + the groove + a margin either
+    side of it = 3.5 mm before the first cell's dots. 15 columns leave 5.761 mm
+    of gap - 0.731 mm from the column to the dots, the arrows themselves
+    already overlap them and the signed tactile-gap warning speaks - so both
+    plates leave the groove out and say why with S-C5, never the visual
+    sentence S-C2.
     """
-    spec = build_spec('positive', {'grid_columns': 15, 'indicator_mode': 'tactile'}, lines=[FULL_CELL * 15] * 4)
-    assert 'seam_channel' in spec['cylinder']
+    spec = build_spec(plate_type, {'grid_columns': 15, 'indicator_mode': 'tactile'}, lines=[FULL_CELL * 15] * 4)
+    assert 'seam_channel' not in spec['cylinder']
+    assert ROOM_WARNING in spec['warnings']
     assert GAP_WARNING not in spec['warnings']
     assert any(w.startswith('Tactile indicator needs a seam gap') for w in spec['warnings'])
 
 
-def test_a_short_barrel_keeps_the_recut_inside_its_end_faces():
+def test_the_tactile_room_rule_worked_numbers():
     """
-    4 rows on 10 mm spacing with 10 mm arrows span 40 mm; on a 40 mm barrel
-    the chain plus its margin would reach past the end faces, and the recut is
-    clamped SEAM_CHANNEL_RECUT_INSET_MM inside them instead - the full-height
-    cut has already taken the groove there, and a gear face must never be
-    nicked. The groove itself is never left out in tactile mode.
+    The first-cell side's room is gap/2 - footprint, against arrow width/2 +
+    1.0 + 2 x 0.25. 14 cells at 30.8 mm leave 3.981 mm: room for the 3.5 mm a
+    4 mm arrow needs, not for the 4.1 mm a 5.2 mm one does - the case S-C5 was
+    reworded for, where neither the cell count nor the diameter is the cause.
+    30.4 mm leaves 14 cells only 3.352 mm.
     """
-    short = {'diameter': 30.8, 'height': 40.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0}
-    spec = build_spec(
-        'positive', {'grid_columns': 13, 'indicator_mode': 'tactile'}, cylinder=short, lines=[FULL_CELL * 13] * 4
-    )
-    recut = channel_of(spec)['arrow_recut']
-    inset = 20.0 - geometry_spec.SEAM_CHANNEL_RECUT_INSET_MM
-    assert (recut['z_from'], recut['z_to']) == pytest.approx((-inset, inset))
-    assert not any(w.startswith('The seam channel was left out') for w in spec['warnings'])
+    tactile = {'grid_columns': 14, 'indicator_mode': 'tactile'}
+    lines = [FULL_CELL * 14] * 4
+    assert 'seam_channel' in build_spec('positive', tactile, lines=lines)['cylinder']
+    wide = build_spec('positive', {**tactile, 'tactile_indicator_width': 5.2}, lines=lines)
+    assert 'seam_channel' not in wide['cylinder'] and ROOM_WARNING in wide['warnings']
+    narrow = build_spec('negative', tactile, cylinder={**V1_CYLINDER, 'diameter': 30.4}, lines=lines)
+    assert 'seam_channel' not in narrow['cylinder'] and ROOM_WARNING in narrow['warnings']
 
 
 def test_narrow_barrel_visual_has_no_room_and_says_so():

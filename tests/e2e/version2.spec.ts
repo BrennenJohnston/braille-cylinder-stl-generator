@@ -37,6 +37,8 @@ const S_G2_READY = 'Cylinder generated with fixed gears for the Version 2 emboss
 const S5_GEARS_READY = 'Cylinder generated with integrated gears.';
 // S3, signed 2026-08-24: raised by the gear refresh while a cutout radius is dialled.
 const S3_CUTOUT_NOTE = 'The polygonal cutout is not used while integrated gears are on.';
+// S-M10, signed 2026-09-21: the gear choice, announced one tick after the click.
+const S_M10_FIXED = 'Simplified fixed gears selected.';
 const S_V10_ON = 'Version 2 selected: keyed gear-peg cutouts, 30.8 mm cylinder.';
 const S_V10_OFF = 'Version 1 selected.';
 
@@ -290,6 +292,9 @@ test.describe('Embosser Version 2', () => {
     await selectVersion2(page);
     await page.locator('#gear_mode_fixed').check();
     await expect(page.locator('#gear-size-warning')).toBeHidden();
+
+    // S-M10 lands one tick after the click; a dial edited before then loses its S-V5 to it.
+    await expect(page.locator('#a11y-status')).toContainText(S_M10_FIXED);
 
     // 52 is the VERSION 1 gear barrel: right for Version 1 gears, off-size here.
     await setDial(page, 'cylinder_height_mm', '52');
