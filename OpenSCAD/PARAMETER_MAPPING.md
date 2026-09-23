@@ -41,8 +41,8 @@ Version 2 equivalent to map:
 | `seam_offset_degrees` | the keys sit on the tactile arrow column; turning the seam would put them in the wrong place |
 
 `integrated_gears` is **present** in the Version 2 file too (since 2026-09-21),
-under a tab named `[Integrated Gears]`: it fuses the **Version 2** gear set,
-not the Version 1 one — see [Integrated Gears](#integrated-gears-beta) below.
+under the `[Gears]` tab: it fuses the **Version 2** gear set,
+not the Version 1 one — see [Gears](#gears) below.
 On the web that is `gear_rollers_enabled: 1` together with `embosser_version: 2`.
 
 On the web side these ride inside `settings` as the flat names
@@ -80,7 +80,7 @@ triggers a `TOO MANY LINES: n/grid_rows` warning — a console `echo()` plus red
 text above the cylinder for the MakerWorld preview, which has no console. The
 web app blocks the same case before generation instead of warning after.
 
-### Double-Sided Card (BETA)
+### Card Sides
 
 Emboss BOTH faces of one card in a single pass. Turning `double_sided` On forces
 Tactile row indicators, replaces the counter plate's universal recess grid with
@@ -94,7 +94,7 @@ at all, so this is the one place the two versions work identically by necessity.
 
 | OpenSCAD Parameter | Web App Equivalent | Notes |
 |--------------------|-------------------|-------|
-| `double_sided` | Double-Sided Card (BETA) toggle | `"Off"` (default), `"On"`. Web schema home `double_sided.enabled`; on the wire it is the flat integer `double_sided_enabled` (0/1), never sent for cards. OpenSCAD accepts the Customizer's `On`/`Off` and the lowercase `on`/`off` the test system passes with `-D`. |
+| `double_sided` | Card sides: Double-sided | `"Off"` (default), `"On"`. Web schema home `double_sided.enabled`; on the wire it is the flat integer `double_sided_enabled` (0/1), never sent for cards. OpenSCAD accepts the Customizer's `On`/`Off` and the lowercase `on`/`off` the test system passes with `-D`. |
 | `Back_Line_1` … `Back_Line_10` | `back_lines[0]` … `back_lines[9]` | **Composite mapping.** OpenSCAD needs one fixed field per row because the Customizer cannot add fields on demand; the web app carries the whole back face as ONE top-level array, `back_lines`, sent beside `lines`. Read only while `double_sided` is On. Settings-file spelling is `text.back_lines`; the Python keyword is `back_lines=`. |
 | `interpoint_offset_x_mm` | `interpoint_offset_x` | Circumferential half of the diagonal shift between the front and back grids, measured around the cylinder. Default **1.25 mm**, range **1.15–1.35 mm**. Web schema home `double_sided.interpoint_offset_x_mm`. |
 | `interpoint_offset_y_mm` | `interpoint_offset_y` | Axial half of the same diagonal shift, measured along the cylinder: back rows sit this far above the front rows. Default **1.25 mm**, range **1.15–1.35 mm**. Web schema home `double_sided.interpoint_offset_y_mm`; the web repo's `app/geometry/interpoint.py` calls this same number `offset_z`. |
@@ -121,14 +121,14 @@ preset** — there are no double-sided dial parameters to map. See
 `paper_thickness_preset` below and `docs/specifications/INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md`
 in the web repository for the two packages.
 
-### Plate Selection
+### Cylinders to Generate
 | OpenSCAD Parameter | Web App Equivalent | Values |
 |--------------------|-------------------|--------|
-| `plate_type` | Select Plate to Generate | `"Embossing Plate"`, `"Counter Plate"` |
-| `render_both_plates` | Generate Both Cylinders (no wire field) | `"Off"` (default), `"On"`. Renders Cylinder A and Cylinder B side by side in one pass; `plate_type` is ignored while On. **No request field maps to this**: the web app reaches the same outcome by running its single-plate pipeline twice and concatenating the two STLs into one combined download. Accepts the lowercase `on`/`off` the test system passes with `-D`. |
+| `plate_type` | Cylinders to Generate: Cylinder A (Embossing Plate) / Cylinder B (Universal Counter Plate) | `"Embossing Plate"`, `"Counter Plate"`; used while `render_both_plates` is Off |
+| `render_both_plates` | Cylinders to Generate: Both Cylinder A and B (no wire field) | `"On"` (default since v2.9.0, matching the web app's default), `"Off"`. Renders Cylinder A and Cylinder B side by side in one pass; `plate_type` is ignored while On. **No request field maps to this**: the web app reaches the same outcome by running its single-plate pipeline twice and concatenating the two STLs into one combined download. Accepts the lowercase `on`/`off` the test system passes with `-D`. |
 | `pair_spacing_mm` | (no wire field; the web app hard-codes 10 mm) | `10` (default), range `2`–`50`. Gap between the two barrel **surfaces** while `render_both_plates` is On, for laying the pair out on one print plate; centre-to-centre is this plus one diameter. It is **not** the assembly distance — a meshed pair runs at a 32.0473 mm axis distance, and with gears On the teeth overhang the barrel, leaving about 8.58 mm tip to tip at the default. |
 
-### Integrated Gears (BETA)
+### Gears
 
 | OpenSCAD Parameter | Web App Equivalent | Values |
 |--------------------|-------------------|--------|
@@ -142,8 +142,8 @@ choice that could be worked around: MakerWorld's Parametric Model Maker has no
 way to accept a mesh file at all (tested 2026-08-25).
 
 **Embosser Version 2 (`Braille_Cylinder_STL_Generator_EmbosserV2.scad`, since
-2026-09-21).** The same switch, under a tab named `[Integrated Gears]` (no BETA
-tag), fuses the **Version 2** gear set — `assets/v2_gears_a.stl` /
+2026-09-21).** The same switch, under the `[Gears]` tab, fuses the **Version 2**
+gear set — `assets/v2_gears_a.stl` /
 `assets/v2_gears_b.stl`, derived from the web repo's packed assets and pinned by
 `assets/GEARS_PROVENANCE.json` — with the cylinder locked to **30.8 mm × 54 mm**
 (any other size is refused with the web generator's own sentence, "Fixed gears
@@ -156,7 +156,7 @@ channel is still cut. On the web the same roller is `gear_rollers_enabled: 1`
 with `embosser_version: 2`. The MakerWorld Version 2 upload hides the switch
 exactly as the Version 1 build does.
 
-### Indicator Mode
+### Row Indicator Style
 
 This mode originated here and the web app has since ported it, so every
 parameter below now has a web equivalent under the same name. The web app's
@@ -189,7 +189,7 @@ user switches preset. The one exception, since 2026-09-20, is the arrow
 places three of them instead of one per row, precisely so the preset can be
 recognised by touch.
 
-### Paper Thickness Preset
+### Card Thickness
 | OpenSCAD Parameter | Web App Equivalent | Default | Values |
 |--------------------|-------------------|---------|--------|
 | `paper_thickness_preset` | Card Thickness | `"0.4mm"` | `"0.4mm"`, `"0.3mm"`, `"Custom"` |
@@ -327,7 +327,7 @@ and the polygonal cutout are unchanged — only surface features differ.
   between the last and first cell — or, on the `"0.3mm"` paper-thickness
   preset since 2026-09-20, exactly three at mid-height and ±15 mm, whatever
   the row count (`tactile_arrow_y_positions()`; the preset's tactile
-  marking, see the Indicator Mode table). The grid is centred on angle 0, so
+  marking, see the Row Indicator Style table). The grid is centred on angle 0, so
   that midpoint is always exactly **180°** — and 180° is the fixed point of
   the counter plate's `mirror([0,1,0])` / angle-negation construction, so the
   emboss arrow and the counter recess self-align radially with no extra maths,
@@ -403,23 +403,25 @@ All default values match the web-based generator's defaults (0.4mm paper preset 
 - Default shape: Rounded (the dropdown still offers Cone)
 - Default indicator mode: Visual (the dropdown still offers Tactile)
 - Default preset: 0.4mm (optimized for thicker paper, larger dots)
+- Default output: both cylinders side by side (`render_both_plates = "On"`),
+  matching the web app, whose Generate builds both
 
 ## Workflow Comparison
 
 ### Web App Workflow:
-1. Enter English text
-2. Select language/grade
-3. Choose shape and plate type
-4. Adjust expert parameters (optional)
-5. Generate STL
-6. Download
+1. Choose the embosser setup (version, card sides, gears)
+2. Enter English text and select language/grade
+3. Adjust expert parameters (optional)
+4. Generate STL — both cylinders unless Cylinders to Generate names one
+5. Download — one file holding the pair
 
 ### OpenSCAD Workflow:
 1. Translate text at https://www.branah.com/braille-translator
 2. Copy Unicode braille output
 3. Open OpenSCAD file
 4. Paste braille into Line_1, Line_2, etc.
-5. Choose `dot_shape` and `plate_type` in Customizer
+5. Choose `dot_shape` in the Customizer (both cylinders render by default; for
+   one, set `render_both_plates` to `Off` and choose `plate_type`)
 6. Adjust expert parameters (optional)
 7. Render (F6)
 8. Export STL (File → Export → Export as STL)
@@ -443,7 +445,7 @@ All default values match the web-based generator's defaults (0.4mm paper preset 
 
 ## Notes
 
-1. **Paper Thickness Preset System**: This is a convenience system that sets 21 parameters to known-good values:
+1. **Card Thickness Preset System**: This is a convenience system that sets 21 parameters to known-good values:
    - **0.4mm preset** (thicker paper, larger dots): Default setting that matches web app on-load behavior
    - **0.3mm preset** (thinner paper, smaller dots): Alternative optimized for thinner materials
    - **Custom**: Indicator state when values deviate from presets
@@ -460,7 +462,7 @@ All default values match the web-based generator's defaults (0.4mm paper preset 
    cells *available for text*, not including markers — the code internally adds
    2 cells when Indicator Letters is On and 1 cell when Off.
 
-3. **Indicator Mode**: `indicator_mode = "Tactile"` reserves **no** marker
+3. **Row Indicator Style**: `indicator_mode = "Tactile"` reserves **no** marker
    cells (`actual_grid_columns == grid_columns`), places the alignment
    indicator in the seam gap at 180° instead, and ignores `indicators`
    entirely. `Visual` is the default and reproduces the layout in Note 2

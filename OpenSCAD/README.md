@@ -5,7 +5,7 @@
 > | | |
 > |---|---|
 > | **Canonical repo** | [BrennenJohnston/braille-cylinder-stl-generator-openscad](https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad) |
-> | **Vendored from** | tag `v2.8.2` (commit `75a19f5`, released 2026-09-23) |
+> | **Vendored from** | tag `v2.9.0` (commit `3f096f1`, released 2026-09-23) |
 > | **Copied on** | 2026-09-23 |
 > | **Machine-readable provenance** | [`VENDORED.json`](VENDORED.json) |
 >
@@ -89,14 +89,18 @@ cells by hand before pasting.
    Customizer panel (View → Customizer).
 3. **Configure**:
    - Paste braille into `Line_1`, `Line_2`, …
-   - `plate_type`: Embossing Plate or Counter Plate.
+   - Both cylinders render side by side by default. For one plate, set
+     `render_both_plates` to `Off` and choose `plate_type`: Embossing Plate
+     or Counter Plate.
    - `indicator_mode`: `Visual` (default) or `Tactile` — see below.
    - `paper_thickness_preset`: 0.4mm, 0.3mm, or Custom.
    - `dot_shape`: Rounded (default) or Cone.
 4. **Generate**: Render (F6), then File → Export → Export as STL.
 
-Generate the Embossing Plate and the Counter Plate separately — same settings,
-only `plate_type` changes — so the two plates form a matching pair.
+One render gives the matching pair, as the web app's Generate does. To make
+the plates one at a time, keep every setting the same and change only
+`plate_type` — the two plates only work as a pair made from one set of
+settings.
 
 ## What this makes
 
@@ -104,7 +108,7 @@ only `plate_type` changes — so the two plates form a matching pair.
 - **Cylinder counter plate** — matching recesses that the emboss plate presses
   paper into.
 
-## Indicator mode: Visual or Tactile
+## Row indicator style: Visual or Tactile
 
 `indicator_mode` decides how each row is marked for alignment. Cylinder
 diameter, height, and cutout are identical either way, so **both plates must use

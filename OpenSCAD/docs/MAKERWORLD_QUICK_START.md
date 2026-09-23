@@ -116,14 +116,18 @@ end of the first line is preferred; omit it only as a last resort. Tip: omit
      triangle is always present — it is critical to the mechanical device the
      cylinder mounts into. On widens the grid by 2 marker cells, Off by 1
      (triangle only) — your 13-cell text capacity is unchanged either way.
-3. Generate the **Embossing Plate** (`plate_type = Embossing Plate`),
-   render, and download the STL.
-4. Switch `plate_type` to **Counter Plate** — change nothing else — and
-   download again. The two plates form a matching pair: paper goes between
-   them, and pressing the embossing plate's dots into the counter plate's
-   recesses forms readable braille.
+3. Generate and download the STL. By default one render builds **both
+   cylinders** side by side — Cylinder A, the **Embossing Plate**, on the left
+   and Cylinder B, the **Counter Plate**, on the right — so one download holds
+   the pair. The two plates form a matching pair: paper goes between them, and
+   pressing the embossing plate's dots into the counter plate's recesses forms
+   readable braille.
+4. To download the plates separately instead, set `render_both_plates` to
+   `Off`, generate with `plate_type = Embossing Plate`, then switch
+   `plate_type` to **Counter Plate** — change nothing else — and generate
+   again.
 
-## 5. Indicator Mode: Visual or Tactile
+## 5. Row Indicator Style: Visual or Tactile
 
 `indicator_mode` decides how each row is marked for alignment. The cylinder's
 size and cutout are the same either way — only the surface features change, so
@@ -150,7 +154,7 @@ Choose Tactile when a blind user needs to align the two cylinders unaided:
   by touch — on either plate.
 - Raised on one plate, recessed on the other, so you can tell the embosser
   from the counter without sighted help.
-- It is deliberately shallower than the braille dots (0.8 mm vs 1.0 mm), so the
+- It is deliberately shallower than the braille dots (0.5 mm vs 1.0 mm), so the
   dots still do the embossing and the indicator leaves at most a faint mark.
 - With no marker cells, up to **14 text cells** fit the default cylinder. The
   `indicators` toggle is ignored.
@@ -176,6 +180,10 @@ validated — raise the two recess values if the plates bind.
   has no marker cells — up to 14 text cells fit the default cylinder.
 - Print cylinders standing upright for the best dot quality, and use
   `seam_offset_degrees` to rotate the seam away from your text.
+- Leave your slicer's seam mode on **Aligned**: the shallow groove beside the
+  row markers (the slicer seam channel, On by default) catches each layer's
+  seam so it stays off the dots. A profile set to *Back* / *Rear* ignores the
+  groove, so switch it once.
 
 ## 7. Troubleshooting
 
@@ -194,7 +202,7 @@ Fixes, in order of preference:
 
 1. **Shorten or split** the line across rows (see the phone-number splitting
    pattern above).
-2. **Raise `grid_columns`** (Braille Grid Layout section) if your cylinder is
+2. **Raise `grid_columns`** (Expert Mode - Braille Spacing section) if your cylinder is
    large enough.
 3. **Set `text_limit_check` to `Off`** (Text Input section) to bypass the
    check entirely: every pasted cell renders and no warning appears, but rows
@@ -210,7 +218,7 @@ leaves only 5.8 mm and trips the warning. Fixes, in order of preference:
 
 1. **Lower `grid_columns`** back to 14 or fewer.
 2. **Raise `cylinder_diameter_mm`** if you are labelling a larger container.
-3. **Narrow `tactile_indicator_width`** (Indicator Mode section) — but a
+3. **Narrow `tactile_indicator_width`** (Row Indicator Style section) — but a
    narrower arrow is harder to find by touch, so treat this as a last resort.
 
 ### The plates bind or the indicator crushes the paper
