@@ -9,11 +9,11 @@
 -r requirements.txt
 
 # Heavy geometry processing (optional - for local server-side generation)
-numpy==2.5.1
-trimesh==4.12.2
+numpy==2.5.2
+trimesh==5.0.0
 shapely==2.1.2
 mapbox_earcut==2.0.0
-scipy==1.18.0              # For mesh.fix_normals() (fallback: unify_normals)
+scipy==1.18.1              # For mesh.fix_normals() (fallback: unify_normals)
 matplotlib==3.11.1         # For character markers (fallback: rectangles)
 manifold3d==3.5.2          # Boolean operations (not available on Vercel)
 rtree==1.4.1               # Spatial index for trimesh.contains() â€” the golden-fixture containment probes need it
@@ -22,6 +22,6 @@ networkx==3.6.1            # Graph backend trimesh imports lazily for sections â
 # Development tools
 pytest==9.1.1
 pytest-cov==7.1.0
-ruff==0.16.0               # Linting and formatting
-mypy==2.3.0               # Type checking
-pre-commit==4.6.1          # Git hooks
+ruff==0.16.5               # Linting and formatting
+mypy==2.3.1               # Type checking
+pre-commit==4.6.2          # Git hooks
