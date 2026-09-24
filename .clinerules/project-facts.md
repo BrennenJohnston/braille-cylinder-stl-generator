@@ -200,7 +200,7 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      2026-08-31 also at 30.8 x 54 with 4 text rows per face):
      Braille_Cylinder_STL_Generator_EmbosserV2.scad in the OpenSCAD repo -
      self-contained, interpoint included, and since OpenSCAD v2.8.0
-     (2026-09-21) with its own [Integrated Gears] switch for the fused
+     (2026-09-21) with its own gears switch (tab [Gears] since v2.9.0) for the fused
      Version 2 roller (D-V6 retired); NOT vendored into this repo. The V1
      .scad files stay 52 and untouched.
    - Clearance 0.110 default, range 0.0-0.5, input step 0.005. Applied OUTWARD
@@ -251,7 +251,7 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      change listener now makes ONE composed DEFERRED announcement (S-V10 +
      gear notes) - keep the deferral: the form-wide change listener bubbles
      after it and re-announces the bare gear note. OpenSCAD counterpart since
-     v2.8.0 (2026-09-21): `[Integrated Gears]` in the EmbosserV2 file -
+     v2.8.0 (2026-09-21): the `[Gears]` tab (so named since v2.9.0) in the EmbosserV2 file -
      gear_set_v2 imports assets/v2_gears_{a,b}.stl, the same weld rings and
      notch fill, the same hard 30.8 x 54 gate with the S-G1 sentence; its
      MakerWorld copy hides the switch (no assets there).
@@ -483,7 +483,15 @@ translation, Three.js preview. Working branch: develop — never commit to main.
     never edit it here. Its home is the GitHub repo
     **braille-cylinder-stl-generator-openscad** (the local clone sits in a folder
     named braille-stl-generator-openscad — the two spellings are the same repo;
-    OpenSCAD/VENDORED.json and a test both pin the GitHub name).
+    OpenSCAD/VENDORED.json and a test both pin the GitHub name). Since
+    OpenSCAD v2.9.0 (2026-09-23; v2.9.1 the same day, docs only; vendored
+    from v2.9.1) its Customizer uses
+    this app's section names (Card Sides, Gears, Cylinders to Generate, Row
+    Indicator Style, Card Thickness), carries no BETA or sign-off labels, and
+    renders both cylinders by default like 6f; its parameter names never
+    changed. Its CI runs only on PRs to its main, so its full local suite is
+    the real gate - and tests/cross_platform_validation.py runs only in that
+    CI (pytest does not collect it), so run it by hand before a PR.
 
 ## Spec map — load exactly ONE file, only when the task matches
 Specs live in docs/specifications/.
