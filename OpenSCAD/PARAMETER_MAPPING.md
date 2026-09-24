@@ -337,11 +337,11 @@ and the polygonal cutout are unchanged — only surface features differ.
   collide) and **asymmetric axially, apex toward the cylinder top** (so a
   blind user feels which end is up on either plate). Raised-vs-recessed
   distinguishes the embosser from the counter by touch.
-- **Crush safety.** The default 0.8 mm raise is below the 1.0 mm braille dot
+- **Crush safety.** The default 0.5 mm raise is below the 1.0 mm braille dot
   height, so the dots always carry the rolling pressure. At defaults the arrow
-  tip sits at radius 16.2 mm and the recess floor at 14.4 mm — 0.2 mm of radial
-  slack, 0.2 mm of outline clearance, and ~0.93 mm of wall left over the
-  polygonal cutout.
+  tip sits at radius 15.9 mm and the recess floor at 14.7 mm — 0.2 mm of radial
+  slack, 0.2 mm of outline clearance, and ~1.22 mm of wall left over the
+  polygonal cutout, just above the 1.2 mm printable minimum the model warns at.
 - **Uniform raise/depth.** Both features are a radial prism intersected with a
   shell band tessellated at `CYLINDER_SHELL_FN`, so the raise and depth stay
   constant across the arrow. A flat prism 4 mm wide on a 15.4 mm radius would

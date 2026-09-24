@@ -107,8 +107,8 @@ end of the first line is preferred; omit it only as a last resort. Tip: omit
      not be rendered.
    - `paper_thickness_preset`: keep `0.4mm` (default) for typical card stock,
      `0.3mm` for thinner paper, or `Custom` to use your own slider values.
-     Presets control dot and spacing dimensions; they never change the
-     `grid_columns` / `grid_rows` capacity sliders.
+     Presets control dot, spacing and cylinder dimensions; they never change
+     the `grid_columns` / `grid_rows` capacity sliders.
    - `dot_shape`: `Rounded` (default) or `Cone`.
    - `indicator_mode`: `Visual` (default) or `Tactile` — see section 5.
    - `indicators` (Indicator Letters): Visual mode only. `On` adds a square
@@ -168,7 +168,8 @@ validated — raise the two recess values if the plates bind.
 
 - **Measure the diameter** of the container you are labeling: wrap a string
   around it, measure the string, and divide by π (3.14159). Enter it as
-  `cylinder_diameter`.
+  `cylinder_diameter_mm`, with `paper_thickness_preset` set to `Custom` — the
+  0.4mm and 0.3mm presets fix the diameter at 30.8 mm and ignore the slider.
 - **Height:** measure the flat area where the braille will sit and leave a
   margin at the top and bottom.
 - **Capacity math:** cells are spaced 6.5 mm apart, so the default 13 text
@@ -228,8 +229,9 @@ leaves only 5.8 mm and trips the warning. Fixes, in order of preference:
 - Heavy marking: lower `tactile_indicator_raise`. Keep it below the braille dot
   height so the dots, not the indicator, do the embossing.
 - Very deep recesses thin the wall between the recess and the cylinder's
-  internal cutout — at defaults that wall is about 0.93 mm, and
-  `tactile_recess_extra_depth` eats into it directly.
+  internal cutout — at defaults that wall is about 1.22 mm, just above the
+  1.2 mm printable minimum, and `tactile_recess_extra_depth` eats into it
+  directly.
 
 ## 8. Examples
 
@@ -241,7 +243,7 @@ Business-card examples take the content decisions from BANA's Fact Sheet
 | Name + e-mail (BANA Example 1) | `harry potter` / `harry@hogwarts.edu` | Organization omitted — it already appears in the e-mail address. |
 | Long name (BANA Example 4) | `liesel a.` / `schimmelfennig` / `l.schimmelfennig@usace.army` | Name continues onto the second line; phone omitted. |
 | Nickname + two phones (BANA Example 7) | `fran rikard` / `albuquerque ac` / `c 505.312.4224` / `f 505.312.4225` | Nickname saves cells; `c`/`f` prefixes tag cell and fax. |
-| Spice jar (~55 mm diameter) | `cinnamon` | One row; set `cylinder_diameter = 55`. |
+| Spice jar (~55 mm diameter) | `cinnamon` | One row; set `paper_thickness_preset = Custom` and `cylinder_diameter_mm = 55`. |
 | Medicine bottle (~40 mm) | `amoxicillin` / `500mg` | "amoxicillin" is 11 cells — within the 13-cell row. |
 | Water bottle tag (~75 mm) | `j. smith` / `555.867.5309` | Initials save space; the phone number fits one row. |
 

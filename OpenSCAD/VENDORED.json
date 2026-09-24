@@ -1,8 +1,8 @@
 {
   "$comment": "Provenance for the vendored OpenSCAD copy. Every file below is copied verbatim from the upstream repository at the recorded tag, except where a note says otherwise. Edit them upstream, never here. Each sha256 is of the bytes this repo ships, which for a file with an 'edited on copy' note is deliberately not the upstream hash; tests/test_vendored_openscad.py fails if any file drifts from its record.",
   "upstream_repo": "https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad",
-  "upstream_tag": "v2.9.0",
-  "upstream_commit": "3f096f12e152339f1e43e7e9e1e8273eb62db7e9",
+  "upstream_tag": "v2.9.1",
+  "upstream_commit": "672916a83470761c9945067671cc8378548cafe6",
   "upstream_release_date": "2026-09-23",
   "vendored_on": "2026-09-23",
   "canonical": "upstream",
@@ -18,16 +18,16 @@
     },
     "PARAMETER_MAPPING.md": {
       "upstream_path": "docs/PARAMETER_MAPPING.md",
-      "sha256": "bc9e70c440e9b16740511174c03b468996a87070fd91b3e1e92d7dd77308a4dc",
+      "sha256": "f16852891acdc678554da706393dba722932091da98877d35a40002179268086",
       "note": "One sentence edited on copy: upstream says 'this repository contains only the OpenSCAD cylinder generator', which is false here. The hash covers the edited copy, so it still catches later drift."
     },
     "docs/MAKERWORLD_QUICK_START.md": {
       "upstream_path": "docs/MAKERWORLD_QUICK_START.md",
-      "sha256": "ce72e13773ddd74296ba50b24d20530ddb63d0f3d8715387942d4da0b288be44"
+      "sha256": "4dc7a8dc47f736645e70ece70f012cf25c1b47170c8c56c2e6ae24e056aa7586"
     },
     "docs/MakerWorld_Quick_Start_Guide.pdf": {
       "upstream_path": "docs/MakerWorld_Quick_Start_Guide.pdf",
-      "sha256": "6aa0d12603e9de69fde4bb449d7d149e41a84a94bd2f39bb58fba9c0720cf308"
+      "sha256": "117710c6e3f7bee64d99f1bf4b4e5dcfca6a7cb91faa0bf6d49abd0ff1b8c977"
     },
     "docs/OPENSCAD_COORDINATE_SYSTEM_SPECIFICATIONS.md": {
       "upstream_path": "docs/OPENSCAD_COORDINATE_SYSTEM_SPECIFICATIONS.md",
