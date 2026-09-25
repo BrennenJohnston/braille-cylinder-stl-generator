@@ -21,6 +21,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
+import { revealRowIndicatorPanel, selectIndicatorMode, selectThicknessPreset } from './helpers/menus';
 import fs from 'node:fs';
 import { selectCylinders, selectedCylinders } from './helpers/cylinders';
 
@@ -117,7 +118,7 @@ async function openApp(page: Page) {
   await page.goto('/');
   await page.waitForLoadState('domcontentloaded');
   await page.waitForLoadState('networkidle');
-  await page.waitForSelector('#indicator-mode-selection');
+  await page.waitForSelector('#embosser-setup-selection');
   // Since 2026-09-21 Generate builds both cylinders by default; this spec
   // exercises one cylinder at a time, so choose Cylinder A (the old default)
   // under Cylinders to Generate. Pair tests choose 'both' themselves.
@@ -368,7 +369,7 @@ test.describe('Double-Sided Card beta', () => {
 
   test('toggle off sends the pre-feature payload for both plates', async ({ page }) => {
     await openApp(page);
-    await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+    await selectIndicatorMode(page, 'tactile');
     await page.locator('#auto-text').fill('abc');
 
     const spec = await interceptGeometrySpec(page);
@@ -403,6 +404,7 @@ test.describe('Double-Sided Card beta', () => {
     await expect(page.locator('#back-text')).toBeEnabled();
     await expect(tactile).toBeChecked();
     await expect(visual).toBeDisabled();
+    await revealRowIndicatorPanel(page);
     await expect(page.locator('#indicator-mode-lock-note')).toBeVisible();
     await expect(page.locator('#front-entry-legend')).toHaveText('Front of Card — Enter Text for Braille Translation');
 
@@ -469,7 +471,7 @@ test.describe('Double-Sided Card beta', () => {
     // The 0.3 preset switches the wire to the Option B package (validated
     // 2026-08-17) without any ds dials existing. The preset toast lands in
     // #error-text, which generate() reads on slow runs, so clear it first.
-    await page.locator('input[name="card_thickness_preset"][value="0.3"]').check();
+    await selectThicknessPreset(page, '0.3');
     await page.evaluate(() => { const t = document.getElementById('error-text'); if (t) t.textContent = ''; });
     await generate(page, spec, 2);
     const settings03 = (spec.bodies[1] as Record<string, unknown>).settings as Record<string, unknown>;
@@ -559,7 +561,7 @@ test.describe('Double-Sided Card beta', () => {
     // also clear of the line - still quiet. Both shipped packages are silent
     // now, which is the point: the box speaks about configurations the user
     // chose, not about the defaults they were handed.
-    await page.locator('input[name="card_thickness_preset"][value="0.3"]').check();
+    await selectThicknessPreset(page, '0.3');
     await expect(warning).toBeHidden();
 
     // The offsets stay adjustable by design (D1), but their dials arrive with
@@ -601,7 +603,7 @@ test.describe('Double-Sided Card beta', () => {
     // nozzle floor, the "generation will be blocked" variant.
     await page.locator('#interpoint_offset_x').fill('1.15');
     await page.locator('#interpoint_offset_y').fill('1.15');
-    await page.locator('input[name="card_thickness_preset"][value="0.4"]').check();
+    await selectThicknessPreset(page, '0.4');
     await expect(warning).toBeVisible();
     await expect(message).toContainText('0.326 mm');
     await expect(message).toContainText('generation will be blocked');
@@ -918,7 +920,7 @@ test.describe('Double-Sided Card beta', () => {
     expect(await page.evaluate(() => localStorage.getItem('braille_prefs_back_placement_mode'))).toBe('manual');
 
     await page.reload();
-    await page.waitForSelector('#indicator-mode-selection');
+    await page.waitForSelector('#embosser-setup-selection');
     await expect(page.locator('#back_placement_mode_manual')).toBeChecked();
     await expect(page.locator('#back-dynamic-line-inputs')).toBeVisible();
 

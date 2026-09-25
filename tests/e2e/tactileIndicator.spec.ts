@@ -13,12 +13,13 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
+import { revealRowIndicatorPanel, selectIndicatorMode, selectThicknessPreset } from './helpers/menus';
 
 async function openApp(page: Page) {
   await page.goto('/');
   await page.waitForLoadState('domcontentloaded');
   await page.waitForLoadState('networkidle');
-  await page.waitForSelector('#indicator-mode-selection');
+  await page.waitForSelector('#embosser-setup-selection');
 }
 
 /** Capture the /geometry_spec payload, aborting the request so no CSG runs. */
@@ -119,10 +120,11 @@ test.describe('Row Indicator Style', () => {
     // would be permanent furniture. Visual mode's 13 text cells reach 15 total
     // columns, which is past the old "one full cell spacing" threshold but well
     // clear of the dot footprint the seam actually has to hold.
+    await revealRowIndicatorPanel(page);
     const warning = page.locator('#tactile-gap-warning');
     await expect(warning).toBeHidden();
 
-    await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+    await selectIndicatorMode(page, 'tactile');
     await expect(page.locator('#grid_columns')).toHaveValue('13');
     await expect(warning).toBeHidden();
     await expect(page.locator('#card-fit-warning')).toBeHidden();
@@ -131,7 +133,7 @@ test.describe('Row Indicator Style', () => {
   test('tactile mode frees the marker columns and sends the tactile parameters', async ({ page }) => {
     await openApp(page);
 
-    await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+    await selectIndicatorMode(page, 'tactile');
     // The dial normalizes to the recommended tactile capacity: 13 since the
     // card-fit check of 2026-09-21 (D-T4) - the most a 90 mm card holds.
     await expect(page.locator('#grid_columns')).toHaveValue('13');
@@ -155,7 +157,7 @@ test.describe('Row Indicator Style', () => {
 
   test('the 0.4 preset sends no arrow layout and the 0.3 preset sends three_spaced', async ({ page }) => {
     await openApp(page);
-    await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+    await selectIndicatorMode(page, 'tactile');
 
     const spec = await interceptGeometrySpec(page);
     await fillBraille(page, '⠁'.repeat(13));
@@ -167,7 +169,7 @@ test.describe('Row Indicator Style', () => {
 
     // The 0.3 preset's marking: three fixed arrows. The preset toast lands in
     // #error-text, which generate() reads on slow runs, so clear it first.
-    await page.locator('input[name="card_thickness_preset"][value="0.3"]').check();
+    await selectThicknessPreset(page, '0.3');
     await page.evaluate(() => { const t = document.getElementById('error-text'); if (t) t.textContent = ''; });
     spec.called = false;
     await generate(page, spec);
@@ -189,7 +191,7 @@ test.describe('Row Indicator Style', () => {
     await openApp(page);
     await expect(page.locator('input[name="card_thickness_preset"][value="custom"]')).toBeChecked();
 
-    await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+    await selectIndicatorMode(page, 'tactile');
     const spec = await interceptGeometrySpec(page);
     await fillBraille(page, '⠁'.repeat(13));
     await generate(page, spec);
@@ -199,7 +201,7 @@ test.describe('Row Indicator Style', () => {
 
   test('visual mode never sends an arrow layout, whatever the preset', async ({ page }) => {
     await openApp(page);
-    await page.locator('input[name="card_thickness_preset"][value="0.3"]').check();
+    await selectThicknessPreset(page, '0.3');
     await page.evaluate(() => { const t = document.getElementById('error-text'); if (t) t.textContent = ''; });
 
     const spec = await interceptGeometrySpec(page);
@@ -216,7 +218,7 @@ test.describe('Row Indicator Style', () => {
     // 10.0 / 0.5, which meant clearing a box silently shrank the arrow. Nothing
     // pinned them, so nothing caught it; this is that pin.
     await openApp(page);
-    await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+    await selectIndicatorMode(page, 'tactile');
 
     // The five dials live in a submenu of Expert Mode, both collapsed by default.
     await page.locator('#expert-toggle').click();
@@ -247,7 +249,7 @@ test.describe('Row Indicator Style', () => {
     // 2026-09-21 (D-T4) it recommends 13: the card's leading edge sits at the
     // alignment arrow, and 14 cells need 92.8 mm of a 90 mm card. The row is
     // still blocked at the dial's 13.
-    await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+    await selectIndicatorMode(page, 'tactile');
     await expect(page.locator('#grid_columns')).toHaveValue('13');
     await expect(page.locator('#tactile-gap-warning')).toBeHidden();
     await expect(page.locator('#card-fit-warning')).toBeHidden();
@@ -262,6 +264,7 @@ test.describe('Row Indicator Style', () => {
     });
     await page.locator('#grid_columns').fill('14');
     await page.locator('#grid_columns').dispatchEvent('input');
+    await revealRowIndicatorPanel(page);
     await expect(page.locator('#card-fit-warning')).toBeVisible();
     await expect(page.locator('#card-fit-message')).toContainText(
       'The last braille cell would run off the card: this layout needs 92.8 mm of card from the alignment arrow and the card is 90 mm. Use 13 cells or fewer.',
@@ -282,7 +285,8 @@ test.describe('Row Indicator Style', () => {
   test('warns when the seam gap can no longer hold the indicator', async ({ page }) => {
     await openApp(page);
 
-    await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+    await selectIndicatorMode(page, 'tactile');
+    await revealRowIndicatorPanel(page);
     const warning = page.locator('#tactile-gap-warning');
     await expect(warning).toBeHidden();
 
@@ -307,8 +311,9 @@ test.describe('Row Indicator Style', () => {
   test('tactile dimensions are hidden until tactile mode is selected', async ({ page }) => {
     await openApp(page);
 
-    // The dials live in their own Expert Mode submenu, whose whole accordion is
-    // hidden while the visual markers are selected.
+    // Since 2026-09-24 (D-5) the Row Indicator Style submenu holds the choice
+    // AND the dials, so the submenu is always shown; only the dials block
+    // hides while the visual markers are selected.
     await page.evaluate(() => {
       const panel = document.getElementById('expert-settings');
       if (panel) panel.style.display = 'block';
@@ -317,12 +322,14 @@ test.describe('Row Indicator Style', () => {
     });
 
     const dimensions = page.locator('#tactile-indicator-dimensions');
+    await expect(page.locator('#tactile-indicator-submenu')).toBeVisible();
+    await expect(page.locator('#indicator-mode-selection')).toBeVisible();
     await expect(dimensions).toBeHidden();
 
-    await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+    await selectIndicatorMode(page, 'tactile');
     await expect(dimensions).toBeVisible();
 
-    await page.locator('input[name="indicator_mode"][value="visual"]').check();
+    await selectIndicatorMode(page, 'visual');
     await expect(dimensions).toBeHidden();
   });
 });

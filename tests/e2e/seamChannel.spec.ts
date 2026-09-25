@@ -20,6 +20,7 @@
  */
 
 import { expect, test, type Page } from '@playwright/test';
+import { revealRowIndicatorPanel, selectIndicatorMode } from './helpers/menus';
 import fs from 'node:fs';
 import path from 'node:path';
 import { selectCylinders } from './helpers/cylinders';
@@ -46,7 +47,7 @@ async function openApp(page: Page) {
   await page.goto('/');
   await page.waitForLoadState('domcontentloaded');
   await page.waitForLoadState('networkidle');
-  await page.waitForSelector('#indicator-mode-selection');
+  await page.waitForSelector('#embosser-setup-selection');
   // Since 2026-09-21 Generate builds both cylinders by default; this spec
   // exercises one cylinder at a time, so choose Cylinder A (the old default)
   // under Cylinders to Generate. Pair tests choose 'both' themselves.
@@ -251,7 +252,7 @@ test.describe('Slicer seam channel', () => {
     // 2026-09-22) - up to 10.3 degrees off the column, above 180 in the file
     // because the worker negates theta - so the arrows stay whole.
     await openApp(page);
-    await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+    await selectIndicatorMode(page, 'tactile');
     await expect(page.locator('#grid_columns')).toHaveValue('13');
     await page.locator('#auto-text').fill('abc');
     const state = watchGeometrySpecRequests(page);
@@ -310,12 +311,13 @@ test.describe('Slicer seam channel', () => {
     // beside the arrow column. 13 cells leave 7.2 mm; 15 leave 0.7 mm - the
     // arrows already overlap the dots and the signed tactile-gap warning
     // speaks - so the channel note says why, in S-C5.
-    await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+    await selectIndicatorMode(page, 'tactile');
     await expect(page.locator('#grid_columns')).toHaveValue('13');
     await expect(page.locator('#seam-channel-warning')).toBeHidden();
 
     await page.locator('#grid_columns').fill('15');
     await page.locator('#grid_columns').dispatchEvent('input');
+    await revealRowIndicatorPanel(page);
     await expect(page.locator('#tactile-gap-warning')).toBeVisible();
     await expect(page.locator('#seam-channel-warning')).toBeVisible();
     await expect(page.locator('#seam-channel-message')).toHaveText(ROOM_NOTE);
@@ -326,7 +328,7 @@ test.describe('Slicer seam channel', () => {
     await expect(page.locator('#seam-channel-warning')).toBeHidden();
     // Visual mode again for the wall case below, where the channel note must
     // fire alone: no tactile or card-fit note beside it in the live region.
-    await page.locator('input[name="indicator_mode"][value="visual"]').check();
+    await selectIndicatorMode(page, 'visual');
 
     // Visual mode keeps S-C2, its own cause: 15 text cells plus the two marker
     // columns leave the seam gap no window for the groove.

@@ -19,6 +19,7 @@
  */
 
 import { expect, test, type Page } from '@playwright/test';
+import { revealRowIndicatorPanel, selectIndicatorMode, selectThicknessPreset } from './helpers/menus';
 import { selectCylinders } from './helpers/cylinders';
 
 // Signed 2026-08-28 by Brennen at the Phase 05 gate. Reword only with his sign-off.
@@ -59,7 +60,7 @@ async function openApp(page: Page) {
   await page.goto('/');
   await page.waitForLoadState('domcontentloaded');
   await page.waitForLoadState('networkidle');
-  await page.waitForSelector('#indicator-mode-selection');
+  await page.waitForSelector('#embosser-setup-selection');
   // Since 2026-09-21 Generate builds both cylinders by default; this spec
   // exercises one cylinder at a time, so choose Cylinder A (the old default)
   // under Cylinders to Generate. Pair tests choose 'both' themselves.
@@ -520,7 +521,7 @@ test.describe('Embosser Version 2', () => {
 
     await page.reload();
     await page.waitForLoadState('networkidle');
-    await page.waitForSelector('#indicator-mode-selection');
+    await page.waitForSelector('#embosser-setup-selection');
 
     await expect(page.locator('#embosser_version_2')).toBeChecked();
     // The card-thickness preset rewrites the diameter on every load, so this
@@ -549,12 +550,12 @@ test.describe('Embosser Version 2', () => {
     await selectVersion2(page);
     await expect(page.locator('input[name="indicator_mode"][value="tactile"]')).toBeChecked();
 
-    await page.locator('input[name="indicator_mode"][value="visual"]').check();
+    await selectIndicatorMode(page, 'visual');
     expect(await page.evaluate(() => localStorage.getItem('braille_prefs_indicator_mode'))).toBe('visual');
 
     await page.reload();
     await page.waitForLoadState('networkidle');
-    await page.waitForSelector('#indicator-mode-selection');
+    await page.waitForSelector('#embosser-setup-selection');
     await expect(page.locator('#embosser_version_2')).toBeChecked();
     await expect(page.locator('input[name="indicator_mode"][value="visual"]')).toBeChecked();
     await expect(page.locator('#a11y-status')).toHaveText('');
@@ -575,6 +576,7 @@ test.describe('Embosser Version 2', () => {
     await selectVersion2(page);
     await expect(page.locator('#a11y-status')).toHaveText(S_V10_ON);
     await expect(page.locator('input[name="indicator_mode"][value="tactile"]')).toBeChecked();
+    await revealRowIndicatorPanel(page);
     await expect(page.locator('#indicator-mode-lock-note')).toBeVisible();
 
     await page.locator('#embosser_version_1').check();
@@ -610,7 +612,7 @@ test.describe('Embosser Version 2', () => {
 
     // The preset toast lands in #error-text, which generate() reads on slow
     // runs, so clear it before generating.
-    await page.locator('input[name="card_thickness_preset"][value="0.3"]').check();
+    await selectThicknessPreset(page, '0.3');
     await page.evaluate(() => { const t = document.getElementById('error-text'); if (t) t.textContent = ''; });
     await expect(page.locator('#cylinder_height_mm')).toHaveValue(V2_HEIGHT);
     await expect(page.locator('#cylinder_diameter_mm')).toHaveValue(V2_DIAMETER);

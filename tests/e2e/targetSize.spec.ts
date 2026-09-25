@@ -32,6 +32,7 @@ import { test, expect, type Page } from '@playwright/test';
 const MIN_TARGET_PX = 44;
 
 const EXPERT_PANELS = [
+  'expert-panel-card-thickness',
   'expert-panel-dimensions',
   'expert-panel-dots',
   'expert-panel-shapes',

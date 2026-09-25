@@ -12,6 +12,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
+import { selectIndicatorMode } from './helpers/menus';
 import { selectCylinders } from './helpers/cylinders';
 
 async function openApp(page: Page) {
@@ -124,7 +125,7 @@ test.describe('Form column layout', () => {
     await expect(button).toHaveAttribute('data-state', 'download');
 
     // The tactile dials were the controls the old per-input listener list missed
-    await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+    await selectIndicatorMode(page, 'tactile');
     await page.evaluate(() => {
       const panel = document.getElementById('expert-settings');
       if (panel) panel.style.display = 'block';
@@ -276,5 +277,73 @@ test.describe('Form column layout', () => {
     await expect(cells).toHaveValue('9');
     // ...but the recommendation is still surfaced in the note
     await expect(page.locator('#grid_columns_note')).toContainText('Recommended value: 13');
+  });
+});
+
+test.describe('Expert Mode submenus (2026-09-24, decision D-5)', () => {
+  const ORDER = [
+    'Cylinders to Generate',
+    'Card Thickness',
+    'Row Indicator Style',
+    'Shape Selection',
+    'Braille Spacing',
+    'Braille Dot Adjustments',
+    'Surface Dimensions',
+    'Translation Options',
+  ];
+
+  test('lists the submenus in the agreed order, with Card Thickness and Row Indicator Style second and third', async ({
+    page,
+  }) => {
+    await openApp(page);
+    const titles = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('#expert-settings .expert-submenu h3 .expert-submenu-title')).map((el) =>
+        el.textContent?.trim(),
+      ),
+    );
+    expect(titles).toEqual(ORDER);
+    // Neither block is on the main form any more.
+    expect(await page.locator('form h2:has-text("Card Thickness")').count()).toBe(0);
+    expect(await page.locator('form h2:has-text("Row Indicator Style")').count()).toBe(0);
+  });
+
+  test('the two new accordions expose aria-expanded and aria-controls and focus their first control when opened', async ({
+    page,
+  }) => {
+    await openApp(page);
+    await page.locator('#expert-toggle').click();
+    for (const [panel, first] of [
+      ['expert-panel-card-thickness', 'input[name="card_thickness_preset"][value="0.4"]'],
+      ['expert-panel-tactile', 'input[name="indicator_mode"][value="visual"]'],
+    ] as const) {
+      const toggle = page.locator(`button[aria-controls="${panel}"]`);
+      await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      await expect(page.locator(`#${panel}`)).toBeHidden();
+      await toggle.click();
+      await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+      await expect(page.locator(`#${panel}`)).toBeVisible();
+      // The shared wiring focuses the first control after 100 ms.
+      await expect(page.locator(first)).toBeFocused();
+      await toggle.click();
+      await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      await expect(page.locator(`#${panel}`)).toBeHidden();
+    }
+  });
+
+  test('the Row Indicator Style submenu is shown in both styles and its dials only in the tactile one', async ({
+    page,
+  }) => {
+    await openApp(page);
+    await page.locator('#expert-toggle').click();
+    await expect(page.locator('#tactile-indicator-submenu')).toBeVisible();
+    await page.locator('button[aria-controls="expert-panel-tactile"]').click();
+    await expect(page.locator('#indicator-mode-selection')).toBeVisible();
+    await expect(page.locator('#tactile-indicator-dimensions')).toBeHidden();
+    await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+    await expect(page.locator('#tactile-indicator-dimensions')).toBeVisible();
+    await expect(page.locator('#tactile-indicator-submenu')).toBeVisible();
+    await page.locator('input[name="indicator_mode"][value="visual"]').check();
+    await expect(page.locator('#tactile-indicator-dimensions')).toBeHidden();
+    await expect(page.locator('#tactile-indicator-submenu')).toBeVisible();
   });
 });

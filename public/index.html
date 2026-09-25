@@ -3606,97 +3606,6 @@
                           </fieldset>
                       </div>
 
-                      <!-- Row Indicator Style (cylinder only) -->
-                      <div class="grade-selection" id="indicator-mode-selection">
-                          <fieldset>
-                              <legend class="grade-label"><h2 class="legend-heading">Row Indicator Style</h2></legend>
-                              <div class="radio-group" role="radiogroup" aria-required="true">
-                                  <label class="radio-option">
-                                      <input type="radio" name="indicator_mode" value="visual" checked aria-describedby="indicator-mode-visual-desc">
-                                      <span class="radio-text">Visual markers</span>
-                                  </label>
-                                  <span id="indicator-mode-visual-desc" class="sr-only">Default. A recessed triangle, plus the optional indicator letter, in marker cells at the start of every row. Uses one or two braille cells per row.</span>
-                                  <label class="radio-option">
-                                      <input type="radio" name="indicator_mode" value="tactile" aria-describedby="indicator-mode-tactile-desc">
-                                      <span class="radio-text">Tactile seam arrow</span>
-                                  </label>
-                                  <span id="indicator-mode-tactile-desc" class="sr-only">A raised arrow on the embossing plate and a matching recess on the counter plate, centred in the gap at the cylinder seam with the point toward the top. Uses no braille cells, so every cell in the row is available for text.</span>
-                              </div>
-                              <!-- Shown while the double-sided beta is on; updateDoubleSidedUI()
-                                   also disables the visual radio and appends this note's id to
-                                   its aria-describedby, so the lock reason travels with the
-                                   disabled option. -->
-                              <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
-                              <!-- Announced through #a11y-status. Still referenced by the disabled
-                                   "Visual markers" radio's aria-describedby, which reads this text
-                                   whether or not the box is visible - that wiring is unaffected. -->
-                              <div id="indicator-mode-lock-note" class="grade-note"
-                                   style="margin-top: 6px; font-size: 0.85em; display: none;">
-                                  <strong>Locked:</strong> Double-sided is on, so the Row Indicator Style stays on the tactile seam arrow — both cylinders of a double-sided pair need it. Choose Single-sided to pick visual markers.
-                              </div>
-                              <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
-                                  <strong>Tactile</strong> lets a blind user find the alignment point and tell which end is up by touch: the arrow is one continuous wedge, nothing like a braille dot, and raised-versus-recessed tells you which cylinder you are holding. It also frees the marker cells for text. Both plates of a pair must use the same style. Its dimensions live in the <strong>Tactile Indicator Dimensions</strong> submenu of Expert Mode.
-                              </div>
-                              <!-- Announced through #a11y-status - see that region's note. -->
-                              <div id="tactile-gap-warning" class="grade-note inline-warning"
-                                   style="margin-top: 0.6em; display: none;">
-                                  <strong>Warning:</strong> <span id="tactile-gap-message"></span>
-                              </div>
-                              <!-- A tactile row that would run off the card (the card's leading
-                                   edge sits at the alignment arrow). Announced through #a11y-status
-                                   on the hidden-to-shown edge, like the box above. -->
-                              <div id="card-fit-warning" class="grade-note inline-warning"
-                                   style="margin-top: 0.6em; display: none;">
-                                  <strong>Warning:</strong> <span id="card-fit-message"></span>
-                              </div>
-                          </fieldset>
-                      </div>
-
-                      <!-- Card Thickness Preset Selection -->
-                      <div class="grade-selection">
-                          <fieldset>
-                              <!-- The 0.3 / 0.4 numbers are the thickness of the PAPER CARD STOCK
-                                   the cylinders emboss - the stock standard paper business cards
-                                   come in. They are NOT the printer's layer height.
-                                   Corrected 2026-08-19 with Brennen's sign-off, undoing the
-                                   2026-08-18 "Print Layer Height" rename. That rename reasoned
-                                   that "both presets set card_thickness: 2.0, so nothing about the
-                                   card's thickness varies" - but card_thickness is the printed
-                                   PLASTIC PLATE's thickness, not the paper. What the presets
-                                   actually change is bowl DEPTH (0.5 -> 0.8 mm) and dot HEIGHT
-                                   (0.8 -> 1.0 mm); cylinders print standing upright, so both are
-                                   radial dimensions a layer-height setting cannot motivate and
-                                   thicker stock motivates directly. The sr-only descriptions had
-                                   said "layer height" since the feature first shipped, which is
-                                   what made the visible label look like the wrong one. -->
-                              <legend class="grade-label"><h2 class="legend-heading">Card Thickness</h2></legend>
-                              <!-- No aria-label here on purpose: the <legend> above is this
-                                   group's only name. Labelling the radiogroup as well made
-                                   NVDA announce two groups for one set of radios, which no
-                                   sibling group in this file does (audit F-N). -->
-                              <div class="radio-group thickness-toggle" role="radiogroup" aria-required="true">
-                                  <label class="radio-option">
-                                      <input type="radio" name="card_thickness_preset" value="0.4" checked aria-describedby="thickness-04-desc">
-                                      <span class="radio-text">0.4mm</span>
-                                  </label>
-                                  <span id="thickness-04-desc" class="sr-only">Preset settings optimized for embossing 0.4mm card stock. In the tactile style its cylinders carry one seam arrow per row.</span>
-                                  <label class="radio-option">
-                                      <input type="radio" name="card_thickness_preset" value="0.3" aria-describedby="thickness-03-desc">
-                                      <span class="radio-text">0.3mm</span>
-                                  </label>
-                                  <span id="thickness-03-desc" class="sr-only">Preset settings optimized for embossing 0.3mm card stock. In the tactile style its cylinders carry three evenly spaced seam arrows, so the preset can be felt.</span>
-                                  <label class="radio-option">
-                                      <input type="radio" name="card_thickness_preset" value="custom" aria-describedby="thickness-custom-desc">
-                                      <span class="radio-text">Custom</span>
-                                  </label>
-                                  <span id="thickness-custom-desc" class="sr-only">Custom settings - automatically selected when any parameter is modified from preset values</span>
-                              </div>
-                              <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
-                                  Selecting a card thickness preset will automatically adjust all braille dot and surface parameters to values tuned for embossing that card stock. This is the thickness of the paper business cards you feed through the cylinders — the printed plate itself is always 2 mm thick either way. "Custom" is automatically selected when you modify any parameter.
-                              </div>
-                          </fieldset>
-                      </div>
-
                       <!-- The plate selector left the main form on 2026-09-21 (programme
                            sub-plan E, decision D-8): Generate builds BOTH cylinders by
                            default, and choosing one lives in Expert Mode under
@@ -3776,6 +3685,159 @@
                                               <span id="counter-plate-desc" class="sr-only">Creates recessed dots to support embossing process</span>
                                           </div>
                                       </fieldset>
+                                  </div>
+                              </div>
+                          </div>
+
+                          <!-- Submenu: Card Thickness (moved here from the main form on 2026-09-24,
+                               programme decision D-5; second submenu). The fieldset, its radios,
+                               ids and sr-only descriptions are exactly what the main form carried:
+                               the preset system, persistence and the request read them by id and
+                               name. Only the legend lost its h2 - a submenu is headed by its h3
+                               button. -->
+                          <div class="expert-submenu" id="card-thickness-submenu">
+                              <h3 class="expert-submenu-heading">
+                                  <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-card-thickness">
+                                      <span class="expert-submenu-title">Card Thickness</span>
+                                      <span class="expert-submenu-icon" aria-hidden="true">▼</span>
+                                  </button>
+                              </h3>
+                              <div id="expert-panel-card-thickness" class="expert-submenu-content" style="display: none;">
+                                  <div class="grade-selection">
+                                      <fieldset>
+                                          <!-- The 0.3 / 0.4 numbers are the thickness of the PAPER CARD STOCK
+                                               the cylinders emboss - the stock standard paper business cards
+                                               come in. They are NOT the printer's layer height.
+                                               Corrected 2026-08-19 with Brennen's sign-off, undoing the
+                                               2026-08-18 "Print Layer Height" rename. That rename reasoned
+                                               that "both presets set card_thickness: 2.0, so nothing about the
+                                               card's thickness varies" - but card_thickness is the printed
+                                               PLASTIC PLATE's thickness, not the paper. What the presets
+                                               actually change is bowl DEPTH (0.5 -> 0.8 mm) and dot HEIGHT
+                                               (0.8 -> 1.0 mm); cylinders print standing upright, so both are
+                                               radial dimensions a layer-height setting cannot motivate and
+                                               thicker stock motivates directly. The sr-only descriptions had
+                                               said "layer height" since the feature first shipped, which is
+                                               what made the visible label look like the wrong one. -->
+                                          <legend class="grade-label">Card Thickness</legend>
+                                          <!-- No aria-label here on purpose: the <legend> above is this
+                                               group's only name. Labelling the radiogroup as well made
+                                               NVDA announce two groups for one set of radios, which no
+                                               sibling group in this file does (audit F-N). -->
+                                          <div class="radio-group thickness-toggle" role="radiogroup" aria-required="true">
+                                              <label class="radio-option">
+                                                  <input type="radio" name="card_thickness_preset" value="0.4" checked aria-describedby="thickness-04-desc">
+                                                  <span class="radio-text">0.4mm</span>
+                                              </label>
+                                              <span id="thickness-04-desc" class="sr-only">Preset settings optimized for embossing 0.4mm card stock. In the tactile style its cylinders carry one seam arrow per row.</span>
+                                              <label class="radio-option">
+                                                  <input type="radio" name="card_thickness_preset" value="0.3" aria-describedby="thickness-03-desc">
+                                                  <span class="radio-text">0.3mm</span>
+                                              </label>
+                                              <span id="thickness-03-desc" class="sr-only">Preset settings optimized for embossing 0.3mm card stock. In the tactile style its cylinders carry three evenly spaced seam arrows, so the preset can be felt.</span>
+                                              <label class="radio-option">
+                                                  <input type="radio" name="card_thickness_preset" value="custom" aria-describedby="thickness-custom-desc">
+                                                  <span class="radio-text">Custom</span>
+                                              </label>
+                                              <span id="thickness-custom-desc" class="sr-only">Custom settings - automatically selected when any parameter is modified from preset values</span>
+                                          </div>
+                                          <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
+                                              Selecting a card thickness preset will automatically adjust all braille dot and surface parameters to values tuned for embossing that card stock. This is the thickness of the paper business cards you feed through the cylinders — the printed plate itself is always 2 mm thick either way. "Custom" is automatically selected when you modify any parameter.
+                                          </div>
+                                      </fieldset>
+                                  </div>
+                              </div>
+                          </div>
+
+                          <!-- Submenu: Row Indicator Style (2026-09-24, D-5; third submenu). The
+                               Visual / Tactile choice moved here from the main form, with its lock
+                               note, its notes and its two warning boxes, and the five tactile dials
+                               sit below it - everything about row indicators in one place. The
+                               submenu is ALWAYS shown; only the dials block hides in the visual
+                               style (updateIndicatorModeUI). Ids, names, values and sr-only
+                               descriptions are unchanged. -->
+                          <div class="expert-submenu" id="tactile-indicator-submenu">
+                              <h3 class="expert-submenu-heading">
+                                  <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-tactile">
+                                      <span class="expert-submenu-title">Row Indicator Style</span>
+                                      <span class="expert-submenu-icon" aria-hidden="true">▼</span>
+                                  </button>
+                              </h3>
+                              <div id="expert-panel-tactile" class="expert-submenu-content" style="display: none;">
+                                  <div class="grade-selection" id="indicator-mode-selection">
+                                      <fieldset>
+                                          <legend class="grade-label">Row Indicator Style</legend>
+                                          <div class="radio-group" role="radiogroup" aria-required="true">
+                                              <label class="radio-option">
+                                                  <input type="radio" name="indicator_mode" value="visual" checked aria-describedby="indicator-mode-visual-desc">
+                                                  <span class="radio-text">Visual markers</span>
+                                              </label>
+                                              <span id="indicator-mode-visual-desc" class="sr-only">Default. A recessed triangle, plus the optional indicator letter, in marker cells at the start of every row. Uses one or two braille cells per row.</span>
+                                              <label class="radio-option">
+                                                  <input type="radio" name="indicator_mode" value="tactile" aria-describedby="indicator-mode-tactile-desc">
+                                                  <span class="radio-text">Tactile seam arrow</span>
+                                              </label>
+                                              <span id="indicator-mode-tactile-desc" class="sr-only">A raised arrow on the embossing plate and a matching recess on the counter plate, centred in the gap at the cylinder seam with the point toward the top. Uses no braille cells, so every cell in the row is available for text.</span>
+                                          </div>
+                                          <!-- Shown while the double-sided beta is on; updateDoubleSidedUI()
+                                               also disables the visual radio and appends this note's id to
+                                               its aria-describedby, so the lock reason travels with the
+                                               disabled option. -->
+                                          <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
+                                          <!-- Announced through #a11y-status. Still referenced by the disabled
+                                               "Visual markers" radio's aria-describedby, which reads this text
+                                               whether or not the box is visible - that wiring is unaffected. -->
+                                          <div id="indicator-mode-lock-note" class="grade-note"
+                                               style="margin-top: 6px; font-size: 0.85em; display: none;">
+                                              <strong>Locked:</strong> Double-sided is on, so the Row Indicator Style stays on the tactile seam arrow — both cylinders of a double-sided pair need it. Choose Single-sided to pick visual markers.
+                                          </div>
+                                          <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
+                                              <strong>Tactile</strong> lets a blind user find the alignment point and tell which end is up by touch: the arrow is one continuous wedge, nothing like a braille dot, and raised-versus-recessed tells you which cylinder you are holding. It also frees the marker cells for text. Both plates of a pair must use the same style. Its dimensions are the dials below, shown in the tactile style.
+                                          </div>
+                                          <!-- Announced through #a11y-status - see that region's note. -->
+                                          <div id="tactile-gap-warning" class="grade-note inline-warning"
+                                               style="margin-top: 0.6em; display: none;">
+                                              <strong>Warning:</strong> <span id="tactile-gap-message"></span>
+                                          </div>
+                                          <!-- A tactile row that would run off the card (the card's leading
+                                               edge sits at the alignment arrow). Announced through #a11y-status
+                                               on the hidden-to-shown edge, like the box above. -->
+                                          <div id="card-fit-warning" class="grade-note inline-warning"
+                                               style="margin-top: 0.6em; display: none;">
+                                              <strong>Warning:</strong> <span id="card-fit-message"></span>
+                                          </div>
+                                      </fieldset>
+                                  </div>
+                                  <div class="grade-selection" id="tactile-indicator-dimensions">
+                                      <div class="grade-note" style="margin-bottom: 6px; font-size: 0.85em;">
+                                          Used only when Row Indicator Style is <strong>Tactile seam arrow</strong>. Both Card Thickness presets apply these values.
+                                      </div>
+                                      <div>
+                                          <label for="tactile_indicator_width">Indicator width around the cylinder (mm):</label>
+                                          <input type="number" id="tactile_indicator_width" name="tactile_indicator_width" value="4.0" step="0.1" min="2" max="10" style="width: 110px;" autocomplete="off">
+                                      </div>
+                                      <div style="margin-top: 6px;">
+                                          <label for="tactile_indicator_length">Indicator length along the cylinder axis (mm):</label>
+                                          <input type="number" id="tactile_indicator_length" name="tactile_indicator_length" value="10.0" step="0.1" min="2" max="15" style="width: 110px;" autocomplete="off">
+                                      </div>
+                                      <div style="margin-top: 6px;">
+                                          <label for="tactile_indicator_raise">Arrow raise above the surface (mm):</label>
+                                          <input type="number" id="tactile_indicator_raise" name="tactile_indicator_raise" value="0.5" step="0.1" min="0" max="2" style="width: 110px;" autocomplete="off">
+                                          <div class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
+                                              Keep this below the braille dot height so the dots — not the indicator — carry the rolling pressure.
+                                          </div>
+                                      </div>
+                                      <div style="margin-top: 6px;">
+                                          <label for="tactile_recess_clearance">Counter recess outline clearance (mm):</label>
+                                          <input type="number" id="tactile_recess_clearance" name="tactile_recess_clearance" value="0.2" step="0.05" min="0" max="1" style="width: 110px;" autocomplete="off">
+                                      </div>
+                                      <div style="margin-top: 6px;">
+                                          <label for="tactile_recess_extra_depth">Counter recess extra depth (mm):</label>
+                                          <input type="number" id="tactile_recess_extra_depth" name="tactile_recess_extra_depth" value="0.2" step="0.05" min="0" max="1" style="width: 110px;" autocomplete="off">
+                                          <div class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
+                                              Raise the clearance or the extra depth if the arrow binds instead of nesting. Large values thin the wall between the recess and the polygonal cutout.
+                                          </div>
+                                      </div>
                                   </div>
                               </div>
                           </div>
@@ -4119,49 +4181,6 @@
                                       <input type="number" id="card_height" name="card_height" value="52" step="0.1" min="30" max="150" autocomplete="off" tabindex="-1">
                                       <label for="card_thickness">Plate Thickness:</label>
                                       <input type="number" id="card_thickness" name="card_thickness" value="2.0" step="0.1" min="1" max="10" autocomplete="off" tabindex="-1">
-                                  </div>
-                              </div>
-                          </div>
-
-                          <!-- Submenu: Tactile Indicator Dimensions (shown only in tactile mode) -->
-                          <div class="expert-submenu" id="tactile-indicator-submenu">
-                              <h3 class="expert-submenu-heading">
-                                  <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-tactile">
-                                      <span class="expert-submenu-title">Tactile Indicator Dimensions</span>
-                                      <span class="expert-submenu-icon" aria-hidden="true">▼</span>
-                                  </button>
-                              </h3>
-                              <div id="expert-panel-tactile" class="expert-submenu-content" style="display: none;">
-                                  <div class="grade-selection" id="tactile-indicator-dimensions">
-                                      <div class="grade-note" style="margin-bottom: 6px; font-size: 0.85em;">
-                                          Used only when Row Indicator Style is <strong>Tactile seam arrow</strong>. Both Card Thickness presets apply these values.
-                                      </div>
-                                      <div>
-                                          <label for="tactile_indicator_width">Indicator width around the cylinder (mm):</label>
-                                          <input type="number" id="tactile_indicator_width" name="tactile_indicator_width" value="4.0" step="0.1" min="2" max="10" style="width: 110px;" autocomplete="off">
-                                      </div>
-                                      <div style="margin-top: 6px;">
-                                          <label for="tactile_indicator_length">Indicator length along the cylinder axis (mm):</label>
-                                          <input type="number" id="tactile_indicator_length" name="tactile_indicator_length" value="10.0" step="0.1" min="2" max="15" style="width: 110px;" autocomplete="off">
-                                      </div>
-                                      <div style="margin-top: 6px;">
-                                          <label for="tactile_indicator_raise">Arrow raise above the surface (mm):</label>
-                                          <input type="number" id="tactile_indicator_raise" name="tactile_indicator_raise" value="0.5" step="0.1" min="0" max="2" style="width: 110px;" autocomplete="off">
-                                          <div class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
-                                              Keep this below the braille dot height so the dots — not the indicator — carry the rolling pressure.
-                                          </div>
-                                      </div>
-                                      <div style="margin-top: 6px;">
-                                          <label for="tactile_recess_clearance">Counter recess outline clearance (mm):</label>
-                                          <input type="number" id="tactile_recess_clearance" name="tactile_recess_clearance" value="0.2" step="0.05" min="0" max="1" style="width: 110px;" autocomplete="off">
-                                      </div>
-                                      <div style="margin-top: 6px;">
-                                          <label for="tactile_recess_extra_depth">Counter recess extra depth (mm):</label>
-                                          <input type="number" id="tactile_recess_extra_depth" name="tactile_recess_extra_depth" value="0.2" step="0.05" min="0" max="1" style="width: 110px;" autocomplete="off">
-                                          <div class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
-                                              Raise the clearance or the extra depth if the arrow binds instead of nesting. Large values thin the wall between the recess and the polygonal cutout.
-                                          </div>
-                                      </div>
                                   </div>
                               </div>
                           </div>
@@ -6794,9 +6813,9 @@
         function updateIndicatorModeUI() {
             const tactile = isTactileIndicatorOn();
 
-            const submenu = document.getElementById('tactile-indicator-submenu');
-            if (submenu) submenu.style.display = tactile ? '' : 'none';
-
+            // The Row Indicator Style submenu itself is always shown (it holds the
+            // Visual / Tactile choice since 2026-09-24, D-5); only the dials block
+            // below the choice follows the style.
             const dimensions = document.getElementById('tactile-indicator-dimensions');
             if (dimensions) dimensions.style.display = tactile ? '' : 'none';
 
@@ -12096,6 +12115,17 @@
                                     <td><strong>Cylinders to Generate</strong></td>
                                     <td>Both cylinders (the default, one combined file), or Cylinder A or Cylinder B on its own</td>
                                 </tr>
+                                <!-- S-H1 and S-H2, DRAFT 2026-09-24 - awaiting Brennen's sign-off (the table
+                                     above them is signed 2026-09-21). Card Thickness and Row Indicator Style
+                                     are Expert Mode submenus 2 and 3 since 2026-09-24 (decision D-5). -->
+                                <tr>
+                                    <td><strong>Card Thickness</strong></td>
+                                    <td>The 0.4 mm and 0.3 mm card-stock presets, or Custom; a preset sets every dot and surface dial</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Row Indicator Style</strong></td>
+                                    <td>Visual markers or the tactile seam arrow, and the arrow's size, raise and recess clearance (shown in tactile mode)</td>
+                                </tr>
                                 <tr>
                                     <td><strong>Shape Selection</strong></td>
                                     <td>Output shape, braille dot shape (rounded/cone), and indicator letters on/off</td>
@@ -12111,10 +12141,6 @@
                                 <tr>
                                     <td><strong>Surface Dimensions</strong></td>
                                     <td>Cylinder diameter, height, polygonal cutout, seam offset, and the slicer seam channel switch</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Tactile Indicator Dimensions</strong></td>
-                                    <td>Size, raise, and recess clearance of the tactile seam arrow. Appears only when Row Indicator Style is set to <strong>Tactile seam arrow</strong></td>
                                 </tr>
                                 <tr>
                                     <td><strong>Translation Options</strong></td>
