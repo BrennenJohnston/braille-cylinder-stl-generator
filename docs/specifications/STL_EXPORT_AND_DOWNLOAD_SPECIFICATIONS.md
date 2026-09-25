@@ -1031,6 +1031,11 @@ once and cannot drift out of step with what is on screen.
 **Signed-off wording (2026-08-18).** Reword only with Brennen's sign-off:
 
 - Completion announcement: `Your STL file is ready. Use the Download STL button to save it.`
+  A fused Version 2 run (Version 2 + fixed gears) prefixes it with S-G2 (signed 2026-09-21,
+  GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md §11.6) and, since 2026-09-24 (decision D-7), with
+  S-P1 `Print it with the bottom gear on the build plate.` — DRAFT until Brennen signs it — because
+  the fused roller has a preferred way up (its chamfered barrel edge and vented, self-supporting
+  gear socket are at the bottom gear; §11.8 there).
 - Pair completion: `Both cylinders are ready. Use the Download Cylinder A and Download Cylinder B buttons below to save them.`
 - The download button's accessible name is its visible text, `Download STL`.
 
@@ -1638,6 +1643,7 @@ the action button already looks idle. After a pair run the action button always 
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.4 | 2026-09-24 | **S-P1 joins the fused Version 2 ready message (programme 2026-09-24, decision D-7).** After S-G2, the fused run says which end goes on the build plate; DRAFT until signed. No filename changes. |
 | 1.0 | 2024-12-06 | Initial specification document |
 | 1.1 | 2024-12-08 | **BUG FIX:** CSG worker integration. Frontend now properly initializes CSG worker and uses client-side generation exclusively. Server-side fallback disabled. Updated Sections 1, 2, and 9. |
 | 1.2 | 2024-12-08 | **BUG FIX:** Manifold worker integration. Cylinders now use `csg-worker-manifold.js` for guaranteed manifold output. Added dual-worker architecture with automatic shape-based routing. |

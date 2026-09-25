@@ -257,6 +257,26 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      MakerWorld copy hides the switch (no assets there).
    - Naming: a `V2_` segment is inserted ONLY when Version 2 is on
      (Embossing_Cylinder_V2_{preset}_{name}.stl). Version 1 names never change.
+   - THE v9 UPDATE TO THE FUSED ROLLER (2026-09-24 programme, decisions D-1,
+     D-2, D-6, D-7; web develop e91e352 / af2d45f / 3a1c636): FUSED Version 2
+     ONLY, and every number lives in app/geometry/version2.py. (1) The barrel's
+     BOTTOM edge is chamfered 0.65 x 45 deg (V2_FUSED_BARREL_CHAMFER_MM, lip
+     1.0; spec cylinder.bottom_chamfer, cut on the bare barrel right after the
+     seam channel) because the gear face the barrel stands on reaches only
+     r 14.61 and the 15.4 barrel overhung it 0.79 mm; 0.65 leaves 0.14 (his v9
+     CAD's ledge at its STALE 30.5 barrel - the app stays 30.8, Q-3). (2) A
+     2 mm VENT runs the whole axis (V2_VENT_RADIUS_MM 1.0, z +/-38): the gears
+     already carry the hole from each socket into the buried peg, 0.05 mm
+     off-axis, so it is cut AFTER the gear union. (3) The bottom gear socket's
+     flat ceiling is REPLACED by a 45 deg cone to the vent (D-1; V2_GEAR_SOCKET
+     measured: bore r 7.0 A / 5.0 B, rim 5.3 / 3.3, ceiling 1.5 below the face;
+     cone A z -29.0..-24.2, B -29.0..-26.2) - zero overhang, no auto-support in
+     the socket; the "premade support" and its toggle were DROPPED (D-6).
+     CSG order: one step APPENDED - shell -> union raised -> subtract recesses
+     -> subtract axis cuts (spec gears.axis_cuts: vent then cone). The fused
+     roller now prints BOTTOM GEAR DOWN (S-P1 in the ready message, S-P2 in the
+     Cylinder Guide - DRAFT). The D-6 golden test is now "one VENTED body" and
+     the other six pairs regenerate byte-identical. Never re-couple a support.
    - Version 2 recommends the SAME cell counts as Version 1. The one-fewer
      rule was retired 2026-08-29 with the 30.5 barrel (seam gap 4.8 mm against
      the 4.0 needed) and the 30.8 barrel widens it to 5.76. Restore it only
@@ -265,6 +285,17 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      (14x14, 18x10, 16x12, 20x8, every corner r 0.500). Their STLs are still
      named "v7" - that is the gear body's version, not the peg's. No v7 PEG
      ever enters an R14 hole.
+
+6d2. Version 2 defaults the Row Indicator Style to TACTILE (2026-09-24, D-4): a
+   DEFAULT, not a lock. applyVersion2IndicatorDefault() runs FIRST in the
+   version radios' change listener - entering Version 2 remembers the style
+   (version1IndicatorMode, beside version1DialSnapshot) and, if visual and not
+   double-sided-locked, checks the tactile radio and dispatches its change;
+   leaving Version 2 gives it back; Reset drops the snapshot. NEVER on the
+   silent load restore (a visual choice made in Version 2 survives a reload)
+   and NEVER by a card-stock preset (test_smoke pins that neither
+   THICKNESS_PRESETS object names indicator_mode). The composed deferred
+   announcement gains S-V16 (DRAFT) when the style moved.
 
 6e. Slicer seam channel (2026-09-20, sub-plan A of the 2026-09-20 programme;
    decisions D-1, D-2, D-13, D-14, D-15) - every cylinder, both plates, ON by
@@ -370,6 +401,21 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      against this repo, cross-check S-C5, and render the groove floor against
      THIS repo's own path (sibling checkout; skipped without it) to 0.01 mm
      both ways - V1, V2, gears, three arrows.
+
+6e2. Expert Mode order since 2026-09-24 (D-5): Cylinders to Generate, CARD
+   THICKNESS (#card-thickness-submenu / #expert-panel-card-thickness, the
+   preset radios moved from the main form, ids/names/descriptions unchanged),
+   ROW INDICATOR STYLE (#tactile-indicator-submenu / #expert-panel-tactile,
+   ALWAYS shown, holding #indicator-mode-selection - radios, lock note, the
+   #tactile-gap-warning and #card-fit-warning boxes - with the five tactile
+   dials below in #tactile-indicator-dimensions, which alone follows the
+   style), Shape Selection, Braille Spacing, Braille Dot Adjustments, Surface
+   Dimensions, Translation Options. Neither block is on the main form. e2e:
+   openApp() helpers wait for #embosser-setup-selection; the moved radios are
+   set through tests/e2e/helpers/menus.ts (selectThicknessPreset,
+   selectIndicatorMode - set at the source + change event) and their notes are
+   asserted after revealRowIndicatorPanel(); Playwright's check() refuses a
+   hidden radio.
 
 6f. One Generate / one Download (2026-09-21, sub-plan E of the 2026-09-20
    programme; D-8, D-9, D-10). Generate STL builds BOTH cylinders unless

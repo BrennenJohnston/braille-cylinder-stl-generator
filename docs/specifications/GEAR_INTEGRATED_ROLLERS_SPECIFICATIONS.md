@@ -518,7 +518,8 @@ angle, and at r 10.0–13.0 everywhere outside the ±20° notch window.
   the gear stage unions the vendored set, the weld rings and then each `notch_fills[]`
   prism (`keyedPrismManifold`, the nub's helper — a simple CCW loop, `NonNegative`). CSG
   order unchanged: shell → gears (+rings +fills) → nub (absent in fused mode) → raised →
-  recesses.
+  recesses → **axis cuts** (the vent and the socket cone, since 2026-09-24 — §11.8; the
+  barrel chamfer is a shell-stage cut beside the seam channel).
 
 ### 11.5 What was proved (2026-09-21)
 
@@ -546,10 +547,66 @@ standard-gear names and the double-sided names never change.
 
 ### 11.7 OpenSCAD
 
-No Version 2 OpenSCAD counterpart yet: the fixed Version 2 gears (like the seam channel)
-are in the follow-on OpenSCAD-parity plan (programme plan §11) — `assets/v2_gears_{a,b}.stl`
-derived from the web `.bin`s for the desktop Version 2 file only; MakerWorld cannot ship
-assets (§10).
+`Braille_Cylinder_STL_Generator_EmbosserV2.scad` carries the fused roller since OpenSCAD
+v2.8.0 (2026-09-21; its `[Gears]` tab, `assets/v2_gears_{a,b}.stl` derived from the web
+`.bin`s, the same weld rings, notch fill and size gate). The v9 update below (§11.8) lands
+there as v2.10.0; MakerWorld cannot ship assets (§10), so its copy hides the switch.
+
+### 11.8 The v9 update: chamfer, vent, self-supporting socket (2026-09-24; decisions D-1, D-2, D-6, D-7)
+
+The fused roller prints standing on its **bottom gear** (A2 / B2). Brennen's v9 CAD
+(research folder `New Developement_2026_09_24`, audit `01_V9_STL_AUDIT.md`) answered three
+things a printed 2026-09-21 build showed, and this app builds them from constants in
+`app/geometry/version2.py` — never retyped, mirrored by the OpenSCAD file and diffed by its
+tests. Fused Version 2 ONLY: Version 1 gear mode, Version 2 with separate gears and
+double-sided are byte-identical (the deep-equal and no-new-keys tests, and the six other
+golden pairs regenerating unchanged, prove it).
+
+- **The barrel's bottom edge is chamfered 0.65 mm × 45°** (`V2_FUSED_BARREL_CHAMFER_MM`,
+  lip 1.0; `spec['cylinder']['bottom_chamfer']`). Every gear body's faces are chamfered
+  1.5 mm from the 16.11 mm tips, so the face the barrel stands on reaches only r 14.61
+  while the barrel is r 15.40: a 0.79 mm ledge all round that the slicer supported. At
+  0.65 the ledge is 0.14 mm — what the v9 CAD prints at its ⌀30.5 barrel (the app stays
+  30.8, Q-3) — inside one extrusion width. Sliced with the 2026-09-20 spike's PrusaSlicer
+  setup: 149 mm of perimeter over air per plate became 50 mm, the floor set by the 24
+  tooth valleys any barrel on a gear has; 0.5 would have left 0.29 mm (74 mm), 0.8 flush.
+  It spends 0.65 of the 1 mm card shelf at that end. Cut on the bare barrel right after the
+  seam channel (`createCylinderShellManifold`): a ring from the lip below the face to
+  `size` above it, minus a 45° frustum, so nothing is coplanar.
+- **A ⌀2 vent runs the whole axis** (`V2_VENT_RADIUS_MM` 1.0, z ±(height/2 + 10 + 1) =
+  ±38). The housing peg is a snug fit in the bottom gear's socket and the socket ceiling was
+  blind, so the roller fought a vacuum coming off its peg. The vendored v8 gears ALREADY
+  carry the ⌀2 hole from each socket ceiling into their 15 mm peg, 0.05 mm off the fitted
+  axis; the solid barrel sealed it at the peg tips. The vent joins them, so the bottom
+  socket breathes out through the top gear's open mouth. Subtracted AFTER the gear union —
+  cutting the barrel first would let a peg refill a crescent of it.
+- **The bottom socket's flat ceiling is gone: its 45° taper continues to the vent**
+  (decision D-1; `V2_GEAR_SOCKET`, measured: bore r 7.0 A / 5.0 B, rim r 5.3 / 3.3,
+  ceiling 1.5 below the barrel face, mouth chamfer 1.0; cone from 0.5 below the ceiling at
+  rim + 0.51 up to r 1.01 — A z −29.0..−24.2, B −29.0..−26.2 in the worker frame). The flat
+  annulus around the ⌀3 vent mouth was the overhang the auto-supports fought: 36 mm of
+  perimeter and 106–265 mm of bridge per plate laid over air, ~1.7 m of support inside a
+  blind ⌀14 hole. The cone lays nothing over air and the slicer generates no support in the
+  socket at all (`02_CEILING_SUPPORT_RESEARCH.md`). The "premade support" and its toggle
+  were therefore dropped (D-6). A flat-topped peg cannot reach the cone: the straight bore is
+  5.7 mm deep before the taper starts. Open item Q-1: the housing peg's real reach, to be
+  confirmed by the print test.
+- **CSG order:** one step appended — shell (seam channel, chamfer) → union raised (gears,
+  rings, fills, nub, dots, arrows) → subtract recesses → **subtract axis cuts** (vent, cone).
+  Both the worker and `tests/test_golden.py` build it so; the two agree on the gears, cone,
+  vent and chamfer to ≤ 0.0001 mm (real chromium exports against the regenerated golden
+  pair, 2026-09-24).
+- **Proved:** `tests/fixtures/v2_gear_roller{A,B}_golden.*` regenerated once (A 50 881.149
+  mm³ / 37 832 faces, B 52 281.651 / 89 624); the D-6 acceptance is now
+  `test_v2_gear_golden_fixture_is_one_vented_roller_with_no_void` — ONE body, air on the
+  axis from mouth to mouth, solid at r 1.5 beside it, the chamfer's and the cone's
+  air/solid probes, the socket bore still open, 24 teeth, the notch fill solid. The
+  vendored-surface test excludes the cut socket and the vent bore (the vent trues the
+  gears' own off-axis holes, which leaves asset points up to 0.05 mm into air).
+- **Orientation text (D-7):** the fused ready message gains S-P1 after S-G2, and the help
+  modal's Cylinder Guide gains S-P2 — both DRAFT until Brennen signs them.
+- **Print test:** NEEDS-HUMAN — the fused pair, bottom gear down, auto-supports off,
+  Aligned seam (the programme's closeout).
 
 ---
 
@@ -557,6 +614,7 @@ assets (§10).
 
 | Date | Change |
 |---|---|
+| 2026-09-24 | **The v9 update: the fused roller's barrel is chamfered, its axis vented and its bottom gear socket made self-supporting (programme 2026-09-24, phases G1–G3; decisions D-1, D-2, D-6, D-7).** New §11.8 with the numbers, the slicing evidence, the appended CSG step and the regenerated golden pair; §11.4's order line and §11.7 (OpenSCAD v2.8.0 already carries the fused roller; v2.10.0 carries this) updated. Web develop `e91e352` (spec), `af2d45f` (worker), `3a1c636` (golden). |
 | 2026-09-21 | **Pair mode is universal (programme sub-plan E).** §8.1's pair paragraph: Generate STL builds both cylinders by default and Download STL saves the combined Geared pair file; `isPairModeOn()` and the relabel retired; the frozen single-cylinder names come from Cylinders to Generate. Nothing else changed. |
 | 2026-09-21 | **Version 2 fixed gears — the fused one-piece Version 2 roller (programme sub-plan B, phases B1-B7; decisions D-5, D-6).** New §11: the v8-derived `v2_gears_*` assets and their per-gear fitted axes (§11.1), the transform and frame (§11.2), the D-6 notch fill as an exact 0.05 mm parallel curve capped at 13.95 mm (§11.3), the fused spec / per-version size gate with S-G1 (signed 2026-09-21) / the worker's notch-fill union (§11.4), what the browser exports and the new `v2_gear_roller*` golden pair proved (§11.5), the UI and the composed `_Geared_V2_` names with S-G2 (signed 2026-09-21) (§11.6), and the OpenSCAD follow-on (§11.7). §1, §2, §5, §8 and §9.2 updated to match; the temporary S-M13 guard paragraph in §8 replaced; the "(BETA)" left in the title since 2026-09-20 removed (D-7). Open item: the Version 2 operating axis distance. |
 | 2026-09-20 | **Out of beta, into the Embosser setup menu (programme decisions D-7, D-8; phases C1-C4).** §1 retitled "Feature Rules" (the rules are unchanged). §8 rewritten: the checkbox fieldset is gone; the choice is the **Gears** radio group (`#gear_mode_standard` checked / `#gear_mode_fixed`, S-M3a/b (signed 2026-09-21), description S-M4 (signed 2026-09-21), S2 kept visible, S-M5 replacing S9′ with a link to the new help tab) inside `#embosser-setup-selection`, read only through `isGearRollersOn()`; one composed, deferred announcement per change (S-M10 (signed 2026-09-21) plus S3/S7); Version 2 no longer hides the choice — a temporary guard resets it to Standard and says so (S-M13 (signed 2026-09-21)) until phase B6 ships fixed Version 2 gears. Strings signed off by Brennen 2026-09-21. |

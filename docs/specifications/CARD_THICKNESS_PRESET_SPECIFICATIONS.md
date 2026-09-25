@@ -662,7 +662,7 @@ anything. Clicking a preset still shows the notice and announces it once.
 
 ### Visibility Behavior
 
-- **Preset Controls**: Always visible (above Expert Mode toggle)
+- **Preset Controls**: In Expert Mode since 2026-09-24 (decision D-5) — the second submenu, "Card Thickness", collapsed by default like the others; ids, names and descriptions unchanged (until then: always visible above the Expert Mode toggle)
 - **Affected Parameters**: Only visible when Expert Mode is expanded
 - **Real-time Updates**: If Expert Mode is open, parameter changes are immediately visible
 
@@ -683,6 +683,9 @@ All preset-controlled parameters are located in Expert Mode submenus:
 
 ```
 Expert Mode (dropdown)
+├── Cylinders to Generate (not preset-controlled)
+├── Card Thickness (the 0.4 / 0.3 / Custom preset radios themselves, since 2026-09-24)
+├── Row Indicator Style (the Visual / Tactile choice; not preset-controlled — a preset never sets the style — with the 5 tactile dials below it, shown only in tactile mode)
 ├── Shape Selection
 ├── Braille Spacing
 │   ├── grid_columns, grid_rows
@@ -696,7 +699,6 @@ Expert Mode (dropdown)
 ├── Surface Dimensions
 │   ├── Cylinder (5 params)
 │   └── Plate (3 params, hidden - schema carriers only)
-├── Tactile Indicator Dimensions (5 params; shown only in tactile mode)
 └── Translation Options (not preset-controlled)
 ```
 
@@ -824,6 +826,7 @@ The preset system is designed to **never fail visibly**:
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-09-24 | 1.11 | **The preset control moves into Expert Mode** (programme 2026-09-24, decision D-5): the second submenu, "Card Thickness", with the radios, ids, sr-only descriptions and the note unchanged and the legend no longer an h2 (a submenu is headed by its h3 button). §7 updated. Also pinned: neither preset names `indicator_mode` (`tests/test_smoke.py`), because Version 2 now defaults the Row Indicator Style to tactile (D-4) and a preset chosen afterwards must not undo it. |
 | 2025-12-07 | 1.0 | Initial creation. Documented Card Thickness Preset System including preset definitions, UI controls, application logic, localStorage persistence, and default behavior. |
 | 2025-12-07 | 1.1 | Documented critical bug fix: preset now applies on page load to ensure consistency between HTML defaults and preset values. Added dual event listener strategy (change + click). |
 | 2025-12-07 | 1.2 | Updated 0.3mm preset values: All dot dimensions reduced for finer detail (rounded base: 1.5→1.2, heights reduced, emboss cone: 1.5→1.2, counter depths reduced). |

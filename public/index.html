@@ -5432,8 +5432,12 @@
                prefix rides in the ready message rather than as a second write
                to the one live region. */
             const fusedVersion2 = lastGenerationUsedGears && lastGenerationUsedV2;
+            /* S-P1, DRAFT 2026-09-24 - awaiting Brennen's sign-off (decision D-7): the
+               fused roller has a preferred way up since the v9 update - the chamfered
+               barrel edge and the vented, self-supporting gear socket are at the
+               bottom gear - so the fused ready message says which end goes down. */
             announceStatus('stl-ready',
-                (fusedVersion2 ? 'Cylinder generated with fixed gears for the Version 2 embosser. ' : '')
+                (fusedVersion2 ? 'Cylinder generated with fixed gears for the Version 2 embosser. Print it with the bottom gear on the build plate. ' : '')
                 + (lastGenerationUsedGears && !fusedVersion2 ? 'Cylinder generated with integrated gears. ' : '')
                 + (lastGenerationUsedV2 && !fusedVersion2 ? 'Cylinder generated for the Version 2 embosser. ' : '')
                 + 'Your STL file is ready. Use the Download STL button to save it.'
@@ -11981,6 +11985,8 @@
                         <h4>Tips for Best Results</h4>
                         <ul>
                             <li><strong>Print orientation:</strong> Print cylinders standing upright for best dot quality</li>
+                            <!-- S-P2, DRAFT 2026-09-24 - awaiting Brennen's sign-off (decision D-7). -->
+                            <li><strong>Fused Version 2 rollers:</strong> put the bottom gear on the build plate. Its barrel edge is chamfered and its gear socket is vented, so it prints without supports and lifts off the embosser's peg without a vacuum.</li>
                             <li><strong>Test fit:</strong> Print a small section first to verify the diameter matches your container</li>
                             <!-- Seam placement bullet reworded and signed off by Brennen (2026-09-21); reword only with his sign-off. -->
                             <li><strong>Seam placement:</strong> Leave your slicer's seam mode on Aligned; the seam channel does the rest</li>

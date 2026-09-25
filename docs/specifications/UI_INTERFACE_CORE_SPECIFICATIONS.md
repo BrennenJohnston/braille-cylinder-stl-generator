@@ -1847,7 +1847,7 @@ When `aria-expanded` changes, screen readers automatically announce the new stat
 
 #### Expert Mode Submenus
 
-All six submenus use the identical `.expert-submenu-toggle` markup and are wired by one
+All eight submenus (six until 2026-09-24) use the identical `.expert-submenu-toggle` markup and are wired by one
 handler (`initExpertSubmenus()`), which sets `aria-expanded`, toggles `.active`, flips the
 `▼`/`▲` icon, and moves focus into the panel on open. Since 2026-08-31 the handler serves
 a seventh accordion outside Expert Mode: the Double-Sided Card menu (§4.8), whose header
@@ -1859,12 +1859,19 @@ A new submenu needs the heading wrapper plus the markup:
 
 | Order | Submenu | `aria-controls` | Notes |
 |-------|---------|-----------------|-------|
-| 1 | Shape Selection | `expert-panel-shapes` | |
-| 2 | Braille Spacing | `expert-panel-spacing` | |
-| 3 | Braille Dot Adjustments | `expert-panel-dots` | |
-| 4 | Surface Dimensions | `expert-panel-dimensions` | |
-| 5 | Tactile Indicator Dimensions | `expert-panel-tactile` | Whole accordion hidden unless Row Indicator Style is *Tactile seam arrow* |
-| 6 | Translation Options | `expert-panel-translation` | Capitalized Letters and Number Signs |
+| 1 | Cylinders to Generate | `expert-panel-cylinders` | Since 2026-09-21 (programme sub-plan E) |
+| 2 | Card Thickness | `expert-panel-card-thickness` | Since 2026-09-24 (decision D-5): the 0.4 / 0.3 / Custom preset radios, moved from the main form with their ids, names and descriptions unchanged; `#card-thickness-submenu` |
+| 3 | Row Indicator Style | `expert-panel-tactile` | Since 2026-09-24 (D-5): the Visual / Tactile radios, the lock note and the two warning boxes (`#indicator-mode-selection`, moved from the main form) with the five tactile dials below them (`#tactile-indicator-dimensions`). The submenu is ALWAYS shown; only the dials block follows the style (`updateIndicatorModeUI`). `#tactile-indicator-submenu` keeps its id |
+| 4 | Shape Selection | `expert-panel-shapes` | |
+| 5 | Braille Spacing | `expert-panel-spacing` | |
+| 6 | Braille Dot Adjustments | `expert-panel-dots` | |
+| 7 | Surface Dimensions | `expert-panel-dimensions` | |
+| 8 | Translation Options | `expert-panel-translation` | Capitalized Letters and Number Signs |
+
+Playwright cannot `check()` a radio inside a collapsed panel, so the e2e helpers
+`selectThicknessPreset()`, `selectIndicatorMode()` and `revealRowIndicatorPanel()` in
+`tests/e2e/helpers/menus.ts` set the moved radios at the source (the `selectCylinders`
+pattern) and open the panel for visibility assertions.
 
 The chevron is decorative and **must** be marked
 `<span class="expert-submenu-icon" aria-hidden="true">`. Without it the glyph is folded
@@ -2393,15 +2400,14 @@ the one method seven users in ten try first found nothing (audit finding F-A).
 | h3 | Card sides | nested `#card-sides-selection` legend (2026-09-20; was the h2 accordion header "Double-Sided Card (BETA — for testing)") | always |
 | h2 | Enter Text for Braille Translation | `legend#front-entry-legend` | always |
 | h2 | Back of Card — Enter Text for Braille Translation | `#back-entry-heading` in the `#back-entry-fieldset` legend (2026-09-20; always in the tree, its controls disabled while single-sided) | always |
-| h2 | Row Indicator Style | `#indicator-mode-selection` | always |
-| h2 | Card Thickness | thickness fieldset | always |
 | h2 | Braille Translation Preview: | `#braille-preview` | Expert Mode open **and** Preview pressed |
 | h3 | Cylinders to Generate | `#cylinders-to-generate-submenu` (2026-09-21, the FIRST Expert submenu; replaces the main-form "Select Plate to Generate" h2 — programme sub-plan E) | Expert Mode open |
+| h3 | Card Thickness | `#card-thickness-submenu` (2026-09-24, decision D-5; was a main-form h2 in its legend) | Expert Mode open |
+| h3 | Row Indicator Style | `#tactile-indicator-submenu` (2026-09-24, D-5; was the main-form h2 `#indicator-mode-selection` plus the tactile-only "Tactile Indicator Dimensions" h3, now one always-shown submenu whose dials block follows the style) | Expert Mode open |
 | h3 | Shape Selection | `.expert-submenu` | Expert Mode open |
 | h3 | Braille Spacing | `.expert-submenu` | Expert Mode open |
 | h3 | Braille Dot Adjustments | `.expert-submenu` | Expert Mode open |
 | h3 | Surface Dimensions | `.expert-submenu` | Expert Mode open |
-| h3 | Tactile Indicator Dimensions | `#tactile-indicator-submenu` | Expert Mode open **and** Row Indicator Style set to tactile |
 | h3 | Translation Options | `.expert-submenu` | Expert Mode open |
 
 Counts measured from the live document (the probe pattern of
@@ -3248,6 +3254,7 @@ Low vision users benefit from enhanced depth perception:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.28 | 2026-09-24 | **Card Thickness and Row Indicator Style move into Expert Mode, and Version 2 defaults to the tactile seam arrow (programme 2026-09-24; decisions D-4, D-5).** §4.5's submenu table is eight rows: Card Thickness second and Row Indicator Style third, the latter absorbing the tactile dials (always shown; the dials block follows the style). §4.11's outline loses the two main-form h2s and the tactile-only h3, gains two always-available h3s (load count 6 → 4 visible headings). The Version 2 change listener moves the style to tactile and says so in its one composed announcement (S-V16, DRAFT). W3C Nu 0 errors / 0 warnings on the source; every moved `aria-describedby` text byte-identical (SOP 6.8 counts unchanged); Lighthouse is a manual step still owed. |
 | 1.0 | 2024-12-06 | Initial specification document |
 | 1.1 | 2024-12-06 | Cross-check verification completed; corrected skip link href from `#main-form` to `#main-content`; updated appendices to match actual implementation |
 | 1.2 | 2024-12-06 | Added CAMERA_SETTINGS global configuration documentation in Section 3.4; expanded camera controls section with detailed instructions for adjusting initial view positions for cards and cylinders |

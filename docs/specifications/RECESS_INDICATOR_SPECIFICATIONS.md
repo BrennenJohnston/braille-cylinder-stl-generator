@@ -25,6 +25,18 @@ Tactile mode exists so a blind user can align the two cylinders unaided: the arr
 
 `indicator_mode` is cylinder-only; cards ignore it and the UI hides the control when the shape is a card.
 
+Since 2026-09-24 (programme decision D-5) the control lives in **Expert Mode**, third submenu "Row
+Indicator Style", with the five tactile dials directly below it (the submenu is always shown;
+the dials block appears in the tactile style). And choosing **Embosser Version 2 moves the style
+to `tactile` as a default** (decision D-4): the version radios' change listener remembers the
+style the user had, checks the tactile radio and dispatches its change (so persistence, the
+cell dial and the warnings follow as for a click), and gives the remembered style back on the
+way to Version 1. It is a default, not a lock — the user may pick visual markers in Version 2
+and that choice persists — and it is never applied by the silent load restore nor by a
+card-stock preset (`tests/test_smoke.py` pins that neither preset names `indicator_mode`). The
+double-sided lock (v3.3) takes precedence: a locked tactile style is left alone. The composed
+Version 2 announcement gains S-V16 when the style moved (DRAFT until signed).
+
 ### Indicator Letters Toggle (`indicator_shapes`)
 
 The user-facing **"Indicator Letters (Emboss and Counter)"** toggle (runtime field
@@ -990,6 +1002,7 @@ When implementing or modifying indicator code, verify:
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-09-24 | 3.13 | **The control moves into Expert Mode and Version 2 defaults it to tactile (programme 2026-09-24; decisions D-4, D-5).** Row Indicator Style is the third Expert Mode submenu with the tactile dials below it; choosing Version 2 sets tactile as a remembered, reversible default (never a lock, never on load restore, never by a preset). |
 | 2024-10-11 | 1.0 | Initial documentation during Phase 0 refactoring |
 | 2024-12-06 | 2.0 | Expanded with Manifold WASM implementation details, coordinate system documentation, common bugs |
 | 2024-12-06 | 2.1 | Changed character marker depth from 1.0mm to 0.5mm; Added Section 3.1 with detailed Manifold WASM character generation specifications including bitmap font format, pixel-to-box conversion algorithm, horizontal mirroring requirements, and coordinate system details |

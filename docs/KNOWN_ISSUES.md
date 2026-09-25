@@ -1,5 +1,21 @@
 # Known Issues
 
+## Fused Version 2 roller — open item after the v9 update (2026-09-24)
+
+Since 2026-09-24 the fused Version 2 roller (Version 2 + fixed gears) prints with its bottom
+gear on the build plate: the barrel's bottom edge is chamfered, a 2 mm vent runs the whole
+axis, and the bottom gear's socket ceiling is a 45° cone that needs no support. Two things
+are still owed a print (Brennen's closeout test — Bambu Studio, fused pair, bottom gear
+down, auto-supports off):
+
+- **Q-1 — the housing peg's reach.** The socket's straight ⌀14 (A) / ⌀10 (B) bore is 5.7 mm
+  deep before its taper starts and the cone begins above that, so a flat-topped peg cannot
+  touch it. If the real peg is longer or pointed and touches the cone, say so: the cone's
+  numbers live in `app/geometry/version2.py` (`V2_GEAR_SOCKET`) and would be revisited.
+- **The residual 0.14 mm ledge and the tooth valleys** under the barrel's first layer are
+  short spans a slicer bridges; whether Bambu Studio still asks for support there at its
+  default overhang threshold is the same print's answer.
+
 ## Double-sided (interpoint) — status
 
 Double-sided is a released choice since 2026-09-20: pick **Double-sided** under **Card
