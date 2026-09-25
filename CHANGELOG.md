@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **The vendored OpenSCAD copy is refreshed to upstream v2.10.0** (`OpenSCAD/`, 2026-09-24): the quick-start guide (Markdown and PDF) now says the Version 2 file defaults to the tactile seam arrow. The vendored `.scad` is the Version 1 single-file build, which v2.10.0 did not change; the release's geometry lives in the separate Embosser Version 2 file upstream.
 - **The fused Version 2 roller prints support-free, bottom gear down** (2026-09-24). Its barrel's bottom edge is chamfered 0.65 mm so the first layer no longer overhangs the gear face, a 2 mm vent runs the whole axis so the roller lifts off the embosser's peg without a vacuum, and the bottom gear's socket ceiling is a 45° cone to that vent instead of a flat overhang — the slicer lays nothing over air there and adds no support inside the socket. Version 1, Version 2 with separate gears and double-sided cylinders are unchanged. The fused ready message and the Cylinder Guide say which end goes on the build plate.
 - **Choosing Embosser Version 2 now selects the tactile seam arrow by default** (2026-09-24). It is a default, not a lock: you can go back to visual markers in Version 2 and the choice is kept; the style you had returns when you choose Version 1 again.
 - **Card Thickness and Row Indicator Style live in Expert Mode** (2026-09-24): the second and third submenus. Row Indicator Style now holds the tactile arrow dials directly below the Visual / Tactile choice.

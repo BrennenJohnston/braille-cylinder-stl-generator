@@ -110,7 +110,8 @@ end of the first line is preferred; omit it only as a last resort. Tip: omit
      Presets control dot, spacing and cylinder dimensions; they never change
      the `grid_columns` / `grid_rows` capacity sliders.
    - `dot_shape`: `Rounded` (default) or `Cone`.
-   - `indicator_mode`: `Visual` (default) or `Tactile` — see section 5.
+   - `indicator_mode`: `Visual` (the Version 1 default) or `Tactile` (the
+     Version 2 file's default since v2.10.0) — see section 5.
    - `indicators` (Indicator Letters): Visual mode only. `On` adds a square
      marker next to the triangle alignment indicator at each row's start. The
      triangle is always present — it is critical to the mechanical device the
