@@ -111,6 +111,11 @@ WELD_RING_R_IN_MM = 8.0
 WELD_RING_R_OUT_MM = 13.0
 WELD_RING_HEIGHT_MM = 0.1
 
+# Each gear body is this thick (both sets, measured; the manifests record it).
+# A fused roller's bed plane therefore sits height/2 + this below the barrel's
+# centre, which is where the Version 2 axis cuts measure from (version2.py).
+GEAR_BODY_THICKNESS_MM = 10.0
+
 # Decision D-8a. The raised tactile row arrows are 10 mm long on 10 mm line
 # spacing, so each arrow's apex touches the next arrow's base exactly; float32
 # STL rounding welds that tangency into a non-manifold pinch edge. Gear mode

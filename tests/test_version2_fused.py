@@ -10,6 +10,10 @@ phase B2).
      parallel curve, on the arrow column, inside the 13.95 mm cap and clear of
      the other roller's teeth, extruded from just inside the barrel face to
      just past the notch floor.
+  3. The v9 update (2026-09-24, decisions D-1, D-2): the barrel's bottom-edge
+     chamfer and the two axis cuts - the 2 mm vent the length of the roller and
+     the cone that makes each bottom socket's ceiling self-supporting - with
+     every z following the request's height.
 
 No mesh library needed: these read dicts and polygons. The S-G1 sentence is
 signed off by Brennen on 2026-09-21; reword only with his sign-off.
@@ -160,3 +164,84 @@ def test_fill_block_refuses_a_non_positive_height():
 def test_fill_refuses_an_unknown_plate():
     with pytest.raises(ValueError):
         version2.notch_fill_outline('both')
+
+
+# ---------------------------------------------------------------------------
+# 3. The v9 update: chamfer, vent, socket cone (2026-09-24)
+# ---------------------------------------------------------------------------
+
+
+def test_the_socket_table_is_the_measured_hardware():
+    """Recorded off the v8 assets (01_V9_STL_AUDIT.md section 4); a retype is a hardware change."""
+    assert version2.V2_GEAR_SOCKET == {
+        'positive': {
+            'gear': 'A2',
+            'bore_radius': 7.0,
+            'rim_radius': 5.3,
+            'ceiling_below_face': 1.5,
+            'mouth_chamfer': 1.0,
+        },
+        'negative': {
+            'gear': 'B2',
+            'bore_radius': 5.0,
+            'rim_radius': 3.3,
+            'ceiling_below_face': 1.5,
+            'mouth_chamfer': 1.0,
+        },
+    }
+    assert (version2.V2_FUSED_BARREL_CHAMFER_MM, version2.V2_VENT_RADIUS_MM) == (0.65, 1.0)
+    assert gears.GEAR_BODY_THICKNESS_MM == 10.0
+
+
+def test_bottom_chamfer_block_is_the_signed_size_with_its_lip():
+    assert version2.bottom_chamfer_block(version2.V2_BARREL_DIAMETER_MM / 2) == {'size': 0.65, 'lip': 1.0}
+
+
+def test_bottom_chamfer_refuses_a_foot_inside_the_gear_root_circle():
+    """14.0 - 0.65 = 13.35 sits inside the 13.6613 root circle: the barrel would stand on air."""
+    with pytest.raises(ValueError):
+        version2.bottom_chamfer_block(14.0)
+
+
+@pytest.mark.parametrize(
+    'plate_type, gear, r_from, z_to',
+    [('positive', 'A2', 5.81, -24.2), ('negative', 'B2', 3.81, -26.2)],
+)
+def test_axis_cuts_at_the_version_two_height(plate_type, gear, r_from, z_to):
+    """
+    The vent runs the whole roller plus 1 mm out of each mouth; the cone starts
+    0.5 below the old ceiling (z -28.5) at the rim grown 0.5 + 0.01 and rises at
+    45 degrees to the vent radius + 0.01.
+    """
+    vent, cone = version2.axis_cut_blocks(plate_type, 54.0)
+    assert vent == {'kind': 'vent', 'radius': 1.0, 'z_from': -38.0, 'z_to': 38.0}
+    assert cone['kind'] == 'cone'
+    assert cone['gear'] == gear
+    assert cone['z_from'] == pytest.approx(-29.0)
+    assert cone['r_from'] == pytest.approx(r_from)
+    assert cone['z_to'] == pytest.approx(z_to)
+    assert cone['r_to'] == pytest.approx(1.01)
+    # 45 degrees: the radius falls exactly as fast as z rises.
+    assert (cone['r_from'] - cone['r_to']) == pytest.approx(cone['z_to'] - cone['z_from'])
+
+
+def test_axis_cuts_follow_the_height_never_the_preset():
+    vent, cone = version2.axis_cut_blocks('positive', 52.0)
+    assert (vent['z_from'], vent['z_to']) == (-37.0, 37.0)
+    assert cone['z_from'] == pytest.approx(-28.0)
+    assert cone['z_to'] == pytest.approx(-23.2)
+
+
+@pytest.mark.parametrize('plate_type, height', [('both', 54.0), ('positive', 0.0), ('negative', -1.0)])
+def test_axis_cuts_refuse_bad_input(plate_type, height):
+    with pytest.raises(ValueError):
+        version2.axis_cut_blocks(plate_type, height)
+
+
+@pytest.mark.parametrize('plate_type', ['positive', 'negative'])
+def test_the_cone_stays_inside_the_weld_rings_and_the_vent_inside_every_peg(plate_type):
+    vent, cone = version2.axis_cut_blocks(plate_type, 54.0)
+    assert cone['r_from'] < gears.WELD_RING_R_IN_MM
+    narrowest = min(min(p['length'], p['width']) for p in version2.V2_KEY_PROFILES.values()) / 2.0
+    assert narrowest == 4.0
+    assert vent['radius'] < narrowest

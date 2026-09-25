@@ -698,6 +698,17 @@ def test_each_plate_gets_its_own_gear_set(plate_type, expected_asset):
     assert build_spec(plate_type)['gears']['asset'] == expected_asset
 
 
+def test_the_version_one_roller_carries_none_of_the_version_two_cuts():
+    """
+    The v9 update (2026-09-24) chamfers, vents and cones the FUSED VERSION 2
+    roller only; a Version 1 one-piece roller's spec is the one it always was.
+    """
+    for plate_type in ('positive', 'negative'):
+        spec = build_spec(plate_type)
+        assert 'axis_cuts' not in spec['gears']
+        assert 'bottom_chamfer' not in spec['cylinder']
+
+
 def test_weld_rings_sit_at_the_two_gear_interfaces():
     rings = build_spec()['gears']['weld_rings']
     assert [ring['z_center'] for ring in rings] == [-26.0, 26.0]

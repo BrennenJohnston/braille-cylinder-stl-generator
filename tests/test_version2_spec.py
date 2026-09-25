@@ -156,6 +156,11 @@ def test_fused_version_two_is_a_solid_barrel_with_its_own_gears_and_a_notch_fill
     assert fill['z_from'] == pytest.approx(27.0 - version2.V2_NOTCH_FILL_OVERLAP_MM)
     assert fill['z_to'] == pytest.approx(27.0 + 3.15 + version2.V2_NOTCH_FILL_OVERLAP_MM)
     assert all(set(point) == {'x', 'y'} for point in fill['profile'])
+    # The v9 update (2026-09-24, D-1 / D-2): the chamfer on the barrel and the
+    # two axis cuts, vent then cone, ride in the same two blocks.
+    assert spec['cylinder']['bottom_chamfer'] == {'size': 0.65, 'lip': 1.0}
+    assert [cut['kind'] for cut in gears['axis_cuts']] == ['vent', 'cone']
+    assert gears['axis_cuts'][1]['gear'] == ('A2' if plate_type == 'positive' else 'B2')
 
 
 def test_version_two_without_gears_is_byte_identical_to_before():
@@ -166,6 +171,7 @@ def test_version_two_without_gears_is_byte_identical_to_before():
         assert plain == explicit_off
         assert 'gears' not in plain
         assert 'keyed_cutouts' in plain
+        assert 'bottom_chamfer' not in plain['cylinder']
 
 
 def test_version_one_gear_mode_carries_no_notch_fill_and_the_version_one_asset():
@@ -175,7 +181,9 @@ def test_version_one_gear_mode_carries_no_notch_fill_and_the_version_one_asset()
     spec = build_spec('positive', settings, cylinder)
     assert spec['gears']['asset'] == 'gears_a'
     assert 'notch_fills' not in spec['gears']
+    assert 'axis_cuts' not in spec['gears']
     assert 'solid' not in spec['cylinder']
+    assert 'bottom_chamfer' not in spec['cylinder']
     assert spec['warnings'] == [CARD_FIT_WARNING]
 
 

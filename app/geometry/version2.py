@@ -48,7 +48,7 @@ from __future__ import annotations
 
 import math
 
-from app.geometry.gears import _format_mm
+from app.geometry.gears import GEAR_BODY_THICKNESS_MM, WELD_RING_R_IN_MM, _format_mm
 
 # The Version 2 barrel (D-V4). A SOFT preset: an off-size cylinder raises a
 # warning and is still built (D-V15), unlike the gears' hard size gate. That
@@ -894,3 +894,139 @@ def v2_size_message(diameter: float, height: float) -> str:
         f'{_format_mm(V2_BARREL_DIAMETER_MM)} mm x {_format_mm(V2_BARREL_HEIGHT_MM)} mm cylinder. '
         f'Received {_format_mm(diameter)} mm x {_format_mm(height)} mm.'
     )
+
+
+# ---------------------------------------------------------------------------
+# Fused Version 2 rollers, the v9 update (2026-09-24; decisions D-1, D-2, D-6)
+#
+# The fused roller prints standing on its BOTTOM gear (A2 / B2). Three things
+# about that end came out of printing the 2026-09-21 build, and Brennen's v9
+# CAD answered them (research folder New Developement_2026_09_24, files 01-04):
+#
+#   * The barrel's bottom face overhung the gear face. Both faces of every
+#     gear body are chamfered 1.5 mm at 45 degrees from the 16.11 mm tips, so
+#     the face the barrel stands on reaches only r 14.61 while the barrel is
+#     r 15.4: a 0.79 mm ledge all the way round, which the slicer supported.
+#     A 45 degree chamfer on the barrel's bottom edge takes the ledge to
+#     0.14 mm (D-2: 0.65, the ledge his v9 CAD prints at its 30.5 barrel),
+#     inside one extrusion width. It spends 0.65 of the 1 mm card shelf at
+#     that end. Sliced: 149 mm of perimeter laid over air per plate became 50,
+#     the floor set by the 24 tooth valleys that any barrel on a gear has.
+#   * The housing-peg socket in the bottom gear sealed a vacuum. The peg is a
+#     snug fit in the socket's bore and the socket's ceiling was blind, so the
+#     roller fought suction coming off its peg. The gears ALREADY carry a 2 mm
+#     hole from each socket's ceiling into their 15 mm peg (measured on the v8
+#     assets); the solid barrel sealed it at the peg tip. One 2 mm cut along
+#     the whole axis joins them, so the bottom socket breathes out through the
+#     top gear's open mouth. It is cut AFTER the gears are unioned: the pegs'
+#     own holes sit 0.05 mm off the axis in the asset, and cutting the barrel
+#     first would let a peg refill a crescent of the vent.
+#   * The socket's flat ceiling was the overhang the auto-supports fought:
+#     36 mm of perimeter and 106-265 mm of bridge per plate laid over air, and
+#     1.7 m of support inside a blind hole (02_CEILING_SUPPORT_RESEARCH.md).
+#     The ceiling is made self-supporting instead (D-1): the socket's own 45
+#     degree taper continues from its rim to the vent, a cone the slicer lays
+#     nothing over air for and generates no support under. Nothing to remove
+#     from the hole, so no toggle (D-6). The peg's straight bore is 5.7 mm
+#     deep before the taper starts, so a flat-topped peg never reaches it.
+#
+# Every number lives here; app/geometry_spec.py, the worker, the golden
+# renderer and the OpenSCAD file read them and never retype them.
+V2_FUSED_BARREL_CHAMFER_MM = 0.65
+V2_FUSED_CHAMFER_LIP_MM = 1.0  # the cutter overshoots outward and downward by this
+V2_VENT_RADIUS_MM = 1.0
+V2_VENT_OVERSHOOT_MM = 1.0  # past both gear mouths
+
+# The 54 mm Version 2 barrel is the 52 mm card plus this at each end
+# (2026-08-31); the chamfer may not spend more than the shelf.
+V2_CARD_SHELF_MM = 1.0
+
+# The gear root circle (both sets, manifest root_radius_mm): the chamfer may
+# never take the barrel's foot inside it, or the barrel would stand on air
+# between the teeth.
+V2_GEAR_ROOT_RADIUS_MM = 13.6613
+
+# The housing-peg socket in each BOTTOM gear, MEASURED off the v8 assets (the
+# v9 bodies are the same to the micron, 01_V9_STL_AUDIT.md section 4): the
+# bore the peg rides in, the rim where the 45 degree taper met the old flat
+# ceiling, how far below the barrel face that ceiling sat, and the 45 degree
+# mouth chamfer at the bed. Recorded hardware, like V2_GEAR_ANTIROT - not ours
+# to adjust.
+V2_GEAR_SOCKET = {
+    'positive': {'gear': 'A2', 'bore_radius': 7.0, 'rim_radius': 5.3, 'ceiling_below_face': 1.5, 'mouth_chamfer': 1.0},
+    'negative': {'gear': 'B2', 'bore_radius': 5.0, 'rim_radius': 3.3, 'ceiling_below_face': 1.5, 'mouth_chamfer': 1.0},
+}
+
+# The cone is grown radially by this so it overlaps the socket's own taper
+# instead of sharing its surface (the two are the same 45 degree line), and
+# it starts this far below the ceiling, inside the socket's air.
+V2_SOCKET_CONE_GROWTH_MM = 0.01
+V2_SOCKET_CONE_OVERLAP_MM = 0.5
+
+
+def bottom_chamfer_block(radius: float) -> dict:
+    """
+    The barrel's bottom-edge chamfer as the worker reads it: a 45 degree cut of
+    `size` at the bottom face, its cutter overshooting by `lip` outward and
+    downward so nothing is coplanar. Fused Version 2 only - a shell-stage cut,
+    taken from the bare barrel right after the seam channel.
+    """
+    size = V2_FUSED_BARREL_CHAMFER_MM
+    if not 0 < size <= V2_CARD_SHELF_MM:
+        raise ValueError(f'barrel chamfer {size} mm must lie within the {V2_CARD_SHELF_MM} mm card shelf')
+    if radius - size <= V2_GEAR_ROOT_RADIUS_MM:
+        raise ValueError(
+            f'a {size} mm chamfer on a {radius} mm barrel stands its foot inside the gear root circle '
+            f'({V2_GEAR_ROOT_RADIUS_MM} mm)'
+        )
+    return {'size': size, 'lip': V2_FUSED_CHAMFER_LIP_MM}
+
+
+def axis_cut_blocks(plate_type: str, height: float) -> list[dict]:
+    """
+    The two cuts the worker takes along the axis LAST, after every union: the
+    vent the full length of the roller, and this plate's socket cone.
+
+    Every z is computed from THIS cylinder's height, like the notch fill: the
+    bottom socket's ceiling sits `ceiling_below_face` under the barrel face,
+    and the cone runs from `V2_SOCKET_CONE_OVERLAP_MM` below it (inside the
+    socket's air) up at 45 degrees to the vent radius, so its apex lands
+    rim - vent above the old ceiling: 4.3 mm on Cylinder A, 2.3 on B, inside
+    the buried peg.
+    """
+    if plate_type not in V2_GEAR_SOCKET:
+        raise ValueError(f'unknown plate type {plate_type!r}; known: {sorted(V2_GEAR_SOCKET)}')
+    if height <= 0:
+        raise ValueError(f'Version 2 cylinder height must be positive, got {height}')
+    narrowest_peg_half_width = min(min(p['length'], p['width']) for p in V2_KEY_PROFILES.values()) / 2.0
+    if not 0 < V2_VENT_RADIUS_MM < min(narrowest_peg_half_width, WELD_RING_R_IN_MM):
+        raise ValueError(f'vent radius {V2_VENT_RADIUS_MM} mm would leave the pegs or reach the weld rings')
+
+    half_height = height / 2.0
+    reach = half_height + GEAR_BODY_THICKNESS_MM + V2_VENT_OVERSHOOT_MM
+    vent = {
+        'kind': 'vent',
+        'radius': V2_VENT_RADIUS_MM,
+        'z_from': round(-reach, 6),
+        'z_to': round(reach, 6),
+    }
+
+    socket = V2_GEAR_SOCKET[plate_type]
+    if socket['rim_radius'] >= socket['bore_radius']:
+        raise ValueError(
+            f'{socket["gear"]} socket rim {socket["rim_radius"]} must be inside its bore {socket["bore_radius"]}'
+        )
+    ceiling = -half_height - socket['ceiling_below_face']
+    cone = {
+        'kind': 'cone',
+        'gear': socket['gear'],
+        'z_from': round(ceiling - V2_SOCKET_CONE_OVERLAP_MM, 6),
+        'r_from': round(socket['rim_radius'] + V2_SOCKET_CONE_OVERLAP_MM + V2_SOCKET_CONE_GROWTH_MM, 6),
+        'z_to': round(ceiling + (socket['rim_radius'] - V2_VENT_RADIUS_MM), 6),
+        'r_to': round(V2_VENT_RADIUS_MM + V2_SOCKET_CONE_GROWTH_MM, 6),
+    }
+    if cone['r_from'] >= WELD_RING_R_IN_MM:
+        raise ValueError(f'{socket["gear"]} socket cone reaches r {cone["r_from"]}, into the weld rings')
+    if not cone['z_to'] > cone['z_from'] or not cone['r_to'] < cone['r_from']:
+        raise ValueError(f'{socket["gear"]} socket cone is not a rising, narrowing cone: {cone}')
+    return [vent, cone]

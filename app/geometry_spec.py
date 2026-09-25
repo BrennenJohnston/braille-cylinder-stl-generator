@@ -690,6 +690,17 @@ def extract_cylinder_geometry_spec(
             # nothing can drain, so it is filled (D-6). The fill is unioned in
             # the gear stage, before the recesses are cut.
             spec['gears']['notch_fills'] = [version2.notch_fill_block(plate_type, height)]
+            # The v9 update (2026-09-24, decisions D-1 and D-2): the barrel's
+            # bottom edge is chamfered so its first layer no longer overhangs
+            # the gear face (a shell-stage cut, like the seam channel), and two
+            # cuts come LAST in the worker, after every union - the 2 mm vent
+            # that joins the gears' own socket holes through the barrel, and
+            # the cone that continues each bottom socket's 45 degree taper up
+            # to the vent so the socket ceiling prints with no support. Fused
+            # Version 2 only: nothing here reaches a Version 1 or a
+            # separate-gear spec.
+            spec['cylinder']['bottom_chamfer'] = version2.bottom_chamfer_block(radius)
+            spec['gears']['axis_cuts'] = version2.axis_cut_blocks(plate_type, height)
 
     # Counts recesses declined for having no depth, so the omission is reported
     # once per request rather than silently or once per dot.
