@@ -1,9 +1,9 @@
 {
-  "description": "Fused Embosser Version 2 golden: Cylinder B (negative), solid 54 mm barrel plus its fixed v8 gears as one part, notch filled",
+  "description": "Fused Embosser Version 2 golden: Cylinder B (negative), solid 54 mm barrel plus its fixed v8 gears as one part, notch filled, vented along the axis, bottom edge chamfered, bottom socket coned (v9 update, 2026-09-24)",
   "fixture_name": "v2_gear_rollerB_golden",
   "plate_type": "negative",
   "generation": {
-    "note": "Rendered by tests/test_golden.py generate_v2_gear_golden_fixtures() from extract_cylinder_geometry_spec called directly with embosser_version=2 and gear_rollers_enabled=1 (no back_lines: single-sided). The barrel is the plain solid cylinder - no keyed holes, countersinks, nub or socket (decision D-6) - with the vendored v8 gear set from static/assets/gears/v2_gears_*.bin, the two weld rings and the top gear notch fill unioned in before any recess is cut. Z-up, theta as emitted, base of the barrel reseated to z=0, which puts the gears at z -10..0 and 54..64. The slicer seam channel is cut as on every pair.",
+    "note": "Rendered by tests/test_golden.py generate_v2_gear_golden_fixtures() from extract_cylinder_geometry_spec called directly with embosser_version=2 and gear_rollers_enabled=1 (no back_lines: single-sided). The barrel is the plain solid cylinder - no keyed holes, countersinks, nub or socket (decision D-6) - with the vendored v8 gear set from static/assets/gears/v2_gears_*.bin, the two weld rings and the top gear notch fill unioned in before any recess is cut. Z-up, theta as emitted, base of the barrel reseated to z=0, which puts the gears at z -10..0 and 54..64. The slicer seam channel is cut as on every pair. Since 2026-09-24 (decisions D-1 and D-2) the barrel bottom edge carries a 0.65 mm x 45 deg chamfer (cut on the bare shell after the seam channel), a 2 mm vent runs the whole axis, and the bottom socket ceiling is a 45 deg cone to the vent - the last two subtracted after every union, as the worker does.",
     "gear_asset": "v2_gears_b",
     "front_lines": [
       "\u2801\u2803\u2809",
@@ -34,13 +34,13 @@
       "wall_thickness": 2.0,
       "seam_offset_deg": 355.0
     },
-    "generated": "2026-09-21",
+    "generated": "2026-09-24",
     "trimesh_version": "4.10.1",
     "manifold3d_version": "3.3.2"
   },
   "expected_properties": {
-    "face_count": 89002,
-    "vertex_count": 44503,
+    "face_count": 89624,
+    "vertex_count": 44812,
     "is_watertight": true,
     "bbox_min": [
       -16.108776092529297,
@@ -52,7 +52,7 @@
       16.108774185180664,
       64.0
     ],
-    "volume": 52500.84128096996,
-    "surface_area": 11264.175607001682
+    "volume": 52281.65135860892,
+    "surface_area": 11565.054326028354
   }
 }

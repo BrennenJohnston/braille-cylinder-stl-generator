@@ -436,6 +436,37 @@ def _seam_channel_path_cutter(channel, radius):
     return trimesh.Trimesh(vertices=mesh.vert_properties[:, :3], faces=mesh.tri_verts)
 
 
+def _frustum(r_bottom, z_bottom, r_top, z_top, sections):
+    """
+    A capped cone from radius r_bottom at z_bottom to r_top at z_top - the
+    shape csg-worker-manifold.js gets from createManifoldFrustum. The fused
+    Version 2 chamfer's keep-solid and the socket cone are both this.
+    """
+    import numpy as np
+    import trimesh
+
+    theta = np.linspace(0.0, 2.0 * np.pi, sections, endpoint=False)
+    ring_bottom = np.c_[r_bottom * np.cos(theta), r_bottom * np.sin(theta), np.full(sections, z_bottom)]
+    ring_top = np.c_[r_top * np.cos(theta), r_top * np.sin(theta), np.full(sections, z_top)]
+    vertices = np.vstack([ring_bottom, ring_top, [[0.0, 0.0, z_bottom]], [[0.0, 0.0, z_top]]])
+    centre_bottom, centre_top = 2 * sections, 2 * sections + 1
+    faces = []
+    for i in range(sections):
+        j = (i + 1) % sections
+        faces.append([i, j, sections + j])
+        faces.append([i, sections + j, sections + i])
+        faces.append([centre_bottom, j, i])
+        faces.append([centre_top, sections + i, sections + j])
+    mesh = trimesh.Trimesh(vertices, faces, process=True)
+    if mesh.volume < 0:
+        mesh.invert()
+    return mesh
+
+
+# csg-worker-manifold.js AXIS_CUT_SEGMENTS: the fused Version 2 vent and cone.
+_AXIS_CUT_SECTIONS = 48
+
+
 def _build_ds_cylinder_mesh(spec, shell=None):
     """
     Render a double-sided cylinder spec to a watertight mesh.
@@ -474,6 +505,22 @@ def _build_ds_cylinder_mesh(spec, shell=None):
     channel = cylinder.get('seam_channel')
     if channel:
         cutter = _seam_channel_cutter(channel, radius, height)
+        shell = trimesh.boolean.difference([shell, cutter], engine='manifold')
+
+    # Fused Version 2, the v9 update (2026-09-24, decision D-2): the barrel's
+    # bottom edge is chamfered on the bare shell, exactly where and how the
+    # worker does it - a ring from `lip` below the bottom face to `size` above
+    # it, minus a 45 degree frustum through r = R - size at the face. Absent
+    # key, absent cut.
+    chamfer = cylinder.get('bottom_chamfer')
+    if chamfer:
+        size, lip = chamfer['size'], chamfer['lip']
+        z_low = -height / 2.0 - lip
+        z_high = -height / 2.0 + size
+        ring = trimesh.creation.cylinder(radius=radius + lip, height=size + lip, sections=_DS_SHELL_SECTIONS)
+        ring.apply_translation([0.0, 0.0, (z_low + z_high) / 2.0])
+        keep = _frustum(radius - size - lip, z_low, radius, z_high, _DS_SHELL_SECTIONS)
+        cutter = trimesh.boolean.difference([ring, keep], engine='manifold')
         shell = trimesh.boolean.difference([shell, cutter], engine='manifold')
     raised = [shell]
 
@@ -521,6 +568,26 @@ def _build_ds_cylinder_mesh(spec, shell=None):
     if cutters:
         solid = trimesh.boolean.difference(
             [solid, trimesh.boolean.union(cutters, engine='manifold')], engine='manifold'
+        )
+    # Fused Version 2, the v9 update (2026-09-24, decisions D-1 and D-2): the
+    # axis cuts come LAST, after every union, as in the worker - the 2 mm vent
+    # has to pass through the buried pegs, and the socket cone cuts the gear
+    # body itself. Absent key, absent cut.
+    axis_cutters = []
+    for cut in spec.get('gears', {}).get('axis_cuts', []):
+        if cut['kind'] == 'vent':
+            vent = trimesh.creation.cylinder(
+                radius=cut['radius'], height=cut['z_to'] - cut['z_from'], sections=_AXIS_CUT_SECTIONS
+            )
+            vent.apply_translation([0.0, 0.0, (cut['z_from'] + cut['z_to']) / 2.0])
+            axis_cutters.append(vent)
+        elif cut['kind'] == 'cone':
+            axis_cutters.append(_frustum(cut['r_from'], cut['z_from'], cut['r_to'], cut['z_to'], _AXIS_CUT_SECTIONS))
+        else:
+            raise ValueError(f'unknown Version 2 axis cut kind {cut["kind"]!r}')
+    if axis_cutters:
+        solid = trimesh.boolean.difference(
+            [solid, trimesh.boolean.union(axis_cutters, engine='manifold')], engine='manifold'
         )
     # Fixture convention: reseat so the barrel's base sits at z = 0. In gear
     # mode that puts the gears at z -10..0 and 52..62 - the sample assembly's
@@ -1413,7 +1480,8 @@ def generate_v2_gear_golden_fixtures():
         metadata = {
             'description': (
                 f'Fused Embosser Version 2 golden: {"Cylinder A" if plate_type == "positive" else "Cylinder B"} '
-                f'({plate_type}), solid 54 mm barrel plus its fixed v8 gears as one part, notch filled'
+                f'({plate_type}), solid 54 mm barrel plus its fixed v8 gears as one part, notch filled, '
+                f'vented along the axis, bottom edge chamfered, bottom socket coned (v9 update, 2026-09-24)'
             ),
             'fixture_name': fixture_name,
             'plate_type': plate_type,
@@ -1426,13 +1494,17 @@ def generate_v2_gear_golden_fixtures():
                     'the vendored v8 gear set from static/assets/gears/v2_gears_*.bin, the two weld '
                     'rings and the top gear notch fill unioned in before any recess is cut. Z-up, theta '
                     'as emitted, base of the barrel reseated to z=0, which puts the gears at z -10..0 '
-                    'and 54..64. The slicer seam channel is cut as on every pair.'
+                    'and 54..64. The slicer seam channel is cut as on every pair. Since 2026-09-24 (decisions '
+                    'D-1 and D-2) the barrel bottom edge carries a 0.65 mm x 45 deg chamfer (cut on the bare '
+                    'shell after the seam channel), a 2 mm vent runs the whole axis, and the bottom socket '
+                    'ceiling is a 45 deg cone to the vent - the last two subtracted after every union, as the '
+                    'worker does.'
                 ),
                 'gear_asset': V2_GEAR_FIXTURE_ASSETS[plate_type],
                 'front_lines': DS_FIXTURE_FRONT_LINES,
                 'settings': V2_GEAR_FIXTURE_SETTINGS,
                 'cylinder_params': V2_FIXTURE_CYLINDER_PARAMS,
-                'generated': '2026-09-21',
+                'generated': '2026-09-24',
                 'trimesh_version': importlib.metadata.version('trimesh'),
                 'manifold3d_version': importlib.metadata.version('manifold3d'),
             },
@@ -1462,6 +1534,8 @@ def test_v2_gear_golden_spec_is_fused(plate_type):
     assert 'keyed_cutouts' not in spec
     assert spec['gears']['asset'] == V2_GEAR_FIXTURE_ASSETS[plate_type]
     assert len(spec['gears']['notch_fills']) == 1
+    assert spec['cylinder']['bottom_chamfer'] == {'size': 0.65, 'lip': 1.0}
+    assert [cut['kind'] for cut in spec['gears']['axis_cuts']] == ['vent', 'cone']
     assert 'seam_channel' in spec['cylinder']
 
 
@@ -1498,13 +1572,15 @@ def test_v2_gear_golden_fixture_matches_regenerated_geometry(fixtures_dir, plate
 
 
 @pytest.mark.parametrize('plate_type', ['positive', 'negative'])
-def test_v2_gear_golden_fixture_is_one_sealed_roller_with_no_void(fixtures_dir, plate_type):
+def test_v2_gear_golden_fixture_is_one_vented_roller_with_no_void(fixtures_dir, plate_type):
     """
     The D-6 acceptance: ONE body and no enclosed void - a sealed notch would
     appear as a second shell in split(only_watertight=False) - 74 mm tall,
-    gears at both ends with 24 teeth each, the old keyed-hole region SOLID,
-    the notch region solid, the barrel rim still 15.4 mm, nothing proud of the
-    top face (no nub in fused mode).
+    gears at both ends with 24 teeth each, the notch region solid, the barrel
+    rim still 15.4 mm, nothing proud of the top face (no nub in fused mode).
+    Since the v9 update (2026-09-24, D-1 / D-2) the axis is AIR from mouth to
+    mouth - the 2 mm vent - with solid barrel beside it, the bottom edge is
+    chamfered 0.65 mm, and the bottom socket's ceiling is a 45 degree cone.
     """
     trimesh = pytest.importorskip('trimesh')
     import numpy as np
@@ -1551,11 +1627,30 @@ def test_v2_gear_golden_fixture_is_one_sealed_roller_with_no_void(fixtures_dir, 
     assert not (under & off_column).any(), 'the surface is eaten away from the seam channel'
     assert radial[(radial > 15.0) & off_column].min() == pytest.approx(version2.V2_BARREL_DIAMETER_MM / 2, abs=0.02)
 
-    # Solid where the keyed hole and the socket used to be, and inside the
-    # notch volume the fill closed (r 12 on the arrow column, 1.5 mm into the
-    # top gear), and through the whole axis.
-    axis = np.array([[0.0, 0.0, float(z)] for z in range(1, int(version2.V2_BARREL_HEIGHT_MM))])
-    assert roller.contains(axis).all()
+    # The vent: air on the axis from the bottom gear's mouth to the top gear's
+    # (fixture frame, gears at -10..0 and 54..64), solid barrel at r 1.5 beside
+    # it above the socket cone (its radius passes 1.5 at z 2.3 on A).
+    axis = np.array([[0.0, 0.0, float(z)] for z in range(-9, 64)])
+    assert not roller.contains(axis).any()
+    beside = np.array([[1.5, 0.0, float(z)] for z in range(4, 51)])
+    assert roller.contains(beside).all()
+    # The chamfer: air just outside the foot at the bottom face, solid 0.65 up
+    # and on the rim above.
+    assert not roller.contains(np.array([[15.30, 0.0, 0.1], [15.35, 0.0, 0.05]])).any()
+    assert roller.contains(np.array([[15.35, 0.0, 0.7], [15.39, 0.0, 27.0]])).all()
+    # The socket cone (worker z -29.0 upward is fixture z -2.0 upward): air on
+    # the axis side of the 45 degree wall, solid outside it and above the apex.
+    # A: r 4.81 at z -1.0, apex z 2.8; B: r 2.81 at z -1.0, apex z 0.8.
+    assert not roller.contains(np.array([[2.0, 0.0, -1.0], [1.5, 0.0, 0.0]])).any()
+    if plate_type == 'positive':
+        assert roller.contains(np.array([[5.0, 0.0, -1.0], [4.0, 0.0, 0.0], [3.0, 0.0, 3.5]])).all()
+    else:
+        assert roller.contains(np.array([[3.0, 0.0, -1.0], [2.0, 0.0, 0.0], [3.0, 0.0, 1.5]])).all()
+    # The socket bore below the cone is still the open peg socket.
+    bore = 6.5 if plate_type == 'positive' else 4.5
+    assert not roller.contains(np.array([[bore, 0.0, -6.0], [bore, 0.0, -8.0]])).any()
+    # Solid inside the notch volume the fill closed (r 12 on the arrow column,
+    # 1.5 mm into the top gear) and where the keyed hole used to be.
     column = math.radians(version2.V2_ARROW_COLUMN_DEG)
     probes = np.array(
         [
@@ -1597,7 +1692,16 @@ def test_v2_gear_golden_fixture_keeps_the_vendored_gear_surface(fixtures_dir, pl
         & (z > version2.V2_BARREL_HEIGHT_MM - 0.1)
         & (z < version2.V2_BARREL_HEIGHT_MM + 3.5)
     )
-    keep = outside & ~in_notch
+    # The bottom socket's flat ceiling, its 45 degree taper and the vent
+    # countersink are cut away by the socket cone (D-1, 2026-09-24): points
+    # sampled on them are now air, or lie 0.01 mm inside the grown cone.
+    in_socket = (np.hypot(points[:, 0], points[:, 1]) < 8.0) & (z > -3.6) & (z < -0.1)
+    # The gears' own 2 mm holes sit 0.05 mm off the fitted axis in the asset;
+    # the vent trues them to the axis, so a point on the near wall of the top
+    # gear's hole now lies up to 0.05 mm into air. That is the vent doing its
+    # job, not the union moving a gear.
+    in_vent = np.hypot(points[:, 0], points[:, 1]) < 1.1
+    keep = outside & ~in_notch & ~in_socket & ~in_vent
     assert keep.sum() > 500
     assert float(np.percentile(distances[keep], 99)) < 0.01
     assert float(distances[keep].max()) < 0.05
