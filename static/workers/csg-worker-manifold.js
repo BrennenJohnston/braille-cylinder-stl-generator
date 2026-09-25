@@ -107,6 +107,9 @@ async function initManifold() {
  * a deeper embed to stay fused.
  */
 const CYLINDER_SHELL_SEGMENTS = 64;
+// The fused Version 2 vent (r 1.0) and socket cone (r 5.8 down to 1.0): small
+// radii, so 48 segments keep every chord under 0.1 mm without the shell's 64.
+const AXIS_CUT_SEGMENTS = 48;
 
 /**
  * Embosser Version 2: the thickness of the slabs a mouth chamfer is hulled from.
@@ -1788,6 +1791,42 @@ function createCylinderShellManifold(spec, solid = false, keyed = null) {
             console.log(`Manifold CSG Worker: cut seam channel at ${(-seamChannel.theta * 180 / Math.PI).toFixed(2)} deg (${seamChannel.width} x ${seamChannel.depth} mm${route})`);
         }
 
+        // Fused Version 2, the v9 update (2026-09-24, decision D-2): a 45
+        // degree chamfer on the barrel's bottom edge, cut here on the bare
+        // barrel like the seam channel. The gear face the barrel stands on
+        // reaches only r 14.61 (the gear's own 1.5 mm face chamfer), so an
+        // unchamfered 15.4 barrel overhung it by 0.79 mm all the way round and
+        // the slicer supported that ring; 0.65 leaves 0.14. The cutter is a
+        // ring from `lip` below the face to `size` above it, minus a 45 degree
+        // frustum, so no face of it is coplanar with the barrel or with the
+        // gear unioned later. Absent block, absent cut - every other mode's
+        // barrel is the one it always was. Numbers: app/geometry/version2.py.
+        const chamfer = spec.bottom_chamfer;
+        if (chamfer) {
+            const { size, lip } = chamfer;
+            if (!(size > 0) || !(lip > 0)) {
+                throw new Error(`Version 2 barrel chamfer needs a positive size and lip, got ${size} / ${lip}`);
+            }
+            const cutHeight = size + lip;
+            const zCentre = -validHeight / 2 - lip + cutHeight / 2;
+            const ringRaw = createManifoldCylinder(cutHeight, validRadius + lip, CYLINDER_SHELL_SEGMENTS);
+            const ring = ringRaw.translate([0, 0, zCentre]);
+            ringRaw.delete();
+            // Radius R - size - lip at the cutter's bottom and R at its top:
+            // the 45 degree line passes through r = R - size at the face.
+            const keepRaw = createManifoldFrustum(validRadius - size - lip, validRadius, cutHeight, CYLINDER_SHELL_SEGMENTS);
+            const keep = keepRaw.translate([0, 0, zCentre]);
+            keepRaw.delete();
+            const cutter = ring.subtract(keep);
+            ring.delete();
+            keep.delete();
+            const chamfered = outer.subtract(cutter);
+            outer.delete();
+            cutter.delete();
+            outer = chamfered;
+            console.log(`Manifold CSG Worker: chamfered the barrel's bottom edge ${size} mm at 45 deg (fused Version 2)`);
+        }
+
         // Decision D-2, gear mode only: a one-piece roller is SOLID, like the
         // reference part. An empty polygon_points list does not say that on its
         // own - without a polygon this function falls through to hollowing by
@@ -2183,6 +2222,45 @@ function processGeometrySpec(spec, gearAsset = null) {
                 result = newResult;
                 console.log('Manifold CSG Worker: Subtracted markers');
             }
+        }
+
+        // Fused Version 2, the v9 update (2026-09-24, decisions D-1 and D-2):
+        // the axis cuts come LAST, after every union. The 2 mm vent has to
+        // pass through the buried pegs, which only exist once the gears are
+        // unioned in (their own holes sit 0.05 mm off the axis, so cutting the
+        // barrel first would let a peg refill a crescent of it), and the
+        // socket cone cuts the gear body itself: it continues the bottom
+        // socket's 45 degree taper up to the vent so the socket ceiling prints
+        // with no support. Absent block, absent cut - Version 1 and
+        // separate-gear rollers are untouched. Numbers: app/geometry/version2.py.
+        if (gears && Array.isArray(gears.axis_cuts) && gears.axis_cuts.length > 0) {
+            const axisCutters = [];
+            for (const cut of gears.axis_cuts) {
+                const length = cut.z_to - cut.z_from;
+                if (!(length > 0)) {
+                    throw new Error(`Version 2 axis cut ${cut.kind}: z_to ${cut.z_to} must be above z_from ${cut.z_from}`);
+                }
+                let cutter;
+                if (cut.kind === 'vent') {
+                    cutter = createManifoldCylinder(length, cut.radius, AXIS_CUT_SEGMENTS);
+                } else if (cut.kind === 'cone') {
+                    cutter = createManifoldFrustum(cut.r_from, cut.r_to, length, AXIS_CUT_SEGMENTS);
+                } else {
+                    throw new Error(`unknown Version 2 axis cut kind ${cut.kind}`);
+                }
+                const placed = cutter.translate([0, 0, (cut.z_from + cut.z_to) / 2]);
+                cutter.delete();
+                axisCutters.push(placed);
+            }
+            const unionedCuts = batchUnionManifold(axisCutters);
+            if (!unionedCuts) {
+                throw new Error('Version 2 axis cuts produced no geometry');
+            }
+            const vented = result.subtract(unionedCuts);
+            result.delete();
+            unionedCuts.delete();
+            result = vented;
+            console.log(`Manifold CSG Worker: Subtracted ${gears.axis_cuts.length} axis cuts (vent and socket cone, fused Version 2)`);
         }
 
         // For cylinders: the coordinate system is already correct (Z-up)
