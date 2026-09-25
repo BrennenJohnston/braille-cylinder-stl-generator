@@ -1843,7 +1843,10 @@ function createCylinderShellManifold(spec, solid = false, keyed = null) {
         // and the boolean is at its cheapest.
         if (keyed) {
             const keyedShell = cutKeyedCutoutsManifold(outer, keyed, validHeight);
-            console.log(`Manifold CSG Worker: Created Version 2 keyed cylinder (clearance ${keyed.clearance_mm} mm)`);
+            const clearanceNote = (keyed.halves || [])
+                .map((half) => `${half.key || half.end} ${half.clearance_mm} mm`)
+                .join(', ');
+            console.log(`Manifold CSG Worker: Created Version 2 keyed cylinder (clearances ${clearanceNote})`);
             return keyedShell;
         }
 

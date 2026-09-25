@@ -665,9 +665,12 @@ def extract_cylinder_geometry_spec(
         # preset's, so an off-size barrel still gets a hole that meets in the
         # middle. A missing plate_type raises there rather than guessing a side,
         # exactly as the gear asset lookup does.
+        # One clearance per key since 2026-09-25 (own field, else the legacy
+        # shared field, else the key's default - resolved by version2, never
+        # here), so each of the four holes is cut at its own dial.
         if not gear_rollers:
-            v2_clearance = float(getattr(settings, 'v2_key_clearance_mm', version2.V2_KEY_CLEARANCE_DEFAULT_MM))
-            spec['keyed_cutouts'] = version2.keyed_cutout_block(plate_type, height, v2_clearance)
+            clearances = version2.key_clearances(lambda field: getattr(settings, field, None))
+            spec['keyed_cutouts'] = version2.keyed_cutout_block(plate_type, height, clearances)
         # With fixed gears (2026-09-21, sub-plan B, decision D-6) the Version 2
         # barrel stays solid and carries NO keyed holes, countersinks, nub or
         # socket: the gears are already on it. Only the notch each top gear

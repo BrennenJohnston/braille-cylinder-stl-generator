@@ -84,7 +84,8 @@ def build_spec(plate_type='positive', settings=None, cylinder=None, back_lines=N
 def v2_spec(plate_type='positive', clearance=None, cylinder=None, settings=None):
     data = {'embosser_version': 2}
     if clearance is not None:
-        data['v2_key_clearance_mm'] = clearance
+        # One number on every key, sent the way the four dials send it.
+        data.update(dict.fromkeys(version2.V2_KEY_CLEARANCE_FIELDS.values(), clearance))
     data.update(settings or {})
     return build_spec(plate_type, data, cylinder or V2_CYLINDER)
 
@@ -231,10 +232,13 @@ def test_each_plate_gets_its_own_pair_of_keys(plate_type):
     block = spec['keyed_cutouts']
     bottom_name, top_name = version2.KEY_PROFILES_BY_PLATE[plate_type]
 
-    assert block['clearance_mm'] == version2.V2_KEY_CLEARANCE_DEFAULT_MM
+    assert block['clearances_mm'] == {
+        name: version2.V2_KEY_CLEARANCE_DEFAULTS_MM[name] for name in (bottom_name, top_name)
+    }
     assert [half['end'] for half in block['halves']] == ['bottom', 'top']
     for half, name in zip(block['halves'], (bottom_name, top_name), strict=True):
-        expected = version2.key_profile(name, version2.V2_KEY_CLEARANCE_DEFAULT_MM)
+        assert half['key'] == name
+        expected = version2.key_profile(name, version2.V2_KEY_CLEARANCE_DEFAULTS_MM[name])
         assert len(half['profile']) == len(expected)
         assert half['profile'][0]['x'] == pytest.approx(expected[0][0], abs=1e-6)
     assert [sink['kind'] for sink in block['countersinks']] == ['hull', 'hull']
@@ -273,8 +277,39 @@ def test_the_clearance_flows_into_the_profiles(clearance):
     bottom_name = version2.KEY_PROFILES_BY_PLATE['positive'][0]
     nominal = version2.V2_KEY_PROFILES[bottom_name]['width']
     xs = [point['x'] for point in block['halves'][0]['profile']]
-    assert block['clearance_mm'] == clearance
+    assert block['clearances_mm'][bottom_name] == clearance
     assert max(xs) - min(xs) == pytest.approx(nominal + 2 * clearance, abs=1e-6)
+
+
+def test_each_dial_reaches_only_its_own_key():
+    """
+    Four dials since 2026-09-25: A1's number moves the top of Cylinder A and
+    nothing else. The other three keys stay at their defaults.
+    """
+    spec = v2_spec('positive', settings={'v2_key_clearance_a1_mm': 0.085})
+    block = spec['keyed_cutouts']
+    assert block['clearances_mm'] == {
+        'a2_rect_18x10': version2.V2_KEY_CLEARANCE_DEFAULTS_MM['a2_rect_18x10'],
+        'a1_square_14': 0.085,
+    }
+    xs = [point['x'] for point in block['halves'][1]['profile']]
+    assert max(xs) - min(xs) == pytest.approx(14.0 + 2 * 0.085, abs=1e-6)
+    untouched = v2_spec('negative', settings={'v2_key_clearance_a1_mm': 0.085})['keyed_cutouts']
+    assert untouched == v2_spec('negative')['keyed_cutouts']
+
+
+def test_the_legacy_shared_field_still_cuts_every_key():
+    """
+    A request saved before the per-key dials carries only v2_key_clearance_mm;
+    it must build exactly what it always did - every hole at that number.
+    """
+    for plate_type in ('positive', 'negative'):
+        legacy = v2_spec(plate_type, settings={'v2_key_clearance_mm': 0.11})['keyed_cutouts']
+        assert set(legacy['clearances_mm'].values()) == {0.11}
+        assert legacy == v2_spec(plate_type, clearance=0.11)['keyed_cutouts']
+    # A per-key field beside it wins for its own key only.
+    mixed = v2_spec('negative', settings={'v2_key_clearance_mm': 0.11, 'v2_key_clearance_b1_mm': 0.3})
+    assert mixed['keyed_cutouts']['clearances_mm'] == {'b2_rect_20x8': 0.11, 'b1_rect_16x12': 0.3}
 
 
 # --- warnings ---------------------------------------------------------------

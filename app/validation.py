@@ -548,23 +548,26 @@ def validate_embosser_version_settings(settings_data: dict, shape_type: str, cyl
             {'key': 'embosser_version', 'shape_type': shape_type, 'required': 'cylinder'},
         )
 
-    clearance = _double_sided_number(
-        settings_data,
-        'v2_key_clearance_mm',
-        'version_2.key_clearance_mm',
-        version2.V2_KEY_CLEARANCE_DEFAULT_MM,
-    )
-    if not version2.V2_KEY_CLEARANCE_MIN_MM <= clearance <= version2.V2_KEY_CLEARANCE_MAX_MM:
-        raise ValidationError(
-            f"Setting 'version_2.key_clearance_mm' must be between "
-            f'{version2.V2_KEY_CLEARANCE_MIN_MM} and {version2.V2_KEY_CLEARANCE_MAX_MM} mm',
-            {
-                'key': 'v2_key_clearance_mm',
-                'value': clearance,
-                'minimum': version2.V2_KEY_CLEARANCE_MIN_MM,
-                'maximum': version2.V2_KEY_CLEARANCE_MAX_MM,
-            },
-        )
+    # Gate 2: every Version 2 key clearance the request carries is in range -
+    # the four per-key fields (2026-09-25) and the legacy shared one alike. An
+    # absent field is not a fault: version2.key_clearances resolves it later
+    # (own field, else the shared field, else the key's default).
+    for flat_key in (*version2.V2_KEY_CLEARANCE_FIELDS.values(), version2.V2_KEY_CLEARANCE_SHARED_FIELD):
+        schema_name = 'version_2.' + flat_key.removeprefix('v2_')
+        clearance = _double_sided_number(settings_data, flat_key, schema_name, None)
+        if clearance is None:
+            continue
+        if not version2.V2_KEY_CLEARANCE_MIN_MM <= clearance <= version2.V2_KEY_CLEARANCE_MAX_MM:
+            raise ValidationError(
+                f"Setting '{schema_name}' must be between "
+                f'{version2.V2_KEY_CLEARANCE_MIN_MM} and {version2.V2_KEY_CLEARANCE_MAX_MM} mm',
+                {
+                    'key': flat_key,
+                    'value': clearance,
+                    'minimum': version2.V2_KEY_CLEARANCE_MIN_MM,
+                    'maximum': version2.V2_KEY_CLEARANCE_MAX_MM,
+                },
+            )
 
     # Gate 3 (S-V7, "Integrated gears are not available in Version 2.") was
     # RETIRED on 2026-09-21 (2026-09-20 programme, phase B3): Version 2 has

@@ -4160,14 +4160,32 @@
                                   <div class="grade-selection" id="v2-keyed-cutouts-selection" hidden>
                                       <fieldset>
                                           <legend class="grade-label" style="font-size: 1.2em; font-weight: 700;">Version 2 Keyed Cutouts</legend>
+                                          <!-- One dial PER KEY since 2026-09-25, so one gear's fit
+                                               can be tuned without moving the other three. The ids
+                                               are the flat request fields; every default is a whole
+                                               number of 0.005 steps (0.095 / 0.005 = 19) or the input
+                                               is :invalid on load and Generate dies silently. The
+                                               four labels S-K2..S-K5 and the shared note S-K1 are
+                                               DRAFT (2026-09-25) until Brennen signs them; S-V9
+                                               (signed 2026-08-28) retired with the single dial. The
+                                               note is 24 words, under the Step 6.8 ceiling. -->
                                           <div>
-                                              <!-- S-V9, signed off by Brennen (2026-08-28);
-                                                   reword only with his sign-off. The help text
-                                                   is 16 words, under the Step 6.8 ceiling. -->
-                                              <label for="v2_key_clearance_mm">Key clearance (mm):</label>
-                                              <input type="number" id="v2_key_clearance_mm" name="v2_key_clearance_mm" value="0.110" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off" aria-describedby="v2-key-clearance-note">
-                                              <div class="grade-note" id="v2-key-clearance-note" style="margin-top: 4px; font-size: 0.85em;">Extra room around each gear peg, per side. 0.110 mm suits most printers; raise it if pegs bind.</div>
+                                              <label for="v2_key_clearance_a1_mm">Gear A1 (top of Cylinder A) key clearance (mm):</label>
+                                              <input type="number" id="v2_key_clearance_a1_mm" name="v2_key_clearance_a1_mm" value="0.095" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off" aria-describedby="v2-key-clearance-note">
                                           </div>
+                                          <div style="margin-top: 6px;">
+                                              <label for="v2_key_clearance_a2_mm">Gear A2 (bottom of Cylinder A) key clearance (mm):</label>
+                                              <input type="number" id="v2_key_clearance_a2_mm" name="v2_key_clearance_a2_mm" value="0.095" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off" aria-describedby="v2-key-clearance-note">
+                                          </div>
+                                          <div style="margin-top: 6px;">
+                                              <label for="v2_key_clearance_b1_mm">Gear B1 (top of Cylinder B) key clearance (mm):</label>
+                                              <input type="number" id="v2_key_clearance_b1_mm" name="v2_key_clearance_b1_mm" value="0.095" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off" aria-describedby="v2-key-clearance-note">
+                                          </div>
+                                          <div style="margin-top: 6px;">
+                                              <label for="v2_key_clearance_b2_mm">Gear B2 (bottom of Cylinder B) key clearance (mm):</label>
+                                              <input type="number" id="v2_key_clearance_b2_mm" name="v2_key_clearance_b2_mm" value="0.095" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off" aria-describedby="v2-key-clearance-note">
+                                          </div>
+                                          <div class="grade-note" id="v2-key-clearance-note" style="margin-top: 4px; font-size: 0.85em;">Extra room around each gear's peg, per side. 0.095 mm suits most printers: raise a value if that peg binds, lower it if loose.</div>
                                       </fieldset>
                                   </div>
 
@@ -7854,6 +7872,18 @@
         // dial snapshot above.
         let version1IndicatorMode = null;
 
+        // One key clearance dial per gear since 2026-09-25. The ids ARE the
+        // flat request fields (settings.schema.json version_2.key_clearance_*).
+        // The legacy shared dial's storage key is still read on load, and
+        // cleared on reset, so a value saved before the four dials is kept.
+        const V2_KEY_CLEARANCE_IDS = [
+            'v2_key_clearance_a1_mm',
+            'v2_key_clearance_a2_mm',
+            'v2_key_clearance_b1_mm',
+            'v2_key_clearance_b2_mm'
+        ];
+        const V2_LEGACY_CLEARANCE_PREF = 'braille_prefs_v2_key_clearance_mm';
+
         function isVersion2() {
             return document.querySelector('input[name="embosser_version"]:checked')?.value === '2';
         }
@@ -8020,13 +8050,14 @@
             });
         });
 
-        const v2ClearanceInput = document.getElementById('v2_key_clearance_mm');
-        if (v2ClearanceInput) {
-            v2ClearanceInput.addEventListener('input', () => {
-                persistValue('braille_prefs_v2_key_clearance_mm', v2ClearanceInput.value);
+        V2_KEY_CLEARANCE_IDS.forEach((id) => {
+            const input = document.getElementById(id);
+            if (!input) return;
+            input.addEventListener('input', () => {
+                persistValue('braille_prefs_' + id, input.value);
                 resetToGenerateState();
             });
-        }
+        });
 
         // Live overflow warning for auto mode. Runs the exact same banaAutoWrap
         // simulation generation uses (same capitalization and number-sign
@@ -8376,6 +8407,10 @@
                 'braille_prefs_gear_rollers_enabled',
                 'braille_prefs_seam_channel_enabled',
                 'braille_prefs_embosser_version',
+                'braille_prefs_v2_key_clearance_a1_mm',
+                'braille_prefs_v2_key_clearance_a2_mm',
+                'braille_prefs_v2_key_clearance_b1_mm',
+                'braille_prefs_v2_key_clearance_b2_mm',
                 'braille_prefs_v2_key_clearance_mm'
             ];
             keys.forEach(k => { try { localStorage.removeItem(k); } catch (e) { log.debug('Could not clear saved setting', k, e); } });
@@ -8760,7 +8795,7 @@
                 if (seamChannelReset) seamChannelReset.checked = true;
                 // Embosser version back to 1. The radio sweep above already
                 // did that (Version 1 is defaultChecked) and the input sweep
-                // put the clearance dial back to 0.110, so all that is left is
+                // put the four key clearance dials back to 0.095, so all that is left is
                 // to DROP the snapshot: without this, updateEmbosserVersionUI
                 // would see Version 1 selected, restore the remembered
                 // Version 2-era dials, and undo the reset it was called to
@@ -9110,7 +9145,7 @@
             }
         })();
 
-        // Embosser version and its clearance dial are restored HERE, after the
+        // Embosser version and its key clearance dials are restored HERE, after the
         // Card Thickness preset IIFE above - NOT inside applyPersistedSettings,
         // which runs before it. The preset rewrites cylinder_diameter_mm on
         // every single load, so a Version 2 restore that ran earlier would be
@@ -9118,11 +9153,16 @@
         // size warning about a selection they never changed.
         (function restoreEmbosserVersion() {
             try {
-                const savedClearance = readPersisted('braille_prefs_v2_key_clearance_mm');
-                const clearanceInput = document.getElementById('v2_key_clearance_mm');
-                if (clearanceInput && savedClearance) {
-                    clearanceInput.value = savedClearance;
-                }
+                // A dial saved before 2026-09-25 (one shared value) seeds every
+                // dial that has no saved value of its own.
+                const legacyClearance = readPersisted(V2_LEGACY_CLEARANCE_PREF);
+                V2_KEY_CLEARANCE_IDS.forEach((id) => {
+                    const input = document.getElementById(id);
+                    const saved = readPersisted('braille_prefs_' + id) || legacyClearance;
+                    if (input && saved) {
+                        input.value = saved;
+                    }
+                });
                 // Only the two legal spellings are honoured; anything else in
                 // storage leaves Version 1 checked, which is the markup default.
                 const savedVersion = readPersisted('braille_prefs_embosser_version');
@@ -10336,20 +10376,24 @@
                 settings.seam_channel_enabled = 0;
             }
 
-            // Embosser Version 2 (keyed gear pegs) PROTOTYPE: two flat fields,
-            // and NOTHING is added while Version 1 is selected, so a Version 1
-            // request body stays byte-identical to a pre-prototype one.
-            // The clearance is read from the BOUNDED dial with no fallback
-            // literal: an empty or unparseable value raises here rather than
-            // quietly shipping geometry at a clearance nobody asked for.
+            // Embosser Version 2 (keyed gear pegs): five flat fields - the
+            // version and one key clearance per gear (2026-09-25; the shared
+            // v2_key_clearance_mm is no longer sent) - and NOTHING is added
+            // while Version 1 is selected, so a Version 1 request body stays
+            // byte-identical to a pre-prototype one. Each clearance is read
+            // from its BOUNDED dial with no fallback literal: an empty or
+            // unparseable value raises here rather than quietly shipping
+            // geometry at a clearance nobody asked for.
             if (isVersion2()) {
-                const clearanceInput = document.getElementById('v2_key_clearance_mm');
-                const clearance = parseFloat(clearanceInput?.value);
-                if (!Number.isFinite(clearance)) {
-                    throw new Error('Key clearance (mm) is empty or not a number. Enter a value between 0 and 0.5.');
-                }
                 settings.embosser_version = 2;
-                settings.v2_key_clearance_mm = clearance;
+                V2_KEY_CLEARANCE_IDS.forEach((id) => {
+                    const clearance = parseFloat(document.getElementById(id)?.value);
+                    if (!Number.isFinite(clearance)) {
+                        const gear = id.slice('v2_key_clearance_'.length, -'_mm'.length).toUpperCase();
+                        throw new Error(`Gear ${gear} key clearance (mm) is empty or not a number. Enter a value between 0 and 0.5.`);
+                    }
+                    settings[id] = clearance;
+                });
             }
 
             // Debug: Log the settings being sent

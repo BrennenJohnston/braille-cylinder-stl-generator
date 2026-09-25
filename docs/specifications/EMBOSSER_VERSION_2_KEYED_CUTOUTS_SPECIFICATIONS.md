@@ -257,19 +257,40 @@ Swap either half of that pairing and the wall is 0.55 mm. Pinned by
 
 ## 5. The Clearance
 
-One dial, `version_2.key_clearance_mm` (schema) / `v2_key_clearance_mm` (runtime):
-default **0.110 mm**, range **0.0–0.5 mm** (`V2_KEY_CLEARANCE_DEFAULT_MM`, `_MIN_MM`,
-`_MAX_MM`). It is applied as an **outward** growth of each hole profile — the hole gets
-bigger, the peg does not change.
+**One dial per key since 2026-09-25** (D-K1): `version_2.key_clearance_a1_mm`,
+`_a2_mm`, `_b1_mm`, `_b2_mm` (schema) / `v2_key_clearance_a1_mm` … (runtime), each
+default **0.095 mm**, range **0.0–0.5 mm** (`V2_KEY_CLEARANCE_DEFAULTS_MM`, a dict keyed
+by the §3 profile names and written out one line per key; `_MIN_MM`, `_MAX_MM`;
+`V2_KEY_CLEARANCE_FIELDS` maps each key to its runtime field). Each is applied as an
+**outward** growth of that one hole's profile — the hole gets bigger, the peg does not
+change — so one gear's fit can be tuned without moving the other three.
 
-**It governs the four holes and nothing else.** Two printed rounds bracketed it, both
-on 2026-08-29: at **0.15** all four peg holes were too loose, at **0.075** they were too
-tight, so the value lands between them at **0.110** (D-R3-1). The pegs measure exactly
-nominal (§11), so a hole is its peg plus 2c.
+**The legacy shared field `version_2.key_clearance_mm` / `v2_key_clearance_mm` is still
+honoured** (D-K2): it has no default any more and the web app no longer sends it, but
+`version2.key_clearances()` resolves every key as *its own field → the shared field →
+its default*, so a request saved before the four dials builds exactly the geometry it
+always did. `CardSettings` runs that resolution once at construction, so every reader
+downstream sees four numbers; `app/validation.py` range-checks all five fields when
+present and names the one at fault.
 
-Not the exact midpoint 0.1125: the dial's step is 0.005, and a default that is not a
-whole number of steps above the minimum renders the input `:invalid` and disables
-Generate with no message anyone can see. 0.110 / 0.005 = 22.
+**They govern the four holes and nothing else.** Two printed rounds bracketed the
+shared dial on 2026-08-29 — at **0.15** all four peg holes were too loose, at **0.075**
+too tight — and it sat at **0.110** (D-R3-1) until Brennen's 2026-09-24 round
+(cylinders on Bambu Studio's 0.12 mm Fine Detail preset, gears on 0.2 mm Strength)
+found the larger pegs a bit loose there; the thinner layers put less material into
+each perimeter, so the hole prints closer to its modelled size. **0.095** was confirmed
+right for **A2 and B2** in print on 2026-09-25 (D-K3); A1 and B1 still felt a touch
+loose at it, which is why each key now has its own dial. The pegs measure exactly
+nominal (§11), so a hole is its peg plus 2c. What a hand feels on A1 and B1 is largely
+*rotational* and limited by the fixed anti-rotation features (0.748° / 0.664° at the
+tooth tips), not by the key: the key only becomes A1's rotational limit below about
+0.084 mm and B1's below about 0.087, so the next A1/B1 test value is **0.085** (the
+2026-09-25 recommendation), the smallest step that puts the key in charge.
+
+Not an exact midpoint: the dial's step is 0.005, and a default that is not a whole
+number of steps above the minimum renders the input `:invalid` and disables Generate
+with no message anyone can see. 0.095 / 0.005 = 19 — pinned per key by
+`test_every_key_default_is_a_whole_number_of_dial_steps`.
 
 **The nub does NOT follow the dial** (D-V11, revised 2026-08-29). It is inset by
 `V2_NUB_CLEARANCE_MM` = **0.30 mm**, which is **derived**, never retyped, as
@@ -287,7 +308,7 @@ Raise `V2_NUB_CLEARANCE_MM` only alongside a matching gear A1. Note that a miter
 moves every *face* in by `c`, which on this triangle costs the base half-width
 `√3 · c` = 1.732 c — the inradius is what drops by exactly `c`.
 
-Raising the clearance eats into the error-proofing margins of §11: 0.890 mm at the
+Raising a clearance eats into the error-proofing margins of §11: 0.905 mm at the
 default, 0.500 mm at the maximum.
 
 The dial is bounded **at the source** (`min="0" max="0.5" step="0.005"` on the input),
@@ -411,7 +432,7 @@ class="legend-heading">`), and the "(prototype)" tag and the prototype notice ar
 | ~~Prototype notice~~ | ~~`v2-prototype-note`~~ | S-V4 retired 2026-09-20 (D-7) |
 | Size warning | `v2-size-warning` / `v2-size-message` | S-V5, the server's sentence verbatim |
 | Clearance fieldset | `v2-keyed-cutouts-selection` | Expert Mode, hidden in Version 1 |
-| Clearance dial | `v2_key_clearance_mm` | S-V9 label and help |
+| Clearance dials (four, 2026-09-25) | `v2_key_clearance_a1_mm`, `_a2_mm`, `_b1_mm`, `_b2_mm` | labels S-K2..S-K5 *"Gear A1 (top of Cylinder A) key clearance (mm):"* etc. (DRAFT); one shared help note `v2-key-clearance-note`, S-K1 (DRAFT) *"Extra room around each gear's peg, per side. 0.095 mm suits most printers: raise a value if that peg binds, lower it if loose."* — S-V9 retired with the single dial |
 | Hidden rows | `cylinder-cutout-radius-row`, `cylinder-cutout-sides-row`, `cylinder-seam-offset-row` | inert in Version 2 |
 
 **Selecting Version 2** snapshots five cylinder dials, applies `V2_PRESET_OVERRIDES`
@@ -475,22 +496,28 @@ which π·d − 91 falls under 4.0. See RECESS_INDICATOR_SPECIFICATIONS.md v3.6.
 
 ### 8.2 Request, filenames, persistence
 
-Only when Version 2 is on does `settings` gain `embosser_version: 2` and
-`v2_key_clearance_mm`. The clearance is read from the bounded dial with **no fallback
-literal** — an empty or unparseable value raises rather than quietly shipping geometry
-at a clearance nobody asked for.
+Only when Version 2 is on does `settings` gain `embosser_version: 2` and the four
+per-key clearances `v2_key_clearance_a1_mm`, `_a2_mm`, `_b1_mm`, `_b2_mm` (the shared
+`v2_key_clearance_mm` is no longer sent; §5). Each clearance is read from its bounded
+dial with **no fallback literal** — an empty or unparseable value raises, naming the
+gear, rather than quietly shipping geometry at a clearance nobody asked for. The
+`keyed_cutouts` block carries `clearances_mm` (the two keys this plate cuts) and each
+half its `key` and `clearance_mm`.
 
 Filenames insert a `V2_` segment the way `Geared_` is inserted (D-V12):
 `Embossing_Cylinder_V2_{preset}_{name}.stl`, `Counter_Cylinder_V2_…`,
 `Cylinder_Pair_V2_…`, and `Cylinder_A_V2_…` / `Cylinder_B_V2_…` with double-sided on.
 Version 1 names are byte-identical to today's.
 
-Persistence stores `braille_prefs_embosser_version` (`'1'` or `'2'` only) and
-`braille_prefs_v2_key_clearance_mm`. Both are restored **after** the Card Thickness
-preset IIFE, not inside `applyPersistedSettings()`, because the preset rewrites
+Persistence stores `braille_prefs_embosser_version` (`'1'` or `'2'` only) and one
+`braille_prefs_v2_key_clearance_{a1,a2,b1,b2}_mm` per dial; a
+`braille_prefs_v2_key_clearance_mm` saved before the four dials seeds every dial that
+has no saved value of its own. All are restored **after** the Card Thickness preset
+IIFE, not inside `applyPersistedSettings()`, because the preset rewrites
 `cylinder_diameter_mm` on every load and an earlier restore would be silently
-overwritten. Reset to defaults returns Version 1 and 0.110 mm, and **drops the
-snapshot** — otherwise the restore would undo the reset it was called to finish.
+overwritten. Reset to defaults returns Version 1 and 0.095 mm on every dial, clears all
+five keys, and **drops the snapshot** — otherwise the restore would undo the reset it
+was called to finish.
 
 D-V10 said Version 2 reveals Generate Both Cylinders and reuses the signed Cylinder A /
 Cylinder B labels, because A and B are a matched, differently keyed pair and the pair is
@@ -693,6 +720,7 @@ mode; this section records only what changes on THIS document's side.
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-09-25 | 1.15 | **One key clearance dial per gear, and the default moves to 0.095 (D-K1..D-K3).** §5 rewritten: four fields `version_2.key_clearance_{a1,a2,b1,b2}_mm`, each default 0.095 (confirmed in print for A2 and B2 on 2026-09-25 at cylinders 0.12 Fine Detail / gears 0.2 Strength), the legacy shared `key_clearance_mm` honoured as a stand-in with no default, resolution own field → shared → default in `version2.key_clearances()`, the next A1/B1 test value 0.085 and why. §8.1: four dials with DRAFT labels S-K2..S-K5 and the DRAFT shared note S-K1 (S-V9 retired). §8.2: five keys on the wire, `clearances_mm` and per-half `key`/`clearance_mm` in the block, per-dial persistence with the legacy seed. The Version 2 golden pair was regenerated at 0.095 (holes 0.015 mm tighter per side); the fused pair's STLs are byte-identical and only their settings record changed. OpenSCAD parity: four `key_clearance_{a1,a2,b1,b2}_mm` dials, `key_clearance_mm` retired (v2.11.0). |
 | 2026-09-24 | 1.14 | **The v9 update to the fused roller, and the tactile default (programme 2026-09-24; decisions D-1, D-2, D-4, D-6).** §13 gains the fused-only constants (chamfer 0.65, vent r 1.0, the measured `V2_GEAR_SOCKET` table, the socket cone) — owned in full by GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md §11.8 — and the Version 2 tactile default. The keyed Version 2 cylinder is unchanged (its golden pair regenerated byte-identical). |
 | 2026-09-21 | 1.13 | **Pair mode is universal (programme sub-plan E).** §8.2's D-V10 paragraph: no Generate Both button to reveal — every run builds both cylinders unless one is chosen under Cylinders to Generate. Nothing else changed. |
 | 2026-09-21 | 1.12 | **Fixed gears on a Version 2 cylinder — fused mode (programme sub-plan B, phases B1-B7; decision D-6; D-V6 retired).** New §13: no keyed cutouts, the notch fill, the per-version size gate with S-G1 (signed 2026-09-21), the `_Geared_V2_` names and S-G2 (signed 2026-09-21), and where it is pinned. §1's gear rule flipped; §6 gains the fused `gears` block; §7 item 2 rewritten; §8's temporary-guard paragraph replaced (S-M13 retired; the version announcement now composes the gear notes and is deferred); §12 points both missing OpenSCAD features at the follow-on plan. The "(PROTOTYPE)" left in the title since 2026-09-20 removed (D-7). |

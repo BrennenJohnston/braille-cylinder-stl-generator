@@ -203,11 +203,23 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      (2026-09-21) with its own gears switch (tab [Gears] since v2.9.0) for the fused
      Version 2 roller (D-V6 retired); NOT vendored into this repo. The V1
      .scad files stay 52 and untouched.
-   - Clearance 0.110 default, range 0.0-0.5, input step 0.005. Applied OUTWARD
-     to the four holes ONLY. TWO printed rounds bracketed it on 2026-08-29:
-     too loose at 0.15, too tight at 0.075. NOT the midpoint 0.1125 - an
-     off-step default renders the input :invalid and kills Generate silently;
-     0.110 / 0.005 = 22. Wrong-pair margin is 1.000 - c, so 0.890 here.
+   - Clearance: ONE DIAL PER KEY since 2026-09-25 (D-K1) -
+     v2_key_clearance_{a1,a2,b1,b2}_mm (schema version_2.key_clearance_*),
+     each default 0.095, range 0.0-0.5, input step 0.005, owned by
+     version2.V2_KEY_CLEARANCE_DEFAULTS_MM (a dict, one line per key: the
+     next print round moves A1 and B1 without A2 and B2). Applied OUTWARD to
+     that key's hole ONLY. The legacy shared v2_key_clearance_mm is still
+     HONOURED (own field > shared field > the key's default, resolved by
+     version2.key_clearances() inside CardSettings) but has no default and
+     the web app no longer sends it; the OpenSCAD dial key_clearance_mm is
+     RETIRED for four (v2.11.0). History: 0.15 -> 0.075 -> 0.110
+     (2026-08-29, two rounds at 0.2 mm layers) -> 0.095 (2026-09-25, Brennen's
+     round at cylinders 0.12 Fine Detail / gears 0.2 Strength confirmed it
+     for A2 and B2; A1 and B1 still a touch loose - next test 0.085 on those
+     two, from the rotational-play analysis in
+     Research/.../New Developement_2026_09_24/05_KEY_FIT_TOLERANCE_ANALYSIS.md).
+     An off-step default renders the input :invalid and kills Generate
+     silently; 0.095 / 0.005 = 19. Wrong-pair margin is 1.000 - c, so 0.905.
    - The NUB DOES NOT FOLLOW THE DIAL, because gear A1's notch is already cut.
      Under the old shared-dial rule, tightening the holes GREW the nub into
      that notch. Never re-couple them. V2_NUB_CLEARANCE_MM is 0.30 since

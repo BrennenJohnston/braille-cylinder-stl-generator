@@ -1079,7 +1079,11 @@ V2_FIXTURE_SETTINGS = {
     },
     'grid_columns': 3,
     'embosser_version': 2,
-    'v2_key_clearance_mm': version2.V2_KEY_CLEARANCE_DEFAULT_MM,
+    # One field per key since 2026-09-25, each at that key's default.
+    **{
+        version2.V2_KEY_CLEARANCE_FIELDS[name]: clearance
+        for name, clearance in version2.V2_KEY_CLEARANCE_DEFAULTS_MM.items()
+    },
 }
 V2_FIXTURE_CYLINDER_PARAMS = {
     **DS_FIXTURE_CYLINDER_PARAMS,

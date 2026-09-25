@@ -288,10 +288,18 @@ class CardSettings:
             # hardware, which leaves every existing code path exactly as it is.
             # Cylinders only, and integrated gears are rejected alongside it.
             'embosser_version': 1,
-            # Version 2 print clearance per side. Read from the module that owns
-            # every Version 2 number rather than retyped, so the schema, the
-            # validator, the spec and the UI can never disagree about it.
-            'v2_key_clearance_mm': version2.V2_KEY_CLEARANCE_DEFAULT_MM,
+            # Version 2 print clearance per side, ONE PER KEY since 2026-09-25
+            # (v2_key_clearance_{a1,a2,b1,b2}_mm). Read from the module that
+            # owns every Version 2 number rather than retyped, so the schema,
+            # the validator, the spec and the UI can never disagree about it.
+            # The defaults here are placeholders: the loop below stores None
+            # for an absent field and the resolution (own field, else the
+            # legacy shared v2_key_clearance_mm, else the key's default) runs
+            # in version2.key_clearances() right after it, so a saved request
+            # that still carries only the shared field builds what it always
+            # did. See app/geometry/version2.py.
+            **{field: None for field in version2.V2_KEY_CLEARANCE_FIELDS.values()},
+            version2.V2_KEY_CLEARANCE_SHARED_FIELD: None,
         }
 
         # Set attributes from kwargs or defaults, while being tolerant of "empty" inputs
@@ -307,6 +315,14 @@ class CardSettings:
                 val = float(raw_val)
 
             setattr(self, key, val)
+
+        # Version 2 key clearances: resolve the four per-key values now (own
+        # field, else the legacy shared field, else the key's default), so
+        # every reader downstream sees four numbers and never the None a
+        # missing field left above. The shared field keeps whatever the
+        # request sent (None when it sent nothing) for anyone who logs it.
+        for name, value in version2.key_clearances(lambda field: getattr(self, field, None)).items():
+            setattr(self, version2.V2_KEY_CLEARANCE_FIELDS[name], value)
 
         # Row indicator style. Kept out of the numeric loop above because it is a
         # string enum, not a measurement. Anything unrecognized falls back to the

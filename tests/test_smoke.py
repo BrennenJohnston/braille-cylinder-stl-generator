@@ -804,10 +804,19 @@ def test_schema_and_models_agree_on_embosser_version_fields():
     assert properties['embosser_version']['enum'] == [1, 2]
     assert properties['embosser_version']['default'] == settings.embosser_version == 1
 
-    clearance = properties['version_2']['properties']['key_clearance_mm']
-    assert clearance['default'] == settings.v2_key_clearance_mm == version2.V2_KEY_CLEARANCE_DEFAULT_MM
-    assert clearance['minimum'] == version2.V2_KEY_CLEARANCE_MIN_MM
-    assert clearance['maximum'] == version2.V2_KEY_CLEARANCE_MAX_MM
+    fields = properties['version_2']['properties']
+    for name, flat in version2.V2_KEY_CLEARANCE_FIELDS.items():
+        clearance = fields[flat.removeprefix('v2_')]
+        assert clearance['default'] == getattr(settings, flat) == version2.V2_KEY_CLEARANCE_DEFAULTS_MM[name]
+        assert clearance['minimum'] == version2.V2_KEY_CLEARANCE_MIN_MM
+        assert clearance['maximum'] == version2.V2_KEY_CLEARANCE_MAX_MM
+    # The legacy shared field is still declared (old saved requests carry it)
+    # but has no default: an absent field means each key's own default.
+    legacy = fields['key_clearance_mm']
+    assert 'default' not in legacy
+    assert legacy['minimum'] == version2.V2_KEY_CLEARANCE_MIN_MM
+    assert legacy['maximum'] == version2.V2_KEY_CLEARANCE_MAX_MM
+    assert settings.v2_key_clearance_mm is None
 
 
 def test_schema_and_models_agree_on_seam_channel():
@@ -1047,15 +1056,20 @@ def test_ui_version2_numbers_match_the_geometry_module():
         'seam_offset_deg': 0.0,
     }
 
-    dial = re.search(r'<input type="number" id="v2_key_clearance_mm"[^>]*>', html)
-    assert dial, 'the v2_key_clearance_mm dial was not found in public/index.html'
-    attrs = dict(re.findall(r'(value|step|min|max)="([^"]+)"', dial.group(0)))
-    assert float(attrs['value']) == version2.V2_KEY_CLEARANCE_DEFAULT_MM
-    assert float(attrs['min']) == version2.V2_KEY_CLEARANCE_MIN_MM
-    assert float(attrs['max']) == version2.V2_KEY_CLEARANCE_MAX_MM
-    # The default must be a whole number of steps above the minimum.
-    steps = (float(attrs['value']) - float(attrs['min'])) / float(attrs['step'])
-    assert abs(steps - round(steps)) < 1e-9, f'{attrs["value"]} is not a whole number of {attrs["step"]} steps'
+    # Four dials since 2026-09-25, one per key; the shared dial is gone.
+    assert 'id="v2_key_clearance_mm"' not in html
+    for name, flat in version2.V2_KEY_CLEARANCE_FIELDS.items():
+        dial = re.search(rf'<input type="number" id="{flat}"[^>]*>', html)
+        assert dial, f'the {flat} dial was not found in public/index.html'
+        attrs = dict(re.findall(r'(value|step|min|max)="([^"]+)"', dial.group(0)))
+        assert float(attrs['value']) == version2.V2_KEY_CLEARANCE_DEFAULTS_MM[name]
+        assert float(attrs['min']) == version2.V2_KEY_CLEARANCE_MIN_MM
+        assert float(attrs['max']) == version2.V2_KEY_CLEARANCE_MAX_MM
+        # The default must be a whole number of steps above the minimum.
+        steps = (float(attrs['value']) - float(attrs['min'])) / float(attrs['step'])
+        assert abs(steps - round(steps)) < 1e-9, (
+            f'{flat}: {attrs["value"]} is not a whole number of {attrs["step"]} steps'
+        )
 
     # The live UI constants must also agree with the module, since the size
     # warning is compared against them before any request is sent.

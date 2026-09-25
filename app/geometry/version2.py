@@ -47,6 +47,7 @@ test pass.
 from __future__ import annotations
 
 import math
+from collections.abc import Callable, Mapping
 
 from app.geometry.gears import GEAR_BODY_THICKNESS_MM, WELD_RING_R_IN_MM, _format_mm
 
@@ -84,25 +85,51 @@ V2_BARREL_HEIGHT_MM = 54.0
 # 3.8e-6 mm, so 0.001 is far below any dimension a user can type.
 V2_SIZE_TOLERANCE_MM = 0.001
 
-# Print clearance per side (D-V3), an Expert-Mode dial. Every KEY HOLE grows
-# by this: how loose the four keys are. The error-proofing margin shrinks with
-# it, which is why the family is judged at the dial's maximum as well as its
-# default.
+# Print clearance per side (D-V3), ONE Expert-Mode dial PER KEY since
+# 2026-09-25. Each KEY HOLE grows by its own value: how loose that one gear
+# is, tuned without moving the other three. The error-proofing margin shrinks
+# with it, which is why the family is judged at the dial's maximum as well as
+# its default.
 #
-# 0.110 since 2026-08-29, after two printed rounds bracketed it: all four peg
-# holes were too loose at 0.15 and too tight at 0.075, so the value lands
-# between them (D-R3-1). 0.110 and not the exact midpoint 0.1125, because the
-# dial's step is 0.005 and a default that is not a whole number of steps above
-# the minimum renders the input :invalid and disables Generate with no message
-# anyone can see. 0.110 / 0.005 = 22.
+# 0.095 on every key since 2026-09-25. Two printed rounds on 2026-08-29
+# bracketed the shared dial - all four peg holes too loose at 0.15 and too
+# tight at 0.075 - and it sat at 0.110 (D-R3-1) until Brennen's 2026-09-24
+# round (cylinders on Bambu Studio's 0.12 mm Fine Detail preset, gears on the
+# 0.2 mm Strength preset) found the larger pegs a bit loose there. 0.095 was
+# confirmed right for A2 and B2 in print on 2026-09-25; A1 and B1 still felt
+# a touch loose at it, which is why each key now has its own dial. The dial's
+# step is 0.005 and a default that is not a whole number of steps above the
+# minimum renders the input :invalid and disables Generate with no message
+# anyone can see. 0.095 / 0.005 = 19.
 #
 # His gears measure exactly nominal - 14x14, 18x10, 16x12 and 20x8, corner
 # radius 0.5 - so a hole is its peg plus 2c and the wrong-pair margin is
-# 1.000 - c: 0.890 mm here, against 0.925 at 0.075 and 0.850 at 0.15
+# 1.000 - c: 0.905 mm here, against 0.925 at 0.075 and 0.850 at 0.15
 # (tests/test_version2_profiles.py::SMALLEST_WRONG_PAIR_PROTRUSION).
-V2_KEY_CLEARANCE_DEFAULT_MM = 0.110
+#
+# The dict is keyed by the V2_KEY_PROFILES names and written out one line per
+# key on purpose: the next print round moves A1 and B1 without A2 and B2.
+V2_KEY_CLEARANCE_DEFAULTS_MM = {
+    'a1_square_14': 0.095,
+    'a2_rect_18x10': 0.095,
+    'b1_rect_16x12': 0.095,
+    'b2_rect_20x8': 0.095,
+}
 V2_KEY_CLEARANCE_MIN_MM = 0.0
 V2_KEY_CLEARANCE_MAX_MM = 0.5
+
+# The flat runtime field that carries each key's clearance (settings.schema.json
+# version_2.key_clearance_{a1,a2,b1,b2}_mm), and the shared field every Version
+# 2 request carried before 2026-09-25. The shared field is LEGACY but still
+# honoured: it stands in for any per-key field a request leaves out, so a saved
+# request from before the four dials builds exactly what it always did.
+V2_KEY_CLEARANCE_FIELDS = {
+    'a1_square_14': 'v2_key_clearance_a1_mm',
+    'a2_rect_18x10': 'v2_key_clearance_a2_mm',
+    'b1_rect_16x12': 'v2_key_clearance_b1_mm',
+    'b2_rect_20x8': 'v2_key_clearance_b2_mm',
+}
+V2_KEY_CLEARANCE_SHARED_FIELD = 'v2_key_clearance_mm'
 
 # Clearance per face on EVERY anti-rotation feature (D-R3-2): between a nub and
 # its gear notch, and between a socket and its gear pin. A fixed constant with
@@ -673,6 +700,26 @@ def validate_clearance(clearance: float) -> float:
     return clearance
 
 
+def key_clearances(lookup: Callable[[str], object]) -> dict[str, float]:
+    """
+    One clearance per key from a request's settings: the key's own field if
+    the request carries it, else the legacy shared field, else the key's
+    default. `lookup(field)` returns the raw value or None for an absent field
+    (the CardSettings getattr, the validator's dict.get). Each value is
+    range-checked here, so a caller never has to remember to.
+    """
+    shared = lookup(V2_KEY_CLEARANCE_SHARED_FIELD)
+    resolved = {}
+    for name, field in V2_KEY_CLEARANCE_FIELDS.items():
+        raw = lookup(field)
+        if raw is None or raw == '':
+            raw = shared
+        if raw is None or raw == '':
+            raw = V2_KEY_CLEARANCE_DEFAULTS_MM[name]
+        resolved[name] = validate_clearance(float(raw))
+    return resolved
+
+
 def _wire_points(points: list[tuple[float, float]]) -> list[dict]:
     """Polygon points in the shape the worker reads, rounded to micron-cubed."""
     return [{'x': round(x, 6), 'y': round(y, 6)} for x, y in points]
@@ -803,7 +850,7 @@ def socket_block(plate_type: str, height: float) -> dict:
     }
 
 
-def keyed_cutout_block(plate_type: str, height: float, clearance: float) -> dict:
+def keyed_cutout_block(plate_type: str, height: float, clearances: Mapping[str, float] | float) -> dict:
     """
     Everything the worker needs to cut one cylinder's keyed through-hole.
 
@@ -817,29 +864,47 @@ def keyed_cutout_block(plate_type: str, height: float, clearance: float) -> dict
     anti-rotation feature now, so that invariant is retired. The two plates'
     features are still different shapes, and the plate selector is what picks
     them - guessing a side would silently print the wrong pair.
+
+    `clearances` maps every V2_KEY_PROFILES name to its own print clearance
+    (see key_clearances); each half and its countersink use the clearance of
+    the key it cuts, so one gear's fit moves without the other three. One
+    number means that clearance on every key - what the legacy shared dial
+    meant.
     """
     if plate_type not in KEY_PROFILES_BY_PLATE:
         raise ValueError(f'unknown plate type {plate_type!r}; known: {sorted(KEY_PROFILES_BY_PLATE)}')
     if height <= 0:
         raise ValueError(f'Version 2 cylinder height must be positive, got {height}')
-    validate_clearance(clearance)
+    if not isinstance(clearances, Mapping):
+        clearances = dict.fromkeys(V2_KEY_PROFILES, clearances)
+    missing = sorted(set(V2_KEY_PROFILES) - set(clearances))
+    if missing:
+        raise ValueError(f'no clearance for key(s) {missing}; every key needs its own')
+    for name in V2_KEY_PROFILES:
+        validate_clearance(clearances[name])
 
     bottom_name, top_name = KEY_PROFILES_BY_PLATE[plate_type]
+    bottom_clearance = clearances[bottom_name]
+    top_clearance = clearances[top_name]
     half_height = height / 2.0
-    bottom_profile = key_profile(bottom_name, clearance)
-    top_profile = key_profile(top_name, clearance)
+    bottom_profile = key_profile(bottom_name, bottom_clearance)
+    top_profile = key_profile(top_name, top_clearance)
 
     block = {
-        'clearance_mm': clearance,
+        'clearances_mm': {bottom_name: bottom_clearance, top_name: top_clearance},
         'halves': [
             {
                 'end': 'bottom',
+                'key': bottom_name,
+                'clearance_mm': bottom_clearance,
                 'profile': _wire_points(bottom_profile),
                 'z_from': -half_height - V2_OVERLAP_MM,
                 'z_to': V2_OVERLAP_MM,
             },
             {
                 'end': 'top',
+                'key': top_name,
+                'clearance_mm': top_clearance,
                 'profile': _wire_points(top_profile),
                 'z_from': -V2_OVERLAP_MM,
                 'z_to': half_height + V2_OVERLAP_MM,
@@ -849,14 +914,16 @@ def keyed_cutout_block(plate_type: str, height: float, clearance: float) -> dict
             {
                 'end': 'bottom',
                 'kind': 'hull',
-                'face_profile': _wire_points(grown_key_outline(bottom_name, clearance + V2_COUNTERSINK_OFFSET_MM)),
+                'face_profile': _wire_points(
+                    grown_key_outline(bottom_name, bottom_clearance + V2_COUNTERSINK_OFFSET_MM)
+                ),
                 'inner_profile': _wire_points(bottom_profile),
                 'depth': V2_COUNTERSINK_DEPTH_MM,
             },
             {
                 'end': 'top',
                 'kind': 'hull',
-                'face_profile': _wire_points(grown_key_outline(top_name, clearance + V2_COUNTERSINK_OFFSET_MM)),
+                'face_profile': _wire_points(grown_key_outline(top_name, top_clearance + V2_COUNTERSINK_OFFSET_MM)),
                 'inner_profile': _wire_points(top_profile),
                 'depth': V2_COUNTERSINK_DEPTH_MM,
             },

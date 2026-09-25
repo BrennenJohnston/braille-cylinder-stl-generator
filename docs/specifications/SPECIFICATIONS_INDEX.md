@@ -254,7 +254,7 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 - `app/geometry/version2.py` - the one place every Version 2 number lives
 - `validate_embosser_version_settings()` in `app/validation.py`
 - `keyed_cutouts` in `app/geometry_spec.py`, cut by `cutKeyedCutoutsManifold()` in the Manifold worker
-- The `#embosser-version-selection` header selector and the `#v2_key_clearance_mm` dial
+- The `#embosser-version-selection` header selector and the four `#v2_key_clearance_{a1,a2,b1,b2}_mm` dials
 
 ---
 
