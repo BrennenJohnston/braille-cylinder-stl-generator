@@ -1267,3 +1267,23 @@ def test_payload_fallback_literals_match_the_shipped_defaults():
             f'Emptying the {field} box would send {match.group(1)}, but the shipped default is '
             f'{want} ({source}). A fallback literal must never be a second, drifting copy of a default.'
         )
+
+
+def test_ui_thickness_presets_never_set_the_row_indicator_style():
+    """
+    Version 2 defaults the Row Indicator Style to the tactile seam arrow on the
+    user's version change (decision D-4, 2026-09-24), and a card-stock preset
+    chosen afterwards must not undo it. The presets are the one thing that
+    rewrites dials wholesale on every load, so neither THICKNESS_PRESETS
+    object may name the style - "all presets on the Version 2 tree" holds by
+    construction, and this pins it.
+    """
+    import re
+    from pathlib import Path
+
+    html = (Path(__file__).resolve().parents[1] / 'public' / 'index.html').read_text(encoding='utf-8')
+    match = re.search(r'const THICKNESS_PRESETS = \{(.*?)\n {8}\};', html, re.DOTALL)
+    assert match, 'THICKNESS_PRESETS block not found in public/index.html'
+    block = match.group(1)
+    assert "'0.4': {" in block and "'0.3': {" in block
+    assert 'indicator_mode' not in block

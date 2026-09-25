@@ -7822,6 +7822,14 @@
             'cylinder_polygonal_cutout_sides'
         ];
         let version1DialSnapshot = null;
+        // The Row Indicator Style the user had before Version 2 moved it to
+        // the tactile seam arrow (2026-09-24, decision D-4): Version 2
+        // DEFAULTS to tactile - a default, not a lock. Taken on the user's
+        // version change only, never on the silent load restore (which must
+        // not overrule a persisted choice) and never by a card-stock preset;
+        // given back on the way to Version 1 and dropped by Reset, like the
+        // dial snapshot above.
+        let version1IndicatorMode = null;
 
         function isVersion2() {
             return document.querySelector('input[name="embosser_version"]:checked')?.value === '2';
@@ -7835,6 +7843,41 @@
             input.value = String(value);
             persistValue(`braille_prefs_${inputId}`, String(value));
         }
+
+        // The tactile seam arrow is the Version 2 default (D-4, 2026-09-24).
+        // Called from the version radios' change listener ONLY. Entering
+        // Version 2 remembers the style the user had and, if it was visual
+        // (and not held tactile by the double-sided lock), checks the tactile
+        // radio and dispatches its change - so persistence, the cell dial,
+        // the tactile dials and the fit warnings follow exactly as they do
+        // for a click, the mechanism updateDoubleSidedUI uses. Leaving
+        // Version 2 gives the remembered style back. Returns true when the
+        // style just moved, so the announcement can say so.
+        function applyVersion2IndicatorDefault() {
+            const current = document.querySelector('input[name="indicator_mode"]:checked')?.value || 'visual';
+            if (isVersion2()) {
+                if (version1IndicatorMode === null) version1IndicatorMode = current;
+                if (current !== 'visual' || isDoubleSidedOn()) return false;
+                const tactileRadio = document.querySelector('input[name="indicator_mode"][value="tactile"]');
+                if (!tactileRadio) return false;
+                tactileRadio.checked = true;
+                tactileRadio.dispatchEvent(new Event('change', { bubbles: true }));
+                return true;
+            }
+            if (version1IndicatorMode === null) return false;
+            const remembered = version1IndicatorMode;
+            version1IndicatorMode = null;
+            const radio = document.querySelector(`input[name="indicator_mode"][value="${remembered}"]`);
+            if (radio && !radio.checked && !radio.disabled && !isDoubleSidedOn()) {
+                radio.checked = true;
+                radio.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            return false;
+        }
+
+        /* S-V16, DRAFT 2026-09-24 - awaiting Brennen's sign-off. The clause the
+           version announcement gains when the style just moved to tactile. */
+        const S_V16_STYLE_MOVED = 'Row Indicator Style set to the tactile seam arrow, the Version 2 default.';
 
         /* S-V10, signed off by Brennen (2026-08-28); reword only with his sign-off. */
         function embosserVersionAnnouncement() {
@@ -7933,6 +7976,9 @@
 
         document.querySelectorAll('input[name="embosser_version"]').forEach(radio => {
             radio.addEventListener('change', () => {
+                // The style first, so the cell-count recommendation the version
+                // refresh makes below already sees the tactile layout (D-4).
+                const styleMoved = applyVersion2IndicatorDefault();
                 updateEmbosserVersionUI();
                 persistValue('braille_prefs_embosser_version', isVersion2() ? '2' : '1');
                 resetToGenerateState();
@@ -7945,7 +7991,8 @@
                 // here would be overwritten by the bare note. The version
                 // sentence leads and the notes the refresh raised ride with it.
                 const gearNotes = updateGearRollersUI();
-                const message = [embosserVersionAnnouncement(), gearNotes].filter(Boolean).join(' ');
+                const styleNote = styleMoved ? S_V16_STYLE_MOVED : '';
+                const message = [embosserVersionAnnouncement(), styleNote, gearNotes].filter(Boolean).join(' ');
                 setTimeout(() => announceStatus('embosser-version', message), 0);
             });
         });
@@ -8696,6 +8743,7 @@
                 // Version 2-era dials, and undo the reset it was called to
                 // finish.
                 version1DialSnapshot = null;
+                version1IndicatorMode = null;
                 try { updateEmbosserVersionUI(); } catch (e) { log.error('Embosser version UI failed to refresh after reset to defaults:', e); }
                 try { updateDoubleSidedUI(); } catch (e) { log.error('Double-sided UI failed to refresh after reset to defaults:', e); }
                 // The radio sweep puts both placement toggles back to Auto; the
