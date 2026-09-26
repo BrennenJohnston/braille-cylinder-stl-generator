@@ -120,14 +120,20 @@ async function downloadName(page: Page, selector = '#download-stl-btn'): Promise
  * edit would.
  */
 // One key clearance dial per gear since 2026-09-25 (the ids are the request
-// fields); every dial ships at the same default until a print round moves one.
+// fields), each at its own printed-round default (D-K4: top gears A1/B1
+// 0.075, bottom gears A2/B2 0.085).
 const V2_KEY_CLEARANCE_IDS = [
   'v2_key_clearance_a1_mm',
   'v2_key_clearance_a2_mm',
   'v2_key_clearance_b1_mm',
   'v2_key_clearance_b2_mm',
 ];
-const V2_KEY_CLEARANCE_DEFAULT = '0.095';
+const V2_KEY_CLEARANCE_DEFAULTS: Record<string, string> = {
+  v2_key_clearance_a1_mm: '0.075',
+  v2_key_clearance_a2_mm: '0.085',
+  v2_key_clearance_b1_mm: '0.075',
+  v2_key_clearance_b2_mm: '0.085',
+};
 
 async function setDial(page: Page, id: string, value: string) {
   await page.evaluate(([dialId, dialValue]) => {
@@ -247,7 +253,7 @@ test.describe('Embosser Version 2', () => {
     expect(await page.evaluate(() => localStorage.getItem('braille_prefs_indicator_mode'))).toBe('tactile');
     await expect(page.locator('#v2-keyed-cutouts-selection')).toBeVisible();
     for (const id of V2_KEY_CLEARANCE_IDS) {
-      await expect(page.locator(`#${id}`)).toHaveValue(V2_KEY_CLEARANCE_DEFAULT);
+      await expect(page.locator(`#${id}`)).toHaveValue(V2_KEY_CLEARANCE_DEFAULTS[id]);
     }
 
     // The gear choice stays visible - it is a menu item, not a beta toggle to
@@ -423,7 +429,7 @@ test.describe('Embosser Version 2', () => {
 
       // And the shipped default must be a whole number of steps, or the dial
       // would be :invalid on load and kill Generate silently.
-      await setDial(page, id, V2_KEY_CLEARANCE_DEFAULT);
+      await setDial(page, id, V2_KEY_CLEARANCE_DEFAULTS[id]);
       expect(await dial.evaluate((el: HTMLInputElement) => el.checkValidity())).toBe(true);
     }
   });
@@ -464,7 +470,7 @@ test.describe('Embosser Version 2', () => {
     await selectVersion2(page);
     // One dial moved: only ITS field may carry the new number.
     await openExpertDimensions(page);
-    await setDial(page, 'v2_key_clearance_a1_mm', '0.085');
+    await setDial(page, 'v2_key_clearance_a1_mm', '0.065');
     await generate(page, state, 2);
     await page.locator('#download-stl-btn').waitFor({ state: 'visible', timeout: 240_000 });
 
@@ -476,10 +482,10 @@ test.describe('Embosser Version 2', () => {
     expect(added.sort()).toEqual(['embosser_version', ...V2_KEY_CLEARANCE_IDS].sort());
     expect(removed).toEqual([]);
     expect(on.embosser_version).toBe(2);
-    expect(on.v2_key_clearance_a1_mm).toBe(0.085);
-    expect(on.v2_key_clearance_a2_mm).toBe(0.095);
-    expect(on.v2_key_clearance_b1_mm).toBe(0.095);
-    expect(on.v2_key_clearance_b2_mm).toBe(0.095);
+    expect(on.v2_key_clearance_a1_mm).toBe(0.065);
+    expect(on.v2_key_clearance_a2_mm).toBe(0.085);
+    expect(on.v2_key_clearance_b1_mm).toBe(0.075);
+    expect(on.v2_key_clearance_b2_mm).toBe(0.085);
     // The legacy shared field is never sent by this build.
     expect('v2_key_clearance_mm' in on).toBe(false);
     // Same key set, one changed value: Version 2 moved the style to tactile
@@ -560,7 +566,7 @@ test.describe('Embosser Version 2', () => {
     await expect(page.locator('#embosser_version_1')).toBeChecked();
     await expect(page.locator('input[name="indicator_mode"][value="visual"]')).toBeChecked();
     for (const id of V2_KEY_CLEARANCE_IDS) {
-      await expect(page.locator(`#${id}`)).toHaveValue(V2_KEY_CLEARANCE_DEFAULT);
+      await expect(page.locator(`#${id}`)).toHaveValue(V2_KEY_CLEARANCE_DEFAULTS[id]);
     }
     expect(
       await page.evaluate(

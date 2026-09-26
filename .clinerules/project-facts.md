@@ -205,21 +205,24 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      .scad files stay 52 and untouched.
    - Clearance: ONE DIAL PER KEY since 2026-09-25 (D-K1) -
      v2_key_clearance_{a1,a2,b1,b2}_mm (schema version_2.key_clearance_*),
-     each default 0.095, range 0.0-0.5, input step 0.005, owned by
-     version2.V2_KEY_CLEARANCE_DEFAULTS_MM (a dict, one line per key: the
-     next print round moves A1 and B1 without A2 and B2). Applied OUTWARD to
+     defaults A1/B1 0.075 and A2/B2 0.085 (D-K4), range 0.0-0.5, input step
+     0.005, owned by
+     version2.V2_KEY_CLEARANCE_DEFAULTS_MM (a dict, one line per key: a
+     print round moves one gear without the others). Applied OUTWARD to
      that key's hole ONLY. The legacy shared v2_key_clearance_mm is still
      HONOURED (own field > shared field > the key's default, resolved by
      version2.key_clearances() inside CardSettings) but has no default and
      the web app no longer sends it; the OpenSCAD dial key_clearance_mm is
-     RETIRED for four (v2.11.0). History: 0.15 -> 0.075 -> 0.110
-     (2026-08-29, two rounds at 0.2 mm layers) -> 0.095 (2026-09-25, Brennen's
-     round at cylinders 0.12 Fine Detail / gears 0.2 Strength confirmed it
-     for A2 and B2; A1 and B1 still a touch loose - next test 0.085 on those
-     two, from the rotational-play analysis in
+     RETIRED for four (v2.11.0). History of the shared dial: 0.15 -> 0.075
+     -> 0.110 (2026-08-29, two rounds at 0.2 mm layers); then at cylinders
+     0.12 Fine Detail / gears 0.2 Strength (Brennen's rounds, 2026-09-24/25)
+     0.110 was loose, 0.095 fitted only A2/B2, and the A1/B1 round at 0.085
+     settled the top gears at 0.075 and the bottom gears at 0.085 (the
+     rotational-play analysis is in
      Research/.../New Developement_2026_09_24/05_KEY_FIT_TOLERANCE_ANALYSIS.md).
      An off-step default renders the input :invalid and kills Generate
-     silently; 0.095 / 0.005 = 19. Wrong-pair margin is 1.000 - c, so 0.905.
+     silently; 0.075 / 0.005 = 15, 0.085 / 0.005 = 17. Wrong-pair margin is
+     1.000 - c: 0.925 on A1/B1, 0.915 on A2/B2.
    - The NUB DOES NOT FOLLOW THE DIAL, because gear A1's notch is already cut.
      Under the old shared-dial rule, tightening the holes GREW the nub into
      that notch. Never re-couple them. V2_NUB_CLEARANCE_MM is 0.30 since

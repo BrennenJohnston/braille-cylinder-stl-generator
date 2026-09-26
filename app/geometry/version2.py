@@ -91,29 +91,31 @@ V2_SIZE_TOLERANCE_MM = 0.001
 # with it, which is why the family is judged at the dial's maximum as well as
 # its default.
 #
-# 0.095 on every key since 2026-09-25. Two printed rounds on 2026-08-29
-# bracketed the shared dial - all four peg holes too loose at 0.15 and too
-# tight at 0.075 - and it sat at 0.110 (D-R3-1) until Brennen's 2026-09-24
-# round (cylinders on Bambu Studio's 0.12 mm Fine Detail preset, gears on the
-# 0.2 mm Strength preset) found the larger pegs a bit loose there. 0.095 was
-# confirmed right for A2 and B2 in print on 2026-09-25; A1 and B1 still felt
-# a touch loose at it, which is why each key now has its own dial. The dial's
-# step is 0.005 and a default that is not a whole number of steps above the
-# minimum renders the input :invalid and disables Generate with no message
-# anyone can see. 0.095 / 0.005 = 19.
+# A1 and B1 0.075, A2 and B2 0.085 since 2026-09-25 (D-K4): Brennen's numbers
+# after three printed rounds with the cylinders on Bambu Studio's 0.12 mm Fine
+# Detail preset and the gears on the 0.2 mm Strength preset. History: two
+# rounds on 2026-08-29 (cylinders at 0.2 mm layers) bracketed ONE shared dial
+# - all four holes too loose at 0.15, too tight at 0.075 - and it sat at 0.110
+# (D-R3-1); the 2026-09-24 round found the larger pegs loose there (thinner
+# layers print a hole closer to its modelled size); 0.095 fitted A2 and B2 but
+# left A1 and B1 loose, so each key got its own dial; the A1/B1 round at 0.085
+# settled the top gears at 0.075 and moved the bottom gears to 0.085. The
+# dial's step is 0.005 and a default that is not a whole number of steps above
+# the minimum renders the input :invalid and disables Generate with no message
+# anyone can see: 0.075 / 0.005 = 15, 0.085 / 0.005 = 17.
 #
 # His gears measure exactly nominal - 14x14, 18x10, 16x12 and 20x8, corner
 # radius 0.5 - so a hole is its peg plus 2c and the wrong-pair margin is
-# 1.000 - c: 0.905 mm here, against 0.925 at 0.075 and 0.850 at 0.15
+# 1.000 - c: 0.925 mm on A1 and B1, 0.915 on A2 and B2, against 0.850 at 0.15
 # (tests/test_version2_profiles.py::SMALLEST_WRONG_PAIR_PROTRUSION).
 #
 # The dict is keyed by the V2_KEY_PROFILES names and written out one line per
-# key on purpose: the next print round moves A1 and B1 without A2 and B2.
+# key on purpose: a print round moves one gear without the others.
 V2_KEY_CLEARANCE_DEFAULTS_MM = {
-    'a1_square_14': 0.095,
-    'a2_rect_18x10': 0.095,
-    'b1_rect_16x12': 0.095,
-    'b2_rect_20x8': 0.095,
+    'a1_square_14': 0.075,
+    'a2_rect_18x10': 0.085,
+    'b1_rect_16x12': 0.075,
+    'b2_rect_20x8': 0.085,
 }
 V2_KEY_CLEARANCE_MIN_MM = 0.0
 V2_KEY_CLEARANCE_MAX_MM = 0.5

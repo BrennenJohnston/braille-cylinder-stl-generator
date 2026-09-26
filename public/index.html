@@ -4163,7 +4163,7 @@
                                           <!-- One dial PER KEY since 2026-09-25, so one gear's fit
                                                can be tuned without moving the other three. The ids
                                                are the flat request fields; every default is a whole
-                                               number of 0.005 steps (0.095 / 0.005 = 19) or the input
+                                               number of 0.005 steps (0.075 / 0.005 = 15, 0.085 / 0.005 = 17) or the input
                                                is :invalid on load and Generate dies silently. The
                                                four labels S-K2..S-K5 and the shared note S-K1 are
                                                DRAFT (2026-09-25) until Brennen signs them; S-V9
@@ -4171,21 +4171,21 @@
                                                note is 24 words, under the Step 6.8 ceiling. -->
                                           <div>
                                               <label for="v2_key_clearance_a1_mm">Gear A1 (top of Cylinder A) key clearance (mm):</label>
-                                              <input type="number" id="v2_key_clearance_a1_mm" name="v2_key_clearance_a1_mm" value="0.095" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off" aria-describedby="v2-key-clearance-note">
+                                              <input type="number" id="v2_key_clearance_a1_mm" name="v2_key_clearance_a1_mm" value="0.075" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off" aria-describedby="v2-key-clearance-note">
                                           </div>
                                           <div style="margin-top: 6px;">
                                               <label for="v2_key_clearance_a2_mm">Gear A2 (bottom of Cylinder A) key clearance (mm):</label>
-                                              <input type="number" id="v2_key_clearance_a2_mm" name="v2_key_clearance_a2_mm" value="0.095" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off" aria-describedby="v2-key-clearance-note">
+                                              <input type="number" id="v2_key_clearance_a2_mm" name="v2_key_clearance_a2_mm" value="0.085" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off" aria-describedby="v2-key-clearance-note">
                                           </div>
                                           <div style="margin-top: 6px;">
                                               <label for="v2_key_clearance_b1_mm">Gear B1 (top of Cylinder B) key clearance (mm):</label>
-                                              <input type="number" id="v2_key_clearance_b1_mm" name="v2_key_clearance_b1_mm" value="0.095" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off" aria-describedby="v2-key-clearance-note">
+                                              <input type="number" id="v2_key_clearance_b1_mm" name="v2_key_clearance_b1_mm" value="0.075" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off" aria-describedby="v2-key-clearance-note">
                                           </div>
                                           <div style="margin-top: 6px;">
                                               <label for="v2_key_clearance_b2_mm">Gear B2 (bottom of Cylinder B) key clearance (mm):</label>
-                                              <input type="number" id="v2_key_clearance_b2_mm" name="v2_key_clearance_b2_mm" value="0.095" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off" aria-describedby="v2-key-clearance-note">
+                                              <input type="number" id="v2_key_clearance_b2_mm" name="v2_key_clearance_b2_mm" value="0.085" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off" aria-describedby="v2-key-clearance-note">
                                           </div>
-                                          <div class="grade-note" id="v2-key-clearance-note" style="margin-top: 4px; font-size: 0.85em;">Extra room around each gear's peg, per side. 0.095 mm suits most printers: raise a value if that peg binds, lower it if loose.</div>
+                                          <div class="grade-note" id="v2-key-clearance-note" style="margin-top: 4px; font-size: 0.85em;">Extra room around each gear's peg, per side. The defaults suit most printers: raise a value if that peg binds, lower it if loose.</div>
                                       </fieldset>
                                   </div>
 
@@ -8795,7 +8795,7 @@
                 if (seamChannelReset) seamChannelReset.checked = true;
                 // Embosser version back to 1. The radio sweep above already
                 // did that (Version 1 is defaultChecked) and the input sweep
-                // put the four key clearance dials back to 0.095, so all that is left is
+                // put the four key clearance dials back to their defaults, so all that is left is
                 // to DROP the snapshot: without this, updateEmbosserVersionUI
                 // would see Version 1 selected, restore the remembered
                 // Version 2-era dials, and undo the reset it was called to
