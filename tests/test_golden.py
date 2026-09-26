@@ -1485,7 +1485,7 @@ def generate_v2_gear_golden_fixtures():
             'description': (
                 f'Fused Embosser Version 2 golden: {"Cylinder A" if plate_type == "positive" else "Cylinder B"} '
                 f'({plate_type}), solid 54 mm barrel plus its fixed v8 gears as one part, notch filled, '
-                f'vented along the axis, bottom edge chamfered, bottom socket coned (v9 update, 2026-09-24)'
+                f'vented along the axis, bottom edge chamfered, both sockets coned (v9 update, 2026-09-24; top cone D-K5, 2026-09-25)'
             ),
             'fixture_name': fixture_name,
             'plate_type': plate_type,
@@ -1539,7 +1539,7 @@ def test_v2_gear_golden_spec_is_fused(plate_type):
     assert spec['gears']['asset'] == V2_GEAR_FIXTURE_ASSETS[plate_type]
     assert len(spec['gears']['notch_fills']) == 1
     assert spec['cylinder']['bottom_chamfer'] == {'size': 0.65, 'lip': 1.0}
-    assert [cut['kind'] for cut in spec['gears']['axis_cuts']] == ['vent', 'cone']
+    assert [cut['kind'] for cut in spec['gears']['axis_cuts']] == ['vent', 'cone', 'cone']
     assert 'seam_channel' in spec['cylinder']
 
 
@@ -1584,7 +1584,8 @@ def test_v2_gear_golden_fixture_is_one_vented_roller_with_no_void(fixtures_dir, 
     rim still 15.4 mm, nothing proud of the top face (no nub in fused mode).
     Since the v9 update (2026-09-24, D-1 / D-2) the axis is AIR from mouth to
     mouth - the 2 mm vent - with solid barrel beside it, the bottom edge is
-    chamfered 0.65 mm, and the bottom socket's ceiling is a 45 degree cone.
+    chamfered 0.65 mm, and the bottom socket's ceiling is a 45 degree cone;
+    since D-K5 (2026-09-25) the top socket's floor is the mirror cone.
     """
     trimesh = pytest.importorskip('trimesh')
     import numpy as np
@@ -1653,6 +1654,15 @@ def test_v2_gear_golden_fixture_is_one_vented_roller_with_no_void(fixtures_dir, 
     # The socket bore below the cone is still the open peg socket.
     bore = 6.5 if plate_type == 'positive' else 4.5
     assert not roller.contains(np.array([[bore, 0.0, -6.0], [bore, 0.0, -8.0]])).any()
+    # The top socket cone (D-K5; worker z +24.3 (A) / +26.3 (B) apex is fixture
+    # z 51.3 / 53.3, floor at 55.5): air on the axis side of the 45 degree
+    # wall, solid outside it and below the apex, the bore above still open.
+    assert not roller.contains(np.array([[2.0, 0.0, 55.0], [1.5, 0.0, 54.0]])).any()
+    if plate_type == 'positive':
+        assert roller.contains(np.array([[5.0, 0.0, 55.0], [4.0, 0.0, 54.0], [3.0, 0.0, 50.5]])).all()
+    else:
+        assert roller.contains(np.array([[3.0, 0.0, 55.0], [2.0, 0.0, 54.0], [3.0, 0.0, 52.5]])).all()
+    assert not roller.contains(np.array([[bore, 0.0, 60.0], [bore, 0.0, 62.0]])).any()
     # Solid inside the notch volume the fill closed (r 12 on the arrow column,
     # 1.5 mm into the top gear) and where the keyed hole used to be.
     column = math.radians(version2.V2_ARROW_COLUMN_DEG)
@@ -1700,12 +1710,16 @@ def test_v2_gear_golden_fixture_keeps_the_vendored_gear_surface(fixtures_dir, pl
     # countersink are cut away by the socket cone (D-1, 2026-09-24): points
     # sampled on them are now air, or lie 0.01 mm inside the grown cone.
     in_socket = (np.hypot(points[:, 0], points[:, 1]) < 8.0) & (z > -3.6) & (z < -0.1)
+    # The top socket's flat floor, its taper and its vent countersink go the
+    # same way under the top cone (D-K5, 2026-09-25): fixture z 54.1..57.6.
+    top_face = version2.V2_BARREL_HEIGHT_MM
+    in_top_socket = (np.hypot(points[:, 0], points[:, 1]) < 8.0) & (z > top_face + 0.1) & (z < top_face + 3.6)
     # The gears' own 2 mm holes sit 0.05 mm off the fitted axis in the asset;
     # the vent trues them to the axis, so a point on the near wall of the top
     # gear's hole now lies up to 0.05 mm into air. That is the vent doing its
     # job, not the union moving a gear.
     in_vent = np.hypot(points[:, 0], points[:, 1]) < 1.1
-    keep = outside & ~in_notch & ~in_socket & ~in_vent
+    keep = outside & ~in_notch & ~in_socket & ~in_top_socket & ~in_vent
     assert keep.sum() > 500
     assert float(np.percentile(distances[keep], 99)) < 0.01
     assert float(distances[keep].max()) < 0.05

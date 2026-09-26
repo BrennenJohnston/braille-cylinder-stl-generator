@@ -591,8 +591,20 @@ golden pairs regenerating unchanged, prove it).
   were therefore dropped (D-6). A flat-topped peg cannot reach the cone: the straight bore is
   5.7 mm deep before the taper starts. Open item Q-1: the housing peg's real reach, to be
   confirmed by the print test.
+- **The top socket's floor is the same cone, since 2026-09-25 (decision D-K5,
+  `V2_TOP_GEAR_SOCKET`, measured: bore r 7.0 A1 / 5.0 B1, rim r 5.2 / 3.2 at the floor
+  vertex, floor 1.5 above the barrel's top face; cone from 0.5 above the floor at
+  rim + 0.51 down at 45° to r 1.01 — A z +29.0..+24.3, B +29.0..+26.3 in the worker
+  frame, emitted apex first because the worker's frustum and the golden renderer both
+  read `r_from` at `z_from`).** Printed bottom gear down that floor faces upward and
+  never needed support; Brennen asked for the top gears to match the bottom ones, so both
+  ends are alike and the roller prints support-free either way up (the barrel's top edge
+  keeps its square corner, so bottom-gear-down stays the advice). The bottom table's rim
+  5.3 / 3.3 was read 0.1 up the taper on 2026-09-24 and stays as printed and pinned
+  (O-2, recorded per gear, never averaged).
 - **CSG order:** one step appended — shell (seam channel, chamfer) → union raised (gears,
-  rings, fills, nub, dots, arrows) → subtract recesses → **subtract axis cuts** (vent, cone).
+  rings, fills, nub, dots, arrows) → subtract recesses → **subtract axis cuts** (vent,
+  bottom cone, top cone).
   Both the worker and `tests/test_golden.py` build it so; the two agree on the gears, cone,
   vent and chamfer to ≤ 0.0001 mm (real chromium exports against the regenerated golden
   pair, 2026-09-24).
@@ -614,6 +626,7 @@ golden pairs regenerating unchanged, prove it).
 
 | Date | Change |
 |---|---|
+| 2026-09-25 | **The top gear socket is coned like the bottom one (Brennen's decision D-K5).** §11.8 gains `V2_TOP_GEAR_SOCKET` (A1 / B1 measured off the v8 assets: bore 7.0 / 5.0, rim 5.2 / 3.2 at the floor vertex, floor 1.5 above the top face) and the third axis cut, emitted apex first; the CSG line reads vent, bottom cone, top cone. The fused golden pair regenerated; every other pair byte-identical. |
 | 2026-09-24 | **The v9 update: the fused roller's barrel is chamfered, its axis vented and its bottom gear socket made self-supporting (programme 2026-09-24, phases G1–G3; decisions D-1, D-2, D-6, D-7).** New §11.8 with the numbers, the slicing evidence, the appended CSG step and the regenerated golden pair; §11.4's order line and §11.7 (OpenSCAD v2.8.0 already carries the fused roller; v2.10.0 carries this) updated. Web develop `e91e352` (spec), `af2d45f` (worker), `3a1c636` (golden). |
 | 2026-09-21 | **Pair mode is universal (programme sub-plan E).** §8.1's pair paragraph: Generate STL builds both cylinders by default and Download STL saves the combined Geared pair file; `isPairModeOn()` and the relabel retired; the frozen single-cylinder names come from Cylinders to Generate. Nothing else changed. |
 | 2026-09-21 | **Version 2 fixed gears — the fused one-piece Version 2 roller (programme sub-plan B, phases B1-B7; decisions D-5, D-6).** New §11: the v8-derived `v2_gears_*` assets and their per-gear fitted axes (§11.1), the transform and frame (§11.2), the D-6 notch fill as an exact 0.05 mm parallel curve capped at 13.95 mm (§11.3), the fused spec / per-version size gate with S-G1 (signed 2026-09-21) / the worker's notch-fill union (§11.4), what the browser exports and the new `v2_gear_roller*` golden pair proved (§11.5), the UI and the composed `_Geared_V2_` names with S-G2 (signed 2026-09-21) (§11.6), and the OpenSCAD follow-on (§11.7). §1, §2, §5, §8 and §9.2 updated to match; the temporary S-M13 guard paragraph in §8 replaced; the "(BETA)" left in the title since 2026-09-20 removed (D-7). Open item: the Version 2 operating axis distance. |

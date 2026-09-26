@@ -193,6 +193,19 @@ def test_the_socket_table_is_the_measured_hardware():
     assert gears.GEAR_BODY_THICKNESS_MM == 10.0
 
 
+def test_the_top_socket_table_is_the_measured_hardware():
+    """
+    Measured off the v8 assets on 2026-09-25 (D-K5): the top gear's floor 1.5
+    above the barrel face, flat to the rim, taper to the bore. The rim is the
+    floor vertex's own radius (the bottom table's 5.3 / 3.3 were read 0.1 up
+    the taper and stay as printed) - recorded per gear, never averaged.
+    """
+    assert version2.V2_TOP_GEAR_SOCKET == {
+        'positive': {'gear': 'A1', 'bore_radius': 7.0, 'rim_radius': 5.2, 'floor_above_face': 1.5},
+        'negative': {'gear': 'B1', 'bore_radius': 5.0, 'rim_radius': 3.2, 'floor_above_face': 1.5},
+    }
+
+
 def test_bottom_chamfer_block_is_the_signed_size_with_its_lip():
     assert version2.bottom_chamfer_block(version2.V2_BARREL_DIAMETER_MM / 2) == {'size': 0.65, 'lip': 1.0}
 
@@ -213,10 +226,11 @@ def test_axis_cuts_at_the_version_two_height(plate_type, gear, r_from, z_to):
     0.5 below the old ceiling (z -28.5) at the rim grown 0.5 + 0.01 and rises at
     45 degrees to the vent radius + 0.01.
     """
-    vent, cone = version2.axis_cut_blocks(plate_type, 54.0)
+    vent, cone, _top = version2.axis_cut_blocks(plate_type, 54.0)
     assert vent == {'kind': 'vent', 'radius': 1.0, 'z_from': -38.0, 'z_to': 38.0}
     assert cone['kind'] == 'cone'
     assert cone['gear'] == gear
+    assert cone['end'] == 'bottom'
     assert cone['z_from'] == pytest.approx(-29.0)
     assert cone['r_from'] == pytest.approx(r_from)
     assert cone['z_to'] == pytest.approx(z_to)
@@ -225,11 +239,39 @@ def test_axis_cuts_at_the_version_two_height(plate_type, gear, r_from, z_to):
     assert (cone['r_from'] - cone['r_to']) == pytest.approx(cone['z_to'] - cone['z_from'])
 
 
+@pytest.mark.parametrize(
+    'plate_type, gear, z_from, r_to',
+    [('positive', 'A1', 24.3, 5.71), ('negative', 'B1', 26.3, 3.71)],
+)
+def test_the_top_socket_cone_mirrors_the_bottom_one(plate_type, gear, z_from, r_to):
+    """
+    D-K5 (2026-09-25): the top socket's floor (z +28.5) becomes a 45 degree
+    cone down to the vent - emitted apex first (z_from < z_to, r_from at
+    z_from) because that is how the worker's frustum and the golden renderer
+    read a block: apex at floor - (rim - vent), mouth 0.5 above the floor at
+    rim + 0.51.
+    """
+    _vent, _bottom, top = version2.axis_cut_blocks(plate_type, 54.0)
+    assert top['kind'] == 'cone'
+    assert top['gear'] == gear
+    assert top['end'] == 'top'
+    assert top['z_from'] == pytest.approx(z_from)
+    assert top['r_from'] == pytest.approx(1.01)
+    assert top['z_to'] == pytest.approx(29.0)
+    assert top['r_to'] == pytest.approx(r_to)
+    # 45 degrees: the radius grows exactly as fast as z rises.
+    assert (top['r_to'] - top['r_from']) == pytest.approx(top['z_to'] - top['z_from'])
+    # The apex sits inside the buried peg, above the barrel's mid-plane.
+    assert 0.0 < top['z_from'] < 27.0
+
+
 def test_axis_cuts_follow_the_height_never_the_preset():
-    vent, cone = version2.axis_cut_blocks('positive', 52.0)
+    vent, cone, top = version2.axis_cut_blocks('positive', 52.0)
     assert (vent['z_from'], vent['z_to']) == (-37.0, 37.0)
     assert cone['z_from'] == pytest.approx(-28.0)
     assert cone['z_to'] == pytest.approx(-23.2)
+    assert top['z_from'] == pytest.approx(23.3)
+    assert top['z_to'] == pytest.approx(28.0)
 
 
 @pytest.mark.parametrize('plate_type, height', [('both', 54.0), ('positive', 0.0), ('negative', -1.0)])
@@ -240,8 +282,9 @@ def test_axis_cuts_refuse_bad_input(plate_type, height):
 
 @pytest.mark.parametrize('plate_type', ['positive', 'negative'])
 def test_the_cone_stays_inside_the_weld_rings_and_the_vent_inside_every_peg(plate_type):
-    vent, cone = version2.axis_cut_blocks(plate_type, 54.0)
+    vent, cone, top = version2.axis_cut_blocks(plate_type, 54.0)
     assert cone['r_from'] < gears.WELD_RING_R_IN_MM
+    assert top['r_to'] < gears.WELD_RING_R_IN_MM
     narrowest = min(min(p['length'], p['width']) for p in version2.V2_KEY_PROFILES.values()) / 2.0
     assert narrowest == 4.0
     assert vent['radius'] < narrowest

@@ -1032,6 +1032,20 @@ V2_GEAR_SOCKET = {
 V2_SOCKET_CONE_GROWTH_MM = 0.01
 V2_SOCKET_CONE_OVERLAP_MM = 0.5
 
+# The TOP gear sockets (A1 / B1), measured off the same v8 assets on 2026-09-25
+# for Brennen's D-K5: their floor sits `floor_above_face` above the barrel's
+# top face, flat from the vent countersink out to the rim, then the 45 degree
+# taper up to the bore (A1: floor r 1.5..5.2 at +28.5, bore r 7.0 from +30.3;
+# B1: r 1.5..3.2, bore 5.0). Printed bottom gear down these floors face UP and
+# never needed support; the cone mirrors D-1 so both ends match and the roller
+# prints support-free either way up. The rim is the floor vertex's own radius
+# (5.2 / 3.2); the bottom table above was read 0.1 up the taper on 2026-09-24
+# and stays as printed and pinned (observation O-2, never averaged).
+V2_TOP_GEAR_SOCKET = {
+    'positive': {'gear': 'A1', 'bore_radius': 7.0, 'rim_radius': 5.2, 'floor_above_face': 1.5},
+    'negative': {'gear': 'B1', 'bore_radius': 5.0, 'rim_radius': 3.2, 'floor_above_face': 1.5},
+}
+
 
 def bottom_chamfer_block(radius: float) -> dict:
     """
@@ -1053,17 +1067,22 @@ def bottom_chamfer_block(radius: float) -> dict:
 
 def axis_cut_blocks(plate_type: str, height: float) -> list[dict]:
     """
-    The two cuts the worker takes along the axis LAST, after every union: the
-    vent the full length of the roller, and this plate's socket cone.
+    The three cuts the worker takes along the axis LAST, after every union:
+    the vent the full length of the roller, this plate's bottom socket cone
+    (D-1) and, since 2026-09-25 (D-K5), its top socket cone.
 
     Every z is computed from THIS cylinder's height, like the notch fill: the
     bottom socket's ceiling sits `ceiling_below_face` under the barrel face,
     and the cone runs from `V2_SOCKET_CONE_OVERLAP_MM` below it (inside the
     socket's air) up at 45 degrees to the vent radius, so its apex lands
     rim - vent above the old ceiling: 4.3 mm on Cylinder A, 2.3 on B, inside
-    the buried peg.
+    the buried peg. The top cone is its mirror: from the overlap above the top
+    socket's floor down at 45 degrees to the vent, apex rim - vent below the
+    floor (4.2 on A, 2.2 on B). Each block runs z_from < z_to with r_from at
+    z_from, the way both the worker's frustum and the golden renderer's read
+    it, so the top cone is emitted apex first.
     """
-    if plate_type not in V2_GEAR_SOCKET:
+    if plate_type not in V2_GEAR_SOCKET or plate_type not in V2_TOP_GEAR_SOCKET:
         raise ValueError(f'unknown plate type {plate_type!r}; known: {sorted(V2_GEAR_SOCKET)}')
     if height <= 0:
         raise ValueError(f'Version 2 cylinder height must be positive, got {height}')
@@ -1089,6 +1108,7 @@ def axis_cut_blocks(plate_type: str, height: float) -> list[dict]:
     cone = {
         'kind': 'cone',
         'gear': socket['gear'],
+        'end': 'bottom',
         'z_from': round(ceiling - V2_SOCKET_CONE_OVERLAP_MM, 6),
         'r_from': round(socket['rim_radius'] + V2_SOCKET_CONE_OVERLAP_MM + V2_SOCKET_CONE_GROWTH_MM, 6),
         'z_to': round(ceiling + (socket['rim_radius'] - V2_VENT_RADIUS_MM), 6),
@@ -1098,4 +1118,22 @@ def axis_cut_blocks(plate_type: str, height: float) -> list[dict]:
         raise ValueError(f'{socket["gear"]} socket cone reaches r {cone["r_from"]}, into the weld rings')
     if not cone['z_to'] > cone['z_from'] or not cone['r_to'] < cone['r_from']:
         raise ValueError(f'{socket["gear"]} socket cone is not a rising, narrowing cone: {cone}')
-    return [vent, cone]
+
+    top = V2_TOP_GEAR_SOCKET[plate_type]
+    if top['rim_radius'] >= top['bore_radius']:
+        raise ValueError(f'{top["gear"]} socket rim {top["rim_radius"]} must be inside its bore {top["bore_radius"]}')
+    floor = half_height + top['floor_above_face']
+    top_cone = {
+        'kind': 'cone',
+        'gear': top['gear'],
+        'end': 'top',
+        'z_from': round(floor - (top['rim_radius'] - V2_VENT_RADIUS_MM), 6),
+        'r_from': round(V2_VENT_RADIUS_MM + V2_SOCKET_CONE_GROWTH_MM, 6),
+        'z_to': round(floor + V2_SOCKET_CONE_OVERLAP_MM, 6),
+        'r_to': round(top['rim_radius'] + V2_SOCKET_CONE_OVERLAP_MM + V2_SOCKET_CONE_GROWTH_MM, 6),
+    }
+    if top_cone['r_to'] >= WELD_RING_R_IN_MM:
+        raise ValueError(f'{top["gear"]} socket cone reaches r {top_cone["r_to"]}, into the weld rings')
+    if not top_cone['z_to'] > top_cone['z_from'] or not top_cone['r_to'] > top_cone['r_from']:
+        raise ValueError(f'{top["gear"]} socket cone is not a rising, widening cone: {top_cone}')
+    return [vent, cone, top_cone]

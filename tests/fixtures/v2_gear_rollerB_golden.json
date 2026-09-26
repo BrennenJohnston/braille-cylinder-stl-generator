@@ -1,5 +1,5 @@
 {
-  "description": "Fused Embosser Version 2 golden: Cylinder B (negative), solid 54 mm barrel plus its fixed v8 gears as one part, notch filled, vented along the axis, bottom edge chamfered, bottom socket coned (v9 update, 2026-09-24)",
+  "description": "Fused Embosser Version 2 golden: Cylinder B (negative), solid 54 mm barrel plus its fixed v8 gears as one part, notch filled, vented along the axis, bottom edge chamfered, both sockets coned (v9 update, 2026-09-24; top cone D-K5, 2026-09-25)",
   "fixture_name": "v2_gear_rollerB_golden",
   "plate_type": "negative",
   "generation": {
@@ -42,8 +42,8 @@
     "manifold3d_version": "3.3.2"
   },
   "expected_properties": {
-    "face_count": 89624,
-    "vertex_count": 44812,
+    "face_count": 89744,
+    "vertex_count": 44872,
     "is_watertight": true,
     "bbox_min": [
       -16.108776092529297,
@@ -55,7 +55,7 @@
       16.108774185180664,
       64.0
     ],
-    "volume": 52281.65135860892,
-    "surface_area": 11565.054326028354
+    "volume": 52255.979043636085,
+    "surface_area": 11565.101071143868
   }
 }

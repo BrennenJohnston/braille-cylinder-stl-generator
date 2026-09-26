@@ -287,8 +287,16 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      measured: bore r 7.0 A / 5.0 B, rim 5.3 / 3.3, ceiling 1.5 below the face;
      cone A z -29.0..-24.2, B -29.0..-26.2) - zero overhang, no auto-support in
      the socket; the "premade support" and its toggle were DROPPED (D-6).
+     (4) Since 2026-09-25 (D-K5) the TOP gear socket's floor (A1/B1) is the
+     mirror cone: V2_TOP_GEAR_SOCKET measured bore 7.0/5.0, rim 5.2/3.2 (the
+     floor vertex; the bottom table's 5.3/3.3 were read 0.1 up the taper and
+     stay as printed - O-2), floor 1.5 above the top face; cone z
+     floor-(rim-1) .. floor+0.5, emitted apex FIRST (z_from < z_to, r_from at
+     z_from - the worker's frustum reads it so). Not needed for supports
+     bottom-gear-down (that floor faces up); his call so both ends match.
      CSG order: one step APPENDED - shell -> union raised -> subtract recesses
-     -> subtract axis cuts (spec gears.axis_cuts: vent then cone). The fused
+     -> subtract axis cuts (spec gears.axis_cuts: vent, bottom cone, top
+     cone). The fused
      roller now prints BOTTOM GEAR DOWN (S-P1 in the ready message, S-P2 in the
      Cylinder Guide - DRAFT). The D-6 golden test is now "one VENTED body" and
      the other six pairs regenerate byte-identical. Never re-couple a support.

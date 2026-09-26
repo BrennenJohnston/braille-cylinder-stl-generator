@@ -160,8 +160,11 @@ def test_fused_version_two_is_a_solid_barrel_with_its_own_gears_and_a_notch_fill
     # The v9 update (2026-09-24, D-1 / D-2): the chamfer on the barrel and the
     # two axis cuts, vent then cone, ride in the same two blocks.
     assert spec['cylinder']['bottom_chamfer'] == {'size': 0.65, 'lip': 1.0}
-    assert [cut['kind'] for cut in gears['axis_cuts']] == ['vent', 'cone']
+    assert [cut['kind'] for cut in gears['axis_cuts']] == ['vent', 'cone', 'cone']
     assert gears['axis_cuts'][1]['gear'] == ('A2' if plate_type == 'positive' else 'B2')
+    # D-K5 (2026-09-25): the top socket's cone rides in the same block.
+    assert gears['axis_cuts'][2]['gear'] == ('A1' if plate_type == 'positive' else 'B1')
+    assert [cut['end'] for cut in gears['axis_cuts'][1:]] == ['bottom', 'top']
 
 
 def test_version_two_without_gears_is_byte_identical_to_before():
