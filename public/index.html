@@ -4158,7 +4158,7 @@
                                        valid against its own step - the trap that once made
                                        the Generate button die silently. -->
                                   <div class="grade-selection" id="v2-keyed-cutouts-selection" hidden>
-                                      <fieldset>
+                                      <fieldset aria-describedby="v2-key-clearance-note">
                                           <legend class="grade-label" style="font-size: 1.2em; font-weight: 700;">Version 2 Keyed Cutouts</legend>
                                           <!-- One dial PER KEY since 2026-09-25, so one gear's fit
                                                can be tuned without moving the other three. The ids
@@ -4168,22 +4168,26 @@
                                                four labels S-K2..S-K5 and the shared note S-K1 are
                                                DRAFT (2026-09-25) until Brennen signs them; S-V9
                                                (signed 2026-08-28) retired with the single dial. The
-                                               note is 24 words, under the Step 6.8 ceiling. -->
+                                               note S-K1 (24 words, under the Step 6.8 ceiling) is the
+                                               FIELDSET's aria-describedby, not the dials' - one
+                                               description, one host (SOP 6.8 clause 5): a screen
+                                               reader hears it once on entering the group, not once
+                                               per dial (measured 96 -> 24 words per pass, 2026-09-25). -->
                                           <div>
                                               <label for="v2_key_clearance_a1_mm">Gear A1 (top of Cylinder A) key clearance (mm):</label>
-                                              <input type="number" id="v2_key_clearance_a1_mm" name="v2_key_clearance_a1_mm" value="0.075" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off" aria-describedby="v2-key-clearance-note">
+                                              <input type="number" id="v2_key_clearance_a1_mm" name="v2_key_clearance_a1_mm" value="0.075" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off">
                                           </div>
                                           <div style="margin-top: 6px;">
                                               <label for="v2_key_clearance_a2_mm">Gear A2 (bottom of Cylinder A) key clearance (mm):</label>
-                                              <input type="number" id="v2_key_clearance_a2_mm" name="v2_key_clearance_a2_mm" value="0.085" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off" aria-describedby="v2-key-clearance-note">
+                                              <input type="number" id="v2_key_clearance_a2_mm" name="v2_key_clearance_a2_mm" value="0.085" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off">
                                           </div>
                                           <div style="margin-top: 6px;">
                                               <label for="v2_key_clearance_b1_mm">Gear B1 (top of Cylinder B) key clearance (mm):</label>
-                                              <input type="number" id="v2_key_clearance_b1_mm" name="v2_key_clearance_b1_mm" value="0.075" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off" aria-describedby="v2-key-clearance-note">
+                                              <input type="number" id="v2_key_clearance_b1_mm" name="v2_key_clearance_b1_mm" value="0.075" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off">
                                           </div>
                                           <div style="margin-top: 6px;">
                                               <label for="v2_key_clearance_b2_mm">Gear B2 (bottom of Cylinder B) key clearance (mm):</label>
-                                              <input type="number" id="v2_key_clearance_b2_mm" name="v2_key_clearance_b2_mm" value="0.085" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off" aria-describedby="v2-key-clearance-note">
+                                              <input type="number" id="v2_key_clearance_b2_mm" name="v2_key_clearance_b2_mm" value="0.085" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off">
                                           </div>
                                           <div class="grade-note" id="v2-key-clearance-note" style="margin-top: 4px; font-size: 0.85em;">Extra room around each gear's peg, per side. The defaults suit most printers: raise a value if that peg binds, lower it if loose.</div>
                                       </fieldset>
@@ -7837,7 +7841,7 @@
         });
 
         // ---------------------------------------------------------------------
-        // Embosser Version 2 (keyed gear pegs) PROTOTYPE
+        // Embosser Version 2 (keyed gear pegs)
         // ---------------------------------------------------------------------
         // A Version 2 cylinder is keyed at both ends instead of bored through,
         // so its barrel is a fixed size and the polygonal-cutout and seam-offset
@@ -12029,8 +12033,8 @@
                         <h4>Tips for Best Results</h4>
                         <ul>
                             <li><strong>Print orientation:</strong> Print cylinders standing upright for best dot quality</li>
-                            <!-- S-P2, DRAFT 2026-09-24 - awaiting Brennen's sign-off (decision D-7). -->
-                            <li><strong>Fused Version 2 rollers:</strong> put the bottom gear on the build plate. Its barrel edge is chamfered and its gear socket is vented, so it prints without supports and lifts off the embosser's peg without a vacuum.</li>
+                            <!-- S-P2, DRAFT 2026-09-24 - awaiting Brennen's sign-off (decision D-7); "gear sockets are" since 2026-09-25 (D-K5, both sockets coned). -->
+                            <li><strong>Fused Version 2 rollers:</strong> put the bottom gear on the build plate. Its barrel edge is chamfered and its gear sockets are vented, so it prints without supports and lifts off the embosser's peg without a vacuum.</li>
                             <li><strong>Test fit:</strong> Print a small section first to verify the diameter matches your container</li>
                             <!-- Seam placement bullet reworded and signed off by Brennen (2026-09-21); reword only with his sign-off. -->
                             <li><strong>Seam placement:</strong> Leave your slicer's seam mode on Aligned; the seam channel does the rest</li>
@@ -12190,7 +12194,8 @@
                                 </tr>
                                 <tr>
                                     <td><strong>Surface Dimensions</strong></td>
-                                    <td>Cylinder diameter, height, polygonal cutout, seam offset, and the slicer seam channel switch</td>
+                                    <!-- S-H3, DRAFT 2026-09-25: the Version 2 clause added to this signed row; reword only with Brennen's sign-off. -->
+                                    <td>Cylinder diameter, height, polygonal cutout, seam offset, the slicer seam channel switch and, in Version 2, the four gear key clearance dials</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Translation Options</strong></td>

@@ -1,12 +1,13 @@
 # Known Issues
 
-## Fused Version 2 roller — open item after the v9 update (2026-09-24)
+## Fused Version 2 roller — open items after the v9 update (2026-09-24)
 
 Since 2026-09-24 the fused Version 2 roller (Version 2 + fixed gears) prints with its bottom
 gear on the build plate: the barrel's bottom edge is chamfered, a 2 mm vent runs the whole
-axis, and the bottom gear's socket ceiling is a 45° cone that needs no support. Two things
-are still owed a print (Brennen's closeout test — Bambu Studio, fused pair, bottom gear
-down, auto-supports off):
+axis, and the bottom gear's socket ceiling is a 45° cone that needs no support. Brennen
+printed that pair on 2026-09-24 and it passed his print check. Since 2026-09-25 the top
+gear's socket (A1 / B1) ends in the same cone (decision D-K5) — that build has not been
+printed yet. Two questions the passed print did not answer separately:
 
 - **Q-1 — the housing peg's reach.** The socket's straight ⌀14 (A) / ⌀10 (B) bore is 5.7 mm
   deep before its taper starts and the cone begins above that, so a flat-topped peg cannot

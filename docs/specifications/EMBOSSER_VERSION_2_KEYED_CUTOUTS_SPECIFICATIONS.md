@@ -84,12 +84,15 @@ All four keys are **rounded rectangles** with a corner radius of **0.500 mm**
 (`V2_KEY_CORNER_RADIUS_MM`), tessellated at **96 segments** per full circle
 (`V2_ARC_SEGMENTS`). `V2_KEY_PROFILES` owns the dimensions:
 
-| Key | Length × width (mm) | Where it sits | Section area at c = 0.110 (mm²) |
-|---|---|---|---|
-| `a1_square_14` | 14.0 × 14.0 | Cylinder A, **top** (the nub end) | 201.889 |
-| `a2_rect_18x10` | 18.0 × 10.0 | Cylinder A, bottom | 185.889 |
-| `b1_rect_16x12` | 16.0 × 12.0 | Cylinder B, **top** | 197.889 |
-| `b2_rect_20x8` | 20.0 × 8.0 | Cylinder B, bottom | 165.889 |
+| Key | Length × width (mm) | Where it sits | Default clearance c (mm) | Section area at that c (mm²) |
+|---|---|---|---|---|
+| `a1_square_14` | 14.0 × 14.0 | Cylinder A, **top** (the nub end) | 0.075 | 199.939 |
+| `a2_rect_18x10` | 18.0 × 10.0 | Cylinder A, bottom | 0.085 | 184.495 |
+| `b1_rect_16x12` | 16.0 × 12.0 | Cylinder B, **top** | 0.075 | 195.939 |
+| `b2_rect_20x8` | 20.0 × 8.0 | Cylinder B, bottom | 0.085 | 164.495 |
+
+(Area = (L + 2c)(W + 2c) − (4 − π)(0.5 + c)²; at the old shared 0.110 the four were
+201.889, 185.889, 197.889 and 165.889.)
 
 `KEY_PROFILES_BY_PLATE` maps plate type to `(bottom, top)`:
 `positive → ('a2_rect_18x10', 'a1_square_14')`, `negative → ('b2_rect_20x8',
@@ -313,8 +316,8 @@ Raising a clearance eats into the error-proofing margins of §11: 0.925 mm on A1
 and 0.915 mm on A2/B2 at the defaults, 0.500 mm at the maximum.
 
 The dial is bounded **at the source** (`min="0" max="0.5" step="0.005"` on the input),
-and 0.110 / 0.005 = 22 — a whole number of steps, so the shipped default is valid
-against its own step. **The step moved from 0.01 on 2026-08-29**, and had to:
+and 0.075 / 0.005 = 15, 0.085 / 0.005 = 17 — whole numbers of steps, so every shipped
+default is valid against its own step. **The step moved from 0.01 on 2026-08-29**, and had to:
 0.075 is not a multiple of 0.01, and a default that is invalid against its step makes
 the input `:invalid` and kills the Generate button silently. This repo has been bitten
 by that before, which is why `tests/test_smoke.py` divides one by the other.
@@ -328,12 +331,12 @@ adds `spec['keyed_cutouts']`:
 
 ```jsonc
 {
-  "clearance_mm": 0.110,
+  "clearances_mm": { "a2_rect_18x10": 0.085, "a1_square_14": 0.075 },   // this plate's two keys (2026-09-25)
   "halves": [
-    { "end": "bottom", "profile": [ {"x": …, "y": …}, … 100 points ],
-      "z_from": -27.01, "z_to": 0.01 },
-    { "end": "top",    "profile": [ … 100 points ],
-      "z_from": -0.01,  "z_to": 27.01 }
+    { "end": "bottom", "key": "a2_rect_18x10", "clearance_mm": 0.085,
+      "profile": [ {"x": …, "y": …}, … 100 points ], "z_from": -27.01, "z_to": 0.01 },
+    { "end": "top",    "key": "a1_square_14",  "clearance_mm": 0.075,
+      "profile": [ … 100 points ], "z_from": -0.01,  "z_to": 27.01 }
   ],
   "countersinks": [
     { "end": "bottom", "kind": "hull", "depth": 2.0,
@@ -433,7 +436,7 @@ class="legend-heading">`), and the "(prototype)" tag and the prototype notice ar
 | ~~Prototype notice~~ | ~~`v2-prototype-note`~~ | S-V4 retired 2026-09-20 (D-7) |
 | Size warning | `v2-size-warning` / `v2-size-message` | S-V5, the server's sentence verbatim |
 | Clearance fieldset | `v2-keyed-cutouts-selection` | Expert Mode, hidden in Version 1 |
-| Clearance dials (four, 2026-09-25) | `v2_key_clearance_a1_mm`, `_a2_mm`, `_b1_mm`, `_b2_mm` | labels S-K2..S-K5 *"Gear A1 (top of Cylinder A) key clearance (mm):"* etc. (DRAFT); one shared help note `v2-key-clearance-note`, S-K1 (DRAFT) *"Extra room around each gear's peg, per side. The defaults suit most printers: raise a value if that peg binds, lower it if loose."* — S-V9 retired with the single dial |
+| Clearance dials (four, 2026-09-25) | `v2_key_clearance_a1_mm`, `_a2_mm`, `_b1_mm`, `_b2_mm` | labels S-K2..S-K5 *"Gear A1 (top of Cylinder A) key clearance (mm):"* etc. (DRAFT); one shared help note `v2-key-clearance-note`, S-K1 (DRAFT), wired as the FIELDSET's `aria-describedby` — one description, one host (SOP 6.8 clause 5; a screen reader hears it once on entering the group, 24 words, not four times) *"Extra room around each gear's peg, per side. The defaults suit most printers: raise a value if that peg binds, lower it if loose."* — S-V9 retired with the single dial |
 | Hidden rows | `cylinder-cutout-radius-row`, `cylinder-cutout-sides-row`, `cylinder-seam-offset-row` | inert in Version 2 |
 
 **Selecting Version 2** snapshots five cylinder dials, applies `V2_PRESET_OVERRIDES`
@@ -606,8 +609,9 @@ wrong-pair protrusion is pinned in
 | Clearance (mm) | Smallest wrong-pair margin (mm) |
 |---|---|
 | 0.00 | 1.000 |
-| 0.075 | 0.925 |
-| 0.110 (default) | 0.890 |
+| 0.075 (A1 / B1 default) | 0.925 |
+| 0.085 (A2 / B2 default) | 0.915 |
+| 0.110 | 0.890 |
 | 0.15 | 0.850 |
 | 0.30 | 0.700 |
 | 0.50 (maximum) | 0.500 |
@@ -721,6 +725,7 @@ mode; this section records only what changes on THIS document's side.
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-09-25 | 1.18 | **Documentation and accessibility pass.** §2's table carries each key's own default and section area (the 0.110 column is history); §5's whole-step sentence and §11's margin table name both defaults; §6's wire example shows `clearances_mm` and the per-half `key` / `clearance_mm`; §8.1: the S-K1 note is the fieldset's `aria-describedby`, one host (SOP 6.8 clause 5, measured 96 → 24 description words per pass on the opened page). The schema's `version_2` and `embosser_version` descriptions and four code comments stop calling Version 2 a prototype with one nub. |
 | 2026-09-25 | 1.17 | **Fused roller: the top gear socket (A1 / B1) is coned like the bottom one (D-K5).** §13's third axis cut, owned by GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md §11.8 (`V2_TOP_GEAR_SOCKET`, measured). The keyed cylinder is untouched. |
 | 2026-09-25 | 1.16 | **The defaults settle: A1 and B1 0.075 mm, A2 and B2 0.085 mm (D-K4).** Brennen's verdict on the A1/B1 print at 0.085: §5's numbers, the S-K1 note no longer quotes one value ("The defaults suit most printers"), the margins 0.925 / 0.915. The keyed Version 2 golden pair regenerated once more; nothing else moves. |
 | 2026-09-25 | 1.15 | **One key clearance dial per gear, and the default moves to 0.095 (D-K1..D-K3).** §5 rewritten: four fields `version_2.key_clearance_{a1,a2,b1,b2}_mm`, each default 0.095 (confirmed in print for A2 and B2 on 2026-09-25 at cylinders 0.12 Fine Detail / gears 0.2 Strength), the legacy shared `key_clearance_mm` honoured as a stand-in with no default, resolution own field → shared → default in `version2.key_clearances()`, the next A1/B1 test value 0.085 and why. §8.1: four dials with DRAFT labels S-K2..S-K5 and the DRAFT shared note S-K1 (S-V9 retired). §8.2: five keys on the wire, `clearances_mm` and per-half `key`/`clearance_mm` in the block, per-dial persistence with the legacy seed. The Version 2 golden pair was regenerated at 0.095 (holes 0.015 mm tighter per side); the fused pair's STLs are byte-identical and only their settings record changed. OpenSCAD parity: four `key_clearance_{a1,a2,b1,b2}_mm` dials, `key_clearance_mm` retired (v2.11.0). |

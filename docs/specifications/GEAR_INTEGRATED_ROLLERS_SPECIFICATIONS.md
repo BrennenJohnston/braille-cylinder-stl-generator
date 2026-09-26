@@ -617,8 +617,10 @@ golden pairs regenerating unchanged, prove it).
   gears' own off-axis holes, which leaves asset points up to 0.05 mm into air).
 - **Orientation text (D-7):** the fused ready message gains S-P1 after S-G2, and the help
   modal's Cylinder Guide gains S-P2 — both DRAFT until Brennen signs them.
-- **Print test:** NEEDS-HUMAN — the fused pair, bottom gear down, auto-supports off,
-  Aligned seam (the programme's closeout).
+- **Print test:** PASSED — Brennen printed the fused pair from the pushed build on
+  2026-09-24, bottom gear down ("passes 3D print check"); Q-1 (the housing peg's reach
+  into the cone) was not separately reported and stays open in `docs/KNOWN_ISSUES.md`.
+  The top-socket cone (D-K5, 2026-09-25) has not been printed yet.
 
 ---
 
@@ -626,6 +628,7 @@ golden pairs regenerating unchanged, prove it).
 
 | Date | Change |
 |---|---|
+| 2026-09-25 | **Documentation pass.** §11.8's print-test line records the 2026-09-24 pass and the unprinted top cone. |
 | 2026-09-25 | **The top gear socket is coned like the bottom one (Brennen's decision D-K5).** §11.8 gains `V2_TOP_GEAR_SOCKET` (A1 / B1 measured off the v8 assets: bore 7.0 / 5.0, rim 5.2 / 3.2 at the floor vertex, floor 1.5 above the top face) and the third axis cut, emitted apex first; the CSG line reads vent, bottom cone, top cone. The fused golden pair regenerated; every other pair byte-identical. |
 | 2026-09-24 | **The v9 update: the fused roller's barrel is chamfered, its axis vented and its bottom gear socket made self-supporting (programme 2026-09-24, phases G1–G3; decisions D-1, D-2, D-6, D-7).** New §11.8 with the numbers, the slicing evidence, the appended CSG step and the regenerated golden pair; §11.4's order line and §11.7 (OpenSCAD v2.8.0 already carries the fused roller; v2.10.0 carries this) updated. Web develop `e91e352` (spec), `af2d45f` (worker), `3a1c636` (golden). |
 | 2026-09-21 | **Pair mode is universal (programme sub-plan E).** §8.1's pair paragraph: Generate STL builds both cylinders by default and Download STL saves the combined Geared pair file; `isPairModeOn()` and the relabel retired; the frozen single-cylinder names come from Cylinders to Generate. Nothing else changed. |

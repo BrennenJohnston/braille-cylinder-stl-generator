@@ -283,10 +283,10 @@ class CardSettings:
             # Mode switch sends 0. The groove's size is not a dial - it lives in
             # app/geometry_spec.py (SEAM_CHANNEL_*) because it is print-tuned.
             'seam_channel_enabled': 1,
-            # Embosser Version 2 (keyed gear pegs) PROTOTYPE. Flat runtime name
-            # for the settings.schema.json "embosser_version" field; 1 = today's
+            # Embosser Version 2 (keyed gear pegs). Flat runtime name for the
+            # settings.schema.json "embosser_version" field; 1 = the original
             # hardware, which leaves every existing code path exactly as it is.
-            # Cylinders only, and integrated gears are rejected alongside it.
+            # Cylinders only; with gear_rollers_enabled it is the fused roller.
             'embosser_version': 1,
             # Version 2 print clearance per side, ONE PER KEY since 2026-09-25
             # (v2_key_clearance_{a1,a2,b1,b2}_mm). Read from the module that

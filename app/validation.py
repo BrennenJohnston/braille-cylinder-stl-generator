@@ -459,11 +459,11 @@ def validate_double_sided_settings(settings_data: dict) -> bool:
 
 def validate_embosser_version_settings(settings_data: dict, shape_type: str, cylinder_params: dict) -> bool:
     """
-    Hard gates for the Embosser Version 2 keyed gear-peg prototype.
+    Hard gates for the Embosser Version 2 keyed gear-peg embosser.
 
     Every gate is skipped when embosser_version is absent, 1, '1', 1.0 or '',
     so a request that does not ask for Version 2 is validated exactly as it was
-    before the prototype existed.
+    before Version 2 existed.
 
     Gate 1: Version 2 is cylinders-only (S-V6). Its whole subject is a shaped
     cutout in the ends of a barrel; a card has no such end.
@@ -526,7 +526,7 @@ def validate_embosser_version_settings(settings_data: dict, shape_type: str, cyl
         ) from e
     # A version is an enum, not a toggle, so a fractional value is refused
     # rather than truncated. The gear beta's int(float(...)) would read 2.5 as
-    # "Version 2" and build a prototype cylinder for a request nobody could
+    # "Version 2" and build a Version 2 cylinder for a request nobody could
     # have meant - the same silent-fallback shape this project keeps finding.
     if not number.is_integer():
         raise ValidationError(

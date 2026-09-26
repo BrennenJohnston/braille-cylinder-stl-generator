@@ -560,10 +560,10 @@ def extract_cylinder_geometry_spec(
         gear_warnings.append(warning)
         logger.warning(warning)
 
-    # Embosser Version 2 (keyed gear pegs) PROTOTYPE. Read once, exactly as the
+    # Embosser Version 2 (keyed gear pegs). Read once, exactly as the
     # two betas above are: with Version 1 selected - absent, 1, '1', 1.0 or '' -
     # every Version 2 line below is skipped and the function emits precisely the
-    # spec it emitted before the prototype existed, new keys included.
+    # spec it emitted before Version 2 existed, new keys included.
     embosser_v2 = int(getattr(settings, 'embosser_version', 1)) == 2
     v2_warnings: list[str] = []
     if embosser_v2 and not version2.matches_v2_barrel(diameter, height):
@@ -615,7 +615,7 @@ def extract_cylinder_geometry_spec(
         # a polygonal one running the length of the axis would break into it.
         # Mirrors the gear rule above, and like it the barrel is forced solid
         # rather than the request refused, so a saved cutout radius cannot lock
-        # a user out of the prototype. Wording S-V14 was new in Phase 05 and
+        # a user out of Version 2. Wording S-V14 was new in Phase 05 and
         # was signed as drafted at that gate, 2026-08-28.
         warning = 'The polygonal cutout is not used in Version 2.'
         v2_warnings.append(warning)
