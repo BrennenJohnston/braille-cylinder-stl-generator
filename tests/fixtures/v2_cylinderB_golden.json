@@ -31,9 +31,9 @@
       "ds_bowl_depth": 0.5,
       "embosser_version": 2,
       "v2_key_clearance_a1_mm": 0.075,
-      "v2_key_clearance_a2_mm": 0.085,
+      "v2_key_clearance_a2_mm": 0.075,
       "v2_key_clearance_b1_mm": 0.075,
-      "v2_key_clearance_b2_mm": 0.085
+      "v2_key_clearance_b2_mm": 0.075
     },
     "cylinder_params": {
       "diameter": 30.8,
@@ -59,7 +59,7 @@
       15.399999618530273,
       57.0
     ],
-    "volume": 30007.152893269642,
-    "surface_area": 9652.046950691969
+    "volume": 30022.30113429797,
+    "surface_area": 9651.070563018826
   }
 }

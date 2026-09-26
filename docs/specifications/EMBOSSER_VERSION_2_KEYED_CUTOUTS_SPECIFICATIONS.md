@@ -87,9 +87,9 @@ All four keys are **rounded rectangles** with a corner radius of **0.500 mm**
 | Key | Length × width (mm) | Where it sits | Default clearance c (mm) | Section area at that c (mm²) |
 |---|---|---|---|---|
 | `a1_square_14` | 14.0 × 14.0 | Cylinder A, **top** (the nub end) | 0.075 | 199.939 |
-| `a2_rect_18x10` | 18.0 × 10.0 | Cylinder A, bottom | 0.085 | 184.495 |
+| `a2_rect_18x10` | 18.0 × 10.0 | Cylinder A, bottom | 0.075 | 183.939 |
 | `b1_rect_16x12` | 16.0 × 12.0 | Cylinder B, **top** | 0.075 | 195.939 |
-| `b2_rect_20x8` | 20.0 × 8.0 | Cylinder B, bottom | 0.085 | 164.495 |
+| `b2_rect_20x8` | 20.0 × 8.0 | Cylinder B, bottom | 0.075 | 163.939 |
 
 (Area = (L + 2c)(W + 2c) − (4 − π)(0.5 + c)²; at the old shared 0.110 the four were
 201.889, 185.889, 197.889 and 165.889.)
@@ -261,9 +261,9 @@ Swap either half of that pairing and the wall is 0.55 mm. Pinned by
 ## 5. The Clearance
 
 **One dial per key since 2026-09-25** (D-K1): `version_2.key_clearance_a1_mm`,
-`_a2_mm`, `_b1_mm`, `_b2_mm` (schema) / `v2_key_clearance_a1_mm` … (runtime), defaults
-**0.075 mm for the top gears A1 and B1, 0.085 mm for the bottom gears A2 and B2** (D-K4),
-range **0.0–0.5 mm** (`V2_KEY_CLEARANCE_DEFAULTS_MM`, a dict keyed
+`_a2_mm`, `_b1_mm`, `_b2_mm` (schema) / `v2_key_clearance_a1_mm` … (runtime), default
+**0.075 mm on all four** (D-K6, 2026-09-26 — kept as four separate numbers so a print
+round can move one gear without the others), range **0.0–0.5 mm** (`V2_KEY_CLEARANCE_DEFAULTS_MM`, a dict keyed
 by the §3 profile names and written out one line per key; `_MIN_MM`, `_MAX_MM`;
 `V2_KEY_CLEARANCE_FIELDS` maps each key to its runtime field). Each is applied as an
 **outward** growth of that one hole's profile — the hole gets bigger, the peg does not
@@ -277,7 +277,7 @@ always did. `CardSettings` runs that resolution once at construction, so every r
 downstream sees four numbers; `app/validation.py` range-checks all five fields when
 present and names the one at fault.
 
-**They govern the four holes and nothing else.** The numbers are Brennen's, after three
+**They govern the four holes and nothing else.** The number is Brennen's, after four
 printed rounds with the cylinders on Bambu Studio's 0.12 mm Fine Detail preset and the
 gears on 0.2 mm Strength. Two rounds on 2026-08-29 (cylinders at 0.2 mm layers) had
 bracketed ONE shared dial — at **0.15** all four peg holes were too loose, at **0.075**
@@ -285,7 +285,8 @@ too tight — and it sat at **0.110** (D-R3-1). The 2026-09-24 round found the l
 a bit loose there: the thinner layers put less material into each perimeter, so a hole
 prints closer to its modelled size. **0.095** fitted **A2 and B2** but left A1 and B1 a
 touch loose (D-K3), which is why each key got its own dial; the A1/B1 round at 0.085
-settled the top gears at **0.075** and moved the bottom gears to **0.085** (D-K4). The
+settled the top gears at **0.075** with the bottom gears at 0.085 (D-K4), and the print
+recorded on 2026-09-26 brought A2 and B2 to **0.075** as well (D-K6). The
 pegs measure exactly nominal (§11), so a hole is its peg plus 2c. What a hand feels on
 A1 and B1 is largely *rotational* and limited by the fixed anti-rotation features
 (0.748° / 0.664° at the tooth tips) until the key takes over below about 0.084 / 0.087 —
@@ -293,7 +294,7 @@ which is where the top gears now sit.
 
 Not a midpoint: the dial's step is 0.005, and a default that is not a whole number of
 steps above the minimum renders the input `:invalid` and disables Generate with no
-message anyone can see. 0.075 / 0.005 = 15 and 0.085 / 0.005 = 17 — pinned per key by
+message anyone can see. 0.075 / 0.005 = 15 — pinned per key by
 `test_every_key_default_is_a_whole_number_of_dial_steps`.
 
 **The nub does NOT follow the dial** (D-V11, revised 2026-08-29). It is inset by
@@ -312,12 +313,12 @@ Raise `V2_NUB_CLEARANCE_MM` only alongside a matching gear A1. Note that a miter
 moves every *face* in by `c`, which on this triangle costs the base half-width
 `√3 · c` = 1.732 c — the inradius is what drops by exactly `c`.
 
-Raising a clearance eats into the error-proofing margins of §11: 0.925 mm on A1/B1
-and 0.915 mm on A2/B2 at the defaults, 0.500 mm at the maximum.
+Raising a clearance eats into the error-proofing margins of §11: 0.925 mm at the
+default, 0.500 mm at the maximum.
 
 The dial is bounded **at the source** (`min="0" max="0.5" step="0.005"` on the input),
-and 0.075 / 0.005 = 15, 0.085 / 0.005 = 17 — whole numbers of steps, so every shipped
-default is valid against its own step. **The step moved from 0.01 on 2026-08-29**, and had to:
+and 0.075 / 0.005 = 15 — a whole number of steps, so the shipped default is valid
+against its own step. **The step moved from 0.01 on 2026-08-29**, and had to:
 0.075 is not a multiple of 0.01, and a default that is invalid against its step makes
 the input `:invalid` and kills the Generate button silently. This repo has been bitten
 by that before, which is why `tests/test_smoke.py` divides one by the other.
@@ -331,9 +332,9 @@ adds `spec['keyed_cutouts']`:
 
 ```jsonc
 {
-  "clearances_mm": { "a2_rect_18x10": 0.085, "a1_square_14": 0.075 },   // this plate's two keys (2026-09-25)
+  "clearances_mm": { "a2_rect_18x10": 0.075, "a1_square_14": 0.075 },   // this plate's two keys (2026-09-25)
   "halves": [
-    { "end": "bottom", "key": "a2_rect_18x10", "clearance_mm": 0.085,
+    { "end": "bottom", "key": "a2_rect_18x10", "clearance_mm": 0.075,
       "profile": [ {"x": …, "y": …}, … 100 points ], "z_from": -27.01, "z_to": 0.01 },
     { "end": "top",    "key": "a1_square_14",  "clearance_mm": 0.075,
       "profile": [ … 100 points ], "z_from": -0.01,  "z_to": 27.01 }
@@ -609,8 +610,8 @@ wrong-pair protrusion is pinned in
 | Clearance (mm) | Smallest wrong-pair margin (mm) |
 |---|---|
 | 0.00 | 1.000 |
-| 0.075 (A1 / B1 default) | 0.925 |
-| 0.085 (A2 / B2 default) | 0.915 |
+| 0.075 (default, all four) | 0.925 |
+| 0.085 | 0.915 |
 | 0.110 | 0.890 |
 | 0.15 | 0.850 |
 | 0.30 | 0.700 |
@@ -725,6 +726,7 @@ mode; this section records only what changes on THIS document's side.
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-09-26 | 1.19 | **All four defaults 0.075 mm (D-K6).** Brennen's next print brought A2 and B2 down to the top gears' 0.075; §2, §5, §6 and §11 carry the one value (the per-key dict and dials stay separate). The keyed golden pair regenerated once more. |
 | 2026-09-25 | 1.18 | **Documentation and accessibility pass.** §2's table carries each key's own default and section area (the 0.110 column is history); §5's whole-step sentence and §11's margin table name both defaults; §6's wire example shows `clearances_mm` and the per-half `key` / `clearance_mm`; §8.1: the S-K1 note is the fieldset's `aria-describedby`, one host (SOP 6.8 clause 5, measured 96 → 24 description words per pass on the opened page). The schema's `version_2` and `embosser_version` descriptions and four code comments stop calling Version 2 a prototype with one nub. |
 | 2026-09-25 | 1.17 | **Fused roller: the top gear socket (A1 / B1) is coned like the bottom one (D-K5).** §13's third axis cut, owned by GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md §11.8 (`V2_TOP_GEAR_SOCKET`, measured). The keyed cylinder is untouched. |
 | 2026-09-25 | 1.16 | **The defaults settle: A1 and B1 0.075 mm, A2 and B2 0.085 mm (D-K4).** Brennen's verdict on the A1/B1 print at 0.085: §5's numbers, the S-K1 note no longer quotes one value ("The defaults suit most printers"), the margins 0.925 / 0.915. The keyed Version 2 golden pair regenerated once more; nothing else moves. |

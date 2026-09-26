@@ -120,8 +120,8 @@ async function downloadName(page: Page, selector = '#download-stl-btn'): Promise
  * edit would.
  */
 // One key clearance dial per gear since 2026-09-25 (the ids are the request
-// fields), each at its own printed-round default (D-K4: top gears A1/B1
-// 0.075, bottom gears A2/B2 0.085).
+// fields), each at its own printed-round default - 0.075 on all four since
+// D-K6 (2026-09-26); the map stays per dial so a future round can move one.
 const V2_KEY_CLEARANCE_IDS = [
   'v2_key_clearance_a1_mm',
   'v2_key_clearance_a2_mm',
@@ -130,9 +130,9 @@ const V2_KEY_CLEARANCE_IDS = [
 ];
 const V2_KEY_CLEARANCE_DEFAULTS: Record<string, string> = {
   v2_key_clearance_a1_mm: '0.075',
-  v2_key_clearance_a2_mm: '0.085',
+  v2_key_clearance_a2_mm: '0.075',
   v2_key_clearance_b1_mm: '0.075',
-  v2_key_clearance_b2_mm: '0.085',
+  v2_key_clearance_b2_mm: '0.075',
 };
 
 async function setDial(page: Page, id: string, value: string) {
@@ -483,9 +483,9 @@ test.describe('Embosser Version 2', () => {
     expect(removed).toEqual([]);
     expect(on.embosser_version).toBe(2);
     expect(on.v2_key_clearance_a1_mm).toBe(0.065);
-    expect(on.v2_key_clearance_a2_mm).toBe(0.085);
+    expect(on.v2_key_clearance_a2_mm).toBe(0.075);
     expect(on.v2_key_clearance_b1_mm).toBe(0.075);
-    expect(on.v2_key_clearance_b2_mm).toBe(0.085);
+    expect(on.v2_key_clearance_b2_mm).toBe(0.075);
     // The legacy shared field is never sent by this build.
     expect('v2_key_clearance_mm' in on).toBe(false);
     // Same key set, one changed value: Version 2 moved the style to tactile

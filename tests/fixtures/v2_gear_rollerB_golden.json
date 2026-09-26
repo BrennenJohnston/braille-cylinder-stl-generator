@@ -26,9 +26,9 @@
       "ds_bowl_depth": 0.5,
       "embosser_version": 2,
       "v2_key_clearance_a1_mm": 0.075,
-      "v2_key_clearance_a2_mm": 0.085,
+      "v2_key_clearance_a2_mm": 0.075,
       "v2_key_clearance_b1_mm": 0.075,
-      "v2_key_clearance_b2_mm": 0.085,
+      "v2_key_clearance_b2_mm": 0.075,
       "gear_rollers_enabled": 1
     },
     "cylinder_params": {
