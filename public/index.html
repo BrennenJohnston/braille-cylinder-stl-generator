@@ -6946,9 +6946,15 @@
             if (isTactileIndicatorOn()) {
                 const indicatorWidth = parseFloat(document.getElementById('tactile_indicator_width')?.value) || 4.0;
                 const required = indicatorWidth + TACTILE_MIN_GAP_MARGIN_MM;
-                if (seamGap < required) {
+                // X Adjust slides the grid toward one side of the arrow, so the
+                // crowded side has seamGap/2 - |shift| of room: the same rule on
+                // the gap left after the shift (mirrors seam_gap_after_shift_mm
+                // in app/geometry_spec.py). A blank dial counts as no shift.
+                const xShift = parseFloat(document.getElementById('braille_x_adjust')?.value);
+                const seamGapAfterShift = seamGap - 2 * Math.abs(Number.isFinite(xShift) ? xShift : 0);
+                if (seamGapAfterShift < required) {
                     warningMsg.textContent = `The tactile indicator needs a seam gap of at least ${required.toFixed(1)} mm, ` +
-                        `but this layout leaves ${seamGap.toFixed(1)} mm. Reduce the number of braille cells, ` +
+                        `but this layout leaves ${seamGapAfterShift.toFixed(1)} mm. Reduce the number of braille cells, ` +
                         'increase the cylinder diameter, or narrow the indicator in Expert Mode.';
                     warningDiv.style.display = 'block';
                     if (wasHidden) {
@@ -7741,30 +7747,40 @@
                 const totalColumns = getAvailableColumns() + getReservedMarkerColumns();
                 const footprint = seamChannelFootprintMm();
                 const gap = Math.PI * diameter - (totalColumns - 1) * cellSpacing;
+                // X Adjust slides the whole grid round the barrel (mm of arc;
+                // negative brings the first cell toward the arrow), so the
+                // room either side of the groove slides with it. Mirrors
+                // x_shift_mm in app/geometry_spec.py _seam_channel_block.
+                const xShift = parseFloat(document.getElementById('braille_x_adjust')?.value);
                 // Tactile mode (D-T6, D-T8): the groove runs down the arrow
                 // column itself and, on the embossing plate, steps round the
                 // raised arrows on the first-cell side, so that side needs half
                 // an arrow, the groove and a margin either side of it before
-                // the first cell's dots. Visual: between the last cell's dots
-                // and column 0's triangle.
+                // the first cell's dots; the last-cell side must still clear
+                // the straight groove's half-width and margin. Visual: between
+                // the last cell's dots and column 0's triangle.
                 let free;
                 let need;
+                let lastCellRoom = Infinity;
+                let lastCellNeed = 0;
                 if (isTactileIndicatorOn()) {
                     const indicatorWidth = parseFloat(document.getElementById('tactile_indicator_width')?.value);
-                    free = gap / 2 - footprint;
+                    free = gap / 2 + xShift - footprint;
                     need = indicatorWidth / 2 + SEAM_CHANNEL_WIDTH_MM + 2 * SEAM_CHANNEL_MARGIN_MM;
+                    lastCellRoom = gap / 2 - xShift - footprint;
+                    lastCellNeed = SEAM_CHANNEL_WIDTH_MM / 2 + SEAM_CHANNEL_MARGIN_MM;
                 } else {
-                    const lo = -(gap / 2 - footprint);
-                    const hi = gap / 2 - dotSpacing / 2;
+                    const lo = -(gap / 2 - footprint) + xShift;
+                    const hi = gap / 2 - dotSpacing / 2 + xShift;
                     free = hi - lo;
                     need = SEAM_CHANNEL_WIDTH_MM + 2 * SEAM_CHANNEL_MARGIN_MM;
                 }
 
                 // A dial that is empty or mid-edit gives NaN; the box stays
                 // quiet rather than guessing, and the server has the last word.
-                if (Number.isFinite(free) && Number.isFinite(need)) {
+                if (Number.isFinite(free) && Number.isFinite(need) && Number.isFinite(lastCellRoom)) {
                     /* S-C2 and S-C3, signed off by Brennen (2026-09-21), and S-C5, signed off by him 2026-09-23; reword only with his sign-off. Byte-for-byte the server's sentences. */
-                    if (free < need) {
+                    if (free < need || lastCellRoom < lastCellNeed) {
                         text = isTactileIndicatorOn()
                             ? 'The seam channel was left out: there is not enough room for it beside the alignment arrows. Reduce the number of braille cells, increase the cylinder diameter, or narrow the indicator.'
                             : 'The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.';
@@ -7815,10 +7831,14 @@
                 const gridWidth = (totalColumns - 1) * cellSpacing;
                 const halfGap = (Math.PI * diameter - gridWidth) / 2;
                 const cardLength = parseFloat(document.getElementById('card_width')?.value);
-                const need = halfGap + gridWidth + footprint;
+                // X Adjust moves the first cell along the card (negative
+                // toward the arrow), so the need moves with it: mirrors
+                // x_shift_mm in tactile_card_need_mm / tactile_max_cells.
+                const xShift = parseFloat(document.getElementById('braille_x_adjust')?.value);
+                const need = halfGap + xShift + gridWidth + footprint;
                 if (Number.isFinite(need) && Number.isFinite(cardLength) && need > cardLength) {
-                    // need(n) = pi * D / 2 + (n - 1) * cell / 2 + footprint
-                    const room = cardLength - (Math.PI * diameter) / 2 - footprint;
+                    // need(n) = pi * D / 2 + xShift + (n - 1) * cell / 2 + footprint
+                    const room = cardLength - (Math.PI * diameter) / 2 - xShift - footprint;
                     const maxCells = room < 0 ? 0 : Math.floor((room * 2) / cellSpacing) + 1;
                     /* S-T1, signed off by Brennen (2026-09-21); reword only with his sign-off. Byte-for-byte the server's sentence. */
                     text = `The last braille cell would run off the card: this layout needs ${need.toFixed(1)} mm of card ` +

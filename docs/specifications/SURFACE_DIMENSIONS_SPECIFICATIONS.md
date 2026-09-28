@@ -569,7 +569,9 @@ Placement, as signed arc `s` along the surface from the seam centre, positive to
 gap       = π · diameter − (grid_columns_total − 1) · cell_spacing
 footprint = dot_spacing / 2 + max(active dot base radius, active recess mouth radius)
             (double-sided: the ds_* package's dot and bowl radii; the SAME number on both plates)
-visual :  lo = −(gap/2 − footprint)                  hi = gap/2 − dot_spacing/2        (column 0's triangle)
+shift     = braille_x_adjust (X Adjust, mm of arc; 0 by default — the grid slides by it, the seam centre and the
+            arrows do not; see BRAILLE_SPACING_SPECIFICATIONS.md §5, since 2026-09-27)
+visual :  lo = −(gap/2 − footprint) + shift          hi = gap/2 − dot_spacing/2 + shift        (column 0's triangle)
 tactile:  The groove runs down the arrow column itself (D-T6, 2026-09-21): theta = π on BOTH plates, the FULL
           height (D-T7, same day, after Brennen's print: wherever the groove stopped, the slicer chose a dot).
           COUNTER plate: straight, the same cut as visual mode - its recesses are deeper (0.7 mm) than the groove
@@ -596,14 +598,16 @@ tactile:  The groove runs down the arrow column itself (D-T6, 2026-09-21): theta
           asin(x / R), the round corners as chords of at most SEAM_CHANNEL_DETOUR_ARC_STEP_DEG (7.5°) set
           outside the circle, and every sideways stretch split into pieces of at most
           SEAM_CHANNEL_DETOUR_STEP_MM (1.0) so each chord stays within 0.005 mm of the barrel.
-          free = gap/2 − footprint (the first-cell side's room)
+          free = gap/2 + shift − footprint (the first-cell side's room; a negative shift crowds it)
           need = tactile_indicator_width / 2 + SEAM_CHANNEL_WIDTH_MM + 2 · SEAM_CHANNEL_MARGIN_MM = 3.5 mm
+          and the last-cell side, gap/2 − shift − footprint, must still clear the straight groove:
+          SEAM_CHANNEL_WIDTH_MM / 2 + SEAM_CHANNEL_MARGIN_MM = 0.75 mm (only a positive shift can fail it)
           The rule is nominal, in the tangent plane. On the surface the path reaches R·asin(x / R) plus the
           outside-chord bulge, about 0.016 mm beyond b + d at the defaults, so exactly at the limit (14 cells
           on a 30.5 mm barrel: free 3.509) the flat beside the first cell's dots is 0.243 mm, not 0.25 - far
           below print resolution, and the UI mirrors the same simple rule.
-visual:   free = hi − lo ;  need = SEAM_CHANNEL_WIDTH_MM + 2 · SEAM_CHANNEL_MARGIN_MM = 1.5 mm
-          s_c = (lo + hi) / 2
+visual:   free = hi − lo (the shift cancels: the window slides, its width does not) ;  need = SEAM_CHANNEL_WIDTH_MM + 2 · SEAM_CHANNEL_MARGIN_MM = 1.5 mm
+          s_c = (lo + hi) / 2  (moves by the shift, so the groove keeps equal margins to the moved grid)
           theta = π − s_c / R  (positive plate)      theta = π + s_c / R  (negative plate)
 ```
 
@@ -630,7 +634,7 @@ Fit rules (each leaves the groove out and adds one warning to `spec.warnings`; t
 | Rule | Warning (S-C2 and S-C3 signed 2026-09-21, S-C5 signed 2026-09-23) |
 |------|---------------------------|
 | visual: `free < 1.5 mm` | S-C2: "The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter." |
-| tactile (D-T8): the first-cell side's `gap/2 − footprint` under `tactile_indicator_width/2 + 1.5 mm` — the room the embossing plate's detour needs, applied to both plates so they keep or lose the groove together | S-C5: "The seam channel was left out: there is not enough room for it beside the alignment arrows. Reduce the number of braille cells, increase the cylinder diameter, or narrow the indicator." — its own sentence because the arrow width can cause it too, where S-C2 would blame only the cell count and diameter |
+| tactile (D-T8): the first-cell side's `gap/2 + shift − footprint` under `tactile_indicator_width/2 + 1.5 mm` — the room the embossing plate's detour needs, applied to both plates so they keep or lose the groove together — or the last-cell side's `gap/2 − shift − footprint` under 0.75 mm (`shift` = X Adjust, 0 by default: at 13 tactile cells on 30.8 mm the groove survives X −3 and is left out at X −4) | S-C5: "The seam channel was left out: there is not enough room for it beside the alignment arrows. Reduce the number of braille cells, increase the cylinder diameter, or narrow the indicator." — its own sentence because the arrow width can cause it too, where S-C2 would blame only the cell count and diameter |
 | wall under the apex `< 1.2 mm` — against the polygonal cutout's circumradius (`r / cos(π/sides)`), or `wall_thickness − depth` for a barrel hollowed by wall thickness (2 mm when the field is absent); solid barrels (integrated gears, Version 2) skip this rule | S-C3: "The seam channel was left out: the cylinder wall would be thinner than 1.2 mm under it." |
 
 At the default 13.0 mm cutout (12-gon, circumradius 13.459) the wall under the apex is 15.4 − 0.5 − 13.459 = 1.441 mm; a 13.25 mm inscribed cutout (circumradius 13.717) already breaks 1.2.
@@ -1177,6 +1181,7 @@ self.counter_dot_depth = max(0.0, min(depth, self.card_thickness - self.epsilon_
 
 | Date | Change |
 |------|--------|
+| 2026-09-27 | **§2.6: the seam channel's room rules read X Adjust.** The X Adjust dial now works on cylinders (BRAILLE_SPACING_SPECIFICATIONS.md §5): the grid slides round the barrel by the dial's mm of arc while the seam centre and the arrows stay put. In visual mode the free window and the groove slide with the grid (equal margins kept); in tactile mode the first-cell side has `gap/2 + shift − footprint` against the detour's 3.5 mm and the last-cell side `gap/2 − shift − footprint` against the straight groove's 0.75 mm, S-C5 unchanged; `updateSeamChannelUI()` mirrors both. The tactile arrow-gap warning likewise reads the gap left after the shift (`gap − 2·|shift|`). Nothing changes at 0. |
 | 2026-08-31 | Cylinder height default 52 → 54 mm: the barrel now carries a 1 mm shelf past each edge of the 52 mm card so a slightly mis-rolled card cannot ruffle over the ends. Braille rows remain centered (the layout centers itself in the height). Cylinder height no longer falls back to `card_height` anywhere — the absent-field default is 54, owned by `app/geometry/gears.py` (`DEFAULT_CYLINDER_HEIGHT_MM`). |
 | 2026-08-31 | **Cylinder height default returns to 52 mm — the 54 mm card-shelf barrel is Embosser Version 2 only** (Brennen's deployment verdict, same day). 52 is the Version 1 standard barrel, the height every previously shipped V1 gear model pairs with; the one-day 54 default made the integrated-gears BETA warn/reject on untouched dials. The decoupling from `card_height` stays: the absent-field fallback is 52, still owned by `gears.DEFAULT_CYLINDER_HEIGHT_MM`, and Version 2 still forces 30.8 × 54 via its preset overrides. Both card-stock presets carry 52 again. |
 | 2026-09-20 | **Slicer seam channel (new §2.6).** Every cylinder now carries a V 1.0 × 0.5 mm groove the full height of its outer surface, in the seam gap beside the row-indicator column, on both plates, so a slicer's default "aligned" seam mode hides each layer's seam there instead of in a dot. ON by default; Expert Mode switch `#seam_channel_enabled` turns it off and is the only thing that sends `seam_channel_enabled: 0`. Constants in `app/geometry_spec.py` (`SEAM_CHANNEL_*`), placement and fit rules with worked numbers, the two DRAFT omission warnings S-C2/S-C3, the worker cut, the regenerated goldens and the slicing-spike evidence are all in §2.6. Decisions D-1, D-2, D-13, D-14 (no export rotation), D-15 (groove size). |

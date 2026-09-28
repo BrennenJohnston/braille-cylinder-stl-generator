@@ -513,6 +513,39 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      on 2026-09-23 as OpenSCAD v2.8.2 (tag on 75a19f5), re-vendored the same
      day - the recut replaced by the detour round the raised arrows (6e).
 
+6h. X Adjust on cylinders (2026-09-27, Brennen's request after his print of
+   the development build: the front's first cell sat too far from the arrow
+   and its last cell ran off the card; the back lost its first cells). Until
+   that day app/geometry_spec.py's cylinder path NEVER read braille_x_adjust
+   (Y Adjust worked) - the dial was sent, validated, stored and ignored, and
+   an earlier "fix" was confirmed on the spec alone. Now:
+   - The dial slides the WHOLE text grid round the barrel by its value in mm
+     of arc, added INSIDE apply_seam / apply_seam_mirrored (x_shift_angle =
+     braille_x_adjust / radius) - i.e. in the card frame both plates share
+     and AFTER the double-sided back mirror, so front dots, back dots and
+     their paired recesses all move together and A's theta is still minus
+     B's. Never add it to start_angle or inside _text_dot_placements: the
+     back mirror would flip it for the back text.
+   - The tactile arrows (TACTILE_SEAM_THETA), the tactile groove and the
+     Version 2 keys do NOT move - they are the reference the grid moves
+     against.
+   - DIRECTION (his words, verified on the preview and the exported STL):
+     from the default cylinder camera a NEGATIVE X moves Cylinder A's dots
+     and recesses LEFT and Cylinder B's RIGHT by |X| mm of arc; on both that
+     is the first cell moving TOWARD the arrow (A's column 0 sits right of
+     its arrow, B's left of its). Never re-derive or flip this.
+   - Room rules read the shift: seam channel (visual window slides; tactile
+     first-cell side gap/2 + shift - footprint vs 3.5, last-cell side
+     gap/2 - shift - footprint vs 0.75), the tactile arrow-gap rule
+     (gap - 2|shift|), tactile_card_need_mm / tactile_max_cells (need
+     + shift). index.html's updateSeamChannelUI, checkPhysicalFitNow and
+     updateCardFitUI mirror them (a test pins that all three read the dial).
+   - At 0 nothing changes: all eight golden pairs byte-identical. Proof of
+     the bytes is tests/e2e/xAdjust.spec.ts (real worker exports at 0 and
+     -3, dome-cap arcs measured; arrows at 0.0); the spec-level pins are in
+     tests/test_x_adjust_cylinder.py. Neither OpenSCAD file has an X Adjust
+     dial, so there is no parity to keep there.
+
 ## Settings changes — order of operations
 7. settings.schema.json is the single source of truth. When adding or changing
    any parameter/default: update settings.schema.json FIRST, then
