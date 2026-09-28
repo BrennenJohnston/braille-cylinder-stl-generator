@@ -563,6 +563,58 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      preserves it across a reload. Announcement clause S-X1 (DRAFT) rides
      in the composed version announcement when the dial moved.
 
+6i. Text entry (2026-09-28, three of Brennen's user-testing findings):
+   - PRIVACY RULE: NO text or braille input is EVER persisted - not
+     #auto-text, the line1..N rows, #back-text, back_line1..N, nor either
+     Braille (Unicode) field. Only 3D design settings persist, and only in
+     the user's browser. Even a locally stored value would look like the
+     app collecting what people write. braille_prefs_back_text (the one
+     field that WAS saved, restored on the next visit while the front was
+     not) is retired: never written or read, scrubbed on every load
+     (localStorage.removeItem in applyPersistedSettings) and by Reset.
+     tests/test_text_privacy.py pins the source; tests/e2e/textPrivacy.spec.ts
+     proves it in a browser. Never add a text key to persistence again.
+   - GENERATE FILLS THE BRAILLE FIELD: every Generate writes the translation
+     it embosses into #braille-unicode (and #back-braille-unicode on a
+     double-sided run) as the PRISTINE mirror, via the same helper the
+     Translate button uses (showTranslationInBrailleField /
+     showTranslationInBackBrailleField, announce=false: the run's own
+     messages are the one announcement). The field KEEPS ITS AUTHORITY: a
+     non-empty field - mirror or hand-edit - is embossed verbatim on the
+     next Generate (Brennen's 2026-08-23 flow depends on it: overflowing
+     text, Translate truncates to what fits, Generate succeeds with the
+     overflow warning appended - completionWarnings.spec.ts pins it; a
+     "display-only mirror" was tried on 2026-09-28 and broke that flow by
+     re-translating into the truncation gate). To keep consecutive
+     requests byte-identical the FRONT field path now PADS `lines` to
+     grid_rows and takes per-row tables from the manual selects (the back
+     field path always padded) - four e2e specs diff consecutive bodies.
+   - PRISTINE FIELDS EMPTY WHEN AN EFFECTIVE TRANSLATION SETTING CHANGES
+     (not only on a text change): translationSettingsKey(side) =
+     [available cells, rows, language table, capitals, number signs,
+     placement mode, per-row tables] is remembered at fill time
+     (brailleFieldMirrorKey / backBrailleFieldMirrorKey) and
+     reconcilePristineBrailleFields() compares it on every form
+     input/change, clearing with reason 'setting' (S-BF1 / S-BF2, DRAFT).
+     A FINGERPRINT, never "which control fired": the double-sided lock's
+     tactile dispatch at the same cell count, a dot-size dial or X Adjust
+     leave the mirror alone (a selector-based version cleared the field
+     when Double-sided was chosen and broke the same 2026-08-23 flow).
+     Dirty fields are never touched. Without this, the auto-fill would
+     have embossed a stale mirror after a language or cell-count change.
+   - PLACEHOLDERS: #auto-text carries S-P3 "Input your text information
+     here." (DRAFT, his words); #braille-unicode carries S-P4, that
+     sentence's EXACT translation at the defaults (UEB g2, capitals, 13
+     cells: "⠠⠔⠏⠥⠞ ⠽⠗ ⠞⠑⠭⠞" / "⠔⠿⠍⠁⠰⠝ ⠐⠓⠲"); #back-text keeps its signed
+     2026-08-17 placeholder and #back-braille-unicode carries S-P5, the
+     translation of its FIRST sentence (the whole sample needs five rows).
+     MEASURED through the real field, never typed from memory;
+     tests/e2e/textEntryPlaceholders.spec.ts re-derives them. Not spoken:
+     aria-describedby outranks a placeholder in the AX tree (CDP-checked).
+     Style: the --text-placeholder token in all three themes (#5b6472 /
+     #b0b8c4 / #7fd67f = 5.72 / 5.15 / 9.8:1 on --bg-input), opacity 1,
+     italic for text boxes, upright for textarea[lang="und-Brai"].
+
 ## Settings changes — order of operations
 7. settings.schema.json is the single source of truth. When adding or changing
    any parameter/default: update settings.schema.json FIRST, then

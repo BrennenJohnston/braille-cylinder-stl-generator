@@ -209,7 +209,7 @@ Auto Placement mode allows users to enter all text in a single textarea. The sys
 <div id="auto-input-container" style="display: none;">
     <label for="auto-text" class="line-label">Auto Placement Text</label>
     <textarea id="auto-text" rows="4"
-        placeholder="Type all your text here. It will be translated to braille and auto-wrapped across rows based on available cells."
+        placeholder="Input your text information here."
         style="width: 100%; resize: vertical;"></textarea>
     <div id="auto-overflow-warning" class="grade-note" style="margin-top: 0.6em; color: #d73502; display: none;">
         <strong>Warning:</strong> <span id="auto-overflow-message"></span>
@@ -226,9 +226,9 @@ Auto Placement mode allows users to enter all text in a single textarea. The sys
 │                                                                   │
 │  Auto Placement Text                                              │
 │  ┌───────────────────────────────────────────────────────────┐   │
-│  │ Type all your text here. It will be translated to         │   │
-│  │ braille and auto-wrapped across rows based on available   │   │
-│  │ cells.                                                     │   │
+│  │ Input your text information here.                          │   │
+│  │                                                            │   │
+│  │                                                            │   │
 │  │                                                            │   │
 │  └───────────────────────────────────────────────────────────┘   │
 │                                                                   │
@@ -237,6 +237,8 @@ Auto Placement mode allows users to enter all text in a single textarea. The sys
 │                                                                   │
 └───────────────────────────────────────────────────────────────────┘
 ```
+
+**Placeholders (2026-09-28, Brennen's request).** New users found the two boxes hard to tell apart, so each empty box shows a sample in the placeholder style every form uses (muted colour `--text-placeholder`, italic for text, gone the moment they type; the browser's default placeholder grey failed contrast on `--bg-input`, the token clears 4.5:1 in all three themes - 5.72 / 5.15 / 9.8). The text box carries **S-P3** *"Input your text information here."* (DRAFT, his words) and the Braille (Unicode) box carries **S-P4**, that sentence's own translation exactly as Translate to Braille produces it at the defaults (UEB grade 2, capitals on, 13 cells: `⠠⠔⠏⠥⠞ ⠽⠗ ⠞⠑⠭⠞` / `⠔⠿⠍⠁⠰⠝ ⠐⠓⠲`), so the reader sees which box takes text and which shows braille. The Back of Card text box keeps its signed 2026-08-17 placeholder; its braille box carries **S-P5**, the translation of that placeholder's FIRST sentence (`⠠⠞⠽⠏⠑ ⠮ ⠞⠑⠭⠞` / `⠿ ⠮ ⠃⠁⠉⠅ ⠷ ⠮` / `⠉⠜⠙ ⠐⠓⠲`), because the whole sample needs five rows at 13 cells and would be cut off. Both braille placeholders were measured through the real field, never typed from memory, and `tests/e2e/textEntryPlaceholders.spec.ts` re-derives them on every run. The braille placeholder is not spoken: the field's description comes from `aria-describedby`, which takes precedence in the computed accessibility tree (checked over CDP by the same test).
 
 ### How Auto Placement Processes Text
 
@@ -899,7 +901,7 @@ The **Braille (Unicode)** textarea (`#braille-unicode`) gives users direct contr
 
 ### The Core Contract (safety-critical)
 
-> **Whenever the field is non-empty, its lines are used exactly as written.** Generation skips liblouis entirely, so what the user reads in the box is what gets embossed.
+> **Whenever the field is non-empty, its lines are used exactly as written.** Generation skips liblouis entirely, so what the user reads in the box is what gets embossed - whether the content is a hand-edit, a paste, or the pristine mirror a Translate or (since 2026-09-28) a Generate left there. A mirror can never be stale: it is emptied the moment the text or an effective translation setting changes. Since 2026-09-28 the field path pads `lines` to `grid_rows` and sends the same per-row tables the translated paths do (the back field path always padded), so a Generate from the mirror the previous Generate left sends the very same body.
 
 There is no silent reconciliation between the English inputs and the field, and no re-wrapping of edited lines. That is the property the state machine below exists to protect.
 
@@ -945,8 +947,10 @@ Inside the "Enter Text for Braille Translation" fieldset, directly below the tex
 
 | State | Meaning | English text edit | Translate button |
 |-------|---------|-------------------|------------------|
-| `pristine` (`brailleFieldDirty === false`) | Field mirrors a translation, or is empty | **Clears** the field and announces why | Refills |
+| `pristine` (`brailleFieldDirty === false`) | Field mirrors a translation (left by the button or, since 2026-09-28, by Generate), or is empty | **Clears** the field and announces why (so does an effective translation-setting change, 2026-09-28) | Refills |
 | `dirty` (`brailleFieldDirty === true`) | Hand-edited or pasted | **Never touched** | Overwrites, announces, returns to `pristine` |
+
+**Since 2026-09-28 (Brennen's request) every Generate fills the field too.** A user who types text and goes straight to Generate used to see an empty braille box; now the translation the run is about to emboss is written into the field as its pristine mirror (`showTranslationInBrailleField(lines, [], announce = false)`, the same helper the button uses), front and - on a double-sided run - back, with no announcement of its own: the run's progress and ready messages are that action's one announcement (ADA SOP Section 12, C9); the visible status line still says *Filled from translation*. The field keeps its authority - the next Generate embosses the mirror exactly as written, as it always has after Translate to Braille (Brennen's 2026-08-23 flow, where overflowing text translated and truncated to what fits then generated legitimately with the overflow warning on screen, depends on this) - and the field path now pads its body to `grid_rows` so a Cylinder A / Cylinder B pair's two requests, and any two Generates in a row, are byte-identical. So that the mirror on screen is always the translation that would be embossed, a pristine field is now also **emptied when an effective translation setting changes**, exactly as it is when the text changes. "Effective" is a fingerprint remembered at fill time (`translationSettingsKey(side)`: the available cells, the rows, the language table and the per-row tables, the capital-letter and number-sign choices, the placement mode) and compared on every form change by `reconcilePristineBrailleFields()` - never "which control fired" - so the double-sided lock moving the style to tactile at the same cell count, a dot-size dial or X Adjust leave the mirror alone, while these empty it: the language table and the per-line tables, Capitalized Letters, Number Signs, Rows, Cells, the Row Indicator Style and Indicator Letters (they set the cells a row holds) and the placement mode. Front-only controls (front placement, `line_lang_*`) leave the back field alone and vice versa; hand-edited fields are never touched; a dial that does not change the translation (X Adjust, dot sizes) leaves the field alone. `clearPristineBrailleField(reason)` carries `'text'` or `'setting'` so the status and the announcement say which (S-BF1 / S-BF2, DRAFT).
 
 A pristine field is cleared rather than left stale because its content is machine-generated: nothing the user typed is lost, and the field can never silently disagree with the English text it claims to mirror. A dirty field outranks the English inputs unconditionally.
 
@@ -958,6 +962,8 @@ Status and live-region messages:
 | User clears the field | `Empty — the text above will be translated` | "Braille field cleared. The text above will be translated instead." |
 | Translate button succeeds | `Filled from translation — edit any cell you want to change.` | "Braille field updated from translation." |
 | English text changes while pristine | `Cleared because the text changed — press Translate to Braille to refresh` | "Braille field cleared because the text changed. Press Translate to Braille to refresh it." |
+| A translation setting changes while pristine (2026-09-28) | S-BF1 (DRAFT): `Cleared because a translation setting changed — press Translate to Braille to refresh` | S-BF2 (DRAFT): "Braille field cleared because a translation setting changed. Press Translate to Braille to refresh it." |
+| Generate translates the text (2026-09-28) | `Filled from translation — edit any cell you want to change.` | nothing of its own - the run's messages |
 
 ### Translate to Braille
 
@@ -1020,7 +1026,8 @@ if (plateType === 'positive' && useBrailleField) {
 - `original_lines` still carries the English inputs (manual lines or auto text) when they are non-empty, so each row's indicator letter survives the braille-field bypass — the field is normally filled from that same text via Translate to Braille. Only braille pasted with the English inputs left empty has no source to derive a letter from; then `original_lines` is sent as `null` and `extract_cylinder_geometry_spec()` falls back to the square placeholder (its existing `else` branch for absent `original_lines`).
 - The "Please enter text in at least one line" guard is bypassed, since the field supplies its own content.
 - A translation receipt is still logged (PR-10 parity) with `source: 'braille-unicode-field'` and the dirty flag, so an incorrect-braille report can be traced even though liblouis was bypassed.
-- The field is **not** persisted to `localStorage`: it holds content, not a preference.
+- When the field is empty and the text is translated instead, the translation is written into the field before the request goes out (2026-09-28; see the state machine above), so the next Generate takes this verbatim path with the same cells - and sends the same body: `translatedLines` is padded to `grid_rows` and `per_line_language_tables` takes each non-empty row's per-line table in Manual placement (the master table otherwise), exactly as the translated paths do.
+- The field is **not** persisted to `localStorage`: it holds content, not a preference - and since 2026-09-28 no text or braille input is (Section 11).
 
 ### Coverage
 
@@ -1402,8 +1409,10 @@ auto warning box) so the two warnings can never disagree.
 | `braille_prefs_grid_rows` | Number of rows | Integer string |
 | `braille_prefs_grid_columns` | Number of columns | Integer string |
 | `braille_prefs_double_sided_enabled` | Double-sided beta toggle | `"1"` or `"0"` |
-| `braille_prefs_back_text` | Back of Card source text (double-sided beta) | Raw text, newlines = rows |
+| ~~`braille_prefs_back_text`~~ | ~~Back of Card source text~~ — **RETIRED 2026-09-28** (see the privacy rule below); scrubbed on every load and by Reset | — |
 | `braille_prefs_back_placement_mode` | Back of Card placement mode (2026-09-21) | `"auto"` or `"manual"` |
+
+**Privacy rule (Brennen, 2026-09-28): no text or braille input is ever stored.** Not the Auto Placement text, the manual rows, the Back of Card text, nor either Braille (Unicode) field - only 3D design settings persist, and only in the user's own browser. Even a value kept locally would give the impression that the app collects what people write. The back text had been the one exception (saved on every keystroke and restored on the next visit, while the front never was - the asymmetry that surfaced it); `braille_prefs_back_text` is no longer written or read, and any value left from before is removed on load. `tests/test_text_privacy.py` pins the page's source (no persistence call names a text or braille key) and `tests/e2e/textPrivacy.spec.ts` proves it in a browser: nothing typed into any of the six boxes appears in `localStorage` or `sessionStorage`, and none of it survives a reload while the settings do.
 
 ### Persistence Listeners
 
@@ -1937,8 +1946,9 @@ None required. All implementations match the specification exactly.
 
 ---
 
-*Document Version: 1.8*
-*Last Updated: 2026-09-21 - Back of Card parity (programme sub-plan D, decision D-11): Section 2 records the back's own placement toggle, Section 8's double-sided subsection the Manual Placement rows with per-line tables (`back_per_line_language_tables` / `text.back_languages`, sent only for a manually placed back), and the Section 11 table the `braille_prefs_back_placement_mode` key. Strings S-D1 and S-D3 signed 2026-09-21.*
+*Document Version: 1.9*
+*Last Updated: 2026-09-28 - Three of Brennen's user-testing findings. (1) Privacy: no text or braille input is persisted any more - `braille_prefs_back_text` retired and scrubbed (Section 11's rule). (2) Generate fills the Braille (Unicode) field with the translation it embosses, front and back, silently; a pristine field is now also emptied when a translation setting changes (Section 6.3; S-BF1 / S-BF2 DRAFT). (3) Placeholders: the text box carries the sample S-P3 (DRAFT) and the braille boxes their exact translations S-P4 / S-P5, styled with the new `--text-placeholder` token (Section 3).*
+*Previous: 1.8, 2026-09-21 - Back of Card parity (programme sub-plan D, decision D-11): Section 2 records the back's own placement toggle, Section 8's double-sided subsection the Manual Placement rows with per-line tables (`back_per_line_language_tables` / `text.back_languages`, sent only for a manually placed back), and the Section 11 table the `braille_prefs_back_placement_mode` key. Strings S-D1 and S-D3 signed 2026-09-21.*
 *Previous: 1.7, 2026-08-23 - `lang="und-Brai"` on the braille field investigated and KEPT (new note in Section 8 UI Structure). NVDA says "und (not supported)" on every visit - 17 times in a 30-minute walkthrough - and it is kept anyway: the tag is correct, nothing in the code reads it, the announcement is a user-configurable NVDA setting, and removing it would trade a switchable annoyance for an untested risk to braille-display users. Brennen decided after the investigation; the note records that a braille display, not a speech test, is what would settle it. No markup changed.*
 *Previous: 1.6, 2026-08-22 - Two descriptions stop being spoken in full, and no word of either changed. (1) The language combobox is described by its LAST SENTENCE only - `id="language-help"` moved onto a `<span>` around "Switch to uncontracted (grade 1) only if your reader has asked for it." (13 w), and the BANA rationale before it stays in the same div, visible and unwired. Its dropped opening, "Default: English (UEB), United States - contracted (grade 2)", is exactly what the combobox announces as its selected option, so keeping it wired restated the label. Measured **71 -> 13 words**; it had been spoken 18 times in a 34-minute NVDA session (audit F-D, decision D2 step 2). (2) The **Disabled** capitals radio no longer carries `aria-describedby`, and the orphan `#caps-disabled-desc` span is gone with it: its text duplicated BOTH the live `#caps-warning` and the VISIBLE `.grade-note` beneath the radios, which is unchanged, so nothing left the page (audit F-J, decision D6). `#caps-enabled-desc` is deliberately still wired. The braille-field element table now records that `#braille-unicode-help` is a span around its first sentence, and that this textarea's budget is the ceiling minus `#braille-unicode-status`. Every HTML sample here updated - they would otherwise teach the old markup. Keepers approved by Brennen as drafts before the edit (FD-25). Pattern: `UI_INTERFACE_CORE_SPECIFICATIONS.md` 4.13.*
 *Previous: 1.5, 2026-08-22 - The four per-line language selects no longer carry a screen-reader description (audit F-K; commit 23575ab); descriptions on those selects 4 -> 0, spans in the DOM 4 -> 0, and the sibling `#line{N}-help` deliberately unchanged.*

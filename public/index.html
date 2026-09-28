@@ -71,6 +71,10 @@
             --text-primary: #2d3748;
             --text-secondary: #4a5568;
             --text-tertiary: #666;
+            /* Placeholder text in every box: muted against the typed colour,
+               and 5.72:1 on --bg-input (WCAG 1.4.3 applies to placeholders;
+               the browser default, darkgray, is 2.3:1 on this surface). */
+            --text-placeholder: #5b6472;
             --border-primary: #e2e8f0;
             --border-secondary: #cbd5e1;
             --border-focus: #3182ce;
@@ -139,6 +143,7 @@
             --text-primary: #f7fafc;
             --text-secondary: #e2e8f0;
             --text-tertiary: #cbd5e1;
+            --text-placeholder: #b0b8c4; /* 5.15:1 on --bg-input, muted next to --text-primary */
             --border-primary: #4a5568;
             --border-secondary: #718096;
             --border-focus: #63b3ed;
@@ -190,6 +195,7 @@
             --text-primary: #02fe05; /* Green instead of white */
             --text-secondary: #02fe05; /* Green instead of white */
             --text-tertiary: #02fe05; /* Green instead of white */
+            --text-placeholder: #7fd67f; /* Softer green, 9.8:1 on --bg-input */
             --border-primary: #ffff00;
             --border-secondary: #00ffff;
             --border-focus: #ff00ff;
@@ -1707,6 +1713,22 @@
             border: 1.5px solid var(--border-focus);
             outline: none;
             background: var(--bg-primary);
+        }
+
+        /* Placeholder text (2026-09-28): the sample in an empty box reads as a
+           hint, not as content - muted colour, italic - and goes the moment the
+           user types, as placeholders do everywhere. opacity 1 because Firefox
+           fades placeholders by default, which would undo the contrast the
+           token provides. The braille boxes keep upright glyphs: italic dots
+           mean nothing. */
+        textarea::placeholder,
+        input[type="text"]::placeholder {
+            color: var(--text-placeholder);
+            opacity: 1;
+            font-style: italic;
+        }
+        textarea[lang="und-Brai"]::placeholder {
+            font-style: normal;
         }
 
         /* Ensure number inputs are properly styled and functional */
@@ -3427,7 +3449,11 @@
                               <!-- Auto placement textarea (hidden by default) -->
                               <div id="auto-input-container" style="display: none;">
                                   <label for="auto-text" class="line-label">Auto Placement Text</label>
-                                  <textarea id="auto-text" rows="4" placeholder="Type all your text here. It will be translated to braille and auto-wrapped across rows based on available cells." style="width: 100%; resize: vertical;" autocomplete="off"></textarea>
+                                  <!-- S-P3, DRAFT 2026-09-28 - awaiting Brennen's sign-off (his words: a sample
+                                       that says input your text information here). The braille field below
+                                       carries this sample's own translation as ITS placeholder (S-P4), so a
+                                       new user sees which box takes text and which shows braille. -->
+                                  <textarea id="auto-text" rows="4" placeholder="Input your text information here." style="width: 100%; resize: vertical;" autocomplete="off"></textarea>
                                   <!-- Announced through #a11y-status, not from here: this box is
                                        display:none between messages, so it is inserted into the
                                        accessibility tree already holding its text, and an insertion
@@ -3453,8 +3479,15 @@
                               <!-- Editable Unicode braille field: the authoritative text when non-empty -->
                               <div class="braille-field" style="margin-top: 1em;">
                                   <label for="braille-unicode" class="line-label">Braille (Unicode) — one line per row</label>
+                                  <!-- S-P4 (2026-09-28): the placeholder is EXACTLY what Translate to Braille
+                                       puts here for the text box's sample (S-P3) at the defaults - UEB grade 2,
+                                       capitals on, wrapped at 13 cells - measured through the real field, never
+                                       typed from memory; tests/e2e/textEntryPlaceholders.spec.ts re-derives it.
+                                       Not spoken: the description comes from aria-describedby, which takes
+                                       precedence over a placeholder in the accessibility tree (checked over CDP). -->
                                   <textarea id="braille-unicode" name="braille_unicode" rows="4" lang="und-Brai"
                                             autocomplete="off" spellcheck="false"
+                                            placeholder="⠠⠔⠏⠥⠞ ⠽⠗ ⠞⠑⠭⠞&#10;⠔⠿⠍⠁⠰⠝ ⠐⠓⠲"
                                             aria-describedby="braille-unicode-help braille-unicode-status"></textarea>
                                   <!-- Upward half of the two-way translation: braille here → text above -->
                                   <div class="translate-row">
@@ -3483,9 +3516,11 @@
                            again. updateDoubleSidedUI() enables it when Double-sided is chosen.
                            The legend keeps the signed 2026-08-16 text as this section's h2.
                            The ids inside are load-bearing: the generate handler reads
-                           #back-text.value, persistence stores braille_prefs_back_text, the
-                           back braille field is wired by wireBackBrailleField(), and
-                           computeBackOverflow() finds #ds-back-overflow-warning by id. -->
+                           #back-text.value, the back braille field is wired by
+                           wireBackBrailleField(), and computeBackOverflow() finds
+                           #ds-back-overflow-warning by id. Nothing typed here is stored:
+                           since 2026-09-28 no text or braille input is persisted anywhere
+                           (privacy - Brennen's rule; only 3D design settings are kept). -->
                       <div class="line-input-group" id="double-sided-section">
                           <fieldset class="line-input-fieldset" id="back-entry-fieldset" disabled>
                               <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
@@ -3565,8 +3600,14 @@
                                            status line and the sr-only live region all mirror the front's. -->
                                       <div class="braille-field" style="margin-top: 1em;">
                                           <label for="back-braille-unicode" class="line-label">Braille (Unicode) — one line per row</label>
+                                          <!-- S-P5 (2026-09-28): the translation of the FIRST sentence of the back
+                                               text box's signed placeholder ("Type the text for the back of the card
+                                               here."), measured through the real field at the defaults. The whole
+                                               signed sample needs five rows at 13 cells and would be cut off in this
+                                               four-row box. Same test re-derives it. -->
                                           <textarea id="back-braille-unicode" name="back_braille_unicode" rows="4" lang="und-Brai"
                                                     autocomplete="off" spellcheck="false"
+                                                    placeholder="⠠⠞⠽⠏⠑ ⠮ ⠞⠑⠭⠞&#10;⠿ ⠮ ⠃⠁⠉⠅ ⠷ ⠮&#10;⠉⠜⠙ ⠐⠓⠲"
                                                     aria-describedby="back-braille-unicode-help back-braille-unicode-status"></textarea>
                                           <!-- Upward half: braille here → back text above -->
                                           <div class="translate-row">
@@ -5619,6 +5660,11 @@
         // current and future field with no extra bookkeeping.
         ['input', 'change'].forEach(eventName => {
             form.addEventListener(eventName, () => {
+                // A pristine braille field mirrors a translation made under the
+                // settings of the moment (2026-09-28): emptied here when an
+                // effective translation setting changed, exactly as it is when
+                // the text changes; hand-edited fields are never touched.
+                reconcilePristineBrailleFields();
                 resetToGenerateState();
                 // A finished A/B pair is invalidated by an edit for the same
                 // reason the STL is, and a blocking validation notice stops
@@ -6271,8 +6317,19 @@
         let brailleFieldProblem = null;
         // Set when a pristine field was emptied because the English text changed,
         // so the status line can keep saying why instead of falling back to the
-        // generic empty message.
+        // generic empty message. The reason ('text' or 'setting') picks the
+        // sentence: since 2026-09-28 a translation SETTING change empties a
+        // pristine field too, because Generate now fills the field on every
+        // run and a mirror made under yesterday's language or cell count must
+        // not outlive the change (hand-edited fields are never touched).
         let brailleFieldAutoCleared = false;
+        let brailleFieldAutoClearReason = null;
+
+        /* S-BF1 / S-BF2, DRAFT 2026-09-28 - awaiting Brennen's sign-off: the status
+           and the announcement when a translation setting emptied a pristine
+           field. The text-change pair keeps its existing wording. */
+        const S_BF1_SETTING_CLEARED_STATUS = 'Cleared because a translation setting changed — press Translate to Braille to refresh';
+        const S_BF2_SETTING_CLEARED_ANNOUNCE = 'Braille field cleared because a translation setting changed. Press Translate to Braille to refresh it.';
 
         function isBrailleUnicodeChar(ch) {
             const code = ch.codePointAt(0);
@@ -6311,13 +6368,75 @@
         // What the status line says when the field has nothing wrong with it.
         function brailleFieldBaselineStatus() {
             if (!isBrailleFieldActive()) {
-                return brailleFieldAutoCleared
-                    ? 'Cleared because the text changed — press Translate to Braille to refresh'
-                    : 'Empty — the text above will be translated';
+                if (!brailleFieldAutoCleared) return 'Empty — the text above will be translated';
+                return brailleFieldAutoClearReason === 'setting'
+                    ? S_BF1_SETTING_CLEARED_STATUS
+                    : 'Cleared because the text changed — press Translate to Braille to refresh';
             }
             return brailleFieldDirty
                 ? 'Edited — will be used as-is'
                 : 'Filled from translation — edit any cell you want to change.';
+        }
+
+        // What a translation depends on besides the text itself: the cells a
+        // row holds, the rows, the language table and the per-row tables, the
+        // capital-letter and number-sign choices and the placement mode. A
+        // pristine field is a mirror made under these; the key is remembered at
+        // fill time and compared on every form change, so the mirror is emptied
+        // (S-BF1 / S-BF2) when one of them really changes and left alone when a
+        // control fires without changing anything effective - the double-sided
+        // lock moving the style to tactile at the same cell count, a dot-size
+        // dial, X Adjust. Never derived from which control fired: what matters
+        // is whether the same text would translate the same way now.
+        function translationSettingsKey(side) {
+            const rows = parseInt(document.getElementById('grid_rows')?.value) || 4;
+            const table = document.getElementById('language-table')?.value || DEFAULT_LANGUAGE_TABLE;
+            const capitals = document.querySelector('input[name="capitalize_letters"]:checked')?.value || '';
+            const numberSigns = document.querySelector('input[name="repeat_number_sign"]:checked')?.value || '';
+            const placement = side === 'back'
+                ? backPlacementMode()
+                : (document.querySelector('input[name="placement_mode"]:checked')?.value || 'manual');
+            const prefix = side === 'back' ? 'back_line_lang_' : 'line_lang_';
+            const perRow = [];
+            for (let i = 1; i <= rows; i++) perRow.push(document.getElementById(`${prefix}${i}`)?.value || table);
+            return JSON.stringify([getAvailableColumns(), rows, table, capitals, numberSigns, placement, perRow]);
+        }
+        let brailleFieldMirrorKey = null;
+        let backBrailleFieldMirrorKey = null;
+
+        // Called from the form-wide change delegate: empties a pristine field
+        // whose mirror no longer matches the translation the text would get.
+        function reconcilePristineBrailleFields() {
+            if (!brailleFieldDirty && isBrailleFieldActive() && brailleFieldMirrorKey !== null
+                && translationSettingsKey('front') !== brailleFieldMirrorKey) {
+                clearPristineBrailleField('setting');
+            }
+            if (!backBrailleFieldDirty && isBackBrailleFieldActive() && backBrailleFieldMirrorKey !== null
+                && translationSettingsKey('back') !== backBrailleFieldMirrorKey) {
+                clearPristineBackBrailleField('setting');
+            }
+        }
+
+        // Writes a translation into the field as its pristine mirror. Used by
+        // the Translate to Braille button and, since 2026-09-28, by every
+        // Generate (Brennen's request: the braille about to be embossed is on
+        // screen without a second press). The field keeps its authority: a
+        // non-empty field, mirror or hand-edit, is embossed exactly as written
+        // on the next Generate, which sends the same body the translation did.
+        // Generate passes announce=false: its own progress and ready messages
+        // are the one announcement that action makes (ADA SOP Section 12, C9);
+        // the visible status line still updates.
+        function showTranslationInBrailleField(lines, warnings = [], announce = true) {
+            const field = document.getElementById('braille-unicode');
+            if (!field) return;
+            field.value = trimTrailingEmptyLines(lines).join('\n');
+            brailleFieldDirty = false;
+            brailleFieldAutoCleared = false;
+            brailleFieldAutoClearReason = null;
+            brailleFieldMirrorKey = translationSettingsKey('front');
+            const note = warnings.length ? ` ${warnings.join(' ')}` : '';
+            setBrailleFieldStatus(`Filled from translation — edit any cell you want to change.${note}`);
+            if (announce) announceBrailleField('Braille field updated from translation.');
         }
 
         // Holds the field to the same rules generation enforces, live: a paste
@@ -6460,6 +6579,7 @@
                 const wasDirty = brailleFieldDirty;
                 brailleFieldDirty = isBrailleFieldActive();
                 brailleFieldAutoCleared = false;
+                brailleFieldAutoClearReason = null;
                 resetToGenerateState();
                 updateBrailleFieldStatus();
                 // A problem announces itself; do not talk over it.
@@ -6482,12 +6602,7 @@
                         announceBrailleField(result.error);
                         return;
                     }
-                    field.value = trimTrailingEmptyLines(result.lines).join('\n');
-                    brailleFieldDirty = false;
-                    brailleFieldAutoCleared = false;
-                    const note = result.warnings.length ? ` ${result.warnings.join(' ')}` : '';
-                    setBrailleFieldStatus(`Filled from translation — edit any cell you want to change.${note}`);
-                    announceBrailleField('Braille field updated from translation.');
+                    showTranslationInBrailleField(result.lines, result.warnings);
                     resetToGenerateState();
                 } catch (error) {
                     log.error('Translate to Braille failed:', error);
@@ -6532,16 +6647,24 @@
             });
         }
 
-        // Called when the English inputs change. A pristine field only mirrors a
+        // Called when the English inputs change ('text') or a translation
+        // setting changes ('setting'). A pristine field only mirrors a
         // translation, so it is cleared rather than left silently stale; a dirty
         // field is never touched.
-        function onSourceTextChangedForBrailleField() {
+        function clearPristineBrailleField(reason) {
             if (brailleFieldDirty || !isBrailleFieldActive()) return;
             const field = document.getElementById('braille-unicode');
             if (field) field.value = '';
             brailleFieldAutoCleared = true;
+            brailleFieldAutoClearReason = reason;
             updateBrailleFieldStatus();
-            announceBrailleField('Braille field cleared because the text changed. Press Translate to Braille to refresh it.');
+            announceBrailleField(reason === 'setting'
+                ? S_BF2_SETTING_CLEARED_ANNOUNCE
+                : 'Braille field cleared because the text changed. Press Translate to Braille to refresh it.');
+        }
+
+        function onSourceTextChangedForBrailleField() {
+            clearPristineBrailleField('text');
         }
 
         // ------------------------------------------------------------------
@@ -6556,6 +6679,7 @@
         let backBrailleFieldDirty = false;
         let backBrailleFieldProblem = null;
         let backBrailleFieldAutoCleared = false;
+        let backBrailleFieldAutoClearReason = null;
 
         function getBackBrailleFieldValue() {
             return document.getElementById('back-braille-unicode')?.value || '';
@@ -6583,13 +6707,30 @@
 
         function backBrailleFieldBaselineStatus() {
             if (!isBackBrailleFieldActive()) {
-                return backBrailleFieldAutoCleared
-                    ? 'Cleared because the text changed — press Translate to Braille to refresh'
-                    : 'Empty — the text above will be translated';
+                if (!backBrailleFieldAutoCleared) return 'Empty — the text above will be translated';
+                return backBrailleFieldAutoClearReason === 'setting'
+                    ? S_BF1_SETTING_CLEARED_STATUS
+                    : 'Cleared because the text changed — press Translate to Braille to refresh';
             }
             return backBrailleFieldDirty
                 ? 'Edited — will be used as-is'
                 : 'Filled from translation — edit any cell you want to change.';
+        }
+
+        // The back's twin of showTranslationInBrailleField: the button and,
+        // since 2026-09-28, every double-sided Generate write the back
+        // translation here as its pristine mirror.
+        function showTranslationInBackBrailleField(lines, warnings = [], announce = true) {
+            const field = document.getElementById('back-braille-unicode');
+            if (!field) return;
+            field.value = trimTrailingEmptyLines(lines).join('\n');
+            backBrailleFieldDirty = false;
+            backBrailleFieldAutoCleared = false;
+            backBrailleFieldAutoClearReason = null;
+            backBrailleFieldMirrorKey = translationSettingsKey('back');
+            const note = warnings.length ? ` ${warnings.join(' ')}` : '';
+            setBackBrailleFieldStatus(`Filled from translation — edit any cell you want to change.${note}`);
+            if (announce) announceBackBrailleField('Braille field updated from translation.');
         }
 
         function updateBackBrailleFieldStatus() {
@@ -6651,12 +6792,7 @@
                 textLines.push(line.trim() ? (await backTranslateWithLiblouis(line, tableName)).trim() : '');
             }
             const target = document.getElementById('back-text');
-            if (target) {
-                target.value = textLines.join('\n');
-                // A scripted write fires no input event: persist by hand, exactly
-                // as the field's own input listener would have.
-                persistValue('braille_prefs_back_text', target.value);
-            }
+            if (target) target.value = textLines.join('\n');
             return { lines: textLines };
         }
 
@@ -6670,6 +6806,7 @@
                 const wasDirty = backBrailleFieldDirty;
                 backBrailleFieldDirty = isBackBrailleFieldActive();
                 backBrailleFieldAutoCleared = false;
+                backBrailleFieldAutoClearReason = null;
                 resetToGenerateState();
                 updateBackBrailleFieldStatus();
                 // A problem announces itself; do not talk over it.
@@ -6692,12 +6829,7 @@
                         announceBackBrailleField(result.error);
                         return;
                     }
-                    field.value = trimTrailingEmptyLines(result.lines).join('\n');
-                    backBrailleFieldDirty = false;
-                    backBrailleFieldAutoCleared = false;
-                    const note = result.warnings.length ? ` ${result.warnings.join(' ')}` : '';
-                    setBackBrailleFieldStatus(`Filled from translation — edit any cell you want to change.${note}`);
-                    announceBackBrailleField('Braille field updated from translation.');
+                    showTranslationInBackBrailleField(result.lines, result.warnings);
                     resetToGenerateState();
                 } catch (error) {
                     log.error('Translate to Braille (back) failed:', error);
@@ -6742,16 +6874,24 @@
             });
         }
 
-        // Called when the Back of Card Text changes. Same rule as the front: a
-        // pristine field only mirrors a translation, so it is cleared rather
-        // than left silently stale; a hand-edited field is never touched.
-        function onBackSourceTextChangedForBackBrailleField() {
+        // Called when the Back of Card Text changes ('text') or a translation
+        // setting changes ('setting'). Same rule as the front: a pristine field
+        // only mirrors a translation, so it is cleared rather than left silently
+        // stale; a hand-edited field is never touched.
+        function clearPristineBackBrailleField(reason) {
             if (backBrailleFieldDirty || !isBackBrailleFieldActive()) return;
             const field = document.getElementById('back-braille-unicode');
             if (field) field.value = '';
             backBrailleFieldAutoCleared = true;
+            backBrailleFieldAutoClearReason = reason;
             updateBackBrailleFieldStatus();
-            announceBackBrailleField('Braille field cleared because the text changed. Press Translate to Braille to refresh it.');
+            announceBackBrailleField(reason === 'setting'
+                ? S_BF2_SETTING_CLEARED_ANNOUNCE
+                : 'Braille field cleared because the text changed. Press Translate to Braille to refresh it.');
+        }
+
+        function onBackSourceTextChangedForBackBrailleField() {
+            clearPristineBackBrailleField('text');
         }
 
         // Update the capitalization warning visibility based on toggle state and input content
@@ -7764,7 +7904,10 @@
                 // the last cell's dots and column 0's triangle.
                 let free;
                 let need;
-                let lastCellRoom = Infinity;
+                // Finite in both modes: the isFinite guard below treats an
+                // Infinity as "mid-edit" and mutes the box (caught by
+                // seamChannel.spec.ts in visual mode, 2026-09-28).
+                let lastCellRoom = 0;
                 let lastCellNeed = 0;
                 if (isTactileIndicatorOn()) {
                     const indicatorWidth = parseFloat(document.getElementById('tactile_indicator_width')?.value);
@@ -8483,7 +8626,7 @@
                 'braille_prefs_cylinder_polygonal_cutout_sides',
                 'braille_prefs_seam_offset_deg',
                 'braille_prefs_double_sided_enabled',
-                'braille_prefs_back_text',
+                'braille_prefs_back_text', // never written since 2026-09-28; listed so Reset scrubs older values
                 'braille_prefs_gear_rollers_enabled',
                 'braille_prefs_seam_channel_enabled',
                 'braille_prefs_embosser_version',
@@ -8612,11 +8755,12 @@
                 const radio = document.querySelector(`input[name="back_placement_mode"][value="${savedBackPlacement}"]`);
                 if (radio) radio.checked = true;
             }
-            const savedBackText = readPersisted('braille_prefs_back_text');
-            const backTextEl = document.getElementById('back-text');
-            if (backTextEl && savedBackText !== null && savedBackText !== undefined) {
-                backTextEl.value = savedBackText;
-            }
+            // No text or braille input is stored or restored (Brennen's rule,
+            // 2026-09-28): even a value kept only in this browser would look
+            // like the app collecting what people write. The back text was the
+            // one field that had been saved, so a value left over from before
+            // this date is scrubbed here on every load.
+            try { localStorage.removeItem('braille_prefs_back_text'); } catch (e) { log.debug('Could not scrub the stored back text:', e); }
             // Numeric/text inputs
             const map = [
                 ['grid_rows','braille_prefs_grid_rows'],
@@ -8792,12 +8936,11 @@
             if (seamChannelToggle) {
                 seamChannelToggle.addEventListener('change', () => persistValue('braille_prefs_seam_channel_enabled', seamChannelToggle.checked ? '1' : '0'));
             }
+            // Not persisted (privacy, 2026-09-28): the listener only keeps the
+            // back braille field's mirror honest.
             const backText = document.getElementById('back-text');
             if (backText) {
-                backText.addEventListener('input', () => {
-                    persistValue('braille_prefs_back_text', backText.value);
-                    onBackSourceTextChangedForBackBrailleField();
-                });
+                backText.addEventListener('input', onBackSourceTextChangedForBackBrailleField);
             }
         }
 
@@ -10045,7 +10188,10 @@
                 && (document.querySelector('input[name="shape_type"]:checked')?.value || 'cylinder') === 'cylinder';
 
             // The Braille (Unicode) field wins whenever it has content: its lines
-            // are embossed exactly as written, with no liblouis pass.
+            // are embossed exactly as written, with no liblouis pass - whether
+            // hand-edited or the pristine mirror a Translate or a Generate left
+            // (a mirror is emptied the moment the text or an effective
+            // translation setting changes, so it is never stale).
             const useBrailleField = isBrailleFieldActive();
 
             // Translate text to braille only for positive plates
@@ -10063,8 +10209,17 @@
                     resetToGenerateState();
                     return false;
                 }
-                translatedLines = brailleLines;
-                perLineLanguageTables = new Array(brailleLines.length).fill(tableName);
+                // Padded to grid_rows and given the same per-row tables the
+                // translated paths send (the back field path has always padded),
+                // so a Generate from the mirror the previous Generate left sends
+                // the same body it did - four e2e specs diff consecutive bodies
+                // (2026-09-28).
+                translatedLines = [...brailleLines];
+                while (translatedLines.length < availableRows) translatedLines.push('');
+                perLineLanguageTables = translatedLines.map((row, i) =>
+                    (placementMode === 'manual' && row.trim())
+                        ? (document.getElementById(`line_lang_${i + 1}`)?.value || tableName)
+                        : tableName);
                 // Receipt parity with the translated path (PR-10), so an incorrect
                 // braille report can be traced even when liblouis was bypassed.
                 log.debug('Translation receipt:', JSON.stringify({
@@ -10237,6 +10392,15 @@
                     resetToGenerateState();
                     return false;
                 }
+
+                // Show the braille that is about to be embossed (2026-09-28,
+                // Brennen's request): the field becomes the pristine mirror of
+                // this translation, exactly as Translate to Braille would have
+                // left it, so the cells are on screen without a second press.
+                // Silent - the run's own messages are this action's announcement.
+                if (translatedLines.some(line => line && line.trim())) {
+                    showTranslationInBrailleField(translatedLines, [], false);
+                }
             } else {
                 // Counter plates don't need text - just pass empty lines
                 translatedLines = ['', '', '', ''];
@@ -10364,6 +10528,12 @@
                     backBrailleLines = backWrap.brailleLines;
                 }
                 log.debug('Back lines translated:', backBrailleLines);
+                }
+                // The back's mirror, filled on Generate like the front's
+                // (2026-09-28); a back field that already had content was the
+                // source and shows itself.
+                if (backBrailleLines && !isBackBrailleFieldActive() && backBrailleLines.some(line => line && line.trim())) {
+                    showTranslationInBackBrailleField(backBrailleLines, [], false);
                 }
             }
             const settings = {

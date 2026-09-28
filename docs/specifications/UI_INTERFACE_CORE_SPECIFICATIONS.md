@@ -172,6 +172,7 @@ All theme-dependent colors are defined using CSS custom properties (variables) o
     --text-primary: #2d3748;
     --text-secondary: #4a5568;
     --text-tertiary: #666;
+    --text-placeholder: #5b6472; /* placeholders, 5.72:1 on --bg-input (2026-09-28) */
 
     /* Border colors */
     --border-primary: #e2e8f0;
@@ -248,6 +249,7 @@ All theme-dependent colors are defined using CSS custom properties (variables) o
     --text-primary: #f7fafc;
     --text-secondary: #e2e8f0;
     --text-tertiary: #cbd5e1;
+    --text-placeholder: #b0b8c4; /* placeholders, 5.15:1 on --bg-input (2026-09-28) */
 
     /* Border colors */
     --border-primary: #4a5568;
@@ -319,6 +321,7 @@ All theme-dependent colors are defined using CSS custom properties (variables) o
     --text-primary: #02fe05;
     --text-secondary: #02fe05;
     --text-tertiary: #02fe05;
+    --text-placeholder: #7fd67f; /* placeholders: a softer green, 9.8:1 on --bg-input (2026-09-28) */
 
     /* Borders - High visibility colors */
     --border-primary: #ffff00;      /* Yellow */
@@ -3263,6 +3266,7 @@ Low vision users benefit from enhanced depth perception:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.30 | 2026-09-28 | **Placeholder token and style.** `--text-placeholder` joins the three themes (#5b6472 / #b0b8c4 / #7fd67f: 5.72 / 5.15 / 9.8 to 1 on `--bg-input`; the browser's default placeholder grey was 2.3:1 on the light input surface) and `textarea::placeholder, input[type="text"]::placeholder` use it at opacity 1, italic for text boxes and upright for the braille boxes (`textarea[lang="und-Brai"]`). The text-entry samples themselves are in BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md §3. |
 | 1.29 | 2026-09-25 | **The Version 2 key clearance note is a group description (accessibility pass).** Four per-gear dials replaced the single Version 2 clearance dial on 2026-09-25 (EMBOSSER_VERSION_2 spec v1.15–1.18) and at first shared one `aria-describedby`, 24 words × 4 hosts; it is now the fieldset's alone (§4.13, the group form of SOP 6.8 clause 5; §4.5's row 7 names the dials). Probe on the opened page: order A1 → A2 → B1 → B2, arrow keys step 0.005, 3 px focus ring, 110 × 44 px targets, note 6.94:1 / labels 9.83:1 / inputs 11.44:1; W3C Nu 0 / 0. Lighthouse and axe results in the commit. |
 | 1.28 | 2026-09-24 | **Card Thickness and Row Indicator Style move into Expert Mode, and Version 2 defaults to the tactile seam arrow (programme 2026-09-24; decisions D-4, D-5).** §4.5's submenu table is eight rows: Card Thickness second and Row Indicator Style third, the latter absorbing the tactile dials (always shown; the dials block follows the style). §4.11's outline loses the two main-form h2s and the tactile-only h3, gains two always-available h3s (load count 6 → 4 visible headings). The Version 2 change listener moves the style to tactile and says so in its one composed announcement (S-V16, DRAFT). W3C Nu 0 errors / 0 warnings on the source; every moved `aria-describedby` text byte-identical (SOP 6.8 counts unchanged); Lighthouse is a manual step still owed. |
 | 1.0 | 2024-12-06 | Initial specification document |

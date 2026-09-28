@@ -787,8 +787,10 @@ STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md §8.
 ### 7.5 Persistence, reset, and no dials
 
 - Persisted as `braille_prefs_double_sided_enabled` (`'1'`/`'0'` — the SAME key the
-  retired checkbox used, so a saved choice carries over to the radios),
-  `braille_prefs_back_text` and, since 2026-09-21, `braille_prefs_back_placement_mode`
+  retired checkbox used, so a saved choice carries over to the radios) and, since
+  2026-09-21, `braille_prefs_back_placement_mode` (the back TEXT is no longer persisted
+  since 2026-09-28 - no text or braille input is, Brennen's privacy rule; its old key
+  `braille_prefs_back_text` is scrubbed on load)
   (`'auto'`/`'manual'`, restored by checking the back toggle's radio, Reset → Auto through
   the `defaultChecked` sweep plus `updateBackPlacementUI()`; the manual rows themselves are
   not persisted, like the front's); restored on load by checking `#card_sides_double` or
@@ -973,6 +975,7 @@ and separated**. Full record: the research folder's `00_PROJECT_MEMORY.md`, FD-8
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-09-28 | 1.17 | **The back text is no longer persisted (§7.5).** Brennen's privacy rule: no text or braille input is stored, only 3D design settings; `braille_prefs_back_text` is retired and scrubbed on load. A double-sided Generate now also fills the back Braille (Unicode) field with the back translation it embosses, and the back braille box carries a placeholder (BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md §3, §6.3, §11). |
 | 2026-09-21 | 1.16 | **Back of Card parity (programme sub-plan D, decision D-11).** §3.1 adds the back per-row tables' three spellings (`text.back_languages` / `back_per_line_language_tables` / the request model), sent only for a manually placed back; §6.1 step 3 splits into the Auto and Manual branches; §7.4 gains the Manual-placement paragraph (toggle, rows, dropdowns, S-D1 (signed 2026-09-21) gate, live per-line warning, fill-from-text and preview, S-D3 (signed 2026-09-21)); §7.5 records `braille_prefs_back_placement_mode`. Auto placement, the wire shape for Auto, the footprints and the geometry are untouched. |
 | 2026-09-21 | 1.15 | **Pair mode is universal (programme sub-plan E).** §7.7 rewritten: Generate STL builds both cylinders by default, Download STL saves the combined file, a single cylinder is chosen under Expert Mode → Cylinders to Generate; `isPairModeOn()`, Generate Both, the relabel and the pair download row retired. Filenames, wire shape, geometry and the double-sided-only rules untouched. |
 | 2026-09-20 | 1.14 | **Out of beta, into the Embosser setup menu (programme decisions D-7, D-8; phases C1-C4).** Overview and §7.1 rewritten: the "Double-Sided Card (BETA — for testing)" accordion and its `#double_sided_enabled` checkbox are retired; the choice is the **Card sides** radio group (`#card_sides_single` checked / `#card_sides_double`, S-M6a/b (signed 2026-09-21), description S-M7 (signed 2026-09-21)) inside the new `#embosser-setup-selection` item at the top of the form, read only through `isDoubleSidedOn()`. The Back of Card fieldset (`#back-entry-fieldset`, h2 legend) is always in the tree as a sibling of the front entry, native-`disabled` while single-sided and enabled by `updateDoubleSidedUI()`. The 2026-08-16 signed explanation stays visible minus its beta sentence; one composed, deferred announcement per change (S-M11 (signed 2026-09-21) plus the lock note, whose wording is now S-M12 (signed 2026-09-21): "Choose Single-sided to pick visual markers"). §7.5 and §7.7 updated (same persistence key; `isPairModeOn()` reads the three radios). Strings signed off by Brennen 2026-09-21. |
