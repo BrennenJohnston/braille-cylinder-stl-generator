@@ -245,6 +245,27 @@ def test_the_card_need_moves_with_the_first_cell():
     assert not any(w.startswith('The last braille cell would run off the card') for w in shifted['warnings'])
 
 
+def test_the_version2_tactile_x_adjust_default_is_owned_by_the_module_and_mirrored_by_the_page():
+    """
+    Brennen, 2026-09-28: in Version 2 with the tactile seam arrow the X Adjust
+    dial defaults to -2 on every card-stock preset. The number lives in
+    app/geometry/version2.py; the page mirrors it, the presets themselves keep
+    0 (Version 1 is untouched), and the backend's absent-field fallback stays 0.
+    """
+    from app.geometry import version2
+
+    assert version2.V2_TACTILE_X_ADJUST_MM == -2.0
+    html = (REPO / 'public' / 'index.html').read_text(encoding='utf-8')
+    match = re.search(r'const V2_TACTILE_X_ADJUST_MM = (-?[\d.]+);', html)
+    assert match, 'V2_TACTILE_X_ADJUST_MM not found in public/index.html'
+    assert float(match.group(1)) == version2.V2_TACTILE_X_ADJUST_MM
+    presets = re.search(r'const THICKNESS_PRESETS = \{(.*?)\n {8}\};', html, re.S)
+    assert presets
+    assert presets.group(1).count('braille_x_adjust: 0.0,') == 2
+    assert "'braille_x_adjust'" in re.search(r'const V2_SNAPSHOT_IDS = \[(.*?)\];', html, re.S).group(1)
+    assert CardSettings().braille_x_adjust == 0.0
+
+
 def test_the_live_ui_rules_read_the_dial_too():
     """
     The three live boxes mirror the server's rules, so each must read the dial

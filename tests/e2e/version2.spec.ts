@@ -46,10 +46,17 @@ const S_V10_OFF = 'Version 1 selected.';
 // announcement gains when choosing Version 2 moved the Row Indicator Style to
 // the tactile seam arrow, the Version 2 default (decision D-4).
 const S_V16_STYLE_MOVED = 'Row Indicator Style set to the tactile seam arrow, the Version 2 default.';
+// S-X1, DRAFT 2026-09-28 (awaiting Brennen's sign-off): the clause the version
+// announcement gains when choosing Version 2 moved X Adjust to the Version 2
+// tactile default.
+const S_X1_X_ADJUST_MOVED = 'X Adjust set to -2 mm, the Version 2 tactile default.';
 
 // The Version 2 preset barrel (D-V4), owned by app/geometry/version2.py.
 const V2_DIAMETER = '30.8';
 const V2_HEIGHT = '54';
+// X Adjust in Version 2 with the tactile arrow (Brennen, 2026-09-28), owned by
+// app/geometry/version2.py V2_TACTILE_X_ADJUST_MM; both card-stock presets carry 0.
+const V2_TACTILE_X_ADJUST = '-2';
 
 // Same transient failures the other beta specs tolerate: both workers signal
 // readiness asynchronously and Firefox is slower to spin them up.
@@ -246,8 +253,9 @@ test.describe('Embosser Version 2', () => {
 
     // The tactile seam arrow is the Version 2 default (D-4, 2026-09-24): the
     // style moves with the version, the ONE announcement says so, and the
-    // move persists like a click on the radio would.
-    await expect(page.locator('#a11y-status')).toHaveText(`${S_V10_ON} ${S_V16_STYLE_MOVED}`);
+    // move persists like a click on the radio would. X Adjust moves with the
+    // tactile style (2026-09-28) and the same announcement says that too.
+    await expect(page.locator('#a11y-status')).toHaveText(`${S_V10_ON} ${S_V16_STYLE_MOVED} ${S_X1_X_ADJUST_MOVED}`);
     await expect(page.locator('input[name="indicator_mode"][value="tactile"]')).toBeChecked();
     await expect(page.locator('input[name="indicator_mode"][value="visual"]')).toBeEnabled();
     expect(await page.evaluate(() => localStorage.getItem('braille_prefs_indicator_mode'))).toBe('tactile');
@@ -314,7 +322,9 @@ test.describe('Embosser Version 2', () => {
     await selectVersion2(page);
     await expect(page.locator('#gear_mode_fixed')).toBeChecked();
     await expect(page.locator('#gear_mode_standard')).not.toBeChecked();
-    await expect(page.locator('#a11y-status')).toHaveText(`${S_V10_ON} ${S_V16_STYLE_MOVED} ${S3_CUTOUT_NOTE}`);
+    await expect(page.locator('#a11y-status')).toHaveText(
+      `${S_V10_ON} ${S_V16_STYLE_MOVED} ${S_X1_X_ADJUST_MOVED} ${S3_CUTOUT_NOTE}`,
+    );
     expect(await page.evaluate(() => localStorage.getItem('braille_prefs_gear_rollers_enabled'))).toBe('1');
     // The preset barrel is already the fixed gears' 30.8 x 54, so no size note.
     await expect(page.locator('#gear-size-warning')).toBeHidden();
@@ -454,9 +464,10 @@ test.describe('Embosser Version 2', () => {
     // Neither the seam-collision warning nor the row-overflow one may fire.
     await expect(page.locator('#tactile-gap-warning')).toBeHidden();
     await expect(page.locator('#cylinder-overflow-warning')).toBeHidden();
-    // From a visual start the style moved with the version (D-4), so the one
-    // announcement carries S-V16; no size or gap note rides with it.
-    await expect(page.locator('#a11y-status')).toHaveText(`${S_V10_ON} ${S_V16_STYLE_MOVED}`);
+    // From a visual start the style moved with the version (D-4) and X Adjust
+    // with it, so the one announcement carries S-V16 and S-X1; no size or gap
+    // note rides with it.
+    await expect(page.locator('#a11y-status')).toHaveText(`${S_V10_ON} ${S_V16_STYLE_MOVED} ${S_X1_X_ADJUST_MOVED}`);
   });
 
   test('the request gains exactly the five Version 2 keys and loses none', async ({ page }) => {
@@ -604,9 +615,10 @@ test.describe('Embosser Version 2', () => {
     await expect(page.locator('input[name="indicator_mode"][value="tactile"]')).toBeChecked();
     await expect(page.locator('input[name="indicator_mode"][value="visual"]')).toBeDisabled();
 
-    // Nothing moved, so the announcement is the bare version sentence.
+    // The style did not move, but X Adjust did (tactile was already on), so
+    // the announcement is the version sentence with the S-X1 clause alone.
     await selectVersion2(page);
-    await expect(page.locator('#a11y-status')).toHaveText(S_V10_ON);
+    await expect(page.locator('#a11y-status')).toHaveText(`${S_V10_ON} ${S_X1_X_ADJUST_MOVED}`);
     await expect(page.locator('input[name="indicator_mode"][value="tactile"]')).toBeChecked();
     await revealRowIndicatorPanel(page);
     await expect(page.locator('#indicator-mode-lock-note')).toBeVisible();
@@ -660,5 +672,102 @@ test.describe('Embosser Version 2', () => {
     // Version 2 (the snapshot, not the preset).
     await page.locator('#embosser_version_1').check();
     await expect(page.locator('#cylinder_height_mm')).toHaveValue('52');
+  });
+
+  test('choosing Version 2 sets X Adjust to the tactile default, sends it, and Version 1 gives back the value the user had', async ({
+    page,
+  }) => {
+    // Brennen, 2026-09-28, after his print test of the X Adjust fix: in
+    // Version 2 with the tactile seam arrow the braille starts 2 mm of arc
+    // nearer the alignment arrow. A default, not a lock, applied on the
+    // user's version change; the snapshot gives the Version 1 value back.
+    await openApp(page);
+    await page.locator('#auto-text').fill('abc');
+    await setDial(page, 'braille_x_adjust', '1.5');
+
+    await selectVersion2(page);
+    await expect(page.locator('#braille_x_adjust')).toHaveValue(V2_TACTILE_X_ADJUST);
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_braille_x_adjust'))).toBe(V2_TACTILE_X_ADJUST);
+    await expect(page.locator('#a11y-status')).toHaveText(`${S_V10_ON} ${S_V16_STYLE_MOVED} ${S_X1_X_ADJUST_MOVED}`);
+
+    const state = watchGeometrySpecRequests(page);
+    await generate(page, state, 1);
+    const settings = (state.bodies[0] as { settings: Record<string, unknown> }).settings;
+    expect(settings.braille_x_adjust).toBe(V2_TACTILE_X_ADJUST);
+
+    await page.locator('#embosser_version_1').check();
+    await expect(page.locator('#braille_x_adjust')).toHaveValue('1.5');
+    await expect(page.locator('#a11y-status')).toHaveText(S_V10_OFF);
+  });
+
+  test('every card stock chosen in Version 2 keeps the tactile X Adjust default, and the stock never reads as Custom over it', async ({
+    page,
+  }) => {
+    await openApp(page);
+    await selectVersion2(page);
+    await expect(page.locator('#braille_x_adjust')).toHaveValue(V2_TACTILE_X_ADJUST);
+    await expect(page.locator('input[name="card_thickness_preset"][value="0.4"]')).toBeChecked();
+
+    // Both presets carry X Adjust 0; in Version 2 with the tactile arrow the
+    // preset's value is the default instead ("for all preset settings").
+    await selectThicknessPreset(page, '0.3');
+    await expect(page.locator('#braille_x_adjust')).toHaveValue(V2_TACTILE_X_ADJUST);
+    await expect(page.locator('input[name="card_thickness_preset"][value="0.3"]')).toBeChecked();
+    await selectThicknessPreset(page, '0.4');
+    await expect(page.locator('#braille_x_adjust')).toHaveValue(V2_TACTILE_X_ADJUST);
+    await expect(page.locator('input[name="card_thickness_preset"][value="0.4"]')).toBeChecked();
+
+    // A hand-set value still reads as Custom - that is what protects it
+    // across a reload - and the dial stays free.
+    await setDial(page, 'braille_x_adjust', '-2.5');
+    await expect(page.locator('input[name="card_thickness_preset"][value="custom"]')).toBeChecked();
+    await expect(page.locator('#braille_x_adjust')).toHaveValue('-2.5');
+  });
+
+  test('visual markers in Version 2 give back the Version 1 X Adjust, and the tactile arrow brings the default back', async ({
+    page,
+  }) => {
+    await openApp(page);
+    await selectVersion2(page);
+    await expect(page.locator('#braille_x_adjust')).toHaveValue(V2_TACTILE_X_ADJUST);
+
+    // The preset wrote 0 on load, so that is what the snapshot gives back.
+    await selectIndicatorMode(page, 'visual');
+    await expect(page.locator('#braille_x_adjust')).toHaveValue('0');
+    await selectIndicatorMode(page, 'tactile');
+    await expect(page.locator('#braille_x_adjust')).toHaveValue(V2_TACTILE_X_ADJUST);
+
+    // A hand-set value is not the default, so visual markers leave it alone.
+    await setDial(page, 'braille_x_adjust', '-3');
+    await selectIndicatorMode(page, 'visual');
+    await expect(page.locator('#braille_x_adjust')).toHaveValue('-3');
+  });
+
+  test('the tactile X Adjust default survives a reload, and so does a hand-set value', async ({ page }) => {
+    await openApp(page);
+    await selectVersion2(page);
+    await expect(page.locator('#braille_x_adjust')).toHaveValue(V2_TACTILE_X_ADJUST);
+
+    // The card-stock preset rewrites X Adjust to 0 on every load; the Version 2
+    // restore re-asserts the default after it, exactly as it does the barrel.
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('#embosser-setup-selection');
+    await expect(page.locator('#embosser_version_2')).toBeChecked();
+    await expect(page.locator('#braille_x_adjust')).toHaveValue(V2_TACTILE_X_ADJUST);
+    await expect(page.locator('#a11y-status')).toHaveText('');
+
+    // A hand-set value reads as Custom, which applies no preset on load, so
+    // it comes back exactly as saved.
+    await setDial(page, 'braille_x_adjust', '-3');
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('#embosser-setup-selection');
+    await expect(page.locator('#braille_x_adjust')).toHaveValue('-3');
+
+    // Reset to defaults puts everything back: Version 1, X Adjust 0.
+    await page.locator('#reset-defaults-btn').click();
+    await expect(page.locator('#embosser_version_1')).toBeChecked();
+    await expect(page.locator('#braille_x_adjust')).toHaveValue('0.0');
   });
 });

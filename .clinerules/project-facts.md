@@ -545,6 +545,23 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      -3, dome-cap arcs measured; arrows at 0.0); the spec-level pins are in
      tests/test_x_adjust_cylinder.py. Neither OpenSCAD file has an X Adjust
      dial, so there is no parity to keep there.
+   - VERSION 2 DEFAULT -2 (2026-09-28, his call after the print test): in
+     Version 2 WITH the tactile style the dial defaults to -2 on EVERY
+     card-stock preset - version2.V2_TACTILE_X_ADJUST_MM, mirrored by
+     index.html V2_TACTILE_X_ADJUST_MM (test pinned). A UI default like the
+     V2 barrel, NOT a schema default (schema/models stay 0; cards, V1 and an
+     absent field unchanged): syncVersion2TactileXAdjust() runs in the
+     version change listener (after snapshotVersion1Dials(), which the
+     listener now calls FIRST so the style default cannot pollute the
+     snapshot), in the indicator-mode listener, in applyThicknessPreset()
+     (both presets carry 0) and in restoreEmbosserVersion() on load unless
+     the stock is Custom (the load-time preset restore rewrites the dial to
+     0 first). braille_x_adjust is in V2_SNAPSHOT_IDS (leaving V2 gives the
+     V1 value back; visual in V2 gives it back only while the dial still
+     reads -2). checkPresetMatch expects -2 for this dial in V2 tactile, so
+     the stock keeps its name; a hand-set value reads Custom, which is what
+     preserves it across a reload. Announcement clause S-X1 (DRAFT) rides
+     in the composed version announcement when the dial moved.
 
 ## Settings changes — order of operations
 7. settings.schema.json is the single source of truth. When adding or changing

@@ -7476,6 +7476,9 @@
                     window.updateGridColumnsForPlateType();
                 }
                 updateIndicatorModeUI();
+                // In Version 2 the X Adjust default follows the tactile style
+                // (V2_TACTILE_X_ADJUST_MM); a no-op in Version 1.
+                syncVersion2TactileXAdjust();
             });
         });
 
@@ -7877,6 +7880,17 @@
             cylinder_height_mm: 54,
             seam_offset_deg: 0
         };
+        // X Adjust in Version 2 WITH the tactile seam arrow (Brennen, 2026-09-28,
+        // after his print test of the X Adjust fix): the braille starts 2 mm of
+        // arc nearer the alignment arrow on both cylinders. Owned by
+        // app/geometry/version2.py V2_TACTILE_X_ADJUST_MM (a smoke test diffs
+        // them). A default, not a lock, applied on top of every card-stock
+        // preset the way the barrel is: on the user's version change, when the
+        // tactile style is chosen in Version 2, and by a preset chosen in
+        // Version 2 (both presets carry 0). Leaving Version 2 gives back the
+        // value the user had (the snapshot below); choosing visual markers in
+        // Version 2 gives it back too if the dial still reads the default.
+        const V2_TACTILE_X_ADJUST_MM = -2;
         // Every dial Version 2 overrides or hides, so turning it off gives back
         // exactly what the user had rather than a preset's idea of it.
         const V2_SNAPSHOT_IDS = [
@@ -7884,7 +7898,8 @@
             'cylinder_height_mm',
             'seam_offset_deg',
             'cylinder_polygonal_cutout_radius_mm',
-            'cylinder_polygonal_cutout_sides'
+            'cylinder_polygonal_cutout_sides',
+            'braille_x_adjust'
         ];
         let version1DialSnapshot = null;
         // The Row Indicator Style the user had before Version 2 moved it to
@@ -7952,9 +7967,46 @@
             return false;
         }
 
+        // Snapshot ONCE, on the way into Version 2. Taking it again on a later
+        // call would capture Version 2's own overrides and lose the user's
+        // Version 1 dials for good. Called first thing in the version change
+        // listener - before the style default can move X Adjust - and again
+        // (a no-op then) by updateEmbosserVersionUI for the load restore.
+        function snapshotVersion1Dials() {
+            if (!isVersion2() || version1DialSnapshot !== null) return;
+            version1DialSnapshot = {};
+            V2_SNAPSHOT_IDS.forEach(id => {
+                const input = document.getElementById(id);
+                if (input) version1DialSnapshot[id] = input.value;
+            });
+        }
+
+        // X Adjust follows the Version 2 + tactile pair (see
+        // V2_TACTILE_X_ADJUST_MM): both on, the dial takes the default; in
+        // Version 2 with visual markers a dial still AT the default goes back
+        // to the value the user brought into Version 2, while a hand-set value
+        // is left alone. Outside Version 2 this touches nothing.
+        function syncVersion2TactileXAdjust() {
+            if (!isVersion2()) return;
+            const input = document.getElementById('braille_x_adjust');
+            if (!input) return;
+            if (isTactileIndicatorOn()) {
+                setAndPersistDial('braille_x_adjust', V2_TACTILE_X_ADJUST_MM);
+                return;
+            }
+            if (parseFloat(input.value) !== V2_TACTILE_X_ADJUST_MM) return;
+            if (version1DialSnapshot && 'braille_x_adjust' in version1DialSnapshot) {
+                setAndPersistDial('braille_x_adjust', version1DialSnapshot.braille_x_adjust);
+            }
+        }
+
         /* S-V16, DRAFT 2026-09-24 - awaiting Brennen's sign-off. The clause the
            version announcement gains when the style just moved to tactile. */
         const S_V16_STYLE_MOVED = 'Row Indicator Style set to the tactile seam arrow, the Version 2 default.';
+        /* S-X1, DRAFT 2026-09-28 - awaiting Brennen's sign-off. The clause the
+           version announcement gains when choosing Version 2 moved X Adjust to
+           the Version 2 tactile default. */
+        const S_X1_X_ADJUST_MOVED = `X Adjust set to ${V2_TACTILE_X_ADJUST_MM} mm, the Version 2 tactile default.`;
 
         /* S-V10, signed off by Brennen (2026-08-28); reword only with his sign-off. */
         function embosserVersionAnnouncement() {
@@ -7997,16 +8049,9 @@
         function updateEmbosserVersionUI() {
             const on = isVersion2();
 
-            // Snapshot ONCE, on the way in. Taking it again on a later call
-            // would capture Version 2's own overrides and lose the user's
-            // Version 1 dials for good.
-            if (on && version1DialSnapshot === null) {
-                version1DialSnapshot = {};
-                V2_SNAPSHOT_IDS.forEach(id => {
-                    const input = document.getElementById(id);
-                    if (input) version1DialSnapshot[id] = input.value;
-                });
-            }
+            // Snapshot ONCE, on the way in (a no-op when the version change
+            // listener already took it).
+            snapshotVersion1Dials();
 
             if (on) {
                 // Applied ON TOP of the Card Thickness preset, which has already
@@ -8053,10 +8098,20 @@
 
         document.querySelectorAll('input[name="embosser_version"]').forEach(radio => {
             radio.addEventListener('change', () => {
+                // The Version 1 dials first: the style default below may move
+                // X Adjust through the style listener, and the snapshot must
+                // hold what the user had, not the Version 2 default.
+                snapshotVersion1Dials();
+                const xAdjustBefore = parseFloat(document.getElementById('braille_x_adjust')?.value);
                 // The style first, so the cell-count recommendation the version
                 // refresh makes below already sees the tactile layout (D-4).
                 const styleMoved = applyVersion2IndicatorDefault();
                 updateEmbosserVersionUI();
+                // X Adjust after the dials: Version 2 with the tactile arrow
+                // takes its default (a no-op if the style listener just did it);
+                // Version 1 got the snapshot back in the refresh above.
+                syncVersion2TactileXAdjust();
+                const xAdjustMoved = isVersion2() && isTactileIndicatorOn() && xAdjustBefore !== V2_TACTILE_X_ADJUST_MM;
                 persistValue('braille_prefs_embosser_version', isVersion2() ? '2' : '1');
                 resetToGenerateState();
                 refreshLiveWarnings();
@@ -8069,7 +8124,8 @@
                 // sentence leads and the notes the refresh raised ride with it.
                 const gearNotes = updateGearRollersUI();
                 const styleNote = styleMoved ? S_V16_STYLE_MOVED : '';
-                const message = [embosserVersionAnnouncement(), styleNote, gearNotes].filter(Boolean).join(' ');
+                const xAdjustNote = xAdjustMoved ? S_X1_X_ADJUST_MOVED : '';
+                const message = [embosserVersionAnnouncement(), styleNote, xAdjustNote, gearNotes].filter(Boolean).join(' ');
                 setTimeout(() => announceStatus('embosser-version', message), 0);
             });
         });
@@ -8972,6 +9028,11 @@
             // In Version 1 the skip list is empty and this behaves exactly as it
             // always has.
             const skipInVersion2 = isVersion2() ? Object.keys(V2_PRESET_OVERRIDES) : [];
+            // In Version 2 with the tactile arrow every preset's X Adjust IS the
+            // Version 2 default (V2_TACTILE_X_ADJUST_MM), so that value still
+            // reads as the chosen card stock; a hand-set value still reads as
+            // Custom, which is what protects it across a reload.
+            const version2TactileXAdjust = isVersion2() && isTactileIndicatorOn();
 
             for (const [inputId, expectedValue] of Object.entries(preset)) {
                 if (skipInVersion2.includes(inputId)) continue;
@@ -8979,7 +9040,9 @@
                 if (input) {
                     // Compare as numbers to handle floating point formatting differences
                     const currentValue = parseFloat(input.value);
-                    const presetValue = parseFloat(expectedValue);
+                    const presetValue = (version2TactileXAdjust && inputId === 'braille_x_adjust')
+                        ? V2_TACTILE_X_ADJUST_MM
+                        : parseFloat(expectedValue);
                     if (isNaN(currentValue) || Math.abs(currentValue - presetValue) > 0.0001) {
                         return false;
                     }
@@ -9066,6 +9129,11 @@
             if (isVersion2()) {
                 Object.entries(V2_PRESET_OVERRIDES).forEach(([id, value]) => setAndPersistDial(id, value));
             }
+            // Both presets carry X Adjust 0; in Version 2 with the tactile arrow
+            // the preset's value is the Version 2 default instead (every
+            // preset, Brennen 2026-09-28). A no-op on the silent load restore
+            // for the same reason as the barrel above.
+            syncVersion2TactileXAdjust();
 
             // Persist the selected preset
             try { localStorage.setItem('braille_prefs_thickness_preset', presetKey); } catch (e) { log.debug('Could not save the selected thickness preset:', e); }
@@ -9198,6 +9266,15 @@
                 // preset overrides and the live warnings are all seeded by hand.
                 // Silently: a load restore is not a user action.
                 updateEmbosserVersionUI();
+                // The preset restore above rewrote X Adjust to the preset's 0
+                // (with the version radio still on Version 1, its own re-assert
+                // was a no-op), so in Version 2 with the tactile arrow the
+                // preset's value - the Version 2 default - is re-asserted here,
+                // exactly as the barrel is. A saved Custom stock applied nothing,
+                // so a hand-set X Adjust came back from storage and is kept.
+                if (document.querySelector('input[name="card_thickness_preset"]:checked')?.value !== 'custom') {
+                    syncVersion2TactileXAdjust();
+                }
                 refreshLiveWarnings();
             } catch (e) {
                 log.error('Embosser version failed to restore; the page is showing Version 1:', e);

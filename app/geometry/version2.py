@@ -85,6 +85,16 @@ V2_BARREL_HEIGHT_MM = 54.0
 # 3.8e-6 mm, so 0.001 is far below any dimension a user can type.
 V2_SIZE_TOLERANCE_MM = 0.001
 
+# X Adjust in Version 2 with the tactile seam arrow (Brennen, 2026-09-28, after
+# his print test of the X Adjust fix): the text grid starts this many mm of arc
+# nearer the alignment arrow on both cylinders - negative is toward the arrow
+# (see geometry_spec.extract_cylinder_geometry_spec). Like the barrel preset
+# above it is a UI default the page applies on top of every card-stock preset
+# whenever Version 2 and the tactile style are both selected (a default, not a
+# lock: the dial stays free); the request always carries the dial's value, and
+# the backend's absent-field fallback stays the schema's 0 for every shape.
+V2_TACTILE_X_ADJUST_MM = -2.0
+
 # Print clearance per side (D-V3), ONE Expert-Mode dial PER KEY since
 # 2026-09-25. Each KEY HOLE grows by its own value: how loose that one gear
 # is, tuned without moving the other three. The error-proofing margin shrinks
