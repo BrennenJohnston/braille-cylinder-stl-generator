@@ -6,7 +6,8 @@
  * pressed, so a user who went straight to Generate never saw the cells that
  * went onto the cylinder. Now every Generate writes the translation it is
  * about to emboss into the field as its pristine mirror - front and, on a
- * double-sided run, back - with no announcement of its own. The field keeps
+ * double-sided run, back - announced from the field's own live region, as the
+ * button's fill is (Brennen's choice, 2026-09-28). The field keeps
  * its authority: the next Generate embosses the mirror exactly as written,
  * and its request is padded to the row count so consecutive requests are
  * byte-identical. So that the mirror is always the translation that would
@@ -22,7 +23,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { selectCylinders } from './helpers/cylinders';
 
-// S-BF1, DRAFT 2026-09-28 (awaiting Brennen's sign-off).
+// S-BF1, signed by Brennen 2026-09-28 (as drafted).
 const S_BF1_SETTING_CLEARED = 'Cleared because a translation setting changed — press Translate to Braille to refresh';
 
 async function openApp(page: Page) {
@@ -75,7 +76,7 @@ function trimTrailingEmpty(lines: string[]) {
 test.describe('Braille field fills on Generate', () => {
   test.describe.configure({ timeout: 120_000 });
 
-  test('Generate shows the translated rows in the field without Translate to Braille, silently', async ({ page }) => {
+  test('Generate shows the translated rows in the field without Translate to Braille, and says so', async ({ page }) => {
     await openApp(page);
     await page.locator('#auto-text').fill('hello world');
     await expect(page.locator('#braille-unicode')).toHaveValue('');
@@ -87,8 +88,8 @@ test.describe('Braille field fills on Generate', () => {
     expect(sent.some((l) => l.trim())).toBe(true);
     await expect(page.locator('#braille-unicode')).toHaveValue(trimTrailingEmpty(sent).join('\n'));
     await expect(page.locator('#braille-unicode-status')).toContainText('Filled from translation');
-    // No announcement of its own: the run's messages are the announcement.
-    await expect(page.locator('#braille-unicode-live')).toHaveText('');
+    // Announced from the field's own live region, with the button's sentence.
+    await expect(page.locator('#braille-unicode-live')).toHaveText('Braille field updated from translation.');
   });
 
   test('manual placement fills one row per line', async ({ page }) => {

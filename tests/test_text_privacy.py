@@ -29,7 +29,8 @@ def test_the_old_back_text_key_is_scrubbed_on_load_and_by_reset():
 
 
 def test_the_text_boxes_carry_the_sample_and_the_braille_boxes_its_translation():
-    assert 'placeholder="Input your text information here."' in HTML
+    assert 'placeholder="Type the text you want in braille here."' in HTML
+    assert 'placeholder="Type the text for the back of the card here."' in HTML
     front = re.search(r'id="braille-unicode"[^>]*placeholder="([^"]+)"', HTML, re.S)
     back = re.search(r'id="back-braille-unicode"[^>]*placeholder="([^"]+)"', HTML, re.S)
     assert front and back

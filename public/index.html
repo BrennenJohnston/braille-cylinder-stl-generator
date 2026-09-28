@@ -3449,11 +3449,11 @@
                               <!-- Auto placement textarea (hidden by default) -->
                               <div id="auto-input-container" style="display: none;">
                                   <label for="auto-text" class="line-label">Auto Placement Text</label>
-                                  <!-- S-P3, DRAFT 2026-09-28 - awaiting Brennen's sign-off (his words: a sample
-                                       that says input your text information here). The braille field below
-                                       carries this sample's own translation as ITS placeholder (S-P4), so a
-                                       new user sees which box takes text and which shows braille. -->
-                                  <textarea id="auto-text" rows="4" placeholder="Input your text information here." style="width: 100%; resize: vertical;" autocomplete="off"></textarea>
+                                  <!-- S-P3, signed off by Brennen 2026-09-28 (his choice from three drafts);
+                                       reword only with his sign-off. The braille field below carries this
+                                       sample's own translation as ITS placeholder (S-P4), so a new user sees
+                                       which box takes text and which shows braille. -->
+                                  <textarea id="auto-text" rows="4" placeholder="Type the text you want in braille here." style="width: 100%; resize: vertical;" autocomplete="off"></textarea>
                                   <!-- Announced through #a11y-status, not from here: this box is
                                        display:none between messages, so it is inserted into the
                                        accessibility tree already holding its text, and an insertion
@@ -3479,15 +3479,16 @@
                               <!-- Editable Unicode braille field: the authoritative text when non-empty -->
                               <div class="braille-field" style="margin-top: 1em;">
                                   <label for="braille-unicode" class="line-label">Braille (Unicode) — one line per row</label>
-                                  <!-- S-P4 (2026-09-28): the placeholder is EXACTLY what Translate to Braille
-                                       puts here for the text box's sample (S-P3) at the defaults - UEB grade 2,
-                                       capitals on, wrapped at 13 cells - measured through the real field, never
-                                       typed from memory; tests/e2e/textEntryPlaceholders.spec.ts re-derives it.
-                                       Not spoken: the description comes from aria-describedby, which takes
+                                  <!-- S-P4 (rule signed by Brennen 2026-09-28): the placeholder is EXACTLY what
+                                       Translate to Braille puts here for the text box's sample (S-P3) at the
+                                       defaults - UEB grade 2, capitals on, wrapped at 13 cells - measured through
+                                       the real field, never typed from memory; if S-P3 is ever reworded this is
+                                       re-measured, not edited. tests/e2e/textEntryPlaceholders.spec.ts re-derives
+                                       it. Not spoken: the description comes from aria-describedby, which takes
                                        precedence over a placeholder in the accessibility tree (checked over CDP). -->
                                   <textarea id="braille-unicode" name="braille_unicode" rows="4" lang="und-Brai"
                                             autocomplete="off" spellcheck="false"
-                                            placeholder="⠠⠔⠏⠥⠞ ⠽⠗ ⠞⠑⠭⠞&#10;⠔⠿⠍⠁⠰⠝ ⠐⠓⠲"
+                                            placeholder="⠠⠞⠽⠏⠑ ⠮ ⠞⠑⠭⠞&#10;⠽ ⠺⠁⠝⠞ ⠔ ⠃⠗⠇&#10;⠐⠓⠲"
                                             aria-describedby="braille-unicode-help braille-unicode-status"></textarea>
                                   <!-- Upward half of the two-way translation: braille here → text above -->
                                   <div class="translate-row">
@@ -3546,10 +3547,12 @@
                                       <!-- Label wording signed off by Brennen (2026-08-16). Placeholder
                                            replaced with his sign-off (2026-08-17): BANA auto-wrap made
                                            "each line becomes one braille row" untrue, since one typed
-                                           line can now become several rows. Reword either only with his
-                                           sign-off. -->
+                                           line can now become several rows. Shortened to its first
+                                           sentence with his sign-off (2026-09-28) so the braille box
+                                           below can show its whole translation (S-P5) in four rows.
+                                           Reword either only with his sign-off. -->
                                       <label for="back-text" class="line-label">Back of Card Text</label>
-                                      <textarea id="back-text" rows="4" placeholder="Type the text for the back of the card here. It wraps across the rows automatically." style="width: 100%; resize: vertical;" autocomplete="off" aria-describedby="back-text-help"></textarea>
+                                      <textarea id="back-text" rows="4" placeholder="Type the text for the back of the card here." style="width: 100%; resize: vertical;" autocomplete="off" aria-describedby="back-text-help"></textarea>
                                       <!-- User-facing wording signed off by Brennen (2026-08-17); reword only
                                            with his sign-off. Replaces the 2026-08-16 note, which said "there is
                                            no automatic wrapping here yet, so press Enter where each row should
@@ -3600,11 +3603,10 @@
                                            status line and the sr-only live region all mirror the front's. -->
                                       <div class="braille-field" style="margin-top: 1em;">
                                           <label for="back-braille-unicode" class="line-label">Braille (Unicode) — one line per row</label>
-                                          <!-- S-P5 (2026-09-28): the translation of the FIRST sentence of the back
-                                               text box's signed placeholder ("Type the text for the back of the card
-                                               here."), measured through the real field at the defaults. The whole
-                                               signed sample needs five rows at 13 cells and would be cut off in this
-                                               four-row box. Same test re-derives it. -->
+                                          <!-- S-P5 (signed by Brennen 2026-09-28): the translation of the back text
+                                               box's placeholder ("Type the text for the back of the card here."),
+                                               measured through the real field at the defaults - the same rule as
+                                               S-P4, re-measured never edited. Same test re-derives it. -->
                                           <textarea id="back-braille-unicode" name="back_braille_unicode" rows="4" lang="und-Brai"
                                                     autocomplete="off" spellcheck="false"
                                                     placeholder="⠠⠞⠽⠏⠑ ⠮ ⠞⠑⠭⠞&#10;⠿ ⠮ ⠃⠁⠉⠅ ⠷ ⠮&#10;⠉⠜⠙ ⠐⠓⠲"
@@ -6325,9 +6327,10 @@
         let brailleFieldAutoCleared = false;
         let brailleFieldAutoClearReason = null;
 
-        /* S-BF1 / S-BF2, DRAFT 2026-09-28 - awaiting Brennen's sign-off: the status
+        /* S-BF1 / S-BF2, signed off by Brennen 2026-09-28 (as drafted): the status
            and the announcement when a translation setting emptied a pristine
-           field. The text-change pair keeps its existing wording. */
+           field. The text-change pair keeps its existing wording. Reword only
+           with his sign-off. */
         const S_BF1_SETTING_CLEARED_STATUS = 'Cleared because a translation setting changed — press Translate to Braille to refresh';
         const S_BF2_SETTING_CLEARED_ANNOUNCE = 'Braille field cleared because a translation setting changed. Press Translate to Braille to refresh it.';
 
@@ -6423,10 +6426,9 @@
         // screen without a second press). The field keeps its authority: a
         // non-empty field, mirror or hand-edit, is embossed exactly as written
         // on the next Generate, which sends the same body the translation did.
-        // Generate passes announce=false: its own progress and ready messages
-        // are the one announcement that action makes (ADA SOP Section 12, C9);
-        // the visible status line still updates.
-        function showTranslationInBrailleField(lines, warnings = [], announce = true) {
+        // Both callers announce from the field's own live region (Brennen's
+        // choice 2026-09-28, D-U4), beside the run's messages in #a11y-status.
+        function showTranslationInBrailleField(lines, warnings = []) {
             const field = document.getElementById('braille-unicode');
             if (!field) return;
             field.value = trimTrailingEmptyLines(lines).join('\n');
@@ -6436,7 +6438,7 @@
             brailleFieldMirrorKey = translationSettingsKey('front');
             const note = warnings.length ? ` ${warnings.join(' ')}` : '';
             setBrailleFieldStatus(`Filled from translation — edit any cell you want to change.${note}`);
-            if (announce) announceBrailleField('Braille field updated from translation.');
+            announceBrailleField('Braille field updated from translation.');
         }
 
         // Holds the field to the same rules generation enforces, live: a paste
@@ -6719,8 +6721,9 @@
 
         // The back's twin of showTranslationInBrailleField: the button and,
         // since 2026-09-28, every double-sided Generate write the back
-        // translation here as its pristine mirror.
-        function showTranslationInBackBrailleField(lines, warnings = [], announce = true) {
+        // translation here as its pristine mirror, announced from this
+        // field's own live region (D-U4).
+        function showTranslationInBackBrailleField(lines, warnings = []) {
             const field = document.getElementById('back-braille-unicode');
             if (!field) return;
             field.value = trimTrailingEmptyLines(lines).join('\n');
@@ -6730,7 +6733,7 @@
             backBrailleFieldMirrorKey = translationSettingsKey('back');
             const note = warnings.length ? ` ${warnings.join(' ')}` : '';
             setBackBrailleFieldStatus(`Filled from translation — edit any cell you want to change.${note}`);
-            if (announce) announceBackBrailleField('Braille field updated from translation.');
+            announceBackBrailleField('Braille field updated from translation.');
         }
 
         function updateBackBrailleFieldStatus() {
@@ -10396,10 +10399,10 @@
                 // Show the braille that is about to be embossed (2026-09-28,
                 // Brennen's request): the field becomes the pristine mirror of
                 // this translation, exactly as Translate to Braille would have
-                // left it, so the cells are on screen without a second press.
-                // Silent - the run's own messages are this action's announcement.
+                // left it, so the cells are on screen without a second press,
+                // and its live region says so (his choice, D-U4).
                 if (translatedLines.some(line => line && line.trim())) {
-                    showTranslationInBrailleField(translatedLines, [], false);
+                    showTranslationInBrailleField(translatedLines);
                 }
             } else {
                 // Counter plates don't need text - just pass empty lines
@@ -10533,7 +10536,7 @@
                 // (2026-09-28); a back field that already had content was the
                 // source and shows itself.
                 if (backBrailleLines && !isBackBrailleFieldActive() && backBrailleLines.some(line => line && line.trim())) {
-                    showTranslationInBackBrailleField(backBrailleLines, [], false);
+                    showTranslationInBackBrailleField(backBrailleLines);
                 }
             }
             const settings = {

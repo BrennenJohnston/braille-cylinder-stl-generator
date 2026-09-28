@@ -578,8 +578,10 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      it embosses into #braille-unicode (and #back-braille-unicode on a
      double-sided run) as the PRISTINE mirror, via the same helper the
      Translate button uses (showTranslationInBrailleField /
-     showTranslationInBackBrailleField, announce=false: the run's own
-     messages are the one announcement). The field KEEPS ITS AUTHORITY: a
+     showTranslationInBackBrailleField; BOTH callers announce "Braille
+     field updated from translation." from the field's own live region -
+     his choice D-U4, 2026-09-28, over silence under C9). The field KEEPS
+     ITS AUTHORITY: a
      non-empty field - mirror or hand-edit - is embossed verbatim on the
      next Generate (Brennen's 2026-08-23 flow depends on it: overflowing
      text, Translate truncates to what fits, Generate succeeds with the
@@ -595,19 +597,22 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      placement mode, per-row tables] is remembered at fill time
      (brailleFieldMirrorKey / backBrailleFieldMirrorKey) and
      reconcilePristineBrailleFields() compares it on every form
-     input/change, clearing with reason 'setting' (S-BF1 / S-BF2, DRAFT).
+     input/change, clearing with reason 'setting' (S-BF1 / S-BF2, signed
+     2026-09-28).
      A FINGERPRINT, never "which control fired": the double-sided lock's
      tactile dispatch at the same cell count, a dot-size dial or X Adjust
      leave the mirror alone (a selector-based version cleared the field
      when Double-sided was chosen and broke the same 2026-08-23 flow).
      Dirty fields are never touched. Without this, the auto-fill would
      have embossed a stale mirror after a language or cell-count change.
-   - PLACEHOLDERS: #auto-text carries S-P3 "Input your text information
-     here." (DRAFT, his words); #braille-unicode carries S-P4, that
-     sentence's EXACT translation at the defaults (UEB g2, capitals, 13
-     cells: "⠠⠔⠏⠥⠞ ⠽⠗ ⠞⠑⠭⠞" / "⠔⠿⠍⠁⠰⠝ ⠐⠓⠲"); #back-text keeps its signed
-     2026-08-17 placeholder and #back-braille-unicode carries S-P5, the
-     translation of its FIRST sentence (the whole sample needs five rows).
+   - PLACEHOLDERS (all signed by Brennen 2026-09-28): #auto-text carries
+     S-P3 "Type the text you want in braille here."; #braille-unicode
+     carries S-P4, that sentence's EXACT translation at the defaults (UEB
+     g2, capitals, 13 cells: "⠠⠞⠽⠏⠑ ⠮ ⠞⠑⠭⠞" / "⠽ ⠺⠁⠝⠞ ⠔ ⠃⠗⠇" / "⠐⠓⠲");
+     #back-text's placeholder was SHORTENED on his word to "Type the text
+     for the back of the card here." (superseding 2026-08-17) and
+     #back-braille-unicode carries S-P5, its whole translation. RULE: if a
+     sample is reworded its braille is RE-MEASURED, never edited.
      MEASURED through the real field, never typed from memory;
      tests/e2e/textEntryPlaceholders.spec.ts re-derives them. Not spoken:
      aria-describedby outranks a placeholder in the AX tree (CDP-checked).

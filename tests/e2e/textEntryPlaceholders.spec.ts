@@ -12,15 +12,14 @@
  * read as its description (that comes from aria-describedby), which is checked
  * on the computed accessibility tree over CDP, since static markup cannot say.
  *
- * S-P3 (the front sample) is DRAFT, awaiting Brennen's sign-off; the back text
- * sample is the signed 2026-08-17 placeholder, whose FIRST sentence is used
- * because the whole sample needs five rows at 13 cells.
+ * S-P3 (the front sample) and the shortened back sample were signed by Brennen
+ * on 2026-09-28; the braille placeholders S-P4 and S-P5 follow them by rule.
  */
 
 import { expect, test, type Page } from '@playwright/test';
 
-const FRONT_SAMPLE = 'Input your text information here.';
-const BACK_SAMPLE_FIRST_SENTENCE = 'Type the text for the back of the card here.';
+const FRONT_SAMPLE = 'Type the text you want in braille here.';
+const BACK_SAMPLE = 'Type the text for the back of the card here.';
 
 async function openApp(page: Page) {
   await page.goto('/');
@@ -56,15 +55,14 @@ test.describe('Text entry placeholders', () => {
     await expect(page.locator('#braille-unicode')).toHaveValue(braillePlaceholder!);
   });
 
-  test('the back braille box shows the translation of the back sample\'s first sentence', async ({ page }) => {
+  test('the back text box shows its sample and the back braille box its exact translation', async ({ page }) => {
     await openApp(page);
     await page.locator('#card_sides_double').check();
-    const backPlaceholder = await page.locator('#back-text').getAttribute('placeholder');
-    expect(backPlaceholder?.startsWith(BACK_SAMPLE_FIRST_SENTENCE)).toBe(true);
+    await expect(page.locator('#back-text')).toHaveAttribute('placeholder', BACK_SAMPLE);
     const braillePlaceholder = await page.locator('#back-braille-unicode').getAttribute('placeholder');
     expect(braillePlaceholder).toBeTruthy();
 
-    await page.locator('#back-text').fill(BACK_SAMPLE_FIRST_SENTENCE);
+    await page.locator('#back-text').fill(BACK_SAMPLE);
     await translate(page, 'back-translate-to-braille-btn', 'back-braille-unicode');
     await expect(page.locator('#back-braille-unicode')).toHaveValue(braillePlaceholder!);
   });
