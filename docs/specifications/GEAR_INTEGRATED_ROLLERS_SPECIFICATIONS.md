@@ -616,7 +616,10 @@ golden pairs regenerating unchanged, prove it).
   vendored-surface test excludes the cut socket and the vent bore (the vent trues the
   gears' own off-axis holes, which leaves asset points up to 0.05 mm into air).
 - **Orientation text (D-7):** the fused ready message gains S-P1 after S-G2, and the help
-  modal's Cylinder Guide gains S-P2 — both DRAFT until Brennen signs them.
+  modal's Cylinder Guide gains S-P2 — both signed by Brennen 2026-09-28: S-P1 "Print it with the
+  bottom gear on the build plate, with supports off."; S-P2 "Fused Version 2 rollers: print with the
+  bottom gear on the build plate and supports off. They lift off the embosser's peg without a
+  vacuum." (the OpenSCAD [Gears] tab says "Print bottom gear down with supports off.", S-O1).
 - **Print test:** PASSED — Brennen printed the fused pair from the pushed build on
   2026-09-24, bottom gear down ("passes 3D print check"); Q-1 (the housing peg's reach
   into the cone) was not separately reported and stays open in `docs/KNOWN_ISSUES.md`.

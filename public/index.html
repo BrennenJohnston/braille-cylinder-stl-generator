@@ -3835,7 +3835,7 @@
                                               <strong>Locked:</strong> Double-sided is on, so the Row Indicator Style stays on the tactile seam arrow — both cylinders of a double-sided pair need it. Choose Single-sided to pick visual markers.
                                           </div>
                                           <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
-                                              <strong>Tactile</strong> lets a blind user find the alignment point and tell which end is up by touch: the arrow is one continuous wedge, nothing like a braille dot, and raised-versus-recessed tells you which cylinder you are holding. It also frees the marker cells for text. Both plates of a pair must use the same style. Its dimensions are the dials below, shown in the tactile style.
+                                              <strong>Tactile</strong> lets a blind user find the alignment point and tell which end is up by touch: the arrow is one continuous wedge, nothing like a braille dot, and raised-versus-recessed tells you which cylinder you are holding. It also frees the marker cells for text. Both plates of a pair must use the same style. The arrow's size dials appear below when the tactile style is chosen.
                                           </div>
                                           <!-- Announced through #a11y-status - see that region's note. -->
                                           <div id="tactile-gap-warning" class="grade-note inline-warning"
@@ -4208,31 +4208,33 @@
                                                are the flat request fields; every default is a whole
                                                number of 0.005 steps (0.075 / 0.005 = 15) or the input
                                                is :invalid on load and Generate dies silently. The
-                                               four labels S-K2..S-K5 and the shared note S-K1 are
-                                               DRAFT (2026-09-25) until Brennen signs them; S-V9
-                                               (signed 2026-08-28) retired with the single dial. The
-                                               note S-K1 (24 words, under the Step 6.8 ceiling) is the
+                                               four labels S-K2..S-K5 and the shared note S-K1 were
+                                               signed off by Brennen 2026-09-28 (labels shortened, the
+                                               note names his printer settings; reword only with his
+                                               sign-off); S-V9 (signed 2026-08-28) retired with the
+                                               single dial. The note S-K1 (25 words, at the Step 6.8
+                                               ceiling) is the
                                                FIELDSET's aria-describedby, not the dials' - one
                                                description, one host (SOP 6.8 clause 5): a screen
                                                reader hears it once on entering the group, not once
                                                per dial (measured 96 -> 24 words per pass, 2026-09-25). -->
                                           <div>
-                                              <label for="v2_key_clearance_a1_mm">Gear A1 (top of Cylinder A) key clearance (mm):</label>
+                                              <label for="v2_key_clearance_a1_mm">Gear A1 clearance (mm):</label>
                                               <input type="number" id="v2_key_clearance_a1_mm" name="v2_key_clearance_a1_mm" value="0.075" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off">
                                           </div>
                                           <div style="margin-top: 6px;">
-                                              <label for="v2_key_clearance_a2_mm">Gear A2 (bottom of Cylinder A) key clearance (mm):</label>
+                                              <label for="v2_key_clearance_a2_mm">Gear A2 clearance (mm):</label>
                                               <input type="number" id="v2_key_clearance_a2_mm" name="v2_key_clearance_a2_mm" value="0.075" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off">
                                           </div>
                                           <div style="margin-top: 6px;">
-                                              <label for="v2_key_clearance_b1_mm">Gear B1 (top of Cylinder B) key clearance (mm):</label>
+                                              <label for="v2_key_clearance_b1_mm">Gear B1 clearance (mm):</label>
                                               <input type="number" id="v2_key_clearance_b1_mm" name="v2_key_clearance_b1_mm" value="0.075" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off">
                                           </div>
                                           <div style="margin-top: 6px;">
-                                              <label for="v2_key_clearance_b2_mm">Gear B2 (bottom of Cylinder B) key clearance (mm):</label>
+                                              <label for="v2_key_clearance_b2_mm">Gear B2 clearance (mm):</label>
                                               <input type="number" id="v2_key_clearance_b2_mm" name="v2_key_clearance_b2_mm" value="0.075" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off">
                                           </div>
-                                          <div class="grade-note" id="v2-key-clearance-note" style="margin-top: 4px; font-size: 0.85em;">Extra room around each gear's peg, per side. The defaults suit most printers: raise a value if that peg binds, lower it if loose.</div>
+                                          <div class="grade-note" id="v2-key-clearance-note" style="margin-top: 4px; font-size: 0.85em;">Room around each peg, per side. Defaults suit cylinders at 0.12 mm layers, gears at 0.2 mm; raise if a peg binds, lower if loose.</div>
                                       </fieldset>
                                   </div>
 
@@ -5497,12 +5499,13 @@
                prefix rides in the ready message rather than as a second write
                to the one live region. */
             const fusedVersion2 = lastGenerationUsedGears && lastGenerationUsedV2;
-            /* S-P1, DRAFT 2026-09-24 - awaiting Brennen's sign-off (decision D-7): the
+            /* S-P1, signed off by Brennen 2026-09-28 ("with supports off" added to the
+               2026-09-24 draft; decision D-7); reword only with his sign-off. The
                fused roller has a preferred way up since the v9 update - the chamfered
                barrel edge and the vented, self-supporting gear socket are at the
                bottom gear - so the fused ready message says which end goes down. */
             announceStatus('stl-ready',
-                (fusedVersion2 ? 'Cylinder generated with fixed gears for the Version 2 embosser. Print it with the bottom gear on the build plate. ' : '')
+                (fusedVersion2 ? 'Cylinder generated with fixed gears for the Version 2 embosser. Print it with the bottom gear on the build plate, with supports off. ' : '')
                 + (lastGenerationUsedGears && !fusedVersion2 ? 'Cylinder generated with integrated gears. ' : '')
                 + (lastGenerationUsedV2 && !fusedVersion2 ? 'Cylinder generated for the Version 2 embosser. ' : '')
                 + 'Your STL file is ready. Use the Download STL button to save it.'
@@ -8146,13 +8149,14 @@
             }
         }
 
-        /* S-V16, DRAFT 2026-09-24 - awaiting Brennen's sign-off. The clause the
-           version announcement gains when the style just moved to tactile. */
-        const S_V16_STYLE_MOVED = 'Row Indicator Style set to the tactile seam arrow, the Version 2 default.';
-        /* S-X1, DRAFT 2026-09-28 - awaiting Brennen's sign-off. The clause the
-           version announcement gains when choosing Version 2 moved X Adjust to
-           the Version 2 tactile default. */
-        const S_X1_X_ADJUST_MOVED = `X Adjust set to ${V2_TACTILE_X_ADJUST_MM} mm, the Version 2 tactile default.`;
+        /* S-V16, signed off by Brennen 2026-09-28 (shortened from the 2026-09-24
+           draft); reword only with his sign-off. The clause the version
+           announcement gains when the style just moved to tactile. */
+        const S_V16_STYLE_MOVED = 'Row Indicator Style set to tactile.';
+        /* S-X1, signed off by Brennen 2026-09-28 (shortened to match S-V16);
+           reword only with his sign-off. The clause the version announcement
+           gains when choosing Version 2 moved X Adjust to the tactile default. */
+        const S_X1_X_ADJUST_MOVED = `X Adjust set to ${V2_TACTILE_X_ADJUST_MM} mm.`;
 
         /* S-V10, signed off by Brennen (2026-08-28); reword only with his sign-off. */
         function embosserVersionAnnouncement() {
@@ -10664,7 +10668,8 @@
                     const clearance = parseFloat(document.getElementById(id)?.value);
                     if (!Number.isFinite(clearance)) {
                         const gear = id.slice('v2_key_clearance_'.length, -'_mm'.length).toUpperCase();
-                        throw new Error(`Gear ${gear} key clearance (mm) is empty or not a number. Enter a value between 0 and 0.5.`);
+                        /* S-K6, signed off by Brennen 2026-09-28 (matches the shortened dial labels); reword only with his sign-off. */
+                        throw new Error(`Gear ${gear} clearance (mm) is empty or not a number. Enter a value between 0 and 0.5.`);
                     }
                     settings[id] = clearance;
                 });
@@ -12303,8 +12308,8 @@
                         <h4>Tips for Best Results</h4>
                         <ul>
                             <li><strong>Print orientation:</strong> Print cylinders standing upright for best dot quality</li>
-                            <!-- S-P2, DRAFT 2026-09-24 - awaiting Brennen's sign-off (decision D-7); "gear sockets are" since 2026-09-25 (D-K5, both sockets coned). -->
-                            <li><strong>Fused Version 2 rollers:</strong> put the bottom gear on the build plate. Its barrel edge is chamfered and its gear sockets are vented, so it prints without supports and lifts off the embosser's peg without a vacuum.</li>
+                            <!-- S-P2, signed off by Brennen 2026-09-28 (the shorter of three drafts; decision D-7); reword only with his sign-off. -->
+                            <li><strong>Fused Version 2 rollers:</strong> print with the bottom gear on the build plate and supports off. They lift off the embosser's peg without a vacuum.</li>
                             <li><strong>Test fit:</strong> Print a small section first to verify the diameter matches your container</li>
                             <!-- Seam placement bullet reworded and signed off by Brennen (2026-09-21); reword only with his sign-off. -->
                             <li><strong>Seam placement:</strong> Leave your slicer's seam mode on Aligned; the seam channel does the rest</li>
@@ -12439,16 +12444,18 @@
                                     <td><strong>Cylinders to Generate</strong></td>
                                     <td>Both cylinders (the default, one combined file), or Cylinder A or Cylinder B on its own</td>
                                 </tr>
-                                <!-- S-H1 and S-H2, DRAFT 2026-09-24 - awaiting Brennen's sign-off (the table
-                                     above them is signed 2026-09-21). Card Thickness and Row Indicator Style
-                                     are Expert Mode submenus 2 and 3 since 2026-09-24 (decision D-5). -->
+                                <!-- S-H1 and S-H2, signed off by Brennen 2026-09-28 (S-H1 reworded plainer; S-H2
+                                     redrafted on his instruction: the tactile arrows are for touch readers, their
+                                     count follows the card-stock preset, and the row must not be confused with the
+                                     slicer seam channel). The table above them is signed 2026-09-21. Reword only
+                                     with his sign-off. -->
                                 <tr>
                                     <td><strong>Card Thickness</strong></td>
-                                    <td>The 0.4 mm and 0.3 mm card-stock presets, or Custom; a preset sets every dot and surface dial</td>
+                                    <td>Choose the 0.4 mm or 0.3 mm card stock, or Custom. A preset sets every dot and surface dial for you.</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Row Indicator Style</strong></td>
-                                    <td>Visual markers or the tactile seam arrow, and the arrow's size, raise and recess clearance (shown in tactile mode)</td>
+                                    <td>Visual markers, or tactile arrows that a touch reader feels to line up each row: four arrows on 0.4 mm card stock (one per row), three on 0.3 mm.</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Shape Selection</strong></td>

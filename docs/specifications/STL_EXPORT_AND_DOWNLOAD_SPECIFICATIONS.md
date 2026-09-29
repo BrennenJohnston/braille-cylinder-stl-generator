@@ -1033,7 +1033,7 @@ once and cannot drift out of step with what is on screen.
 - Completion announcement: `Your STL file is ready. Use the Download STL button to save it.`
   A fused Version 2 run (Version 2 + fixed gears) prefixes it with S-G2 (signed 2026-09-21,
   GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md §11.6) and, since 2026-09-24 (decision D-7), with
-  S-P1 `Print it with the bottom gear on the build plate.` — DRAFT until Brennen signs it — because
+  S-P1 `Print it with the bottom gear on the build plate, with supports off.` — signed by Brennen 2026-09-28 ("with supports off" added to the draft) — because
   the fused roller has a preferred way up (its chamfered barrel edge and vented, self-supporting
   gear socket are at the bottom gear; §11.8 there).
 - Pair completion: `Both cylinders are ready. Use the Download Cylinder A and Download Cylinder B buttons below to save them.`

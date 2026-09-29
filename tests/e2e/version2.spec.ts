@@ -42,14 +42,14 @@ const S3_CUTOUT_NOTE = 'The polygonal cutout is not used while integrated gears 
 const S_M10_FIXED = 'Simplified fixed gears selected.';
 const S_V10_ON = 'Version 2 selected: keyed gear-peg cutouts, 30.8 mm cylinder.';
 const S_V10_OFF = 'Version 1 selected.';
-// S-V16, DRAFT 2026-09-24 (awaiting Brennen's sign-off): the clause the version
+// S-V16, signed by Brennen 2026-09-28 (shortened): the clause the version
 // announcement gains when choosing Version 2 moved the Row Indicator Style to
-// the tactile seam arrow, the Version 2 default (decision D-4).
-const S_V16_STYLE_MOVED = 'Row Indicator Style set to the tactile seam arrow, the Version 2 default.';
-// S-X1, DRAFT 2026-09-28 (awaiting Brennen's sign-off): the clause the version
-// announcement gains when choosing Version 2 moved X Adjust to the Version 2
-// tactile default.
-const S_X1_X_ADJUST_MOVED = 'X Adjust set to -2 mm, the Version 2 tactile default.';
+// tactile, the Version 2 default (decision D-4).
+const S_V16_STYLE_MOVED = 'Row Indicator Style set to tactile.';
+// S-X1, signed by Brennen 2026-09-28 (shortened to match S-V16): the clause the
+// version announcement gains when choosing Version 2 moved X Adjust to the
+// Version 2 tactile default.
+const S_X1_X_ADJUST_MOVED = 'X Adjust set to -2 mm.';
 
 // The Version 2 preset barrel (D-V4), owned by app/geometry/version2.py.
 const V2_DIAMETER = '30.8';

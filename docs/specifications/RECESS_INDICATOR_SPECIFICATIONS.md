@@ -35,7 +35,7 @@ way to Version 1. It is a default, not a lock — the user may pick visual marke
 and that choice persists — and it is never applied by the silent load restore nor by a
 card-stock preset (`tests/test_smoke.py` pins that neither preset names `indicator_mode`). The
 double-sided lock (v3.3) takes precedence: a locked tactile style is left alone. The composed
-Version 2 announcement gains S-V16 when the style moved (DRAFT until signed).
+Version 2 announcement gains S-V16 *"Row Indicator Style set to tactile."* when the style moved (signed by Brennen 2026-09-28, shortened from the draft).
 
 ### Indicator Letters Toggle (`indicator_shapes`)
 

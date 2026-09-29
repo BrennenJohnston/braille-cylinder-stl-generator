@@ -298,7 +298,7 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      -> subtract axis cuts (spec gears.axis_cuts: vent, bottom cone, top
      cone). The fused
      roller now prints BOTTOM GEAR DOWN (S-P1 in the ready message, S-P2 in the
-     Cylinder Guide - DRAFT). The D-6 golden test is now "one VENTED body" and
+     Cylinder Guide - both SIGNED 2026-09-28: "...with supports off."). The D-6 golden test is now "one VENTED body" and
      the other six pairs regenerate byte-identical. Never re-couple a support.
    - Version 2 recommends the SAME cell counts as Version 1. The one-fewer
      rule was retired 2026-08-29 with the 30.5 barrel (seam gap 4.8 mm against
@@ -318,7 +318,8 @@ translation, Three.js preview. Working branch: develop — never commit to main.
    silent load restore (a visual choice made in Version 2 survives a reload)
    and NEVER by a card-stock preset (test_smoke pins that neither
    THICKNESS_PRESETS object names indicator_mode). The composed deferred
-   announcement gains S-V16 (DRAFT) when the style moved.
+   announcement gains S-V16 "Row Indicator Style set to tactile." (signed
+   2026-09-28) when the style moved.
 
 6e. Slicer seam channel (2026-09-20, sub-plan A of the 2026-09-20 programme;
    decisions D-1, D-2, D-13, D-14, D-15) - every cylinder, both plates, ON by
@@ -560,7 +561,7 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      V1 value back; visual in V2 gives it back only while the dial still
      reads -2). checkPresetMatch expects -2 for this dial in V2 tactile, so
      the stock keeps its name; a hand-set value reads Custom, which is what
-     preserves it across a reload. Announcement clause S-X1 (DRAFT) rides
+     preserves it across a reload. Announcement clause S-X1 "X Adjust set to -2 mm." (signed 2026-09-28) rides
      in the composed version announcement when the dial moved.
 
 6i. Text entry (2026-09-28, three of Brennen's user-testing findings):
