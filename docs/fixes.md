@@ -2,6 +2,14 @@
 
 Entries follow the debug workflow (Cline/Workflows/debug.md, step 9): one paragraph on the bug, one on the fix, and the done-condition check that passed.
 
+## 2026-09-28 — The Version 1 fixed-gear roller carried the wrong gears
+
+**Bug.** Brennen's print of a Version 1 Simplified (fixed-gear) roller found gears that are not the Version 1 embosser's. The vendored `gears_a/b.bin` were 1:1 copies of the 2026-08-24 "Rollers v7 (Gear Sample …)" STLs. Measured against the published Version 1 kit (Thingiverse thing 7365273, parts P03–P06 = his `A1/A2/B1/B2 v6 (0.2) v3.stl`): the teeth are identical in every set (24-tooth herringbone, tip ⌀32.219, 10 mm, same clocking, axis distance 32.047), but the kit gives all four gears one housing pocket (⌀14 to ~6.75 mm, then ⌀10.4 to 8.5 mm; the body pin is ⌀13.7 × 6.25 + ⌀10.17 × 2) while the v7 B gears carry the newer design's ⌀9 bore — up to 2.5 mm off — which the pin cannot enter. The version routing (`gear_asset_for`, the worker cache keyed by asset name) was correct; the wrong thing was the source that was vendored.
+
+**Fix.** `scripts/derive_gear_assets.py` now reads the four Version 1 holders, cuts each to its 10 mm gear ring by an exact Manifold intersection (the barrel-side face is checked to be one solid disk), seats the ring on the barrel end (1 mm inward — the standard housing holds it 1 mm off; the 72 mm roller was his call) and applies the unchanged frame transform. Tooth counting moved to a thin slice at the chevron apex (the holders' tessellation reads 48 with the old 2° gap rule). The V1 fused golden pair regenerated (the other six pairs byte-identical); the deep test now compares the roller with the holders' rings; the OpenSCAD repo's `assets/gears_a/b.stl` regenerated from the new bytes.
+
+**Done-condition check that passed.** `pytest tests/test_gear_rollers.py tests/test_golden.py` (40 + 55 passed), the OpenSCAD repo's `tests/test_gear_assets.py` and `tests/test_gear_rollers_scad.py` (25 + 12 passed), the headless check of `Braille_Cylinder_STL_Generator.scad` with gears on (NoError, STL written) and its three rendered views, and `tests/e2e/gearRollers.spec.ts` on Chromium (12 passed).
+
 ## 2026-09-28 — The seam-channel note went silent in visual mode
 
 **Bug.** Introduced by the X Adjust fix of 2026-09-27 (`7056115`, on the development build for one day, never on main): `updateSeamChannelUI()` gained a last-cell room check for tactile mode and initialised it to `Infinity` for visual mode, and the guard that keeps the box quiet while a dial is mid-edit tests `Number.isFinite()` on it - so in visual mode the note never showed. The server still reported the omission at Generate; only the live note was lost. Found by the full Chromium e2e run (`seamChannel.spec.ts:298`), which had not been run after that change.

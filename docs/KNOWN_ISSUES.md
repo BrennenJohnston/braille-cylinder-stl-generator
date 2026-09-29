@@ -144,9 +144,13 @@ feature. With Simplified chosen the download gains a `Geared_` segment
 (`Embossing_Cylinder_Geared_0.4_name.stl`).
 
 **The gears are not adjustable, and the cylinder size is fixed while they are on.**
-They are a 1:1 replica of the reference set — 24 teeth, tip diameter 32.2187 mm,
-10 mm thick, sitting at z −10..0 and 52..62 around the barrel for a 72 mm roller, with
-the pair meshing at an axis distance of 32.0473 mm. Because that geometry is fixed, a
+They are a 1:1 replica of the Version 1 embosser's own gears — the gear ring of each
+Embosser/Counter Holder (A1, A2, B1, B2), cut free of the boss the standard cylinder
+slides over and seated on the barrel end (since 2026-09-28; until then the 2026-08-24
+sample gears, whose Cylinder B gears carry the newer design's smaller hub and do not fit
+the Version 1 housing — found by a print) — 24 teeth, tip diameter 32.2187 mm, 10 mm
+thick, sitting at z −10..0 and 52..62 around the barrel for a 72 mm roller, with the pair
+meshing at an axis distance of 32.0473 mm. Because that geometry is fixed, a
 gear-mode request for anything other than a 30.8 mm × 52.0 mm cylinder is REFUSED: a
 shorter barrel would export as loose pieces and a taller one would swallow the teeth.
 The app says so live before you press Generate.

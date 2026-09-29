@@ -1,6 +1,7 @@
 {
-  "note": "Derived 1:1 from Brennen's reference STLs; regenerate only via scripts/derive_gear_assets.py",
-  "derived": "2026-08-24",
+  "note": "Derived 1:1 from Brennen's Version 1 gear holders (each holder's gear ring only, seated on the barrel end); regenerate only via scripts/derive_gear_assets.py",
+  "derived": "2026-09-28",
+  "source_parts": "Brennen's Version 1 gear holders A1/A2/B1/B2 (v6): the parts the standard Version 1 cylinders slide onto, each a 10 mm gear ring plus a 40 mm boss. Only the ring ships, cut by an exact Manifold intersection with ring_z_band_source_mm and seated on the barrel end by seat_shift_mm. Until 2026-09-28 the assets were the 2026-08-24 \"Rollers v7 (Gear Sample ...)\" set, whose B gears carry a 9 mm bore the Version 1 housing pin cannot enter.",
   "frame": "Browser worker cylinder frame: axis at x=y=0, barrel centered on z=0 (cylinder spans z -26..+26, gears -36..-26 and +26..+36). Millimeters, Z-up.",
   "format": {
     "magic": "BCGR1\\x00",
@@ -9,7 +10,7 @@
     "header_bytes": 14
   },
   "transform": {
-    "source": "01_SAMPLE_GEOMETRY_AUDIT.md section 10.2",
+    "source": "01_SAMPLE_GEOMETRY_AUDIT.md section 10.2 (the holders share the samples' assembly frame)",
     "a": "p_programA = Rz(180) * (p_sample - (-16.0000, 0.0000, 0)) - (0, 0, 26.0000)",
     "b": "p_programB = (p_sample - (+16.0473, -0.0079, 0)) - (0, 0, 26.0000)",
     "constants": {
@@ -32,10 +33,17 @@
       "sources": [
         {
           "role": "A1",
-          "file": "Rollers v7 (Gear Sample A1) (Top of Cylinder A, joins to handle connector).stl",
-          "sha256": "fd1f3fa1c01108ac62f0269eb498b07bcc0c95c8c0b8ac67837c6d7db94d676c",
-          "vert_count": 7614,
-          "tri_count": 15224,
+          "file": "A1 v6 (0.2) v3.stl",
+          "sha256": "0686fa26e75fa68092ce04e1eebcefee587344de6bc10b34dba0612dac9b3c01",
+          "holder_vert_count": 9831,
+          "holder_tri_count": 19658,
+          "ring_z_band_source_mm": [
+            53.0,
+            63.0
+          ],
+          "seat_shift_mm": -1.0,
+          "vert_count": 6793,
+          "tri_count": 13582,
           "tooth_count": 24,
           "tip_radius_mm": 16.109371,
           "z_span_mm": [
@@ -45,10 +53,17 @@
         },
         {
           "role": "A2",
-          "file": "Rollers v7 (Gear Sample A2) (Bottom of Cylinder A).stl",
-          "sha256": "eef0793878a1ea9610a03408c4725c025813b101bdff479c8f634f94051ad8fe",
-          "vert_count": 7596,
-          "tri_count": 15188,
+          "file": "A2 v6 (0.2) v3.stl",
+          "sha256": "602ad0a444d37ec145bb43cf9067553456a51ee6a253c7568f9a4030a5aca84a",
+          "holder_vert_count": 8100,
+          "holder_tri_count": 16196,
+          "ring_z_band_source_mm": [
+            -11.0,
+            -1.0
+          ],
+          "seat_shift_mm": 1.0,
+          "vert_count": 6771,
+          "tri_count": 13538,
           "tooth_count": 24,
           "tip_radius_mm": 16.109371,
           "z_span_mm": [
@@ -57,9 +72,9 @@
           ]
         }
       ],
-      "vert_count": 15210,
-      "tri_count": 30412,
-      "byte_size": 547478,
+      "vert_count": 13564,
+      "tri_count": 27120,
+      "byte_size": 488222,
       "bounds_mm": {
         "min": [
           -16.109356,
@@ -73,24 +88,31 @@
         ]
       },
       "body_volumes_mm3": [
-        5349.290599,
-        5665.283071
+        5243.781398,
+        5665.153002
       ],
-      "volume_mm3": 11014.57367,
+      "volume_mm3": 10908.9344,
       "bodies_watertight": [
         true,
         true
       ],
-      "sha256": "5d459f2e15cad13e14f19371cc1cea6c5a1df210c5644e62f78f7c522cb52af8"
+      "sha256": "abd7259f8d74e60c393e516acc7c6bf7663ec6074e9abc55076334b61950c689"
     },
     "gears_b.bin": {
       "sources": [
         {
           "role": "B1",
-          "file": "Rollers v7 (Gear Sample B1) (Top of Cylinder B).stl",
-          "sha256": "df58d10a8826e562584260add1941f846902cd104fe4ba6be7daaa80edc89352",
-          "vert_count": 7540,
-          "tri_count": 15076,
+          "file": "B1 v6 (0.2) v3.stl",
+          "sha256": "9fbdeb65f4a212ac7a697352cd4a10c2c5dd883499c8bc09f9738a8e07bb2904",
+          "holder_vert_count": 7947,
+          "holder_tri_count": 15890,
+          "ring_z_band_source_mm": [
+            53.0,
+            63.0
+          ],
+          "seat_shift_mm": -1.0,
+          "vert_count": 6618,
+          "tri_count": 13232,
           "tooth_count": 24,
           "tip_radius_mm": 16.109402,
           "z_span_mm": [
@@ -100,10 +122,17 @@
         },
         {
           "role": "B2",
-          "file": "Rollers v7 (Gear Sample B2) (Bottom of Cylinder B).stl",
-          "sha256": "649d63f87ddb87fa28a6f481ca04e695c41e484aec763b7511eac35e58a78e26",
-          "vert_count": 7540,
-          "tri_count": 15076,
+          "file": "B2 v6 (0.2) v3.stl",
+          "sha256": "f57387215efeac783a0b8dcdc49ddb0d156db0b2f8d3e5c56fb16819001384ce",
+          "holder_vert_count": 9678,
+          "holder_tri_count": 19352,
+          "ring_z_band_source_mm": [
+            -11.0,
+            -1.0
+          ],
+          "seat_shift_mm": 1.0,
+          "vert_count": 6618,
+          "tri_count": 13232,
           "tooth_count": 24,
           "tip_radius_mm": 16.109402,
           "z_span_mm": [
@@ -112,9 +141,9 @@
           ]
         }
       ],
-      "vert_count": 15080,
-      "tri_count": 30152,
-      "byte_size": 542798,
+      "vert_count": 13236,
+      "tri_count": 26464,
+      "byte_size": 476414,
       "bounds_mm": {
         "min": [
           -16.10877,
@@ -128,15 +157,15 @@
         ]
       },
       "body_volumes_mm3": [
-        6414.813186,
-        6414.394175
+        5667.996041,
+        5667.45667
       ],
-      "volume_mm3": 12829.207361,
+      "volume_mm3": 11335.452711,
       "bodies_watertight": [
         true,
         true
       ],
-      "sha256": "f4311a6f0f3f121719db2234bbd63c7e85c78dc915101358d3ef073e9e9933a1"
+      "sha256": "42184a5f5661bd46ff730955bd8233c4af93fa3a5fe4004065d0f4cc60189668"
     }
   }
 }

@@ -50,9 +50,21 @@ and the filenames are exactly what the public training videos show.
 
 | File | Contents |
 |---|---|
-| `gears_a.bin` | Cylinder A's pair: gear A1 (top) + A2 (bottom), 15,210 vertices / 30,412 triangles, 547,478 bytes |
-| `gears_b.bin` | Cylinder B's pair: B1 + B2, 15,080 vertices / 30,152 triangles, 542,798 bytes |
-| `gears_manifest.json` | Provenance: the four source STLs with their sha256s, the transform constants, per-asset counts, bounds, volumes and output sha256s |
+| `gears_a.bin` | Cylinder A's pair: gear A1 (top) + A2 (bottom), 13,564 vertices / 27,120 triangles, 488,222 bytes |
+| `gears_b.bin` | Cylinder B's pair: B1 + B2, 13,236 vertices / 26,464 triangles, 476,414 bytes |
+| `gears_manifest.json` | Provenance: the four source holders with their sha256s, each ring's z band and seat shift, the transform constants, per-asset counts, bounds, volumes and output sha256s |
+
+**Source (since 2026-09-28).** The assets are the gear rings of Brennen's four Version 1 gear
+holders — `A1/A2/B1/B2 v6 (0.2) v3.stl`, the parts the standard Version 1 cylinders slide onto
+(the published kit's P03–P06 Embosser/Counter Holders). The script cuts each holder to its 10 mm
+ring by an exact Manifold intersection with the ring's z band (53..63 / −11..−1 in the assembly
+frame), checks that the barrel-side face is one solid disk, and seats the ring on the barrel end
+(1 mm toward the barrel: the standard housing holds it 1 mm off; Brennen's call, the 72 mm roller
+of his 2026-08-24 samples). Until 2026-09-28 the assets were the 2026-08-24 "Rollers v7 (Gear
+Sample …)" set: identical teeth, but its Cylinder B gears carry the newer design's ⌀9 bore where
+the Version 1 housing pin (⌀13.7 × 6.25 + ⌀10.17 × 2) needs the ⌀14 pocket — his print found they
+do not fit the Version 1 embosser. Research record: `01_V1_GEAR_FINDING.md` in the 2026-09-28
+development folder.
 
 ### 2.1 Binary format
 
@@ -83,8 +95,9 @@ not today's date, so identical inputs give identical bytes.
 
 ## 3. Gear Geometry (measured, not designed)
 
-Every figure below was measured from the reference STEP/STL files and is reproduced in
-`app/geometry/gears.py` and `gears_manifest.json`.
+Every figure below was measured from the 2026-08-24 reference STEP/STL files — the Version 1
+holders share that tooth ring to 0.012 mm; their hubs are the Version 1 kit's (§2) — and is
+reproduced in `app/geometry/gears.py` and `gears_manifest.json`.
 
 | Fact | Value |
 |---|---|
@@ -93,8 +106,8 @@ Every figure below was measured from the reference STEP/STL files and is reprodu
 | Tip radius | 16.1093702290795 mm (diameter 32.2187 mm) |
 | Root circle radius | 13.6613702290795 mm |
 | Gear thickness | 10.000 mm |
-| Tooth flanks | B-spline surfaces, axially crowned — a gear has a distinct top and bottom, and flipping one changes its geometry |
-| Bores | BLIND pockets, not through-holes: A wall r 7.0 (opening r 5.2), B wall r 4.5 (opening r 2.7) |
+| Tooth flanks | B-spline surfaces, herringbone (chevron tip lands) and axially crowned — a gear has a distinct top and bottom, and flipping one changes its geometry |
+| Bores | BLIND pockets, not through-holes. Since 2026-09-28 all four gears carry the Version 1 housing pocket: wall r 7.0 (⌀14) to about 6.75 mm deep, then r 5.2 (⌀10.4) to 8.5 mm; A1 adds the handle-connector lugs. The 2026-08-24 B samples had wall r 4.5 (opening r 2.7) — the newer design's hub, the reason they were replaced. |
 | Gear/barrel interface face | a FULL SOLID DISK out to r 14.609 |
 | Axis-to-axis distance of a meshed pair | 32.0473 mm |
 
@@ -122,6 +135,10 @@ That is the BROWSER frame: cylinder axis at x = y = 0, barrel centred on z = 0
 (spanning z −26..+26), gears at z −36..−26 and +26..+36. The OpenSCAD frame seats the
 barrel base at z = 0, so it is the same geometry translated +26.000 in z: gears at
 z −10..0 and 52..62.
+
+Since 2026-09-28 `p_sample` is a point of the holder's gear ring after the ring has been seated
+on the barrel end (z − 1 for the top gears, z + 1 for the bottom ones, in the assembly frame); the
+holders share the 2026-08-24 samples' assembly frame, so the constants above are unchanged.
 
 ### 4.1 Why those rotations
 
@@ -631,6 +648,7 @@ golden pairs regenerating unchanged, prove it).
 
 | Date | Change |
 |---|---|
+| 2026-09-28 | **The Version 1 gears are the Version 1 embosser's (Brennen's print test; decisions D-G1, D-G2 in the 2026-09-28 research folder).** §2 gains the source paragraph: the assets are now the gear rings of his four Version 1 holders (`A1/A2/B1/B2 v6`), cut by an exact Manifold intersection and seated on the barrel end, replacing the 2026-08-24 sample set whose Cylinder B gears carry the newer design's ⌀9 bore. §2's counts, §3's bores row and §4's seat note updated; teeth, transform constants, the 72 mm roller, the weld rings and S7 unchanged. Tooth counting in the derivation and the tests moved to the chevron apex. The V1 fused golden pair regenerated (the other six pairs byte-identical); the deep test compares the roller with the holders' rings; the OpenSCAD `assets/gears_a/b.stl` regenerated. |
 | 2026-09-25 | **Documentation pass.** §11.8's print-test line records the 2026-09-24 pass and the unprinted top cone. |
 | 2026-09-25 | **The top gear socket is coned like the bottom one (Brennen's decision D-K5).** §11.8 gains `V2_TOP_GEAR_SOCKET` (A1 / B1 measured off the v8 assets: bore 7.0 / 5.0, rim 5.2 / 3.2 at the floor vertex, floor 1.5 above the top face) and the third axis cut, emitted apex first; the CSG line reads vent, bottom cone, top cone. The fused golden pair regenerated; every other pair byte-identical. |
 | 2026-09-24 | **The v9 update: the fused roller's barrel is chamfered, its axis vented and its bottom gear socket made self-supporting (programme 2026-09-24, phases G1–G3; decisions D-1, D-2, D-6, D-7).** New §11.8 with the numbers, the slicing evidence, the appended CSG step and the regenerated golden pair; §11.4's order line and §11.7 (OpenSCAD v2.8.0 already carries the fused roller; v2.10.0 carries this) updated. Web develop `e91e352` (spec), `af2d45f` (worker), `3a1c636` (golden). |

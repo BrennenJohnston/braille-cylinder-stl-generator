@@ -65,7 +65,11 @@ WELD_RING_VOLUME_MM3 = math.pi * (WELD_RING_R_OUT_MM**2 - WELD_RING_R_IN_MM**2) 
 TOOTH_COUNT = 24
 TIP_RADIUS_MM = 16.1093702290795
 TIP_BAND_DEPTH_MM = 0.05  # tip band = radial distance > tip radius - this
-TOOTH_GAP_DEG = 2.0  # angular gap that separates one tooth from the next
+# Teeth are counted in a thin slice at the ring's mid-plane - the chevron apex of the
+# herringbone teeth. Over the whole band each tooth's tip vertices sweep several
+# degrees, and the Version 1 holders' tessellation splits them into two groups.
+TOOTH_MID_PLANE_HALF_MM = 0.5
+TOOTH_MID_GAP_DEG = 5.0  # angular gap that separates one tooth from the next at the apex
 
 # --- tolerances, each with its audit section 11 justification ---------------
 # 11.2 bounds: float32 ULP at 32 mm is 3.8e-6 mm, so 0.001 is ~250x the noise.
@@ -91,39 +95,38 @@ VOLUME_TOL_MM3 = 0.5
 # comparisons - 0.1 mm also clears the weld ring's 0.05 mm half-height.
 INTERFACE_BAND_MM = 0.1
 
-# The reference samples live outside the repo; the deep comparison skips when
-# the folder is absent (CI), and runs on Brennen's machine.
-SAMPLES_DIR = Path(r'C:\Users\WATAP\Documents\Research\Braille Embosser\New Developement_2026_08_24\Roller Samples')
-# Sample assembly frame -> program frame (audit section 10.2), the same
-# constants scripts/derive_gear_assets.py baked into the assets.
-SAMPLE_ROLLERS = {
+# Brennen's Version 1 gear holders (the parts the standard cylinders slide onto)
+# live outside the repo; the deep comparison skips when the folder is absent
+# (CI), and runs on his machine.
+SAMPLES_DIR = Path(r'C:\Users\WATAP\Documents\Research\Braille Embosser\New Developement_2026_09_28\V1 Gears')
+# Assembly frame -> program frame (audit section 10.2), the same constants
+# scripts/derive_gear_assets.py baked into the assets, plus each holder's gear
+# ring band in the assembly frame and the 1 mm seat shift that puts the ring on
+# the barrel end (the standard housing holds it 1 mm off).
+SAMPLE_HOLDERS = {
     'gears_a': {
-        'file': 'Rollers v7 (Cylinder A and Top and Bottom Gears).stl',
         'axis_x_mm': -16.0000,
         'axis_y_mm': 0.0000,
         'rotation_z_deg': 180.0,
+        'gears': [('A1 v6 (0.2) v3.stl', (53.0, 63.0), -1.0), ('A2 v6 (0.2) v3.stl', (-11.0, -1.0), 1.0)],
     },
     'gears_b': {
-        'file': 'Rollers v7 (Cylinder B and Top and Bottom Gears).stl',
         'axis_x_mm': 16.0473,
         'axis_y_mm': -0.0079,
         'rotation_z_deg': 0.0,
+        'gears': [('B1 v6 (0.2) v3.stl', (53.0, 63.0), -1.0), ('B2 v6 (0.2) v3.stl', (-11.0, -1.0), 1.0)],
     },
 }
 Z_SHIFT_MM = -26.0
 
-# Deep-comparison tolerances. Brennen's roller export and our vendored gears
-# tessellate the SAME B-spline flanks differently, so the residual is chord
-# error between two tessellations, not placement error: measured p99 0.0073 mm
-# and max 0.0129 mm over five sampling seeds. A real placement fault is orders
-# above both - a 15 deg mis-mesh reads 2.57 mm, a wrong 180 deg rotation
-# 1.20 mm, and even a half-degree clocking slip 0.11 mm.
+# Deep-comparison tolerances. The vendored ring IS the holder's own triangles
+# (an exact Manifold cut keeps every face outside the cut plane), so the
+# residual is float32 rounding; the tolerances stay where the 2026-08-24
+# samples put them because a real placement fault is orders above them - a
+# 15 deg mis-mesh reads 2.57 mm, a wrong 180 deg rotation 1.20 mm, and even a
+# half-degree clocking slip 0.11 mm.
 SAMPLE_GEAR_P99_TOL_MM = 0.01
 SAMPLE_GEAR_MAX_TOL_MM = 0.02
-# The sample barrel is a 180-gon; ours is the worker's 64-gon. The radial
-# difference is the sagitta gap between the two, 15.4 * (1 - cos(180/64 deg))
-# = 0.0186 mm, which is geometry we deliberately reproduce, not error.
-SAMPLE_BARREL_TOL_MM = 0.019
 
 _ROLLER_CACHE: dict = {}
 
@@ -193,9 +196,10 @@ def tooth_band_phase(vertices, z_low, z_high):
 
     These meshes carry vertices only on feature edges, so a mid-band slice
     finds nothing (audit section 2). The tip band is the one radius where every
-    tooth is guaranteed to have vertices. Phase is the circular mean of the
-    angles modulo the 15 degree pitch, so it is independent of which tooth is
-    called first.
+    tooth is guaranteed to have vertices; the count is taken at the band's
+    mid-plane, the chevron apex, where each tooth is one tight cluster. Phase
+    is the circular mean of every tip angle in the band modulo the 15 degree
+    pitch, so it is independent of which tooth is called first.
     """
     import numpy as np
 
@@ -206,9 +210,13 @@ def tooth_band_phase(vertices, z_low, z_high):
         return 0, float('nan')
 
     angles = np.degrees(np.arctan2(tips[:, 1], tips[:, 0])) % 360.0
-    ordered = np.sort(angles)
-    gaps = np.diff(np.concatenate([ordered, [ordered[0] + 360.0]]))
-    count = max(1, int((gaps > TOOTH_GAP_DEG).sum()))
+    apex = tips[np.abs(tips[:, 2] - (z_low + z_high) / 2.0) <= TOOTH_MID_PLANE_HALF_MM]
+    if len(apex) == 0:
+        count = 0
+    else:
+        ordered = np.sort(np.degrees(np.arctan2(apex[:, 1], apex[:, 0])) % 360.0)
+        gaps = np.diff(np.concatenate([ordered, [ordered[0] + 360.0]]))
+        count = max(1, int((gaps > TOOTH_MID_GAP_DEG).sum()))
 
     pitch = 360.0 / TOOTH_COUNT
     scaled = np.radians((angles % pitch) * TOOTH_COUNT)
@@ -508,51 +516,49 @@ def test_weld_rings_are_invisible_from_outside(geometry_stack, asset_name):
     assert with_rings.volume == pytest.approx(without_rings.volume, abs=VOLUME_TOL_MM3)
 
 
-@pytest.mark.skipif(not SAMPLES_DIR.is_dir(), reason='reference roller samples are not on this machine')
+@pytest.mark.skipif(not SAMPLES_DIR.is_dir(), reason="Brennen's Version 1 gear holders are not on this machine")
 @pytest.mark.parametrize('asset_name', ASSET_NAMES)
-def test_one_piece_roller_matches_the_original_roller_samples(geometry_stack, asset_name):
+def test_one_piece_roller_matches_brennens_version_1_gears(geometry_stack, asset_name):
     """
-    The deep check: does the roller we assemble actually match the roller
-    Brennen exported? This is the ONLY test that can catch a wrong transform.
-    The others compare the union against the same asset it was built from, and
-    a 24-tooth ring is 15 deg periodic, so a wrong rotation still lands teeth
-    on teeth - only the reference assembly knows where the bores, the handle
-    connector and the barrel really sit.
+    The deep check: do the gears on the roller we assemble match the gear rings
+    of the holders Brennen exported? This is the ONLY test that can catch a
+    wrong transform or seat. The others compare the union against the same
+    asset it was built from, and a 24-tooth ring is 15 deg periodic, so a wrong
+    rotation still lands teeth on teeth - only the holders know where the
+    pockets, the handle connector and the marker marks really sit.
+
+    Points are sampled on the whole holder and kept only where they lie on its
+    gear ring: inside the ring's z band and clear of the plane the ring was cut
+    on (that face is buried against the barrel in the union).
     """
     import numpy as np
     import trimesh
 
-    placement = SAMPLE_ROLLERS[asset_name]
-    sample = trimesh.load_mesh(str(SAMPLES_DIR / placement['file']), process=False)
-    sample.merge_vertices()
-    # The samples ship as three kissing shells per roller - that is the state
-    # this whole feature replaces.
-    assert len(sample.split(only_watertight=False)) == 3
-
-    vertices = np.array(sample.vertices, dtype=np.float64)
-    vertices[:, 0] -= placement['axis_x_mm']
-    vertices[:, 1] -= placement['axis_y_mm']
-    if placement['rotation_z_deg'] == 180.0:
-        vertices[:, 0] = -vertices[:, 0]
-        vertices[:, 1] = -vertices[:, 1]
-    vertices[:, 2] += Z_SHIFT_MM
-    sample.vertices = vertices
-
+    placement = SAMPLE_HOLDERS[asset_name]
     roller = one_piece_roller(asset_name)
-    assert sample.bounds == pytest.approx(roller.bounds, abs=SAMPLE_BARREL_TOL_MM)
+    for filename, (z_low, z_high), seat_shift in placement['gears']:
+        holder = trimesh.load_mesh(str(SAMPLES_DIR / filename), process=False)
+        holder.merge_vertices()
+        assert holder.is_watertight
 
-    points, distances = surface_distances(sample, roller, 4000, seed=99)
-    z = points[:, 2]
-    half_height = BARREL_HEIGHT_MM / 2.0
-    gear_zone = np.abs(z) > half_height + INTERFACE_BAND_MM
-    barrel_zone = np.abs(z) < half_height - INTERFACE_BAND_MM
+        points, _ = trimesh.sample.sample_surface(holder, 40000, seed=99)
+        cut_plane = z_low if z_low > 0 else z_high
+        on_ring = (points[:, 2] >= z_low) & (points[:, 2] <= z_high) & (np.abs(points[:, 2] - cut_plane) > INTERFACE_BAND_MM)
+        points = points[on_ring]
+        assert len(points) > 1000
 
-    assert gear_zone.sum() > 1000
-    assert np.percentile(distances[gear_zone], 99) <= SAMPLE_GEAR_P99_TOL_MM
-    assert np.max(distances[gear_zone]) <= SAMPLE_GEAR_MAX_TOL_MM
+        moved = np.array(points, dtype=np.float64)
+        moved[:, 2] += seat_shift
+        moved[:, 0] -= placement['axis_x_mm']
+        moved[:, 1] -= placement['axis_y_mm']
+        if placement['rotation_z_deg'] == 180.0:
+            moved[:, 0] = -moved[:, 0]
+            moved[:, 1] = -moved[:, 1]
+        moved[:, 2] += Z_SHIFT_MM
 
-    assert barrel_zone.sum() > 1000
-    assert np.max(distances[barrel_zone]) <= SAMPLE_BARREL_TOL_MM
+        distances = trimesh.proximity.closest_point(roller, moved)[1]
+        assert np.percentile(distances, 99) <= SAMPLE_GEAR_P99_TOL_MM
+        assert np.max(distances) <= SAMPLE_GEAR_MAX_TOL_MM
 
 
 @pytest.mark.parametrize('asset_name', ASSET_NAMES)

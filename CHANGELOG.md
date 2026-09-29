@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Version 1 fixed gears are now the Version 1 embosser's gears** (2026-09-28, found by Brennen's print). The Simplified roller for Version 1 carried the 2026-08-24 sample gears, whose Cylinder B gears have the newer design's smaller hub (a 9 mm bore where the Version 1 housing pin needs the 14 mm pocket), so the roller could not be mounted. The gears are now derived from the Version 1 gear holders themselves — each holder's 10 mm gear ring, cut free of the boss and seated on the barrel end. Teeth, meshing and the 72 mm roller are unchanged; Standard and Version 2 gears are untouched. The OpenSCAD copy's `assets/gears_a.stl` / `gears_b.stl` follow.
 - **The seam channel's live note works again with visual markers** (2026-09-28). Since the X Adjust change of 2026-09-27 on the development build, the note that says the groove was left out stayed silent in visual mode (a guard mistook an unbounded value for a dial being edited); Generate still reported it. Tactile mode was unaffected.
 - **Nothing you type is remembered any more** (2026-09-28, Brennen's privacy rule). The Back of Card text used to come back on your next visit while the front text did not. No text or braille input is stored now - not the front text, the manual rows, the back text, nor either Braille (Unicode) field - and a back text saved by an earlier version is removed the next time the page loads. Only 3D design settings are kept, and only in your own browser.
 

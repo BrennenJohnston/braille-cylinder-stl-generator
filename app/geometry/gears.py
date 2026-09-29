@@ -9,10 +9,13 @@ cylinders rotationally synchronised.
 Everything here is a pure function or a constant: no I/O, no globals mutated,
 no settings objects. Lengths are millimetres, angles degrees.
 
-The gears are NOT parametric. They are a 1:1 replication of Brennen's reference
-set, vendored as static/assets/gears/gears_a.bin and gears_b.bin and
-regenerated only by scripts/derive_gear_assets.py. Every number below was
-measured from those samples (research folder 01_SAMPLE_GEOMETRY_AUDIT.md) and
+The gears are NOT parametric. They are a 1:1 replication of the gear rings of
+Brennen's Version 1 gear holders (since 2026-09-28; the 2026-08-24 sample set
+before that - same teeth, but its B hub was the newer design's and never fitted
+the Version 1 housing), vendored as static/assets/gears/gears_a.bin and
+gears_b.bin and regenerated only by scripts/derive_gear_assets.py. Every
+number below was measured from the 2026-08-24 samples (research folder
+01_SAMPLE_GEOMETRY_AUDIT.md), whose tooth ring the holders share, and
 is reproduced here so app/validation.py and app/geometry_spec.py read ONE
 source - cross-file default drift is this project's most common historical bug.
 

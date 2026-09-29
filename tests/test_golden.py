@@ -894,8 +894,9 @@ def generate_gear_golden_fixtures():
                     'gear_rollers_enabled=1, so this pair covers the gear beta ON TOP of the '
                     'double-sided one. Z-up, theta as emitted, base of the barrel reseated to '
                     'z=0 - which puts the gears at z -10..0 and 52..62. The gear geometry is '
-                    'the vendored asset from static/assets/gears/, unmodified: the sample-to-'
-                    'program transform is already baked into those bytes. Since 2026-09-20 the '
+                    'the vendored asset from static/assets/gears/, unmodified (since 2026-09-28 the gear '
+                    'rings of the Version 1 holders Brennen exported, seated on the barrel ends): the '
+                    'holder-to-program transform is already baked into those bytes. Since 2026-09-20 the '
                     'barrel also carries the slicer seam channel (V 1.0 x 0.5 mm, cut from the bare '
                     'shell before the gears join, so the gear discs fill its overshoot).'
                 ),
@@ -909,7 +910,7 @@ def generate_gear_golden_fixtures():
                 'back_lines': DS_FIXTURE_BACK_LINES,
                 'settings': GEAR_FIXTURE_SETTINGS,
                 'cylinder_params': GEAR_FIXTURE_CYLINDER_PARAMS,
-                'generated': '2026-09-20',
+                'generated': '2026-09-28',
                 'trimesh_version': importlib.metadata.version('trimesh'),
                 'manifold3d_version': importlib.metadata.version('manifold3d'),
             },

@@ -122,7 +122,17 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      gears_{a,b}.bin — NEVER hand-edit them, and regenerate ONLY via
      scripts/derive_gear_assets.py (the manifest's sha256s are pinned by a
      test). 24 teeth, tip r 16.1093702290795, 10 mm thick, gears at z -36..-26
-     and +26..+36 in the browser frame. The VERSION 2 set lives beside them as
+     and +26..+36 in the browser frame. SOURCE since 2026-09-28: Brennen's
+     VERSION 1 gear holders (A1/A2/B1/B2 v6 (0.2) v3.stl in
+     Research/.../New Developement_2026_09_28/V1 Gears - the parts the standard
+     cylinders slide onto), each cut to its 10 mm gear ring by an exact
+     Manifold intersection and seated ON the barrel end (his call: the 72 mm
+     roller; the standard housing holds the rings 1 mm off). The 2026-08-24
+     'Rollers v7' gear samples vendored before were the NEW design's gears:
+     identical teeth, but B's hub is a 9 mm bore where the Version 1 housing
+     pin (13.7 x 6.25 + 10.17 x 2 mm) needs the 14 mm pocket - his print found
+     they never fitted the Version 1 embosser. Never call the v7 set the
+     Version 1 gears again. The VERSION 2 set lives beside them as
      v2_gears_{a,b}.bin + v2_gears_manifest.json (derived from the v8 Version 2
      gear STLs by scripts/derive_gear_assets_v2.py ONLY, since 2026-09-21;
      same rule, same pin test): same teeth and tip radius, bodies at
