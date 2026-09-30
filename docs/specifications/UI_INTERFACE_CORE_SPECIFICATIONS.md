@@ -1440,6 +1440,68 @@ Brightness, contrast, and edge-outline settings are **not persisted** across ses
 - Provides consistent starting experience for all users
 - Users with specific needs can quickly adjust as needed
 
+#### Phones: the Display settings drawer (2026-09-29)
+
+Brennen's finding from testing on a phone: on a phone the bottom overlay hid the model.
+Measured at 390 × 844 before the change, the phone viewer is 200 px tall and the three
+controls stacked into a 149 px column over it, covering 67 % of the viewer, while the top
+label covered another 26 %. On compact layouts the controls are now stowed behind a
+disclosure button; a wide screen is unchanged (no button, the overlay as before).
+
+| Layout (media query) | Button | Controls when opened |
+|---|---|---|
+| Wide screen (neither block below) | Hidden (`display: none`) | Always shown: the bottom overlay, unchanged |
+| Portrait, the stacked layout (`max-width: 768px`) | Gear icon + "Display settings" + ▼/▲, under the viewer at its right edge, in the page flow | Below the button, in the page flow — never over the model, so it stays in full view while it is adjusted |
+| Phone landscape, the two-column layout (`min-width: 769px` and `max-height: 500px`) | A square gear in the viewer's bottom-right corner, `max(44px, 2.75rem)`; the words are visually hidden with the `.sr-only` method and stay its accessible name | Along the bottom beside the gear (right offset `calc(max(44px, 2.75rem) + 1rem)`), where the overlay always sat, so the upper part of the model stays in view |
+| Phone landscape when a control group does not fit beside the gear | Hidden | Exactly the pre-drawer overlay, always shown, full width (`.is-fallback` on the dock) |
+
+**Markup.** `div.preview-display-dock` wraps a native `<button id="preview-display-toggle"
+aria-expanded aria-controls="preview-display-controls">` and the existing
+`.preview-display-controls` group, which gained `id="preview-display-controls"`. The button's
+visible words are its accessible name — no `aria-label` — and the gear SVG and the chevron are
+`aria-hidden`. The words are **S-PD1 "Display settings", DRAFT 2026-09-29, awaiting Brennen's
+sign-off.** The state is one class, `.is-open` on the group, plus `aria-expanded`; it is not
+persisted, so every load starts closed. On a wide screen the class changes nothing. Why a
+button with `aria-expanded` and not `<details>`/`<summary>`: the same controls must always
+show on a wide screen, and a closed `<details>` hides its content whatever the page's CSS
+says in the browsers this app supports (Safari 15 and up), so the native element cannot be
+open on one layout and collapsible on another.
+
+**Behaviour.** The button toggles (Enter and Space, as a native button). Escape, pressed on
+the button or any control while the drawer is open and the button is on screen, closes it and
+returns focus to the button. Narrowing the window into a compact layout while a control has
+focus opens the drawer instead of hiding the focused control. Opening moves no focus (the
+disclosure pattern): Tab goes from the button into the controls, which follow it in the DOM.
+
+**The landscape fit check.** At larger app text sizes the controls no longer fit beside the
+gear (150 % and up at 844 × 390, measured), and the column is then too short for a panel
+anywhere else — a full-width panel above the gear was tried and lost its top row outside the
+preview column. `fitPreviewDisplayPanel()` therefore measures the groups in the position
+beside the gear (shown with `visibility: hidden` while the drawer is closed) and, when one
+overflows, sets `.is-fallback`, which restores exactly the overlay the page had before the
+drawer; focus on the vanishing gear moves to the first enabled control. It runs on open and
+close, on window resize, on the landscape media query's change, and from a `ResizeObserver`
+on the gear and the three groups, which is how an app text size change is seen. The observer
+schedules the check for the next animation frame, because showing or hiding the gear inside
+the callback is what browsers report as "ResizeObserver loop completed with undelivered
+notifications"; in landscape the groups carry `flex-shrink: 0`, so moving the panel never
+changes a watched width. At 200 % text two controls overflow the column in landscape, and
+four on a 320 px phone in portrait; both are the same on the page before the drawer.
+
+**Accessibility, measured 2026-09-29.** Computed accessibility tree (CDP): role button, name
+"Display settings" in both compact layouts, `expanded` false/true; the closed group and its
+controls are out of the tree; the button is not in the tree on a wide screen, where the Tab
+order is unchanged. Every target is at least 44 × 44 px, and the gear grows with the app text
+size. Text and icon contrast on the button 9.83:1 (dark), 11.46:1 (light), 16.21:1 (high
+contrast); the button reuses `.font-size-btn`, so its tokens and high-contrast overrides are
+the other preview buttons'. axe-core (WCAG 2.0/2.1 A and AA plus best practice) finds nothing
+with the drawer open or closed, in portrait and landscape; Lighthouse accessibility is 100 in
+mobile and desktop mode; the Nu HTML Checker reports no errors or warnings. On a phone the two
+value displays (`role="status"`) are out of the tree while the drawer is closed, so the
+`EXPOSED_STATUS_NODES` count in `tests/e2e/liveRegions.spec.ts` holds at desktop width only;
+they re-enter the tree when the drawer opens, which is before a press can change them.
+Pinned by `tests/e2e/previewDisplayDrawer.spec.ts`.
+
 ### 3.9 WebGL Context Recovery
 
 The application implements resilient WebGL context loss and recovery handling for stability, especially on Safari/iOS where context loss may occur when tabs are backgrounded or when the system is under memory pressure.
@@ -3268,6 +3330,7 @@ Low vision users benefit from enhanced depth perception:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.32 | 2026-09-29 | **§3.8: the Display settings drawer for phones** (Brennen's finding: on a phone the preview toolbar hid the model, 67 % of the viewer at 390 × 844). Portrait: a gear + "Display settings" button under the viewer opens the controls below it, never over the model. Phone landscape: a 44 px gear in the viewer's corner opens them along the bottom beside it, falling back to the old overlay when the app text size makes them too wide. Wide screens unchanged. Button words S-PD1 (DRAFT). Pinned by `tests/e2e/previewDisplayDrawer.spec.ts`. |
 | 1.31 | 2026-09-29 | **§4.8: Single-sided gives back the visual markers the double-sided lock displaced** (Brennen's finding from testing). The card-sides announcement gains S-M14 "Row Indicator Style set to visual." (DRAFT) when the style moved; a tactile style the user chose stays. Details in INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §7.2. |
 | 1.30 | 2026-09-28 | **Placeholder token and style.** `--text-placeholder` joins the three themes (#5b6472 / #b0b8c4 / #7fd67f: 5.72 / 5.15 / 9.8 to 1 on `--bg-input`; the browser's default placeholder grey was 2.3:1 on the light input surface) and `textarea::placeholder, input[type="text"]::placeholder` use it at opacity 1, italic for text boxes and upright for the braille boxes (`textarea[lang="und-Brai"]`). The text-entry samples themselves are in BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md §3. |
 | 1.29 | 2026-09-25 | **The Version 2 key clearance note is a group description (accessibility pass).** Four per-gear dials replaced the single Version 2 clearance dial on 2026-09-25 (EMBOSSER_VERSION_2 spec v1.15–1.18) and at first shared one `aria-describedby`, 24 words × 4 hosts; it is now the fieldset's alone (§4.13, the group form of SOP 6.8 clause 5; §4.5's row 7 names the dials). Probe on the opened page: order A1 → A2 → B1 → B2, arrow keys step 0.005, 3 px focus ring, 110 × 44 px targets, note 6.94:1 / labels 9.83:1 / inputs 11.44:1; W3C Nu 0 / 0. Lighthouse and axe results in the commit. |

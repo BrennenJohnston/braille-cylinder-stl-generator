@@ -1448,6 +1448,131 @@
             }
         }
 
+        /* Display settings drawer (2026-09-29). The toggle exists for the two
+           compact layouts below only; on a wide screen the controls stay the
+           overlay above. Declared after .font-size-btn, whose display: flex
+           it has to override. */
+        .preview-display-toggle {
+            display: none;
+            gap: 0.45em;
+            min-height: 44px;
+            max-width: 100%;
+            padding: 0.4em 0.85em;
+        }
+
+        /* In rem, so the gear grows with the app's own text size setting. */
+        .preview-display-toggle-icon {
+            flex-shrink: 0;
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+
+        /* Phones and small tablets, portrait (the stacked layout): the toggle
+           sits under the viewer at the right and the controls open below it,
+           in the page flow - never over the model, so the model stays in full
+           view while its brightness and contrast are adjusted. */
+        @media (max-width: 768px) {
+            .preview-display-dock {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 0.5em;
+            }
+
+            .preview-display-toggle {
+                display: inline-flex;
+            }
+
+            .preview-display-controls {
+                position: static;
+                align-self: stretch;
+                border: 1px solid var(--border-primary);
+                border-radius: 12px;
+            }
+
+            .preview-display-controls:not(.is-open) {
+                display: none;
+            }
+        }
+
+        /* Phones in landscape get the two-column layout, whose preview column
+           has no room below the viewer. The toggle is a square gear in the
+           viewer's bottom-right corner (44 px at the default text size, larger
+           with the app's text size setting), and the controls open along the
+           bottom beside it - where the overlay always sat - so the upper part
+           of the model stays in view while they are open. Neither moves when
+           the other appears. The gear's size and the panel's right offset are
+           the same expression in root units, so they cannot overlap. */
+        @media (min-width: 769px) and (max-height: 500px) {
+            .preview-display-toggle {
+                display: inline-flex;
+                position: absolute;
+                right: 0.5rem;
+                bottom: 0.5rem;
+                z-index: 16;
+                width: max(44px, 2.75rem);
+                height: max(44px, 2.75rem);
+                padding: 0;
+            }
+
+            /* Icon only here, to keep the corner small. The words stay in the
+               accessibility tree as the button's name (the .sr-only method). */
+            .preview-display-toggle-label {
+                position: absolute;
+                width: 1px;
+                height: 1px;
+                padding: 0;
+                margin: -1px;
+                overflow: hidden;
+                clip: rect(0, 0, 0, 0);
+                white-space: nowrap;
+                border: 0;
+            }
+
+            .preview-display-toggle-chevron {
+                display: none;
+            }
+
+            .preview-display-controls {
+                right: calc(max(44px, 2.75rem) + 1rem);
+                border-right: 1px solid var(--border-primary);
+                border-radius: 0 12px 0 16px;
+            }
+
+            /* A group keeps its own width wherever the panel sits, so the
+               script's ResizeObserver on the groups never sees the panel move. */
+            .preview-display-controls > .preview-control-group {
+                flex-shrink: 0;
+            }
+
+            .preview-display-controls:not(.is-open) {
+                display: none;
+            }
+
+            /* Laid out but unseen, so fitPreviewDisplayPanel() can measure the
+               controls beside the gear while the drawer is closed. */
+            .preview-display-controls.is-measuring {
+                display: flex;
+                visibility: hidden;
+            }
+
+            /* When the app's text size makes the controls too wide to sit
+               beside the gear (150 % and up at 844 x 390), the column is also
+               too short for a panel anywhere else, so the page falls back to
+               exactly the overlay it had before the drawer: always shown, full
+               width, no gear. Set by fitPreviewDisplayPanel(), which measures. */
+            .preview-display-dock.is-fallback .preview-display-toggle {
+                display: none;
+            }
+
+            .preview-display-dock.is-fallback .preview-display-controls {
+                display: flex;
+                right: 0;
+                border-right: 0;
+                border-radius: 0 0 16px 16px;
+            }
+        }
+
         h1 {
             font-size: 2.2em;
             font-weight: 700;
@@ -3210,8 +3335,31 @@
                             </span>
                         </div>
                     </div>
-                    <!-- Preview Display Controls - Bottom overlay inside viewer -->
-                    <div class="preview-display-controls" role="group" aria-label="Preview display settings">
+                    <!-- Preview Display Controls. On a wide screen they are the
+                         bottom overlay inside the viewer and the toggle is hidden.
+                         On a phone that overlay hid almost the whole model
+                         (Brennen's finding, 2026-09-29), so there they are stowed
+                         behind the toggle: in portrait they open BELOW the viewer,
+                         so the model stays in full view while it is adjusted; in
+                         landscape, where the column has no room below, the toggle
+                         is a gear in the viewer's corner and they open along the
+                         bottom beside it. A plain disclosure - native button,
+                         aria-expanded, aria-controls; the layout alone decides
+                         which applies. -->
+                    <div class="preview-display-dock">
+                        <!-- S-PD1, DRAFT 2026-09-29 - awaiting Brennen's sign-off.
+                             The visible words are the accessible name, so the
+                             button needs no aria-label; the icons are hidden. -->
+                        <button type="button" id="preview-display-toggle" class="font-size-btn preview-display-toggle"
+                                aria-expanded="false" aria-controls="preview-display-controls">
+                            <svg class="preview-display-toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                            </svg>
+                            <span class="preview-display-toggle-label">Display settings</span>
+                            <span id="preview-display-toggle-chevron" class="preview-display-toggle-chevron" aria-hidden="true">▼</span>
+                        </button>
+                    <div class="preview-display-controls" id="preview-display-controls" role="group" aria-label="Preview display settings">
                         <div class="preview-control-group">
                             <span class="preview-control-label" id="brightness-label">Brightness:</span>
                             <div class="preview-stepper" role="group" aria-labelledby="brightness-label brightness-value">
@@ -3248,6 +3396,7 @@
                             </button>
                         </div>
                     </div>
+                    </div><!-- /.preview-display-dock -->
                 </div>
                 <div id="viewer-instructions" class="sr-only">
                     To interact with the 3D preview: Use mouse drag to rotate, mouse wheel to zoom. Touch users: one finger to rotate, pinch to zoom. Keyboard users: the visual preview is supplementary; generated STL files contain the same geometry.
@@ -5285,6 +5434,98 @@
             edgesToggleBtn.addEventListener('click', () => applyEdgesVisibility(!edgesVisible));
         }
         updateEdgesToggle();
+
+        // Display settings drawer (2026-09-29). One open/closed state for every
+        // layout; it only shows on a phone, because on a wide screen the toggle
+        // is hidden and the controls always show. Not persisted: every load
+        // starts closed, like the other preview display settings.
+        const previewDisplayToggle = document.getElementById('preview-display-toggle');
+        const previewDisplayControls = document.getElementById('preview-display-controls');
+        const previewDisplayToggleChevron = document.getElementById('preview-display-toggle-chevron');
+        // The CSS's two compact blocks, written the same way: their union,
+        // and the landscape one alone.
+        const compactPreviewQuery = window.matchMedia('(max-width: 768px), (min-width: 769px) and (max-height: 500px)');
+        const landscapePreviewQuery = window.matchMedia('(min-width: 769px) and (max-height: 500px)');
+
+        // Landscape only: the controls sit beside the gear unless a group of
+        // them is wider than that space - the app's text size decides - and
+        // then the page keeps the overlay it had before the drawer (CSS
+        // .is-fallback). Measured every time in the position beside the gear,
+        // shown unseen for the measurement if the drawer is closed, so a
+        // smaller text size brings the gear back.
+        function fitPreviewDisplayPanel() {
+            const dock = previewDisplayToggle.parentElement;
+            dock.classList.remove('is-fallback');
+            if (!landscapePreviewQuery.matches) return;
+            const closed = !previewDisplayControls.classList.contains('is-open');
+            if (closed) previewDisplayControls.classList.add('is-measuring');
+            const panel = previewDisplayControls.getBoundingClientRect();
+            const tooWide = Array.from(previewDisplayControls.children).some((group) => {
+                const box = group.getBoundingClientRect();
+                return box.left < panel.left - 0.5 || box.right > panel.right + 0.5;
+            });
+            if (closed) previewDisplayControls.classList.remove('is-measuring');
+            if (!tooWide) return;
+            const toggleHadFocus = document.activeElement === previewDisplayToggle;
+            dock.classList.add('is-fallback');
+            // The gear is about to vanish; keep the keyboard in the controls.
+            if (toggleHadFocus) previewDisplayControls.querySelector('button:not([disabled])')?.focus();
+        }
+
+        function setPreviewDisplayDrawer(open) {
+            previewDisplayToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            previewDisplayControls.classList.toggle('is-open', open);
+            if (previewDisplayToggleChevron) previewDisplayToggleChevron.textContent = open ? '▲' : '▼';
+            fitPreviewDisplayPanel();
+        }
+
+        if (previewDisplayToggle && previewDisplayControls) {
+            landscapePreviewQuery.addEventListener('change', fitPreviewDisplayPanel);
+            window.addEventListener('resize', fitPreviewDisplayPanel);
+            // The groups and the gear change size with the app's text size,
+            // which fires no resize event; the gear is watched as well because
+            // the groups have no size while the drawer is closed. The check
+            // runs on the next frame, not inside the observer: showing or
+            // hiding the gear changes a watched size, and doing that inside
+            // the callback is what browsers report as a ResizeObserver loop.
+            // Every pass settles: in landscape the groups never shrink (see
+            // the CSS), and the gear's own change leads to one more pass that
+            // reaches the same answer.
+            if ('ResizeObserver' in window) {
+                let fitQueued = false;
+                const sizeWatcher = new ResizeObserver(() => {
+                    if (fitQueued) return;
+                    fitQueued = true;
+                    requestAnimationFrame(() => {
+                        fitQueued = false;
+                        fitPreviewDisplayPanel();
+                    });
+                });
+                sizeWatcher.observe(previewDisplayToggle);
+                Array.from(previewDisplayControls.children).forEach((group) => sizeWatcher.observe(group));
+            }
+            fitPreviewDisplayPanel();
+            previewDisplayToggle.addEventListener('click', () => {
+                setPreviewDisplayDrawer(previewDisplayToggle.getAttribute('aria-expanded') !== 'true');
+            });
+            // Escape closes the open drawer from the toggle or any control in
+            // it, and focus goes back to the toggle rather than to the page.
+            // Only while the toggle is on screen: a wide screen and the
+            // landscape fallback have no drawer to close.
+            previewDisplayToggle.parentElement.addEventListener('keydown', (event) => {
+                if (event.key !== 'Escape' || getComputedStyle(previewDisplayToggle).display === 'none') return;
+                if (previewDisplayToggle.getAttribute('aria-expanded') !== 'true') return;
+                setPreviewDisplayDrawer(false);
+                previewDisplayToggle.focus();
+            });
+            // Narrowing the window to a phone layout while one of the controls
+            // has focus would stow it out from under the keyboard: open instead.
+            compactPreviewQuery.addEventListener('change', () => {
+                if (compactPreviewQuery.matches && previewDisplayControls.contains(document.activeElement)) {
+                    setPreviewDisplayDrawer(true);
+                }
+            });
+        }
 
         // Font size adjustment functionality
         const fontSizes = [75, 87.5, 100, 112.5, 125, 150, 175, 200];
