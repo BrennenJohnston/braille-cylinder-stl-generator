@@ -588,12 +588,25 @@ there is no `aria-disabled` anywhere in the codebase), and shows the live lock n
 `#indicator-mode-lock-note` (no `role="status"`, no `aria-live` — it announces through
 `#a11y-status`; see §7.6):
 
-> "**Locked:** Double-Sided Card is on, so the Row Indicator Style stays on the tactile
-> seam arrow — both cylinders of a double-sided pair need it. Turn the beta off to choose
-> visual markers."
+> "**Locked:** Double-sided is on, so the Row Indicator Style stays on the tactile seam
+> arrow — both cylinders of a double-sided pair need it. Choose Single-sided to pick visual
+> markers." (S-M12, signed 2026-09-21)
 
-All reversed on toggle-off; the tactile **selection** is deliberately kept (no surprise
-snap-back).
+All reversed on toggle-off. **Since 2026-09-29 Single-sided also gives back the style the
+lock displaced** (Brennen's finding from testing: a Version 1 card taken to Double-sided and
+back stayed on the tactile arrow; this retires the old "the tactile selection is
+deliberately kept, no surprise snap-back" rule). `updateDoubleSidedUI()` remembers
+`'visual'` in `singleSidedIndicatorMode` when the lock moves the style;
+`restoreSingleSidedIndicatorMode()`, called from the card-sides change listener only, checks
+the visual radio again through a real `change` event and returns true, and the one
+announcement becomes "Single-sided card selected. Row Indicator Style set to visual."
+(S-M14, **DRAFT** 2026-09-29, the mirror of S-V16). A tactile style the user chose before
+Double-sided is not displaced, so it stays. While the lock holds, a version change works on
+the displaced style rather than on the lock's checked radio (RECESS_INDICATOR_SPECIFICATIONS.md,
+Row Indicator Style): entering Version 2 turns it into the Version 2 tactile default, so
+Single-sided in Version 2 keeps the arrow, and leaving Version 2 hands the Version 1 style
+back to it. The memory lasts for the visit, like the Version 2 one: the silent load restore
+never gives anything back, and Reset drops it.
 
 ### 7.3 The live gap warning
 
@@ -975,6 +988,7 @@ and separated**. Full record: the research folder's `00_PROJECT_MEMORY.md`, FD-8
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-09-29 | 1.19 | **§7.2: Single-sided gives back the Row Indicator Style the lock displaced** (Brennen's finding from testing the Version 1 fixed gears: a card taken to Double-sided and back stayed on the tactile arrow). Retires "the tactile selection is deliberately kept (no surprise snap-back)". A tactile style the user chose is kept; under the lock a version change works on the displaced style; the announcement gains S-M14 "Row Indicator Style set to visual." (DRAFT). The quoted lock note now matches S-M12. Pinned in `tests/e2e/doubleSided.spec.ts`, `version2.spec.ts` and `embosserSetup.spec.ts`. |
 | 2026-09-28 | 1.18 | **`#back-text`'s placeholder shortened to "Type the text for the back of the card here."** (Brennen's sign-off, superseding the 2026-08-17 wording) so the back Braille (Unicode) box can show that sentence's whole translation as its placeholder (BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md §3). The back help sentence still explains the wrapping. |
 | 2026-09-28 | 1.17 | **The back text is no longer persisted (§7.5).** Brennen's privacy rule: no text or braille input is stored, only 3D design settings; `braille_prefs_back_text` is retired and scrubbed on load. A double-sided Generate now also fills the back Braille (Unicode) field with the back translation it embosses, and the back braille box carries a placeholder (BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md §3, §6.3, §11). |
 | 2026-09-21 | 1.16 | **Back of Card parity (programme sub-plan D, decision D-11).** §3.1 adds the back per-row tables' three spellings (`text.back_languages` / `back_per_line_language_tables` / the request model), sent only for a manually placed back; §6.1 step 3 splits into the Auto and Manual branches; §7.4 gains the Manual-placement paragraph (toggle, rows, dropdowns, S-D1 (signed 2026-09-21) gate, live per-line warning, fill-from-text and preview, S-D3 (signed 2026-09-21)); §7.5 records `braille_prefs_back_placement_mode`. Auto placement, the wire shape for Auto, the footprints and the geometry are untouched. |

@@ -2078,7 +2078,9 @@ readers, skipped by arrow-key navigation, and exempt from contrast minimums (WCA
 visible explanation (`#indicator-mode-lock-note`, `role="status"` `aria-live="polite"`) appears
 next to the group, and `updateDoubleSidedUI()` appends its id to the disabled radio's
 `aria-describedby` so the reason travels with the option; both are removed when
-Single-sided is chosen again. Since 2026-09-20 the note's text is S-M12 (signed 2026-09-21) ("Locked:
+Single-sided is chosen again, and since 2026-09-29 the visual markers the lock displaced come
+back with them, announced in the same one write as S-M14 "Row Indicator Style set to
+visual." (DRAFT; INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §7.2). Since 2026-09-20 the note's text is S-M12 (signed 2026-09-21) ("Locked:
 Double-sided is on, … Choose Single-sided to pick visual markers.") and it is no longer
 announced on its own: the card-sides change listener reads it into its one composed
 announcement. Native `disabled` was chosen over `aria-disabled` because the repository's
@@ -3266,6 +3268,7 @@ Low vision users benefit from enhanced depth perception:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.31 | 2026-09-29 | **§4.8: Single-sided gives back the visual markers the double-sided lock displaced** (Brennen's finding from testing). The card-sides announcement gains S-M14 "Row Indicator Style set to visual." (DRAFT) when the style moved; a tactile style the user chose stays. Details in INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §7.2. |
 | 1.30 | 2026-09-28 | **Placeholder token and style.** `--text-placeholder` joins the three themes (#5b6472 / #b0b8c4 / #7fd67f: 5.72 / 5.15 / 9.8 to 1 on `--bg-input`; the browser's default placeholder grey was 2.3:1 on the light input surface) and `textarea::placeholder, input[type="text"]::placeholder` use it at opacity 1, italic for text boxes and upright for the braille boxes (`textarea[lang="und-Brai"]`). The text-entry samples themselves are in BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md §3. |
 | 1.29 | 2026-09-25 | **The Version 2 key clearance note is a group description (accessibility pass).** Four per-gear dials replaced the single Version 2 clearance dial on 2026-09-25 (EMBOSSER_VERSION_2 spec v1.15–1.18) and at first shared one `aria-describedby`, 24 words × 4 hosts; it is now the fieldset's alone (§4.13, the group form of SOP 6.8 clause 5; §4.5's row 7 names the dials). Probe on the opened page: order A1 → A2 → B1 → B2, arrow keys step 0.005, 3 px focus ring, 110 × 44 px targets, note 6.94:1 / labels 9.83:1 / inputs 11.44:1; W3C Nu 0 / 0. Lighthouse and axe results in the commit. |
 | 1.28 | 2026-09-24 | **Card Thickness and Row Indicator Style move into Expert Mode, and Version 2 defaults to the tactile seam arrow (programme 2026-09-24; decisions D-4, D-5).** §4.5's submenu table is eight rows: Card Thickness second and Row Indicator Style third, the latter absorbing the tactile dials (always shown; the dials block follows the style). §4.11's outline loses the two main-form h2s and the tactile-only h3, gains two always-available h3s (load count 6 → 4 visible headings). The Version 2 change listener moves the style to tactile and says so in its one composed announcement (S-V16, DRAFT). W3C Nu 0 errors / 0 warnings on the source; every moved `aria-describedby` text byte-identical (SOP 6.8 counts unchanged); Lighthouse is a manual step still owed. |

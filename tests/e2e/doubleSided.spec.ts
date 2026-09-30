@@ -114,6 +114,12 @@ const BASELINE_NEGATIVE = {
 const FRONT_BRAILLE = '⠁⠃⠉';
 const BACK_BRAILLE = '⠙⠑⠋';
 
+// S-M11, signed 2026-09-21: the Single-sided sentence. S-M14, DRAFT
+// 2026-09-29 (awaiting Brennen's sign-off): the clause it gains when the Row
+// Indicator Style just went back to the visual markers the lock displaced.
+const S_M11_SINGLE = 'Single-sided card selected.';
+const S_M14_STYLE_RESTORED = 'Row Indicator Style set to visual.';
+
 async function openApp(page: Page) {
   await page.goto('/');
   await page.waitForLoadState('domcontentloaded');
@@ -412,9 +418,52 @@ test.describe('Double-Sided Card beta', () => {
     await expect(backEntry).toHaveAttribute('disabled', '');
     await expect(visual).toBeEnabled();
     await expect(page.locator('#indicator-mode-lock-note')).toBeHidden();
-    // The tactile selection is deliberately kept (no surprise snap-back).
-    await expect(tactile).toBeChecked();
+    // Single-sided gives back the visual markers the lock displaced
+    // (Brennen's finding from testing, 2026-09-29, which retired the old
+    // "no surprise snap-back" rule), through a real change event - so the
+    // choice is persisted - and the one announcement says so.
+    await expect(visual).toBeChecked();
+    await expect(page.locator('#a11y-status')).toHaveText(`${S_M11_SINGLE} ${S_M14_STYLE_RESTORED}`);
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_indicator_mode'))).toBe('visual');
     await expect(page.locator('#front-entry-legend')).toHaveText('Enter Text for Braille Translation');
+
+    // The give-back is not a one-off: a second round trip behaves the same.
+    await double.check();
+    await expect(tactile).toBeChecked();
+    await single.check();
+    await expect(visual).toBeChecked();
+  });
+
+  test('Single-sided keeps a tactile style the user chose themselves', async ({ page }) => {
+    await openApp(page);
+    const tactile = page.locator('input[name="indicator_mode"][value="tactile"]');
+
+    await selectIndicatorMode(page, 'tactile');
+    await chooseDoubleSided(page);
+    await expect(tactile).toBeChecked();
+
+    // The lock moved nothing, so there is nothing to give back and the
+    // announcement is the choice sentence alone.
+    await page.locator('#card_sides_single').check();
+    await expect(page.locator('input[name="indicator_mode"][value="visual"]')).toBeEnabled();
+    await expect(tactile).toBeChecked();
+    await expect(page.locator('#a11y-status')).toHaveText(S_M11_SINGLE);
+  });
+
+  test('Reset while Double-sided is on leaves nothing to give back later', async ({ page }) => {
+    await openApp(page);
+    await chooseDoubleSided(page);
+    await page.locator('#reset-defaults-btn').click();
+    await expect(page.locator('#card_sides_single')).toBeChecked();
+    await expect(page.locator('input[name="indicator_mode"][value="visual"]')).toBeChecked();
+
+    // A tactile style chosen after the reset is the user's own: a later
+    // round trip through Double-sided must not replace it with the visual
+    // markers the lock displaced before the reset.
+    await selectIndicatorMode(page, 'tactile');
+    await chooseDoubleSided(page);
+    await page.locator('#card_sides_single').check();
+    await expect(page.locator('input[name="indicator_mode"][value="tactile"]')).toBeChecked();
   });
 
   test('the Back of Card section is always present, and the choice survives a reload', async ({ page }) => {

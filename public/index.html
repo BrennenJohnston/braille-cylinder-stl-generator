@@ -7643,6 +7643,17 @@
         // markup in "Cylinders to Generate" since 2026-09-21: every run is a
         // pair unless one cylinder is chosen, so there is no relabel to do.
 
+        // The Row Indicator Style the double-sided lock displaced (2026-09-29,
+        // Brennen's finding from testing: a Version 1 card taken to
+        // Double-sided and back stayed on the tactile arrow). Only ever
+        // 'visual' - the lock moves nothing when the style is already tactile,
+        // so a tactile style the user chose themselves stays put. Choosing
+        // Single-sided gives it back (restoreSingleSidedIndicatorMode). While
+        // the lock holds, a version change works on this value rather than on
+        // the checked radio, which is the lock's. Kept for the visit, like
+        // version1IndicatorMode, and dropped by Reset.
+        let singleSidedIndicatorMode = null;
+
         // Deliberately silent: the card-sides change
         // listener makes the one announcement, and the load-time restore must
         // make none at all.
@@ -7670,6 +7681,7 @@
             const visualRadio = document.querySelector('input[name="indicator_mode"][value="visual"]');
             const tactileRadio = document.querySelector('input[name="indicator_mode"][value="tactile"]');
             if (on && visualRadio?.checked && tactileRadio) {
+                singleSidedIndicatorMode = 'visual';
                 tactileRadio.checked = true;
                 // A real change event, so persistence, the column dial, and the
                 // tactile submenu react exactly as they do to a user click.
@@ -7696,16 +7708,41 @@
             return lockNote ? lockNote.textContent.replace(/\s+/g, ' ').trim() : '';
         }
 
+        // Single-sided gives back the style the double-sided lock displaced.
+        // Called from the card-sides change listener ONLY, after
+        // updateDoubleSidedUI() has re-enabled the visual radio - never by the
+        // silent load restore or by Reset. A real change event, as the lock
+        // itself uses, so persistence, the cell dial, the tactile panel and
+        // the Version 2 X Adjust default follow as for a click. Returns true
+        // when the style just moved, so the one announcement can say so.
+        function restoreSingleSidedIndicatorMode() {
+            if (isDoubleSidedOn() || singleSidedIndicatorMode === null) return false;
+            const remembered = singleSidedIndicatorMode;
+            singleSidedIndicatorMode = null;
+            const radio = document.querySelector(`input[name="indicator_mode"][value="${remembered}"]`);
+            if (!radio || radio.checked || radio.disabled) return false;
+            radio.checked = true;
+            radio.dispatchEvent(new Event('change', { bubbles: true }));
+            return true;
+        }
+
+        /* S-M14, DRAFT 2026-09-29 - awaiting Brennen's sign-off; the mirror of
+           S-V16. The clause the Single-sided announcement gains when the
+           Row Indicator Style just went back to visual markers. */
+        const S_M14_STYLE_RESTORED = 'Row Indicator Style set to visual.';
+
         // Card sides: one change, ONE announcement (ADA SOP Section 12, C9):
         // the choice sentence plus, when turning double-sided on, the lock
-        // note that says why the Row Indicator Style just moved. Deferred by
-        // a tick on purpose - written synchronously it would queue ahead of
-        // the radio's own "selected", so the user would wait out the whole
-        // sentence before hearing whether the option they pressed took.
+        // note that says why the Row Indicator Style just moved, or, when
+        // turning it off, S-M14 if the style went back to visual markers.
+        // Deferred by a tick on purpose - written synchronously it would queue
+        // ahead of the radio's own "selected", so the user would wait out the
+        // whole sentence before hearing whether the option they pressed took.
         document.querySelectorAll('input[name="card_sides"]').forEach(radio => {
             radio.addEventListener('change', () => {
                 updateDoubleSidedUI();
                 const on = isDoubleSidedOn();
+                const styleRestored = restoreSingleSidedIndicatorMode();
                 persistValue('braille_prefs_double_sided_enabled', on ? '1' : '0');
                 resetToGenerateState();
                 refreshLiveWarnings();
@@ -7713,7 +7750,9 @@
                 const choice = on
                     ? 'Double-sided card selected. The Back of Card section is now active.'
                     : 'Single-sided card selected.';
-                const message = on ? `${choice} ${indicatorLockMessage()}` : choice;
+                const message = on
+                    ? `${choice} ${indicatorLockMessage()}`
+                    : [choice, styleRestored ? S_M14_STYLE_RESTORED : ''].filter(Boolean).join(' ');
                 setTimeout(() => announceStatus('embosser-setup', message), 0);
             });
         });
@@ -8094,11 +8133,23 @@
         // for a click, the mechanism updateDoubleSidedUI uses. Leaving
         // Version 2 gives the remembered style back. Returns true when the
         // style just moved, so the announcement can say so.
+        // While the double-sided lock holds tactile, the checked radio is the
+        // lock's and not the user's: both directions then work on the style
+        // the lock displaced (singleSidedIndicatorMode), and Single-sided
+        // shows the result - the Version 2 default, or the Version 1 style.
         function applyVersion2IndicatorDefault() {
-            const current = document.querySelector('input[name="indicator_mode"]:checked')?.value || 'visual';
+            const checked = document.querySelector('input[name="indicator_mode"]:checked')?.value || 'visual';
+            const locked = isDoubleSidedOn();
+            const current = (locked && singleSidedIndicatorMode !== null) ? singleSidedIndicatorMode : checked;
             if (isVersion2()) {
                 if (version1IndicatorMode === null) version1IndicatorMode = current;
-                if (current !== 'visual' || isDoubleSidedOn()) return false;
+                if (current !== 'visual') return false;
+                if (locked) {
+                    // The default lands under the lock, leaving nothing to
+                    // give back: Single-sided in Version 2 keeps the arrow.
+                    singleSidedIndicatorMode = null;
+                    return false;
+                }
                 const tactileRadio = document.querySelector('input[name="indicator_mode"][value="tactile"]');
                 if (!tactileRadio) return false;
                 tactileRadio.checked = true;
@@ -8108,8 +8159,13 @@
             if (version1IndicatorMode === null) return false;
             const remembered = version1IndicatorMode;
             version1IndicatorMode = null;
+            if (locked) {
+                // The Version 1 style waits for Single-sided.
+                singleSidedIndicatorMode = remembered === 'visual' ? 'visual' : null;
+                return false;
+            }
             const radio = document.querySelector(`input[name="indicator_mode"][value="${remembered}"]`);
-            if (radio && !radio.checked && !radio.disabled && !isDoubleSidedOn()) {
+            if (radio && !radio.checked && !radio.disabled) {
                 radio.checked = true;
                 radio.dispatchEvent(new Event('change', { bubbles: true }));
             }
@@ -9032,6 +9088,7 @@
                 // finish.
                 version1DialSnapshot = null;
                 version1IndicatorMode = null;
+                singleSidedIndicatorMode = null;
                 try { updateEmbosserVersionUI(); } catch (e) { log.error('Embosser version UI failed to refresh after reset to defaults:', e); }
                 try { updateDoubleSidedUI(); } catch (e) { log.error('Double-sided UI failed to refresh after reset to defaults:', e); }
                 // The radio sweep puts both placement toggles back to Auto; the

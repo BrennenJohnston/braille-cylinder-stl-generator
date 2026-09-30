@@ -50,6 +50,11 @@ const S_V16_STYLE_MOVED = 'Row Indicator Style set to tactile.';
 // version announcement gains when choosing Version 2 moved X Adjust to the
 // Version 2 tactile default.
 const S_X1_X_ADJUST_MOVED = 'X Adjust set to -2 mm.';
+// S-M11, signed 2026-09-21: the Single-sided sentence. S-M14, DRAFT
+// 2026-09-29 (awaiting Brennen's sign-off): the clause it gains when the Row
+// Indicator Style just went back to the visual markers the lock displaced.
+const S_M11_SINGLE = 'Single-sided card selected.';
+const S_M14_STYLE_RESTORED = 'Row Indicator Style set to visual.';
 
 // The Version 2 preset barrel (D-V4), owned by app/geometry/version2.py.
 const V2_DIAMETER = '30.8';
@@ -627,6 +632,75 @@ test.describe('Embosser Version 2', () => {
     await expect(page.locator('#a11y-status')).toHaveText(S_V10_OFF);
     await expect(page.locator('input[name="indicator_mode"][value="tactile"]')).toBeChecked();
     await expect(page.locator('input[name="indicator_mode"][value="visual"]')).toBeDisabled();
+  });
+
+  // 2026-09-29 (Brennen's finding from testing): Single-sided gives back the
+  // style the double-sided lock displaced. While the lock holds, a version
+  // change works on that displaced style, so what Single-sided shows is the
+  // style the version rules say - never the lock's leftover tactile.
+  test('Single-sided after a Version 2 round trip under the lock gives back the Version 1 visual markers', async ({ page }) => {
+    await openApp(page);
+    const visual = page.locator('input[name="indicator_mode"][value="visual"]');
+    await page.locator('#card_sides_double').check();
+    await selectVersion2(page);
+    await page.locator('#embosser_version_1').check();
+    await expect(page.locator('#a11y-status')).toHaveText(S_V10_OFF);
+
+    await page.locator('#card_sides_single').check();
+    await expect(visual).toBeChecked();
+    await expect(page.locator('#a11y-status')).toHaveText(`${S_M11_SINGLE} ${S_M14_STYLE_RESTORED}`);
+  });
+
+  test('Single-sided in Version 2 keeps the Version 2 tactile default, and Version 1 then gives back visual', async ({ page }) => {
+    await openApp(page);
+    const visual = page.locator('input[name="indicator_mode"][value="visual"]');
+    const tactile = page.locator('input[name="indicator_mode"][value="tactile"]');
+    await page.locator('#card_sides_double').check();
+    await selectVersion2(page);
+
+    // The Version 2 default landed under the lock, so nothing comes back.
+    await page.locator('#card_sides_single').check();
+    await expect(visual).toBeEnabled();
+    await expect(tactile).toBeChecked();
+    await expect(page.locator('#a11y-status')).toHaveText(S_M11_SINGLE);
+
+    await page.locator('#embosser_version_1').check();
+    await expect(visual).toBeChecked();
+  });
+
+  test('Version 2, then Double-sided, then Version 1 and Single-sided gives back visual', async ({ page }) => {
+    await openApp(page);
+    const visual = page.locator('input[name="indicator_mode"][value="visual"]');
+    await selectVersion2(page);
+    await expect(page.locator('input[name="indicator_mode"][value="tactile"]')).toBeChecked();
+    await page.locator('#card_sides_double').check();
+
+    // Leaving Version 2 while locked: the Version 1 style waits for Single-sided.
+    await page.locator('#embosser_version_1').check();
+    await expect(visual).toBeDisabled();
+    await page.locator('#card_sides_single').check();
+    await expect(visual).toBeChecked();
+    await expect(page.locator('#a11y-status')).toHaveText(`${S_M11_SINGLE} ${S_M14_STYLE_RESTORED}`);
+  });
+
+  test('in Version 2, visual markers the user chose come back after Double-sided, X Adjust with them', async ({ page }) => {
+    await openApp(page);
+    const visual = page.locator('input[name="indicator_mode"][value="visual"]');
+    await selectVersion2(page);
+    await expect(page.locator('#braille_x_adjust')).toHaveValue(V2_TACTILE_X_ADJUST);
+    await selectIndicatorMode(page, 'visual');
+    await expect(page.locator('#braille_x_adjust')).toHaveValue('0');
+
+    // The lock moves the style to tactile and X Adjust to the tactile default...
+    await page.locator('#card_sides_double').check();
+    await expect(page.locator('input[name="indicator_mode"][value="tactile"]')).toBeChecked();
+    await expect(page.locator('#braille_x_adjust')).toHaveValue(V2_TACTILE_X_ADJUST);
+
+    // ...and Single-sided gives both back.
+    await page.locator('#card_sides_single').check();
+    await expect(visual).toBeChecked();
+    await expect(page.locator('#braille_x_adjust')).toHaveValue('0');
+    await expect(page.locator('#a11y-status')).toHaveText(`${S_M11_SINGLE} ${S_M14_STYLE_RESTORED}`);
   });
 
   test('the card stock stays 0.4 in Version 2 rather than flipping to Custom', async ({ page }) => {

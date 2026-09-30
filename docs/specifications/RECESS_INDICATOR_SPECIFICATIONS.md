@@ -34,7 +34,13 @@ cell dial and the warnings follow as for a click), and gives the remembered styl
 way to Version 1. It is a default, not a lock — the user may pick visual markers in Version 2
 and that choice persists — and it is never applied by the silent load restore nor by a
 card-stock preset (`tests/test_smoke.py` pins that neither preset names `indicator_mode`). The
-double-sided lock (v3.3) takes precedence: a locked tactile style is left alone. The composed
+double-sided lock (v3.3) takes precedence: a locked tactile style is left alone. Since
+2026-09-29 the lock remembers the visual style it displaced and choosing Single-sided gives
+it back (INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §7.2; announced with S-M14 *"Row
+Indicator Style set to visual."*, DRAFT). While the lock holds, a version change works on
+that displaced style instead of on the checked radio: entering Version 2 turns it into the
+tactile default (Single-sided in Version 2 keeps the arrow), and leaving Version 2 hands the
+remembered Version 1 style to it (Single-sided in Version 1 shows that style). The composed
 Version 2 announcement gains S-V16 *"Row Indicator Style set to tactile."* when the style moved (signed by Brennen 2026-09-28, shortened from the draft).
 
 ### Indicator Letters Toggle (`indicator_shapes`)
@@ -1005,6 +1011,7 @@ When implementing or modifying indicator code, verify:
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-09-29 | 3.15 | **Single-sided gives back the style the double-sided lock displaced** (Brennen's finding from testing). A Version 1 card taken to Double-sided and back used to stay on the tactile arrow; the visual markers now return, a tactile style the user chose stays, and under the lock a version change works on the displaced style (Row Indicator Style section). New DRAFT clause S-M14. |
 | 2026-09-27 | 3.14 | **The card-fit need reads X Adjust (§4).** The X Adjust dial now works on cylinders (BRAILLE_SPACING_SPECIFICATIONS.md §5): it slides the text grid round the barrel while the tactile arrow stays at the seam-gap midpoint, so `tactile_card_need_mm` / `tactile_max_cells` gain the shift (`card_need = gap/2 + shift + grid + footprint`; 14 cells at X −3 fit a 90 mm card) and `updateCardFitUI()` mirrors it. The arrow-gap warning likewise reads the gap left after the shift. Nothing changes at 0. |
 | 2026-09-24 | 3.13 | **The control moves into Expert Mode and Version 2 defaults it to tactile (programme 2026-09-24; decisions D-4, D-5).** Row Indicator Style is the third Expert Mode submenu with the tactile dials below it; choosing Version 2 sets tactile as a remembered, reversible default (never a lock, never on load restore, never by a preset). |
 | 2024-10-11 | 1.0 | Initial documentation during Phase 0 refactoring |

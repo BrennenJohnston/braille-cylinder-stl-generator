@@ -78,7 +78,11 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      (settings double_sided.interpoint_offset_x_mm/_y_mm → flat runtime
      interpoint_offset_x/_y; interpoint.py calls the y number offset_z).
    - Double-sided = 1:1 paired recesses on BOTH cylinders (no universal
-     counter grid) + Row Indicator Style locked to tactile. Footprints ship
+     counter grid) + Row Indicator Style locked to tactile. Single-sided GIVES
+     BACK the visual style the lock displaced (singleSidedIndicatorMode,
+     2026-09-29, Brennen's finding; the old "no snap-back" rule is retired) -
+     never on load restore, dropped by Reset; under the lock a version change
+     works on the displaced style, not the checked radio. Footprints ship
      FIXED — no UI dials (2026-08-16) — and KEYED to the card-stock preset
      since 2026-08-20: 0.3 preset → Option B dot ⌀1.2 (0.4 base + 0.4 dome,
      dome ⌀0.8) + bowl ⌀1.3 × 0.5 mm (still the schema/models defaults);
