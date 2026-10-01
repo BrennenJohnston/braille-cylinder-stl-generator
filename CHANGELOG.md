@@ -169,6 +169,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `docs/guides/_bana_business_cards_verified_source.md` Example 6 heading had inadvertently duplicated Example 5's title ("Omission of capitals from name; division of surname; omission of company name (in e-mail)"). Replaced with BANA's actual Example 6 heading ("Division of hyphenated name (client agreed to a shortened first name); omission of capitals from post-nominal letters/credentials; omission of organization name (in e-mail)").
 - Resynced the second "BANA-quoted blocks below — DO NOT EDIT" comment block in `public/index.html` (above the Formatting Rules panel) to match the propagation reminder in the first block, so future edits don't drift between the two panels.
 
+### Fixed
+- **The vendored `OpenSCAD/` copy told contributors the wrong thing.** Its README
+  claimed the standalone repo was "no longer the active home for this project"
+  and asked for issues here. The opposite is true: the standalone repo holds the
+  dual-file desktop build, the cross-platform fixture suite, and the CI. It also
+  shipped a May-2026 snapshot named `Braille_Card_And_Cylinder_STL_Generator.scad`
+  — a file that generates cylinders only.
+
+### Changed
+- **`OpenSCAD/` refreshed to upstream `v2.4.0` and documented as a vendored
+  copy.** The vendored file is now the upstream MakerWorld single-file build
+  (presets inlined, no `include`), renamed to
+  `Braille_Cylinder_STL_Generator.scad` since this folder ships exactly one file.
+  That build is self-contained, so the download works standalone *and* uploads
+  directly to MakerWorld. Ships tactile indicator mode, the 13-cell default
+  capacity, and the counted `TEXT TOO LONG` warning.
+- **`OpenSCAD/VENDORED.json` records provenance** — upstream repo, tag, full
+  commit sha, release date, copy date, and a SHA-256 per file, with each file's
+  upstream path.
+- **`tests/test_vendored_openscad.py` (4 tests) guards against silent drift** —
+  the `.scad` must hash to what `VENDORED.json` records, every file in the folder
+  must be accounted for, the provenance must name a resolvable tag and full sha,
+  and the README must still state that upstream is canonical. Detecting a *newer*
+  upstream release needs the network, so that is a release-checklist item in
+  [docs/deployment/DEPLOYMENT_CHECKLIST.md](docs/deployment/DEPLOYMENT_CHECKLIST.md)
+  instead.
+- **Repository renamed to `braille-cylinder-stl-generator`.** The UI has
+  generated cylinders only since v2.0.0, so "card-and-cylinder" no longer
+  described the tool. GitHub redirects the old URLs, and the deployed Vercel
+  URL is unchanged — existing links and QR codes keep working. `package.json`,
+  the README title, badges, `PROJECT_STRUCTURE.md`, the in-app GitHub links,
+  and the workspace file all follow the new name.
+- **Flat business card plates are documented as parked, not "temporarily
+  disabled".** They will not return in this repo; see
+  [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md). Directly readable braille cards
+  already ship as
+  [braille-wedge-card-openscad](https://github.com/BrennenJohnston/braille-wedge-card-openscad).
+
+### Planned
+- Additional language support
+- Custom dot shape options
+- Batch processing
+- OpenSCAD export option
+
 ## [2.1.0] - 2026-02-16
 
 Documentation overhaul. Rewrote all project docs to remove AI-generated language and match the tone of a small, single-maintainer open-source project.
@@ -283,54 +327,6 @@ First stable release.
 ### Acknowledgments
 
 Thanks to Tobi Weinberg for kick-starting the project. Based on [tobiwg/braile-card-generator](https://github.com/tobiwg/braile-card-generator).
-
----
-
-## [Unreleased]
-
-### Fixed
-- **The vendored `OpenSCAD/` copy told contributors the wrong thing.** Its README
-  claimed the standalone repo was "no longer the active home for this project"
-  and asked for issues here. The opposite is true: the standalone repo holds the
-  dual-file desktop build, the cross-platform fixture suite, and the CI. It also
-  shipped a May-2026 snapshot named `Braille_Card_And_Cylinder_STL_Generator.scad`
-  — a file that generates cylinders only.
-
-### Changed
-- **`OpenSCAD/` refreshed to upstream `v2.4.0` and documented as a vendored
-  copy.** The vendored file is now the upstream MakerWorld single-file build
-  (presets inlined, no `include`), renamed to
-  `Braille_Cylinder_STL_Generator.scad` since this folder ships exactly one file.
-  That build is self-contained, so the download works standalone *and* uploads
-  directly to MakerWorld. Ships tactile indicator mode, the 13-cell default
-  capacity, and the counted `TEXT TOO LONG` warning.
-- **`OpenSCAD/VENDORED.json` records provenance** — upstream repo, tag, full
-  commit sha, release date, copy date, and a SHA-256 per file, with each file's
-  upstream path.
-- **`tests/test_vendored_openscad.py` (4 tests) guards against silent drift** —
-  the `.scad` must hash to what `VENDORED.json` records, every file in the folder
-  must be accounted for, the provenance must name a resolvable tag and full sha,
-  and the README must still state that upstream is canonical. Detecting a *newer*
-  upstream release needs the network, so that is a release-checklist item in
-  [docs/deployment/DEPLOYMENT_CHECKLIST.md](docs/deployment/DEPLOYMENT_CHECKLIST.md)
-  instead.
-- **Repository renamed to `braille-cylinder-stl-generator`.** The UI has
-  generated cylinders only since v2.0.0, so "card-and-cylinder" no longer
-  described the tool. GitHub redirects the old URLs, and the deployed Vercel
-  URL is unchanged — existing links and QR codes keep working. `package.json`,
-  the README title, badges, `PROJECT_STRUCTURE.md`, the in-app GitHub links,
-  and the workspace file all follow the new name.
-- **Flat business card plates are documented as parked, not "temporarily
-  disabled".** They will not return in this repo; see
-  [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md). Directly readable braille cards
-  already ship as
-  [braille-wedge-card-openscad](https://github.com/BrennenJohnston/braille-wedge-card-openscad).
-
-### Planned
-- Additional language support
-- Custom dot shape options
-- Batch processing
-- OpenSCAD export option
 
 [2.1.0]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v2.1.0
 [2.0.0]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v2.0.0
