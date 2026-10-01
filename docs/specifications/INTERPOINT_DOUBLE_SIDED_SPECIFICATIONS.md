@@ -293,9 +293,10 @@ printed-mouth switch was signed off **2026-08-21**. Reword only with his sign-of
 
 1. **Tactile lock.** `indicator_mode` must be `'tactile'` (the absent-key default
    `'visual'` also rejects):
-   > "Double-sided mode is a beta that requires the tactile row indicator style: set the
-   > Row Indicator Style to 'Tactile seam arrow' (indicator_mode 'tactile') or turn
-   > double-sided mode off. Received indicator_mode '`<mode>`'."
+   > "Double-sided mode requires the tactile row indicator style: set the Row Indicator
+   > Style to 'Tactile seam arrow' (indicator_mode 'tactile') or choose Single-sided.
+   > Received indicator_mode '`<mode>`'." (reworded with his sign-off 2026-10-01: it said
+   > "is a beta that requires" and "or turn double-sided mode off")
 2. **Offset range.** Both offsets within [1.15, 1.35], quoting the canonical schema
    spelling:
    > "Setting 'double_sided.interpoint_offset_x_mm' must be between 1.15 and 1.35 mm;
@@ -422,8 +423,9 @@ Two soft warnings can be appended to `spec['warnings']` (wording signed off 2026
 
 - Non-tactile indicator forced (defense-in-depth for direct callers; unreachable via HTTP
   because gate 1 rejects first):
-  > "Double-sided mode is a beta that locks the row indicator style to the tactile seam
-  > arrows; '`<mode>`' was requested and 'tactile' was used instead."
+  > "Double-sided mode locks the row indicator style to the tactile seam arrows;
+  > '`<mode>`' was requested and 'tactile' was used instead." ("is a beta that" removed
+  > with his sign-off 2026-10-01)
 - Marginal same-surface gap (0.34–0.45 mm; 0.50 until 2026-08-23):
   > "Double-sided crowding: a `<dot>` mm dot next to a `<bowl>` mm recess at the
   > `<x>` / `<y>` mm interpoint offset leaves `<gap>` mm of material between them — less
@@ -994,7 +996,8 @@ and separated**. Full record: the research folder's `00_PROJECT_MEMORY.md`, FD-8
 
 | Date | Version | Changes |
 |------|---------|---------|
-| 2026-09-30 | 1.20 | **Documentation review after the approved build.** Present-tense beta and toggle wording now names the Card sides choice (Overview, §3.1, §4, §6.1, §7.3, §7.6, §10, Related Documentation); §4's capacity is 13 cells a row (52 a side, 104 a card) and its filenames lead with the default `Cylinder_Pair_` file; §7.3 carries the provisional 0.45 mm reliable line of 2026-08-23, so the 0.4 preset's 0.468 gap is quiet; §7.1 quotes the S-M15 draft of the visible note and §7.4 the 2026-09-28 back placeholder; Translate ↑ no longer persists the back text. The two server strings that still say "Double-sided mode is a beta" (§5 gate 1, the forced-tactile warning) are quoted as the code has them. |
+| 2026-10-01 | 1.21 | **§5: the two server strings stop calling double-sided a beta** (Brennen's sign-off, 2026-10-01). Gate 1 now reads "Double-sided mode requires the tactile row indicator style: ... or choose Single-sided. ..." and the forced-tactile warning "Double-sided mode locks the row indicator style to the tactile seam arrows; ...". |
+| 2026-09-30 | 1.20 | **Documentation review after the approved build.** Present-tense beta and toggle wording now names the Card sides choice (Overview, §3.1, §4, §6.1, §7.3, §7.6, §10, Related Documentation); §4's capacity is 13 cells a row (52 a side, 104 a card) and its filenames lead with the default `Cylinder_Pair_` file; §7.3 carries the provisional 0.45 mm reliable line of 2026-08-23, so the 0.4 preset's 0.468 gap is quiet; §7.1 quotes the S-M15 draft of the visible note and §7.4 the 2026-09-28 back placeholder; Translate ↑ no longer persists the back text. The two server strings that still said "Double-sided mode is a beta" (§5 gate 1, the forced-tactile warning) were quoted as the code had them (reworded 2026-10-01, v1.21). |
 | 2026-09-29 | 1.19 | **§7.2: Single-sided gives back the Row Indicator Style the lock displaced** (Brennen's finding from testing the Version 1 fixed gears: a card taken to Double-sided and back stayed on the tactile arrow). Retires "the tactile selection is deliberately kept (no surprise snap-back)". A tactile style the user chose is kept; under the lock a version change works on the displaced style; the announcement gains S-M14 "Row Indicator Style set to visual." (DRAFT). The quoted lock note now matches S-M12. Pinned in `tests/e2e/doubleSided.spec.ts`, `version2.spec.ts` and `embosserSetup.spec.ts`. |
 | 2026-09-28 | 1.18 | **`#back-text`'s placeholder shortened to "Type the text for the back of the card here."** (Brennen's sign-off, superseding the 2026-08-17 wording) so the back Braille (Unicode) box can show that sentence's whole translation as its placeholder (BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md §3). The back help sentence still explains the wrapping. |
 | 2026-09-28 | 1.17 | **The back text is no longer persisted (§7.5).** Brennen's privacy rule: no text or braille input is stored, only 3D design settings; `braille_prefs_back_text` is retired and scrubbed on load. A double-sided Generate now also fills the back Braille (Unicode) field with the back translation it embosses, and the back braille box carries a placeholder (BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md §3, §6.3, §11). |

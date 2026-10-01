@@ -545,9 +545,10 @@ def extract_cylinder_geometry_spec(
             # the request route; this branch stays as defense-in-depth for
             # direct callers.
             indicator_mode = str(getattr(settings, 'indicator_mode', 'visual')).lower()
-            # User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off.
+            # User-facing wording signed off by Brennen (2026-08-16), "is a beta that"
+            # removed with his sign-off 2026-10-01; reword only with his sign-off.
             warning = (
-                'Double-sided mode is a beta that locks the row indicator style to the tactile '
+                'Double-sided mode locks the row indicator style to the tactile '
                 f"seam arrows; '{indicator_mode}' was requested and 'tactile' was used instead."
             )
             double_sided_warnings.append(warning)

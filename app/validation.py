@@ -326,10 +326,12 @@ def validate_double_sided_settings(settings_data: dict) -> bool:
 
     indicator_mode = str(settings_data.get('indicator_mode', 'visual')).strip().lower()
     if indicator_mode != 'tactile':
+        # Signed off by Brennen 2026-08-16; reworded with his sign-off 2026-10-01
+        # (no longer "a beta", and Single-sided is the choice to name).
         raise ValidationError(
-            'Double-sided mode is a beta that requires the tactile row indicator style: '
+            'Double-sided mode requires the tactile row indicator style: '
             "set the Row Indicator Style to 'Tactile seam arrow' (indicator_mode 'tactile') "
-            f"or turn double-sided mode off. Received indicator_mode '{indicator_mode}'.",
+            f"or choose Single-sided. Received indicator_mode '{indicator_mode}'.",
             {'key': 'indicator_mode', 'value': indicator_mode, 'required': 'tactile'},
         )
 
