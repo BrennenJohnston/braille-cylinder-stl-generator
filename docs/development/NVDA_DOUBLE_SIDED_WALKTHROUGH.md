@@ -1,6 +1,6 @@
 # NVDA Walkthrough — Double-Sided Card
 
-**Purpose:** a screen-reader pass over the whole double-sided beta flow, run by
+**Purpose:** a screen-reader pass over the whole double-sided flow, run by
 hand. This is the one check in the
 [ADA Accessibility Validation SOP](./ADA_ACCESSIBILITY_VALIDATION_SOP.md)
 (section 6.5) that cannot be automated — automated tools read the markup, NVDA
@@ -61,6 +61,12 @@ order they arrive in.
 > greyed out and unavailable until Double-sided is chosen. Steps 1–5 and 23–24
 > describe the new controls; the expected words in them were signed by
 > Brennen on 2026-09-21. Steps 6–22 are unchanged.
+>
+> **Re-measured 2026-09-30 (Chromium at 1440 × 900, NOT yet run with NVDA):** on
+> 2026-09-24 (decision D-5) Row Indicator Style and Card Thickness moved into Expert
+> Mode, so steps 10–14 and 25–26 now go through it, and every Tab count below was
+> measured in Chromium. Step 23 now also hears that the visual markers came back
+> (S-M14, a draft awaiting Brennen's sign-off).
 
 ## Part 1 — Finding the choice while single-sided
 
@@ -126,10 +132,12 @@ radio group and hear its state again.
 
 ## Part 3 — The Back of Card text box
 
-**Step 6.** Press `Tab` once from the radio group.
+**Step 6.** Press `Tab` seven times from the radio group: past "Which setup should I
+choose?", then the front entry's six controls (its Auto Placement toggle, text box,
+Translate to Braille, Braille (Unicode) box and Translate to Text).
 
-> **Expect (since 2026-09-21):** "Auto Placement, radio button, checked, 1 of 2" —
-> the back's own placement toggle, the same pair the front has. Press `Down
+> **Expect (since 2026-09-21), on the seventh press:** "Auto Placement, radio button,
+> checked, 1 of 2" — the back's own placement toggle, the same pair the front has. Press `Down
 > arrow` once: "Manual Placement, radio button, checked, 2 of 2", and `Tab`
 > then lands on "Back Line 1 Translation, combo box" followed by "Back Line 1,
 > edit" with the help "Maximum 50 characters for back line 1" — one such pair
@@ -146,7 +154,7 @@ radio group and hear its state again.
 > and cells per row as the front."
 >
 > NVDA may also read the placeholder: "Type the text for the back of the card
-> here. It wraps across the rows automatically."
+> here." (shortened on 2026-09-28).
 
 **Step 7.** Type a short back text: `Brennen Johnston`
 
@@ -177,10 +185,16 @@ Wait about two seconds without pressing any key.
 
 ## Part 4 — The Row Indicator Style lock
 
-**Step 10.** `Tab` on to the Select Language combo box, then `Tab` again to
-reach the Row Indicator Style radio group.
+**Step 10.** The Row Indicator Style lives in Expert Mode. From the Back of Card Text
+box, press `Tab` six times — past the back's Translate to Braille, Braille (Unicode)
+box and Translate to Text, the Select Language combo box and Reset — to "Show Expert
+Mode", and press `Enter`. Focus moves to "Preview Braille Translation". Press `Tab`
+three times — past Cylinders to Generate and Card Thickness — to the "Row Indicator
+Style" submenu button, press `Enter`, then press `Tab` once.
 
-> **Expect:** "Tactile seam arrow, radio button, checked, 2 of 2" — plus its
+> **Expect:** "Row Indicator Style, button, collapsed", then "expanded" after `Enter`
+> — focus stays on the button, because the first choice, Visual markers, is locked —
+> then on `Tab`: "Tactile seam arrow, radio button, checked, 2 of 2" plus its
 > description "A raised arrow on the embossing plate and a matching recess on
 > the counter plate…"
 
@@ -188,7 +202,7 @@ reach the Row Indicator Style radio group.
 "Visual markers".
 
 > **Expect:** **nothing moves.** You stay on "Tactile seam arrow, checked".
-> The beta locks this choice, and the lock has to hold for keyboard users too.
+> Double-sided locks this choice, and the lock has to hold for keyboard users too.
 
 **Step 12.** Use NVDA's object navigation or `Shift+Tab` to inspect the
 "Visual markers" radio button if your NVDA settings let you reach disabled
@@ -207,12 +221,12 @@ Since 2026-09-21 there is no plate selector in the main form: Generate STL build
 **both** cylinders unless you choose one under Expert Mode. This part checks that
 choice reads correctly; Part 6 runs the default.
 
-**Step 13.** `Tab` forward past the Card Thickness radio group and Reset to the
-"Show Expert Mode" button, press `Enter`, then `Tab` to the first submenu button and
-press `Enter`.
+**Step 13.** Expert Mode is already open from step 10. Press `Shift+Tab` until you
+reach the first submenu button, "Cylinders to Generate" — from the Tactile seam arrow
+radio that is three presses: the Row Indicator Style button, Card Thickness, then
+Cylinders to Generate — and press `Enter`.
 
-> **Expect:** "Show Expert Mode, button, collapsed" → "expanded"; then
-> "Cylinders to Generate, button, collapsed" → after `Enter`, "expanded", and
+> **Expect:** "Cylinders to Generate, button, collapsed" → after `Enter`, "expanded", and
 > a moment later focus lands on the first radio:
 > "Cylinders to Generate, grouping" … "Both Cylinder A and B, radio button,
 > checked, 1 of 3" with the description "Builds both cylinders and downloads
@@ -224,7 +238,7 @@ press `Enter`.
 > choice — they are fixed now.
 
 **Step 14.** Press `Up arrow` twice to put the selection back on "Both Cylinder A
-and B", then `Shift+Tab` back to "Show Expert Mode" and press `Enter` to close it.
+and B", then `Shift+Tab` back to "Hide Expert Mode" and press `Enter` to close it.
 
 ---
 
@@ -319,7 +333,11 @@ and B", then `Shift+Tab` back to "Show Expert Mode" and press `Enter` to close i
 `Up arrow` to select Single-sided.
 
 > **Expect:** "Single-sided, radio button, checked, 1 of 2", then a moment
-> later, on its own: "Single-sided card selected."
+> later, on its own: "Single-sided card selected. Row Indicator Style set to
+> visual." In Version 1, choosing Single-sided gives back the visual markers that
+> Double-sided replaced (since 2026-09-29; the second sentence is S-M14, a draft
+> awaiting Brennen's sign-off). If the style was already tactile before Double-sided,
+> only the first sentence is spoken.
 
 **Step 24.** `Tab` forward through the front entry controls and on past the
 Back of Card section.
@@ -328,12 +346,15 @@ Back of Card section.
 > them: you go from the front entry controls to the Select Language combo box.
 > The "Back of Card" heading itself is still on the page for arrow-key reading.
 
-**Step 25.** `Tab` to the Row Indicator Style group.
+**Step 25.** Keep pressing `Tab` until you reach the Row Indicator Style radio
+group inside Expert Mode. Expert Mode is still open from step 20 and the Row Indicator
+Style submenu from step 10; if either has closed, open it with `Enter` (opening the
+submenu now moves focus straight onto its first radio).
 
 > **Expect:** "Visual markers, radio button, checked, 1 of 2" — selectable again,
 > **not** "unavailable", and the "Locked:" note is no longer read with it.
 
-**Step 26.** `Tab` on past Card Thickness and Reset.
+**Step 26.** `Shift+Tab` back to "Hide Expert Mode" and press `Enter` to close it.
 
 > **Expect:** no plate radio group anywhere in the main form (it lives under
 > Expert Mode → Cylinders to Generate since 2026-09-21, and its names are
@@ -354,7 +375,7 @@ actually heard, and mark each row Pass or Fail. Anything you are unsure about,
 write "unsure" and quote what NVDA said — that is more useful than a guess.
 
 ```text
-NVDA WALKTHROUGH RESULTS — double-sided beta
+NVDA WALKTHROUGH RESULTS — double-sided
 Run by: Brennen
 Date:
 NVDA version:            Browser + version:
@@ -401,7 +422,7 @@ Anything NVDA said that I did not expect at all:
 
 - [ADA Accessibility Validation SOP](./ADA_ACCESSIBILITY_VALIDATION_SOP.md) — section 6.5 is the requirement this satisfies
 - [UI Interface Core Specifications](../specifications/UI_INTERFACE_CORE_SPECIFICATIONS.md) — section 4 accessibility features
-- [Interpoint Double-Sided Specifications](../specifications/INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md) — what the beta does and why
+- [Interpoint Double-Sided Specifications](../specifications/INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md) — what double-sided does and why
 
 ## Document History
 
@@ -415,3 +436,4 @@ Anything NVDA said that I did not expect at all:
 | 1.4 | 2026-08-18 | Steps 15 and 27 note the new single-plate "Download STL" button, which is separate from the pair's Download Cylinder A/B and only exists after a single-plate generation. `#action-btn` no longer renames itself into a download control mid-focus. |
 | 1.6 | 2026-09-21 | **Back of Card parity (programme sub-plan D, 2026-09-21; NOT yet run).** Part 3 gains the back placement toggle and the Manual rows (step 6, new step 6a for the text box). |
 | 1.5 | 2026-09-21 | **One Generate, one Download (programme sub-plan E, 2026-09-21; NOT yet run).** Part 5 now checks the "Cylinders to Generate" radios inside Expert Mode (three options, both first, fixed A/B names); Part 6 runs the pair from the one Generate STL button and saves the combined file from the one Download STL button (S-E5 / S-E6 (signed 2026-09-21) expected wording); step 3 and steps 26–27 no longer expect the removed buttons or the main-form plate group. The "(Beta)" left in the title on 2026-09-20 dropped (D-7). |
+| 1.7 | 2026-09-30 | **Re-measured in Chromium after the approved build (NOT yet run with NVDA).** Row Indicator Style and Card Thickness live in Expert Mode since 2026-09-24 (D-5): steps 10, 13, 25 and 26 now open it, with Tab counts measured in Chromium; step 6 is seven presses (the front entry sits between Card sides and the back); step 6a quotes the 2026-09-28 back placeholder; step 23 adds S-M14 (draft) for the visual markers coming back. |

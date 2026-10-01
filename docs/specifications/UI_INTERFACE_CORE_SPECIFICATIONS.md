@@ -19,34 +19,16 @@ This document provides **in-depth specifications** for all UI interface core log
 
 ---
 
-## ⚠️ CRITICAL: HTML File Location Warning
+## ⚠️ CRITICAL: HTML File Location
 
-**There are TWO `index.html` files in this project. You MUST edit the correct one:**
-
-| File | Purpose | Served by Flask? | Status |
-|------|---------|------------------|--------|
-| **`public/index.html`** | **PRODUCTION FILE — Edit this one!** | ✅ YES | **ACTIVE** |
-| `templates/index.html` | Legacy/backup file — NOT served | ❌ NO | **⛔ DEPRECATED** |
-
-### `templates/index.html` Deprecation Notice (2026-01-28)
-
-The `templates/index.html` file is **officially deprecated** and should not be edited. It is missing critical features present in `public/index.html`:
-
-| Missing Feature | Purpose |
-|----------------|---------|
-| `viewport-fit=cover` | iOS notch support |
-| `--vh` CSS variable | Mobile viewport handling |
-| `safe-area-inset-*` CSS | Edge-to-edge display support |
-| `nomodule` fallback script | Older browser compatibility |
-| `prefers-reduced-motion` CSS/JS | Motion accessibility |
-| WebGL context loss recovery | Graphics stability |
-
-**This file may be removed in a future release.**
+**`public/index.html` is the only UI file — edit this one.** The legacy
+`templates/index.html` copy was deprecated on 2026-01-28 and deleted on 2026-07-30
+(commit `18102c1`); never recreate the `templates/` folder. Older documents and commits
+that mention `templates/index.html` describe history.
 
 **Why this matters:**
 - The Flask backend (`backend.py`) serves `public/index.html` via `send_from_directory('public', 'index.html')`
-- Changes to `templates/index.html` will have **NO EFFECT** on the running application
-- Both files may contain similar content, which can cause confusion
+- Vercel serves the same file from `public/`
 
 **Before making UI changes:**
 1. Always edit `public/index.html`
@@ -102,7 +84,7 @@ def index_explicit():
    - 4.5 [Toggle Button ARIA Requirements](#45-toggle-button-aria-requirements)
    - 4.6 [Reduced Motion Support](#46-reduced-motion-support)
    - 4.7 [Two-Way Translation Controls](#47-two-way-translation-controls)
-   - 4.8 [Double-Sided Card Beta: Disclosure Checkbox and Locked Radio Option](#48-double-sided-card-beta-disclosure-checkbox-and-locked-radio-option)
+   - 4.8 [The Embosser Setup Menu Item: Three Either/Or Choices, a Disabled Section, and a Locked Radio Option](#48-the-embosser-setup-menu-item-three-eitheror-choices-a-disabled-section-and-a-locked-radio-option)
    - 4.9 [Button Contrast Tokens and the 44 px Action Button](#49-button-contrast-tokens-and-the-44-px-action-button)
    - 4.10 [Live Regions Must Already Be in the Accessibility Tree](#410-live-regions-must-already-be-in-the-accessibility-tree)
    - 4.11 [Heading Outline](#411-heading-outline)
@@ -1160,7 +1142,7 @@ const clampPreviewLevel = level => Math.min(5, Math.max(1, parseInt(level, 10) |
 
 function updatePreviewDisplaySettings() {
     // Applies brightness/contrast multipliers to lights and mesh material.
-    // See implementation in templates/public index scripts for full logic.
+    // See the implementation in public/index.html for the full logic.
 }
 
 function updateBrightnessStepper() {
@@ -1914,9 +1896,9 @@ When `aria-expanded` changes, screen readers automatically announce the new stat
 
 All eight submenus (six until 2026-09-24) use the identical `.expert-submenu-toggle` markup and are wired by one
 handler (`initExpertSubmenus()`), which sets `aria-expanded`, toggles `.active`, flips the
-`▼`/`▲` icon, and moves focus into the panel on open. Since 2026-08-31 the handler serves
-a seventh accordion outside Expert Mode: the Double-Sided Card menu (§4.8), whose header
-heading is an `<h2>` rather than `<h3>` because it is a top-level form section. Since 2026-08-22 each button is
+`▼`/`▲` icon, and moves focus into the panel on open. All eight sit inside Expert Mode:
+from 2026-08-31 to 2026-09-20 the handler also served a Double-Sided Card accordion outside
+it, with an `<h2>` header, which went with the BETA toggle (decision D-7, §4.8). Since 2026-08-22 each button is
 **wrapped in `<h3 class="expert-submenu-heading">` as its sole child**, which the APG
 Accordion pattern requires — see §4.11 — and the handler therefore resolves its panel
 through `aria-controls` rather than `toggle.nextElementSibling`, which is now `null`.
@@ -2055,7 +2037,7 @@ the direction the content moves on screen. Neither button changes the contract: 
 `#braille-unicode` holds content, those exact cells are what get embossed, and
 "Translate to Text" deliberately leaves the braille untouched.
 
-Since 2026-08-31 the **Back of Card entry (double-sided beta) carries the same pair** —
+Since 2026-08-31 the **Back of Card entry (double-sided cards) carries the same pair** —
 `#back-translate-to-braille-btn` / `#back-translate-to-text-btn` beside the authoritative
 `#back-braille-unicode` field, announced through its own `#back-braille-unicode-live` and
 `#back-braille-unicode-status` — the exact mirror of this section at back-specific ids,
@@ -2493,34 +2475,38 @@ Expert Mode open, 16 with Double-sided chosen; no level skipped in any state** (
 sit under their own h2). Re-measured at the sub-plan E quick path
 (`build/a11yverify/e_footer/probe.cjs`, Chromium, 2026-09-21), after the "Select Plate to
 Generate" h2 left the main form and the "Cylinders to Generate" h3 joined Expert Mode:
-**9 on load, 15 with Expert Mode open; no level skipped.**
+**9 on load, 15 with Expert Mode open; no level skipped.** Re-measured 2026-09-30
+(Chromium at 1440 × 900), after decision D-5 of 2026-09-24 moved Row Indicator Style and
+Card Thickness into Expert Mode: **7 on load, 15 with Expert Mode open, 15 with
+Double-sided chosen; no level skipped in any state.**
 
 #### Level choice
 
-The seven section headings are **h2** (five at the 2026-08-22 restructure; Integrated
-Gears joined 2026-08-24, Embosser version 2026-08-31): they are the form's own
-top-level sections, one step below the page title, and h2 keeps the step from the
-`<h1>` at exactly one. The six
-accordion headers are **h3** because they are one level deeper again — they exist only
-inside Expert Mode, and the level is what tells a listener "this is inside the thing I
-just opened" rather than another basic section. This is also what the WAI-ARIA APG and
-the GOV.UK Design System accordion do. The Double-Sided accordion header stays **h2**
-for the same reason in reverse: it is a top-level section that happens to fold.
+The form's section headings are **h2** — three today: Embosser setup, the front entry
+and the Back of Card entry (five at the 2026-08-22 restructure and seven at most, before
+the feature items became Embosser setup on 2026-09-20 and Row Indicator Style and Card
+Thickness moved into Expert Mode on 2026-09-24): they are the form's own top-level
+sections, one step below the page title, and h2 keeps the step from the `<h1>` at exactly
+one. Embosser setup's three choices are **h3** inside it. The eight accordion headers are
+**h3** because they are one level deeper again — they exist only inside Expert Mode, and
+the level is what tells a listener "this is inside the thing I just opened" rather than
+another basic section. This is also what the WAI-ARIA APG and the GOV.UK Design System
+accordion do.
 
 **Known limit, recorded rather than hidden:** the Expert Mode disclosure button itself
-carries no heading, so a strict outline algorithm nests the six h3s under *Select Plate
-to Generate*, the last h2 before them. Nothing is skipped and heading navigation is
+carries no heading, so a strict outline algorithm nests the eight h3s under *Back of
+Card — Enter Text for Braille Translation*, the last h2 before them. Nothing is skipped and heading navigation is
 unaffected; wrapping that button too would need a decision about its label, which
 changes between "Show Expert Mode" and "Hide Expert Mode". Left for the page-structure
 pass. The pre-existing `h2` on the preview panel sits inside Expert Mode too and so
 has the same shape of oddity when it is showing; it is left as it is, being outside
 this change, and the `h3` *Front of Card* / *Back of Card* headings the preview injects
-for the double-sided beta nest under it correctly.
+for double-sided cards nest under it correctly.
 
 #### Heading inside `<legend>` — why it is allowed, and why not a `<div>`
 
 ```html
-<legend class="grade-label"><h2 class="legend-heading">Card Thickness</h2></legend>
+<legend class="grade-label"><h3 class="legend-heading">Card sides</h3></legend>
 ```
 
 The HTML content model for `<legend>` is *phrasing content, optionally intermixed with
@@ -2540,11 +2526,12 @@ every measured box are byte-identical before and after (accordion headers 672 ×
 
 #### Two load-bearing consequences
 
-1. `updateDoubleSidedUI()` relabels the first section *"Front of Card — …"* while the
-   beta is on. It used to assign `legend.textContent`, which would now **delete the
+1. `updateDoubleSidedUI()` relabels the first section *"Front of Card — …"* while
+   Double-sided is chosen. It used to assign `legend.textContent`, which would now **delete the
    heading element**; it writes to `#front-entry-heading` instead. `id="front-entry-legend"`
    stays on the legend — `tests/e2e/doubleSided.spec.ts` reads it — and the off-state text
-   is byte-identical, verified by toggling the beta on and off under probe.
+   is byte-identical, verified by switching between Single-sided and Double-sided under
+   probe.
 2. `initExpertSubmenus()` used to find each panel with `toggle.nextElementSibling`. The
    button is now the heading's only child (an APG requirement) and has **no next
    sibling**, so the handler resolves `aria-controls` instead — an attribute all six
@@ -2642,7 +2629,8 @@ value would have had to move four files together and risked exactly the cross-fi
 default drift this project treats as its worst bug class. The step is presentation, and
 0.05 keeps every previously-valid entry valid — it only *adds* legal positions. Note the
 30.75-vs-30.8 split is real and deliberate elsewhere: gear mode still hard-rejects
-anything but 30.8 × 52.0 (`app/geometry/gears.py`, `app/validation.py`).
+anything but 30.8 × 52.0 in Version 1 and 30.8 × 54.0 in Version 2 (`app/geometry/gears.py`,
+`app/validation.py`).
 
 ---
 
@@ -2809,7 +2797,10 @@ body::-webkit-scrollbar-thumb {
 
 ### 6.1 Action Button States
 
-The main action button has two states: **Generate** and **Download**.
+The main action button, `#action-btn`, always reads **Generate STL**; it is disabled and
+reads "Generating..." while a run is in flight. Since 2026-08-18 a finished run shows the
+**separate** `#download-stl-btn` ("Download STL") instead of turning the action button
+into a download button (STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md §8).
 
 **Since 2026-09-21 (programme sub-plan E, decisions D-8/D-9) Generate STL builds BOTH
 cylinders by default** and the separate Download STL button saves the combined pair file;
@@ -2820,8 +2811,10 @@ gone. Mechanics, strings and the state-machine interaction:
 STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md §8 and §15.
 
 ```javascript
-// Generate state (blue, prompts user to create STL)
+// Generate state. A changed setting invalidates the finished file, so its
+// Download STL button goes first, before the idempotence guard.
 function resetToGenerateState() {
+    hideDownloadButton();
     // Idempotent - see "Why this must be idempotent" below
     if (actionBtn.getAttribute('data-state') === 'generate' &&
         !actionBtn.disabled &&
@@ -2836,26 +2829,31 @@ function resetToGenerateState() {
     actionBtn.disabled = false;
 }
 
-// Download state (green, allows user to download generated STL)
+// Run finished. Despite the historical name, the action button stays on
+// Generate STL; the separate Download STL button appears (not mid pair run)
+// and the signed ready message is announced.
 function setToDownloadState() {
-    actionBtn.textContent = 'Download STL';
-    actionBtn.className = 'download-state';
-    actionBtn.setAttribute('data-state', 'download');
-    actionBtn.setAttribute('aria-label', 'Download generated STL file');
+    actionBtn.textContent = 'Generate STL';
+    actionBtn.className = 'generate-state';
+    actionBtn.setAttribute('data-state', 'generate');
+    actionBtn.setAttribute('aria-label', 'Generate STL file from entered text');
     actionBtn.style.opacity = '1';
     actionBtn.disabled = false;
+    if (pairRunInFlight) return;
+    if (downloadStlBtn) downloadStlBtn.style.display = '';
+    announceStatus('stl-ready', /* the signed ready message */);
 }
 ```
 
 **State Transitions:**
 ```
-User enters text → Button shows "Generate STL" (generate-state)
+User enters text → "Generate STL" (generate-state); no Download STL button
                          ↓
-User clicks "Generate STL" → Button shows "Generating..." (disabled)
+User clicks "Generate STL" → "Generating..." (disabled)
                          ↓
-Generation complete → Button shows "Download STL" (download-state)
+Generation complete → "Generate STL" again, and the separate "Download STL" button appears
                          ↓
-User modifies any input → Button returns to "Generate STL" (generate-state)
+User modifies any input → the Download STL button is hidden (resetToGenerateState)
 ```
 
 ### 6.2 Resetting on Settings Changes
@@ -3166,11 +3164,18 @@ The Help Modal provides business card guidance — with rule statements quoted v
 
 | Tab ID | Panel ID | Content |
 |--------|----------|---------|
-| `tab-quickstart` | `helpPanelQuickStart` | Getting started steps, basic layout |
-| `tab-businesscard` | `helpPanelBusinessCard` | BANA priority guide, space-saving strategies |
-| `tab-formatting` | `helpPanelFormatting` | Phone, email, web, name formatting tips |
-| `tab-examples` | `helpPanelExamples` | Real-world BANA examples |
-| `tab-resources` | `helpPanelResources` | Links to standards, credits |
+| `tab-whattoinclude` | `helpPanelWhatToInclude` | Choosing what to include: BANA's space limits and priorities, quoted verbatim (the default tab) |
+| `tab-formatting` | `helpPanelFormatting` | Phone, e-mail and web address rules (BANA, verbatim) and capitalization |
+| `tab-howtouse` | `helpPanelHowToUse` | Step-by-step use, the two Translate buttons, file names, key settings |
+| `tab-setup` | `helpPanelSetup` | The four embosser projects, double-sided cards, build files (S-M9) |
+| `tab-cylinder` | `helpPanelCylinder` | The two cylinders, their Surface Dimensions settings, text capacity, printing tips |
+| `tab-expertmode` | `helpPanelExpertMode` | What each Expert Mode submenu holds and when to use it |
+| `tab-examples` | `helpPanelExamples` | BANA's worked business-card examples with what to type |
+| `tab-resources` | `helpPanelResources` | Standards, guides and credits |
+
+Since the 2026-09-30 help review several sentences in these panels are drafts awaiting
+Brennen's sign-off (S-H4..S-H14 and the redrafted S-P2 label, each marked in an HTML
+comment beside it in `public/index.html`).
 
 ### 8.4 Accessibility Features
 
@@ -3185,11 +3190,11 @@ The Help Modal provides business card guidance — with rule statements quoted v
 ### 8.5 JavaScript API
 
 ```javascript
-// Open modal (default: quickstart tab)
-window.openHelpModal('quickstart');
+// Open the modal on its default tab, What to Include
+window.openHelpModal();               // same as openHelpModal('whattoinclude')
 
-// Open modal to specific tab
-window.openHelpModal('businesscard');
+// Open it on a given tab: the argument is the tab id without "tab-"
+window.openHelpModal('setup');        // the Embosser Setup tab
 
 // Switch tabs programmatically
 window.switchHelpTab('tab-formatting');
@@ -3203,7 +3208,8 @@ window.switchHelpTab('tab-formatting');
 |--------|-----|--------|
 | GitHub Link | — | Opens GitHub repo in new tab |
 | Help Button | `helpModalBtn` | Opens Help Modal |
-| Info Panel Link | — | Calls `window.openHelpModal('quickstart')` |
+| "Help me choose what to include →" (info panel) | — | Calls `window.openHelpModal('whattoinclude')` |
+| "Which setup should I choose? →" and "Open Embosser Setup help →" (Embosser setup) | — | Call `window.openHelpModal('setup')` |
 
 ### 8.7 CSS Classes
 
@@ -3330,6 +3336,7 @@ Low vision users benefit from enhanced depth perception:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.33 | 2026-09-30 | **Documentation review after the approved build.** The two-file warning is gone (`templates/index.html` was deleted on 2026-07-30). §4.8's table-of-contents entry, the accordion handler note and §4.11 follow the Embosser setup item: the heading outline re-measured at 7 / 15 / 15, three h2 sections and eight Expert Mode h3s, the legend example is Card sides. §6.1 describes the action button as it is since 2026-08-18 (always Generate STL, with a separate Download STL button). §8's tab table, JavaScript API and trigger buttons match the eight help tabs. The gear size note names both versions. |
 | 1.32 | 2026-09-29 | **§3.8: the Display settings drawer for phones** (Brennen's finding: on a phone the preview toolbar hid the model, 67 % of the viewer at 390 × 844). Portrait: a gear + "Display settings" button under the viewer opens the controls below it, never over the model. Phone landscape: a 44 px gear in the viewer's corner opens them along the bottom beside it, falling back to the old overlay when the app text size makes them too wide. Wide screens unchanged. Button words S-PD1 (DRAFT). Pinned by `tests/e2e/previewDisplayDrawer.spec.ts`. |
 | 1.31 | 2026-09-29 | **§4.8: Single-sided gives back the visual markers the double-sided lock displaced** (Brennen's finding from testing). The card-sides announcement gains S-M14 "Row Indicator Style set to visual." (DRAFT) when the style moved; a tactile style the user chose stays. Details in INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §7.2. |
 | 1.30 | 2026-09-28 | **Placeholder token and style.** `--text-placeholder` joins the three themes (#5b6472 / #b0b8c4 / #7fd67f: 5.72 / 5.15 / 9.8 to 1 on `--bg-input`; the browser's default placeholder grey was 2.3:1 on the light input surface) and `textarea::placeholder, input[type="text"]::placeholder` use it at opacity 1, italic for text boxes and upright for the braille boxes (`textarea[lang="und-Brai"]`). The text-entry samples themselves are in BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md §3. |

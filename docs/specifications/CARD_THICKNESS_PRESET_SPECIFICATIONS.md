@@ -2,7 +2,7 @@
 
 ## Document Purpose
 
-This document defines the Card Thickness Preset System, a frontend convenience feature that automatically adjusts all braille geometry parameters to optimal values for specific 3D printer layer heights (0.3mm and 0.4mm). This system ensures users can quickly configure appropriate settings for their printing capabilities without manually adjusting dozens of individual parameters.
+This document defines the Card Thickness Preset System, a frontend convenience feature that automatically adjusts all braille geometry parameters to values tuned for embossing a specific paper card-stock thickness (see the naming note below).
 
 > **Naming note (2026-08-19, correcting 2026-08-18).** The 0.3 / 0.4 numbers are the thickness of the **paper card stock** the cylinders emboss — the stock standard paper business cards come in. They are **not** the printer's layer height, and the control is labelled **Card Thickness**.
 >
@@ -54,8 +54,8 @@ This document defines the Card Thickness Preset System, a frontend convenience f
 ### Purpose
 
 The Card Thickness Preset System provides two optimized parameter configurations:
-- **0.4mm preset**: Optimized for 0.4mm layer height (standard FDM printing)
-- **0.3mm preset**: Optimized for 0.3mm layer height (finer detail FDM printing)
+- **0.4mm preset**: tuned for embossing 0.4 mm card stock (the default)
+- **0.3mm preset**: tuned for embossing 0.3 mm card stock
 
 ### Key Benefits
 
@@ -92,7 +92,7 @@ Frontend Only
 ### Source Code Location
 
 - `public/index.html`: the `THICKNESS_PRESETS` object (search for `const THICKNESS_PRESETS`)
-- `templates/index.html` is a deprecated stale copy and is not maintained
+- (the old `templates/index.html` copy was deleted on 2026-07-30; `public/index.html` is the only UI file)
 
 ### Complete Preset Values
 
@@ -228,9 +228,11 @@ flips the selector to Custom like every other preset-controlled dial.
 
 ### UI Location
 
-The Card Thickness preset selector (field name `card_thickness_preset`) appears **above** the Expert Mode toggle:
-- After the Braille Grade selection
-- Before the "Show Expert Mode" button
+Since 2026-09-24 (decision D-5) the Card Thickness preset selector (field name
+`card_thickness_preset`) is the **second Expert Mode submenu**, "Card Thickness"
+(`#card-thickness-submenu` / `#expert-panel-card-thickness`), after Cylinders to Generate;
+its ids, names and descriptions did not change (§7). Until then it sat on the main form,
+above the "Show Expert Mode" button.
 
 ### HTML Structure
 
@@ -246,12 +248,12 @@ The Card Thickness preset selector (field name `card_thickness_preset`) appears 
                 <input type="radio" name="card_thickness_preset" value="0.4" checked aria-describedby="thickness-04-desc">
                 <span class="radio-text">0.4mm</span>
             </label>
-            <span id="thickness-04-desc" class="sr-only">Preset settings optimized for 0.4mm layer height printing</span>
+            <span id="thickness-04-desc" class="sr-only">Preset settings optimized for embossing 0.4mm card stock. In the tactile style its cylinders carry one seam arrow per row.</span>
             <label class="radio-option">
                 <input type="radio" name="card_thickness_preset" value="0.3" aria-describedby="thickness-03-desc">
                 <span class="radio-text">0.3mm</span>
             </label>
-            <span id="thickness-03-desc" class="sr-only">Preset settings optimized for 0.3mm layer height printing</span>
+            <span id="thickness-03-desc" class="sr-only">Preset settings optimized for embossing 0.3mm card stock. In the tactile style its cylinders carry three evenly spaced seam arrows, so the preset can be felt.</span>
             <label class="radio-option">
                 <input type="radio" name="card_thickness_preset" value="custom" aria-describedby="thickness-custom-desc">
                 <span class="radio-text">Custom</span>
@@ -267,7 +269,7 @@ The Card Thickness preset selector (field name `card_thickness_preset`) appears 
 
 ### User Interaction Flow
 
-1. **User clicks 0.4mm or 0.3mm radio button**
+1. **User opens Expert Mode → Card Thickness and clicks the 0.4mm or 0.3mm radio button**
 2. **JavaScript applies preset immediately** (no confirmation needed)
 3. **All expert mode input fields update** (visible if expert mode is open)
 4. **LocalStorage saves selection** (persists across sessions)
@@ -541,7 +543,7 @@ The following UI elements are **NOT** controlled by presets:
 2. **Selection Controls**:
    - Language table dropdown
    - Shape type (Card/Cylinder)
-   - Plate type (Emboss/Counter)
+   - Cylinders to Generate (both / Cylinder A / Cylinder B)
    - Recess shape selection (Bowl/Cone radio) — set indirectly via the combined shape
      when a preset is explicitly applied (see above), never forced on page load
    - Indicator Letters toggle
@@ -559,16 +561,17 @@ changeable by the user afterward.
 
 ### Double-Sided Footprints Follow the Preset (2026-08-20)
 
-The double-sided beta's six `ds_*` footprint values are NOT in `THICKNESS_PRESETS`
-and have no dials, but the preset radio now selects which fixed package the generate
-handler sends when the beta is on: `DS_FOOTPRINTS['0.3']` is Option B (dot ⌀1.2 ×
+Double-sided's six `ds_*` footprint values are NOT in `THICKNESS_PRESETS`
+and have no dials, but the preset radio selects which fixed package the generate
+handler sends when Double-sided is chosen: `DS_FOOTPRINTS['0.3']` is Option B (dot ⌀1.2 ×
 0.8 mm tall, bowl ⌀1.3), `DS_FOOTPRINTS['0.4']` is the Q2 print-matrix winner (dot
 ⌀1.2 × 1.0 mm tall with dome ⌀1.0, bowl ⌀1.4). A 'custom' selection falls back to
 the last persisted preset, then '0.4'. Source-of-truth pairing:
 `app/geometry/interpoint.py` `DS_FOOTPRINTS_BY_PRESET`, diffed against the UI by
 `tests/test_smoke.py::test_ui_ds_footprints_match_interpoint_packages`. On the 0.4
-preset the crowding warning shows whenever the beta is on — by design; see
-INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §3, §7.3, §7.5.
+preset the crowding warning showed by design until 2026-08-23; the provisional 0.45 mm
+reliable line keeps its 0.468 mm gap quiet now (INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md
+§3, §7.3, §7.5).
 
 ### Tactile Seam-Arrow Layout Follows the Preset (2026-09-20)
 
@@ -826,6 +829,7 @@ The preset system is designed to **never fail visibly**:
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-09-30 | 1.12 | **Documentation review after the approved build.** The purpose and overview say card stock, not layer height; §3's UI location and interaction flow follow the 2026-09-24 move into Expert Mode (§7 already did); the HTML snippet carries the live sr-only descriptions; the deleted `templates/` copy and the plate radios are gone from the text; the double-sided note drops "beta" and records the quiet 0.4 package. |
 | 2026-09-24 | 1.11 | **The preset control moves into Expert Mode** (programme 2026-09-24, decision D-5): the second submenu, "Card Thickness", with the radios, ids, sr-only descriptions and the note unchanged and the legend no longer an h2 (a submenu is headed by its h3 button). §7 updated. Also pinned: neither preset names `indicator_mode` (`tests/test_smoke.py`), because Version 2 now defaults the Row Indicator Style to tactile (D-4) and a preset chosen afterwards must not undo it. |
 | 2025-12-07 | 1.0 | Initial creation. Documented Card Thickness Preset System including preset definitions, UI controls, application logic, localStorage persistence, and default behavior. |
 | 2025-12-07 | 1.1 | Documented critical bug fix: preset now applies on page load to ensure consistency between HTML defaults and preset values. Added dual event listener strategy (change + click). |
@@ -843,7 +847,7 @@ The preset system is designed to **never fail visibly**:
 
 ---
 
-**Document Version**: 1.10
+**Document Version**: 1.12
 **Created**: 2025-12-07
 **Purpose**: Specification for Card Thickness Preset System (frontend convenience feature)
 **Status**: ✅ Complete

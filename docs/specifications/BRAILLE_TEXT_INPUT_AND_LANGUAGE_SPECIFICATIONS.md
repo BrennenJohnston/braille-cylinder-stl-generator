@@ -44,7 +44,7 @@ This document specifies the "Enter Text for Braille Translation" text input syst
 
 ### Location in Application
 
-The text input and language selection controls are located at the top of the main form, in this order:
+The text input and language selection controls are located in the main form, below the Embosser setup item, in this order (the Back of Card section sits between the two boxes drawn here):
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -73,18 +73,6 @@ The text input and language selection controls are located at the top of the mai
 │  │  Default: English (UEB)...aligned with BANA guidance...    │  │
 │  └─────────────────────────────────────────────────────────────┘  │
 │                                                                   │
-│  ┌─ Row Indicator Style ──────────────────────── (cylinder) ──┐  │
-│  │  (•) Visual markers    ( ) Tactile seam arrow              │  │
-│  └─────────────────────────────────────────────────────────────┘  │
-│                                                                   │
-│  ┌─ Card Thickness ───────────────────────────────────────────┐  │
-│  │  (•) 0.4mm    ( ) 0.3mm    ( ) Custom                      │  │
-│  └─────────────────────────────────────────────────────────────┘  │
-│                                                                   │
-│  ┌─ Select Plate to Generate ─────────────────────────────────┐  │
-│  │  (•) Embossing Plate    ( ) Universal Counter Plate        │  │
-│  └─────────────────────────────────────────────────────────────┘  │
-│                                                                   │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -107,15 +95,12 @@ Options** submenu of Expert Mode; a short note in their old place points there.
    - Master language dropdown
    - Help text explaining default choice
 
-3. **Row Indicator Style** (fieldset with legend, cylinder only)
-   - Visual markers / Tactile seam arrow radio buttons
-   - See `RECESS_INDICATOR_SPECIFICATIONS.md` §4
-
-4. **Card Thickness** (fieldset with legend)
-   - 0.4mm / 0.3mm / Custom preset radio buttons
-
-5. **Select Plate to Generate** (fieldset with legend)
-   - Embossing Plate / Counter Plate radio buttons
+Between items 1 and 2 sits the **Back of Card — Enter Text for Braille Translation** fieldset,
+always on the page and disabled until Double-sided is chosen (see "Double-Sided:
+`back_lines`" below). The controls that used to follow Select Language are Expert Mode
+submenus now: **Row Indicator Style** and **Card Thickness** since 2026-09-24 (decision
+D-5; see `RECESS_INDICATOR_SPECIFICATIONS.md` §4 and `CARD_THICKNESS_PRESET_SPECIFICATIONS.md`),
+and "Select Plate to Generate" became **Cylinders to Generate** on 2026-09-21.
 
 ---
 
@@ -1204,21 +1189,21 @@ if original_lines and row_num < len(original_lines):
         rect_polygon = create_line_marker_polygon(...)
 ```
 
-### Double-Sided Beta: `back_lines` (cylinder only, toggle-gated)
+### Double-Sided: `back_lines` (cylinder only, sent only when Double-sided is chosen)
 
 **Source:** `public/index.html` (generate handler + `generateSTLClientSide`), `backend.py` (`/geometry_spec`)
 
-When the double-sided (interpoint) beta toggle is ON, the `/geometry_spec` request additionally carries:
+When Double-sided is chosen (the Card sides radios in Embosser setup), the `/geometry_spec` request additionally carries:
 
 - A **top-level** `back_lines` key beside `lines` — an array of braille Unicode strings padded to `grid_rows`, produced by running the Back of Card text through the **same `banaAutoWrap()` pass the front's Auto Placement uses** (same language table, same capitalization setting, same contracted-grade default as the front lines; newlines are hard row breaks). There is no `text` object on the wire; `text.back_lines` is only the saved-settings spelling in `settings.schema.json`.
 - The flat double-sided fields inside `settings`: `double_sided_enabled` (int 1), `interpoint_offset_x`, `interpoint_offset_y`, `ds_dot_base_diameter`, `ds_dot_base_height`, `ds_dot_dome_diameter`, `ds_dot_dome_height`, `ds_bowl_base_diameter`, `ds_bowl_depth` (dial strings; absent dials fall back to the signed-off Option B defaults).
 - **Both plates carry the front braille.** Cylinder B (plate_type `negative`) requests send the translated front lines too — in single-sided mode counter-plate requests send empty lines — because Cylinder B needs them to place its 1:1 paired recesses.
 
-The backend validates `back_lines` with the same gates as the front lines (`validate_lines`, `validate_braille_lines`, `validate_line_lengths`); the braille-charset check always runs for `back_lines` (back braille is real geometry on both plates, so there is no counter-plate skip). With the toggle OFF the request is byte-identical to the single-sided one.
+The backend validates `back_lines` with the same gates as the front lines (`validate_lines`, `validate_braille_lines`, `validate_line_lengths`); the braille-charset check always runs for `back_lines` (back braille is real geometry on both plates, so there is no counter-plate skip). With Single-sided chosen the request is byte-identical to the single-sided one of before the feature.
 
 The Back of Card source text lives in the `#back-text` textarea inside the Back of Card fieldset (always on the page since 2026-09-20, native-disabled until Double-sided is chosen under Embosser setup). Since 2026-09-21 the back also has the front's **Manual Placement**: one `#back_line{i}` input per row with its own `#back_line_lang_{i}` table, translated row by row and held to the cell count (fail closed, S-D1 (signed 2026-09-21)), with the tables sent as top-level `back_per_line_language_tables` (`text.back_languages` in the schema) — only for a manually placed back. In **Auto Placement** (the default) the paragraph below applies unchanged. Since 2026-08-17 it is **BANA auto-wrapped, not one row per newline**: `banaAutoWrap(backSrc, getAvailableColumns(), grid_rows, tableName)` wraps whole words across the available rows and treats each newline as a forced row break, exactly as the front does in Auto Placement. Because `banaAutoWrap()` always returns exactly `rows` lines, the padded-to-`grid_rows` wire shape is unchanged.
 
-Back text fails **closed** — the generate handler blocks with an error and sends no request — when the wrap needs more rows than the plate has, when a word cannot be divided per BANA, or when liblouis is unavailable. A live `role="status"` region (`#ds-back-overflow-warning`) runs the same wrap on a 250 ms debounce while the user types, gated on the toggle being on. The exact strings (signed off by Brennen 2026-08-17) and the live-warning wording live in INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §7.4; full geometry semantics belong to that document too.
+Back text fails **closed** — the generate handler blocks with an error and sends no request — when the wrap needs more rows than the plate has, when a word cannot be divided per BANA, or when liblouis is unavailable. A live warning box (`#ds-back-overflow-warning`, announced through `#a11y-status` since 2026-08-18) runs the same wrap on a 250 ms debounce while the user types, only while Double-sided is chosen. The exact strings (signed off by Brennen 2026-08-17) and the live-warning wording live in INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §7.4; full geometry semantics belong to that document too.
 
 ---
 
@@ -1404,11 +1389,11 @@ auto warning box) so the two warnings can never disagree.
 |-----|---------|--------|
 | `braille_prefs_placement_mode` | Placement mode toggle | `"auto"` or `"manual"` |
 | `braille_prefs_language_table` | Master language selection | Table filename |
-| `braille_prefs_plate_type` | Plate type selection | `"positive"` or `"negative"` |
+| `braille_prefs_plate_type` | Cylinders to Generate (the key kept its old name; old `positive` / `negative` values are honoured) | `"both"` (default), `"positive"` or `"negative"` |
 | `braille_prefs_shape_type` | Output shape | `"card"` or `"cylinder"` |
 | `braille_prefs_grid_rows` | Number of rows | Integer string |
 | `braille_prefs_grid_columns` | Number of columns | Integer string |
-| `braille_prefs_double_sided_enabled` | Double-sided beta toggle | `"1"` or `"0"` |
+| `braille_prefs_double_sided_enabled` | The Card sides choice (the retired toggle's key, so a saved choice carried over) | `"1"` (Double-sided) or `"0"` |
 | ~~`braille_prefs_back_text`~~ | ~~Back of Card source text~~ — **RETIRED 2026-09-28** (see the privacy rule below); scrubbed on every load and by Reset | — |
 | `braille_prefs_back_placement_mode` | Back of Card placement mode (2026-09-21) | `"auto"` or `"manual"` |
 
@@ -1946,8 +1931,9 @@ None required. All implementations match the specification exactly.
 
 ---
 
-*Document Version: 1.9*
-*Last Updated: 2026-09-28 - Three of Brennen's user-testing findings. (1) Privacy: no text or braille input is persisted any more - `braille_prefs_back_text` retired and scrubbed (Section 11's rule). (2) Generate fills the Braille (Unicode) field with the translation it embosses, front and back, announced from the field's live region (D-U4); a pristine field is now also emptied when an effective translation setting changes (Section 6.3; S-BF1 / S-BF2 signed). (3) Placeholders: the text box carries the sample S-P3 "Type the text you want in braille here.", the back box its shortened sample, and the braille boxes their exact translations S-P4 / S-P5, styled with the new `--text-placeholder` token (Section 3). All five strings signed by Brennen 2026-09-28.*
+*Document Version: 1.10*
+*Last Updated: 2026-09-30 - Documentation review after the approved build: Section 1 shows the main form as it is (Row Indicator Style and Card Thickness are Expert Mode submenus since 2026-09-24, Cylinders to Generate since 2026-09-21; the Back of Card section sits between the boxes); the `back_lines` section names the Card sides choice and the `#a11y-status` announcement; the storage table describes `braille_prefs_plate_type` (Cylinders to Generate) and `braille_prefs_double_sided_enabled` (the Card sides choice).*
+*Previous: 1.9, 2026-09-28 - Three of Brennen's user-testing findings. (1) Privacy: no text or braille input is persisted any more - `braille_prefs_back_text` retired and scrubbed (Section 11's rule). (2) Generate fills the Braille (Unicode) field with the translation it embosses, front and back, announced from the field's live region (D-U4); a pristine field is now also emptied when an effective translation setting changes (Section 6.3; S-BF1 / S-BF2 signed). (3) Placeholders: the text box carries the sample S-P3 "Type the text you want in braille here.", the back box its shortened sample, and the braille boxes their exact translations S-P4 / S-P5, styled with the new `--text-placeholder` token (Section 3). All five strings signed by Brennen 2026-09-28.*
 *Previous: 1.8, 2026-09-21 - Back of Card parity (programme sub-plan D, decision D-11): Section 2 records the back's own placement toggle, Section 8's double-sided subsection the Manual Placement rows with per-line tables (`back_per_line_language_tables` / `text.back_languages`, sent only for a manually placed back), and the Section 11 table the `braille_prefs_back_placement_mode` key. Strings S-D1 and S-D3 signed 2026-09-21.*
 *Previous: 1.7, 2026-08-23 - `lang="und-Brai"` on the braille field investigated and KEPT (new note in Section 8 UI Structure). NVDA says "und (not supported)" on every visit - 17 times in a 30-minute walkthrough - and it is kept anyway: the tag is correct, nothing in the code reads it, the announcement is a user-configurable NVDA setting, and removing it would trade a switchable annoyance for an untested risk to braille-display users. Brennen decided after the investigation; the note records that a braille display, not a speech test, is what would settle it. No markup changed.*
 *Previous: 1.6, 2026-08-22 - Two descriptions stop being spoken in full, and no word of either changed. (1) The language combobox is described by its LAST SENTENCE only - `id="language-help"` moved onto a `<span>` around "Switch to uncontracted (grade 1) only if your reader has asked for it." (13 w), and the BANA rationale before it stays in the same div, visible and unwired. Its dropped opening, "Default: English (UEB), United States - contracted (grade 2)", is exactly what the combobox announces as its selected option, so keeping it wired restated the label. Measured **71 -> 13 words**; it had been spoken 18 times in a 34-minute NVDA session (audit F-D, decision D2 step 2). (2) The **Disabled** capitals radio no longer carries `aria-describedby`, and the orphan `#caps-disabled-desc` span is gone with it: its text duplicated BOTH the live `#caps-warning` and the VISIBLE `.grade-note` beneath the radios, which is unchanged, so nothing left the page (audit F-J, decision D6). `#caps-enabled-desc` is deliberately still wired. The braille-field element table now records that `#braille-unicode-help` is a span around its first sentence, and that this textarea's budget is the ceiling minus `#braille-unicode-status`. Every HTML sample here updated - they would otherwise teach the old markup. Keepers approved by Brennen as drafts before the edit (FD-25). Pattern: `UI_INTERFACE_CORE_SPECIFICATIONS.md` 4.13.*

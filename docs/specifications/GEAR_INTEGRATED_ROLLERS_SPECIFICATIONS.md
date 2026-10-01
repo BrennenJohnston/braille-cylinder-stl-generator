@@ -13,9 +13,9 @@ set, vendored as binary assets and never reconstructed. Everything in this docum
 was verified against the merged code on 2026-08-24; where a number appears, the file
 that owns it is named.
 
-**Status:** ✅ BETA (Created 2026-08-24)
-**Toggle:** `gear_rollers.enabled` (schema) / `gear_rollers_enabled` (runtime), default
-false
+**Status:** ✅ Released 2026-09-20 (Created 2026-08-24)
+**Choice:** the Gears radio group (Standard / Simplified) in Embosser setup; on the wire
+`gear_rollers.enabled` (schema) / `gear_rollers_enabled` (runtime), default false
 **Scope:** cylinders only, both the single-sided and double-sided flows
 
 ---
@@ -188,8 +188,8 @@ Brennen's deployment verdict the same day returned the default to the
 gear model pairs with — so **gear mode passes S7 on untouched dials again**.
 The 54 mm card-shelf barrel is Embosser Version 2 only (forced by its preset
 overrides). The gears themselves never moved: they are baked at fixed z (see
-5.1). Height still tells the gears BETA (52) apart from Embosser Version 2
-(54); both use the 30.8 diameter.
+5.1). Height still tells a Version 1 roller (52) from a Version 2 one (54), with
+or without fixed gears; both use the 30.8 diameter.
 
 ### 5.1 Why a rejection and not a warning
 
@@ -245,7 +245,9 @@ is not a spec-frame feature, and Phase 01 baked its placement into the bytes.
 ### 6.2 The barrel is solid — and an empty `polygon_points` is not enough
 
 Decision D-2 forces the barrel solid while gears are on, because the blind bores mean a
-cutout would seal a cavity nothing can reach or drain.
+cutout would seal a cavity nothing can reach or drain. The axis cuts of §6.5 (Version 2
+since 2026-09-24, Version 1 since 2026-09-30) add a 2 mm vent joining the two gear
+sockets; the barrel around it stays solid.
 
 **Emitting `polygon_points: []` does NOT achieve that.** With no polygon,
 `createCylinderShellManifold` falls through to hollowing by wall thickness. Measured in
@@ -350,7 +352,7 @@ On the **counter** plate a geared cylinder exports as exactly one watertight bod
 On the **embossing** plate the roller body is one watertight solid (49,738.478 mm³, same
 bounds) **plus one small separate body per raised braille dot** — the dome of each dot,
 0.614 mm³ each. That is the long-standing second tangency inside every rounded dot: it is
-present identically with gears off, it predates this beta, gears cannot fix it, and it is
+present identically with gears off, it predates this feature, gears cannot fix it, and it is
 tracked separately. Tests assert around it deliberately: exactly one body spans the full
 72 mm, no body has negative volume, and every other body must look like a known dome
 (under 1 mm³, watertight, entirely outside the barrel radius). A bare "one body" assertion
@@ -708,6 +710,7 @@ golden pairs regenerating unchanged, prove it).
 
 | Date | Change |
 |---|---|
+| 2026-09-30 | **Documentation review after the approved build.** The header's status and choice lines name the released Gears radio group; §5 tells a Version 1 roller (52) from a Version 2 one (54) instead of "the gears BETA"; §6.2 notes the §6.5 vent beside the solid barrel; §9's dome note says "this feature". |
 | 2026-09-30 | **The Version 1 fused roller is vented and its sockets self-supporting (Brennen's approved plan).** New §6.5: the measured socket table, a ⌀2 axis vent and a 45° cone at each socket's blind end, cut last, each cone 0.02 mm inside the taper so the pin's chamfer, key bore and taper are untouched (0.01 was planned; the taper's facets made it clip by up to 0.0004 mm). §3, §6 and §6.1 updated for the third spec key and the appended CSG step. No barrel chamfer. The Version 1 ready message gains S-P1. Version 1 golden pair regenerated. |
 | 2026-09-28 | **The Version 1 gears are the Version 1 embosser's (Brennen's print test; decisions D-G1, D-G2 in the 2026-09-28 research folder).** §2 gains the source paragraph: the assets are now the gear rings of his four Version 1 holders (`A1/A2/B1/B2 v6`), cut by an exact Manifold intersection and seated on the barrel end, replacing the 2026-08-24 sample set whose Cylinder B gears carry the newer design's ⌀9 bore. §2's counts, §3's bores row and §4's seat note updated; teeth, transform constants, the 72 mm roller, the weld rings and S7 unchanged. Tooth counting in the derivation and the tests moved to the chevron apex. The V1 fused golden pair regenerated (the other six pairs byte-identical); the deep test compares the roller with the holders' rings; the OpenSCAD `assets/gears_a/b.stl` regenerated. |
 | 2026-09-25 | **Documentation pass.** §11.8's print-test line records the 2026-09-24 pass and the unprinted top cone. |

@@ -3417,7 +3417,8 @@
                            task. Removed on Brennen's call (FD-27a); the
                            destination is still reachable from the banner and
                            from the help modal. -->
-                      <p>Generates custom braille embossing plates for cylinders such as labels and containers.</p>
+                      <!-- S-H14, DRAFT 2026-09-30 (help review): was "Generates custom braille embossing plates for cylinders such as labels and containers." The label use stays as the secondary use of Brennen's README line (2026-07-27). Reword only with his sign-off. -->
+                      <p>Generates the two braille cylinders of a hand-operated braille card embosser. They also work on their own as tactile labels.</p>
 
                       <p><strong>First Step: Decide What to Include</strong></p>
                       <p>Braille space is limited. Not everything from print will fit.</p>
@@ -3546,9 +3547,9 @@
                                   </div>
                                   <!-- S-M7, signed 2026-09-21 (16 words). -->
                                   <div class="grade-note" id="double-sided-note" style="margin-top: 6px; font-size: 0.85em;">Double-sided embosses both faces of the card in one pass and uses the tactile row markers.</div>
-                                  <!-- User-facing wording signed off by Brennen (2026-08-16); visible only. -->
+                                  <!-- User-facing wording signed off by Brennen (2026-08-16); visible only. S-M15, DRAFT 2026-09-30 (help review): "Turning this on shows the Back of Card section below" became "Choosing it makes the Back of Card section below active" - Card sides is a radio since D-7 and the section is always shown, disabled while single-sided. Reword only with his sign-off. -->
                                   <div class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
-                                      Embosses both sides of the card in one pass: <strong>Cylinder A</strong> (the embossing plate) carries the front's raised dots plus recesses for the back, and <strong>Cylinder B</strong> (the counter plate) carries the back's raised dots plus recesses for the front, offset diagonally by 1.25 mm so the two sides never collide. Turning this on shows the Back of Card section below and locks the Row Indicator Style to the tactile seam arrow. Generate each cylinder with the same settings.
+                                      Embosses both sides of the card in one pass: <strong>Cylinder A</strong> (the embossing plate) carries the front's raised dots plus recesses for the back, and <strong>Cylinder B</strong> (the counter plate) carries the back's raised dots plus recesses for the front, offset diagonally by 1.25 mm so the two sides never collide. Choosing it makes the Back of Card section below active and locks the Row Indicator Style to the tactile seam arrow. Generate each cylinder with the same settings.
                                   </div>
                                   <!-- Live same-surface crowding warning (the ids and ARIA are
                                        load-bearing for checkDoubleSidedGap()). Announced through
@@ -4294,8 +4295,9 @@
                                       <div style="margin-top: 6px;" id="cylinder-seam-offset-row">
                                           <label for="seam_offset_deg">Seam Offset (degrees):</label>
                                           <input type="number" id="seam_offset_deg" name="seam_offset_deg" value="355" step="1" min="0" max="360" style="width: 110px;" autocomplete="off">
+                                          <!-- S-SO1, DRAFT 2026-09-30 (help review): the old note said the braille turns; seam_offset_deg turns only the polygonal cutout (app/geometry_spec.py). Reword only with Brennen's sign-off. -->
                                           <div class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
-                                              Rotates the starting position of braille text around the cylinder
+                                              Turns the polygonal cutout around the cylinder's axis. The braille does not move.
                                           </div>
                                       </div>
                                       <!-- Announced through #a11y-status, not from here: hidden
@@ -12463,7 +12465,7 @@
                         Verbatim from the BANA Business Cards Fact Sheet (approved March 2024).
                         Source of truth: docs/guides/_bana_business_cards_verified_source.md
                         If BANA publishes a revision, update the verified-source file first,
-                        then propagate to this panel, templates/index.html, and the Business Card Guide.
+                        then propagate to this panel and the Business Card Guide.
                     -->
                     <!-- What to Include Panel (BANA-focused content selection) -->
                     <div class="help-panel" role="tabpanel" aria-labelledby="tab-whattoinclude" id="helpPanelWhatToInclude">
@@ -12473,7 +12475,8 @@
                             <strong>The most important decision:</strong> Braille takes far more space than print. You cannot include everything — you must prioritize.
                         </div>
 
-                        <p><em>BANA wrote this guidance for printed business cards, and it transfers directly to the <strong>cylinders</strong> (jars, bottles, containers) this tool produces: a cylinder row holds about as many cells as a card line, so the same space constraints and prioritization strategies apply.</em></p>
+                        <!-- S-H4, DRAFT 2026-09-30 (help review): replaces the jars-and-bottles framing - the cylinders are the embosser's rollers. Reword only with Brennen's sign-off. -->
+                        <p><em>BANA wrote this guidance for business cards, and business cards are what this tool's cylinders emboss: each braille row on the cylinders becomes one line on the card, so the same space limits and priorities apply.</em></p>
 
                         <h4>The Core Question</h4>
                         <p class="help-quote-block">
@@ -12576,7 +12579,8 @@
 
                         <p><strong>First:</strong> Decide <button type="button" class="btn-link" onclick="window.switchHelpTab('tab-whattoinclude')">what information to include</button>. Cylinder space is limited just like cards.</p>
 
-                        <p>Cylinders let you create braille labels that wrap around curved surfaces like bottles, jars, and containers.</p>
+                        <!-- S-H5, DRAFT 2026-09-30 (help review): replaces the braille-label framing; its last sentence is Brennen's own README line (2026-07-27), so the label use stays as the secondary use he wrote it as. Reword only with his sign-off. -->
+                        <p>The two cylinders are the rollers of the braille card embosser. <strong>Cylinder A</strong> (the embossing plate) carries the raised dots and <strong>Cylinder B</strong> (the counter plate) carries the matching recesses. The card is embossed as it passes between them. You can also use the cylinders on their own as tactile labels for jars, bottles, and containers.</p>
 
                         <h4>Key Cylinder Parameters</h4>
                         <table class="help-table">
@@ -12584,24 +12588,19 @@
                                 <tr><th>Parameter</th><th>What It Controls</th></tr>
                             </thead>
                             <tbody>
-                                <tr><td><strong>Outer Diameter</strong></td><td>The diameter of the object you're labeling (in mm). Measure around the widest part where the label will go.</td></tr>
-                                <tr><td><strong>Cylinder Height</strong></td><td>How tall the braille surface will be. This determines how many rows of braille can fit.</td></tr>
-                                <tr><td><strong>Wall Thickness</strong></td><td>Thickness of the cylinder wall. Thicker = sturdier but uses more material.</td></tr>
-                                <tr><td><strong>Polygon Cutout</strong></td><td>Number of flat sides for the inner shape. Higher numbers = smoother curve but larger file size.</td></tr>
-                                <tr><td><strong>Seam Offset</strong></td><td>Rotates where the "seam" (gap) in the cylinder appears. Adjust so the seam doesn't interrupt your text.</td></tr>
+                                <!-- S-H6, DRAFT 2026-09-30 (help review): the rows name the real Surface Dimensions dials. Wall Thickness is gone (there is no such dial) and Seam Offset turns only the polygonal cutout (app/geometry_spec.py). Reword only with Brennen's sign-off. -->
+                                <tr><td><strong>Cylinder Diameter</strong></td><td>The roller's outside diameter in mm. The Card Thickness presets set 30.8 mm, the size the embosser was built for.</td></tr>
+                                <tr><td><strong>Cylinder Height</strong></td><td>The roller's length in mm: 52 for Version 1, and 54 for Version 2, which adds a 1 mm card shelf at each end.</td></tr>
+                                <tr><td><strong>Polygonal Cutout</strong></td><td>Version 1 with Standard gears only: the shaped hole through the cylinder, set by its radius and number of points. The presets set both. Version 2 and Simplified-gear cylinders do not use it.</td></tr>
+                                <tr><td><strong>Seam Offset</strong></td><td>Version 1 only: turns the polygonal cutout around the cylinder's axis, in degrees. The braille does not move.</td></tr>
                             </tbody>
                         </table>
-
-                        <h4>Measuring Your Container</h4>
-                        <ol>
-                            <li><strong>Outer diameter:</strong> Wrap a string around the container, mark where it meets, then measure the string. Divide by 3.14159 (π) to get diameter.</li>
-                            <li><strong>Height:</strong> Measure the flat area where braille will go. Leave margin at top and bottom.</li>
-                        </ol>
 
                         <h4>Text Capacity</h4>
                         <p>Each row holds a fixed number of braille cells:</p>
                         <ul>
-                            <li>By default, each row holds <strong>13 braille cells of text</strong> (2 additional cells are reserved for the indicator letter and the triangle alignment indicator). With indicator letters turned off, up to <strong>14 cells</strong> are available — the alignment triangles are always included.</li>
+                            <!-- S-H7, DRAFT 2026-09-30 (help review): the reserved cells belong to the Visual style only; the tactile sentence borrows signed S-T3's words. Reword only with Brennen's sign-off. -->
+                            <li>By default, each row holds <strong>13 braille cells of text</strong>. In the Visual markers style, 2 more cells are reserved for the indicator letter and the triangle alignment indicator; with indicator letters turned off, up to <strong>14 cells</strong> are available — the alignment triangles are always included. The Tactile seam arrow style reserves no marker cells, but 13 text cells is the most that fits a 90 mm card measured from the alignment arrow.</li>
                             <li>Cells are spaced 6.5mm apart, so the default 13-cell layout needs about 91mm of circumference — the default 30.8mm-diameter cylinder (about 96.8mm around) fits it with room for the seam gap.</li>
                             <li>A larger diameter gives more circumference, which adds margin around the seam rather than more cells per row.</li>
                             <li>In the <strong>Tactile seam arrow</strong> style, the 0.4mm card thickness preset places one arrow per row and the 0.3mm preset places three evenly spaced arrows, so you can feel which preset a cylinder was made for — and a 0.3mm cylinder will not nest with a 0.4mm one.</li>
@@ -12610,9 +12609,8 @@
                         <h4>Tips for Best Results</h4>
                         <ul>
                             <li><strong>Print orientation:</strong> Print cylinders standing upright for best dot quality</li>
-                            <!-- S-P2, signed off by Brennen 2026-09-28 (the shorter of three drafts; decision D-7); reword only with his sign-off. -->
-                            <li><strong>Fused Version 2 rollers:</strong> print with the bottom gear on the build plate and supports off. They lift off the embosser's peg without a vacuum.</li>
-                            <li><strong>Test fit:</strong> Print a small section first to verify the diameter matches your container</li>
+                            <!-- S-P2, signed off by Brennen 2026-09-28 (the shorter of three drafts; decision D-7) with the label "Fused Version 2 rollers:". DRAFT 2026-09-30 (help review): the label now also covers the Version 1 Simplified-gear roller, which got the same vent and self-supporting sockets on 2026-09-30; the sentence is unchanged. Reword only with his sign-off. -->
+                            <li><strong>Simplified-gear rollers:</strong> print with the bottom gear on the build plate and supports off. They lift off the embosser's peg without a vacuum.</li>
                             <!-- Seam placement bullet reworded and signed off by Brennen (2026-09-21); reword only with his sign-off. -->
                             <li><strong>Seam placement:</strong> Leave your slicer's seam mode on Aligned; the seam channel does the rest</li>
                             <!-- S-C4, reworded for tactile mode and signed off by Brennen (2026-09-21); reword only with his sign-off. -->
@@ -12650,13 +12648,22 @@
                             <li><strong>Translate to Braille ↓</strong> fills the braille box from the text above it.</li>
                             <li><strong>Translate to Text ↑</strong> reads pasted braille back into English, so you can check braille that came from somewhere else.</li>
                         </ul>
-                        <p>Whenever the braille box has content, <strong>those exact cells are what get embossed</strong> — clear it to go back to translating the text above.</p>
+                        <!-- S-H8, DRAFT 2026-09-30 (help review): adds the Generate fill and the automatic clearing of 2026-09-28 (D-U2). Reword only with Brennen's sign-off. -->
+                        <p>Whenever the braille box has content, <strong>those exact cells are what get embossed</strong>. <strong>Generate STL</strong> also fills the box with the braille it embosses. Until you edit the box, it empties itself when you change the text or a translation setting; once you have edited it, clear it yourself to go back to translating the text above.</p>
 
                         <h4>File Names</h4>
-                        <p>Downloads are named <code>Embossing_Cylinder_{preset}_{name}.stl</code> and <code>Counter_Cylinder_{preset}_{name}.stl</code>, where <code>{preset}</code> is the selected card thickness and <code>{name}</code> is the first word of your text. Paste braille with no text and the name is back-translated from the braille for you.</p>
+                        <!-- S-H9, DRAFT 2026-09-30 (help review): adds the pair file (the default since 2026-09-21), the double-sided names and the Geared_ / V2_ segments. The file names themselves never change (training videos); only this description is new. Reword only with Brennen's sign-off. -->
+                        <p>Downloads are named from the cylinders, the selected card thickness (<code>{preset}</code>) and the first word of your text (<code>{name}</code>):</p>
+                        <ul>
+                            <li><code>Cylinder_Pair_{preset}_{name}.stl</code> holds both cylinders. This is the default.</li>
+                            <li><code>Embossing_Cylinder_{preset}_{name}.stl</code> or <code>Counter_Cylinder_{preset}_{name}.stl</code> holds the one cylinder chosen under <strong>Cylinders to Generate</strong>. For a double-sided card they are <code>Cylinder_A_{preset}_{name}.stl</code> and <code>Cylinder_B_{preset}_{name}.stl</code>.</li>
+                            <li><code>Geared_</code> and then <code>V2_</code> are added before the preset for Simplified gears and for Version 2, for example <code>Cylinder_Pair_Geared_V2_0.4_jane.stl</code>.</li>
+                        </ul>
+                        <p>Paste braille with no text and the name is back-translated from the braille for you.</p>
 
                         <h4>Current Availability</h4>
-                        <p><strong>Cylinder shapes</strong> are available for labeling bottles, jars, and containers.</p>
+                        <!-- S-H10, DRAFT 2026-09-30 (help review): replaces the bottles-and-jars sentence. Reword only with Brennen's sign-off. -->
+                        <p>The tool makes <strong>cylinders</strong> only: the two rollers of the braille card embosser chosen under <strong>Embosser setup</strong>.</p>
 
                         <h4>Key Settings</h4>
                         <table class="help-table">
@@ -12665,7 +12672,8 @@
                             </thead>
                             <tbody>
                                 <tr><td><strong>Placement Mode</strong></td><td>Auto Placement (handles wrapping)</td></tr>
-                                <tr><td><strong>Row Indicator Style</strong></td><td>Visual markers (default); choose Tactile seam arrow to free the marker cells and give a blind user a touch alignment point</td></tr>
+                                <!-- S-H11, DRAFT 2026-09-30 (help review): adds the Version 2 default (D-4, 2026-09-24), the double-sided lock and where the setting lives. Reword only with Brennen's sign-off. -->
+                                <tr><td><strong>Row Indicator Style</strong></td><td>Visual markers (the Version 1 default) or Tactile seam arrow (the Version 2 default, and always used for double-sided cards). Tactile frees the marker cells and gives a blind user a touch alignment point. Under <strong>Row Indicator Style</strong> in Expert Mode</td></tr>
                                 <tr><td><strong>Capitalized Letters</strong></td><td>Enabled (default); disable it under <strong>Translation Options</strong> in Expert Mode to save one cell per capital, which is BANA's first suggestion when a name will not fit</td></tr>
                                 <tr><td><strong>Number Signs</strong></td><td>One number sign per number (default) — standard UEB; choose the repeating option only to match non-standard online translators. Also under <strong>Translation Options</strong></td></tr>
                                 <tr><td><strong>Language</strong></td><td>English (UEB) contracted, grade 2 (default) — what BANA's Business Cards Fact Sheet uses, and it fits more into each row</td></tr>
@@ -12681,7 +12689,7 @@
                         Verbatim from the BANA Business Cards Fact Sheet (approved March 2024).
                         Source of truth: docs/guides/_bana_business_cards_verified_source.md
                         If BANA publishes a revision, update the verified-source file first,
-                        then propagate to this panel, templates/index.html, and the Business Card Guide.
+                        then propagate to this panel and the Business Card Guide.
                     -->
                     <!-- Formatting Rules Panel -->
                     <div class="help-panel" role="tabpanel" aria-labelledby="tab-formatting" id="helpPanelFormatting" hidden>
@@ -12714,8 +12722,9 @@
                         <h4>Capitalization</h4>
                         <p>Each capital letter in braille adds a capitalization indicator (1 extra cell). The <strong>Capitalized Letters</strong> toggle, in the <strong>Translation Options</strong> submenu of Expert Mode, controls how capitals are handled:</p>
                         <ul>
-                            <li><strong>Disabled (default):</strong> Text is automatically converted to lowercase before translation. You can type normally — capitals are converted for you.</li>
-                            <li><strong>Enabled:</strong> Capital letters are preserved, adding indicator cells to the braille output.</li>
+                            <!-- S-H12, DRAFT 2026-09-30 (help review): the default is Enabled (capitalize_enabled is checked), so the two items swapped "(default)" and order; their sentences are unchanged. Reword only with Brennen's sign-off. -->
+                            <li><strong>Enabled (default):</strong> Capital letters are preserved, adding indicator cells to the braille output.</li>
+                            <li><strong>Disabled:</strong> Text is automatically converted to lowercase before translation. You can type normally — capitals are converted for you.</li>
                         </ul>
                         <p><strong>Why disable capitals?</strong> Saves approximately 1 braille cell per capital letter. Braille readers understand this is standard practice for space-limited applications like labels and business cards.</p>
 
@@ -12773,7 +12782,7 @@
                                 </tr>
                                 <tr>
                                     <td><strong>Surface Dimensions</strong></td>
-                                    <!-- S-H3, DRAFT 2026-09-25: the Version 2 clause added to this signed row; reword only with Brennen's sign-off. -->
+                                    <!-- S-H3, signed off by Brennen 2026-09-28 as drafted on 2026-09-25 (the Version 2 clause added to this signed row); reword only with his sign-off. -->
                                     <td>Cylinder diameter, height, polygonal cutout, seam offset, the slicer seam channel switch and, in Version 2, the four gear key clearance dials</td>
                                 </tr>
                                 <tr>
@@ -12787,7 +12796,8 @@
                         <ul>
                             <li><strong>Preview translations:</strong> Always preview before generating to catch warnings about text length or character issues</li>
                             <li><strong>Capitals and numbers:</strong> Open <strong>Translation Options</strong> to keep capital letters, or to repeat the number sign after each period</li>
-                            <li><strong>Custom cylinder sizes:</strong> Adjust diameter and height to match your specific container</li>
+                            <!-- S-H13, DRAFT 2026-09-30 (help review): replaces "match your specific container". Reword only with Brennen's sign-off. -->
+                            <li><strong>Cylinder size:</strong> The Card Thickness presets set the diameter and height your embosser was built for. With Simplified gears that size is fixed</li>
                             <li><strong>Fine-tune spacing:</strong> Modify cell and line spacing for non-standard applications</li>
                             <li><strong>Printer calibration:</strong> Adjust dot dimensions if your 3D printer produces dots that are too large or small</li>
                         </ul>
@@ -12860,43 +12870,13 @@ f 505.312.4225</pre>
                             <p><strong>Result:</strong> 4 lines.</p>
                         </div>
 
-                        <h4>Cylinder Examples</h4>
-
-                        <h4>Example 4: Spice Jar Label</h4>
-                        <div class="example-box">
-                            <p><strong>Goal:</strong> Label a spice jar (diameter ~55mm) so it can be identified by touch.</p>
-                            <p><strong>Decision:</strong> A single word is all that's needed — just the spice name.</p>
-                            <p><strong>Type:</strong></p>
-                            <pre>cinnamon</pre>
-                            <p><strong>Result:</strong> 1 row, fits easily. Cylinder diameter set to 55mm.</p>
-                        </div>
-
-                        <h4>Example 5: Medicine Bottle</h4>
-                        <div class="example-box">
-                            <p><strong>Goal:</strong> Label a prescription bottle (diameter ~40mm) with drug name and dosage.</p>
-                            <p><strong>Decision:</strong> Two key pieces of info — the medication name and dosage.</p>
-                            <p><strong>Type:</strong></p>
-                            <pre>amoxicillin
-500mg</pre>
-                            <p><strong>Result:</strong> 2 rows. "amoxicillin" is at most 11 braille cells (fewer once contracted), within the default 13-cell row; abbreviate to "amox" if you add more per-row content.</p>
-                        </div>
-
-                        <h4>Example 6: Water Bottle ID Tag</h4>
-                        <div class="example-box">
-                            <p><strong>Goal:</strong> Identify a personal water bottle (diameter ~75mm) at a shared workplace.</p>
-                            <p><strong>Decision:</strong> Name plus one contact method. Omit organization — not needed to identify a personal item.</p>
-                            <p><strong>Type:</strong></p>
-                            <pre>j. smith
-555.867.5309</pre>
-                            <p><strong>Result:</strong> 2 rows on a 75mm cylinder (~13 cells per row). Initials save space.</p>
-                        </div>
+                        <!-- 2026-09-30 help review: the three jar, bottle and water-bottle "Cylinder Examples" were removed. The cylinders are the embosser's rollers, not labels, and their 55/40/75 mm diameters would not fit it. -->
 
                         <p><a href="https://github.com/BrennenJohnston/braille-cylinder-stl-generator/blob/main/docs/guides/BUSINESS_CARD_TRANSLATION_GUIDE.md#worked-examples--bana-braille--what-to-type" target="_blank" rel="noopener noreferrer">See "what to type" hints for all nine BANA examples in the full guide →</a></p>
                         <p><a href="https://www.brailleauthority.org/sites/default/files/2024-10/Business%20Cards%20Fact%20Sheet.pdf" target="_blank" rel="noopener noreferrer">See BANA's original worked examples in the Fact Sheet (PDF) →</a></p>
-                        <p><a href="https://github.com/BrennenJohnston/braille-cylinder-stl-generator/blob/main/docs/guides/CYLINDER_GUIDE.md#worked-examples" target="_blank" rel="noopener noreferrer">See more cylinder examples in the full guide →</a></p>
 
                         <div class="help-tab-sources">
-                            <p><small><strong>Sources:</strong> Business card examples take the content decisions from the <a href="https://www.brailleauthority.org/sites/default/files/2024-10/Business%20Cards%20Fact%20Sheet.pdf" target="_blank" rel="noopener noreferrer">BANA <em>Business Cards Fact Sheet</em></a> (approved March 2024); the braille shown alongside them is BANA's own, quoted verbatim from the PDF. Cylinder examples are based on <a href="https://www.brailleauthority.org/size-and-spacing-braille-characters" target="_blank" rel="noopener noreferrer">BANA <em>Size and Spacing of Braille Characters</em></a>.</small></p>
+                            <p><small><strong>Source:</strong> Business card examples take the content decisions from the <a href="https://www.brailleauthority.org/sites/default/files/2024-10/Business%20Cards%20Fact%20Sheet.pdf" target="_blank" rel="noopener noreferrer">BANA <em>Business Cards Fact Sheet</em></a> (approved March 2024); the braille shown alongside them is BANA's own, quoted verbatim from the PDF.</small></p>
                         </div>
                     </div>
 

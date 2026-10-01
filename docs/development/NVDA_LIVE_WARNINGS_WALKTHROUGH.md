@@ -83,7 +83,8 @@ What that run measured, and what changed because of it:
 regression — the first two would mean the throwaway announcers became audible,
 the third that the load-time restore is showing its notice again.
 
-**Control step — keep it, it is the fix's positive proof.** Click the
+**Control step — keep it, it is the fix's positive proof.** Open **Show Expert
+Mode** → **Card Thickness** (the preset radios moved there on 2026-09-24) and click the
 card-thickness preset that is **already selected**. Clicking it again re-applies
 it, which is a real user action, so the notice must appear on screen AND be
 spoken **once**. (Both presets pin the same 4 rows and 13 text cells, so this
@@ -307,7 +308,7 @@ Anything NVDA said that I did not expect at all:
 
 ## Related documents
 
-- [NVDA Double-Sided Walkthrough](./NVDA_DOUBLE_SIDED_WALKTHROUGH.md) — the beta flow's own pass; setup and conventions are shared
+- [NVDA Double-Sided Walkthrough](./NVDA_DOUBLE_SIDED_WALKTHROUGH.md) — the double-sided flow's own pass; setup and conventions are shared
 - [NVDA Page Structure Walkthrough](./NVDA_PAGE_STRUCTURE_WALKTHROUGH.md) — headings, landmarks, the two skip links and a timed keyboard generate flow; the closing pass for the POST15_7 programme
 - [ADA Accessibility Validation SOP](./ADA_ACCESSIBILITY_VALIDATION_SOP.md) — section 6.5 is the requirement this satisfies
 - [UI Interface Core Specifications](../specifications/UI_INTERFACE_CORE_SPECIFICATIONS.md) — §4.10 is the rule these three now follow
@@ -317,6 +318,7 @@ Anything NVDA said that I did not expect at all:
 
 | Version | Date | Changes |
 |---|---|---|
+| 1.6 | 2026-09-30 | **Documentation review:** the control step opens Expert Mode → Card Thickness first, where the preset radios live since 2026-09-24 (D-5); the related-documents line says "double-sided flow". |
 | 1.5 | 2026-08-22 | **Part 3 gains the F-J change** (item F, D6): the **Disabled** capitals radio no longer carries its own `aria-describedby` description, so selecting it now speaks one utterance fewer. Its sr-only text duplicated both the note this walkthrough already quotes AND the visible `.grade-note` beneath the radios, which is unchanged and still on screen. **No quoted sentence in this document changed** - the caps note's wording and its once-per-episode gate are untouched - so every existing step, count and fail condition still stands; Step 9 simply gained a new fail condition for the duplicate returning. Nothing else in the app was changed by that item that this walkthrough covers. |
 | 1.0 | 2026-08-21 | Created with the accessibility hygiene bundle, when `#auto-overflow-warning`, `#cylinder-overflow-warning` and `#caps-warning` were wired to `#a11y-status`. Expected wording is the boxes' own on-screen text — no new strings were authored. Counts come from measured runs: 1 announcement per episode for all three, against 11 per 11 keystrokes for the capitalization note before its gate was added. |
 | 1.4 | 2026-08-22 | **The FD-20(c) wording landed** (same closeout, approved by Brennen): the seam-fit warning now counts text cells only — Part 5's expected opening updated to "This layout does not fit around the cylinder: …". No counts, gates, or steps changed. |

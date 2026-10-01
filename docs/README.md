@@ -2,8 +2,8 @@
 
 ## Using the app
 
-- [Cylinder Guide](guides/CYLINDER_GUIDE.md) — measuring containers, setting parameters, worked examples
-- [Business Card Guide](guides/BUSINESS_CARD_TRANSLATION_GUIDE.md) — what to include, formatting tips (flat cards temporarily disabled)
+- [Cylinder Guide](guides/CYLINDER_GUIDE.md) — the cylinders and their settings, printing tips, and double-sided cards
+- [Business Card Guide](guides/BUSINESS_CARD_TRANSLATION_GUIDE.md) — what to include and how to format it, for the cards the cylinders emboss (flat card plates are parked)
 
 ## Working on the code
 

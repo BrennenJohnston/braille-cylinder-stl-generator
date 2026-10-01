@@ -89,8 +89,11 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      0.4 preset → Q2 dot ⌀1.2 (0.5 base + 0.5 dome, dome ⌀1.0; total 1.0)
      + bowl ⌀1.4 × 0.5 mm (prints ⌀1.48 × 0.74). Source of truth:
      interpoint.DS_FOOTPRINTS_BY_PRESET = index.html DS_FOOTPRINTS (a smoke
-     test diffs them). The 0.4 package trips the crowding warning by design
-     (nominal gap 0.468; printed ridge 0.428, measured clean 2026-08-20).
+     test diffs them). The 0.4 package's nominal gap is 0.468 (printed
+     ridge 0.428, measured clean 2026-08-20): it tripped the crowding
+     warning by design until the reliable line became a PROVISIONAL 0.45
+     on 2026-08-23 (interpoint.SAME_SURFACE_GAP_RELIABLE_MM), and is quiet
+     now; the 0.34 floor still rejects.
      Die heights above 1.0 mm scrape the embosser housing — never raise
      them on your own.
    - csg-worker-manifold.js partitions dots per dot on is_recess (true →

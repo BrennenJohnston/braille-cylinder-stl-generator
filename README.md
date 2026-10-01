@@ -11,10 +11,10 @@ The goal is to make braille labels and cards accessible to anyone with a 3D prin
 ## What it does
 
 - Translates text to Grade 1 or Grade 2 braille across 50+ language tables
-- Generates STL files for cylindrical braille labels (jars, bottles, containers, etc.)
+- Generates STL files for the two cylinders of a hand-operated braille card embosser
 - All STL generation runs in the browser — nothing gets uploaded
 - Shows a 3D preview before you download
-- Embosses **both faces** of a card in one pass, with the Double-Sided Card beta
+- Embosses **both faces** of a card in one pass when **Double-sided** is chosen
 
 Flat business card plates are **parked**, not in development here — the code is
 still in the repo but disabled in the UI. See
@@ -25,8 +25,8 @@ already ship as their own tool:
 ### Slicer seam channel
 
 Every cylinder carries a shallow groove (1 mm wide, 0.5 mm deep) the full height of its
-outside: beside the row markers in Visual mode, down the alignment-arrow column and through
-the raised arrows in Tactile mode. A slicer's default "Aligned" seam mode hides each layer's
+outside: beside the row markers in Visual mode, down the alignment-arrow column in Tactile
+mode, where it steps around the raised arrows so they stay whole. A slicer's default "Aligned" seam mode hides each layer's
 seam in that groove instead of in a braille dot, so no seam painting is needed; leave the
 seam mode on Aligned. It can be turned off under Expert Mode → Surface Dimensions. Details
 in [SURFACE_DIMENSIONS_SPECIFICATIONS.md](docs/specifications/SURFACE_DIMENSIONS_SPECIFICATIONS.md#26-slicer-seam-channel).
@@ -42,9 +42,9 @@ often), and the **card sides**. A "Which setup should I choose?" link opens the 
 
 ### Double-sided cards
 
-Choosing **Double-sided** under Embosser setup makes the app generate a matched **pair** of
-cylinders instead of one. Run a card between them and it comes out with braille on both
-faces in a single pass.
+Choosing **Double-sided** under Embosser setup makes both cylinders emboss: each carries the
+raised dots for one face and the recesses for the other. Run a card between them and it
+comes out with braille on both faces in a single pass.
 
 Choosing it enables the **Back of Card** section for the back text, and locks the Row
 Indicator Style to the tactile seam arrow, which both cylinders of a pair need. The back
@@ -108,21 +108,24 @@ You can optionally set `PRODUCTION_DOMAIN` as an environment variable, but it's 
 
 ## How to use it
 
-1. Type your text (up to 4 lines)
-2. Pick a braille translation table and grade
-3. Set your cylinder dimensions — measure your container first
-4. Press **Generate STL** — it builds both cylinders, A and B
-5. Press **Download STL** when it appears: one file with both cylinders spaced for one
+1. Under **Embosser setup** at the top of the page, choose your embosser version, gears
+   and card sides
+2. Type your text (up to 4 lines)
+3. Pick a braille translation table and grade
+4. Check that **Card Thickness** in Expert Mode matches your card stock (0.4 mm by
+   default); the preset sets the cylinder size and dots for you
+5. Press **Generate STL** — it builds both cylinders, A and B
+6. Press **Download STL** when it appears: one file with both cylinders spaced for one
    print plate. Print it and emboss the card between the two cylinders.
 
 Want just one cylinder? Open **Expert Mode** and choose it under **Cylinders to
 Generate**, the first submenu; Download STL then saves that cylinder on its own. For a
-double-sided card, choose **Double-sided** under **Embosser setup** before step 4 and
+double-sided card, choose **Double-sided** under **Embosser setup** in step 1 and
 type the back text into the **Back of Card** box — the back has its own Auto / Manual
 placement and per-line translation choices, exactly like the front. Nothing ever downloads on its own — one
 press of Download STL saves one file.
 
-There's a **Help** button inside the app that walks you through choosing what to include, formatting your text, and measuring containers. For more depth, check the guides below.
+There's a **Help** button inside the app that walks you through choosing what to include, formatting your text, and choosing your embosser setup. For more depth, check the guides below.
 
 ## OpenSCAD version
 
@@ -143,7 +146,7 @@ Issues and pull requests for the OpenSCAD program belong upstream. Nothing in
 
 The web app translates automatically; the OpenSCAD version needs you to translate manually (using [Branah.com](https://www.branah.com/braille-translator)), but it works without an internet connection and integrates with existing CAD workflows.
 
-As of v2.6.0 the OpenSCAD companion includes the **double-sided (interpoint) beta** as well,
+As of v2.6.0 the OpenSCAD companion includes **double-sided (interpoint)** cards as well,
 with the same paired Cylinder A / Cylinder B workflow. Back-of-card text there is
 pre-translated braille only, like the front — automatic translation stays a web-app feature.
 
@@ -180,7 +183,7 @@ Pre-commit hooks are included — run `pre-commit install` to set them up.
 
 **Using the app:**
 
-- [Cylinder Guide](docs/guides/CYLINDER_GUIDE.md) — measuring containers, setting parameters, worked examples
+- [Cylinder Guide](docs/guides/CYLINDER_GUIDE.md) — the cylinders and their settings, printing tips, and double-sided cards
 - [Business Card Guide](docs/guides/BUSINESS_CARD_TRANSLATION_GUIDE.md) — what to include and formatting rules, quoted verbatim from the BANA *Business Cards Fact Sheet* (approved March 2024). Flat cards are parked; the formatting rules still apply to cylinder text.
 
 **Working on the code:**

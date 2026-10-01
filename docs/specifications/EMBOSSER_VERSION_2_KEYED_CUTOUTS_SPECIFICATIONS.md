@@ -2,29 +2,29 @@
 
 ## Overview
 
-Embosser **Version 2** is a new hardware design. Its drive gears are separate prints
-again — not the one-piece rollers of the gear BETA — but each of the four gears carries
-a **differently shaped peg**, and each end of each cylinder gets a **matching keyed
-through-cutout**, so a gear physically cannot be seated in the wrong place. The
-generator's job in Version 2 is the **cylinders only**: the gear files are assembly
-reference, and nothing gear-shaped is generated.
+Embosser **Version 2** is a new hardware design. With **Standard** gears its drive gears
+are separate prints — not the one-piece rollers of **Simplified** gears — but each of the
+four gears carries a **differently shaped peg**, and each end of each cylinder gets a
+**matching keyed through-cutout**, so a gear physically cannot be seated in the wrong
+place. The generator's job there is the **cylinders only**: the gear files are assembly
+reference. Since 2026-09-21 Version 2 with Simplified gears generates the fused one-piece
+roller with its Version 2 gears attached instead (§13).
 
-Version 1 — today's app, the double-sided BETA and the integrated-gears BETA included —
-stays reachable, byte-identical and supported indefinitely behind a selector that
-defaults to Version 1.
+Version 1 — with double-sided cards and its own Simplified gears — stays reachable,
+byte-identical and supported indefinitely behind a selector that defaults to Version 1.
 
 Every number in this document was read back out of the merged code, not out of the
 planning folder; where a number appears, the file that owns it is named. The single
 owner of the geometry is `app/geometry/version2.py`, the way `app/geometry/gears.py`
 owns the gear constants.
 
-**Status:** 🧪 PROTOTYPE (Created 2026-08-28)
+**Status:** ✅ Released (Created 2026-08-28; the "(prototype)" tag was dropped on 2026-09-20, decision D-7; the 54 mm barrel passed its print test on 2026-09-01)
 **Selector:** `embosser_version` (schema and runtime), integer enum `[1, 2]`, default `1`
 **Scope:** cylinders only, single-sided and double-sided flows, pair mode included
 
-> **This is a work-in-progress prototype.** The cylinder size, the cutout shapes and
-> the fit may all change as testing continues — the barrel has moved twice, 30.1 mm →
-> 30.5 mm → **30.8 mm**, and has now arrived at the size Version 1 has always used. The
+> **From prototype to release.** Until 2026-09-20 this was a work-in-progress prototype
+> whose size and fit changed with testing — the barrel moved twice, 30.1 mm → 30.5 mm →
+> **30.8 mm**, and arrived at the size Version 1 has always used. The
 > gear pegs have been cut to family R14 and measured; §11 records what that print found.
 
 ---
@@ -51,9 +51,9 @@ block, and every filename is exactly what the public training videos show.
 Version 2 sets the cylinder to **30.8 × 54.0 mm** (`V2_BARREL_DIAMETER_MM`,
 `V2_BARREL_HEIGHT_MM`) with a tolerance of **0.001 mm** (`V2_SIZE_TOLERANCE_MM`). Off
 that size the app shows S-V5 live and the spec carries the same sentence in
-`warnings` — but the request is **accepted**. This is deliberately unlike the gear
-BETA's hard size gate: the vendored gears cannot move with the barrel, whereas the
-Version 2 barrel is still being found by printing.
+`warnings` — but the request is **accepted**. This is deliberately unlike the fixed
+gears' hard size gate (S7 / S-G1): the vendored gears cannot move with the barrel,
+whereas the Version 2 barrel was found by printing.
 
 It has moved twice, and the search is now over. The prototype shipped at 30.1 mm; the
 first printed pair embossed with noticeably less pressure than Version 1, so on
@@ -443,8 +443,8 @@ class="legend-heading">`), and the "(prototype)" tag and the prototype notice ar
 
 **Selecting Version 2** snapshots five cylinder dials, applies `V2_PRESET_OVERRIDES`
 (`cylinder_diameter_mm` 30.8, `cylinder_height_mm` 54, `seam_offset_deg` 0) on top of
-the Card Thickness preset, hides the three inert rows, reveals the clearance dial, joins
-pair mode, and announces S-V10 once — composed, since 2026-09-21, with whatever notes the
+the Card Thickness preset, hides the three inert rows, reveals the four clearance dials,
+and announces S-V10 once — composed, since 2026-09-21, with whatever notes the
 gear refresh returned (S3, S7 / S-G1) and deferred by a tick, the rule the gear and
 card-sides listeners follow (see below). **Selecting Version 1** restores the snapshot
 exactly.
@@ -553,7 +553,7 @@ Generate, the A/B labels are static markup there, and there is no Generate Both 
 | One watertight body, pockets, mouths, nub, minimum wall, as-built fit matrix, six mutations | `tests/test_version2_keyed.py` |
 | Schema and models agree | `tests/test_smoke.py::test_schema_and_models_agree_on_embosser_version_fields` |
 | The UI's numbers match the module | `tests/test_smoke.py::test_ui_version2_numbers_match_the_geometry_module` |
-| Cylinders only, clearance bounds, gears refused | `tests/test_version2_validation.py` |
+| Cylinders only, clearance bounds, the fused roller's size gate | `tests/test_version2_validation.py` |
 | The spec block, the warnings, z from the request's height | `tests/test_version2_spec.py` |
 | The committed golden pair | `tests/test_golden.py` — `v2_cylinderA_golden`, `v2_cylinderB_golden` |
 | The whole UI in three browsers | `tests/e2e/version2.spec.ts` |
@@ -583,7 +583,7 @@ Generate, the A/B labels are static markup there, and there is no Generate Both 
 A Version 2 counter cylinder exports as exactly **one** watertight body. A Version 2
 **embossing** cylinder exports as one watertight cylinder plus one small separate body
 per raised braille dot — the dome of each dot. That is the long-standing tangency issue
-in the dot geometry, present in Version 1 and with every beta off, and it is tracked
+in the dot geometry, present in Version 1 and with Standard gears, and it is tracked
 separately. It is the same exemption GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md §7
 records.
 
@@ -714,8 +714,8 @@ mode; this section records only what changes on THIS document's side.
 
 ## Related Documentation
 
-- `docs/KNOWN_ISSUES.md` — the user-facing prototype status (S-V13)
-- `GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md` — the Version 1 one-piece rollers
+- `docs/KNOWN_ISSUES.md` — the user-facing status (S-V13)
+- `GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md` — the one-piece rollers, Version 1 and (§11) Version 2
 - `RECESS_INDICATOR_SPECIFICATIONS.md` §3, v3.5 — the arrow column and the Version 2
   cell recommendation
 - `SURFACE_DIMENSIONS_SPECIFICATIONS.md` — cylinder size and the polygonal cutout
@@ -727,6 +727,7 @@ mode; this section records only what changes on THIS document's side.
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-09-30 | 1.21 | **Documentation review after the approved build.** The overview and status say released, not prototype or BETA, and name the fused Version 2 roller (§13); the size-gate note compares against the fixed gears' S7 / S-G1; the version listener reveals four clearance dials (pair mode is universal); the test table and related documents follow. |
 | 2026-09-28 | 1.20 | **X Adjust defaults to −2 mm in Version 2 with the tactile seam arrow, on every card-stock preset (§8).** Brennen's call after his print test of the X Adjust fix (BRAILLE_SPACING_SPECIFICATIONS.md §5, 2026-09-27): `version2.V2_TACTILE_X_ADJUST_MM`, mirrored by the page and applied the way the barrel preset is — on the version change (announcement clause S-X1, DRAFT), on choosing the tactile style in Version 2, by any preset chosen in Version 2, and re-asserted after the load-time preset restore unless the stock is Custom; the snapshot gives the Version 1 value back. The presets still carry 0, the schema fallback stays 0, Version 1 is byte-identical. |
 | 2026-09-26 | 1.19 | **All four defaults 0.075 mm (D-K6).** Brennen's next print brought A2 and B2 down to the top gears' 0.075; §2, §5, §6 and §11 carry the one value (the per-key dict and dials stay separate). The keyed golden pair regenerated once more. |
 | 2026-09-25 | 1.18 | **Documentation and accessibility pass.** §2's table carries each key's own default and section area (the 0.110 column is history); §5's whole-step sentence and §11's margin table name both defaults; §6's wire example shows `clearances_mm` and the per-half `key` / `clearance_mm`; §8.1: the S-K1 note is the fieldset's `aria-describedby`, one host (SOP 6.8 clause 5, measured 96 → 24 description words per pass on the opened page). The schema's `version_2` and `embosser_version` descriptions and four code comments stop calling Version 2 a prototype with one nub. |

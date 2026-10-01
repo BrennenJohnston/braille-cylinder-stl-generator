@@ -270,7 +270,7 @@ The shift is added inside the two seam mappings, i.e. in the card frame the two 
 
 ### Summary Table
 
-> **Exception — double-sided (interpoint) BETA.** Everything in this section
+> **Exception — double-sided (interpoint) cards.** Everything in this section
 > describes single-sided mode, which is the default and is unchanged. When
 > `double_sided.enabled` is on (runtime name `double_sided_enabled`, a 0/1 int),
 > the counter plate does **not** generate the universal grid: each cylinder
@@ -712,6 +712,7 @@ makes the declared source of truth state what was already being enforced.
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-09-30 | 1.8 | Documentation review: Section 6's double-sided exception drops "BETA" (released 2026-09-20). |
 | 2026-09-27 | 1.7 | **X Adjust now works on cylinders (new Section 5 subsection).** The cylinder spec builder had never read `braille_x_adjust` (Y Adjust worked); the dial now slides the whole text grid round the barrel by its value in mm of arc, added inside `apply_seam` / `apply_seam_mirrored` after the double-sided back mirror, so both cylinders' dots and recesses move together and the pairing holds. Negative moves Cylinder A's grid left and Cylinder B's right as the default camera shows them — the first cell toward the alignment arrow on both (Brennen's request after his 2026-09-27 print). Arrows, tactile groove and Version 2 keys stay put; the seam-channel, arrow-gap and card-fit rules read the shift, mirrored live. Nothing changes at 0: all eight golden pairs byte-identical. Proof on the real worker's STL exports (tests/e2e/xAdjust.spec.ts) and in tests/test_x_adjust_cylinder.py. |
 | 2024-12-06 | 1.0 | Initial specification based on working backend.py and csg-worker implementations |
 | 2024-12-06 | 1.1 | Added Manifold theta negation fix (Bug 6) to correct reverse cell order on cylinders |

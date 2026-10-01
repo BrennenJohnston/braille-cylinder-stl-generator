@@ -249,9 +249,9 @@ All twelve fields appear **flat** in the runtime settings payload under the same
 (`indicator_mode`, `tactile_indicator_width`, …), matching the OpenSCAD parameter names.
 `indicators.enabled` is the one exception: its runtime name is `indicator_shapes` (0 or 1).
 
-UI location: `indicator_mode` is a main-form control (**Row Indicator Style**, above Card
-Thickness). The five `tactile_*` dials live in the **Tactile Indicator Dimensions** submenu
-of Expert Mode, which is hidden entirely unless tactile mode is selected.
+UI location: `indicator_mode` is the **Row Indicator Style** submenu of Expert Mode (the
+third, since 2026-09-24, decision D-5). The five `tactile_*` dials sit in the same
+submenu, in a block hidden unless tactile mode is selected.
 
 Reserved marker columns per row. The UI dial counts TEXT cells only; the payload
 `grid_columns` adds the reserved columns on top. What limits the total is the seam gap
@@ -413,10 +413,10 @@ High-level checks (non-exhaustive):
 - All mm values must be non-negative; heights/diameters > 0 where noted
 - Geometry safety checks: margins, grid centering, cylinder wrap
 
-Double-sided (interpoint) beta — hard gates (`validate_double_sided_settings()` in
-`app/validation.py`, called from `validate_settings()` on every request). All three
+Double-sided (interpoint) — hard gates (`validate_double_sided_settings()` in
+`app/validation.py`, called from `validate_settings()` on every request). All of them
 are skipped when `double_sided.enabled` is off, so single-sided requests validate
-exactly as before the beta. This is the first runtime enforcement of these ranges —
+exactly as before the feature. This is the first runtime enforcement of these ranges —
 the `minimum`/`maximum` values in settings.schema.json are documentation only:
 - `double_sided.enabled` = true requires `indicator_mode` = "tactile"; any other
   value (including the absent-key default "visual") is rejected with HTTP 400.
@@ -437,19 +437,20 @@ the `minimum`/`maximum` values in settings.schema.json are documentation only:
   since 2026-08-23 — see INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §3) is NOT rejected, and both soft
   channels deliberately keep measuring the NOMINAL diameter: geometry_spec returns
   the warning in the spec's `warnings` array, and the UI recomputes the same gap live
-  (`checkDoubleSidedGap()` in public/index.html, status region `#ds-gap-warning`).
+  (`checkDoubleSidedGap()` in public/index.html, the `#ds-gap-warning` box, announced
+  through `#a11y-status`).
   See INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md v1.6 §5 for why the two differ.
   Reference values at offsets 1.25/1.25, nominal then printed: Option B / 0.3-preset
   dot 1.2 + bowl 1.3 → 0.518 / 0.495 mm (clean); the 0.4-preset Q2 package dot 1.2 +
-  bowl 1.4 → 0.468 / 0.428 mm (warn — the shipped default with the beta on, accepted
-  by design since 2026-08-20); dot 1.2 + bowl 1.5 → 0.418 / 0.355 mm (warn);
+  bowl 1.4 → 0.468 / 0.428 mm (quiet since 2026-08-23: the nominal gap clears the
+  provisional 0.45 line; it warned against the old 0.50, accepted by design on 2026-08-20); dot 1.2 + bowl 1.5 → 0.418 / 0.355 mm (warn);
   single-sided dot 1.5 + bowl 1.8 → 0.118 nominal but **−0.042 printed** (reject).
 - The six `ds_*` footprint values must stay inside their schema ranges
   (`ds_dot_base_diameter_mm` 0.5–3.0, `ds_dot_base_height_mm` 0.0–2.0,
   `ds_dot_dome_diameter_mm` 0.5–3.0, `ds_dot_dome_height_mm` 0.1–2.0,
   `ds_bowl_base_diameter_mm` 0.5–5.0, `ds_bowl_depth_mm` 0.0–5.0); out-of-range
   values are rejected with the range quoted. Like the rest of these gates this
-  fires only when the beta is on; the range literals in `validate_double_sided_settings()`
+  fires only when Double-sided is chosen; the range literals in `validate_double_sided_settings()`
   mirror this schema and must change with it in the same commit.
 
 See feature specs for detailed constraints and formulas.
@@ -601,6 +602,8 @@ Before completing any task involving settings:
 ---
 
 ## 10. Document History
+
+- 2026-09-30 — Documentation review after the approved build: the Row Indicator Style and tactile dials' UI location is the Expert Mode submenu (D-5, 2026-09-24); the double-sided gates drop "beta"; the 0.4-preset package is quiet against the provisional 0.45 mm line; `#ds-gap-warning` is announced through `#a11y-status`.
 
 - 2026-09-21 — `text.back_languages` added beside `text.languages` (programme sub-plan D, Back of Card parity): the back's per-row liblouis tables, `back_per_line_language_tables` on the wire, sent only for a manually placed back; `GenerateBrailleRequest` gains `back_lines` and `back_per_line_language_tables`. Pinned by `tests/test_smoke.py::test_schema_and_request_model_declare_the_back_per_line_tables`.
 

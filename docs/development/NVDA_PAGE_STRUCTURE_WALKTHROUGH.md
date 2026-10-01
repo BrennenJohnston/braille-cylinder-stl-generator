@@ -128,8 +128,15 @@ Press `H` repeatedly from the top.
 > load, 15 with Expert Mode open, 16 with Double-sided chosen, no level skipped
 > in any state. What NVDA actually reads is still for Brennen to hear.
 
-**Expected: nine, in this order** (ten until 2026-09-21, when "Select Plate to
-Generate" left the main form for Expert Mode).
+> **Re-measured 2026-09-30 (Chromium at 1440 × 900, NOT yet run with NVDA):** 7 on
+> load, 15 with Expert Mode open, 15 with Double-sided chosen, no level skipped in
+> any state. On 2026-09-24 (decision D-5) Row Indicator Style and Card Thickness left
+> the main form for Expert Mode, and the tactile dials moved inside the Row Indicator
+> Style submenu, so tactile mode no longer adds a heading.
+
+**Expected: seven, in this order** (nine until 2026-09-24, when Row Indicator Style
+and Card Thickness moved into Expert Mode; ten until 2026-09-21, when "Select Plate to
+Generate" left the main form).
 
 ```
 h1  Custom Braille STL Generator
@@ -139,35 +146,34 @@ h3    Gears
 h3    Card sides
 h2  Enter Text for Braille Translation
 h2  Back of Card — Enter Text for Braille Translation
-h2  Row Indicator Style
-h2  Card Thickness
 ```
 
 ### 2b — With Expert Mode open
 
 Open Expert Mode, then press `H` from the top again.
 
-**Expected: fifteen** — the nine above plus six at level 3: *Cylinders to
-Generate* (first, since 2026-09-21), *Shape Selection*, *Braille Spacing*,
-*Braille Dot Adjustments*, *Surface Dimensions*, *Translation Options*.
+**Expected: fifteen** — the seven above plus eight at level 3, in this order:
+*Cylinders to Generate*, *Card Thickness*, *Row Indicator Style*, *Shape Selection*,
+*Braille Spacing*, *Braille Dot Adjustments*, *Surface Dimensions*, *Translation
+Options*.
 
 ### 2c — With Double-sided chosen
 
 Choose **Double-sided** under Card sides, leave Expert Mode open, press `H`.
 
-**Expected: sixteen.** Double-sided forces tactile mode, which reveals a sixth
-Expert Mode level-3 header, *Tactile Indicator Dimensions*. The front entry `h2`
-also relabels itself to **"Front of Card — Enter Text for Braille Translation"**;
-the Back of Card `h2` was already there, its controls simply become available.
+**Expected: fifteen, the same as 2b.** Double-sided forces tactile mode, but the
+tactile dials sit inside the Row Indicator Style submenu, so no heading appears. The
+front entry `h2` relabels itself to **"Front of Card — Enter Text for Braille
+Translation"**; the Back of Card `h2` was already there, its controls simply become
+available.
 
 ### The rule for all three
 
 **No level may be skipped in any state** — never an h1 followed by an h3.
 Verified by probe on 2026-08-23 in all three states: `SKIPPED LEVELS: none`.
 
-**Counts to write down: 9 / 15 / 16, or whatever you actually reach** (measured
-2026-09-21 by `build/a11yverify/e_footer/probe.cjs` for the first two states; the
-third follows from 2c).
+**Counts to write down: 7 / 15 / 15, or whatever you actually reach** (measured
+2026-09-30 in Chromium for all three states).
 
 > **If your run differs from these numbers, that is a finding. Report it — do not
 > adjust the numbers to match.** They came from
@@ -212,9 +218,12 @@ textarea precisely because Manual hides that textarea.
 Reload. `Tab` from the top, counting, until you reach **Auto Placement** (the
 first control that does the app's job).
 
-**Expected: it is stop 15 — fourteen stops come first.** In order: two skip
-links, three font-size buttons, theme, GitHub, help, brightness −/+, contrast
-−/+, Edges, "Help me choose what to include".
+**Expected: it is stop 20 — nineteen stops come first** (measured 2026-09-30 in
+Chromium; fourteen until the Embosser setup item arrived on 2026-09-20). In order: two
+skip links, three font-size buttons, theme, GitHub, help, brightness −/+, contrast
+−/+, Edges, "Help me choose what to include", then the Embosser setup item's five:
+the Embosser version radio group, the Gears radio group, "Open Embosser Setup help",
+the Card sides radio group and "Which setup should I choose?".
 
 > **This number did not improve, and the honest expectation is that it will
 > sound no better than last time.** Audit finding F-F opened at *14 of 32*, and
@@ -326,15 +335,15 @@ Speech log windowed with nvdaspeech.py?   yes / no
 Part | What I heard | Count | Expected | Pass/Fail
 -----|--------------|-------|----------|----------
   1  landmarks      |      | 5 incl. banner |
-  2a headings load  |      | 10             |
+  2a headings load  |      | 7              |
   2b + expert mode  |      | 15             |
-  2c + double-sided |      | 16             |
+  2c + double-sided |      | 15             |
   2  any skipped levels?  |      | none      |
   3  link 1 lands on      |      | main      |
   3  link 2 lands on      |      | the h2    |
   3  keystrokes to task   |      | 3         |
   3  link 2 in Manual mode|      | works     |
-  4  stops before task    |      | 14        |
+  4  stops before task    |      | 19        |
   4  GitHub links heard   |      | 1         |
   5  words on Translate to Braille |  | name+role only |
   5  words on Braille (Unicode)    |  | ~13            |
@@ -361,7 +370,7 @@ Anything NVDA said that I did not expect at all:
 ## Related documents
 
 - [NVDA Live Warnings Walkthrough](./NVDA_LIVE_WARNINGS_WALKTHROUGH.md) — the three front-of-card warnings; shared setup and conventions
-- [NVDA Double-Sided Walkthrough](./NVDA_DOUBLE_SIDED_WALKTHROUGH.md) — the beta flow's own pass
+- [NVDA Double-Sided Walkthrough](./NVDA_DOUBLE_SIDED_WALKTHROUGH.md) — the double-sided flow's own pass
 - [Screen Reader UX Research and Flow Audit](./SCREEN_READER_UX_RESEARCH_AND_FLOW_AUDIT.md) — findings F-E, F-F and F-L, and criteria C3/C4/C5
 - [ADA Accessibility Validation SOP](./ADA_ACCESSIBILITY_VALIDATION_SOP.md) — Step 6.8 (description verbosity) and Section 12 (the C1–C10 flow review)
 - [UI Interface Core Specifications](../specifications/UI_INTERFACE_CORE_SPECIFICATIONS.md) — §4.1 documents the banner, both skip links and the `tabindex="-1"` targets; §4.13 the sentence-span pattern
@@ -374,3 +383,4 @@ Anything NVDA said that I did not expect at all:
 | 1.1 | 2026-08-23 | **RUN by Brennen** (NVDA 2026.1.1, Chrome Guest, 1,799 utterances captured). Items A-I confirmed audibly: the banner is heard, the six headings read with no chevron glyph, skip link 2 lands on the `h2`, and the braille field's description is down to ~13 words from a 72-word paragraph. **Three defects found that every automated count had passed** - F-Q the Help dialog leaking focus into Chrome's toolbar (fixed, `e62a2bd`), F-R generating and downloading a plate missing the tail of the text under a cheerful "Both cylinders are ready" (fixed, `b642e7a`), and F-S the standing crowding warning on the shipped default (threshold lowered to a provisional 0.45, `ddd7bd8`). **Part 5's F-P prediction was WRONG**: NVDA suppresses a description identical to the accessible name, so the font buttons never said their name twice - the defect is real in the AX tree but inert in NVDA. Part 4's ring-length question and the three judgement questions are **not yet answered in Brennen's words**; F-F stays open. |
 | 1.0 | 2026-08-23 | Created as POST15_7 item G Part 5 — the closing re-listen for the whole A–I programme. Expected counts are measured, not predicted: landmarks **5** and heading outline **6 / 11 / 12 with no skipped levels** from `axprobe.cjs` and `build/a11yverify/post15_7c/headings.cjs` re-run on 2026-08-23 after the banner move; description budget **226 w** from `axprobe.cjs`; tab ring **32** with the first task control at stop **15**. Part 4 states plainly that F-F's number did **not** improve and says what would reopen it. Part 6 is timed but deliberately has no target. |
 | 1.3 | 2026-09-21 | **Heading counts follow sub-plan E (2026-09-21; NOT yet run).** Part 2: nine headings on load (the "Select Plate to Generate" h2 moved into Expert Mode as the first level-3 "Cylinders to Generate"), fifteen with Expert Mode open, sixteen with Double-sided; the counts line says 9 / 15 / 16. |
+| 1.4 | 2026-09-30 | **Re-measured in Chromium after the approved build (NOT yet run with NVDA).** Part 2: seven headings on load, fifteen with Expert Mode open and fifteen with Double-sided chosen — Row Indicator Style and Card Thickness moved into Expert Mode on 2026-09-24 (D-5) and the tactile dials no longer add a heading. Part 4: Auto Placement is stop 20; the Embosser setup item (2026-09-20) put five stops before it. The results template follows. |

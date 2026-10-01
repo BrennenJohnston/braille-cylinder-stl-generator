@@ -33,7 +33,7 @@ This document specifies the Braille Translation Preview feature in the applicati
 10. [Error States and Fallbacks](#10-error-states-and-fallbacks)
 11. [Styling and Accessibility](#11-styling-and-accessibility)
 12. [Cross-Implementation Consistency](#12-cross-implementation-consistency)
-13. [Double-Sided Beta: Front of Card / Back of Card Preview](#13-double-sided-beta-front-of-card--back-of-card-preview)
+13. [Double-Sided: Front of Card / Back of Card Preview](#13-double-sided-front-of-card--back-of-card-preview)
 
 ---
 
@@ -75,9 +75,9 @@ The preview is **hidden by default** and appears only after clicking the preview
 │  │                                                              │ │
 │  └─────────────────────────────────────────────────────────────┘ │
 │                                                                   │
-│  ▼ Shape Selection                                               │
-│  ▼ Surface Dimensions                                            │
-│  ... (other submenus)                                            │
+│  ▼ Cylinders to Generate                                         │
+│  ▼ Card Thickness                                                │
+│  ... (six more submenus)                                         │
 │                                                                   │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -975,7 +975,7 @@ The backend has additional fallback paths for alternative deployment configurati
 
 ---
 
-## 13. Double-Sided Beta: Front of Card / Back of Card Preview
+## 13. Double-Sided: Front of Card / Back of Card Preview
 
 **Source:** `public/index.html` (the `#preview-braille-btn` click handler)
 
@@ -983,20 +983,20 @@ Added 2026-08-17. All four new user-facing strings in this section - the two hea
 the empty-back note, and the two error prefixes - were **signed off by Brennen on
 2026-08-17**; reword only with his sign-off.
 
-When the double-sided (interpoint) beta is ON the preview shows
-**both sides of the card**. The handler computes the beta state with the exact test
-the generate handler uses - `#double_sided_enabled` checked AND the shape radio on
-`cylinder` - so the preview can never disagree with the STL about which mode is
-active.
+When Double-sided is chosen the preview shows
+**both sides of the card**. The handler computes the double-sided state with the exact
+test the generate handler uses - `isDoubleSidedOn()` (the Double-sided radio under
+Embosser setup → Card sides) AND the shape radio on `cylinder` - so the preview can
+never disagree with the STL about which mode is active.
 
-### With the beta OFF
+### With Single-sided chosen
 
 Nothing changes. No wrapper, no heading, no extra node: `#preview-content` receives
 byte-for-byte the same markup it did before the feature existed. This is verified by
 capturing `#preview-content.innerHTML` for the same input before and after and
 comparing the two strings exactly.
 
-### With the beta ON
+### With Double-sided chosen
 
 1. The existing front output (manual or auto, unchanged) is prefixed with an
    `<h3 class="preview-section-heading">Front of Card</h3>` heading.
@@ -1042,7 +1042,7 @@ the preview only reports.
 
 The handler still returns early, with no preview at all, when the front text is empty
 ("Please enter text in at least one line." in manual mode, "Please enter text in the
-Auto Placement field." in auto mode). That is true with the beta ON as well - a card
+Auto Placement field." in auto mode). That is true with Double-sided chosen as well - a card
 with only back text cannot be previewed. Deliberately left as-is in the phase that
 added the back section, since changing it would alter single-sided behavior.
 
@@ -1182,5 +1182,6 @@ If backend returns "does not contain proper braille Unicode characters":
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-09-30 | 1.2 | Documentation review after the approved build: §13 names the Card sides choice (`isDoubleSidedOn()`) in place of the retired `#double_sided_enabled` beta toggle, and the layout diagram lists Cylinders to Generate and Card Thickness as the first Expert Mode submenus. |
 | 2026-08-17 | 1.1 | Added §13: with the double-sided (interpoint) beta ON the preview shows both sides - the existing front output under an h3 "Front of Card" heading, then an h3 "Back of Card" section whose rows come from the same `banaAutoWrap()` call the generate handler makes. Beta OFF is byte-identical (verified by comparing `#preview-content.innerHTML` before and after). §11 gained the `.preview-section-heading` rule. Back-of-card preview errors render inline as `.preview-line-error` blocks rather than in the `#error-message` overlay, so they cannot overwrite a front warning. |
 | (pre-history) | 1.0 | Original specification: UI layout, translation architecture, liblouis worker integration, computer shorthand conversion, manual and auto placement previews, language tables, backend validation, braille Unicode handling, error states, styling and accessibility, cross-implementation consistency, and Appendices A-D. This document carried no version footer before 2026-08-17. |

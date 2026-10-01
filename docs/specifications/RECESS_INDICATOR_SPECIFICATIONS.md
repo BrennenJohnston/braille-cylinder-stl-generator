@@ -546,7 +546,7 @@ Rules:
 
 ### UI Location
 
-The five dials live in their own **Tactile Indicator Dimensions** submenu of Expert Mode (fifth, after Surface Dimensions). The whole submenu is hidden unless **Row Indicator Style** is set to *Tactile seam arrow*, since the dials do nothing in visual mode.
+Since 2026-09-24 (decision D-5) the five dials live inside the **Row Indicator Style** submenu of Expert Mode (the third), in `#tactile-indicator-dimensions` below the style radios. That block alone is hidden unless the style is *Tactile seam arrow*, since the dials do nothing in visual mode; the submenu itself is always shown.
 
 Derived constants (`app/geometry_spec.py`, mirroring the `.scad`):
 
@@ -609,9 +609,9 @@ required    = tactile_indicator_width + TACTILE_MIN_GAP_MARGIN
 When `seam_gap_mm < required` the layout is **warned about, not rejected** — matching the OpenSCAD version, which renders a 3D "TACTILE GAP TOO SMALL" label:
 
 - **Backend:** the message is appended to `spec['warnings']` (a list, always present, empty in visual mode) and logged.
-- **Frontend:** `checkPhysicalFit()` shows it live in `#tactile-gap-warning` (`role="status"`, `aria-live="polite"`), recomputed whenever the diameter, cell spacing, cell count, indicator width, or mode changes. Generation is not blocked.
+- **Frontend:** `checkPhysicalFit()` shows it live in `#tactile-gap-warning` (announced through `#a11y-status`, not a live region of its own), recomputed whenever the diameter, cell spacing, cell count, indicator width, or mode changes. Generation is not blocked.
 
-At defaults (30.75 mm diameter, 6.5 mm cell spacing, 4 mm indicator) the gap needs ≥ 9 mm: 13 cells leave 18.6 mm and 14 cells leave 12.1 mm, both passing; 15 cells leave 5.6 mm and warn. The UI recommends 13 since 2026-09-21: 14 still clears the arrow but runs off a 90 mm card (Card Fit, next).
+At the live defaults (30.8 mm diameter from the presets, 6.5 mm cell spacing, 4 mm indicator) the gap needs ≥ 9 mm: 13 cells leave 18.8 mm and 14 cells leave 12.3 mm, both passing; 15 cells leave 5.8 mm and warn. The UI recommends 13 since 2026-09-21: 14 still clears the arrow but runs off a 90 mm card (Card Fit, next).
 
 ### Card Fit (2026-09-21)
 
@@ -619,7 +619,7 @@ The card's leading edge sits at the alignment arrow when the embosser is loaded 
 
 ```
 gap       = π · diameter − (grid_columns − 1) · cell_spacing
-shift     = braille_x_adjust (X Adjust, mm of arc, 0 by default; since 2026-09-27 it slides the grid, not the arrow —
+shift     = braille_x_adjust (X Adjust, mm of arc, 0 by default and −2 in Version 2 tactile; since 2026-09-27 it slides the grid, not the arrow —
             negative brings the first cell toward the arrow, so the need falls by |shift|; BRAILLE_SPACING_SPECIFICATIONS.md §5)
 card_need = gap/2 + shift + (grid_columns − 1) · cell_spacing + footprint
           13 cells, 30.8 mm, 0.4 mm preset:  9.38 + 78.0 + 2.15 = 89.5 mm   (fits a 90 mm card by 0.5; a 3.5 in card, 88.9 mm, does NOT — its maximum is 12)
@@ -1011,6 +1011,7 @@ When implementing or modifying indicator code, verify:
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-09-30 | 3.16 | **Documentation review after the approved build.** The tactile dials' UI location is the Row Indicator Style submenu (since D-5, 2026-09-24); `#tactile-gap-warning` is announced through `#a11y-status`; the gap example uses the live 30.8 mm barrel (18.8 / 12.3 / 5.8 mm); the card-fit formula notes X Adjust's −2 Version 2 tactile default. |
 | 2026-09-29 | 3.15 | **Single-sided gives back the style the double-sided lock displaced** (Brennen's finding from testing). A Version 1 card taken to Double-sided and back used to stay on the tactile arrow; the visual markers now return, a tactile style the user chose stays, and under the lock a version change works on the displaced style (Row Indicator Style section). New DRAFT clause S-M14. |
 | 2026-09-27 | 3.14 | **The card-fit need reads X Adjust (§4).** The X Adjust dial now works on cylinders (BRAILLE_SPACING_SPECIFICATIONS.md §5): it slides the text grid round the barrel while the tactile arrow stays at the seam-gap midpoint, so `tactile_card_need_mm` / `tactile_max_cells` gain the shift (`card_need = gap/2 + shift + grid + footprint`; 14 cells at X −3 fit a 90 mm card) and `updateCardFitUI()` mirrors it. The arrow-gap warning likewise reads the gap left after the shift. Nothing changes at 0. |
 | 2026-09-24 | 3.13 | **The control moves into Expert Mode and Version 2 defaults it to tactile (programme 2026-09-24; decisions D-4, D-5).** Row Indicator Style is the third Expert Mode submenu with the tactile dials below it; choosing Version 2 sets tactile as a remembered, reversible default (never a lock, never on load restore, never by a preset). |
