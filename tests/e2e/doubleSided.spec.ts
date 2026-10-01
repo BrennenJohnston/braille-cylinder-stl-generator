@@ -466,6 +466,47 @@ test.describe('Double-Sided Card beta', () => {
     await expect(page.locator('input[name="indicator_mode"][value="tactile"]')).toBeChecked();
   });
 
+  // Since 2026-10-01 (Brennen's decision) the style the lock displaced is
+  // saved with the design settings, so Single-sided gives it back after a
+  // reload as well as within one visit.
+  test('Single-sided gives back the visual markers after a reload too', async ({ page }) => {
+    await openApp(page);
+    const visual = page.locator('input[name="indicator_mode"][value="visual"]');
+    const tactile = page.locator('input[name="indicator_mode"][value="tactile"]');
+    await chooseDoubleSided(page);
+    await expect(tactile).toBeChecked();
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_single_sided_indicator_mode'))).toBe('visual');
+
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('#embosser-setup-selection');
+    await expect(page.locator('#card_sides_double')).toBeChecked();
+    await expect(tactile).toBeChecked();
+    // The load restore is silent and moves nothing.
+    await expect(page.locator('#a11y-status')).toHaveText('');
+
+    await page.locator('#card_sides_single').check();
+    await expect(visual).toBeChecked();
+    await expect(page.locator('#a11y-status')).toHaveText(`${S_M11_SINGLE} ${S_M14_STYLE_RESTORED}`);
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_single_sided_indicator_mode'))).toBeNull();
+  });
+
+  test('a remembered style without Double-sided is dropped on load, and Reset clears it', async ({ page }) => {
+    await openApp(page);
+    // A stale value: saved, but the card came back single-sided.
+    await page.evaluate(() => localStorage.setItem('braille_prefs_single_sided_indicator_mode', 'visual'));
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('#embosser-setup-selection');
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_single_sided_indicator_mode'))).toBeNull();
+
+    await chooseDoubleSided(page);
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_single_sided_indicator_mode'))).toBe('visual');
+    await page.locator('#reset-defaults-btn').click();
+    await expect(page.locator('#card_sides_single')).toBeChecked();
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_single_sided_indicator_mode'))).toBeNull();
+  });
+
   test('the Back of Card section is always present, and the choice survives a reload', async ({ page }) => {
     await openApp(page);
 

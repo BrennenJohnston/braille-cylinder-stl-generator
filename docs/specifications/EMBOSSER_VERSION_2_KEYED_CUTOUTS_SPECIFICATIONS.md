@@ -707,8 +707,8 @@ mode; this section records only what changes on THIS document's side.
   Version 2 cylinder carries none of them.
 - **Version 2 defaults the Row Indicator Style to the tactile seam arrow** since 2026-09-24
   (decision D-4): a default set on the user's version change and given back on the way to
-  Version 1 — never a lock, never applied by the silent load restore, never by a card-stock
-  preset (`RECESS_INDICATOR_SPECIFICATIONS.md`).
+  Version 1, after a reload too since 2026-10-01 — never a lock, never applied by the silent
+  load restore, never by a card-stock preset (`RECESS_INDICATOR_SPECIFICATIONS.md`).
 
 ---
 

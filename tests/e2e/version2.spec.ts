@@ -683,6 +683,54 @@ test.describe('Embosser Version 2', () => {
     await expect(page.locator('#a11y-status')).toHaveText(`${S_M11_SINGLE} ${S_M14_STYLE_RESTORED}`);
   });
 
+  // Since 2026-10-01 (Brennen's decision) the style the user had before
+  // Version 2 is saved with the design settings, so leaving Version 2 gives it
+  // back after a reload as well as within one visit.
+  test('Version 1 gives back the visual markers after a reload in Version 2', async ({ page }) => {
+    await openApp(page);
+    const visual = page.locator('input[name="indicator_mode"][value="visual"]');
+    const tactile = page.locator('input[name="indicator_mode"][value="tactile"]');
+    await selectVersion2(page);
+    await expect(tactile).toBeChecked();
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_version1_indicator_mode'))).toBe('visual');
+
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('#embosser-setup-selection');
+    await expect(page.locator('#embosser_version_2')).toBeChecked();
+    await expect(tactile).toBeChecked();
+
+    await page.locator('#embosser_version_1').check();
+    await expect(visual).toBeChecked();
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_version1_indicator_mode'))).toBeNull();
+  });
+
+  test('under the lock, a reload keeps the Version 1 style waiting for Single-sided', async ({ page }) => {
+    await openApp(page);
+    const visual = page.locator('input[name="indicator_mode"][value="visual"]');
+    await selectVersion2(page);
+    await page.locator('#card_sides_double').check();
+
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('#embosser-setup-selection');
+    await page.locator('#embosser_version_1').check();
+    await expect(visual).toBeDisabled();
+    await page.locator('#card_sides_single').check();
+    await expect(visual).toBeChecked();
+    await expect(page.locator('#a11y-status')).toHaveText(`${S_M11_SINGLE} ${S_M14_STYLE_RESTORED}`);
+  });
+
+  test('a remembered Version 1 style is dropped when Version 1 comes back on load', async ({ page }) => {
+    await openApp(page);
+    await page.evaluate(() => localStorage.setItem('braille_prefs_version1_indicator_mode', 'visual'));
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('#embosser-setup-selection');
+    await expect(page.locator('#embosser_version_1')).toBeChecked();
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_version1_indicator_mode'))).toBeNull();
+  });
+
   test('in Version 2, visual markers the user chose come back after Double-sided, X Adjust with them', async ({ page }) => {
     await openApp(page);
     const visual = page.locator('input[name="indicator_mode"][value="visual"]');

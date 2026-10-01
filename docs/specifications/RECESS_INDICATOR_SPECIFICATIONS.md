@@ -31,9 +31,11 @@ the dials block appears in the tactile style). And choosing **Embosser Version 2
 to `tactile` as a default** (decision D-4): the version radios' change listener remembers the
 style the user had, checks the tactile radio and dispatches its change (so persistence, the
 cell dial and the warnings follow as for a click), and gives the remembered style back on the
-way to Version 1. It is a default, not a lock — the user may pick visual markers in Version 2
-and that choice persists — and it is never applied by the silent load restore nor by a
-card-stock preset (`tests/test_smoke.py` pins that neither preset names `indicator_mode`). The
+way to Version 1 (since 2026-10-01 the remembered style is saved as
+`braille_prefs_version1_indicator_mode`, so this works after a reload too; it is read back
+only when Version 2 itself came back on). It is a default, not a lock — the user may pick
+visual markers in Version 2 and that choice persists — and it is never applied by the silent
+load restore nor by a card-stock preset (`tests/test_smoke.py` pins that neither preset names `indicator_mode`). The
 double-sided lock (v3.3) takes precedence: a locked tactile style is left alone. Since
 2026-09-29 the lock remembers the visual style it displaced and choosing Single-sided gives
 it back (INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §7.2; announced with S-M14 *"Row
@@ -1011,6 +1013,7 @@ When implementing or modifying indicator code, verify:
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-10-01 | 3.17 | **Both remembered styles survive a reload** (Brennen's decision): the Version 2 default's memory (`braille_prefs_version1_indicator_mode`) and the double-sided lock's (`braille_prefs_single_sided_indicator_mode`) are saved with the design settings, read back only with the state they belong to, and cleared by Reset. |
 | 2026-09-30 | 3.16 | **Documentation review after the approved build.** The tactile dials' UI location is the Row Indicator Style submenu (since D-5, 2026-09-24); `#tactile-gap-warning` is announced through `#a11y-status`; the gap example uses the live 30.8 mm barrel (18.8 / 12.3 / 5.8 mm); the card-fit formula notes X Adjust's −2 Version 2 tactile default. |
 | 2026-09-29 | 3.15 | **Single-sided gives back the style the double-sided lock displaced** (Brennen's finding from testing). A Version 1 card taken to Double-sided and back used to stay on the tactile arrow; the visual markers now return, a tactile style the user chose stays, and under the lock a version change works on the displaced style (Row Indicator Style section). New DRAFT clause S-M14. |
 | 2026-09-27 | 3.14 | **The card-fit need reads X Adjust (§4).** The X Adjust dial now works on cylinders (BRAILLE_SPACING_SPECIFICATIONS.md §5): it slides the text grid round the barrel while the tactile arrow stays at the seam-gap midpoint, so `tactile_card_need_mm` / `tactile_max_cells` gain the shift (`card_need = gap/2 + shift + grid + footprint`; 14 cells at X −3 fit a 90 mm card) and `updateCardFitUI()` mirrors it. The arrow-gap warning likewise reads the gap left after the shift. Nothing changes at 0. |

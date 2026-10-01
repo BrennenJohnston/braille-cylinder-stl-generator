@@ -612,8 +612,12 @@ Double-sided is not displaced, so it stays. While the lock holds, a version chan
 the displaced style rather than on the lock's checked radio (RECESS_INDICATOR_SPECIFICATIONS.md,
 Row Indicator Style): entering Version 2 turns it into the Version 2 tactile default, so
 Single-sided in Version 2 keeps the arrow, and leaving Version 2 hands the Version 1 style
-back to it. The memory lasts for the visit, like the Version 2 one: the silent load restore
-never gives anything back, and Reset drops it.
+back to it. Since 2026-10-01 (Brennen's decision) the memory is saved with the design
+settings (`braille_prefs_single_sided_indicator_mode`, only ever `visual`), like the Version 2
+one, so the give-back also works after a reload. `restoreRememberedStyles()` reads it back
+only when Double-sided itself came back on and removes a stale value otherwise; the silent
+load restore still gives nothing back by itself, and Reset drops it. Pinned by two tests in
+`tests/e2e/doubleSided.spec.ts` that reload with Double-sided on.
 
 ### 7.3 The live gap warning
 
@@ -996,6 +1000,7 @@ and separated**. Full record: the research folder's `00_PROJECT_MEMORY.md`, FD-8
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-10-01 | 1.22 | **§7.2: the displaced style survives a reload** (Brennen's decision): saved as `braille_prefs_single_sided_indicator_mode`, read back only with Double-sided, cleared by Reset. |
 | 2026-10-01 | 1.21 | **§5: the two server strings stop calling double-sided a beta** (Brennen's sign-off, 2026-10-01). Gate 1 now reads "Double-sided mode requires the tactile row indicator style: ... or choose Single-sided. ..." and the forced-tactile warning "Double-sided mode locks the row indicator style to the tactile seam arrows; ...". |
 | 2026-09-30 | 1.20 | **Documentation review after the approved build.** Present-tense beta and toggle wording now names the Card sides choice (Overview, §3.1, §4, §6.1, §7.3, §7.6, §10, Related Documentation); §4's capacity is 13 cells a row (52 a side, 104 a card) and its filenames lead with the default `Cylinder_Pair_` file; §7.3 carries the provisional 0.45 mm reliable line of 2026-08-23, so the 0.4 preset's 0.468 gap is quiet; §7.1 quotes the S-M15 draft of the visible note and §7.4 the 2026-09-28 back placeholder; Translate ↑ no longer persists the back text. The two server strings that still said "Double-sided mode is a beta" (§5 gate 1, the forced-tactile warning) were quoted as the code had them (reworded 2026-10-01, v1.21). |
 | 2026-09-29 | 1.19 | **§7.2: Single-sided gives back the Row Indicator Style the lock displaced** (Brennen's finding from testing the Version 1 fixed gears: a card taken to Double-sided and back stayed on the tactile arrow). Retires "the tactile selection is deliberately kept (no surprise snap-back)". A tactile style the user chose is kept; under the lock a version change works on the displaced style; the announcement gains S-M14 "Row Indicator Style set to visual." (DRAFT). The quoted lock note now matches S-M12. Pinned in `tests/e2e/doubleSided.spec.ts`, `version2.spec.ts` and `embosserSetup.spec.ts`. |

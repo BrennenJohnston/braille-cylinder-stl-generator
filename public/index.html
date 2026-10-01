@@ -7897,9 +7897,27 @@
         // so a tactile style the user chose themselves stays put. Choosing
         // Single-sided gives it back (restoreSingleSidedIndicatorMode). While
         // the lock holds, a version change works on this value rather than on
-        // the checked radio, which is the lock's. Kept for the visit, like
-        // version1IndicatorMode, and dropped by Reset.
+        // the checked radio, which is the lock's. Dropped by Reset.
+        // Since 2026-10-01 (Brennen's decision) it is saved with the other
+        // design settings, so the give-back also works after a reload - never
+        // text, only 'visual' or nothing. restoreRememberedStyles() reads it
+        // back only when Double-sided itself came back on.
         let singleSidedIndicatorMode = null;
+        const SINGLE_SIDED_STYLE_PREF = 'braille_prefs_single_sided_indicator_mode';
+
+        // One writer for each remembered style, so storage can never disagree
+        // with the variable: null removes the saved value.
+        function persistRememberedStyle(key, value) {
+            if (value === null) {
+                try { localStorage.removeItem(key); } catch (e) { log.debug('Could not clear saved setting', key, e); }
+            } else {
+                persistValue(key, value);
+            }
+        }
+        function setSingleSidedIndicatorMode(value) {
+            singleSidedIndicatorMode = value;
+            persistRememberedStyle(SINGLE_SIDED_STYLE_PREF, value);
+        }
 
         // Deliberately silent: the card-sides change
         // listener makes the one announcement, and the load-time restore must
@@ -7928,7 +7946,7 @@
             const visualRadio = document.querySelector('input[name="indicator_mode"][value="visual"]');
             const tactileRadio = document.querySelector('input[name="indicator_mode"][value="tactile"]');
             if (on && visualRadio?.checked && tactileRadio) {
-                singleSidedIndicatorMode = 'visual';
+                setSingleSidedIndicatorMode('visual');
                 tactileRadio.checked = true;
                 // A real change event, so persistence, the column dial, and the
                 // tactile submenu react exactly as they do to a user click.
@@ -7965,7 +7983,7 @@
         function restoreSingleSidedIndicatorMode() {
             if (isDoubleSidedOn() || singleSidedIndicatorMode === null) return false;
             const remembered = singleSidedIndicatorMode;
-            singleSidedIndicatorMode = null;
+            setSingleSidedIndicatorMode(null);
             const radio = document.querySelector(`input[name="indicator_mode"][value="${remembered}"]`);
             if (!radio || radio.checked || radio.disabled) return false;
             radio.checked = true;
@@ -8344,8 +8362,16 @@
         // version change only, never on the silent load restore (which must
         // not overrule a persisted choice) and never by a card-stock preset;
         // given back on the way to Version 1 and dropped by Reset, like the
-        // dial snapshot above.
+        // dial snapshot above. Since 2026-10-01 (Brennen's decision) it is
+        // saved with the design settings, so leaving Version 2 gives it back
+        // after a reload too; restoreRememberedStyles() reads it back only
+        // when Version 2 itself came back on.
         let version1IndicatorMode = null;
+        const VERSION1_STYLE_PREF = 'braille_prefs_version1_indicator_mode';
+        function setVersion1IndicatorMode(value) {
+            version1IndicatorMode = value;
+            persistRememberedStyle(VERSION1_STYLE_PREF, value);
+        }
 
         // One key clearance dial per gear since 2026-09-25. The ids ARE the
         // flat request fields (settings.schema.json version_2.key_clearance_*).
@@ -8390,12 +8416,12 @@
             const locked = isDoubleSidedOn();
             const current = (locked && singleSidedIndicatorMode !== null) ? singleSidedIndicatorMode : checked;
             if (isVersion2()) {
-                if (version1IndicatorMode === null) version1IndicatorMode = current;
+                if (version1IndicatorMode === null) setVersion1IndicatorMode(current);
                 if (current !== 'visual') return false;
                 if (locked) {
                     // The default lands under the lock, leaving nothing to
                     // give back: Single-sided in Version 2 keeps the arrow.
-                    singleSidedIndicatorMode = null;
+                    setSingleSidedIndicatorMode(null);
                     return false;
                 }
                 const tactileRadio = document.querySelector('input[name="indicator_mode"][value="tactile"]');
@@ -8406,10 +8432,10 @@
             }
             if (version1IndicatorMode === null) return false;
             const remembered = version1IndicatorMode;
-            version1IndicatorMode = null;
+            setVersion1IndicatorMode(null);
             if (locked) {
                 // The Version 1 style waits for Single-sided.
-                singleSidedIndicatorMode = remembered === 'visual' ? 'visual' : null;
+                setSingleSidedIndicatorMode(remembered === 'visual' ? 'visual' : null);
                 return false;
             }
             const radio = document.querySelector(`input[name="indicator_mode"][value="${remembered}"]`);
@@ -8897,6 +8923,8 @@
                 'braille_prefs_back_placement_mode',
                 'braille_prefs_indicator_shapes',
                 'braille_prefs_indicator_mode',
+                'braille_prefs_single_sided_indicator_mode',
+                'braille_prefs_version1_indicator_mode',
                 'braille_prefs_tactile_indicator_width',
                 'braille_prefs_tactile_indicator_length',
                 'braille_prefs_tactile_indicator_raise',
@@ -9338,8 +9366,8 @@
                 // Version 2-era dials, and undo the reset it was called to
                 // finish.
                 version1DialSnapshot = null;
-                version1IndicatorMode = null;
-                singleSidedIndicatorMode = null;
+                setVersion1IndicatorMode(null);
+                setSingleSidedIndicatorMode(null);
                 try { updateEmbosserVersionUI(); } catch (e) { log.error('Embosser version UI failed to refresh after reset to defaults:', e); }
                 try { updateDoubleSidedUI(); } catch (e) { log.error('Double-sided UI failed to refresh after reset to defaults:', e); }
                 // The radio sweep puts both placement toggles back to Auto; the
@@ -9736,6 +9764,31 @@
                 refreshLiveWarnings();
             } catch (e) {
                 log.error('Embosser version failed to restore; the page is showing Version 1:', e);
+            }
+        })();
+
+        // The remembered Row Indicator Styles come back with the state they
+        // belong to (Brennen's decision, 2026-10-01): the double-sided one
+        // only when Double-sided was restored, the Version 2 one only when
+        // Version 2 was. A value without its state is stale and is removed.
+        // Silent, like every load restore: nothing moves here - the styles are
+        // given back only when the user chooses Single-sided or Version 1.
+        (function restoreRememberedStyles() {
+            try {
+                const sided = readPersisted(SINGLE_SIDED_STYLE_PREF);
+                if (sided === 'visual' && isDoubleSidedOn()) {
+                    singleSidedIndicatorMode = 'visual';
+                } else if (sided !== null && singleSidedIndicatorMode === null) {
+                    persistRememberedStyle(SINGLE_SIDED_STYLE_PREF, null);
+                }
+                const version1 = readPersisted(VERSION1_STYLE_PREF);
+                if ((version1 === 'visual' || version1 === 'tactile') && isVersion2()) {
+                    version1IndicatorMode = version1;
+                } else if (version1 !== null) {
+                    persistRememberedStyle(VERSION1_STYLE_PREF, null);
+                }
+            } catch (e) {
+                log.error('The remembered Row Indicator Styles failed to restore; Single-sided and Version 1 will keep the current style:', e);
             }
         })();
 

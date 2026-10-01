@@ -82,7 +82,10 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      BACK the visual style the lock displaced (singleSidedIndicatorMode,
      2026-09-29, Brennen's finding; the old "no snap-back" rule is retired) -
      never on load restore, dropped by Reset; under the lock a version change
-     works on the displaced style, not the checked radio. Footprints ship
+     works on the displaced style, not the checked radio. SAVED across reloads
+     since 2026-10-01 (his decision): braille_prefs_single_sided_indicator_mode,
+     read back by restoreRememberedStyles() only when Double-sided was
+     restored too (a stale value is removed). Footprints ship
      FIXED — no UI dials (2026-08-16) — and KEYED to the card-stock preset
      since 2026-08-20: 0.3 preset → Option B dot ⌀1.2 (0.4 base + 0.4 dome,
      dome ⌀0.8) + bowl ⌀1.3 × 0.5 mm (still the schema/models defaults);
@@ -340,7 +343,10 @@ translation, Three.js preview. Working branch: develop — never commit to main.
    version radios' change listener - entering Version 2 remembers the style
    (version1IndicatorMode, beside version1DialSnapshot) and, if visual and not
    double-sided-locked, checks the tactile radio and dispatches its change;
-   leaving Version 2 gives it back; Reset drops the snapshot. NEVER on the
+   leaving Version 2 gives it back; Reset drops the snapshot. The memory is
+   SAVED across reloads since 2026-10-01 (his decision):
+   braille_prefs_version1_indicator_mode, read back only when Version 2 was
+   restored too. NEVER on the
    silent load restore (a visual choice made in Version 2 survives a reload)
    and NEVER by a card-stock preset (test_smoke pins that neither
    THICKNESS_PRESETS object names indicator_mode). The composed deferred
