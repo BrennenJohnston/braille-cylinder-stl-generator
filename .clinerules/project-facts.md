@@ -694,8 +694,9 @@ translation, Three.js preview. Working branch: develop — never commit to main.
     named braille-stl-generator-openscad — the two spellings are the same repo;
     OpenSCAD/VENDORED.json and a test both pin the GitHub name). Since
     OpenSCAD v2.9.0 (2026-09-23; v2.9.1 the same day, docs only; vendored
-    from v2.10.0 - 2026-09-24, the fused roller's v9 update and the Version 2
-    Tactile default; only the quick-start docs changed among the vendored files) its Customizer uses
+    from v2.11.0 - 2026-10-01, tag on 8e64e06: per-gear key clearance, the
+    Version 1 gears and fused-roller vent, the S-SO1 Seam Offset wording and a
+    quick start without jar examples) its Customizer uses
     this app's section names (Card Sides, Gears, Cylinders to Generate, Row
     Indicator Style, Card Thickness), carries no BETA or sign-off labels, and
     renders both cylinders by default like 6f; its parameter names never

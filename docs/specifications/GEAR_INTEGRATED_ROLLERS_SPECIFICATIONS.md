@@ -629,7 +629,9 @@ standard-gear names and the double-sided names never change.
 `Braille_Cylinder_STL_Generator_EmbosserV2.scad` carries the fused roller since OpenSCAD
 v2.8.0 (2026-09-21; its `[Gears]` tab, `assets/v2_gears_{a,b}.stl` derived from the web
 `.bin`s, the same weld rings, notch fill and size gate). The v9 update below (§11.8) lands
-there as v2.10.0; MakerWorld cannot ship assets (§10), so its copy hides the switch.
+there as v2.10.0, and the Version 1 file's vent and socket cones (§6.5) as v2.11.0
+(2026-10-01, re-vendored here the same day); MakerWorld cannot ship assets (§10), so its
+copy hides the switch.
 
 ### 11.8 The v9 update: chamfer, vent, self-supporting socket (2026-09-24; decisions D-1, D-2, D-6, D-7)
 

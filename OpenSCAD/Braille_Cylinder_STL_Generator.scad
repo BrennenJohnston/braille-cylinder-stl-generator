@@ -259,7 +259,7 @@ cylinder_diameter_mm = 30.8; // [10:0.1:100] Cylinder outer diameter in mm
 cylinder_height_mm = 52; // [20:1:150] Cylinder height in mm
 polygon_cutout_radius_mm = 13.0; // [0:0.1:50] Polygonal cutout circumscribed radius (0 = no cutout)
 polygon_cutout_points = 12; // [3:1:24] Number of sides/points for polygonal cutout
-seam_offset_degrees = 0.0; // [0:1:360] Seam offset (degrees) — Rotates starting position around cylinder
+seam_offset_degrees = 0.0; // [0:1:360] Seam offset (degrees) — Turns the polygonal cutout around the cylinder's axis. The braille does not move.
 
 // Slicer seam channel (OpenSCAD parity plan phase O1, 2026-09-21; web decisions
 // D-1, D-2, D-13..D-15). Size is not a dial: the six SEAM_CHANNEL_* constants
@@ -280,9 +280,7 @@ dot_spacing = 2.5; // [1:0.1:5] Spacing between dots within a cell (mm)
 
 // --- Braille Positioning ---
 // Note: on a cylinder, X = angular wrap around the seam — a linear "X adjust"
-// has no useful meaning, so only the vertical adjust is exposed. Use
-// `seam_offset_degrees` (Expert Mode - Cylinder Dimensions) to rotate the
-// braille pattern around the cylinder axis.
+// has no useful meaning, so only the vertical adjust is exposed.
 braille_y_adjust = 0.0; // [-10:0.1:10] Vertical adjustment of braille pattern (mm)
 
 /* [Expert Mode - Braille Dot Adjustments] */
@@ -1483,7 +1481,7 @@ function get_dot_pattern(char) =
 // =============================================================================
 //
 // Every curved-surface primitive below picks its $fn from exactly one source
-// based on what kind of surface it is. The six sources are intentionally
+// based on what kind of surface it is. The seven sources are intentionally
 // segregated (not competing) — pick whichever matches your geometry class:
 //
 //   1. CYLINDER_SHELL_FN = 64   — the outer cylinder shell, and any band
@@ -1518,6 +1516,10 @@ function get_dot_pattern(char) =
 //      web worker's SEAM_CHANNEL_CONE_SEGMENTS so both generators cut the same
 //      groove, and a multiple of 4 so each cone has a vertex straight across
 //      the barrel and a straight run keeps the exact V of the straight cut.
+//
+//   7. AXIS_CUT_FN = 48 — the gear-mode roller's axis vent and its two socket
+//      cones (2026-09-30). Fixed, like case 6, to the web worker's
+//      AXIS_CUT_SEGMENTS so both generators cut the same hole.
 //
 // If you add a new curved primitive, pick the case that matches and pass
 // its constant explicitly. Do not rely on the global $fn for any visible
@@ -1554,6 +1556,9 @@ CYLINDER_SHELL_FN = 64;
 
 // The tactile seam channel's sweep cones ($fn TESSELLATION POLICY case 6).
 SEAM_CHANNEL_CONE_FN = 32;
+
+// The gear-mode roller's axis vent and socket cones ($fn TESSELLATION POLICY case 7).
+AXIS_CUT_FN = 48;
 
 // -----------------------------------------------------------------------------
 // RAISED-DOT BASE EMBED
@@ -2146,6 +2151,68 @@ module gear_set(emboss = is_emboss_plate) {
     }
 }
 
+// The roller's vent and self-supporting gear sockets (2026-09-30, Brennen's
+// approved plan; the web generator's gears.axis_cut_blocks). Printed as
+// generated, bottom gear down, each gear's housing-pin socket ended in a flat
+// blind end: a roof over air that needed support inside the hole. A cone that
+// carries the socket's own 45 degree taper on to a 2 mm vent along the whole
+// axis lays nothing over air, and the vent lets the roller come off its pin
+// with no vacuum. The pin is a close fit, so the cone runs
+// V1_SOCKET_CONE_INSET INSIDE the taper and never touches the mouth chamfer,
+// the key bore or the taper: the taper's flat facets dip up to 0.01071 mm
+// inside the ideal cone (bounded by V1_SOCKET_TAPER_FACET_DIP), and the
+// cutter's corners sit on its nominal radius.
+//
+// Every number mirrors app/geometry/gears.py in the web generator
+// (tests/test_gear_rollers_scad.py diffs them). Each socket is MEASURED off the
+// gear assets by vertex fits and is the same on all four gears: [mouth
+// chamfer, key bore radius, taper start depth, rim radius, blind-end depth],
+// depths from the gear's mouth. Recorded per gear, never averaged.
+V1_GEAR_SOCKET_A = [1.0, 7.0, 6.7, 5.2, 8.5];       // A2, Cylinder A's bottom gear
+V1_GEAR_SOCKET_B = [1.0, 7.0, 6.7, 5.2, 8.5];       // B2
+V1_TOP_GEAR_SOCKET_A = [1.0, 7.0, 6.7, 5.2, 8.5];   // A1, Cylinder A's top gear
+V1_TOP_GEAR_SOCKET_B = [1.0, 7.0, 6.7, 5.2, 8.5];   // B1
+V1_GEAR_BODY_T = 10.0;                // each gear's thickness: its mouth sits h/2 + this from the barrel's centre
+V1_VENT_R = 1.0;                      // the 2 mm vent
+V1_VENT_OVERSHOOT = 1.0;              // past both gear mouths
+V1_SOCKET_CONE_OVERLAP = 0.5;         // the cone starts this far short of the blind end, in the socket's air
+V1_SOCKET_TAPER_FACET_DIP = 0.0108;   // the taper's facets dip at most this inside the ideal cone (measured 0.01071)
+V1_SOCKET_CONE_INSET = 0.02;          // the cone runs this far inside the taper, touching none of it
+V1_SOCKET_CONE_VENT_GROWTH = 0.01;    // its narrow end overlaps the vent by this, nothing coplanar
+
+function v1_socket_ok(s) = s[3] < s[1]
+                           && abs((s[1] - s[3]) - (s[4] - s[2])) < 1e-9   // a 45 degree taper
+                           && s[4] - s[2] > V1_SOCKET_CONE_OVERLAP;      // the cone starts on the taper
+assert(v1_socket_ok(V1_GEAR_SOCKET_A) && v1_socket_ok(V1_GEAR_SOCKET_B)
+       && v1_socket_ok(V1_TOP_GEAR_SOCKET_A) && v1_socket_ok(V1_TOP_GEAR_SOCKET_B),
+       "a gear socket table is not a 45 degree taper the cone can start on");
+assert(V1_SOCKET_CONE_INSET > V1_SOCKET_TAPER_FACET_DIP && V1_SOCKET_CONE_INSET < V1_SOCKET_CONE_OVERLAP,
+       "the socket cone inset must clear the taper's facets and stay below the overlap");
+assert(V1_VENT_R > 0 && V1_VENT_R < GEAR_WELD_RING_R_IN, "the vent would reach the weld rings");
+assert(max([for (s = [V1_GEAR_SOCKET_A, V1_GEAR_SOCKET_B, V1_TOP_GEAR_SOCKET_A, V1_TOP_GEAR_SOCKET_B])
+                s[3] + V1_SOCKET_CONE_OVERLAP - V1_SOCKET_CONE_INSET]) < GEAR_WELD_RING_R_IN,
+       "a socket cone would reach the weld rings");
+
+// The three axis cuts, subtracted LAST in each plate module - after every
+// union and every recess, as the web worker does - in the plate modules' LOCAL
+// frame (barrel -h/2..+h/2): the vent the whole roller plus the overshoot out
+// of each mouth, the bottom socket's cone from V1_SOCKET_CONE_OVERLAP short of
+// its blind end, at the taper's radius there less the inset, rising at 45
+// degrees to the vent, and the top socket's mirror cone, emitted apex first.
+module v1_axis_cuts(emboss) {
+    mouth = active_cylinder_height_mm / 2 + V1_GEAR_BODY_T;
+    narrow = V1_VENT_R + V1_SOCKET_CONE_VENT_GROWTH;
+    bottom = emboss ? V1_GEAR_SOCKET_A : V1_GEAR_SOCKET_B;
+    top = emboss ? V1_TOP_GEAR_SOCKET_A : V1_TOP_GEAR_SOCKET_B;
+    wide = bottom[3] + V1_SOCKET_CONE_OVERLAP - V1_SOCKET_CONE_INSET;
+    top_wide = top[3] + V1_SOCKET_CONE_OVERLAP - V1_SOCKET_CONE_INSET;
+    cylinder(h = 2 * (mouth + V1_VENT_OVERSHOOT), r = V1_VENT_R, center = true, $fn = AXIS_CUT_FN);
+    translate([0, 0, -mouth + bottom[4] - V1_SOCKET_CONE_OVERLAP])
+        cylinder(h = wide - narrow, r1 = wide, r2 = narrow, $fn = AXIS_CUT_FN);
+    translate([0, 0, mouth - top[4] + V1_SOCKET_CONE_OVERLAP - (top_wide - narrow)])
+        cylinder(h = top_wide - narrow, r1 = narrow, r2 = top_wide, $fn = AXIS_CUT_FN);
+}
+
 // The seam channel cutter, the web worker's createSeamChannelManifold: a V
 // section in the radial plane (X radial, Y tangential) - apex SEAM_CHANNEL_DEPTH_MM
 // below the surface, sides through the surface at SEAM_CHANNEL_WIDTH_MM and on
@@ -2513,6 +2580,12 @@ module cylinder_emboss_plate() {
             if (ds_on) {
                 ds_back_recesses();
             }
+
+            // The vent and both socket cones, cut last of all (2026-09-30),
+            // as the web worker cuts them.
+            if (gears_on) {
+                v1_axis_cuts(true);
+            }
         }
     }
 }
@@ -2613,6 +2686,12 @@ module cylinder_counter_plate() {
             // the same reason ds_back_recesses() is on the emboss plate.
             if (ds_on) {
                 ds_front_recesses();
+            }
+
+            // The vent and both socket cones, cut last of all (2026-09-30),
+            // as the web worker cuts them.
+            if (gears_on) {
+                v1_axis_cuts(false);
             }
         }
 

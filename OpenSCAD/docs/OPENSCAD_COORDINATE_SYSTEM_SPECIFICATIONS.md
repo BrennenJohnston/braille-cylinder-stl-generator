@@ -354,8 +354,9 @@ module braille_dot_centered_cylinder() {
     }
 }
 
-// Placement on cylinder:
-theta_deg = angle_rad * 180 / PI + seam_offset_degrees;
+// Placement on cylinder (seam_offset_degrees does not enter here: it turns
+// only the polygonal cutout, through cylinder_shell's cutout_rotate_deg):
+theta_deg = angle_rad * 180 / PI;
 radial_offset = radius + active_emboss_height / 2;
 
 translate([radial_offset * cos(theta_deg), radial_offset * sin(theta_deg), z_position])

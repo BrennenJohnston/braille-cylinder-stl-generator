@@ -167,12 +167,10 @@ validated — raise the two recess values if the plates bind.
 
 ## 6. Cylinder Sizing
 
-- **Measure the diameter** of the container you are labeling: wrap a string
-  around it, measure the string, and divide by π (3.14159). Enter it as
-  `cylinder_diameter_mm`, with `paper_thickness_preset` set to `Custom` — the
-  0.4mm and 0.3mm presets fix the diameter at 30.8 mm and ignore the slider.
-- **Height:** measure the flat area where the braille will sit and leave a
-  margin at the top and bottom.
+- **Diameter and height:** the cylinders are the rollers of the braille card
+  embosser, and the 0.4mm and 0.3mm presets fix the diameter at 30.8 mm, the
+  size the embosser was built for, and ignore the slider. Set
+  `paper_thickness_preset` to `Custom` only to tune the fit.
 - **Capacity math:** cells are spaced 6.5 mm apart, so the default 13 text
   cells + 2 indicator cells span about 91 mm. The default 30.8 mm-diameter
   cylinder (~96.8 mm circumference) fits that with room left for the seam
@@ -180,8 +178,9 @@ validated — raise the two recess values if the plates bind.
   raise `grid_columns` yourself if you want longer rows on a bigger cylinder.
   With Indicator Letters Off (triangle cell only) — or in Tactile mode, which
   has no marker cells — up to 14 text cells fit the default cylinder.
-- Print cylinders standing upright for the best dot quality, and use
-  `seam_offset_degrees` to rotate the seam away from your text.
+- Print cylinders standing upright for the best dot quality.
+  `seam_offset_degrees` turns only the polygonal cutout; the braille does not
+  move.
 - Leave your slicer's seam mode on **Aligned**: the shallow groove beside the
   row markers (the slicer seam channel, On by default) catches each layer's
   seam so it stays off the dots. A profile set to *Back* / *Rear* ignores the
@@ -219,8 +218,7 @@ cylinder size the gap is 18.8 mm at 13 text cells and 12.3 mm at 14; 15 cells
 leaves only 5.8 mm and trips the warning. Fixes, in order of preference:
 
 1. **Lower `grid_columns`** back to 14 or fewer.
-2. **Raise `cylinder_diameter_mm`** if you are labelling a larger container.
-3. **Narrow `tactile_indicator_width`** (Row Indicator Style section) — but a
+2. **Narrow `tactile_indicator_width`** (Row Indicator Style section) — but a
    narrower arrow is harder to find by touch, so treat this as a last resort.
 
 ### The plates bind or the indicator crushes the paper
@@ -244,9 +242,6 @@ Business-card examples take the content decisions from BANA's Fact Sheet
 | Name + e-mail (BANA Example 1) | `harry potter` / `harry@hogwarts.edu` | Organization omitted — it already appears in the e-mail address. |
 | Long name (BANA Example 4) | `liesel a.` / `schimmelfennig` / `l.schimmelfennig@usace.army` | Name continues onto the second line; phone omitted. |
 | Nickname + two phones (BANA Example 7) | `fran rikard` / `albuquerque ac` / `c 505.312.4224` / `f 505.312.4225` | Nickname saves cells; `c`/`f` prefixes tag cell and fax. |
-| Spice jar (~55 mm diameter) | `cinnamon` | One row; set `paper_thickness_preset = Custom` and `cylinder_diameter_mm = 55`. |
-| Medicine bottle (~40 mm) | `amoxicillin` / `500mg` | "amoxicillin" is 11 cells — within the 13-cell row. |
-| Water bottle tag (~75 mm) | `j. smith` / `555.867.5309` | Initials save space; the phone number fits one row. |
 
 ## 9. Resources
 
