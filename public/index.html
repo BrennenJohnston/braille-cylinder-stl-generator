@@ -9041,6 +9041,9 @@
                 expertToggleText.textContent = visible ? 'Hide Expert Mode' : 'Show Expert Mode';
                 expertToggleIcon.textContent = visible ? '▲' : '▼';
                 expertToggleBtn.classList.toggle('active', visible);
+                // The state a screen reader announces. Missing until 2026-10-01: a
+                // reload with Expert Mode open read "Hide Expert Mode, collapsed".
+                expertToggleBtn.setAttribute('aria-expanded', String(visible));
             }
             // Double-sided beta toggle and back text (hidden storage until Phase 08)
             // Same keys as the retired checkboxes, so a saved choice carries

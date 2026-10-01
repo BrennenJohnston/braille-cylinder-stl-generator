@@ -1885,6 +1885,13 @@ expertToggleBtn.addEventListener('click', () => {
 });
 ```
 
+**Every path that changes the state sets `aria-expanded`, not just the click.** The
+load-time restore of `braille_prefs_expert_visible` re-opens the panel and relabels the
+button; until 2026-10-01 it did not set `aria-expanded`, so a reload with Expert Mode open
+was announced "Hide Expert Mode, button, collapsed". It now sets the attribute beside the
+text and icon, and `tests/e2e/expertModeRestore.spec.ts` reloads in both states and reads
+the attribute.
+
 #### Screen Reader Announcements
 
 When `aria-expanded` changes, screen readers automatically announce the new state:
@@ -3335,6 +3342,7 @@ Low vision users benefit from enhanced depth perception:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.34 | 2026-10-01 | **§4.5: the Expert Mode restore sets `aria-expanded`** (found in the 2026-09-30 review, fixed on Brennen's word): a reload with Expert Mode open used to be announced as collapsed; pinned by `tests/e2e/expertModeRestore.spec.ts`. |
 | 1.33 | 2026-09-30 | **Documentation review after the approved build.** The two-file warning is gone (`templates/index.html` was deleted on 2026-07-30). §4.8's table-of-contents entry, the accordion handler note and §4.11 follow the Embosser setup item: the heading outline re-measured at 7 / 15 / 15, three h2 sections and eight Expert Mode h3s, the legend example is Card sides. §6.1 describes the action button as it is since 2026-08-18 (always Generate STL, with a separate Download STL button). §8's tab table, JavaScript API and trigger buttons match the eight help tabs. The gear size note names both versions. |
 | 1.32 | 2026-09-29 | **§3.8: the Display settings drawer for phones** (Brennen's finding: on a phone the preview toolbar hid the model, 67 % of the viewer at 390 × 844). Portrait: a gear + "Display settings" button under the viewer opens the controls below it, never over the model. Phone landscape: a 44 px gear in the viewer's corner opens them along the bottom beside it, falling back to the old overlay when the app text size makes them too wide. Wide screens unchanged. Button words S-PD1 (DRAFT). Pinned by `tests/e2e/previewDisplayDrawer.spec.ts`. |
 | 1.31 | 2026-09-29 | **§4.8: Single-sided gives back the visual markers the double-sided lock displaced** (Brennen's finding from testing). The card-sides announcement gains S-M14 "Row Indicator Style set to visual." (DRAFT) when the style moved; a tactile style the user chose stays. Details in INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §7.2. |
