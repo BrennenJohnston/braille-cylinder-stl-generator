@@ -66,7 +66,7 @@ order they arrive in.
 > 2026-09-24 (decision D-5) Row Indicator Style and Card Thickness moved into Expert
 > Mode, so steps 10–14 and 25–26 now go through it, and every Tab count below was
 > measured in Chromium. Step 23 now also hears that the visual markers came back
-> (S-M14, a draft awaiting Brennen's sign-off).
+> (S-M14, signed by Brennen 2026-10-01).
 
 ## Part 1 — Finding the choice while single-sided
 
@@ -335,8 +335,8 @@ and B", then `Shift+Tab` back to "Hide Expert Mode" and press `Enter` to close i
 > **Expect:** "Single-sided, radio button, checked, 1 of 2", then a moment
 > later, on its own: "Single-sided card selected. Row Indicator Style set to
 > visual." In Version 1, choosing Single-sided gives back the visual markers that
-> Double-sided replaced (since 2026-09-29; the second sentence is S-M14, a draft
-> awaiting Brennen's sign-off). If the style was already tactile before Double-sided,
+> Double-sided replaced (since 2026-09-29; the second sentence is S-M14, signed by
+> Brennen 2026-10-01). If the style was already tactile before Double-sided,
 > only the first sentence is spoken.
 
 **Step 24.** `Tab` forward through the front entry controls and on past the

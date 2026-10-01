@@ -4,8 +4,6 @@ This guide explains the two cylinders the Braille STL Generator makes. They are 
 rollers of the hand-operated Custom Braille Embosser, which presses braille into business
 cards: **Cylinder A** (the embossing plate) carries the raised dots and **Cylinder B** (the
 counter plate) carries the matching recesses. A card fed between them comes out embossed.
-You can also use the cylinders on their own as tactile labels for jars, bottles, and
-containers.
 
 ## First: Decide What to Include
 
@@ -313,4 +311,4 @@ Braille translation powered by [liblouis](https://liblouis.io/).
 ---
 
 *Document Version: 1.4*
-*Last Updated: September 2026 (the cylinders described as the embosser's rollers, with the jar and bottle label material removed; Simplified-gear printing; double-sided sizes per card stock)*
+*Last Updated: October 2026 (the cylinders described as the embosser's rollers only, with the jar and bottle label material removed; Simplified-gear printing; double-sided sizes per card stock)*

@@ -1441,8 +1441,7 @@ disclosure button; a wide screen is unchanged (no button, the overlay as before)
 aria-expanded aria-controls="preview-display-controls">` and the existing
 `.preview-display-controls` group, which gained `id="preview-display-controls"`. The button's
 visible words are its accessible name — no `aria-label` — and the gear SVG and the chevron are
-`aria-hidden`. The words are **S-PD1 "Display settings", DRAFT 2026-09-29, awaiting Brennen's
-sign-off.** The state is one class, `.is-open` on the group, plus `aria-expanded`; it is not
+`aria-hidden`. The words are **S-PD1 "Display settings", signed by Brennen 2026-10-01.** The state is one class, `.is-open` on the group, plus `aria-expanded`; it is not
 persisted, so every load starts closed. On a wide screen the class changes nothing. Why a
 button with `aria-expanded` and not `<details>`/`<summary>`: the same controls must always
 show on a wide screen, and a closed `<details>` hides its content whatever the page's CSS
@@ -2124,7 +2123,7 @@ next to the group, and `updateDoubleSidedUI()` appends its id to the disabled ra
 `aria-describedby` so the reason travels with the option; both are removed when
 Single-sided is chosen again, and since 2026-09-29 the visual markers the lock displaced come
 back with them, announced in the same one write as S-M14 "Row Indicator Style set to
-visual." (DRAFT; INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §7.2). Since 2026-09-20 the note's text is S-M12 (signed 2026-09-21) ("Locked:
+visual." (signed 2026-10-01; INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §7.2). Since 2026-09-20 the note's text is S-M12 (signed 2026-09-21) ("Locked:
 Double-sided is on, … Choose Single-sided to pick visual markers.") and it is no longer
 announced on its own: the card-sides change listener reads it into its one composed
 announcement. Native `disabled` was chosen over `aria-disabled` because the repository's
@@ -3173,9 +3172,9 @@ The Help Modal provides business card guidance — with rule statements quoted v
 | `tab-examples` | `helpPanelExamples` | BANA's worked business-card examples with what to type |
 | `tab-resources` | `helpPanelResources` | Standards, guides and credits |
 
-Since the 2026-09-30 help review several sentences in these panels are drafts awaiting
-Brennen's sign-off (S-H4..S-H14 and the redrafted S-P2 label, each marked in an HTML
-comment beside it in `public/index.html`).
+The sentences rewritten in the 2026-09-30 help review (S-H4..S-H14 and the S-P2 label)
+were signed off by Brennen on 2026-10-01; each carries its ID in an HTML comment beside it
+in `public/index.html`.
 
 ### 8.4 Accessibility Features
 

@@ -507,7 +507,7 @@ the embosser version and the gears). Full pattern in UI_INTERFACE_CORE_SPECIFICA
   Generate each cylinder with the same settings." The "This is a beta for testing —
   proofread both sides…" sentence was removed with the BETA label (decision D-7), and
   "Turning this on shows the Back of Card section below" became "Choosing it makes the Back
-  of Card section below active" on 2026-09-30 (S-M15, DRAFT awaiting Brennen's sign-off).
+  of Card section below active" on 2026-09-30 (S-M15, signed by Brennen 2026-10-01).
 - `#ds-gap-warning` / `#ds-gap-message` (§7.3) moved into this fieldset.
 - Change listener: `updateDoubleSidedUI()`, persist, `resetToGenerateState()`,
   `refreshLiveWarnings()`, then ONE announcement deferred by a tick (so the radio's own
@@ -605,7 +605,7 @@ deliberately kept, no surprise snap-back" rule). `updateDoubleSidedUI()` remembe
 `restoreSingleSidedIndicatorMode()`, called from the card-sides change listener only, checks
 the visual radio again through a real `change` event and returns true, and the one
 announcement becomes "Single-sided card selected. Row Indicator Style set to visual."
-(S-M14, **DRAFT** 2026-09-29, the mirror of S-V16). A tactile style the user chose before
+(S-M14, signed by Brennen 2026-10-01, the mirror of S-V16). A tactile style the user chose before
 Double-sided is not displaced, so it stays. While the lock holds, a version change works on
 the displaced style rather than on the lock's checked radio (RECESS_INDICATOR_SPECIFICATIONS.md,
 Row Indicator Style): entering Version 2 turns it into the Version 2 tactile default, so

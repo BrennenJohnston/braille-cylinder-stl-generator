@@ -6,7 +6,7 @@
 
 A web app for generating 3D-printable braille. Type your text, pick a braille translation table, and download an STL file you can send straight to your 3D printer.
 
-The goal is to make braille labels and cards accessible to anyone with a 3D printer, without needing to know braille yourself. The app handles translation (via [liblouis](https://liblouis.io/)) and turns it into a ready-to-print 3D model.
+The goal is to make embossed braille business cards accessible to anyone with a 3D printer, without needing to know braille yourself. The app handles translation (via [liblouis](https://liblouis.io/)) and turns it into a ready-to-print 3D model.
 
 ## What it does
 
@@ -78,9 +78,6 @@ cannot be seated in the wrong place, and which carries tactile row markers a bli
 user can feel. Its gears must be cut to the R14 peg spec — earlier pegs do not fit.
 Version 1 stays the default and is fully supported; see
 [KNOWN_ISSUES.md](./docs/KNOWN_ISSUES.md).
-
-You can also use the cylinders on their own as tactile labels for jars, bottles,
-and containers.
 
 ## Quick start
 

@@ -37,7 +37,7 @@ card-stock preset (`tests/test_smoke.py` pins that neither preset names `indicat
 double-sided lock (v3.3) takes precedence: a locked tactile style is left alone. Since
 2026-09-29 the lock remembers the visual style it displaced and choosing Single-sided gives
 it back (INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §7.2; announced with S-M14 *"Row
-Indicator Style set to visual."*, DRAFT). While the lock holds, a version change works on
+Indicator Style set to visual."*, signed 2026-10-01). While the lock holds, a version change works on
 that displaced style instead of on the checked radio: entering Version 2 turns it into the
 tactile default (Single-sided in Version 2 keeps the arrow), and leaving Version 2 hands the
 remembered Version 1 style to it (Single-sided in Version 1 shows that style). The composed

@@ -114,8 +114,8 @@ const BASELINE_NEGATIVE = {
 const FRONT_BRAILLE = '⠁⠃⠉';
 const BACK_BRAILLE = '⠙⠑⠋';
 
-// S-M11, signed 2026-09-21: the Single-sided sentence. S-M14, DRAFT
-// 2026-09-29 (awaiting Brennen's sign-off): the clause it gains when the Row
+// S-M11, signed 2026-09-21: the Single-sided sentence. S-M14, signed
+// 2026-10-01: the clause it gains when the Row
 // Indicator Style just went back to the visual markers the lock displaced.
 const S_M11_SINGLE = 'Single-sided card selected.';
 const S_M14_STYLE_RESTORED = 'Row Indicator Style set to visual.';

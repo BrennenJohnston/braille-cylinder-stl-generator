@@ -668,8 +668,8 @@ golden pairs regenerating unchanged, prove it).
   blind ⌀14 hole. The cone lays nothing over air and the slicer generates no support in the
   socket at all (`02_CEILING_SUPPORT_RESEARCH.md`). The "premade support" and its toggle
   were therefore dropped (D-6). A flat-topped peg cannot reach the cone: the straight bore is
-  5.7 mm deep before the taper starts. Open item Q-1: the housing peg's real reach, to be
-  confirmed by the print test.
+  5.7 mm deep before the taper starts. Item Q-1, the housing peg's real reach, was closed
+  by Brennen's 2026-09-30 print testing: the peg does not reach the cone.
 - **The top socket's floor is the same cone, since 2026-09-25 (decision D-K5,
   `V2_TOP_GEAR_SOCKET`, measured: bore r 7.0 A1 / 5.0 B1, rim r 5.2 / 3.2 at the floor
   vertex, floor 1.5 above the barrel's top face; cone from 0.5 above the floor at
@@ -700,9 +700,11 @@ golden pairs regenerating unchanged, prove it).
   bottom gear on the build plate and supports off. They lift off the embosser's peg without a
   vacuum." (the OpenSCAD [Gears] tab says "Print bottom gear down with supports off.", S-O1).
 - **Print test:** PASSED — Brennen printed the fused pair from the pushed build on
-  2026-09-24, bottom gear down ("passes 3D print check"); Q-1 (the housing peg's reach
-  into the cone) was not separately reported and stays open in `docs/KNOWN_ISSUES.md`.
-  The top-socket cone (D-K5, 2026-09-25) has not been printed yet.
+  2026-09-24, bottom gear down ("passes 3D print check"). His print testing of 2026-09-30
+  (confirmed 2026-10-01) closed the rest: the housing peg does not reach the cone (Q-1),
+  the top-socket cone (D-K5, 2026-09-25) has been printed and fits, the 0.14 mm ledge
+  needed no support, and the Version 1 Simplified rollers (§6.5) print bottom gear down
+  with no socket support and fit the Version 1 housing pins.
 
 ---
 
@@ -710,6 +712,7 @@ golden pairs regenerating unchanged, prove it).
 
 | Date | Change |
 |---|---|
+| 2026-10-01 | **Print results recorded.** §11.8: Brennen's 2026-09-30 print testing closed Q-1 (the peg does not reach the cone), printed the top-socket cone (D-K5), found no support needed at the 0.14 mm ledge, and passed the Version 1 Simplified rollers. |
 | 2026-09-30 | **Documentation review after the approved build.** The header's status and choice lines name the released Gears radio group; §5 tells a Version 1 roller (52) from a Version 2 one (54) instead of "the gears BETA"; §6.2 notes the §6.5 vent beside the solid barrel; §9's dome note says "this feature". |
 | 2026-09-30 | **The Version 1 fused roller is vented and its sockets self-supporting (Brennen's approved plan).** New §6.5: the measured socket table, a ⌀2 axis vent and a 45° cone at each socket's blind end, cut last, each cone 0.02 mm inside the taper so the pin's chamfer, key bore and taper are untouched (0.01 was planned; the taper's facets made it clip by up to 0.0004 mm). §3, §6 and §6.1 updated for the third spec key and the appended CSG step. No barrel chamfer. The Version 1 ready message gains S-P1. Version 1 golden pair regenerated. |
 | 2026-09-28 | **The Version 1 gears are the Version 1 embosser's (Brennen's print test; decisions D-G1, D-G2 in the 2026-09-28 research folder).** §2 gains the source paragraph: the assets are now the gear rings of his four Version 1 holders (`A1/A2/B1/B2 v6`), cut by an exact Manifold intersection and seated on the barrel end, replacing the 2026-08-24 sample set whose Cylinder B gears carry the newer design's ⌀9 bore. §2's counts, §3's bores row and §4's seat note updated; teeth, transform constants, the 72 mm roller, the weld rings and S7 unchanged. Tooth counting in the derivation and the tests moved to the chevron apex. The V1 fused golden pair regenerated (the other six pairs byte-identical); the deep test compares the roller with the holders' rings; the OpenSCAD `assets/gears_a/b.stl` regenerated. |

@@ -1,24 +1,24 @@
 # Known Issues
 
-## Fused Version 2 roller — open items after the v9 update (2026-09-24)
+## Fused rollers — print-tested, no open items (closed 2026-10-01)
 
 Since 2026-09-24 the fused Version 2 roller (Version 2 + fixed gears) prints with its bottom
 gear on the build plate: the barrel's bottom edge is chamfered, a 2 mm vent runs the whole
 axis, and the bottom gear's socket ceiling is a 45° cone that needs no support. Brennen
 printed that pair on 2026-09-24 and it passed his print check. Since 2026-09-25 the top
-gear's socket (A1 / B1) ends in the same cone (decision D-K5) — that build has not been
-printed yet. Since 2026-09-30 the fused Version 1 roller has the same 2 mm vent and a 45°
-cone at the blind end of each gear socket (no barrel chamfer: its barrel has no card
-shelf); Brennen reported on 2026-09-30 that testing of that build, 3D printing included,
-passed. Two questions the passed print did not answer separately:
+gear's socket (A1 / B1) ends in the same cone (decision D-K5). Since 2026-09-30 the fused
+Version 1 roller has the same 2 mm vent and a 45° cone at the blind end of each gear socket
+(no barrel chamfer: its barrel has no card shelf).
 
-- **Q-1 — the housing peg's reach.** The socket's straight ⌀14 (A) / ⌀10 (B) bore is 5.7 mm
-  deep before its taper starts and the cone begins above that, so a flat-topped peg cannot
-  touch it. If the real peg is longer or pointed and touches the cone, say so: the cone's
-  numbers live in `app/geometry/version2.py` (`V2_GEAR_SOCKET`) and would be revisited.
-- **The residual 0.14 mm ledge and the tooth valleys** under the barrel's first layer are
-  short spans a slicer bridges; whether Bambu Studio still asks for support there at its
-  default overhang threshold is the same print's answer.
+Brennen's print testing of 2026-09-30 answered everything that was still open (confirmed
+2026-10-01):
+
+- **The Version 1 Simplified rollers** print bottom gear down with no support inside the
+  sockets and fit the Version 1 housing pins.
+- **The Version 2 top-socket cone (D-K5)** has been printed and fits.
+- **Q-1 — the housing peg's reach:** the peg does not reach the socket cone. The cone's
+  numbers stay as they are (`app/geometry/version2.py`, `V2_GEAR_SOCKET`).
+- **The residual 0.14 mm ledge** under the barrel's first layer needed no support.
 
 ## Double-sided (interpoint) — status
 
@@ -188,9 +188,9 @@ that could reach it. Use the desktop build or this web app for geared cylinders.
 Wording in this section signed off by Brennen 2026-08-25; reword only with his
 sign-off. The MakerWorld paragraph was re-signed the same day, when a probe of
 the real customizer replaced the reasoning about mesh size with the tested
-reason. DRAFT 2026-09-30 (documentation review), awaiting his sign-off: the pair
-filename, the "Version 1 ... (Version 2's size is 30.8 × 54.0, below)" clause and the
-vent sentences of "The barrel prints solid" are new.
+reason. The pair filename, the "Version 1 ... (Version 2's size is 30.8 × 54.0, below)"
+clause and the vent sentences of "The barrel prints solid" were added on 2026-09-30 and
+signed off by him on 2026-10-01.
 
 Full technical detail: `docs/specifications/GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md`.
 
@@ -203,13 +203,12 @@ row markers a blind user can feel. Choose it under **Embosser version** in the
 **Embosser setup** item at the top of the page (the "(prototype)" tag and its notice were
 dropped on 2026-09-20; the 54 mm barrel passed its print test on 2026-09-01).
 
-**Fixed gears work for Version 2 too (2026-09-21; wording signed by Brennen 2026-09-21).** Choose **Simplified: gears fixed to the cylinders** with Version 2 and each
+**Fixed gears work for Version 2 too (2026-09-21; wording signed by Brennen 2026-09-21, the print-test sentence 2026-10-01).** Choose **Simplified: gears fixed to the cylinders** with Version 2 and each
 cylinder prints as one piece with its Version 2 drive gears attached — a solid barrel
 with no keyed holes, since the gears are already on. The cylinder must be 30.8 × 54 mm
 (the Version 2 preset); anything else is refused, because the gears sit at fixed heights.
 Downloads are named `..._Geared_V2_...`. Brennen's print of the pair passed on 2026-09-24
-(the open items are at the top of this file). *(DRAFT 2026-09-30: this sentence replaced
-"Not yet print-tested."; awaiting his sign-off.)*
+(the print results are at the top of this file).
 
 **The gears must be re-cut.** The holes are family **R14** — four rounded rectangles,
 14 × 14 mm at Cylinder A's top (the nub end), 18 × 10 at A's bottom, 16 × 12 at B's

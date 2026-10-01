@@ -50,8 +50,8 @@ const S_V16_STYLE_MOVED = 'Row Indicator Style set to tactile.';
 // version announcement gains when choosing Version 2 moved X Adjust to the
 // Version 2 tactile default.
 const S_X1_X_ADJUST_MOVED = 'X Adjust set to -2 mm.';
-// S-M11, signed 2026-09-21: the Single-sided sentence. S-M14, DRAFT
-// 2026-09-29 (awaiting Brennen's sign-off): the clause it gains when the Row
+// S-M11, signed 2026-09-21: the Single-sided sentence. S-M14, signed
+// 2026-10-01: the clause it gains when the Row
 // Indicator Style just went back to the visual markers the lock displaced.
 const S_M11_SINGLE = 'Single-sided card selected.';
 const S_M14_STYLE_RESTORED = 'Row Indicator Style set to visual.';

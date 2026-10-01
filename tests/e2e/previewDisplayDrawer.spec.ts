@@ -18,7 +18,7 @@
  *  - a wide screen is unchanged: no button, the overlay as before.
  *
  * Measured, not asserted on the CSS: every claim here reads laid-out boxes.
- * The button's words are S-PD1, DRAFT 2026-09-29, awaiting Brennen's sign-off.
+ * The button's words are S-PD1, signed off by Brennen 2026-10-01.
  *
  * @see docs/specifications/UI_INTERFACE_CORE_SPECIFICATIONS.md section 3.8
  */

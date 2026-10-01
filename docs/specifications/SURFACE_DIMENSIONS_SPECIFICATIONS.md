@@ -446,7 +446,7 @@ The number of sides determines the **shape of the inner cutout**:
 | Step | `1` |
 | Min | `0` |
 | Max | `360` |
-| Note | Turns the polygonal cutout around the cylinder's axis. The braille does not move. (S-SO1, a 2026-09-30 draft awaiting Brennen's sign-off; the old note said the braille text turned) |
+| Note | Turns the polygonal cutout around the cylinder's axis. The braille does not move. (S-SO1, signed by Brennen 2026-10-01; the old note said the braille text turned) |
 
 #### Parameter Names Across Codebase
 
