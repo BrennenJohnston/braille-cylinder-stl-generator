@@ -326,10 +326,12 @@ def validate_double_sided_settings(settings_data: dict) -> bool:
 
     indicator_mode = str(settings_data.get('indicator_mode', 'visual')).strip().lower()
     if indicator_mode != 'tactile':
+        # Signed off by Brennen 2026-08-16; reworded with his sign-off 2026-10-01
+        # (no longer "a beta", and Single-sided is the choice to name).
         raise ValidationError(
-            'Double-sided mode is a beta that requires the tactile row indicator style: '
+            'Double-sided mode requires the tactile row indicator style: '
             "set the Row Indicator Style to 'Tactile seam arrow' (indicator_mode 'tactile') "
-            f"or turn double-sided mode off. Received indicator_mode '{indicator_mode}'.",
+            f"or choose Single-sided. Received indicator_mode '{indicator_mode}'.",
             {'key': 'indicator_mode', 'value': indicator_mode, 'required': 'tactile'},
         )
 
@@ -459,11 +461,11 @@ def validate_double_sided_settings(settings_data: dict) -> bool:
 
 def validate_embosser_version_settings(settings_data: dict, shape_type: str, cylinder_params: dict) -> bool:
     """
-    Hard gates for the Embosser Version 2 keyed gear-peg prototype.
+    Hard gates for the Embosser Version 2 keyed gear-peg embosser.
 
     Every gate is skipped when embosser_version is absent, 1, '1', 1.0 or '',
     so a request that does not ask for Version 2 is validated exactly as it was
-    before the prototype existed.
+    before Version 2 existed.
 
     Gate 1: Version 2 is cylinders-only (S-V6). Its whole subject is a shaped
     cutout in the ends of a barrel; a card has no such end.
@@ -526,7 +528,7 @@ def validate_embosser_version_settings(settings_data: dict, shape_type: str, cyl
         ) from e
     # A version is an enum, not a toggle, so a fractional value is refused
     # rather than truncated. The gear beta's int(float(...)) would read 2.5 as
-    # "Version 2" and build a prototype cylinder for a request nobody could
+    # "Version 2" and build a Version 2 cylinder for a request nobody could
     # have meant - the same silent-fallback shape this project keeps finding.
     if not number.is_integer():
         raise ValidationError(
@@ -548,23 +550,26 @@ def validate_embosser_version_settings(settings_data: dict, shape_type: str, cyl
             {'key': 'embosser_version', 'shape_type': shape_type, 'required': 'cylinder'},
         )
 
-    clearance = _double_sided_number(
-        settings_data,
-        'v2_key_clearance_mm',
-        'version_2.key_clearance_mm',
-        version2.V2_KEY_CLEARANCE_DEFAULT_MM,
-    )
-    if not version2.V2_KEY_CLEARANCE_MIN_MM <= clearance <= version2.V2_KEY_CLEARANCE_MAX_MM:
-        raise ValidationError(
-            f"Setting 'version_2.key_clearance_mm' must be between "
-            f'{version2.V2_KEY_CLEARANCE_MIN_MM} and {version2.V2_KEY_CLEARANCE_MAX_MM} mm',
-            {
-                'key': 'v2_key_clearance_mm',
-                'value': clearance,
-                'minimum': version2.V2_KEY_CLEARANCE_MIN_MM,
-                'maximum': version2.V2_KEY_CLEARANCE_MAX_MM,
-            },
-        )
+    # Gate 2: every Version 2 key clearance the request carries is in range -
+    # the four per-key fields (2026-09-25) and the legacy shared one alike. An
+    # absent field is not a fault: version2.key_clearances resolves it later
+    # (own field, else the shared field, else the key's default).
+    for flat_key in (*version2.V2_KEY_CLEARANCE_FIELDS.values(), version2.V2_KEY_CLEARANCE_SHARED_FIELD):
+        schema_name = 'version_2.' + flat_key.removeprefix('v2_')
+        clearance = _double_sided_number(settings_data, flat_key, schema_name, None)
+        if clearance is None:
+            continue
+        if not version2.V2_KEY_CLEARANCE_MIN_MM <= clearance <= version2.V2_KEY_CLEARANCE_MAX_MM:
+            raise ValidationError(
+                f"Setting '{schema_name}' must be between "
+                f'{version2.V2_KEY_CLEARANCE_MIN_MM} and {version2.V2_KEY_CLEARANCE_MAX_MM} mm',
+                {
+                    'key': flat_key,
+                    'value': clearance,
+                    'minimum': version2.V2_KEY_CLEARANCE_MIN_MM,
+                    'maximum': version2.V2_KEY_CLEARANCE_MAX_MM,
+                },
+            )
 
     # Gate 3 (S-V7, "Integrated gears are not available in Version 2.") was
     # RETIRED on 2026-09-21 (2026-09-20 programme, phase B3): Version 2 has

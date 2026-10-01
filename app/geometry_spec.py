@@ -510,6 +510,21 @@ def extract_cylinder_geometry_spec(
 
     radius = diameter / 2
 
+    # X Adjust on a cylinder (2026-09-27): the whole text grid slides round the
+    # barrel by braille_x_adjust mm of arc, in the card frame the two plates
+    # share, so both cylinders' dots and recesses move together and every pair
+    # still meets at theta and -theta. It is added inside apply_seam /
+    # apply_seam_mirrored below - AFTER the back grid's mirror, so the back text
+    # moves the same way along the card as the front - and nowhere else: the
+    # tactile arrows, the tactile groove and the Version 2 keys stay put.
+    # Negative moves the grid toward column 0's side of the seam gap (the first
+    # cell closer to the alignment arrow, the last cell further from it); seen
+    # from the preview's default camera that is left on Cylinder A and right on
+    # Cylinder B. At 0 every angle is what it was before the dial reached
+    # cylinders. Until this date the cylinder path never read the dial at all.
+    x_shift_mm = float(getattr(settings, 'braille_x_adjust', 0.0))
+    x_shift_angle = x_shift_mm / radius
+
     # Row indicator style. Tactile drops the marker columns entirely and puts
     # raised arrows (emboss) / matching recesses (counter) in the seam gap - one
     # per row, or three fixed ones on the 0.3 mm card-stock preset (see
@@ -530,9 +545,10 @@ def extract_cylinder_geometry_spec(
             # the request route; this branch stays as defense-in-depth for
             # direct callers.
             indicator_mode = str(getattr(settings, 'indicator_mode', 'visual')).lower()
-            # User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off.
+            # User-facing wording signed off by Brennen (2026-08-16), "is a beta that"
+            # removed with his sign-off 2026-10-01; reword only with his sign-off.
             warning = (
-                'Double-sided mode is a beta that locks the row indicator style to the tactile '
+                'Double-sided mode locks the row indicator style to the tactile '
                 f"seam arrows; '{indicator_mode}' was requested and 'tactile' was used instead."
             )
             double_sided_warnings.append(warning)
@@ -560,10 +576,10 @@ def extract_cylinder_geometry_spec(
         gear_warnings.append(warning)
         logger.warning(warning)
 
-    # Embosser Version 2 (keyed gear pegs) PROTOTYPE. Read once, exactly as the
+    # Embosser Version 2 (keyed gear pegs). Read once, exactly as the
     # two betas above are: with Version 1 selected - absent, 1, '1', 1.0 or '' -
     # every Version 2 line below is skipped and the function emits precisely the
-    # spec it emitted before the prototype existed, new keys included.
+    # spec it emitted before Version 2 existed, new keys included.
     embosser_v2 = int(getattr(settings, 'embosser_version', 1)) == 2
     v2_warnings: list[str] = []
     if embosser_v2 and not version2.matches_v2_barrel(diameter, height):
@@ -615,7 +631,7 @@ def extract_cylinder_geometry_spec(
         # a polygonal one running the length of the axis would break into it.
         # Mirrors the gear rule above, and like it the barrel is forced solid
         # rather than the request refused, so a saved cutout radius cannot lock
-        # a user out of the prototype. Wording S-V14 was new in Phase 05 and
+        # a user out of Version 2. Wording S-V14 was new in Phase 05 and
         # was signed as drafted at that gate, 2026-08-28.
         warning = 'The polygonal cutout is not used in Version 2.'
         v2_warnings.append(warning)
@@ -665,9 +681,12 @@ def extract_cylinder_geometry_spec(
         # preset's, so an off-size barrel still gets a hole that meets in the
         # middle. A missing plate_type raises there rather than guessing a side,
         # exactly as the gear asset lookup does.
+        # One clearance per key since 2026-09-25 (own field, else the legacy
+        # shared field, else the key's default - resolved by version2, never
+        # here), so each of the four holes is cut at its own dial.
         if not gear_rollers:
-            v2_clearance = float(getattr(settings, 'v2_key_clearance_mm', version2.V2_KEY_CLEARANCE_DEFAULT_MM))
-            spec['keyed_cutouts'] = version2.keyed_cutout_block(plate_type, height, v2_clearance)
+            clearances = version2.key_clearances(lambda field: getattr(settings, field, None))
+            spec['keyed_cutouts'] = version2.keyed_cutout_block(plate_type, height, clearances)
         # With fixed gears (2026-09-21, sub-plan B, decision D-6) the Version 2
         # barrel stays solid and carries NO keyed holes, countersinks, nub or
         # socket: the gears are already on it. Only the notch each top gear
@@ -690,6 +709,24 @@ def extract_cylinder_geometry_spec(
             # nothing can drain, so it is filled (D-6). The fill is unioned in
             # the gear stage, before the recesses are cut.
             spec['gears']['notch_fills'] = [version2.notch_fill_block(plate_type, height)]
+            # The v9 update (2026-09-24, decisions D-1 and D-2): the barrel's
+            # bottom edge is chamfered so its first layer no longer overhangs
+            # the gear face (a shell-stage cut, like the seam channel), and two
+            # cuts come LAST in the worker, after every union - the 2 mm vent
+            # that joins the gears' own socket holes through the barrel, and
+            # the cone that continues each bottom socket's 45 degree taper up
+            # to the vent so the socket ceiling prints with no support. Fused
+            # Version 2 only: nothing here reaches a Version 1 or a
+            # separate-gear spec.
+            spec['cylinder']['bottom_chamfer'] = version2.bottom_chamfer_block(radius)
+            spec['gears']['axis_cuts'] = version2.axis_cut_blocks(plate_type, height)
+        else:
+            # The Version 1 fused roller gets the same vent and self-supporting
+            # sockets (2026-09-30, Brennen's approved plan), cut last the same
+            # way - but each cone stays a hair inside its socket's taper, so the
+            # housing pin's bore and taper are exactly as vendored, and there
+            # is no barrel chamfer. Numbers: app/geometry/gears.py.
+            spec['gears']['axis_cuts'] = gears.axis_cut_blocks(plate_type, height)
 
     # Counts recesses declined for having no depth, so the omission is reported
     # once per request rather than silently or once per dot.
@@ -702,11 +739,15 @@ def extract_cylinder_geometry_spec(
     if tactile_on:
         tactile_width = float(getattr(settings, 'tactile_indicator_width', 4.0))
         seam_gap_mm = math.pi * diameter - grid_width
-        if seam_gap_mm < tactile_width + TACTILE_MIN_GAP_MARGIN:
+        # X Adjust slides the grid toward one side of the arrow, so the side it
+        # crowds has gap/2 - |shift| of room: the same rule, on the gap the
+        # arrow is left with after the shift (the gap itself at 0).
+        seam_gap_after_shift_mm = seam_gap_mm - 2.0 * abs(x_shift_mm)
+        if seam_gap_after_shift_mm < tactile_width + TACTILE_MIN_GAP_MARGIN:
             warning = (
                 f'Tactile indicator needs a seam gap of at least '
                 f'{tactile_width + TACTILE_MIN_GAP_MARGIN:.1f} mm; this layout leaves '
-                f'{seam_gap_mm:.1f} mm. Reduce the number of braille cells, increase the '
+                f'{seam_gap_after_shift_mm:.1f} mm. Reduce the number of braille cells, increase the '
                 f'cylinder diameter, or narrow the indicator.'
             )
             spec['warnings'].append(warning)
@@ -717,14 +758,14 @@ def extract_cylinder_geometry_spec(
         # cell, the grid, the last cell's footprint. The check that would have
         # caught a 14-cell row running off a 90 mm card.
         card_length_mm = float(getattr(settings, 'card_width', 90.0))
-        card_need_mm = tactile_card_need_mm(settings, double_sided, grid_width, seam_gap_mm)
+        card_need_mm = tactile_card_need_mm(settings, double_sided, grid_width, seam_gap_mm, x_shift_mm)
         if card_need_mm > card_length_mm:
             # S-T1, signed off by Brennen (2026-09-21); reword only with his sign-off.
             warning = (
                 f'The last braille cell would run off the card: this layout needs '
                 f'{card_need_mm:.1f} mm of card from the alignment arrow and the card is '
                 f'{card_length_mm:.0f} mm. Use '
-                f'{tactile_max_cells(settings, double_sided, card_length_mm, diameter)} cells or fewer.'
+                f'{tactile_max_cells(settings, double_sided, card_length_mm, diameter, x_shift_mm)} cells or fewer.'
             )
             spec['warnings'].append(warning)
             logger.warning(warning)
@@ -761,6 +802,7 @@ def extract_cylinder_geometry_spec(
                 if tactile_on and plate_type != 'negative'
                 else None
             ),
+            x_shift_mm=x_shift_mm,
         )
         if seam_channel is not None:
             spec['cylinder']['seam_channel'] = seam_channel
@@ -779,18 +821,21 @@ def extract_cylinder_geometry_spec(
         """Convert planar angle to cylinder theta (for embossing plate).
 
         Braille content is positioned independently of seam_offset.
-        Content flows counter-clockwise when viewed from above.
+        Content flows counter-clockwise when viewed from above. X Adjust is
+        added here, in the card frame, before the negation.
         """
-        return -angle
+        return -(angle + x_shift_angle)
 
     def apply_seam_mirrored(angle: float) -> float:
         """Convert planar angle to cylinder theta with mirrored direction (for counter plate).
 
         Uses + instead of - to reverse the angular direction, making content flow
         clockwise instead of counter-clockwise when viewed from above.
-        Braille content is positioned independently of seam_offset.
+        Braille content is positioned independently of seam_offset. X Adjust is
+        added here, in the same card frame as apply_seam, so a pair still meets
+        at theta and -theta.
         """
-        return angle
+        return angle + x_shift_angle
 
     layout = _CylinderLayout(
         settings=settings,
@@ -1096,23 +1141,29 @@ def _seam_channel_footprint(settings: Any, double_sided: bool) -> float:
     return float(settings.dot_spacing) / 2.0 + max(radii)
 
 
-def tactile_card_need_mm(settings: Any, double_sided: bool, grid_width: float, seam_gap_mm: float) -> float:
+def tactile_card_need_mm(
+    settings: Any, double_sided: bool, grid_width: float, seam_gap_mm: float, x_shift_mm: float = 0.0
+) -> float:
     """
     Card length a tactile row needs, measured from the alignment arrow where the
     card's leading edge sits (D-T3): half the seam gap to the first cell centre,
-    the grid, and the last cell's footprint out to its far dot edge.
+    the grid, and the last cell's footprint out to its far dot edge. X Adjust
+    moves the first cell centre by `x_shift_mm` along the card (negative toward
+    the arrow), so the need moves with it.
     """
-    return seam_gap_mm / 2.0 + grid_width + _seam_channel_footprint(settings, double_sided)
+    return seam_gap_mm / 2.0 + x_shift_mm + grid_width + _seam_channel_footprint(settings, double_sided)
 
 
-def tactile_max_cells(settings: Any, double_sided: bool, card_length_mm: float, diameter: float) -> int:
+def tactile_max_cells(
+    settings: Any, double_sided: bool, card_length_mm: float, diameter: float, x_shift_mm: float = 0.0
+) -> int:
     """
     The largest cell count whose tactile_card_need_mm fits card_length_mm. With
     the arrow at the gap's midpoint the need grows by half a cell spacing per
-    cell: need(n) = pi * D / 2 + (n - 1) * cell / 2 + footprint.
+    cell: need(n) = pi * D / 2 + x_shift + (n - 1) * cell / 2 + footprint.
     """
     cell = float(settings.cell_spacing)
-    room = card_length_mm - math.pi * diameter / 2.0 - _seam_channel_footprint(settings, double_sided)
+    room = card_length_mm - math.pi * diameter / 2.0 - x_shift_mm - _seam_channel_footprint(settings, double_sided)
     if room < 0:
         return 0
     return int(room * 2.0 // cell) + 1
@@ -1249,6 +1300,7 @@ def _seam_channel_block(
     polygon_points: list[dict[str, float]],
     solid: bool,
     detour_path: list[dict[str, float]] | None = None,
+    x_shift_mm: float = 0.0,
 ) -> tuple[dict[str, Any] | None, str | None]:
     """
     Place the seam channel, or say why it was left out.
@@ -1260,6 +1312,12 @@ def _seam_channel_block(
     side of it, and the groove sits at its middle so both margins are equal. In
     tactile mode the groove is on the arrow column and the room that counts is
     the first-cell side's, where the embossing plate's detour runs.
+
+    `x_shift_mm` is X Adjust: the grid has slid that far along `s`, so in
+    visual mode the free window and the groove slide with it (their margins
+    stay equal), and in tactile mode the first-cell side has gap/2 + shift of
+    room and the last-cell side gap/2 - shift, which must still clear the
+    straight groove's half-width and margin. At 0 nothing here changes.
 
     The emitted `theta` is in the SAME convention as every dot's `theta` in this
     spec: column 0 sits at +grid_angle/2 on the positive plate and at
@@ -1280,13 +1338,15 @@ def _seam_channel_block(
         # needs half an arrow, the groove and a margin either side of it before
         # the first cell's dots. The counter plate keeps or loses its groove
         # with the embossing plate's, so the one sentence is true of both.
-        free = gap / 2.0 - footprint
+        free = gap / 2.0 + x_shift_mm - footprint
         need = (
             float(getattr(settings, 'tactile_indicator_width', 4.0)) / 2.0
             + SEAM_CHANNEL_WIDTH_MM
             + 2.0 * SEAM_CHANNEL_MARGIN_MM
         )
-        if free < need:
+        last_cell_room = gap / 2.0 - x_shift_mm - footprint
+        last_cell_need = SEAM_CHANNEL_WIDTH_MM / 2.0 + SEAM_CHANNEL_MARGIN_MM
+        if free < need or last_cell_room < last_cell_need:
             # S-C5, signed off by Brennen (2026-09-23): it names the room beside
             # the arrows, because the arrow width can cause this as well as the
             # cell count and diameter. Reword only with his sign-off.
@@ -1297,8 +1357,8 @@ def _seam_channel_block(
     else:
         # Between the last cell's dots and column 0's alignment triangle, whose
         # outline is dot_spacing wide.
-        lo = -(gap / 2.0 - footprint)
-        hi = gap / 2.0 - float(settings.dot_spacing) / 2.0
+        lo = -(gap / 2.0 - footprint) + x_shift_mm
+        hi = gap / 2.0 - float(settings.dot_spacing) / 2.0 + x_shift_mm
         free = hi - lo
         need = SEAM_CHANNEL_WIDTH_MM + 2.0 * SEAM_CHANNEL_MARGIN_MM
         if free < need:

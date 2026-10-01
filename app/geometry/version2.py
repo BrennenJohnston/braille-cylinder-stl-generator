@@ -47,8 +47,9 @@ test pass.
 from __future__ import annotations
 
 import math
+from collections.abc import Callable, Mapping
 
-from app.geometry.gears import _format_mm
+from app.geometry.gears import GEAR_BODY_THICKNESS_MM, WELD_RING_R_IN_MM, _format_mm
 
 # The Version 2 barrel (D-V4). A SOFT preset: an off-size cylinder raises a
 # warning and is still built (D-V15), unlike the gears' hard size gate. That
@@ -84,25 +85,64 @@ V2_BARREL_HEIGHT_MM = 54.0
 # 3.8e-6 mm, so 0.001 is far below any dimension a user can type.
 V2_SIZE_TOLERANCE_MM = 0.001
 
-# Print clearance per side (D-V3), an Expert-Mode dial. Every KEY HOLE grows
-# by this: how loose the four keys are. The error-proofing margin shrinks with
-# it, which is why the family is judged at the dial's maximum as well as its
-# default.
+# X Adjust in Version 2 with the tactile seam arrow (Brennen, 2026-09-28, after
+# his print test of the X Adjust fix): the text grid starts this many mm of arc
+# nearer the alignment arrow on both cylinders - negative is toward the arrow
+# (see geometry_spec.extract_cylinder_geometry_spec). Like the barrel preset
+# above it is a UI default the page applies on top of every card-stock preset
+# whenever Version 2 and the tactile style are both selected (a default, not a
+# lock: the dial stays free); the request always carries the dial's value, and
+# the backend's absent-field fallback stays the schema's 0 for every shape.
+V2_TACTILE_X_ADJUST_MM = -2.0
+
+# Print clearance per side (D-V3), ONE Expert-Mode dial PER KEY since
+# 2026-09-25. Each KEY HOLE grows by its own value: how loose that one gear
+# is, tuned without moving the other three. The error-proofing margin shrinks
+# with it, which is why the family is judged at the dial's maximum as well as
+# its default.
 #
-# 0.110 since 2026-08-29, after two printed rounds bracketed it: all four peg
-# holes were too loose at 0.15 and too tight at 0.075, so the value lands
-# between them (D-R3-1). 0.110 and not the exact midpoint 0.1125, because the
-# dial's step is 0.005 and a default that is not a whole number of steps above
-# the minimum renders the input :invalid and disables Generate with no message
-# anyone can see. 0.110 / 0.005 = 22.
+# 0.075 on all four keys since 2026-09-26 (D-K6): Brennen's number after four
+# printed rounds with the cylinders on Bambu Studio's 0.12 mm Fine Detail
+# preset and the gears on the 0.2 mm Strength preset. History: two rounds on
+# 2026-08-29 (cylinders at 0.2 mm layers) bracketed ONE shared dial - all four
+# holes too loose at 0.15, too tight at 0.075 - and it sat at 0.110 (D-R3-1);
+# the 2026-09-24 round found the larger pegs loose there (thinner layers print
+# a hole closer to its modelled size); 0.095 fitted A2 and B2 but left A1 and
+# B1 loose, so each key got its own dial; the A1/B1 round at 0.085 settled the
+# top gears at 0.075 and the bottom gears at 0.085 for a day (D-K4); the next
+# print brought A2 and B2 to 0.075 as well (D-K6). The dial's step is 0.005
+# and a default that is not a whole number of steps above the minimum renders
+# the input :invalid and disables Generate with no message anyone can see:
+# 0.075 / 0.005 = 15.
 #
 # His gears measure exactly nominal - 14x14, 18x10, 16x12 and 20x8, corner
 # radius 0.5 - so a hole is its peg plus 2c and the wrong-pair margin is
-# 1.000 - c: 0.890 mm here, against 0.925 at 0.075 and 0.850 at 0.15
+# 1.000 - c: 0.925 mm on every key, against 0.850 at 0.15
 # (tests/test_version2_profiles.py::SMALLEST_WRONG_PAIR_PROTRUSION).
-V2_KEY_CLEARANCE_DEFAULT_MM = 0.110
+#
+# The dict is keyed by the V2_KEY_PROFILES names and written out one line per
+# key on purpose: a print round moves one gear without the others.
+V2_KEY_CLEARANCE_DEFAULTS_MM = {
+    'a1_square_14': 0.075,
+    'a2_rect_18x10': 0.075,
+    'b1_rect_16x12': 0.075,
+    'b2_rect_20x8': 0.075,
+}
 V2_KEY_CLEARANCE_MIN_MM = 0.0
 V2_KEY_CLEARANCE_MAX_MM = 0.5
+
+# The flat runtime field that carries each key's clearance (settings.schema.json
+# version_2.key_clearance_{a1,a2,b1,b2}_mm), and the shared field every Version
+# 2 request carried before 2026-09-25. The shared field is LEGACY but still
+# honoured: it stands in for any per-key field a request leaves out, so a saved
+# request from before the four dials builds exactly what it always did.
+V2_KEY_CLEARANCE_FIELDS = {
+    'a1_square_14': 'v2_key_clearance_a1_mm',
+    'a2_rect_18x10': 'v2_key_clearance_a2_mm',
+    'b1_rect_16x12': 'v2_key_clearance_b1_mm',
+    'b2_rect_20x8': 'v2_key_clearance_b2_mm',
+}
+V2_KEY_CLEARANCE_SHARED_FIELD = 'v2_key_clearance_mm'
 
 # Clearance per face on EVERY anti-rotation feature (D-R3-2): between a nub and
 # its gear notch, and between a socket and its gear pin. A fixed constant with
@@ -673,6 +713,26 @@ def validate_clearance(clearance: float) -> float:
     return clearance
 
 
+def key_clearances(lookup: Callable[[str], object]) -> dict[str, float]:
+    """
+    One clearance per key from a request's settings: the key's own field if
+    the request carries it, else the legacy shared field, else the key's
+    default. `lookup(field)` returns the raw value or None for an absent field
+    (the CardSettings getattr, the validator's dict.get). Each value is
+    range-checked here, so a caller never has to remember to.
+    """
+    shared = lookup(V2_KEY_CLEARANCE_SHARED_FIELD)
+    resolved = {}
+    for name, field in V2_KEY_CLEARANCE_FIELDS.items():
+        raw = lookup(field)
+        if raw is None or raw == '':
+            raw = shared
+        if raw is None or raw == '':
+            raw = V2_KEY_CLEARANCE_DEFAULTS_MM[name]
+        resolved[name] = validate_clearance(float(raw))
+    return resolved
+
+
 def _wire_points(points: list[tuple[float, float]]) -> list[dict]:
     """Polygon points in the shape the worker reads, rounded to micron-cubed."""
     return [{'x': round(x, 6), 'y': round(y, 6)} for x, y in points]
@@ -803,7 +863,7 @@ def socket_block(plate_type: str, height: float) -> dict:
     }
 
 
-def keyed_cutout_block(plate_type: str, height: float, clearance: float) -> dict:
+def keyed_cutout_block(plate_type: str, height: float, clearances: Mapping[str, float] | float) -> dict:
     """
     Everything the worker needs to cut one cylinder's keyed through-hole.
 
@@ -817,29 +877,47 @@ def keyed_cutout_block(plate_type: str, height: float, clearance: float) -> dict
     anti-rotation feature now, so that invariant is retired. The two plates'
     features are still different shapes, and the plate selector is what picks
     them - guessing a side would silently print the wrong pair.
+
+    `clearances` maps every V2_KEY_PROFILES name to its own print clearance
+    (see key_clearances); each half and its countersink use the clearance of
+    the key it cuts, so one gear's fit moves without the other three. One
+    number means that clearance on every key - what the legacy shared dial
+    meant.
     """
     if plate_type not in KEY_PROFILES_BY_PLATE:
         raise ValueError(f'unknown plate type {plate_type!r}; known: {sorted(KEY_PROFILES_BY_PLATE)}')
     if height <= 0:
         raise ValueError(f'Version 2 cylinder height must be positive, got {height}')
-    validate_clearance(clearance)
+    if not isinstance(clearances, Mapping):
+        clearances = dict.fromkeys(V2_KEY_PROFILES, clearances)
+    missing = sorted(set(V2_KEY_PROFILES) - set(clearances))
+    if missing:
+        raise ValueError(f'no clearance for key(s) {missing}; every key needs its own')
+    for name in V2_KEY_PROFILES:
+        validate_clearance(clearances[name])
 
     bottom_name, top_name = KEY_PROFILES_BY_PLATE[plate_type]
+    bottom_clearance = clearances[bottom_name]
+    top_clearance = clearances[top_name]
     half_height = height / 2.0
-    bottom_profile = key_profile(bottom_name, clearance)
-    top_profile = key_profile(top_name, clearance)
+    bottom_profile = key_profile(bottom_name, bottom_clearance)
+    top_profile = key_profile(top_name, top_clearance)
 
     block = {
-        'clearance_mm': clearance,
+        'clearances_mm': {bottom_name: bottom_clearance, top_name: top_clearance},
         'halves': [
             {
                 'end': 'bottom',
+                'key': bottom_name,
+                'clearance_mm': bottom_clearance,
                 'profile': _wire_points(bottom_profile),
                 'z_from': -half_height - V2_OVERLAP_MM,
                 'z_to': V2_OVERLAP_MM,
             },
             {
                 'end': 'top',
+                'key': top_name,
+                'clearance_mm': top_clearance,
                 'profile': _wire_points(top_profile),
                 'z_from': -V2_OVERLAP_MM,
                 'z_to': half_height + V2_OVERLAP_MM,
@@ -849,14 +927,16 @@ def keyed_cutout_block(plate_type: str, height: float, clearance: float) -> dict
             {
                 'end': 'bottom',
                 'kind': 'hull',
-                'face_profile': _wire_points(grown_key_outline(bottom_name, clearance + V2_COUNTERSINK_OFFSET_MM)),
+                'face_profile': _wire_points(
+                    grown_key_outline(bottom_name, bottom_clearance + V2_COUNTERSINK_OFFSET_MM)
+                ),
                 'inner_profile': _wire_points(bottom_profile),
                 'depth': V2_COUNTERSINK_DEPTH_MM,
             },
             {
                 'end': 'top',
                 'kind': 'hull',
-                'face_profile': _wire_points(grown_key_outline(top_name, clearance + V2_COUNTERSINK_OFFSET_MM)),
+                'face_profile': _wire_points(grown_key_outline(top_name, top_clearance + V2_COUNTERSINK_OFFSET_MM)),
                 'inner_profile': _wire_points(top_profile),
                 'depth': V2_COUNTERSINK_DEPTH_MM,
             },
@@ -894,3 +974,177 @@ def v2_size_message(diameter: float, height: float) -> str:
         f'{_format_mm(V2_BARREL_DIAMETER_MM)} mm x {_format_mm(V2_BARREL_HEIGHT_MM)} mm cylinder. '
         f'Received {_format_mm(diameter)} mm x {_format_mm(height)} mm.'
     )
+
+
+# ---------------------------------------------------------------------------
+# Fused Version 2 rollers, the v9 update (2026-09-24; decisions D-1, D-2, D-6)
+#
+# The fused roller prints standing on its BOTTOM gear (A2 / B2). Three things
+# about that end came out of printing the 2026-09-21 build, and Brennen's v9
+# CAD answered them (research folder New Developement_2026_09_24, files 01-04):
+#
+#   * The barrel's bottom face overhung the gear face. Both faces of every
+#     gear body are chamfered 1.5 mm at 45 degrees from the 16.11 mm tips, so
+#     the face the barrel stands on reaches only r 14.61 while the barrel is
+#     r 15.4: a 0.79 mm ledge all the way round, which the slicer supported.
+#     A 45 degree chamfer on the barrel's bottom edge takes the ledge to
+#     0.14 mm (D-2: 0.65, the ledge his v9 CAD prints at its 30.5 barrel),
+#     inside one extrusion width. It spends 0.65 of the 1 mm card shelf at
+#     that end. Sliced: 149 mm of perimeter laid over air per plate became 50,
+#     the floor set by the 24 tooth valleys that any barrel on a gear has.
+#   * The housing-peg socket in the bottom gear sealed a vacuum. The peg is a
+#     snug fit in the socket's bore and the socket's ceiling was blind, so the
+#     roller fought suction coming off its peg. The gears ALREADY carry a 2 mm
+#     hole from each socket's ceiling into their 15 mm peg (measured on the v8
+#     assets); the solid barrel sealed it at the peg tip. One 2 mm cut along
+#     the whole axis joins them, so the bottom socket breathes out through the
+#     top gear's open mouth. It is cut AFTER the gears are unioned: the pegs'
+#     own holes sit 0.05 mm off the axis in the asset, and cutting the barrel
+#     first would let a peg refill a crescent of the vent.
+#   * The socket's flat ceiling was the overhang the auto-supports fought:
+#     36 mm of perimeter and 106-265 mm of bridge per plate laid over air, and
+#     1.7 m of support inside a blind hole (02_CEILING_SUPPORT_RESEARCH.md).
+#     The ceiling is made self-supporting instead (D-1): the socket's own 45
+#     degree taper continues from its rim to the vent, a cone the slicer lays
+#     nothing over air for and generates no support under. Nothing to remove
+#     from the hole, so no toggle (D-6). The peg's straight bore is 5.7 mm
+#     deep before the taper starts, so a flat-topped peg never reaches it.
+#
+# Every number lives here; app/geometry_spec.py, the worker, the golden
+# renderer and the OpenSCAD file read them and never retype them.
+V2_FUSED_BARREL_CHAMFER_MM = 0.65
+V2_FUSED_CHAMFER_LIP_MM = 1.0  # the cutter overshoots outward and downward by this
+V2_VENT_RADIUS_MM = 1.0
+V2_VENT_OVERSHOOT_MM = 1.0  # past both gear mouths
+
+# The 54 mm Version 2 barrel is the 52 mm card plus this at each end
+# (2026-08-31); the chamfer may not spend more than the shelf.
+V2_CARD_SHELF_MM = 1.0
+
+# The gear root circle (both sets, manifest root_radius_mm): the chamfer may
+# never take the barrel's foot inside it, or the barrel would stand on air
+# between the teeth.
+V2_GEAR_ROOT_RADIUS_MM = 13.6613
+
+# The housing-peg socket in each BOTTOM gear, MEASURED off the v8 assets (the
+# v9 bodies are the same to the micron, 01_V9_STL_AUDIT.md section 4): the
+# bore the peg rides in, the rim where the 45 degree taper met the old flat
+# ceiling, how far below the barrel face that ceiling sat, and the 45 degree
+# mouth chamfer at the bed. Recorded hardware, like V2_GEAR_ANTIROT - not ours
+# to adjust.
+V2_GEAR_SOCKET = {
+    'positive': {'gear': 'A2', 'bore_radius': 7.0, 'rim_radius': 5.3, 'ceiling_below_face': 1.5, 'mouth_chamfer': 1.0},
+    'negative': {'gear': 'B2', 'bore_radius': 5.0, 'rim_radius': 3.3, 'ceiling_below_face': 1.5, 'mouth_chamfer': 1.0},
+}
+
+# The cone is grown radially by this so it overlaps the socket's own taper
+# instead of sharing its surface (the two are the same 45 degree line), and
+# it starts this far below the ceiling, inside the socket's air.
+V2_SOCKET_CONE_GROWTH_MM = 0.01
+V2_SOCKET_CONE_OVERLAP_MM = 0.5
+
+# The TOP gear sockets (A1 / B1), measured off the same v8 assets on 2026-09-25
+# for Brennen's D-K5: their floor sits `floor_above_face` above the barrel's
+# top face, flat from the vent countersink out to the rim, then the 45 degree
+# taper up to the bore (A1: floor r 1.5..5.2 at +28.5, bore r 7.0 from +30.3;
+# B1: r 1.5..3.2, bore 5.0). Printed bottom gear down these floors face UP and
+# never needed support; the cone mirrors D-1 so both ends match and the roller
+# prints support-free either way up. The rim is the floor vertex's own radius
+# (5.2 / 3.2); the bottom table above was read 0.1 up the taper on 2026-09-24
+# and stays as printed and pinned (observation O-2, never averaged).
+V2_TOP_GEAR_SOCKET = {
+    'positive': {'gear': 'A1', 'bore_radius': 7.0, 'rim_radius': 5.2, 'floor_above_face': 1.5},
+    'negative': {'gear': 'B1', 'bore_radius': 5.0, 'rim_radius': 3.2, 'floor_above_face': 1.5},
+}
+
+
+def bottom_chamfer_block(radius: float) -> dict:
+    """
+    The barrel's bottom-edge chamfer as the worker reads it: a 45 degree cut of
+    `size` at the bottom face, its cutter overshooting by `lip` outward and
+    downward so nothing is coplanar. Fused Version 2 only - a shell-stage cut,
+    taken from the bare barrel right after the seam channel.
+    """
+    size = V2_FUSED_BARREL_CHAMFER_MM
+    if not 0 < size <= V2_CARD_SHELF_MM:
+        raise ValueError(f'barrel chamfer {size} mm must lie within the {V2_CARD_SHELF_MM} mm card shelf')
+    if radius - size <= V2_GEAR_ROOT_RADIUS_MM:
+        raise ValueError(
+            f'a {size} mm chamfer on a {radius} mm barrel stands its foot inside the gear root circle '
+            f'({V2_GEAR_ROOT_RADIUS_MM} mm)'
+        )
+    return {'size': size, 'lip': V2_FUSED_CHAMFER_LIP_MM}
+
+
+def axis_cut_blocks(plate_type: str, height: float) -> list[dict]:
+    """
+    The three cuts the worker takes along the axis LAST, after every union:
+    the vent the full length of the roller, this plate's bottom socket cone
+    (D-1) and, since 2026-09-25 (D-K5), its top socket cone.
+
+    Every z is computed from THIS cylinder's height, like the notch fill: the
+    bottom socket's ceiling sits `ceiling_below_face` under the barrel face,
+    and the cone runs from `V2_SOCKET_CONE_OVERLAP_MM` below it (inside the
+    socket's air) up at 45 degrees to the vent radius, so its apex lands
+    rim - vent above the old ceiling: 4.3 mm on Cylinder A, 2.3 on B, inside
+    the buried peg. The top cone is its mirror: from the overlap above the top
+    socket's floor down at 45 degrees to the vent, apex rim - vent below the
+    floor (4.2 on A, 2.2 on B). Each block runs z_from < z_to with r_from at
+    z_from, the way both the worker's frustum and the golden renderer's read
+    it, so the top cone is emitted apex first.
+    """
+    if plate_type not in V2_GEAR_SOCKET or plate_type not in V2_TOP_GEAR_SOCKET:
+        raise ValueError(f'unknown plate type {plate_type!r}; known: {sorted(V2_GEAR_SOCKET)}')
+    if height <= 0:
+        raise ValueError(f'Version 2 cylinder height must be positive, got {height}')
+    narrowest_peg_half_width = min(min(p['length'], p['width']) for p in V2_KEY_PROFILES.values()) / 2.0
+    if not 0 < V2_VENT_RADIUS_MM < min(narrowest_peg_half_width, WELD_RING_R_IN_MM):
+        raise ValueError(f'vent radius {V2_VENT_RADIUS_MM} mm would leave the pegs or reach the weld rings')
+
+    half_height = height / 2.0
+    reach = half_height + GEAR_BODY_THICKNESS_MM + V2_VENT_OVERSHOOT_MM
+    vent = {
+        'kind': 'vent',
+        'radius': V2_VENT_RADIUS_MM,
+        'z_from': round(-reach, 6),
+        'z_to': round(reach, 6),
+    }
+
+    socket = V2_GEAR_SOCKET[plate_type]
+    if socket['rim_radius'] >= socket['bore_radius']:
+        raise ValueError(
+            f'{socket["gear"]} socket rim {socket["rim_radius"]} must be inside its bore {socket["bore_radius"]}'
+        )
+    ceiling = -half_height - socket['ceiling_below_face']
+    cone = {
+        'kind': 'cone',
+        'gear': socket['gear'],
+        'end': 'bottom',
+        'z_from': round(ceiling - V2_SOCKET_CONE_OVERLAP_MM, 6),
+        'r_from': round(socket['rim_radius'] + V2_SOCKET_CONE_OVERLAP_MM + V2_SOCKET_CONE_GROWTH_MM, 6),
+        'z_to': round(ceiling + (socket['rim_radius'] - V2_VENT_RADIUS_MM), 6),
+        'r_to': round(V2_VENT_RADIUS_MM + V2_SOCKET_CONE_GROWTH_MM, 6),
+    }
+    if cone['r_from'] >= WELD_RING_R_IN_MM:
+        raise ValueError(f'{socket["gear"]} socket cone reaches r {cone["r_from"]}, into the weld rings')
+    if not cone['z_to'] > cone['z_from'] or not cone['r_to'] < cone['r_from']:
+        raise ValueError(f'{socket["gear"]} socket cone is not a rising, narrowing cone: {cone}')
+
+    top = V2_TOP_GEAR_SOCKET[plate_type]
+    if top['rim_radius'] >= top['bore_radius']:
+        raise ValueError(f'{top["gear"]} socket rim {top["rim_radius"]} must be inside its bore {top["bore_radius"]}')
+    floor = half_height + top['floor_above_face']
+    top_cone = {
+        'kind': 'cone',
+        'gear': top['gear'],
+        'end': 'top',
+        'z_from': round(floor - (top['rim_radius'] - V2_VENT_RADIUS_MM), 6),
+        'r_from': round(V2_VENT_RADIUS_MM + V2_SOCKET_CONE_GROWTH_MM, 6),
+        'z_to': round(floor + V2_SOCKET_CONE_OVERLAP_MM, 6),
+        'r_to': round(top['rim_radius'] + V2_SOCKET_CONE_OVERLAP_MM + V2_SOCKET_CONE_GROWTH_MM, 6),
+    }
+    if top_cone['r_to'] >= WELD_RING_R_IN_MM:
+        raise ValueError(f'{top["gear"]} socket cone reaches r {top_cone["r_to"]}, into the weld rings')
+    if not top_cone['z_to'] > top_cone['z_from'] or not top_cone['r_to'] > top_cone['r_from']:
+        raise ValueError(f'{top["gear"]} socket cone is not a rising, widening cone: {top_cone}')
+    return [vent, cone, top_cone]

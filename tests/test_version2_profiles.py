@@ -265,12 +265,15 @@ def test_the_nub_points_at_the_arrow_column():
 @pytest.mark.parametrize('plate_type', ('positive', 'negative'))
 def test_block_matches_the_wire_contract(plate_type):
     block = v2.keyed_cutout_block(plate_type, 52.0, 0.075)
-    assert set(block) == {'clearance_mm', 'halves', 'countersinks', 'nub', 'socket'}
-    assert block['clearance_mm'] == 0.075
+    assert set(block) == {'clearances_mm', 'halves', 'countersinks', 'nub', 'socket'}
+    bottom_name, top_name = v2.KEY_PROFILES_BY_PLATE[plate_type]
+    assert block['clearances_mm'] == {bottom_name: 0.075, top_name: 0.075}
 
     assert [half['end'] for half in block['halves']] == ['bottom', 'top']
+    assert [half['key'] for half in block['halves']] == [bottom_name, top_name]
     for half in block['halves']:
-        assert set(half) == {'end', 'profile', 'z_from', 'z_to'}
+        assert set(half) == {'end', 'key', 'clearance_mm', 'profile', 'z_from', 'z_to'}
+        assert half['clearance_mm'] == 0.075
         assert all(set(point) == {'x', 'y'} for point in half['profile'])
     assert block['halves'][0]['z_from'] == pytest.approx(-26.01)
     assert block['halves'][0]['z_to'] == pytest.approx(0.01)
@@ -339,6 +342,10 @@ def test_the_block_scales_with_the_cylinder_height():
         lambda: v2.keyed_cutout_block('positive', 0.0, 0.075),
         lambda: v2.keyed_cutout_block('positive', 52.0, 0.75),
         lambda: v2.keyed_cutout_block('positive', 52.0, -0.1),
+        lambda: v2.keyed_cutout_block('positive', 52.0, {'a1_square_14': 0.075}),
+        lambda: v2.keyed_cutout_block(
+            'positive', 52.0, dict.fromkeys(v2.V2_KEY_PROFILES, 0.075) | {'b2_rect_20x8': 0.75}
+        ),
         lambda: v2.key_profile('a1_star', 0.075),
         lambda: v2.rounded_rectangle(14.0, 14.0, 8.0),
         lambda: v2.rounded_rectangle(0.0, 14.0, 0.5),
@@ -627,3 +634,66 @@ def test_nub_block_takes_a_plate_and_never_a_clearance():
 def test_antirot_bad_input_raises_rather_than_guessing(call):
     with pytest.raises(ValueError):
         call()
+
+
+def test_each_key_is_cut_at_its_own_clearance():
+    """
+    Since 2026-09-25 every key has its own dial. The bottom half and its
+    countersink follow the bottom key's number, the top half the top key's,
+    and the two other keys' numbers (the other plate's) touch nothing here.
+    """
+    clearances = {'a1_square_14': 0.085, 'a2_rect_18x10': 0.095, 'b1_rect_16x12': 0.3, 'b2_rect_20x8': 0.5}
+    block = v2.keyed_cutout_block('positive', 52.0, clearances)
+    assert block['clearances_mm'] == {'a2_rect_18x10': 0.095, 'a1_square_14': 0.085}
+    bottom, top = block['halves']
+    assert (bottom['key'], bottom['clearance_mm']) == ('a2_rect_18x10', 0.095)
+    assert (top['key'], top['clearance_mm']) == ('a1_square_14', 0.085)
+
+    def width(points):
+        xs = [point['x'] for point in points]
+        return max(xs) - min(xs)
+
+    assert width(bottom['profile']) == pytest.approx(10.0 + 2 * 0.095, abs=1e-6)
+    assert width(top['profile']) == pytest.approx(14.0 + 2 * 0.085, abs=1e-6)
+    assert width(block['countersinks'][0]['face_profile']) == pytest.approx(
+        10.0 + 2 * (0.095 + v2.V2_COUNTERSINK_OFFSET_MM), abs=1e-6
+    )
+    assert width(block['countersinks'][1]['face_profile']) == pytest.approx(
+        14.0 + 2 * (0.085 + v2.V2_COUNTERSINK_OFFSET_MM), abs=1e-6
+    )
+
+    # The same dict cuts Cylinder B at ITS two keys' numbers.
+    negative = v2.keyed_cutout_block('negative', 52.0, clearances)
+    assert negative['clearances_mm'] == {'b2_rect_20x8': 0.5, 'b1_rect_16x12': 0.3}
+    assert width(negative['halves'][0]['profile']) == pytest.approx(8.0 + 2 * 0.5, abs=1e-6)
+
+
+def test_key_clearances_resolve_own_field_then_shared_then_default():
+    """own per-key field > legacy shared v2_key_clearance_mm > the key's default."""
+    assert v2.key_clearances(lambda field: None) == v2.V2_KEY_CLEARANCE_DEFAULTS_MM
+    assert v2.key_clearances(lambda field: '') == v2.V2_KEY_CLEARANCE_DEFAULTS_MM
+
+    legacy = {'v2_key_clearance_mm': 0.11}
+    assert v2.key_clearances(legacy.get) == dict.fromkeys(v2.V2_KEY_PROFILES, 0.11)
+
+    mixed = {'v2_key_clearance_mm': 0.11, 'v2_key_clearance_a1_mm': '0.085', 'v2_key_clearance_b1_mm': 0.0}
+    assert v2.key_clearances(mixed.get) == {
+        'a1_square_14': 0.085,
+        'a2_rect_18x10': 0.11,
+        'b1_rect_16x12': 0.0,
+        'b2_rect_20x8': 0.11,
+    }
+
+    with pytest.raises(ValueError):
+        v2.key_clearances({'v2_key_clearance_b2_mm': 0.51}.get)
+    with pytest.raises(ValueError):
+        v2.key_clearances({'v2_key_clearance_mm': -0.01}.get)
+
+
+def test_every_key_default_is_a_whole_number_of_dial_steps():
+    """An off-step default renders the input :invalid and kills Generate silently."""
+    assert set(v2.V2_KEY_CLEARANCE_DEFAULTS_MM) == set(v2.V2_KEY_PROFILES) == set(v2.V2_KEY_CLEARANCE_FIELDS)
+    for name, default in v2.V2_KEY_CLEARANCE_DEFAULTS_MM.items():
+        steps = (default - v2.V2_KEY_CLEARANCE_MIN_MM) / 0.005
+        assert abs(steps - round(steps)) < 1e-9, f'{name}: {default} is not a whole number of 0.005 steps'
+        assert v2.V2_KEY_CLEARANCE_MIN_MM <= default <= v2.V2_KEY_CLEARANCE_MAX_MM

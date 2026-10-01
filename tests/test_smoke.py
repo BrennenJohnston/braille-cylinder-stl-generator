@@ -804,10 +804,19 @@ def test_schema_and_models_agree_on_embosser_version_fields():
     assert properties['embosser_version']['enum'] == [1, 2]
     assert properties['embosser_version']['default'] == settings.embosser_version == 1
 
-    clearance = properties['version_2']['properties']['key_clearance_mm']
-    assert clearance['default'] == settings.v2_key_clearance_mm == version2.V2_KEY_CLEARANCE_DEFAULT_MM
-    assert clearance['minimum'] == version2.V2_KEY_CLEARANCE_MIN_MM
-    assert clearance['maximum'] == version2.V2_KEY_CLEARANCE_MAX_MM
+    fields = properties['version_2']['properties']
+    for name, flat in version2.V2_KEY_CLEARANCE_FIELDS.items():
+        clearance = fields[flat.removeprefix('v2_')]
+        assert clearance['default'] == getattr(settings, flat) == version2.V2_KEY_CLEARANCE_DEFAULTS_MM[name]
+        assert clearance['minimum'] == version2.V2_KEY_CLEARANCE_MIN_MM
+        assert clearance['maximum'] == version2.V2_KEY_CLEARANCE_MAX_MM
+    # The legacy shared field is still declared (old saved requests carry it)
+    # but has no default: an absent field means each key's own default.
+    legacy = fields['key_clearance_mm']
+    assert 'default' not in legacy
+    assert legacy['minimum'] == version2.V2_KEY_CLEARANCE_MIN_MM
+    assert legacy['maximum'] == version2.V2_KEY_CLEARANCE_MAX_MM
+    assert settings.v2_key_clearance_mm is None
 
 
 def test_schema_and_models_agree_on_seam_channel():
@@ -1047,15 +1056,20 @@ def test_ui_version2_numbers_match_the_geometry_module():
         'seam_offset_deg': 0.0,
     }
 
-    dial = re.search(r'<input type="number" id="v2_key_clearance_mm"[^>]*>', html)
-    assert dial, 'the v2_key_clearance_mm dial was not found in public/index.html'
-    attrs = dict(re.findall(r'(value|step|min|max)="([^"]+)"', dial.group(0)))
-    assert float(attrs['value']) == version2.V2_KEY_CLEARANCE_DEFAULT_MM
-    assert float(attrs['min']) == version2.V2_KEY_CLEARANCE_MIN_MM
-    assert float(attrs['max']) == version2.V2_KEY_CLEARANCE_MAX_MM
-    # The default must be a whole number of steps above the minimum.
-    steps = (float(attrs['value']) - float(attrs['min'])) / float(attrs['step'])
-    assert abs(steps - round(steps)) < 1e-9, f'{attrs["value"]} is not a whole number of {attrs["step"]} steps'
+    # Four dials since 2026-09-25, one per key; the shared dial is gone.
+    assert 'id="v2_key_clearance_mm"' not in html
+    for name, flat in version2.V2_KEY_CLEARANCE_FIELDS.items():
+        dial = re.search(rf'<input type="number" id="{flat}"[^>]*>', html)
+        assert dial, f'the {flat} dial was not found in public/index.html'
+        attrs = dict(re.findall(r'(value|step|min|max)="([^"]+)"', dial.group(0)))
+        assert float(attrs['value']) == version2.V2_KEY_CLEARANCE_DEFAULTS_MM[name]
+        assert float(attrs['min']) == version2.V2_KEY_CLEARANCE_MIN_MM
+        assert float(attrs['max']) == version2.V2_KEY_CLEARANCE_MAX_MM
+        # The default must be a whole number of steps above the minimum.
+        steps = (float(attrs['value']) - float(attrs['min'])) / float(attrs['step'])
+        assert abs(steps - round(steps)) < 1e-9, (
+            f'{flat}: {attrs["value"]} is not a whole number of {attrs["step"]} steps'
+        )
 
     # The live UI constants must also agree with the module, since the size
     # warning is compared against them before any request is sent.
@@ -1267,3 +1281,23 @@ def test_payload_fallback_literals_match_the_shipped_defaults():
             f'Emptying the {field} box would send {match.group(1)}, but the shipped default is '
             f'{want} ({source}). A fallback literal must never be a second, drifting copy of a default.'
         )
+
+
+def test_ui_thickness_presets_never_set_the_row_indicator_style():
+    """
+    Version 2 defaults the Row Indicator Style to the tactile seam arrow on the
+    user's version change (decision D-4, 2026-09-24), and a card-stock preset
+    chosen afterwards must not undo it. The presets are the one thing that
+    rewrites dials wholesale on every load, so neither THICKNESS_PRESETS
+    object may name the style - "all presets on the Version 2 tree" holds by
+    construction, and this pins it.
+    """
+    import re
+    from pathlib import Path
+
+    html = (Path(__file__).resolve().parents[1] / 'public' / 'index.html').read_text(encoding='utf-8')
+    match = re.search(r'const THICKNESS_PRESETS = \{(.*?)\n {8}\};', html, re.DOTALL)
+    assert match, 'THICKNESS_PRESETS block not found in public/index.html'
+    block = match.group(1)
+    assert "'0.4': {" in block and "'0.3': {" in block
+    assert 'indicator_mode' not in block

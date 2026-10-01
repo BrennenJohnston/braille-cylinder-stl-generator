@@ -113,20 +113,34 @@ def test_an_unknown_version_is_refused_loudly(value):
     assert 'embosser_version' in str(raised.value)
 
 
+CLEARANCE_FIELDS = (*version2.V2_KEY_CLEARANCE_FIELDS.values(), version2.V2_KEY_CLEARANCE_SHARED_FIELD)
+
+
+@pytest.mark.parametrize('field', CLEARANCE_FIELDS)
 @pytest.mark.parametrize('clearance', [0.0, 0.075, 0.5])
-def test_a_clearance_inside_the_dial_passes(clearance):
-    settings = {'embosser_version': 2, 'v2_key_clearance_mm': clearance}
+def test_a_clearance_inside_the_dial_passes(field, clearance):
+    settings = {'embosser_version': 2, field: clearance}
     assert validate_embosser_version_settings(settings, 'cylinder', V2_CYLINDER) is True
 
 
+@pytest.mark.parametrize('field', CLEARANCE_FIELDS)
 @pytest.mark.parametrize('clearance', [-0.01, 0.51, 5.0])
-def test_a_clearance_outside_the_dial_is_refused(clearance):
-    settings = {'embosser_version': 2, 'v2_key_clearance_mm': clearance}
+def test_a_clearance_outside_the_dial_is_refused(field, clearance):
+    """Each of the four per-key fields and the legacy shared one is gated, and named."""
+    settings = {'embosser_version': 2, field: clearance}
     with pytest.raises(ValidationError) as raised:
         validate_embosser_version_settings(settings, 'cylinder', V2_CYLINDER)
     message = str(raised.value)
-    assert 'version_2.key_clearance_mm' in message
+    assert 'version_2.' + field.removeprefix('v2_') in message
     assert str(version2.V2_KEY_CLEARANCE_MAX_MM) in message
+
+
+def test_a_junk_clearance_is_refused_as_not_a_number():
+    with pytest.raises(ValidationError) as raised:
+        validate_embosser_version_settings(
+            {'embosser_version': 2, 'v2_key_clearance_b1_mm': 'loose'}, 'cylinder', V2_CYLINDER
+        )
+    assert 'version_2.key_clearance_b1_mm' in str(raised.value)
 
 
 def test_the_size_is_not_gated():
@@ -165,18 +179,43 @@ def test_junk_versions_are_refused_by_the_route(client, value):
     assert 'embosser_version' in response.get_json()['error']
 
 
+@pytest.mark.parametrize('field', ('v2_key_clearance_a1_mm', 'v2_key_clearance_mm'))
 @pytest.mark.parametrize('clearance', [-0.01, 0.51])
-def test_an_out_of_range_clearance_is_refused_by_the_route(client, clearance):
-    payload = with_settings(CYLINDER_PAYLOAD, embosser_version=2, v2_key_clearance_mm=clearance)
+def test_an_out_of_range_clearance_is_refused_by_the_route(client, field, clearance):
+    payload = with_settings(CYLINDER_PAYLOAD, embosser_version=2, **{field: clearance})
     response = post_spec(client, payload)
     assert response.status_code == 400
-    assert 'key_clearance_mm' in response.get_json()['error']
+    assert field.removeprefix('v2_') in response.get_json()['error']
 
 
 @pytest.mark.parametrize('clearance', [0.0, 0.075, 0.5])
 def test_an_in_range_clearance_is_accepted_by_the_route(client, clearance):
-    payload = with_settings(CYLINDER_PAYLOAD, embosser_version=2, v2_key_clearance_mm=clearance)
+    payload = with_settings(
+        CYLINDER_PAYLOAD, embosser_version=2, v2_key_clearance_a1_mm=clearance, v2_key_clearance_mm=clearance
+    )
     assert post_spec(client, payload).status_code == 200
+
+
+def test_the_route_cuts_each_key_at_its_own_dial(client):
+    """Four dials on the wire reach four holes; the legacy field alone still reaches all four."""
+    payload = with_settings(
+        CYLINDER_PAYLOAD,
+        embosser_version=2,
+        v2_key_clearance_a1_mm=0.085,
+        v2_key_clearance_a2_mm=0.095,
+        v2_key_clearance_b1_mm=0.09,
+        v2_key_clearance_b2_mm=0.1,
+    )
+    response = post_spec(client, payload)
+    assert response.status_code == 200
+    block = response.get_json()['keyed_cutouts']
+    assert block['clearances_mm'] in (
+        {'a2_rect_18x10': 0.095, 'a1_square_14': 0.085},
+        {'b2_rect_20x8': 0.1, 'b1_rect_16x12': 0.09},
+    )
+    legacy = post_spec(client, with_settings(CYLINDER_PAYLOAD, embosser_version=2, v2_key_clearance_mm=0.11))
+    assert legacy.status_code == 200
+    assert set(legacy.get_json()['keyed_cutouts']['clearances_mm'].values()) == {0.11}
 
 
 def test_gears_with_version_two_are_accepted_at_the_version_two_barrel(client):

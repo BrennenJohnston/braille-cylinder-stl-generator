@@ -65,7 +65,11 @@ WELD_RING_VOLUME_MM3 = math.pi * (WELD_RING_R_OUT_MM**2 - WELD_RING_R_IN_MM**2) 
 TOOTH_COUNT = 24
 TIP_RADIUS_MM = 16.1093702290795
 TIP_BAND_DEPTH_MM = 0.05  # tip band = radial distance > tip radius - this
-TOOTH_GAP_DEG = 2.0  # angular gap that separates one tooth from the next
+# Teeth are counted in a thin slice at the ring's mid-plane - the chevron apex of the
+# herringbone teeth. Over the whole band each tooth's tip vertices sweep several
+# degrees, and the Version 1 holders' tessellation splits them into two groups.
+TOOTH_MID_PLANE_HALF_MM = 0.5
+TOOTH_MID_GAP_DEG = 5.0  # angular gap that separates one tooth from the next at the apex
 
 # --- tolerances, each with its audit section 11 justification ---------------
 # 11.2 bounds: float32 ULP at 32 mm is 3.8e-6 mm, so 0.001 is ~250x the noise.
@@ -91,39 +95,38 @@ VOLUME_TOL_MM3 = 0.5
 # comparisons - 0.1 mm also clears the weld ring's 0.05 mm half-height.
 INTERFACE_BAND_MM = 0.1
 
-# The reference samples live outside the repo; the deep comparison skips when
-# the folder is absent (CI), and runs on Brennen's machine.
-SAMPLES_DIR = Path(r'C:\Users\WATAP\Documents\Research\Braille Embosser\New Developement_2026_08_24\Roller Samples')
-# Sample assembly frame -> program frame (audit section 10.2), the same
-# constants scripts/derive_gear_assets.py baked into the assets.
-SAMPLE_ROLLERS = {
+# Brennen's Version 1 gear holders (the parts the standard cylinders slide onto)
+# live outside the repo; the deep comparison skips when the folder is absent
+# (CI), and runs on his machine.
+SAMPLES_DIR = Path(r'C:\Users\WATAP\Documents\Research\Braille Embosser\New Developement_2026_09_28\V1 Gears')
+# Assembly frame -> program frame (audit section 10.2), the same constants
+# scripts/derive_gear_assets.py baked into the assets, plus each holder's gear
+# ring band in the assembly frame and the 1 mm seat shift that puts the ring on
+# the barrel end (the standard housing holds it 1 mm off).
+SAMPLE_HOLDERS = {
     'gears_a': {
-        'file': 'Rollers v7 (Cylinder A and Top and Bottom Gears).stl',
         'axis_x_mm': -16.0000,
         'axis_y_mm': 0.0000,
         'rotation_z_deg': 180.0,
+        'gears': [('A1 v6 (0.2) v3.stl', (53.0, 63.0), -1.0), ('A2 v6 (0.2) v3.stl', (-11.0, -1.0), 1.0)],
     },
     'gears_b': {
-        'file': 'Rollers v7 (Cylinder B and Top and Bottom Gears).stl',
         'axis_x_mm': 16.0473,
         'axis_y_mm': -0.0079,
         'rotation_z_deg': 0.0,
+        'gears': [('B1 v6 (0.2) v3.stl', (53.0, 63.0), -1.0), ('B2 v6 (0.2) v3.stl', (-11.0, -1.0), 1.0)],
     },
 }
 Z_SHIFT_MM = -26.0
 
-# Deep-comparison tolerances. Brennen's roller export and our vendored gears
-# tessellate the SAME B-spline flanks differently, so the residual is chord
-# error between two tessellations, not placement error: measured p99 0.0073 mm
-# and max 0.0129 mm over five sampling seeds. A real placement fault is orders
-# above both - a 15 deg mis-mesh reads 2.57 mm, a wrong 180 deg rotation
-# 1.20 mm, and even a half-degree clocking slip 0.11 mm.
+# Deep-comparison tolerances. The vendored ring IS the holder's own triangles
+# (an exact Manifold cut keeps every face outside the cut plane), so the
+# residual is float32 rounding; the tolerances stay where the 2026-08-24
+# samples put them because a real placement fault is orders above them - a
+# 15 deg mis-mesh reads 2.57 mm, a wrong 180 deg rotation 1.20 mm, and even a
+# half-degree clocking slip 0.11 mm.
 SAMPLE_GEAR_P99_TOL_MM = 0.01
 SAMPLE_GEAR_MAX_TOL_MM = 0.02
-# The sample barrel is a 180-gon; ours is the worker's 64-gon. The radial
-# difference is the sagitta gap between the two, 15.4 * (1 - cos(180/64 deg))
-# = 0.0186 mm, which is geometry we deliberately reproduce, not error.
-SAMPLE_BARREL_TOL_MM = 0.019
 
 _ROLLER_CACHE: dict = {}
 
@@ -193,9 +196,10 @@ def tooth_band_phase(vertices, z_low, z_high):
 
     These meshes carry vertices only on feature edges, so a mid-band slice
     finds nothing (audit section 2). The tip band is the one radius where every
-    tooth is guaranteed to have vertices. Phase is the circular mean of the
-    angles modulo the 15 degree pitch, so it is independent of which tooth is
-    called first.
+    tooth is guaranteed to have vertices; the count is taken at the band's
+    mid-plane, the chevron apex, where each tooth is one tight cluster. Phase
+    is the circular mean of every tip angle in the band modulo the 15 degree
+    pitch, so it is independent of which tooth is called first.
     """
     import numpy as np
 
@@ -206,9 +210,13 @@ def tooth_band_phase(vertices, z_low, z_high):
         return 0, float('nan')
 
     angles = np.degrees(np.arctan2(tips[:, 1], tips[:, 0])) % 360.0
-    ordered = np.sort(angles)
-    gaps = np.diff(np.concatenate([ordered, [ordered[0] + 360.0]]))
-    count = max(1, int((gaps > TOOTH_GAP_DEG).sum()))
+    apex = tips[np.abs(tips[:, 2] - (z_low + z_high) / 2.0) <= TOOTH_MID_PLANE_HALF_MM]
+    if len(apex) == 0:
+        count = 0
+    else:
+        ordered = np.sort(np.degrees(np.arctan2(apex[:, 1], apex[:, 0])) % 360.0)
+        gaps = np.diff(np.concatenate([ordered, [ordered[0] + 360.0]]))
+        count = max(1, int((gaps > TOOTH_MID_GAP_DEG).sum()))
 
     pitch = 360.0 / TOOTH_COUNT
     scaled = np.radians((angles % pitch) * TOOTH_COUNT)
@@ -508,51 +516,51 @@ def test_weld_rings_are_invisible_from_outside(geometry_stack, asset_name):
     assert with_rings.volume == pytest.approx(without_rings.volume, abs=VOLUME_TOL_MM3)
 
 
-@pytest.mark.skipif(not SAMPLES_DIR.is_dir(), reason='reference roller samples are not on this machine')
+@pytest.mark.skipif(not SAMPLES_DIR.is_dir(), reason="Brennen's Version 1 gear holders are not on this machine")
 @pytest.mark.parametrize('asset_name', ASSET_NAMES)
-def test_one_piece_roller_matches_the_original_roller_samples(geometry_stack, asset_name):
+def test_one_piece_roller_matches_brennens_version_1_gears(geometry_stack, asset_name):
     """
-    The deep check: does the roller we assemble actually match the roller
-    Brennen exported? This is the ONLY test that can catch a wrong transform.
-    The others compare the union against the same asset it was built from, and
-    a 24-tooth ring is 15 deg periodic, so a wrong rotation still lands teeth
-    on teeth - only the reference assembly knows where the bores, the handle
-    connector and the barrel really sit.
+    The deep check: do the gears on the roller we assemble match the gear rings
+    of the holders Brennen exported? This is the ONLY test that can catch a
+    wrong transform or seat. The others compare the union against the same
+    asset it was built from, and a 24-tooth ring is 15 deg periodic, so a wrong
+    rotation still lands teeth on teeth - only the holders know where the
+    pockets, the handle connector and the marker marks really sit.
+
+    Points are sampled on the whole holder and kept only where they lie on its
+    gear ring: inside the ring's z band and clear of the plane the ring was cut
+    on (that face is buried against the barrel in the union).
     """
     import numpy as np
     import trimesh
 
-    placement = SAMPLE_ROLLERS[asset_name]
-    sample = trimesh.load_mesh(str(SAMPLES_DIR / placement['file']), process=False)
-    sample.merge_vertices()
-    # The samples ship as three kissing shells per roller - that is the state
-    # this whole feature replaces.
-    assert len(sample.split(only_watertight=False)) == 3
-
-    vertices = np.array(sample.vertices, dtype=np.float64)
-    vertices[:, 0] -= placement['axis_x_mm']
-    vertices[:, 1] -= placement['axis_y_mm']
-    if placement['rotation_z_deg'] == 180.0:
-        vertices[:, 0] = -vertices[:, 0]
-        vertices[:, 1] = -vertices[:, 1]
-    vertices[:, 2] += Z_SHIFT_MM
-    sample.vertices = vertices
-
+    placement = SAMPLE_HOLDERS[asset_name]
     roller = one_piece_roller(asset_name)
-    assert sample.bounds == pytest.approx(roller.bounds, abs=SAMPLE_BARREL_TOL_MM)
+    for filename, (z_low, z_high), seat_shift in placement['gears']:
+        holder = trimesh.load_mesh(str(SAMPLES_DIR / filename), process=False)
+        holder.merge_vertices()
+        assert holder.is_watertight
 
-    points, distances = surface_distances(sample, roller, 4000, seed=99)
-    z = points[:, 2]
-    half_height = BARREL_HEIGHT_MM / 2.0
-    gear_zone = np.abs(z) > half_height + INTERFACE_BAND_MM
-    barrel_zone = np.abs(z) < half_height - INTERFACE_BAND_MM
+        points, _ = trimesh.sample.sample_surface(holder, 40000, seed=99)
+        cut_plane = z_low if z_low > 0 else z_high
+        on_ring = (
+            (points[:, 2] >= z_low) & (points[:, 2] <= z_high) & (np.abs(points[:, 2] - cut_plane) > INTERFACE_BAND_MM)
+        )
+        points = points[on_ring]
+        assert len(points) > 1000
 
-    assert gear_zone.sum() > 1000
-    assert np.percentile(distances[gear_zone], 99) <= SAMPLE_GEAR_P99_TOL_MM
-    assert np.max(distances[gear_zone]) <= SAMPLE_GEAR_MAX_TOL_MM
+        moved = np.array(points, dtype=np.float64)
+        moved[:, 2] += seat_shift
+        moved[:, 0] -= placement['axis_x_mm']
+        moved[:, 1] -= placement['axis_y_mm']
+        if placement['rotation_z_deg'] == 180.0:
+            moved[:, 0] = -moved[:, 0]
+            moved[:, 1] = -moved[:, 1]
+        moved[:, 2] += Z_SHIFT_MM
 
-    assert barrel_zone.sum() > 1000
-    assert np.max(distances[barrel_zone]) <= SAMPLE_BARREL_TOL_MM
+        distances = trimesh.proximity.closest_point(roller, moved)[1]
+        assert np.percentile(distances, 99) <= SAMPLE_GEAR_P99_TOL_MM
+        assert np.max(distances) <= SAMPLE_GEAR_MAX_TOL_MM
 
 
 @pytest.mark.parametrize('asset_name', ASSET_NAMES)
@@ -618,11 +626,21 @@ def test_a_browser_generated_roller_carries_its_gears(geometry_stack, asset_name
         assert body.is_watertight
         assert np.hypot(body.vertices[:, 0], body.vertices[:, 1]).min() >= BARREL_RADIUS_MM
 
-    # The gears themselves came through the worker unchanged.
+    # The gears themselves came through the worker unchanged - all but each
+    # socket's flat blind end, which the axis cones cut away since 2026-09-30:
+    # points sampled on those two disks are air now. The mouth chamfer, key
+    # bore and taper stay in the comparison.
+    from app.geometry import gears as gears_module
+
+    socket = gears_module.V1_GEAR_SOCKET['positive' if asset_name == 'gears_a' else 'negative']
+    blind_end_z = BARREL_HEIGHT_MM / 2.0 + gears_module.GEAR_BODY_THICKNESS_MM - socket['depth']
     asset = load_gear_asset(asset_name)
     points, distances = surface_distances(asset, solid, 2000, seed=4242)
     external = outside_interface_band(points)
-    assert np.max(distances[external]) <= SURFACE_TOL_MM
+    blind_end = (np.abs(np.abs(points[:, 2]) - blind_end_z) < 1e-3) & (
+        np.hypot(points[:, 0], points[:, 1]) < socket['rim_radius'] + 0.01
+    )
+    assert np.max(distances[external & ~blind_end]) <= SURFACE_TOL_MM
 
 
 # ---------------------------------------------------------------------------
@@ -696,6 +714,163 @@ def test_each_plate_gets_its_own_gear_set(plate_type, expected_asset):
     """Cylinder A takes the A gears, Cylinder B the B ones - B's teeth are
     clocked to mesh with A's, so swapping them would stop the pair meshing."""
     assert build_spec(plate_type)['gears']['asset'] == expected_asset
+
+
+def test_the_version_one_roller_carries_its_own_axis_cuts_and_no_other_version_two_change():
+    """
+    Since 2026-09-30 (Brennen's approved plan) the Version 1 fused roller is
+    vented and its sockets self-supporting, from app/geometry/gears.py - not
+    Version 2's blocks, whose cones grow into their taper - and it still has no
+    barrel chamfer (decision 4) and no notch fill.
+    """
+    from app.geometry import gears as gears_module
+
+    for plate_type in ('positive', 'negative'):
+        spec = build_spec(plate_type)
+        assert spec['gears']['axis_cuts'] == gears_module.axis_cut_blocks(plate_type, 52.0)
+        assert 'bottom_chamfer' not in spec['cylinder']
+        assert 'notch_fills' not in spec['gears']
+
+
+# The approved table (2026-09-30), in the worker frame, with the 0.02 mm cone
+# inset the implementation measured as the least that touches no socket facet.
+APPROVED_V1_AXIS_CUTS = {
+    plate_type: [
+        {'kind': 'vent', 'radius': 1.0, 'z_from': -37.0, 'z_to': 37.0},
+        {
+            'kind': 'cone',
+            'gear': bottom,
+            'end': 'bottom',
+            'z_from': -28.0,
+            'r_from': 5.68,
+            'z_to': -23.33,
+            'r_to': 1.01,
+        },
+        {'kind': 'cone', 'gear': top, 'end': 'top', 'z_from': 23.33, 'r_from': 1.01, 'z_to': 28.0, 'r_to': 5.68},
+    ]
+    for plate_type, bottom, top in (('positive', 'A2', 'A1'), ('negative', 'B2', 'B1'))
+}
+
+
+@pytest.mark.parametrize('plate_type', ['positive', 'negative'])
+def test_version_one_axis_cuts_are_the_approved_table(plate_type):
+    """The vent the full roller plus one mouth's overshoot, and a 45 degree cone per socket."""
+    from app.geometry import gears as gears_module
+
+    blocks = gears_module.axis_cut_blocks(plate_type, 52.0)
+    assert blocks == APPROVED_V1_AXIS_CUTS[plate_type]
+    for cone in blocks[1:]:
+        # 45 degrees: the cone narrows by exactly as much as it rises.
+        assert abs(cone['r_from'] - cone['r_to']) == pytest.approx(cone['z_to'] - cone['z_from'], abs=1e-6)
+
+
+@pytest.mark.parametrize('plate_type', ['positive', 'negative'])
+def test_version_one_cones_stay_inside_the_socket_the_pin_rides_in(plate_type):
+    """
+    Brennen's requirement: the key bore and the taper stay exactly as they are.
+    Over the span where a cone is still inside a socket (from its start, 0.5 mm
+    short of the blind end, to the blind end) the cone is the taper less the
+    inset, it never reaches the key bore, and it starts on the taper itself.
+    """
+    from app.geometry import gears as gears_module
+
+    blocks = gears_module.axis_cut_blocks(plate_type, 52.0)
+    tables = {'bottom': gears_module.V1_GEAR_SOCKET, 'top': gears_module.V1_TOP_GEAR_SOCKET}
+    mouth = 52.0 / 2.0 + gears_module.GEAR_BODY_THICKNESS_MM
+    for cone in blocks[1:]:
+        socket = tables[cone['end']][plate_type]
+        sign = -1.0 if cone['end'] == 'bottom' else 1.0
+        for depth in (8.0, 8.1, 8.25, 8.4, 8.5):
+            z = sign * (mouth - depth)
+            taper_r = socket['rim_radius'] + (socket['depth'] - depth)
+            t = (z - cone['z_from']) / (cone['z_to'] - cone['z_from'])
+            cone_r = cone['r_from'] + t * (cone['r_to'] - cone['r_from'])
+            assert taper_r - cone_r == pytest.approx(gears_module.V1_SOCKET_CONE_INSET_MM, abs=1e-6)
+        assert max(cone['r_from'], cone['r_to']) < socket['bore_radius']
+        start_depth = socket['depth'] - gears_module.V1_SOCKET_CONE_OVERLAP_MM
+        assert start_depth > socket['taper_start_depth']
+    # The inset has to clear the taper's own facets, which dip up to 0.01071 mm
+    # inside the ideal cone (measured 2026-09-30; the bound is 0.0108).
+    assert gears_module.V1_SOCKET_TAPER_FACET_DIP_MM == 0.0108
+    assert gears_module.V1_SOCKET_CONE_INSET_MM > gears_module.V1_SOCKET_TAPER_FACET_DIP_MM
+
+
+@pytest.mark.parametrize('asset_name', ASSET_NAMES)
+def test_version_one_taper_facets_dip_no_further_than_recorded(asset_name):
+    """
+    V1_SOCKET_TAPER_FACET_DIP_MM is measured, not assumed: sample every
+    socket taper on the vendored rings and find how far its flat facets sit
+    inside the ideal 45 degree cone. A re-derived asset with coarser facets
+    fails here, before its cone could clip the taper the pin rides on.
+    """
+    import numpy as np
+    import trimesh
+
+    from app.geometry import gears as gears_module
+
+    mesh = load_gear_asset(asset_name)
+    for body in mesh.split(only_watertight=False):
+        bottom = body.bounds[1][2] <= 0
+        mouth = body.bounds[0][2] if bottom else body.bounds[1][2]
+        socket = gears_module.V1_GEAR_SOCKET['positive']
+        centres = body.triangles_center
+        depth_of_centre = (centres[:, 2] - mouth) if bottom else (mouth - centres[:, 2])
+        radial = np.hypot(centres[:, 0], centres[:, 1])
+        taper = np.where(
+            (depth_of_centre > socket['taper_start_depth'])
+            & (depth_of_centre < socket['depth'])
+            & (radial < socket['bore_radius'])
+            & (radial > socket['rim_radius'])
+        )[0]
+        points, _ = trimesh.sample.sample_surface_even(body.submesh([taper], append=True), 20000, seed=2)
+        depth = (points[:, 2] - mouth) if bottom else (mouth - points[:, 2])
+        ideal = socket['rim_radius'] + (socket['depth'] - depth)
+        dip = ideal - np.hypot(points[:, 0], points[:, 1])
+        assert dip.max() <= gears_module.V1_SOCKET_TAPER_FACET_DIP_MM
+
+
+@pytest.mark.parametrize('asset_name', ASSET_NAMES)
+def test_version_one_socket_table_matches_the_vendored_rings(asset_name):
+    """
+    The socket numbers in app/geometry/gears.py are the vendored bytes, read
+    back from the vertices: a re-derived asset with a different socket fails
+    here before any cone is cut against stale numbers.
+    """
+    import numpy as np
+
+    from app.geometry import gears as gears_module
+
+    plate_type = 'positive' if asset_name == 'gears_a' else 'negative'
+    mesh = load_gear_asset(asset_name)
+    bodies = sorted(mesh.split(only_watertight=False), key=lambda body: body.bounds[0][2])
+    for body, table in ((bodies[0], gears_module.V1_GEAR_SOCKET), (bodies[1], gears_module.V1_TOP_GEAR_SOCKET)):
+        socket = table[plate_type]
+        bottom = body.bounds[1][2] <= 0
+        mouth = body.bounds[0][2] if bottom else body.bounds[1][2]
+        v = np.unique(np.round(body.vertices, 6), axis=0)
+        depth = (v[:, 2] - mouth) if bottom else (mouth - v[:, 2])
+        r = np.hypot(v[:, 0], v[:, 1])
+        inner = r < socket['bore_radius'] + 1.05
+        # The blind end: every vertex there is on the rim, nothing inside it.
+        end = inner & np.isclose(depth, socket['depth'], atol=1e-4)
+        assert end.sum() >= 40
+        assert np.allclose(r[end], socket['rim_radius'], atol=1e-4)
+        assert depth[inner].max() == pytest.approx(socket['depth'], abs=1e-4)
+        # The key bore's deepest ring, where the taper starts.
+        bore = inner & (np.abs(r - socket['bore_radius']) < 1e-4)
+        assert depth[bore].max() == pytest.approx(socket['taper_start_depth'], abs=1e-4)
+        # The mouth chamfer's outer ring on the gear face.
+        face = inner & (depth < 1e-4)
+        assert r[face].max() == pytest.approx(socket['bore_radius'] + socket['mouth_chamfer'], abs=1e-3)
+
+
+def test_axis_cut_blocks_refuse_what_they_cannot_place():
+    from app.geometry import gears as gears_module
+
+    with pytest.raises(ValueError):
+        gears_module.axis_cut_blocks('sideways', 52.0)
+    with pytest.raises(ValueError):
+        gears_module.axis_cut_blocks('positive', 0.0)
 
 
 def test_weld_rings_sit_at_the_two_gear_interfaces():

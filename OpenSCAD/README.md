@@ -5,8 +5,8 @@
 > | | |
 > |---|---|
 > | **Canonical repo** | [BrennenJohnston/braille-cylinder-stl-generator-openscad](https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad) |
-> | **Vendored from** | tag `v2.9.1` (commit `672916a`, released 2026-09-23) |
-> | **Copied on** | 2026-09-23 |
+> | **Vendored from** | tag `v2.11.0` (commit `8e64e06`, released 2026-10-01) |
+> | **Copied on** | 2026-10-01 |
 > | **Machine-readable provenance** | [`VENDORED.json`](VENDORED.json) |
 >
 > The standalone repo **is** the active home for this program: it holds the

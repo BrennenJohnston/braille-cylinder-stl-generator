@@ -588,7 +588,7 @@ def test_browser_generated_stl(plate_type):
     assert not mesh.contains([[0.0, 0.0, float(z)] for z in range(-25, 26)]).any()
     for z in POCKET_PROBE_Z:
         measured = _hole_loop(mesh, z)
-        expected = v2.key_profile(_key_at(plate_type, z), v2.V2_KEY_CLEARANCE_DEFAULT_MM)
+        expected = v2.key_profile(_key_at(plate_type, z), v2.V2_KEY_CLEARANCE_DEFAULTS_MM[_key_at(plate_type, z)])
         assert _max_boundary_distance(measured, expected) <= 0.02
 
 
@@ -607,7 +607,7 @@ def _mutate(block, kind):
         broken['halves'][0]['profile'] = [{'x': float(x), 'y': float(y)} for x, y in turned]
     elif kind == 'clearance_inward':
         name = v2.KEY_PROFILES_BY_PLATE['negative'][0]
-        shrunk = v2.grown_key_outline(name, -v2.V2_KEY_CLEARANCE_DEFAULT_MM)
+        shrunk = v2.grown_key_outline(name, -v2.V2_KEY_CLEARANCE_DEFAULTS_MM[name])
         broken['halves'][0]['profile'] = [{'x': x, 'y': y} for x, y in shrunk]
     elif kind == 'shallow_countersink':
         broken['countersinks'][0]['depth'] = 1.0
@@ -639,7 +639,7 @@ def test_clearance_applied_inward_is_caught():
     # Widths derived from the clearance rather than typed: the dial's default
     # has moved once already (0.15 -> 0.075, 2026-08-29) and a hardcoded 2c
     # turns a real regression into an arithmetic failure that reads like one.
-    clearance = v2.V2_KEY_CLEARANCE_DEFAULT_MM
+    clearance = v2.V2_KEY_CLEARANCE_DEFAULTS_MM[v2.KEY_PROFILES_BY_PLATE['negative'][0]]
     block = _mutate(v2.keyed_cutout_block('negative', FIXTURE_HEIGHT_MM, clearance), 'clearance_inward')
     mesh = build_v2_cylinder(block, FIXTURE_RADIUS_MM, FIXTURE_HEIGHT_MM, 'negative')
     width, _ = _extents(_hole_loop(mesh, -20.0))
@@ -687,7 +687,7 @@ def test_a_block_missing_an_antirotation_feature_is_refused(feature):
     ),
 )
 def test_a_malformed_block_raises(block):
-    block = {'clearance_mm': 0.075, 'countersinks': [], **block}
+    block = {'clearances_mm': {}, 'countersinks': [], **block}
     with pytest.raises(ValueError):
         build_v2_cylinder(block, FIXTURE_RADIUS_MM, FIXTURE_HEIGHT_MM, 'negative')
 

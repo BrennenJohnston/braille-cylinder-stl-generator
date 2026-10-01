@@ -9,10 +9,13 @@ cylinders rotationally synchronised.
 Everything here is a pure function or a constant: no I/O, no globals mutated,
 no settings objects. Lengths are millimetres, angles degrees.
 
-The gears are NOT parametric. They are a 1:1 replication of Brennen's reference
-set, vendored as static/assets/gears/gears_a.bin and gears_b.bin and
-regenerated only by scripts/derive_gear_assets.py. Every number below was
-measured from those samples (research folder 01_SAMPLE_GEOMETRY_AUDIT.md) and
+The gears are NOT parametric. They are a 1:1 replication of the gear rings of
+Brennen's Version 1 gear holders (since 2026-09-28; the 2026-08-24 sample set
+before that - same teeth, but its B hub was the newer design's and never fitted
+the Version 1 housing), vendored as static/assets/gears/gears_a.bin and
+gears_b.bin and regenerated only by scripts/derive_gear_assets.py. Every
+number below was measured from the 2026-08-24 samples (research folder
+01_SAMPLE_GEOMETRY_AUDIT.md), whose tooth ring the holders share, and
 is reproduced here so app/validation.py and app/geometry_spec.py read ONE
 source - cross-file default drift is this project's most common historical bug.
 
@@ -111,6 +114,11 @@ WELD_RING_R_IN_MM = 8.0
 WELD_RING_R_OUT_MM = 13.0
 WELD_RING_HEIGHT_MM = 0.1
 
+# Each gear body is this thick (both sets, measured; the manifests record it).
+# A fused roller's bed plane therefore sits height/2 + this below the barrel's
+# centre, which is where the Version 2 axis cuts measure from (version2.py).
+GEAR_BODY_THICKNESS_MM = 10.0
+
 # Decision D-8a. The raised tactile row arrows are 10 mm long on 10 mm line
 # spacing, so each arrow's apex touches the next arrow's base exactly; float32
 # STL rounding welds that tangency into a non-manifold pinch edge. Gear mode
@@ -121,6 +129,77 @@ WELD_RING_HEIGHT_MM = 0.1
 # exact tangency it ships with today. Recess arrows are untouched - their
 # 0.2 mm clearance growth already overlaps.
 GEAR_ARROW_WELD_MM = 0.005
+
+# The housing-pin socket in each Version 1 gear, MEASURED 2026-09-30 by vertex
+# fits on the vendored rings: identical on A1, A2, B1 and B2, and concentric
+# with the roller axis to 0.00003 mm. From the gear's outer face (its mouth):
+# a 1.0 mm 45 degree chamfer, the r 7.0 key bore to depth 6.7, a 45 degree
+# taper to the r 5.2 rim at depth 8.5, and there a FLAT blind end, 1.5 mm from
+# the barrel face. The Version 1 housing pin (diameter 13.7 x 6.25 then
+# 10.17 x 2, so 8.25 deep) is a close fit in it: recorded hardware, not ours
+# to adjust, and the axis cuts below may not touch any of it (Brennen,
+# 2026-09-30). BOTTOM gears print mouth down; TOP gears mouth up.
+V1_GEAR_SOCKET = {
+    'positive': {
+        'gear': 'A2',
+        'mouth_chamfer': 1.0,
+        'bore_radius': 7.0,
+        'taper_start_depth': 6.7,
+        'rim_radius': 5.2,
+        'depth': 8.5,
+    },
+    'negative': {
+        'gear': 'B2',
+        'mouth_chamfer': 1.0,
+        'bore_radius': 7.0,
+        'taper_start_depth': 6.7,
+        'rim_radius': 5.2,
+        'depth': 8.5,
+    },
+}
+V1_TOP_GEAR_SOCKET = {
+    'positive': {
+        'gear': 'A1',
+        'mouth_chamfer': 1.0,
+        'bore_radius': 7.0,
+        'taper_start_depth': 6.7,
+        'rim_radius': 5.2,
+        'depth': 8.5,
+    },
+    'negative': {
+        'gear': 'B1',
+        'mouth_chamfer': 1.0,
+        'bore_radius': 7.0,
+        'taper_start_depth': 6.7,
+        'rim_radius': 5.2,
+        'depth': 8.5,
+    },
+}
+
+# The Version 1 fused roller's vent and self-supporting sockets (2026-09-30,
+# Brennen's approved plan: Version 2's D-1 and D-K5 with the vent, ported).
+# Printed as generated, bottom gear down, the bottom socket's flat blind end
+# is a roof over air that needed support inside the hole; a cone continuing
+# the socket's own 45 degree taper up to a 2 mm vent along the whole axis
+# lays nothing over air, and the vent lets the roller come off its pin with
+# no vacuum. Unlike Version 2's cone, which grows into its taper, this one
+# runs V1_SOCKET_CONE_INSET_MM INSIDE it, so the mouth, the key bore and the
+# taper stay exactly as vendored (decision 1); a ring that narrow is all that
+# remains of the flat end, far below anything a printer can lay.
+V1_VENT_RADIUS_MM = 1.0
+V1_VENT_OVERSHOOT_MM = 1.0  # past both gear mouths
+V1_SOCKET_CONE_OVERLAP_MM = 0.5  # the cone starts this far short of the blind end, in the socket's air
+# How far inside the socket's taper the cone runs, touching none of it. The
+# plan said 0.01; implementing it showed the taper's flat facets (a strip
+# between a 57-gon and a 49-gon) dip up to V1_SOCKET_TAPER_FACET_DIP_MM inside
+# the ideal cone, and the cutter's corners sit ON its nominal radius, so at
+# 0.01 they clipped the taper by up to 0.0004 mm. At 0.02 every point sampled
+# on the mouth chamfer, key bore and taper comes through the cut at 0.000000 mm
+# (measured 2026-09-30, both cylinders). axis_cut_blocks refuses any inset
+# that does not clear the dip, recorded as a bound on the measured 0.01071.
+V1_SOCKET_TAPER_FACET_DIP_MM = 0.0108
+V1_SOCKET_CONE_INSET_MM = 0.02
+V1_SOCKET_CONE_VENT_GROWTH_MM = 0.01  # its narrow end overlaps the vent by this, nothing coplanar
 
 
 def cylinder_dimensions(cylinder_params: dict) -> tuple[float, float]:
@@ -196,3 +275,96 @@ def weld_rings(height: float) -> list[dict]:
         }
         for z_center in (-half_height, half_height)
     ]
+
+
+def _check_socket(socket: dict) -> None:
+    """Refuse a socket table the inset cone could touch or would not continue."""
+    taper_run = socket['depth'] - socket['taper_start_depth']
+    if not socket['rim_radius'] < socket['bore_radius']:
+        raise ValueError(f'{socket["gear"]} socket rim {socket["rim_radius"]} must be inside its bore')
+    # The cone runs parallel to the taper, which holds only for a 45 degree taper.
+    if abs((socket['bore_radius'] - socket['rim_radius']) - taper_run) > 1e-9:
+        raise ValueError(f'{socket["gear"]} socket taper is not 45 degrees: {socket}')
+    # The cone's base must sit on the taper, never beside the key bore.
+    if not taper_run > V1_SOCKET_CONE_OVERLAP_MM:
+        raise ValueError(
+            f'{socket["gear"]} cone overlap {V1_SOCKET_CONE_OVERLAP_MM} reaches past the taper ({taper_run})'
+        )
+
+
+def axis_cut_blocks(plate_type: str, height: float) -> list[dict]:
+    """
+    The Version 1 fused roller's three axis cuts, taken LAST in the worker after
+    every union: the vent the full length of the roller, the bottom socket's
+    cone and the top socket's mirror cone (2026-09-30, Brennen's approved plan).
+
+    z is measured from each gear's mouth, which sits height/2 + the gear's
+    thickness from the barrel's centre. Each cone starts V1_SOCKET_CONE_OVERLAP_MM
+    short of its socket's blind end, in the socket's air, at the taper's radius
+    there less V1_SOCKET_CONE_INSET_MM, and runs at 45 degrees to the vent: so
+    its side is parallel to the taper and inside it, and it removes material
+    only beyond the old blind end. Same block shape as Version 2's
+    (version2.axis_cut_blocks): z_from < z_to with r_from at z_from, so the top
+    cone is emitted apex first, and the worker and tests/test_golden.py cut both
+    versions the same way.
+    """
+    if plate_type not in V1_GEAR_SOCKET or plate_type not in V1_TOP_GEAR_SOCKET:
+        raise ValueError(f'unknown plate type {plate_type!r}; known: {sorted(V1_GEAR_SOCKET)}')
+    if height <= 0:
+        raise ValueError(f'cylinder height must be positive, got {height}')
+    if not V1_SOCKET_TAPER_FACET_DIP_MM < V1_SOCKET_CONE_INSET_MM < V1_SOCKET_CONE_OVERLAP_MM:
+        raise ValueError(
+            f'cone inset {V1_SOCKET_CONE_INSET_MM} must clear the taper facets '
+            f'({V1_SOCKET_TAPER_FACET_DIP_MM}) and stay below the overlap'
+        )
+
+    bottom = V1_GEAR_SOCKET[plate_type]
+    top = V1_TOP_GEAR_SOCKET[plate_type]
+    _check_socket(bottom)
+    _check_socket(top)
+    narrow = V1_VENT_RADIUS_MM + V1_SOCKET_CONE_VENT_GROWTH_MM
+    if not 0 < V1_VENT_RADIUS_MM < WELD_RING_R_IN_MM:
+        raise ValueError(f'vent radius {V1_VENT_RADIUS_MM} mm would reach the weld rings')
+
+    mouth = height / 2.0 + GEAR_BODY_THICKNESS_MM
+    reach = mouth + V1_VENT_OVERSHOOT_MM
+    vent = {
+        'kind': 'vent',
+        'radius': V1_VENT_RADIUS_MM,
+        'z_from': round(-reach, 6),
+        'z_to': round(reach, 6),
+    }
+
+    blocks = [vent]
+    for socket, end in ((bottom, 'bottom'), (top, 'top')):
+        wide = socket['rim_radius'] + V1_SOCKET_CONE_OVERLAP_MM - V1_SOCKET_CONE_INSET_MM
+        if not narrow < wide < WELD_RING_R_IN_MM:
+            raise ValueError(f'{socket["gear"]} cone must narrow from r {wide} to the vent inside the weld rings')
+        rise = wide - narrow  # 45 degrees
+        if end == 'bottom':
+            start = -mouth + socket['depth'] - V1_SOCKET_CONE_OVERLAP_MM
+            blocks.append(
+                {
+                    'kind': 'cone',
+                    'gear': socket['gear'],
+                    'end': end,
+                    'z_from': round(start, 6),
+                    'r_from': round(wide, 6),
+                    'z_to': round(start + rise, 6),
+                    'r_to': round(narrow, 6),
+                }
+            )
+        else:
+            start = mouth - socket['depth'] + V1_SOCKET_CONE_OVERLAP_MM
+            blocks.append(
+                {
+                    'kind': 'cone',
+                    'gear': socket['gear'],
+                    'end': end,
+                    'z_from': round(start - rise, 6),
+                    'r_from': round(narrow, 6),
+                    'z_to': round(start, 6),
+                    'r_to': round(wide, 6),
+                }
+            )
+    return blocks

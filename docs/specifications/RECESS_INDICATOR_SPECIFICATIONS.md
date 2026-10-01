@@ -25,6 +25,26 @@ Tactile mode exists so a blind user can align the two cylinders unaided: the arr
 
 `indicator_mode` is cylinder-only; cards ignore it and the UI hides the control when the shape is a card.
 
+Since 2026-09-24 (programme decision D-5) the control lives in **Expert Mode**, third submenu "Row
+Indicator Style", with the five tactile dials directly below it (the submenu is always shown;
+the dials block appears in the tactile style). And choosing **Embosser Version 2 moves the style
+to `tactile` as a default** (decision D-4): the version radios' change listener remembers the
+style the user had, checks the tactile radio and dispatches its change (so persistence, the
+cell dial and the warnings follow as for a click), and gives the remembered style back on the
+way to Version 1 (since 2026-10-01 the remembered style is saved as
+`braille_prefs_version1_indicator_mode`, so this works after a reload too; it is read back
+only when Version 2 itself came back on). It is a default, not a lock — the user may pick
+visual markers in Version 2 and that choice persists — and it is never applied by the silent
+load restore nor by a card-stock preset (`tests/test_smoke.py` pins that neither preset names `indicator_mode`). The
+double-sided lock (v3.3) takes precedence: a locked tactile style is left alone. Since
+2026-09-29 the lock remembers the visual style it displaced and choosing Single-sided gives
+it back (INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md §7.2; announced with S-M14 *"Row
+Indicator Style set to visual."*, signed 2026-10-01). While the lock holds, a version change works on
+that displaced style instead of on the checked radio: entering Version 2 turns it into the
+tactile default (Single-sided in Version 2 keeps the arrow), and leaving Version 2 hands the
+remembered Version 1 style to it (Single-sided in Version 1 shows that style). The composed
+Version 2 announcement gains S-V16 *"Row Indicator Style set to tactile."* when the style moved (signed by Brennen 2026-09-28, shortened from the draft).
+
 ### Indicator Letters Toggle (`indicator_shapes`)
 
 The user-facing **"Indicator Letters (Emboss and Counter)"** toggle (runtime field
@@ -528,7 +548,7 @@ Rules:
 
 ### UI Location
 
-The five dials live in their own **Tactile Indicator Dimensions** submenu of Expert Mode (fifth, after Surface Dimensions). The whole submenu is hidden unless **Row Indicator Style** is set to *Tactile seam arrow*, since the dials do nothing in visual mode.
+Since 2026-09-24 (decision D-5) the five dials live inside the **Row Indicator Style** submenu of Expert Mode (the third), in `#tactile-indicator-dimensions` below the style radios. That block alone is hidden unless the style is *Tactile seam arrow*, since the dials do nothing in visual mode; the submenu itself is always shown.
 
 Derived constants (`app/geometry_spec.py`, mirroring the `.scad`):
 
@@ -591,9 +611,9 @@ required    = tactile_indicator_width + TACTILE_MIN_GAP_MARGIN
 When `seam_gap_mm < required` the layout is **warned about, not rejected** — matching the OpenSCAD version, which renders a 3D "TACTILE GAP TOO SMALL" label:
 
 - **Backend:** the message is appended to `spec['warnings']` (a list, always present, empty in visual mode) and logged.
-- **Frontend:** `checkPhysicalFit()` shows it live in `#tactile-gap-warning` (`role="status"`, `aria-live="polite"`), recomputed whenever the diameter, cell spacing, cell count, indicator width, or mode changes. Generation is not blocked.
+- **Frontend:** `checkPhysicalFit()` shows it live in `#tactile-gap-warning` (announced through `#a11y-status`, not a live region of its own), recomputed whenever the diameter, cell spacing, cell count, indicator width, or mode changes. Generation is not blocked.
 
-At defaults (30.75 mm diameter, 6.5 mm cell spacing, 4 mm indicator) the gap needs ≥ 9 mm: 13 cells leave 18.6 mm and 14 cells leave 12.1 mm, both passing; 15 cells leave 5.6 mm and warn. The UI recommends 13 since 2026-09-21: 14 still clears the arrow but runs off a 90 mm card (Card Fit, next).
+At the live defaults (30.8 mm diameter from the presets, 6.5 mm cell spacing, 4 mm indicator) the gap needs ≥ 9 mm: 13 cells leave 18.8 mm and 14 cells leave 12.3 mm, both passing; 15 cells leave 5.8 mm and warn. The UI recommends 13 since 2026-09-21: 14 still clears the arrow but runs off a 90 mm card (Card Fit, next).
 
 ### Card Fit (2026-09-21)
 
@@ -601,10 +621,13 @@ The card's leading edge sits at the alignment arrow when the embosser is loaded 
 
 ```
 gap       = π · diameter − (grid_columns − 1) · cell_spacing
-card_need = gap/2 + (grid_columns − 1) · cell_spacing + footprint
+shift     = braille_x_adjust (X Adjust, mm of arc, 0 by default and −2 in Version 2 tactile; since 2026-09-27 it slides the grid, not the arrow —
+            negative brings the first cell toward the arrow, so the need falls by |shift|; BRAILLE_SPACING_SPECIFICATIONS.md §5)
+card_need = gap/2 + shift + (grid_columns − 1) · cell_spacing + footprint
           13 cells, 30.8 mm, 0.4 mm preset:  9.38 + 78.0 + 2.15 = 89.5 mm   (fits a 90 mm card by 0.5; a 3.5 in card, 88.9 mm, does NOT — its maximum is 12)
           14 cells:                          6.13 + 84.5 + 2.15 = 92.8 mm   (runs off a 90 mm card — the last cell is lost; 92.9 with the default dot families)
-max_cells = floor((card_width − π · diameter / 2 − footprint) · 2 / cell_spacing) + 1 = 13 at 90 mm
+          14 cells at X −3:                  6.13 − 3 + 84.5 + 2.15 = 89.8 mm   (fits — the row starts 3 mm nearer the leading edge)
+max_cells = floor((card_width − π · diameter / 2 − shift − footprint) · 2 / cell_spacing) + 1 = 13 at 90 mm
 ```
 
 When `card_need > card_width` (the settings field, default 90 mm) the layout is **warned about, not rejected** — the cylinder itself still holds the row:
@@ -990,6 +1013,11 @@ When implementing or modifying indicator code, verify:
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-10-01 | 3.17 | **Both remembered styles survive a reload** (Brennen's decision): the Version 2 default's memory (`braille_prefs_version1_indicator_mode`) and the double-sided lock's (`braille_prefs_single_sided_indicator_mode`) are saved with the design settings, read back only with the state they belong to, and cleared by Reset. |
+| 2026-09-30 | 3.16 | **Documentation review after the approved build.** The tactile dials' UI location is the Row Indicator Style submenu (since D-5, 2026-09-24); `#tactile-gap-warning` is announced through `#a11y-status`; the gap example uses the live 30.8 mm barrel (18.8 / 12.3 / 5.8 mm); the card-fit formula notes X Adjust's −2 Version 2 tactile default. |
+| 2026-09-29 | 3.15 | **Single-sided gives back the style the double-sided lock displaced** (Brennen's finding from testing). A Version 1 card taken to Double-sided and back used to stay on the tactile arrow; the visual markers now return, a tactile style the user chose stays, and under the lock a version change works on the displaced style (Row Indicator Style section). New DRAFT clause S-M14. |
+| 2026-09-27 | 3.14 | **The card-fit need reads X Adjust (§4).** The X Adjust dial now works on cylinders (BRAILLE_SPACING_SPECIFICATIONS.md §5): it slides the text grid round the barrel while the tactile arrow stays at the seam-gap midpoint, so `tactile_card_need_mm` / `tactile_max_cells` gain the shift (`card_need = gap/2 + shift + grid + footprint`; 14 cells at X −3 fit a 90 mm card) and `updateCardFitUI()` mirrors it. The arrow-gap warning likewise reads the gap left after the shift. Nothing changes at 0. |
+| 2026-09-24 | 3.13 | **The control moves into Expert Mode and Version 2 defaults it to tactile (programme 2026-09-24; decisions D-4, D-5).** Row Indicator Style is the third Expert Mode submenu with the tactile dials below it; choosing Version 2 sets tactile as a remembered, reversible default (never a lock, never on load restore, never by a preset). |
 | 2024-10-11 | 1.0 | Initial documentation during Phase 0 refactoring |
 | 2024-12-06 | 2.0 | Expanded with Manifold WASM implementation details, coordinate system documentation, common bugs |
 | 2024-12-06 | 2.1 | Changed character marker depth from 1.0mm to 0.5mm; Added Section 3.1 with detailed Manifold WASM character generation specifications including bitmap font format, pixel-to-box conversion algorithm, horizontal mirroring requirements, and coordinate system details |

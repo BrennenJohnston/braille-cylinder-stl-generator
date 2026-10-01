@@ -64,7 +64,7 @@ The submenu contains **two grouped sections**:
 │                                                                   │
 │  ┌─ Cylinder Dimensions ─────────────────────────────────────────┐│
 │  │  • Cylinder Diameter (mm)                    [30.75]         ││
-│  │  • Cylinder Height (mm)                      [54]            ││
+│  │  • Cylinder Height (mm)                      [52]            ││
 │  │  • Polygonal Cutout Circumscribed Radius (mm) [13]           ││
 │  │      Creates a polygonal cutout along the cylinder's length. ││
 │  │      Set to 0 for no cutout.                                 ││
@@ -72,8 +72,8 @@ The submenu contains **two grouped sections**:
 │  │      Lower values create simpler shapes (e.g., 6);           ││
 │  │      higher values approximate a circle.                     ││
 │  │  • Seam Offset (degrees)                     [355]           ││
-│  │      Rotates the starting position of braille text           ││
-│  │      around the cylinder                                     ││
+│  │      Turns the polygonal cutout around the cylinder's        ││
+│  │      axis. The braille does not move.                        ││
 │  └──────────────────────────────────────────────────────────────┘│
 │                                                                   │
 │  ┌─ Plate Dimensions ────────────────────────────────────────────┐│
@@ -111,7 +111,7 @@ The submenu contains **two grouped sections**:
 
 ## 2. Cylinder Dimensions
 
-Cylinder dimensions control the physical shape and structure of cylindrical braille output. These parameters are critical for generating braille cylinders that fit specific pen holders, rollers, or educational tools.
+Cylinder dimensions control the physical shape and structure of cylindrical braille output. These parameters are critical for generating braille cylinders that fit the embosser; the Card Thickness presets set every one of them.
 
 ### 2.1 Cylinder Diameter
 
@@ -123,8 +123,8 @@ Cylinder dimensions control the physical shape and structure of cylindrical brai
 | Input ID | `cylinder_diameter_mm` |
 | Input Name | `cylinder_diameter_mm` |
 | Type | `number` |
-| Default | `30.75` |
-| Step | `0.1` |
+| Default | `30.75` (the raw `value=`; the 0.4 mm preset puts 30.8 on load) |
+| Step | `0.05` |
 | Min | `10` |
 | Max | `200` |
 
@@ -143,12 +143,12 @@ Cylinder dimensions control the physical shape and structure of cylindrical brai
 ```python
 @dataclass
 class CylinderParams:
-    diameter_mm: float = 31.35
+    diameter_mm: float = 30.75
 
     @staticmethod
     def from_dict(data: dict) -> 'CylinderParams':
         return CylinderParams(
-            diameter_mm=float(data.get('diameter_mm', data.get('diameter', 31.35))),
+            diameter_mm=float(data.get('diameter_mm', data.get('diameter', 30.75))),
             # ... other parameters
         )
 ```
@@ -181,7 +181,9 @@ The cylinder diameter determines the **outer radius** of the cylindrical shell:
 
 ```python
 def extract_cylinder_geometry_spec(...):
-    diameter = float(cylinder_params.get('diameter', cylinder_params.get('diameter_mm', 60.0)))
+    # One reader for both spellings, shared with app/validation.py's gear gate;
+    # an absent field means gears.DEFAULT_CYLINDER_DIAMETER_MM / _HEIGHT_MM (30.75 / 52.0).
+    diameter, height = gears.cylinder_dimensions(cylinder_params)
     radius = diameter / 2
 
     # Grid layout calculations depend on radius
@@ -224,7 +226,7 @@ function createCylinderShell(spec) {
 
 **Why 52 (2026-08-31):** 52 is the **Version 1 standard barrel** — the height
 every previously shipped V1 gear model pairs with, and the size the
-integrated-gears BETA is hard-gated to (S7). The default spent part of this
+Version 1 fixed gears are hard-gated to (S7). The default spent part of this
 day at 54 (a 1 mm card shelf past each card edge), which broke gear mode on
 untouched dials; Brennen's deployment verdict moved the shelf to **Embosser
 Version 2 only** (its preset forces 30.8 × 54 — see
@@ -373,7 +375,7 @@ if polygonal_cutout_radius > 0:
 ```
 
 **Special Value:**
-- When `polygonal_cutout_radius_mm = 0`: No inner cutout is created; the cylinder is solid
+- When `polygonal_cutout_radius_mm = 0`: no polygonal cutout is made, and the worker hollows the barrel to the spec's `thickness` instead (2 mm; the request never carries a wall thickness). The barrel is solid only when the spec asks for it (fixed gears, Version 2) or the wall would reach the axis (§10.4)
 
 ---
 
@@ -444,7 +446,7 @@ The number of sides determines the **shape of the inner cutout**:
 | Step | `1` |
 | Min | `0` |
 | Max | `360` |
-| Note | Rotates the starting position of braille text around the cylinder |
+| Note | Turns the polygonal cutout around the cylinder's axis. The braille does not move. (S-SO1, signed by Brennen 2026-10-01; the old note said the braille text turned) |
 
 #### Parameter Names Across Codebase
 
@@ -473,7 +475,7 @@ class CylinderParams:
 #### Geometric Effect
 
 **Critical Behavior Note:**
-The seam offset rotates **ONLY the polygonal cutout**, NOT the braille content. This allows users to align the polygon vertices (useful for pen holder compatibility) independently of where the braille text appears.
+The seam offset rotates **ONLY the polygonal cutout**, NOT the braille content. This allows users to align the polygon vertices independently of where the braille text appears.
 
 ```
           TOP-DOWN VIEW - Seam Offset Effect
@@ -569,7 +571,9 @@ Placement, as signed arc `s` along the surface from the seam centre, positive to
 gap       = π · diameter − (grid_columns_total − 1) · cell_spacing
 footprint = dot_spacing / 2 + max(active dot base radius, active recess mouth radius)
             (double-sided: the ds_* package's dot and bowl radii; the SAME number on both plates)
-visual :  lo = −(gap/2 − footprint)                  hi = gap/2 − dot_spacing/2        (column 0's triangle)
+shift     = braille_x_adjust (X Adjust, mm of arc; 0 by default, −2 in Version 2 tactile — the grid slides by it, the seam centre and the
+            arrows do not; see BRAILLE_SPACING_SPECIFICATIONS.md §5, since 2026-09-27)
+visual :  lo = −(gap/2 − footprint) + shift          hi = gap/2 − dot_spacing/2 + shift        (column 0's triangle)
 tactile:  The groove runs down the arrow column itself (D-T6, 2026-09-21): theta = π on BOTH plates, the FULL
           height (D-T7, same day, after Brennen's print: wherever the groove stopped, the slicer chose a dot).
           COUNTER plate: straight, the same cut as visual mode - its recesses are deeper (0.7 mm) than the groove
@@ -596,14 +600,16 @@ tactile:  The groove runs down the arrow column itself (D-T6, 2026-09-21): theta
           asin(x / R), the round corners as chords of at most SEAM_CHANNEL_DETOUR_ARC_STEP_DEG (7.5°) set
           outside the circle, and every sideways stretch split into pieces of at most
           SEAM_CHANNEL_DETOUR_STEP_MM (1.0) so each chord stays within 0.005 mm of the barrel.
-          free = gap/2 − footprint (the first-cell side's room)
+          free = gap/2 + shift − footprint (the first-cell side's room; a negative shift crowds it)
           need = tactile_indicator_width / 2 + SEAM_CHANNEL_WIDTH_MM + 2 · SEAM_CHANNEL_MARGIN_MM = 3.5 mm
+          and the last-cell side, gap/2 − shift − footprint, must still clear the straight groove:
+          SEAM_CHANNEL_WIDTH_MM / 2 + SEAM_CHANNEL_MARGIN_MM = 0.75 mm (only a positive shift can fail it)
           The rule is nominal, in the tangent plane. On the surface the path reaches R·asin(x / R) plus the
           outside-chord bulge, about 0.016 mm beyond b + d at the defaults, so exactly at the limit (14 cells
           on a 30.5 mm barrel: free 3.509) the flat beside the first cell's dots is 0.243 mm, not 0.25 - far
           below print resolution, and the UI mirrors the same simple rule.
-visual:   free = hi − lo ;  need = SEAM_CHANNEL_WIDTH_MM + 2 · SEAM_CHANNEL_MARGIN_MM = 1.5 mm
-          s_c = (lo + hi) / 2
+visual:   free = hi − lo (the shift cancels: the window slides, its width does not) ;  need = SEAM_CHANNEL_WIDTH_MM + 2 · SEAM_CHANNEL_MARGIN_MM = 1.5 mm
+          s_c = (lo + hi) / 2  (moves by the shift, so the groove keeps equal margins to the moved grid)
           theta = π − s_c / R  (positive plate)      theta = π + s_c / R  (negative plate)
 ```
 
@@ -630,7 +636,7 @@ Fit rules (each leaves the groove out and adds one warning to `spec.warnings`; t
 | Rule | Warning (S-C2 and S-C3 signed 2026-09-21, S-C5 signed 2026-09-23) |
 |------|---------------------------|
 | visual: `free < 1.5 mm` | S-C2: "The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter." |
-| tactile (D-T8): the first-cell side's `gap/2 − footprint` under `tactile_indicator_width/2 + 1.5 mm` — the room the embossing plate's detour needs, applied to both plates so they keep or lose the groove together | S-C5: "The seam channel was left out: there is not enough room for it beside the alignment arrows. Reduce the number of braille cells, increase the cylinder diameter, or narrow the indicator." — its own sentence because the arrow width can cause it too, where S-C2 would blame only the cell count and diameter |
+| tactile (D-T8): the first-cell side's `gap/2 + shift − footprint` under `tactile_indicator_width/2 + 1.5 mm` — the room the embossing plate's detour needs, applied to both plates so they keep or lose the groove together — or the last-cell side's `gap/2 − shift − footprint` under 0.75 mm (`shift` = X Adjust, 0 by default and −2 in Version 2 tactile: at 13 tactile cells on 30.8 mm the groove survives X −3 and is left out at X −4) | S-C5: "The seam channel was left out: there is not enough room for it beside the alignment arrows. Reduce the number of braille cells, increase the cylinder diameter, or narrow the indicator." — its own sentence because the arrow width can cause it too, where S-C2 would blame only the cell count and diameter |
 | wall under the apex `< 1.2 mm` — against the polygonal cutout's circumradius (`r / cos(π/sides)`), or `wall_thickness − depth` for a barrel hollowed by wall thickness (2 mm when the field is absent); solid barrels (integrated gears, Version 2) skip this rule | S-C3: "The seam channel was left out: the cylinder wall would be thinner than 1.2 mm under it." |
 
 At the default 13.0 mm cutout (12-gon, circumradius 13.459) the wall under the apex is 15.4 − 0.5 − 13.459 = 1.441 mm; a 13.25 mm inscribed cutout (circumradius 13.717) already breaks 1.2.
@@ -1109,8 +1115,8 @@ if (isCylinder) {
 
 | Parameter | Default | Unit | Description |
 |-----------|---------|------|-------------|
-| `diameter_mm` | `31.35` | mm | Outer cylinder diameter |
-| `height_mm` | `None` (uses `card_height`) | mm | Cylinder height |
+| `diameter_mm` | `30.75` | mm | Outer cylinder diameter |
+| `height_mm` | `52.0` | mm | Cylinder height (decoupled from `card_height` since 2026-08-31) |
 | `wall_thickness` | `2.0` | mm | Shell wall thickness (when no polygon) |
 | `seam_offset_deg` | `355.0` | degrees | Polygon rotation offset |
 | `polygonal_cutout_radius_mm` | `13.0` | mm | Inner polygon circumscribed radius |
@@ -1130,7 +1136,7 @@ if (isCylinder) {
 
 | Input ID | Default Value | Step | Range |
 |----------|---------------|------|-------|
-| `cylinder_diameter_mm` | `30.75` | 0.1 | 10-200 |
+| `cylinder_diameter_mm` | `30.75` | 0.05 | 10-200 |
 | `cylinder_height_mm` | `52` | 0.1 | 10-200 |
 | `cylinder_polygonal_cutout_radius_mm` | `13` | 0.1 | 0-50 |
 | `cylinder_polygonal_cutout_sides` | `12` | 1 | 3-60 |
@@ -1177,6 +1183,8 @@ self.counter_dot_depth = max(0.0, min(depth, self.card_thickness - self.epsilon_
 
 | Date | Change |
 |------|--------|
+| 2026-09-30 | **Documentation review after the approved build.** The Surface Dimensions diagram shows the 52 mm height and the S-SO1 seam offset note (draft: it turns only the polygonal cutout); §2.1 has the 0.05 step and the real 30.75 backend fallbacks (`CylinderParams`, `gears.cylinder_dimensions()`); a zero cutout radius gives a 2 mm-wall tube, not a solid barrel (§2.3, §10.4); §2.6 notes X Adjust's −2 Version 2 tactile default; §7's tables carry 30.75 / 52.0 and the 0.05 step. |
+| 2026-09-27 | **§2.6: the seam channel's room rules read X Adjust.** The X Adjust dial now works on cylinders (BRAILLE_SPACING_SPECIFICATIONS.md §5): the grid slides round the barrel by the dial's mm of arc while the seam centre and the arrows stay put. In visual mode the free window and the groove slide with the grid (equal margins kept); in tactile mode the first-cell side has `gap/2 + shift − footprint` against the detour's 3.5 mm and the last-cell side `gap/2 − shift − footprint` against the straight groove's 0.75 mm, S-C5 unchanged; `updateSeamChannelUI()` mirrors both. The tactile arrow-gap warning likewise reads the gap left after the shift (`gap − 2·|shift|`). Nothing changes at 0. |
 | 2026-08-31 | Cylinder height default 52 → 54 mm: the barrel now carries a 1 mm shelf past each edge of the 52 mm card so a slightly mis-rolled card cannot ruffle over the ends. Braille rows remain centered (the layout centers itself in the height). Cylinder height no longer falls back to `card_height` anywhere — the absent-field default is 54, owned by `app/geometry/gears.py` (`DEFAULT_CYLINDER_HEIGHT_MM`). |
 | 2026-08-31 | **Cylinder height default returns to 52 mm — the 54 mm card-shelf barrel is Embosser Version 2 only** (Brennen's deployment verdict, same day). 52 is the Version 1 standard barrel, the height every previously shipped V1 gear model pairs with; the one-day 54 default made the integrated-gears BETA warn/reject on untouched dials. The decoupling from `card_height` stays: the absent-field fallback is 52, still owned by `gears.DEFAULT_CYLINDER_HEIGHT_MM`, and Version 2 still forces 30.8 × 54 via its preset overrides. Both card-stock presets carry 52 again. |
 | 2026-09-20 | **Slicer seam channel (new §2.6).** Every cylinder now carries a V 1.0 × 0.5 mm groove the full height of its outer surface, in the seam gap beside the row-indicator column, on both plates, so a slicer's default "aligned" seam mode hides each layer's seam there instead of in a dot. ON by default; Expert Mode switch `#seam_channel_enabled` turns it off and is the only thing that sends `seam_channel_enabled: 0`. Constants in `app/geometry_spec.py` (`SEAM_CHANNEL_*`), placement and fit rules with worked numbers, the two DRAFT omission warnings S-C2/S-C3, the worker cut, the regenerated goldens and the slicing-spike evidence are all in §2.6. Decisions D-1, D-2, D-13, D-14 (no export rotation), D-15 (groove size). |
@@ -1289,9 +1297,9 @@ This ensures vertical consistency between card and cylinder outputs.
 
 ### 10.4 Zero Polygonal Cutout Radius
 
-**Issue:** When `polygonal_cutout_radius_mm = 0`, the cylinder is solid with no inner cavity.
+**Issue:** When `polygonal_cutout_radius_mm = 0`, no polygonal cutout is made.
 
-**Behavior:** This is valid and intentional. CSG worker handles this by returning a solid cylinder.
+**Behavior:** Valid and intentional. `createCylinderShellManifold()` then hollows the barrel to the spec's `thickness` (2 mm — the request never carries one), and returns a solid barrel only when its `solid` argument says so (fixed gears, Version 2) or the wall would reach the axis.
 
 ### 10.5 High Polygon Side Counts (>30)
 
@@ -1380,7 +1388,7 @@ console.log(`CSG Worker: Expected dot base at radius ${radialOffset - dotHeight/
 ```
 
 **Validation:**
-- Test with cylinder diameter = 20mm, 30.75mm (default), 40mm, 60mm, 80mm
+- Test with cylinder diameter = 20mm, 30.75mm (the schema default), 30.8mm (the presets), 40mm, 60mm, 80mm
 - Verify dots remain flush with cylinder surface (no floating, no sinking)
 - Compare client-side CSG output with Python backend output for consistency
 - Check browser console for debug logs to verify radius values match
@@ -1469,8 +1477,8 @@ first_row_center_y = height - space_above - dot_spacing
 
 ---
 
-*Document Version: 1.6*
-*Last Updated: 2026-09-20*
+*Document Version: 1.7*
+*Last Updated: 2026-09-30*
 *Revision Notes (1.6, 2026-09-20): New §2.6 Slicer Seam Channel and a Document History row — the groove every cylinder carries since 2026-09-20, its Expert Mode switch, wire, constants, placement and fit rules, worker cut and golden regeneration. The Table of Contents gained the 2.6 entry. No other section changed.*
 *Revision Notes: Added detailed debug logging information and troubleshooting checklist for cylinder dot positioning (Section 10.7)*
 *Revision Notes (1.2, 2026-08-21): Documentation only — the Source Files Referenced line named `templates/index.html`, an empty deprecated folder; it now names `public/index.html`. Part of the templates/ reference sweep (Phase 07b).*

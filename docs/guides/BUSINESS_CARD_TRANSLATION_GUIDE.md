@@ -4,7 +4,7 @@
 >
 > **Do not edit the quoted BANA blocks in this file.** They are reproduced verbatim from the verified transcription in [`docs/guides/_bana_business_cards_verified_source.md`](./_bana_business_cards_verified_source.md). If BANA publishes a revised Fact Sheet, update the verified-source file first, then propagate downstream.
 
-> **Status:** Flat business card generation is currently temporarily disabled while we improve this feature. This guide is preserved for when the feature returns. In the meantime, see [CYLINDER_GUIDE.md](CYLINDER_GUIDE.md) for creating braille cylinders (labels, containers).
+> **Status:** The app embosses business cards with a pair of 3D-printed cylinders, so this guide applies to every card it makes. The cylinders themselves are covered in [CYLINDER_GUIDE.md](CYLINDER_GUIDE.md). Flat card plates are parked; see [KNOWN_ISSUES.md](../KNOWN_ISSUES.md#flat-business-card-plates-are-parked).
 
 This guide helps you create effective braille business cards using the Braille STL Generator. It quotes the Braille Authority of North America (BANA) Fact Sheet for every normative rule, and gives *"what to type into this app"* hints for each BANA example. BANA's published examples are Grade 2 (contracted) UEB, which is also this app's default translation, so the app's output is in the same code — though BANA's transcribers applied cell-level judgement that liblouis will not always reproduce exactly.
 
@@ -88,11 +88,11 @@ The only abbreviations BANA explicitly names are **lib**, **amer**, and **nat**.
 
 The numeric indicator (`#`) is added by the braille translator; do not type it yourself.
 
-**Why only one number sign?** In UEB, a period (or comma) inside a number keeps numeric mode active, so the digits after it do not need another number sign (`⠼`). For example, `206.616.7678` translates to `⠼⠃⠚⠋⠲⠋⠁⠋⠲⠛⠋⠛⠓` — exactly 13 braille cells, which fits the default row in every mode (13 text cells in Visual mode, 14 in Tactile). This is what BANA means by "eliminating the need to repeat numeric indicators."
+**Why only one number sign?** In UEB, a period (or comma) inside a number keeps numeric mode active, so the digits after it do not need another number sign (`⠼`). For example, `206.616.7678` translates to `⠼⠃⠚⠋⠲⠋⠁⠋⠲⠛⠋⠛⠓` — exactly 13 braille cells, which fits the default row in every mode (13 text cells in Visual mode with indicator letters On and in Tactile mode, 14 in Visual mode with them Off). This is what BANA means by "eliminating the need to repeat numeric indicators."
 
 **Why hyphens give you three number signs.** A hyphen or parenthesis **ends** numeric mode, unlike a period, so every hyphen-separated group needs a fresh `⠼`. `206-543-4779` therefore translates to `⠼⠃⠚⠋⠤⠼⠑⠙⠉⠤⠼⠙⠛⠛⠊` — 15 cells, which will not fit a 13- or 14-cell row and wraps to a second line. That is correct UEB from liblouis, and no app setting removes those signs. Convert the hyphens to periods as BANA advises, or edit the cells by hand in the **Braille (Unicode)** field under the text inputs.
 
-Separately, some online translators repeat the number sign after each *period* too; that output is non-standard and uses extra cells. The **Number Signs** control under the text input area has an off-by-default "Repeat the number sign after each period (non-standard)" option if you need to match such output.
+Separately, some online translators repeat the number sign after each *period* too; that output is non-standard and uses extra cells. The **Number Signs** setting, under **Translation Options** in Expert Mode, has an off-by-default "Repeat the number sign after each period (non-standard)" option if you need to match such output.
 
 **Splitting a long number across two rows:** if a phone number will not fit on one row, divide it after a period and begin the next row with the remaining digits — the translator automatically adds a new number sign (`⠼`) at the start of the new row. For example, typing `206.616.` on one line and `7678` on the next produces `⠼⠃⠚⠋⠲⠋⠁⠋⠲` then `⠼⠛⠋⠛⠓`, the same pattern used in BANA's worked examples.
 
@@ -381,20 +381,21 @@ The **Preview Braille Translation** button is inside Expert Mode:
 ### Recommended settings
 
 The **Braille Cells** dial counts *text* cells per row; the marker columns are
-added on top automatically. The recommendations are 13 text cells in Visual
-mode either way the indicator letters are set (13 + 2 markers = 15 total, or
-13 + 1 = 14 with letters Off), and 14 in Tactile mode (no marker cells, so 14
-total). Thirteen is the figure to remember: it is what a BANA-formatted phone
-number needs, so one fits on a single row.
+added on top automatically. The app recommends 13 text cells in Visual mode with
+indicator letters On (13 + 2 markers = 15 total), 14 with them Off (14 + 1 = 15),
+and 13 in Tactile mode, which has no marker cells but is limited by the card: 13
+cells is the most that fits a 90 mm card measured from the alignment arrow.
+Thirteen is the figure to remember: it is what a BANA-formatted phone number
+needs, so one fits on a single row.
 
 | Setting | Value | Reason |
 |---------|-------|--------|
 | Placement Mode | Auto Placement | Handles wrapping automatically (your line breaks are kept — each input line starts a new row) and applies BANA's punctuation-first division preference where it can |
 | Language | English (UEB) — contracted (grade 2) | The app default, and the code BANA uses throughout the Fact Sheet; contractions also buy back cells on a 13-cell row |
 | Capitalized Letters | Disabled (for tight cards) | Saves cells per BANA's "remove the capital indicators" strategy; the app default is Enabled |
-| Braille Cells | 13 (visual, either indicator-letter setting) / 14 (tactile) | The per-mode recommendation the app fills in automatically |
+| Braille Cells | 13 (visual with indicator letters On, and tactile) / 14 (visual with indicator letters Off) | The per-mode recommendation the app fills in automatically |
 | Braille Lines | 4 | BANA's typical layout |
-| Indicator Letters | On | Reserves a second marker cell for the row's first letter. The 13-cell recommendation is the same either way; turning it Off drops the row to 14 total columns and widens the seam gap rather than adding text capacity (the alignment triangle is always included) |
+| Indicator Letters | On | Visual mode only: reserves a second marker cell for the row's first letter. Turning it Off frees that cell for text, so the recommendation rises to 14 (the alignment triangle is always included) |
 
 ### When to switch to Grade 1 (uncontracted)
 

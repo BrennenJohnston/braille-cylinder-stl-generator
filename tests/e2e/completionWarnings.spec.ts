@@ -66,7 +66,7 @@ async function openApp(page: Page) {
   await page.goto('/');
   await page.waitForLoadState('domcontentloaded');
   await page.waitForLoadState('networkidle');
-  await page.waitForSelector('#indicator-mode-selection');
+  await page.waitForSelector('#embosser-setup-selection');
   // Since 2026-09-21 Generate builds both cylinders by default; this spec
   // exercises one cylinder at a time, so choose Cylinder A (the old default)
   // under Cylinders to Generate. Pair tests choose 'both' themselves.

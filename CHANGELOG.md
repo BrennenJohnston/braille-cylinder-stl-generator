@@ -7,7 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **The visual markers come back after a reload too** (2026-10-01, Brennen's decision). Choosing Single-sided gives back the visual markers Double-sided replaced, and leaving Version 2 gives back the style you had before it; until now both worked only within one visit. Each remembered style is now saved with the other design settings (never text), read back only when Double-sided or Version 2 came back on as well, and cleared by Reset. Five new browser tests reload in each case; they fail on the old page.
+- **Expert Mode tells screen readers the truth after a reload** (2026-10-01, found in the 2026-09-30 documentation review). A reload that brought Expert Mode back open relabelled its button "Hide Expert Mode" but left it reporting "collapsed", so a screen-reader user heard the opposite of what was on screen. The restore now sets the button's expanded state too; the new `tests/e2e/expertModeRestore.spec.ts` fails on the old page and passes in Chromium, Firefox and WebKit.
+- **The help and the guides describe the embosser as it is** (2026-09-30, a review after Brennen approved the build). The in-app help no longer calls the cylinders braille labels for jars and bottles or tells you to measure a container: it describes them as the embosser's two rollers (on his call of 2026-10-01 the tactile-label use is no longer mentioned anywhere), drops the three jar and bottle examples and the Wall Thickness row (there is no such setting), and says Seam Offset turns only the polygonal cutout, as does the note under that dial. It gives the Capitalized Letters default correctly (Enabled), lists every download name including the default `Cylinder_Pair_` file, says where Row Indicator Style lives and what each version defaults to, notes that Generate fills the braille box, and tells Simplified-gear users of both versions to print bottom gear down with supports off. He signed the rewritten sentences on 2026-10-01 (S-H4 to S-H14, S-M15, S-SO1 and the S-P2 label), together with the two drafts of 2026-09-29, S-M14 "Row Indicator Style set to visual." and S-PD1 "Display settings"; S-H3's comment now records its 2026-09-28 sign-off. The README, both guides, KNOWN_ISSUES, the specifications and the three NVDA walkthroughs (their heading counts and Tab paths re-measured in Chromium) were brought up to date the same day.
+- **On a phone the 3D preview is no longer hidden by its display controls** (2026-09-29, found by Brennen while testing). The Brightness, Contrast and Edges controls sat over the bottom of the preview and on a phone covered two thirds of it. On a phone they now sit behind a **Display settings** button with a gear icon (wording awaiting sign-off). Held upright, the button is under the preview and the controls open below it, so the model stays in full view while you adjust it. Turned sideways, the button is a gear in the preview's corner and the controls open along the bottom beside it; at the largest text sizes the controls stay on screen as before. On a computer nothing changes.
+- **Going back to Single-sided brings the visual markers back** (2026-09-29, found by Brennen while testing). Choosing Double-sided moves the Row Indicator Style to the tactile seam arrow, which both cylinders of a double-sided pair need. Choosing Single-sided again used to leave the arrow selected, so a Version 1 card stayed on tactile markers the user never chose. Single-sided now restores the visual markers and says so ("Row Indicator Style set to visual.", wording awaiting sign-off). A tactile style you chose yourself before Double-sided stays, and in Version 2 the tactile default stays, as before.
+- **Version 1 fixed gears are now the Version 1 embosser's gears** (2026-09-28, found by Brennen's print). The Simplified roller for Version 1 carried the 2026-08-24 sample gears, whose Cylinder B gears have the newer design's smaller hub (a 9 mm bore where the Version 1 housing pin needs the 14 mm pocket), so the roller could not be mounted. The gears are now derived from the Version 1 gear holders themselves — each holder's 10 mm gear ring, cut free of the boss and seated on the barrel end. Teeth, meshing and the 72 mm roller are unchanged; Standard and Version 2 gears are untouched. The OpenSCAD copy's `assets/gears_a.stl` / `gears_b.stl` follow.
+- **The seam channel's live note works again with visual markers** (2026-09-28). Since the X Adjust change of 2026-09-27 on the development build, the note that says the groove was left out stayed silent in visual mode (a guard mistook an unbounded value for a dial being edited); Generate still reported it. Tactile mode was unaffected.
+- **Nothing you type is remembered any more** (2026-09-28, Brennen's privacy rule). The Back of Card text used to come back on your next visit while the front text did not. No text or braille input is stored now - not the front text, the manual rows, the back text, nor either Braille (Unicode) field - and a back text saved by an earlier version is removed the next time the page loads. Only 3D design settings are kept, and only in your own browser.
+
 ### Changed
+- **The vendored OpenSCAD copy is refreshed to upstream v2.11.0** (`OpenSCAD/`, 2026-10-01, cut on Brennen's word). The Version 1 single-file build carries the Version 1 fused roller's vent and self-supporting gear sockets (its gear switch stays hidden, as MakerWorld cannot ship the gear meshes) and a Seam Offset description that says the dial turns only the polygonal cutout; the MakerWorld quick start (Markdown and PDF) has no jar or bottle examples; the parameter mapping and the coordinate-system document follow. `VENDORED.json` records the tag (commit `8e64e06`) and the new hashes, and `PARAMETER_MAPPING.md` keeps its one edited line.
+- **Version 1 fixed-gear rollers print without support inside the gear sockets** (2026-09-30, Brennen's approved plan). Each gear's housing-pin socket used to end in a flat roof, which a roller printed bottom gear down could only make over support. Both sockets now end in a 45° cone that continues the socket's own taper, and a 2 mm vent runs the whole length of the roller, so it also comes off the embosser's pin without a vacuum. This is the change Version 2's fused roller got on 2026-09-24. The pin's fit is untouched: the chamfer, the 14 mm bore and the taper are exactly as before, proved to a millionth of a millimetre. The ready message now ends "Print it with the bottom gear on the build plate, with supports off."
+- **Wording signed off by Brennen** (2026-09-28, asked one by one). The Version 2 announcement's clauses are now "Row Indicator Style set to tactile." and "X Adjust set to -2 mm."; the fused-roller ready message ends "Print it with the bottom gear on the build plate, with supports off."; the Cylinder Guide bullet reads "Fused Version 2 rollers: print with the bottom gear on the build plate and supports off. They lift off the embosser's peg without a vacuum."; the Expert Mode help rows for Card Thickness and Row Indicator Style are rewritten (the latter now says the tactile arrows are for touch readers and that their count follows the card stock: four on 0.4 mm, three on 0.3 mm); the tactile note ends "The arrow's size dials appear below when the tactile style is chosen."; the four Version 2 clearance dials are labelled "Gear A1 clearance (mm):" and so on, their shared note names the printer settings the defaults suit (cylinders at 0.12 mm layers, gears at 0.2 mm), and the empty-dial error matches the new labels.
+- **Generate shows the braille it embosses** (2026-09-28). Type your text and press Generate STL: the Braille (Unicode) field fills with the translated rows that go onto the cylinder - and the back's field on a double-sided run - without pressing Translate to Braille first. The field then works exactly as if you had pressed the button: edit any cell to change what is embossed, or clear it to translate the text again. Because what the field shows must be what gets embossed, it now also empties itself when a setting change would change the translation (the language, capital letters, number signs, the rows or cells per row, or the placement mode), just as it does when you change the text; a setting that leaves the translation as it was, and a field you edited by hand, are left alone. Screen readers hear "Braille field updated from translation." from the box when Generate fills it, as they do when the button does (Brennen's choice), and the signed wording S-BF1 / S-BF2 when a setting change empties it.
+- **Empty boxes show what goes where** (2026-09-28, wording signed by Brennen the same day). The text box carries the sample "Type the text you want in braille here." and the Braille (Unicode) box carries that sentence's own translation, in the muted placeholder style every form uses, gone the moment you type. The back of card's text box now says "Type the text for the back of the card here." and its braille box shows that sentence's translation. The placeholder colour is a new theme token that clears the contrast rule in all three themes (the browser's default grey did not on the light input surface).
+
+### Fixed
+- **The X Adjust dial now moves the braille on cylinders** (2026-09-27). Under Expert Mode → Braille Spacing → Braille Line Positioning on the Cylinder Surface, X Adjust was sent and accepted but never applied to a cylinder (Y Adjust worked), so a print whose front text started too far from the alignment arrow and lost its last cell past the card's end could not be corrected. It now slides the whole braille grid round the barrel by its value in millimetres, the same way on both cylinders: a negative value moves Cylinder A's dots and recesses to the LEFT and Cylinder B's to the RIGHT as the preview first shows them, which on both brings the first cell closer to the alignment arrow (and the back's text the same way along the card). The arrows, the slicer seam channel's tactile groove and the Version 2 keys stay where they are. The three live room notes (seam channel, tactile arrow gap, card fit) follow the dial, so a shift that crowds the arrows says so before Generate. Nothing changes at the default of 0; every golden fixture is byte-identical. Verified on the real browser worker's exports: at −3 every raised dot on Cylinder A moved 3.00 mm of arc left, every one on Cylinder B 3.00 mm right, the arrows not at all.
+
+### Changed
+- **X Adjust defaults to −2 mm in Version 2 with the tactile seam arrow** (2026-09-28, Brennen's call after testing the X Adjust fix). Choosing Version 2 sets the dial to −2 on every card-stock preset, so the braille starts 2 mm nearer the alignment arrow on both cylinders; choosing a card stock or the tactile style in Version 2 keeps it there. It is a default, not a lock: the dial stays free, a hand-set value is kept (and reads as Custom, as any hand-set dial does), going back to Version 1 gives back the value you had, and choosing visual markers in Version 2 does the same while the dial still reads −2. The version announcement gains a clause saying the dial moved (draft wording pending Brennen's sign-off). Version 1, cards and both presets' own values are unchanged.
+- **Accessibility: the four key clearance dials share one note, heard once** (2026-09-25). The note under the Version 2 Keyed Cutouts dials is now the group's description rather than each dial's, so a screen reader hears it when entering the group instead of four times in a pass. No wording changed.
+- **The fused Version 2 roller's top gear socket is coned like its bottom one** (2026-09-25). The socket in gears A1 and B1 had a flat floor 1.5 mm above the barrel's top face; it is now the same 45° cone down to the 2 mm vent that the bottom sockets got on 2026-09-24, so both ends of the roller are alike and it prints without supports either way up. Printing with the bottom gear on the build plate is still the advice. The fused golden pair was regenerated; nothing else changes.
+- **Each Version 2 gear peg has its own key clearance dial, all four at 0.075 mm** (2026-09-25; the bottom gears' 0.085 lasted one print, 2026-09-26). Under Expert Mode → Surface Dimensions → Version 2 Keyed Cutouts the single Key clearance dial is replaced by four — gear A1 (top of Cylinder A), A2 (bottom of Cylinder A), B1 (top of Cylinder B) and B2 (bottom of Cylinder B) — so one gear's fit can be tightened or loosened without moving the other three. The default is the value Brennen's four print rounds settled on (cylinders on Bambu Studio's 0.12 mm Fine Detail preset, gears on 0.2 mm Strength); the old shared 0.110 had printed a touch loose there. Requests carry `v2_key_clearance_a1_mm` … `_b2_mm`; a request or saved preference from before this change, which carries only the shared `v2_key_clearance_mm`, still applies that one value to all four holes. The anti-rotation nub and sockets do not move with any dial. The Version 2 golden fixtures were regenerated at the new default; Version 1 and the fused Version 2 roller are unchanged.
+- **The vendored OpenSCAD copy is refreshed to upstream v2.10.0** (`OpenSCAD/`, 2026-09-24): the quick-start guide (Markdown and PDF) now says the Version 2 file defaults to the tactile seam arrow. The vendored `.scad` is the Version 1 single-file build, which v2.10.0 did not change; the release's geometry lives in the separate Embosser Version 2 file upstream.
+- **The fused Version 2 roller prints support-free, bottom gear down** (2026-09-24). Its barrel's bottom edge is chamfered 0.65 mm so the first layer no longer overhangs the gear face, a 2 mm vent runs the whole axis so the roller lifts off the embosser's peg without a vacuum, and the bottom gear's socket ceiling is a 45° cone to that vent instead of a flat overhang — the slicer lays nothing over air there and adds no support inside the socket. Version 1, Version 2 with separate gears and double-sided cylinders are unchanged. The fused ready message and the Cylinder Guide say which end goes on the build plate.
+- **Choosing Embosser Version 2 now selects the tactile seam arrow by default** (2026-09-24). It is a default, not a lock: you can go back to visual markers in Version 2 and the choice is kept; the style you had returns when you choose Version 1 again.
+- **Card Thickness and Row Indicator Style live in Expert Mode** (2026-09-24): the second and third submenus. Row Indicator Style now holds the tactile arrow dials directly below the Visual / Tactile choice.
 - **The vendored OpenSCAD copy is refreshed to upstream v2.9.1** (`OpenSCAD/`, 2026-09-23), so the downloadable OpenSCAD file speaks this app's language: one render builds both cylinders, as Generate does here; its Customizer sections carry this app's names (Card Sides, Gears, Cylinders to Generate, Row Indicator Style, Card Thickness); the BETA and sign-off labels are gone; and its gear hardware note is this app's current one (all upstream 2.9.0). Each plate's geometry is unchanged and no OpenSCAD parameter was renamed, so saved Customizer settings keep working. The parameter mapping, the MakerWorld quick start and its PDF are refreshed with it, and `OpenSCAD/README.md` describes the pair default. Upstream 2.9.1 corrects two quick-start instructions: changing the diameter needs `paper_thickness_preset = Custom` and the dial is `cylinder_diameter_mm`, and the tactile recess wall at defaults is about 1.22 mm, not 0.93.
 - **The vendored OpenSCAD copy is refreshed to upstream v2.8.2** (`OpenSCAD/`, 2026-09-23), so the downloadable OpenSCAD file matches the app groove for groove: in Tactile mode the seam channel steps round the raised arrows there too, instead of cutting through them, and a layout with no room for it gets the same signed note naming the cause. Upstream's tests check its groove floor against this app's own path to 0.01 mm.
 - **The raised tactile arrows are whole again: the slicer seam channel now steps round each one instead of cutting through it** (2026-09-22, Brennen's decision D-T8). Cutting the groove through the raised arrows took their points and made the triangles less distinguishable by touch. On the embossing cylinder the groove still runs down the arrow column, but before each raised arrow it slants out at 45° toward the first braille cell, rounds the base corner, runs alongside the long side with 0.25 mm of flat surface between the arrow and the groove, and rounds the tip back to the centre. The 0.4 mm preset's arrows touch tip to base, so there the groove zig-zags beside the chain; the 0.3 mm preset's three arrows are spaced, so it returns to the centre between them. The counter cylinder and Visual mode are unchanged. A tactile layout with no room beside the arrows for the detour (15 cells, or a barrel under about 30.5 mm at 14 cells) now leaves the groove off both cylinders and says why, before Generate as well, in a sentence of its own that names the cause (the arrow width can bring it on too): "The seam channel was left out: there is not enough room for it beside the alignment arrows. Reduce the number of braille cells, increase the cylinder diameter, or narrow the indicator." (signed 2026-09-23). The slicing study measured 0 % of layers with the seam in a dot and 90.8 % in the groove (93.1 % with three arrows); the rest sit on the arrows' own tips, which Brennen found acceptable in print. The embossing-cylinder golden fixtures were regenerated; the counter-cylinder ones are unchanged byte for byte.
@@ -142,6 +170,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `docs/guides/_bana_business_cards_verified_source.md` Example 6 heading had inadvertently duplicated Example 5's title ("Omission of capitals from name; division of surname; omission of company name (in e-mail)"). Replaced with BANA's actual Example 6 heading ("Division of hyphenated name (client agreed to a shortened first name); omission of capitals from post-nominal letters/credentials; omission of organization name (in e-mail)").
 - Resynced the second "BANA-quoted blocks below — DO NOT EDIT" comment block in `public/index.html` (above the Formatting Rules panel) to match the propagation reminder in the first block, so future edits don't drift between the two panels.
 
+### Fixed
+- **The vendored `OpenSCAD/` copy told contributors the wrong thing.** Its README
+  claimed the standalone repo was "no longer the active home for this project"
+  and asked for issues here. The opposite is true: the standalone repo holds the
+  dual-file desktop build, the cross-platform fixture suite, and the CI. It also
+  shipped a May-2026 snapshot named `Braille_Card_And_Cylinder_STL_Generator.scad`
+  — a file that generates cylinders only.
+
+### Changed
+- **`OpenSCAD/` refreshed to upstream `v2.4.0` and documented as a vendored
+  copy.** The vendored file is now the upstream MakerWorld single-file build
+  (presets inlined, no `include`), renamed to
+  `Braille_Cylinder_STL_Generator.scad` since this folder ships exactly one file.
+  That build is self-contained, so the download works standalone *and* uploads
+  directly to MakerWorld. Ships tactile indicator mode, the 13-cell default
+  capacity, and the counted `TEXT TOO LONG` warning.
+- **`OpenSCAD/VENDORED.json` records provenance** — upstream repo, tag, full
+  commit sha, release date, copy date, and a SHA-256 per file, with each file's
+  upstream path.
+- **`tests/test_vendored_openscad.py` (4 tests) guards against silent drift** —
+  the `.scad` must hash to what `VENDORED.json` records, every file in the folder
+  must be accounted for, the provenance must name a resolvable tag and full sha,
+  and the README must still state that upstream is canonical. Detecting a *newer*
+  upstream release needs the network, so that is a release-checklist item in
+  [docs/deployment/DEPLOYMENT_CHECKLIST.md](docs/deployment/DEPLOYMENT_CHECKLIST.md)
+  instead.
+- **Repository renamed to `braille-cylinder-stl-generator`.** The UI has
+  generated cylinders only since v2.0.0, so "card-and-cylinder" no longer
+  described the tool. GitHub redirects the old URLs, and the deployed Vercel
+  URL is unchanged — existing links and QR codes keep working. `package.json`,
+  the README title, badges, `PROJECT_STRUCTURE.md`, the in-app GitHub links,
+  and the workspace file all follow the new name.
+- **Flat business card plates are documented as parked, not "temporarily
+  disabled".** They will not return in this repo; see
+  [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md). Directly readable braille cards
+  already ship as
+  [braille-wedge-card-openscad](https://github.com/BrennenJohnston/braille-wedge-card-openscad).
+
+### Planned
+- Additional language support
+- Custom dot shape options
+- Batch processing
+- OpenSCAD export option
+
 ## [2.1.0] - 2026-02-16
 
 Documentation overhaul. Rewrote all project docs to remove AI-generated language and match the tone of a small, single-maintainer open-source project.
@@ -256,54 +328,6 @@ First stable release.
 ### Acknowledgments
 
 Thanks to Tobi Weinberg for kick-starting the project. Based on [tobiwg/braile-card-generator](https://github.com/tobiwg/braile-card-generator).
-
----
-
-## [Unreleased]
-
-### Fixed
-- **The vendored `OpenSCAD/` copy told contributors the wrong thing.** Its README
-  claimed the standalone repo was "no longer the active home for this project"
-  and asked for issues here. The opposite is true: the standalone repo holds the
-  dual-file desktop build, the cross-platform fixture suite, and the CI. It also
-  shipped a May-2026 snapshot named `Braille_Card_And_Cylinder_STL_Generator.scad`
-  — a file that generates cylinders only.
-
-### Changed
-- **`OpenSCAD/` refreshed to upstream `v2.4.0` and documented as a vendored
-  copy.** The vendored file is now the upstream MakerWorld single-file build
-  (presets inlined, no `include`), renamed to
-  `Braille_Cylinder_STL_Generator.scad` since this folder ships exactly one file.
-  That build is self-contained, so the download works standalone *and* uploads
-  directly to MakerWorld. Ships tactile indicator mode, the 13-cell default
-  capacity, and the counted `TEXT TOO LONG` warning.
-- **`OpenSCAD/VENDORED.json` records provenance** — upstream repo, tag, full
-  commit sha, release date, copy date, and a SHA-256 per file, with each file's
-  upstream path.
-- **`tests/test_vendored_openscad.py` (4 tests) guards against silent drift** —
-  the `.scad` must hash to what `VENDORED.json` records, every file in the folder
-  must be accounted for, the provenance must name a resolvable tag and full sha,
-  and the README must still state that upstream is canonical. Detecting a *newer*
-  upstream release needs the network, so that is a release-checklist item in
-  [docs/deployment/DEPLOYMENT_CHECKLIST.md](docs/deployment/DEPLOYMENT_CHECKLIST.md)
-  instead.
-- **Repository renamed to `braille-cylinder-stl-generator`.** The UI has
-  generated cylinders only since v2.0.0, so "card-and-cylinder" no longer
-  described the tool. GitHub redirects the old URLs, and the deployed Vercel
-  URL is unchanged — existing links and QR codes keep working. `package.json`,
-  the README title, badges, `PROJECT_STRUCTURE.md`, the in-app GitHub links,
-  and the workspace file all follow the new name.
-- **Flat business card plates are documented as parked, not "temporarily
-  disabled".** They will not return in this repo; see
-  [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md). Directly readable braille cards
-  already ship as
-  [braille-wedge-card-openscad](https://github.com/BrennenJohnston/braille-wedge-card-openscad).
-
-### Planned
-- Additional language support
-- Custom dot shape options
-- Batch processing
-- OpenSCAD export option
 
 [2.1.0]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v2.1.0
 [2.0.0]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v2.0.0

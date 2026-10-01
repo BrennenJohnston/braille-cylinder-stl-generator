@@ -13,7 +13,7 @@ braille-cylinder-stl-generator/
 │   ├── utils.py              Braille translation and helpers
 │   └── validation.py         Input validation
 ├── docs/                     Documentation
-│   ├── specifications/       Technical specs (17 files)
+│   ├── specifications/       Technical specs (20 files)
 │   ├── deployment/           Deployment guides
 │   ├── development/          Dev notes and implementation guides
 │   ├── guides/               User-facing guides (cylinder, business card)

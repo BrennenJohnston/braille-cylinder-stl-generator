@@ -2,28 +2,28 @@
 
 ## Overview
 
-This document specifies the **Double-sided card** feature: a choice that turns the
-single cylinder the app generates today into a **paired set** that embosses both faces of a
-card in one pass between two counter-rotating cylinders. Since 2026-09-20 it is the
+This document specifies the **Double-sided card** feature: a choice that turns the two
+cylinders the app generates (an embossing plate and its counter plate) into a **paired set**
+that embosses both faces of a card in one pass between two counter-rotating cylinders. Since 2026-09-20 it is the
 **Card sides** either/or choice (Single-sided / Double-sided) inside the **Embosser setup**
 menu item at the top of the form, no longer a BETA-labelled checkbox in an accordion
 (programme decision D-7; §7).
 
-| Name in this feature | Repo `plate_type` | Single-sided name | Carries when the beta is ON |
+| Name in this feature | Repo `plate_type` | Single-sided name | Carries when Double-sided is chosen |
 |---|---|---|---|
 | **Cylinder A** | `positive` | Embossing Plate | The card FRONT's raised dots, plus one recess for every actual BACK dot, plus raised seam arrows |
 | **Cylinder B** | `negative` | Universal Counter Plate | The card BACK's raised dots, plus one recess for every actual FRONT dot, plus recessed seam arrows |
 
 There is **no universal all-position counter grid** in double-sided mode — every recess is
-paired 1:1 with a real dot on the other cylinder. When the toggle is OFF the app behaves
+paired 1:1 with a real dot on the other cylinder. With Single-sided chosen the app behaves
 exactly as before the feature existed; this is proven, not assumed (see
 [Section 8, Regression anchors](#8-regression-anchors)).
 
-**Status: BETA — physically validated 2026-08, per stock thickness.** The geometry is
+**Status: released 2026-09-20 — physically validated 2026-08, per stock thickness.** The geometry is
 complete and tested in software. The original two print rounds embossed **0.3 mm card
 stock** legibly on both faces — the same pair did NOT emboss 0.4 mm stock (corrected
 2026-08-19). A controlled print matrix then found the 0.4 mm answer, and since
-2026-08-20 the beta ships **two fixed footprint packages keyed to the card-stock
+2026-08-20 it ships **two fixed footprint packages keyed to the card-stock
 preset** — 0.3 → Option B, 0.4 → the Q2 matrix winner (see
 [Section 10, Physical validation](#10-physical-validation-2026-08)). Still no tuning
 dials. The "(BETA — for testing)" label was dropped on 2026-09-20 (decision D-7): the
@@ -142,7 +142,7 @@ ignored** — CardSettings keeps its defaults. Send the runtime names.
 
 | Schema name (`double_sided.*`) | Runtime name (flat) | Default | Range | Meaning (mm unless noted) |
 |---|---|---|---|---|
-| `enabled` | `double_sided_enabled` | `false` / `0` | boolean; runtime 0/1 int | The beta toggle. 0 preserves today's behavior exactly |
+| `enabled` | `double_sided_enabled` | `false` / `0` | boolean; runtime 0/1 int | Double-sided chosen (the Card sides radios; the wire name is unchanged). 0 preserves today's behavior exactly |
 | `interpoint_offset_x_mm` | `interpoint_offset_x` | 1.25 | 1.15–1.35 | Back-grid shift around the cylinder (arc length) |
 | `interpoint_offset_y_mm` | `interpoint_offset_y` | 1.25 | 1.15–1.35 | Back-grid shift along the cylinder axis (module name `offset_z`, §2.4) |
 | `ds_dot_base_diameter_mm` | `ds_dot_base_diameter` | 1.2 | 0.5–3.0 | Double-sided raised dot base diameter |
@@ -260,16 +260,16 @@ range literals; the two are flagged in code as a change-both-in-one-commit pair.
 
 ## 4. Behavior Matrix
 
-| | Toggle OFF (default) | Toggle ON |
+| | Single-sided (default) | Double-sided |
 |---|---|---|
 | Cylinder A (`positive`) | Front raised dots + raised seam arrows (today's Embossing Plate, unchanged) | Front raised dots + **one recess per actual back dot** + raised seam arrows |
 | Cylinder B (`negative`) | Universal counter grid — a recess at EVERY possible dot position (rows × columns × 6) | Back raised dots + **one recess per actual front dot** + recessed seam arrows. **No universal grid** |
-| Row Indicator Style | User's choice (`visual` default) | **Locked to `tactile`** (UI lock + validation gate) |
-| Dot/recess footprints | Shipped single-sided sizes | The `ds_*` Option B footprints for ALL dots and paired recesses |
-| Capacity per side | tactile: 14 cols × 4 rows = 56 cells | **Unchanged** — 56 cells per side, 112 total (interpoint never re-spaces the grid) |
+| Row Indicator Style | User's choice (`visual` default in Version 1, `tactile` in Version 2) | **Locked to `tactile`** (UI lock + validation gate) |
+| Dot/recess footprints | Shipped single-sided sizes | The card-stock preset's `ds_*` package (0.3 → Option B, 0.4 → Q2) for ALL dots and paired recesses |
+| Capacity per side | tactile: 13 cols × 4 rows = 52 cells | **Unchanged** — 52 cells per side, 104 total (interpoint never re-spaces the grid) |
 | `lines` on a Cylinder B request | Empty (counter plate needs no text) | **The front braille** — it places B's 1:1 paired recesses |
 | `back_lines` | Absent (byte-identical pre-feature payload) | Present, top-level, padded to `grid_rows` |
-| Download filenames | `Embossing_Cylinder_{preset}_{name}.stl` / `Counter_Cylinder_{preset}_{name}.stl` | `Cylinder_A_{preset}_{name}.stl` / `Cylinder_B_{preset}_{name}.stl` (both named from the front text; see STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md v1.8 §7) |
+| Download filenames | `Cylinder_Pair_{preset}_{name}.stl` by default; one cylinder alone: `Embossing_Cylinder_{preset}_{name}.stl` / `Counter_Cylinder_{preset}_{name}.stl` | `Cylinder_Pair_{preset}_{name}.stl` by default; one cylinder alone: `Cylinder_A_{preset}_{name}.stl` / `Cylinder_B_{preset}_{name}.stl` (all named from the front text; see STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md §7 and §15) |
 | Shape | Cards and cylinders | **Cylinders only** — the UI never sends the flag for cards |
 
 Example at the test fixture inputs (front "abc" = ⠁⠃⠉ = 5 dots, back "def" = ⠙⠑⠋ =
@@ -293,9 +293,10 @@ printed-mouth switch was signed off **2026-08-21**. Reword only with his sign-of
 
 1. **Tactile lock.** `indicator_mode` must be `'tactile'` (the absent-key default
    `'visual'` also rejects):
-   > "Double-sided mode is a beta that requires the tactile row indicator style: set the
-   > Row Indicator Style to 'Tactile seam arrow' (indicator_mode 'tactile') or turn
-   > double-sided mode off. Received indicator_mode '`<mode>`'."
+   > "Double-sided mode requires the tactile row indicator style: set the Row Indicator
+   > Style to 'Tactile seam arrow' (indicator_mode 'tactile') or choose Single-sided.
+   > Received indicator_mode '`<mode>`'." (reworded with his sign-off 2026-10-01: it said
+   > "is a beta that requires" and "or turn double-sided mode off")
 2. **Offset range.** Both offsets within [1.15, 1.35], quoting the canonical schema
    spelling:
    > "Setting 'double_sided.interpoint_offset_x_mm' must be between 1.15 and 1.35 mm;
@@ -369,9 +370,10 @@ plates (recesses on A, raised dots on B). Decided by Brennen 2026-08-16.
 
 ### 6.1 UI → wire (`public/index.html`, generate handler)
 
-1. `doubleSidedOn` = toggle checked **AND** shape is cylinder. The flag is never sent for
-   cards.
-2. With the beta on, the front translation branch runs for **both** plate types (single-
+1. `doubleSidedOn` = `isDoubleSidedOn()` (the **Double-sided** radio,
+   `#card_sides_double`, is checked) **AND** the shape radio is on `cylinder`, the only
+   shape the UI offers. The flag is never sent for cards.
+2. With Double-sided on, the front translation branch runs for **both** plate types (single-
    sided negative requests still send empty `lines` — byte-identity preserved).
 3. **Auto placement for the back** (the default): `#back-text` runs through the shared
    `banaAutoWrap()` with the master language table (§7.4) and is padded to `grid_rows`.
@@ -385,8 +387,8 @@ plates (recesses on A, raised dots on B). Decided by Brennen 2026-08-16.
    double-sided fields — `double_sided_enabled` as the NUMBER 1, offsets as strings
    with 1.25 fallbacks, and the six footprints as NUMBERS from `DS_FOOTPRINTS[preset]`
    (`activeDsFootprints()`: the package for the selected card-stock preset; 'custom'
-   falls back to the last persisted preset, then '0.4') — **only when the beta is on**.
-   Key order is unchanged, so the toggle-off payload is byte-identical to the
+   falls back to the last persisted preset, then '0.4') — **only when Double-sided is
+   chosen**. Key order is unchanged, so the single-sided payload is byte-identical to the
    pre-feature payload.
 
 ### 6.2 Backend (`backend.py`)
@@ -421,9 +423,10 @@ Two soft warnings can be appended to `spec['warnings']` (wording signed off 2026
 
 - Non-tactile indicator forced (defense-in-depth for direct callers; unreachable via HTTP
   because gate 1 rejects first):
-  > "Double-sided mode is a beta that locks the row indicator style to the tactile seam
-  > arrows; '`<mode>`' was requested and 'tactile' was used instead."
-- Marginal same-surface gap (0.34–0.50 mm):
+  > "Double-sided mode locks the row indicator style to the tactile seam arrows;
+  > '`<mode>`' was requested and 'tactile' was used instead." ("is a beta that" removed
+  > with his sign-off 2026-10-01)
+- Marginal same-surface gap (0.34–0.45 mm; 0.50 until 2026-08-23):
   > "Double-sided crowding: a `<dot>` mm dot next to a `<bowl>` mm recess at the
   > `<x>` / `<y>` mm interpoint offset leaves `<gap>` mm of material between them — less
   > than the 0.50 mm needed to print reliably, so the ridge between them may come out thin
@@ -501,10 +504,12 @@ the embosser version and the gears). Full pattern in UI_INTERFACE_CORE_SPECIFICA
   "Embosses both sides of the card in one pass: **Cylinder A** (the embossing plate)
   carries the front's raised dots plus recesses for the back, and **Cylinder B** (the
   counter plate) carries the back's raised dots plus recesses for the front, offset
-  diagonally by 1.25 mm so the two sides never collide. Turning this on shows the Back of
-  Card section below and locks the Row Indicator Style to the tactile seam arrow. Generate
-  each cylinder with the same settings." The "This is a beta for testing — proofread both
-  sides…" sentence was removed with the BETA label (decision D-7).
+  diagonally by 1.25 mm so the two sides never collide. Choosing it makes the Back of Card
+  section below active and locks the Row Indicator Style to the tactile seam arrow.
+  Generate each cylinder with the same settings." The "This is a beta for testing —
+  proofread both sides…" sentence was removed with the BETA label (decision D-7), and
+  "Turning this on shows the Back of Card section below" became "Choosing it makes the Back
+  of Card section below active" on 2026-09-30 (S-M15, signed by Brennen 2026-10-01).
 - `#ds-gap-warning` / `#ds-gap-message` (§7.3) moved into this fieldset.
 - Change listener: `updateDoubleSidedUI()`, persist, `resetToGenerateState()`,
   `refreshLiveWarnings()`, then ONE announcement deferred by a tick (so the radio's own
@@ -535,11 +540,12 @@ Inside it:
 - Legend: `<h2 class="legend-heading" id="back-entry-heading">` **"Back of Card — Enter
   Text for Braille Translation"** (the signed 2026-08-16 text; the section's own h2 now,
   always visible — UI spec §4.11)
-- Label: **"Back of Card Text"** for the `#back-text` textarea, placeholder **signed off by
-  Brennen 2026-08-17**: **"Type the text for the back of the card here. It wraps across the
-  rows automatically."** This replaces the 2026-08-16 placeholder ("Each line becomes one
-  braille row"), which BANA auto-wrap made untrue — one typed line can now produce several
-  braille rows. A newline is still a forced row break, which is what the help note says.
+- Label: **"Back of Card Text"** for the `#back-text` textarea, placeholder **"Type the
+  text for the back of the card here."** — shortened with Brennen's sign-off on 2026-09-28
+  from his 2026-08-17 wording, which added "It wraps across the rows automatically." That
+  had replaced the 2026-08-16 placeholder ("Each line becomes one braille row"), which BANA
+  auto-wrap made untrue — one typed line can now produce several braille rows. A newline is
+  still a forced row break, which is what the help note says.
 - Help note (`#back-text-help`), **signed off by Brennen 2026-08-17**: "Your text is
   translated with the language selected below and wrapped across the braille rows for you,
   keeping whole words together. Press Enter only where you want to force the start of a new
@@ -566,7 +572,8 @@ Inside it:
   mirror of `#braille-unicode-live`, and the 7th permanently-present `role="status"`
   node (liveRegions.spec.ts pins the count). Translate ↓ runs the same
   `banaAutoWrap` pass generation uses for the back; Translate ↑ back-translates into
-  `#back-text` and persists it by hand (a scripted write fires no input event).
+  `#back-text`, which is never stored (no text or braille input is persisted since
+  2026-09-28).
 - Both back textareas share the front entry area's themed CSS (tokens `--bg-input` /
   `--text-primary` / `--border-secondary`): before 2026-08-31 `#back-text` had **no**
   themed rule and rendered on the browser's default white in dark mode.
@@ -588,26 +595,44 @@ there is no `aria-disabled` anywhere in the codebase), and shows the live lock n
 `#indicator-mode-lock-note` (no `role="status"`, no `aria-live` — it announces through
 `#a11y-status`; see §7.6):
 
-> "**Locked:** Double-Sided Card is on, so the Row Indicator Style stays on the tactile
-> seam arrow — both cylinders of a double-sided pair need it. Turn the beta off to choose
-> visual markers."
+> "**Locked:** Double-sided is on, so the Row Indicator Style stays on the tactile seam
+> arrow — both cylinders of a double-sided pair need it. Choose Single-sided to pick visual
+> markers." (S-M12, signed 2026-09-21)
 
-All reversed on toggle-off; the tactile **selection** is deliberately kept (no surprise
-snap-back).
+All reversed on toggle-off. **Since 2026-09-29 Single-sided also gives back the style the
+lock displaced** (Brennen's finding from testing: a Version 1 card taken to Double-sided and
+back stayed on the tactile arrow; this retires the old "the tactile selection is
+deliberately kept, no surprise snap-back" rule). `updateDoubleSidedUI()` remembers
+`'visual'` in `singleSidedIndicatorMode` when the lock moves the style;
+`restoreSingleSidedIndicatorMode()`, called from the card-sides change listener only, checks
+the visual radio again through a real `change` event and returns true, and the one
+announcement becomes "Single-sided card selected. Row Indicator Style set to visual."
+(S-M14, signed by Brennen 2026-10-01, the mirror of S-V16). A tactile style the user chose before
+Double-sided is not displaced, so it stays. While the lock holds, a version change works on
+the displaced style rather than on the lock's checked radio (RECESS_INDICATOR_SPECIFICATIONS.md,
+Row Indicator Style): entering Version 2 turns it into the Version 2 tactile default, so
+Single-sided in Version 2 keeps the arrow, and leaving Version 2 hands the Version 1 style
+back to it. Since 2026-10-01 (Brennen's decision) the memory is saved with the design
+settings (`braille_prefs_single_sided_indicator_mode`, only ever `visual`), like the Version 2
+one, so the give-back also works after a reload. `restoreRememberedStyles()` reads it back
+only when Double-sided itself came back on and removes a stale value otherwise; the silent
+load restore still gives nothing back by itself, and Reset drops it. Pinned by two tests in
+`tests/e2e/doubleSided.spec.ts` that reload with Double-sided on.
 
 ### 7.3 The live gap warning
 
 `#ds-gap-warning` / `#ds-gap-message` (no `role="status"`, no `aria-live` — announced
-through `#a11y-status`; see §7.6) live inside `#double-sided-section` — visible only while the beta is on, the only time it can fire.
+through `#a11y-status`; see §7.6) live inside the Card sides fieldset (`#card-sides-selection`) — shown only while Double-sided is chosen, the only time it can fire.
 `checkDoubleSidedGap()` recomputes on every form change via the form's input/change
 delegation, using `dsLatticeMinCenterDistance()` (a JS mirror of
-`interpoint.lattice_min_center_distance`). Hidden while the gap ≥ 0.50 mm. The message is
+`interpoint.lattice_min_center_distance`). Hidden while the gap ≥ 0.45 mm (the
+provisional reliable line since 2026-08-23; it was 0.50). The message is
 a shared prefix plus one of two tails:
 
 > "A `<dot>` mm dot next to a `<bowl>` mm recess at the `<x>` / `<y>` mm interpoint offset
 > leaves `<gap>` mm of material between them — "
 >
-> - marginal (0.34–0.50): "less than the 0.50 mm needed to print reliably, so the ridge
+> - marginal (0.34–0.45): "less than the 0.45 mm needed to print reliably, so the ridge
 >   between them may come out thin or merged. Reduce the double-sided dot or recess
 >   diameter, or check the interpoint offsets."
 > - blocked (< 0.34): "less than the 0.34 mm a 0.4 mm nozzle can print, so generation
@@ -615,11 +640,11 @@ a shared prefix plus one of two tails:
 >   interpoint offsets."
 
 The footprints come from the selected card-stock preset's package
-(`activeDsFootprints()`, §7.5), so on the 0.4 preset the warning is visible whenever
-the beta is on: the Q2 package's 0.468 mm nominal gap sits below the 0.50 mm line by
-design (its printed 0.428 mm ridge was measured printing clean, 2026-08-20).
-Reference numbers (asserted by the e2e suite): 0.4 preset at offsets 1.25/1.25 →
-"0.468 mm" marginal; 0.3 preset at 1.25/1.25 → hidden (gap 0.518); 0.3 preset,
+(`activeDsFootprints()`, §7.5), and both shipped packages are quiet at the default
+offsets: the Q2 package's 0.468 mm nominal gap clears the 0.45 mm line (it sat below the
+old 0.50 line until 2026-08-23; its printed 0.428 mm ridge was measured printing clean,
+2026-08-20). Reference numbers (asserted by the e2e suite): 0.4 preset at offsets
+1.25/1.25 → hidden (gap 0.468); 0.3 preset at 1.25/1.25 → hidden (gap 0.518); 0.3 preset,
 offset x 1.15 → "0.449 mm" marginal; both offsets 1.15 → "0.376 mm"; 0.4 preset at
 both 1.15 → "0.326 mm" blocked.
 
@@ -661,9 +686,9 @@ per newline. `banaAutoWrap` always returns exactly `rows` lines, so the wire sha
 
 **Live warning while typing.** `computeBackOverflow()` runs the same simulation on a 250 ms
 debounce behind its own run-id counter (stale async results are dropped), driven by the
-form's `input`/`change` delegation through `refreshLiveWarnings()`. It runs only while the
-beta toggle is ON and hides `#ds-back-overflow-warning` the moment the toggle goes off or
-the text fits. Both sentences were **signed off by Brennen on 2026-08-17**; the per-paragraph
+form's `input`/`change` delegation through `refreshLiveWarnings()`. It runs only while
+Double-sided is chosen and hides `#ds-back-overflow-warning` the moment Single-sided is
+chosen or the text fits. Both sentences were **signed off by Brennen on 2026-08-17**; the per-paragraph
 line deliberately mirrors the front's wording so the two overflow boxes read the same way:
 
 > "Back line N (\"...\") needs C cells but A are available." (one per overflowing paragraph)
@@ -705,9 +730,9 @@ rows too (the preview interpolates braille and shorthand only; the empty case sa
 *"No back of card text yet. Type it in the Back Line boxes above and preview again."*).
 Auto placement is untouched: everything above this paragraph still describes it.
 
-### 7.6 How the beta's warnings are announced (`#a11y-status`)
+### 7.6 How the double-sided warnings are announced (`#a11y-status`)
 
-Added 2026-08-18 (Phase 05d/05e). **The four beta-flow boxes do not announce themselves.**
+Added 2026-08-18 (Phase 05d/05e). **The four double-sided-flow boxes do not announce themselves.**
 `#ds-back-overflow-warning`, `#ds-gap-warning`, `#indicator-mode-lock-note` and
 `#tactile-gap-warning` are hidden between messages, and a live region that is hidden when
 its text is written is inserted into the accessibility tree already holding that text — an
@@ -765,7 +790,7 @@ test that listens) rather than by reading the accessibility tree:
   test hits the known dial race — the walkthrough's Part 5 listens for it
   instead.
 
-**Three more sources joined on 2026-08-21, from outside the beta flow.**
+**Three more sources joined on 2026-08-21, from outside the double-sided flow.**
 `#auto-overflow-warning`, `#cylinder-overflow-warning` and `#caps-warning` had the
 identical defect and were the last unwired regions on the page. All three had their
 `role="status"`/`aria-live` removed and now announce their own `textContent` through
@@ -787,8 +812,10 @@ STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md §8.
 ### 7.5 Persistence, reset, and no dials
 
 - Persisted as `braille_prefs_double_sided_enabled` (`'1'`/`'0'` — the SAME key the
-  retired checkbox used, so a saved choice carries over to the radios),
-  `braille_prefs_back_text` and, since 2026-09-21, `braille_prefs_back_placement_mode`
+  retired checkbox used, so a saved choice carries over to the radios) and, since
+  2026-09-21, `braille_prefs_back_placement_mode` (the back TEXT is no longer persisted
+  since 2026-09-28 - no text or braille input is, Brennen's privacy rule; its old key
+  `braille_prefs_back_text` is scrubbed on load)
   (`'auto'`/`'manual'`, restored by checking the back toggle's radio, Reset → Auto through
   the `defaultChecked` sweep plus `updateBackPlacementUI()`; the manual rows themselves are
   not persisted, like the front's); restored on load by checking `#card_sides_double` or
@@ -937,8 +964,8 @@ The embossing test the beta was waiting on has been run and **passed**.
 
 **What this does NOT close**
 
-- The feature keeps its **BETA** label. The remaining gap is breadth — one builder, one
-  printer, one paper stock — not whether the geometry works.
+- The feature kept its **BETA** label until 2026-09-20 (decision D-7). The remaining gap
+  is breadth — one builder, one printer, one paper stock — not whether the geometry works.
 - **Rotational sync** between the two cylinders must still stay within about ±1.0° (§6.5).
   That is a requirement on whoever assembles the machine, not something this codebase can
   enforce.
@@ -973,6 +1000,12 @@ and separated**. Full record: the research folder's `00_PROJECT_MEMORY.md`, FD-8
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-10-01 | 1.22 | **§7.2: the displaced style survives a reload** (Brennen's decision): saved as `braille_prefs_single_sided_indicator_mode`, read back only with Double-sided, cleared by Reset. |
+| 2026-10-01 | 1.21 | **§5: the two server strings stop calling double-sided a beta** (Brennen's sign-off, 2026-10-01). Gate 1 now reads "Double-sided mode requires the tactile row indicator style: ... or choose Single-sided. ..." and the forced-tactile warning "Double-sided mode locks the row indicator style to the tactile seam arrows; ...". |
+| 2026-09-30 | 1.20 | **Documentation review after the approved build.** Present-tense beta and toggle wording now names the Card sides choice (Overview, §3.1, §4, §6.1, §7.3, §7.6, §10, Related Documentation); §4's capacity is 13 cells a row (52 a side, 104 a card) and its filenames lead with the default `Cylinder_Pair_` file; §7.3 carries the provisional 0.45 mm reliable line of 2026-08-23, so the 0.4 preset's 0.468 gap is quiet; §7.1 quotes the S-M15 draft of the visible note and §7.4 the 2026-09-28 back placeholder; Translate ↑ no longer persists the back text. The two server strings that still said "Double-sided mode is a beta" (§5 gate 1, the forced-tactile warning) were quoted as the code had them (reworded 2026-10-01, v1.21). |
+| 2026-09-29 | 1.19 | **§7.2: Single-sided gives back the Row Indicator Style the lock displaced** (Brennen's finding from testing the Version 1 fixed gears: a card taken to Double-sided and back stayed on the tactile arrow). Retires "the tactile selection is deliberately kept (no surprise snap-back)". A tactile style the user chose is kept; under the lock a version change works on the displaced style; the announcement gains S-M14 "Row Indicator Style set to visual." (DRAFT). The quoted lock note now matches S-M12. Pinned in `tests/e2e/doubleSided.spec.ts`, `version2.spec.ts` and `embosserSetup.spec.ts`. |
+| 2026-09-28 | 1.18 | **`#back-text`'s placeholder shortened to "Type the text for the back of the card here."** (Brennen's sign-off, superseding the 2026-08-17 wording) so the back Braille (Unicode) box can show that sentence's whole translation as its placeholder (BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md §3). The back help sentence still explains the wrapping. |
+| 2026-09-28 | 1.17 | **The back text is no longer persisted (§7.5).** Brennen's privacy rule: no text or braille input is stored, only 3D design settings; `braille_prefs_back_text` is retired and scrubbed on load. A double-sided Generate now also fills the back Braille (Unicode) field with the back translation it embosses, and the back braille box carries a placeholder (BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md §3, §6.3, §11). |
 | 2026-09-21 | 1.16 | **Back of Card parity (programme sub-plan D, decision D-11).** §3.1 adds the back per-row tables' three spellings (`text.back_languages` / `back_per_line_language_tables` / the request model), sent only for a manually placed back; §6.1 step 3 splits into the Auto and Manual branches; §7.4 gains the Manual-placement paragraph (toggle, rows, dropdowns, S-D1 (signed 2026-09-21) gate, live per-line warning, fill-from-text and preview, S-D3 (signed 2026-09-21)); §7.5 records `braille_prefs_back_placement_mode`. Auto placement, the wire shape for Auto, the footprints and the geometry are untouched. |
 | 2026-09-21 | 1.15 | **Pair mode is universal (programme sub-plan E).** §7.7 rewritten: Generate STL builds both cylinders by default, Download STL saves the combined file, a single cylinder is chosen under Expert Mode → Cylinders to Generate; `isPairModeOn()`, Generate Both, the relabel and the pair download row retired. Filenames, wire shape, geometry and the double-sided-only rules untouched. |
 | 2026-09-20 | 1.14 | **Out of beta, into the Embosser setup menu (programme decisions D-7, D-8; phases C1-C4).** Overview and §7.1 rewritten: the "Double-Sided Card (BETA — for testing)" accordion and its `#double_sided_enabled` checkbox are retired; the choice is the **Card sides** radio group (`#card_sides_single` checked / `#card_sides_double`, S-M6a/b (signed 2026-09-21), description S-M7 (signed 2026-09-21)) inside the new `#embosser-setup-selection` item at the top of the form, read only through `isDoubleSidedOn()`. The Back of Card fieldset (`#back-entry-fieldset`, h2 legend) is always in the tree as a sibling of the front entry, native-`disabled` while single-sided and enabled by `updateDoubleSidedUI()`. The 2026-08-16 signed explanation stays visible minus its beta sentence; one composed, deferred announcement per change (S-M11 (signed 2026-09-21) plus the lock note, whose wording is now S-M12 (signed 2026-09-21): "Choose Single-sided to pick visual markers"). §7.5 and §7.7 updated (same persistence key; `isPairModeOn()` reads the three radios). Strings signed off by Brennen 2026-09-21. |
@@ -999,11 +1032,11 @@ and separated**. Full record: the research folder's `00_PROJECT_MEMORY.md`, FD-8
 
 - `BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md` v1.4 §8 — the `back_lines` wire
   field, back translation, persistence keys
-- `UI_INTERFACE_CORE_SPECIFICATIONS.md` v1.16 §4.8 — the disclosure toggle pattern,
-  accessibility validation results
+- `UI_INTERFACE_CORE_SPECIFICATIONS.md` §4.8 — the Embosser setup menu item and its Card
+  sides choice (the disclosure toggle until 2026-09-20), accessibility validation results
 - `STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md` v1.8 §7 — the Cylinder A/B download
   filenames
-- `RECESS_INDICATOR_SPECIFICATIONS.md` §4 — the tactile seam arrow the beta locks to
+- `RECESS_INDICATOR_SPECIFICATIONS.md` §4 — the tactile seam arrow Double-sided locks to
 - `SETTINGS_SCHEMA_CORE_SPECIFICATIONS.md` §5 — the validation gates from the schema's
   point of view
 - `BRAILLE_SPACING_SPECIFICATIONS.md` §6 — the universal-counter-grid exception

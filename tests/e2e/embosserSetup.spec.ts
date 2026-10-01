@@ -25,7 +25,7 @@ async function openApp(page: Page) {
   await page.goto('/');
   await page.waitForLoadState('domcontentloaded');
   await page.waitForLoadState('networkidle');
-  await page.waitForSelector('#indicator-mode-selection');
+  await page.waitForSelector('#embosser-setup-selection');
 }
 
 const GROUPS = [
@@ -107,7 +107,7 @@ test.describe('Embosser setup menu item', () => {
 
     await page.reload();
     await page.waitForLoadState('networkidle');
-    await page.waitForSelector('#indicator-mode-selection');
+    await page.waitForSelector('#embosser-setup-selection');
     await expect(page.locator('#gear_mode_fixed')).toBeChecked();
     await expect(page.locator('#card_sides_double')).toBeChecked();
     await expect(page.locator('#back-entry-fieldset')).not.toHaveAttribute('disabled');
@@ -134,7 +134,9 @@ test.describe('Embosser setup menu item', () => {
 
     await page.locator('#card_sides_double').check();
     await expect(live).toContainText('Double-sided card selected. The Back of Card section is now active.');
+    // The default visual markers come back with Single-sided, so the same one
+    // write carries S-M14 (signed 2026-10-01).
     await page.locator('#card_sides_single').check();
-    await expect(live).toHaveText('Single-sided card selected.');
+    await expect(live).toHaveText('Single-sided card selected. Row Indicator Style set to visual.');
   });
 });

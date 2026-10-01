@@ -432,8 +432,8 @@ def same_surface_min_gap(
     recesses that receive the other face's dots. Negative means the two
     footprints overlap and the printed ridge between them does not exist.
 
-    Compare against SAME_SURFACE_GAP_RELIABLE_MM (0.50) and
-    SAME_SURFACE_GAP_FLOOR_MM (0.34).
+    Compare against SAME_SURFACE_GAP_RELIABLE_MM (0.45, provisional since
+    2026-08-23; it was 0.50) and SAME_SURFACE_GAP_FLOOR_MM (0.34).
 
     `recess_dia` takes either bowl figure, and which one a caller passes is a
     decision, not a detail (Brennen, 2026-08-20). The hard printability gate in
@@ -442,9 +442,9 @@ def same_surface_min_gap(
     app/geometry_spec.py and public/index.html — pass the NOMINAL diameter, so
     the browser, the generator and the OpenSCAD port all report one number to
     the user and no warning threshold had to be re-decided. Feeding the printed
-    mouth to the warnings would make the 0.3 package warn about itself
-    (0.4953 mm against the 0.50 mm reliable line) even though it embosses
-    clean.
+    mouth to the warnings would make the 0.4 package warn about itself
+    (0.4278 mm printed against the 0.45 mm reliable line; at the old 0.50 line
+    it was the 0.3 package, 0.4953 mm) even though both emboss clean.
     """
     center_distance = lattice_min_center_distance(offset_x, offset_z, cols, rows, dot_pitch, cell_pitch, line_pitch)
     return center_distance - (dot_dia + recess_dia) / 2.0

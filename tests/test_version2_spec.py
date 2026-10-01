@@ -84,7 +84,8 @@ def build_spec(plate_type='positive', settings=None, cylinder=None, back_lines=N
 def v2_spec(plate_type='positive', clearance=None, cylinder=None, settings=None):
     data = {'embosser_version': 2}
     if clearance is not None:
-        data['v2_key_clearance_mm'] = clearance
+        # One number on every key, sent the way the four dials send it.
+        data.update(dict.fromkeys(version2.V2_KEY_CLEARANCE_FIELDS.values(), clearance))
     data.update(settings or {})
     return build_spec(plate_type, data, cylinder or V2_CYLINDER)
 
@@ -156,6 +157,14 @@ def test_fused_version_two_is_a_solid_barrel_with_its_own_gears_and_a_notch_fill
     assert fill['z_from'] == pytest.approx(27.0 - version2.V2_NOTCH_FILL_OVERLAP_MM)
     assert fill['z_to'] == pytest.approx(27.0 + 3.15 + version2.V2_NOTCH_FILL_OVERLAP_MM)
     assert all(set(point) == {'x', 'y'} for point in fill['profile'])
+    # The v9 update (2026-09-24, D-1 / D-2): the chamfer on the barrel and the
+    # two axis cuts, vent then cone, ride in the same two blocks.
+    assert spec['cylinder']['bottom_chamfer'] == {'size': 0.65, 'lip': 1.0}
+    assert [cut['kind'] for cut in gears['axis_cuts']] == ['vent', 'cone', 'cone']
+    assert gears['axis_cuts'][1]['gear'] == ('A2' if plate_type == 'positive' else 'B2')
+    # D-K5 (2026-09-25): the top socket's cone rides in the same block.
+    assert gears['axis_cuts'][2]['gear'] == ('A1' if plate_type == 'positive' else 'B1')
+    assert [cut['end'] for cut in gears['axis_cuts'][1:]] == ['bottom', 'top']
 
 
 def test_version_two_without_gears_is_byte_identical_to_before():
@@ -166,16 +175,25 @@ def test_version_two_without_gears_is_byte_identical_to_before():
         assert plain == explicit_off
         assert 'gears' not in plain
         assert 'keyed_cutouts' in plain
+        assert 'bottom_chamfer' not in plain['cylinder']
 
 
 def test_version_one_gear_mode_carries_no_notch_fill_and_the_version_one_asset():
-    """The Version 1 one-piece roller is untouched by the fused Version 2 work."""
+    """
+    The Version 1 one-piece roller takes nothing from the fused Version 2 work:
+    its own gears, no notch fill, no barrel chamfer - and since 2026-09-30 its
+    own vent and socket cones from app/geometry/gears.py, never Version 2's.
+    """
+    from app.geometry import gears
+
     settings = {'grid_columns': 14, 'indicator_mode': 'tactile', 'gear_rollers_enabled': 1}
     cylinder = {'diameter': 30.8, 'height': 52.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0}
     spec = build_spec('positive', settings, cylinder)
     assert spec['gears']['asset'] == 'gears_a'
     assert 'notch_fills' not in spec['gears']
+    assert spec['gears']['axis_cuts'] == gears.axis_cut_blocks('positive', 52.0)
     assert 'solid' not in spec['cylinder']
+    assert 'bottom_chamfer' not in spec['cylinder']
     assert spec['warnings'] == [CARD_FIT_WARNING]
 
 
@@ -223,10 +241,13 @@ def test_each_plate_gets_its_own_pair_of_keys(plate_type):
     block = spec['keyed_cutouts']
     bottom_name, top_name = version2.KEY_PROFILES_BY_PLATE[plate_type]
 
-    assert block['clearance_mm'] == version2.V2_KEY_CLEARANCE_DEFAULT_MM
+    assert block['clearances_mm'] == {
+        name: version2.V2_KEY_CLEARANCE_DEFAULTS_MM[name] for name in (bottom_name, top_name)
+    }
     assert [half['end'] for half in block['halves']] == ['bottom', 'top']
     for half, name in zip(block['halves'], (bottom_name, top_name), strict=True):
-        expected = version2.key_profile(name, version2.V2_KEY_CLEARANCE_DEFAULT_MM)
+        assert half['key'] == name
+        expected = version2.key_profile(name, version2.V2_KEY_CLEARANCE_DEFAULTS_MM[name])
         assert len(half['profile']) == len(expected)
         assert half['profile'][0]['x'] == pytest.approx(expected[0][0], abs=1e-6)
     assert [sink['kind'] for sink in block['countersinks']] == ['hull', 'hull']
@@ -265,8 +286,39 @@ def test_the_clearance_flows_into_the_profiles(clearance):
     bottom_name = version2.KEY_PROFILES_BY_PLATE['positive'][0]
     nominal = version2.V2_KEY_PROFILES[bottom_name]['width']
     xs = [point['x'] for point in block['halves'][0]['profile']]
-    assert block['clearance_mm'] == clearance
+    assert block['clearances_mm'][bottom_name] == clearance
     assert max(xs) - min(xs) == pytest.approx(nominal + 2 * clearance, abs=1e-6)
+
+
+def test_each_dial_reaches_only_its_own_key():
+    """
+    Four dials since 2026-09-25: A1's number moves the top of Cylinder A and
+    nothing else. The other three keys stay at their defaults.
+    """
+    spec = v2_spec('positive', settings={'v2_key_clearance_a1_mm': 0.085})
+    block = spec['keyed_cutouts']
+    assert block['clearances_mm'] == {
+        'a2_rect_18x10': version2.V2_KEY_CLEARANCE_DEFAULTS_MM['a2_rect_18x10'],
+        'a1_square_14': 0.085,
+    }
+    xs = [point['x'] for point in block['halves'][1]['profile']]
+    assert max(xs) - min(xs) == pytest.approx(14.0 + 2 * 0.085, abs=1e-6)
+    untouched = v2_spec('negative', settings={'v2_key_clearance_a1_mm': 0.085})['keyed_cutouts']
+    assert untouched == v2_spec('negative')['keyed_cutouts']
+
+
+def test_the_legacy_shared_field_still_cuts_every_key():
+    """
+    A request saved before the per-key dials carries only v2_key_clearance_mm;
+    it must build exactly what it always did - every hole at that number.
+    """
+    for plate_type in ('positive', 'negative'):
+        legacy = v2_spec(plate_type, settings={'v2_key_clearance_mm': 0.11})['keyed_cutouts']
+        assert set(legacy['clearances_mm'].values()) == {0.11}
+        assert legacy == v2_spec(plate_type, clearance=0.11)['keyed_cutouts']
+    # A per-key field beside it wins for its own key only.
+    mixed = v2_spec('negative', settings={'v2_key_clearance_mm': 0.11, 'v2_key_clearance_b1_mm': 0.3})
+    assert mixed['keyed_cutouts']['clearances_mm'] == {'b2_rect_20x8': 0.11, 'b1_rect_16x12': 0.3}
 
 
 # --- warnings ---------------------------------------------------------------

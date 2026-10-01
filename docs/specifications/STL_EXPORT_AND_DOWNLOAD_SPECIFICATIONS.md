@@ -102,7 +102,7 @@ The STL generation system follows a **client-only architecture** where:
 │  1. Create Blob URL from ArrayBuffer                                        │
 │  2. Load into Three.js scene for preview                                    │
 │  3. Set download link href                                                  │
-│  4. Transition button to "Download STL" state                               │
+│  4. Show the separate Download STL button (#download-stl-btn)               │
 └─────────────────────────────────────────────────────────────────────────────┘
 
                     ┌─────────────────────────────────────┐
@@ -758,29 +758,31 @@ the interpoint spec §7).
 ### Naming Pattern
 
 ```
-Embossing_Cylinder_{preset}_{name}.stl     (single-sided, plate_type positive)
-Counter_Cylinder_{preset}_{name}.stl       (single-sided, plate_type negative)
-Cylinder_A_{preset}_{name}.stl             (double-sided beta, plate_type positive)
-Cylinder_B_{preset}_{name}.stl             (double-sided beta, plate_type negative)
+Cylinder_Pair_[Geared_][V2_]{preset}_{name}.stl       (both cylinders: the default since 2026-09-21, §15)
+Embossing_Cylinder_[Geared_][V2_]{preset}_{name}.stl  (single-sided, Cylinder A alone, plate_type positive)
+Counter_Cylinder_[Geared_][V2_]{preset}_{name}.stl    (single-sided, Cylinder B alone, plate_type negative)
+Cylinder_A_[Geared_][V2_]{preset}_{name}.stl          (double-sided, Cylinder A alone, plate_type positive)
+Cylinder_B_[Geared_][V2_]{preset}_{name}.stl          (double-sided, Cylinder B alone, plate_type negative)
 ```
+
+`Geared_` appears only with Simplified gears and `V2_` only in Version 2 (decisions D-5 and
+D-V12), so every Version 1, Standard-gears name is byte-identical to the one that shipped.
 
 Both plates of a pair therefore differ only in their first word, and both carry the print
 settings and the content in the name — so a folder of downloads stays sortable and a plate
 can be matched to the counter plate it was designed against without opening either file.
 
-When the Double-Sided Card beta is on (cylinder shape only), the pair is named with the
-beta's Cylinder A / Cylinder B vocabulary instead. The single-sided prefixes are frozen:
-public training videos reference them, so the A/B naming applies to the double-sided flow
-only. A pair run with ONLY the gear rollers beta on (2026-08-25, `isPairModeOn()`)
-therefore keeps the single-sided `Embossing_Cylinder_Geared_*` / `Counter_Cylinder_Geared_*`
-names — the plate radios relabel to Cylinder A / Cylinder B in that mode, the filenames do
-not (both pinned by `tests/e2e/gearRollers.spec.ts`).
+With Double-sided chosen, a single cylinder is named with the double-sided Cylinder A /
+Cylinder B vocabulary instead. The single-sided prefixes are frozen: public training videos
+reference them, so the A/B naming applies to the double-sided flow only. A single-sided run
+with Simplified gears therefore keeps the single-sided `Embossing_Cylinder_Geared_*` /
+`Counter_Cylinder_Geared_*` names (pinned by `tests/e2e/gearRollers.spec.ts`).
 
 ### Components
 
 | Component | Source | Values |
 |-----------|--------|--------|
-| Prefix | `plate_type` + double-sided toggle | Single-sided: `Embossing_Cylinder` (positive) or `Counter_Cylinder` (negative). Double-sided beta: `Cylinder_A` (positive) or `Cylinder_B` (negative) |
+| Prefix | `plate_type` + the Card sides choice | Single-sided: `Embossing_Cylinder` (positive) or `Counter_Cylinder` (negative). Double-sided: `Cylinder_A` (positive) or `Cylinder_B` (negative) |
 | `{preset}` | Selected Card Thickness preset | `0.4`, `0.3`, or `Custom` (the custom option has no single numeric value) |
 | `{name}` | First word of the source text, sanitized | `brennen`, `cinnamon`, … or `untitled` |
 
@@ -811,7 +813,7 @@ function sanitizeFilenameWord(word) {
         .replace(/^_+|_+$/g, '');      // Trim leading/trailing underscores
 }
 
-async function buildStlFilename(plateType, doubleSided = false, geared = false) {
+async function buildStlFilename(plateType, doubleSided = false, geared = false, v2 = false) {
     const prefix = doubleSided
         ? (plateType === 'positive' ? 'Cylinder_A' : 'Cylinder_B')
         : (plateType === 'positive' ? 'Embossing_Cylinder' : 'Counter_Cylinder');
@@ -819,25 +821,32 @@ async function buildStlFilename(plateType, doubleSided = false, geared = false) 
     // training videos show them - so the segment is inserted only when
     // the gears are actually there.
     const geared_segment = geared ? 'Geared_' : '';
-    return `${prefix}_${geared_segment}${getThicknessPresetSegment()}_${await deriveStlNameSegment()}.stl`;
+    // Decision D-V12, the same rule for Version 2: a `V2_` segment,
+    // inserted only when Version 2 is actually selected, so every
+    // Version 1 name is byte-identical to the one that shipped.
+    const v2_segment = v2 ? 'V2_' : '';
+    return `${prefix}_${geared_segment}${v2_segment}${getThicknessPresetSegment()}_${await deriveStlNameSegment()}.stl`;
 }
 ```
 
-`doubleSided` receives the generate handler's `doubleSidedOn` flag (toggle checked AND
-shape cylinder), so a card generated with the checkbox stuck on can never pick up an A/B
-name. `geared` receives `isGearRollersOn()` and inserts the `Geared_` segment (decision
-D-5, gears beta 2026-08-24); with the toggle off the segment is absent and every name is
-byte-identical to the pre-gears output.
+`doubleSided` receives the generate handler's `doubleSidedOn` flag (`isDoubleSidedOn()`,
+the Double-sided radio, AND the shape radio on cylinder), so a card can never pick up an
+A/B name. `geared` receives `isGearRollersOn()` and inserts the
+`Geared_` segment (decision D-5, 2026-08-24); with Standard gears the segment is absent and
+every name is byte-identical to the pre-gears output. `v2` receives `isVersion2()` and
+inserts `V2_` the same way (decision D-V12).
 
 ### Combined Pair Filename
 
-**Source:** `buildPairStlFilename(geared)` in `public/index.html` — a separate function
+**Source:** `buildPairStlFilename(geared, v2)` in `public/index.html` — a separate function
 beside `buildStlFilename`, never a rename of the A/B names. Format signed off by Brennen
 2026-08-25:
 
 ```
-Cylinder_Pair_{preset}_{name}.stl           // pair run, gears off
-Cylinder_Pair_Geared_{preset}_{name}.stl    // pair run, gears on
+Cylinder_Pair_{preset}_{name}.stl             // pair run, gears off
+Cylinder_Pair_Geared_{preset}_{name}.stl      // pair run, gears on
+Cylinder_Pair_V2_{preset}_{name}.stl          // pair run, Version 2
+Cylinder_Pair_Geared_V2_{preset}_{name}.stl   // pair run, Version 2 with fixed gears
 ```
 
 `{preset}` and `{name}` reuse `getThicknessPresetSegment()` and `deriveStlNameSegment()`,
@@ -1031,7 +1040,12 @@ once and cannot drift out of step with what is on screen.
 **Signed-off wording (2026-08-18).** Reword only with Brennen's sign-off:
 
 - Completion announcement: `Your STL file is ready. Use the Download STL button to save it.`
-- Pair completion: `Both cylinders are ready. Use the Download Cylinder A and Download Cylinder B buttons below to save them.`
+  A fused Version 2 run (Version 2 + fixed gears) prefixes it with S-G2 (signed 2026-09-21,
+  GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md §11.6) and, since 2026-09-24 (decision D-7), with
+  S-P1 `Print it with the bottom gear on the build plate, with supports off.` — signed by Brennen 2026-09-28 ("with supports off" added to the draft) — because
+  the fused roller has a preferred way up (its chamfered barrel edge and vented, self-supporting
+  gear socket are at the bottom gear; §11.8 there).
+- Pair completion: S-E5 (signed 2026-09-21), `Both cylinders are ready. Use the Download STL button to save one file with both cylinders spaced for printing on one plate.` (S-E6 when the combine fails; §15).
 - The download button's accessible name is its visible text, `Download STL`.
 
 **Label in Name.** The old pairing — visible "Download STL", accessible name
@@ -1638,6 +1652,8 @@ the action button already looks idle. After a pair run the action button always 
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.5 | 2026-09-30 | **Documentation review after the approved build.** The overview diagram's last step shows the separate Download STL button; §7's naming pattern leads with the default `Cylinder_Pair_` file and shows the `Geared_` / `V2_` segments; the `buildStlFilename()` listing gains its `v2` argument and the pair pattern its two `V2_` lines; the double-sided wording drops "beta" and the retired `isPairModeOn()` relabel; the pair-completion line quotes S-E5. |
+| 2.4 | 2026-09-24 | **S-P1 joins the fused Version 2 ready message (programme 2026-09-24, decision D-7).** After S-G2, the fused run says which end goes on the build plate; DRAFT until signed. No filename changes. |
 | 1.0 | 2024-12-06 | Initial specification document |
 | 1.1 | 2024-12-08 | **BUG FIX:** CSG worker integration. Frontend now properly initializes CSG worker and uses client-side generation exclusively. Server-side fallback disabled. Updated Sections 1, 2, and 9. |
 | 1.2 | 2024-12-08 | **BUG FIX:** Manifold worker integration. Cylinders now use `csg-worker-manifold.js` for guaranteed manifold output. Added dual-worker architecture with automatic shape-based routing. |

@@ -1,5 +1,25 @@
 # Known Issues
 
+## Fused rollers — print-tested, no open items (closed 2026-10-01)
+
+Since 2026-09-24 the fused Version 2 roller (Version 2 + fixed gears) prints with its bottom
+gear on the build plate: the barrel's bottom edge is chamfered, a 2 mm vent runs the whole
+axis, and the bottom gear's socket ceiling is a 45° cone that needs no support. Brennen
+printed that pair on 2026-09-24 and it passed his print check. Since 2026-09-25 the top
+gear's socket (A1 / B1) ends in the same cone (decision D-K5). Since 2026-09-30 the fused
+Version 1 roller has the same 2 mm vent and a 45° cone at the blind end of each gear socket
+(no barrel chamfer: its barrel has no card shelf).
+
+Brennen's print testing of 2026-09-30 answered everything that was still open (confirmed
+2026-10-01):
+
+- **The Version 1 Simplified rollers** print bottom gear down with no support inside the
+  sockets and fit the Version 1 housing pins.
+- **The Version 2 top-socket cone (D-K5)** has been printed and fits.
+- **Q-1 — the housing peg's reach:** the peg does not reach the socket cone. The cone's
+  numbers stay as they are (`app/geometry/version2.py`, `V2_GEAR_SOCKET`).
+- **The residual 0.14 mm ledge** under the barrel's first layer needed no support.
+
 ## Double-sided (interpoint) — status
 
 Double-sided is a released choice since 2026-09-20: pick **Double-sided** under **Card
@@ -8,11 +28,11 @@ and its collapsible menu are gone; the Back of Card section is always on the pag
 out until Double-sided is chosen). It is **feature-complete and physically validated**. In
 August 2026 two rounds of Cylinder A / Cylinder B pairs were printed on a Bambu Lab X1C with
 a 0.4 mm nozzle and used to emboss real card stock; the braille came out legible on **both**
-faces. The dot and bowl sizes it ships with (dot 1.2 mm across, bowl 1.3 mm across × 0.5 mm
-deep, back grid offset 1.25 mm diagonally) are therefore final — there are no size dials to
-tune.
+faces. The dot and bowl sizes it ships with (dot 1.2 mm across; bowl 1.4 mm across × 0.5 mm
+deep on 0.4 mm card stock and 1.3 mm across on 0.3 mm; back grid offset 1.25 mm
+diagonally) are therefore final — there are no size dials to tune.
 
-What the finished beta does:
+What it does:
 
 - Choosing Double-sided activates the **Back of Card** section and locks the Row Indicator
   Style to the tactile seam arrow, which both cylinders of a pair need.
@@ -103,6 +123,17 @@ seconds and whole spec files failed with `Worker message timeout`. `init` now ge
 seconds and every other message keeps the 10-second budget, so the page survives a slow
 start instead of giving up on it.
 
+**`brailleFieldAutoFill.spec.ts` failed intermittently in Firefox on Windows (found
+2026-09-30, fixed 2026-10-01).** Its generate step stopped at "Translation failed for the
+following lines": 6 of its 6 tests in a full Chromium + Firefox run, 3 at `--workers=2`, and
+2 with the committed `public/index.html` of that day. The cause was the test's own helper. A
+Generate pressed before the liblouis worker is up fails its translation with exactly that
+sentence, not "not initialized", and every other generate helper already retries on it; this
+one, written 2026-09-28, did not. It now uses the same list of transient messages, and the
+file passed 18 of 18 in Firefox at four workers, three runs each. (The app's own wording for
+a Generate pressed during start-up - a "Translation failed" message that lists causes like
+special characters - is unchanged.)
+
 The OpenSCAD version has this feature: the double-sided port shipped in the OpenSCAD
 generator v2.6 and was refined in v2.7 (2026-08-23).
 
@@ -124,20 +155,28 @@ measured at 0.65 mm of flank clearance on the reference set.
 **Cylinders only, and Standard by default.** With Standard chosen nothing changes: the
 request body, the geometry and the filenames are byte-identical to a build without the
 feature. With Simplified chosen the download gains a `Geared_` segment
-(`Embossing_Cylinder_Geared_0.4_name.stl`).
+(`Cylinder_Pair_Geared_0.4_name.stl`, or `Embossing_Cylinder_Geared_0.4_name.stl` for
+Cylinder A on its own).
 
 **The gears are not adjustable, and the cylinder size is fixed while they are on.**
-They are a 1:1 replica of the reference set — 24 teeth, tip diameter 32.2187 mm,
-10 mm thick, sitting at z −10..0 and 52..62 around the barrel for a 72 mm roller, with
-the pair meshing at an axis distance of 32.0473 mm. Because that geometry is fixed, a
-gear-mode request for anything other than a 30.8 mm × 52.0 mm cylinder is REFUSED: a
+They are a 1:1 replica of the Version 1 embosser's own gears — the gear ring of each
+Embosser/Counter Holder (A1, A2, B1, B2), cut free of the boss the standard cylinder
+slides over and seated on the barrel end (since 2026-09-28; until then the 2026-08-24
+sample gears, whose Cylinder B gears carry the newer design's smaller hub and do not fit
+the Version 1 housing — found by a print) — 24 teeth, tip diameter 32.2187 mm, 10 mm
+thick, sitting at z −10..0 and 52..62 around the barrel for a 72 mm roller, with the pair
+meshing at an axis distance of 32.0473 mm. Because that geometry is fixed, a
+Version 1 gear-mode request for anything other than a 30.8 mm × 52.0 mm cylinder is
+REFUSED (Version 2's size is 30.8 × 54.0, below): a
 shorter barrel would export as loose pieces and a taller one would swallow the teeth.
 The app says so live before you press Generate.
 
 **The barrel prints solid while gears are on.** The polygonal cutout is dropped, and
-the app says so when you had one set. A one-piece roller has no through-path along its
-axis anyway — the gear bores are blind pockets — so keeping the cutout would seal a
-cavity nothing can reach or drain.
+the app says so when you had one set. The gear bores are blind pockets, so a cutout
+would seal a cavity nothing can reach or drain. Since 2026-09-30 a 2 mm vent runs along
+the roller's axis instead, joining the two gear sockets, and each socket ends in a 45°
+cone: the roller prints bottom gear down with no support inside the sockets and lifts off
+the embosser's peg without a vacuum.
 
 **Known limitation, inherited not introduced.** On the EMBOSSING plate the exported
 file is one watertight roller plus one small separate body per raised braille dot —
@@ -153,7 +192,9 @@ that could reach it. Use the desktop build or this web app for geared cylinders.
 Wording in this section signed off by Brennen 2026-08-25; reword only with his
 sign-off. The MakerWorld paragraph was re-signed the same day, when a probe of
 the real customizer replaced the reasoning about mesh size with the tested
-reason.
+reason. The pair filename, the "Version 1 ... (Version 2's size is 30.8 × 54.0, below)"
+clause and the vent sentences of "The barrel prints solid" were added on 2026-09-30 and
+signed off by him on 2026-10-01.
 
 Full technical detail: `docs/specifications/GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md`.
 
@@ -166,11 +207,12 @@ row markers a blind user can feel. Choose it under **Embosser version** in the
 **Embosser setup** item at the top of the page (the "(prototype)" tag and its notice were
 dropped on 2026-09-20; the 54 mm barrel passed its print test on 2026-09-01).
 
-**Fixed gears work for Version 2 too (2026-09-21; wording signed by Brennen 2026-09-21).** Choose **Simplified: gears fixed to the cylinders** with Version 2 and each
+**Fixed gears work for Version 2 too (2026-09-21; wording signed by Brennen 2026-09-21, the print-test sentence 2026-10-01).** Choose **Simplified: gears fixed to the cylinders** with Version 2 and each
 cylinder prints as one piece with its Version 2 drive gears attached — a solid barrel
 with no keyed holes, since the gears are already on. The cylinder must be 30.8 × 54 mm
 (the Version 2 preset); anything else is refused, because the gears sit at fixed heights.
-Downloads are named `..._Geared_V2_...`. Not yet print-tested.
+Downloads are named `..._Geared_V2_...`. Brennen's print of the pair passed on 2026-09-24
+(the print results are at the top of this file).
 
 **The gears must be re-cut.** The holes are family **R14** — four rounded rectangles,
 14 × 14 mm at Cylinder A's top (the nub end), 18 × 10 at A's bottom, 16 × 12 at B's

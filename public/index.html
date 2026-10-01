@@ -71,6 +71,10 @@
             --text-primary: #2d3748;
             --text-secondary: #4a5568;
             --text-tertiary: #666;
+            /* Placeholder text in every box: muted against the typed colour,
+               and 5.72:1 on --bg-input (WCAG 1.4.3 applies to placeholders;
+               the browser default, darkgray, is 2.3:1 on this surface). */
+            --text-placeholder: #5b6472;
             --border-primary: #e2e8f0;
             --border-secondary: #cbd5e1;
             --border-focus: #3182ce;
@@ -139,6 +143,7 @@
             --text-primary: #f7fafc;
             --text-secondary: #e2e8f0;
             --text-tertiary: #cbd5e1;
+            --text-placeholder: #b0b8c4; /* 5.15:1 on --bg-input, muted next to --text-primary */
             --border-primary: #4a5568;
             --border-secondary: #718096;
             --border-focus: #63b3ed;
@@ -190,6 +195,7 @@
             --text-primary: #02fe05; /* Green instead of white */
             --text-secondary: #02fe05; /* Green instead of white */
             --text-tertiary: #02fe05; /* Green instead of white */
+            --text-placeholder: #7fd67f; /* Softer green, 9.8:1 on --bg-input */
             --border-primary: #ffff00;
             --border-secondary: #00ffff;
             --border-focus: #ff00ff;
@@ -1442,6 +1448,131 @@
             }
         }
 
+        /* Display settings drawer (2026-09-29). The toggle exists for the two
+           compact layouts below only; on a wide screen the controls stay the
+           overlay above. Declared after .font-size-btn, whose display: flex
+           it has to override. */
+        .preview-display-toggle {
+            display: none;
+            gap: 0.45em;
+            min-height: 44px;
+            max-width: 100%;
+            padding: 0.4em 0.85em;
+        }
+
+        /* In rem, so the gear grows with the app's own text size setting. */
+        .preview-display-toggle-icon {
+            flex-shrink: 0;
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+
+        /* Phones and small tablets, portrait (the stacked layout): the toggle
+           sits under the viewer at the right and the controls open below it,
+           in the page flow - never over the model, so the model stays in full
+           view while its brightness and contrast are adjusted. */
+        @media (max-width: 768px) {
+            .preview-display-dock {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 0.5em;
+            }
+
+            .preview-display-toggle {
+                display: inline-flex;
+            }
+
+            .preview-display-controls {
+                position: static;
+                align-self: stretch;
+                border: 1px solid var(--border-primary);
+                border-radius: 12px;
+            }
+
+            .preview-display-controls:not(.is-open) {
+                display: none;
+            }
+        }
+
+        /* Phones in landscape get the two-column layout, whose preview column
+           has no room below the viewer. The toggle is a square gear in the
+           viewer's bottom-right corner (44 px at the default text size, larger
+           with the app's text size setting), and the controls open along the
+           bottom beside it - where the overlay always sat - so the upper part
+           of the model stays in view while they are open. Neither moves when
+           the other appears. The gear's size and the panel's right offset are
+           the same expression in root units, so they cannot overlap. */
+        @media (min-width: 769px) and (max-height: 500px) {
+            .preview-display-toggle {
+                display: inline-flex;
+                position: absolute;
+                right: 0.5rem;
+                bottom: 0.5rem;
+                z-index: 16;
+                width: max(44px, 2.75rem);
+                height: max(44px, 2.75rem);
+                padding: 0;
+            }
+
+            /* Icon only here, to keep the corner small. The words stay in the
+               accessibility tree as the button's name (the .sr-only method). */
+            .preview-display-toggle-label {
+                position: absolute;
+                width: 1px;
+                height: 1px;
+                padding: 0;
+                margin: -1px;
+                overflow: hidden;
+                clip: rect(0, 0, 0, 0);
+                white-space: nowrap;
+                border: 0;
+            }
+
+            .preview-display-toggle-chevron {
+                display: none;
+            }
+
+            .preview-display-controls {
+                right: calc(max(44px, 2.75rem) + 1rem);
+                border-right: 1px solid var(--border-primary);
+                border-radius: 0 12px 0 16px;
+            }
+
+            /* A group keeps its own width wherever the panel sits, so the
+               script's ResizeObserver on the groups never sees the panel move. */
+            .preview-display-controls > .preview-control-group {
+                flex-shrink: 0;
+            }
+
+            .preview-display-controls:not(.is-open) {
+                display: none;
+            }
+
+            /* Laid out but unseen, so fitPreviewDisplayPanel() can measure the
+               controls beside the gear while the drawer is closed. */
+            .preview-display-controls.is-measuring {
+                display: flex;
+                visibility: hidden;
+            }
+
+            /* When the app's text size makes the controls too wide to sit
+               beside the gear (150 % and up at 844 x 390), the column is also
+               too short for a panel anywhere else, so the page falls back to
+               exactly the overlay it had before the drawer: always shown, full
+               width, no gear. Set by fitPreviewDisplayPanel(), which measures. */
+            .preview-display-dock.is-fallback .preview-display-toggle {
+                display: none;
+            }
+
+            .preview-display-dock.is-fallback .preview-display-controls {
+                display: flex;
+                right: 0;
+                border-right: 0;
+                border-radius: 0 0 16px 16px;
+            }
+        }
+
         h1 {
             font-size: 2.2em;
             font-weight: 700;
@@ -1707,6 +1838,22 @@
             border: 1.5px solid var(--border-focus);
             outline: none;
             background: var(--bg-primary);
+        }
+
+        /* Placeholder text (2026-09-28): the sample in an empty box reads as a
+           hint, not as content - muted colour, italic - and goes the moment the
+           user types, as placeholders do everywhere. opacity 1 because Firefox
+           fades placeholders by default, which would undo the contrast the
+           token provides. The braille boxes keep upright glyphs: italic dots
+           mean nothing. */
+        textarea::placeholder,
+        input[type="text"]::placeholder {
+            color: var(--text-placeholder);
+            opacity: 1;
+            font-style: italic;
+        }
+        textarea[lang="und-Brai"]::placeholder {
+            font-style: normal;
         }
 
         /* Ensure number inputs are properly styled and functional */
@@ -3188,8 +3335,31 @@
                             </span>
                         </div>
                     </div>
-                    <!-- Preview Display Controls - Bottom overlay inside viewer -->
-                    <div class="preview-display-controls" role="group" aria-label="Preview display settings">
+                    <!-- Preview Display Controls. On a wide screen they are the
+                         bottom overlay inside the viewer and the toggle is hidden.
+                         On a phone that overlay hid almost the whole model
+                         (Brennen's finding, 2026-09-29), so there they are stowed
+                         behind the toggle: in portrait they open BELOW the viewer,
+                         so the model stays in full view while it is adjusted; in
+                         landscape, where the column has no room below, the toggle
+                         is a gear in the viewer's corner and they open along the
+                         bottom beside it. A plain disclosure - native button,
+                         aria-expanded, aria-controls; the layout alone decides
+                         which applies. -->
+                    <div class="preview-display-dock">
+                        <!-- S-PD1, signed off by Brennen 2026-10-01 (drafted 2026-09-29); reword only with his sign-off.
+                             The visible words are the accessible name, so the
+                             button needs no aria-label; the icons are hidden. -->
+                        <button type="button" id="preview-display-toggle" class="font-size-btn preview-display-toggle"
+                                aria-expanded="false" aria-controls="preview-display-controls">
+                            <svg class="preview-display-toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                            </svg>
+                            <span class="preview-display-toggle-label">Display settings</span>
+                            <span id="preview-display-toggle-chevron" class="preview-display-toggle-chevron" aria-hidden="true">▼</span>
+                        </button>
+                    <div class="preview-display-controls" id="preview-display-controls" role="group" aria-label="Preview display settings">
                         <div class="preview-control-group">
                             <span class="preview-control-label" id="brightness-label">Brightness:</span>
                             <div class="preview-stepper" role="group" aria-labelledby="brightness-label brightness-value">
@@ -3226,6 +3396,7 @@
                             </button>
                         </div>
                     </div>
+                    </div><!-- /.preview-display-dock -->
                 </div>
                 <div id="viewer-instructions" class="sr-only">
                     To interact with the 3D preview: Use mouse drag to rotate, mouse wheel to zoom. Touch users: one finger to rotate, pinch to zoom. Keyboard users: the visual preview is supplementary; generated STL files contain the same geometry.
@@ -3246,7 +3417,8 @@
                            task. Removed on Brennen's call (FD-27a); the
                            destination is still reachable from the banner and
                            from the help modal. -->
-                      <p>Generates custom braille embossing plates for cylinders such as labels and containers.</p>
+                      <!-- S-H14, signed off by Brennen 2026-10-01 (drafted in the 2026-09-30 help review; was "Generates custom braille embossing plates for cylinders such as labels and containers."). The tactile-label sentence was removed everywhere on his call the same day. Reword only with his sign-off. -->
+                      <p>Generates the two braille cylinders of a hand-operated braille card embosser.</p>
 
                       <p><strong>First Step: Decide What to Include</strong></p>
                       <p>Braille space is limited. Not everything from print will fit.</p>
@@ -3375,9 +3547,9 @@
                                   </div>
                                   <!-- S-M7, signed 2026-09-21 (16 words). -->
                                   <div class="grade-note" id="double-sided-note" style="margin-top: 6px; font-size: 0.85em;">Double-sided embosses both faces of the card in one pass and uses the tactile row markers.</div>
-                                  <!-- User-facing wording signed off by Brennen (2026-08-16); visible only. -->
+                                  <!-- User-facing wording signed off by Brennen (2026-08-16); visible only. S-M15, signed off by him 2026-10-01 (drafted in the 2026-09-30 help review): "Turning this on shows the Back of Card section below" became "Choosing it makes the Back of Card section below active" - Card sides is a radio since D-7 and the section is always shown, disabled while single-sided. Reword only with his sign-off. -->
                                   <div class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
-                                      Embosses both sides of the card in one pass: <strong>Cylinder A</strong> (the embossing plate) carries the front's raised dots plus recesses for the back, and <strong>Cylinder B</strong> (the counter plate) carries the back's raised dots plus recesses for the front, offset diagonally by 1.25 mm so the two sides never collide. Turning this on shows the Back of Card section below and locks the Row Indicator Style to the tactile seam arrow. Generate each cylinder with the same settings.
+                                      Embosses both sides of the card in one pass: <strong>Cylinder A</strong> (the embossing plate) carries the front's raised dots plus recesses for the back, and <strong>Cylinder B</strong> (the counter plate) carries the back's raised dots plus recesses for the front, offset diagonally by 1.25 mm so the two sides never collide. Choosing it makes the Back of Card section below active and locks the Row Indicator Style to the tactile seam arrow. Generate each cylinder with the same settings.
                                   </div>
                                   <!-- Live same-surface crowding warning (the ids and ARIA are
                                        load-bearing for checkDoubleSidedGap()). Announced through
@@ -3427,7 +3599,11 @@
                               <!-- Auto placement textarea (hidden by default) -->
                               <div id="auto-input-container" style="display: none;">
                                   <label for="auto-text" class="line-label">Auto Placement Text</label>
-                                  <textarea id="auto-text" rows="4" placeholder="Type all your text here. It will be translated to braille and auto-wrapped across rows based on available cells." style="width: 100%; resize: vertical;" autocomplete="off"></textarea>
+                                  <!-- S-P3, signed off by Brennen 2026-09-28 (his choice from three drafts);
+                                       reword only with his sign-off. The braille field below carries this
+                                       sample's own translation as ITS placeholder (S-P4), so a new user sees
+                                       which box takes text and which shows braille. -->
+                                  <textarea id="auto-text" rows="4" placeholder="Type the text you want in braille here." style="width: 100%; resize: vertical;" autocomplete="off"></textarea>
                                   <!-- Announced through #a11y-status, not from here: this box is
                                        display:none between messages, so it is inserted into the
                                        accessibility tree already holding its text, and an insertion
@@ -3453,8 +3629,16 @@
                               <!-- Editable Unicode braille field: the authoritative text when non-empty -->
                               <div class="braille-field" style="margin-top: 1em;">
                                   <label for="braille-unicode" class="line-label">Braille (Unicode) — one line per row</label>
+                                  <!-- S-P4 (rule signed by Brennen 2026-09-28): the placeholder is EXACTLY what
+                                       Translate to Braille puts here for the text box's sample (S-P3) at the
+                                       defaults - UEB grade 2, capitals on, wrapped at 13 cells - measured through
+                                       the real field, never typed from memory; if S-P3 is ever reworded this is
+                                       re-measured, not edited. tests/e2e/textEntryPlaceholders.spec.ts re-derives
+                                       it. Not spoken: the description comes from aria-describedby, which takes
+                                       precedence over a placeholder in the accessibility tree (checked over CDP). -->
                                   <textarea id="braille-unicode" name="braille_unicode" rows="4" lang="und-Brai"
                                             autocomplete="off" spellcheck="false"
+                                            placeholder="⠠⠞⠽⠏⠑ ⠮ ⠞⠑⠭⠞&#10;⠽ ⠺⠁⠝⠞ ⠔ ⠃⠗⠇&#10;⠐⠓⠲"
                                             aria-describedby="braille-unicode-help braille-unicode-status"></textarea>
                                   <!-- Upward half of the two-way translation: braille here → text above -->
                                   <div class="translate-row">
@@ -3483,9 +3667,11 @@
                            again. updateDoubleSidedUI() enables it when Double-sided is chosen.
                            The legend keeps the signed 2026-08-16 text as this section's h2.
                            The ids inside are load-bearing: the generate handler reads
-                           #back-text.value, persistence stores braille_prefs_back_text, the
-                           back braille field is wired by wireBackBrailleField(), and
-                           computeBackOverflow() finds #ds-back-overflow-warning by id. -->
+                           #back-text.value, the back braille field is wired by
+                           wireBackBrailleField(), and computeBackOverflow() finds
+                           #ds-back-overflow-warning by id. Nothing typed here is stored:
+                           since 2026-09-28 no text or braille input is persisted anywhere
+                           (privacy - Brennen's rule; only 3D design settings are kept). -->
                       <div class="line-input-group" id="double-sided-section">
                           <fieldset class="line-input-fieldset" id="back-entry-fieldset" disabled>
                               <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
@@ -3511,10 +3697,12 @@
                                       <!-- Label wording signed off by Brennen (2026-08-16). Placeholder
                                            replaced with his sign-off (2026-08-17): BANA auto-wrap made
                                            "each line becomes one braille row" untrue, since one typed
-                                           line can now become several rows. Reword either only with his
-                                           sign-off. -->
+                                           line can now become several rows. Shortened to its first
+                                           sentence with his sign-off (2026-09-28) so the braille box
+                                           below can show its whole translation (S-P5) in four rows.
+                                           Reword either only with his sign-off. -->
                                       <label for="back-text" class="line-label">Back of Card Text</label>
-                                      <textarea id="back-text" rows="4" placeholder="Type the text for the back of the card here. It wraps across the rows automatically." style="width: 100%; resize: vertical;" autocomplete="off" aria-describedby="back-text-help"></textarea>
+                                      <textarea id="back-text" rows="4" placeholder="Type the text for the back of the card here." style="width: 100%; resize: vertical;" autocomplete="off" aria-describedby="back-text-help"></textarea>
                                       <!-- User-facing wording signed off by Brennen (2026-08-17); reword only
                                            with his sign-off. Replaces the 2026-08-16 note, which said "there is
                                            no automatic wrapping here yet, so press Enter where each row should
@@ -3565,8 +3753,13 @@
                                            status line and the sr-only live region all mirror the front's. -->
                                       <div class="braille-field" style="margin-top: 1em;">
                                           <label for="back-braille-unicode" class="line-label">Braille (Unicode) — one line per row</label>
+                                          <!-- S-P5 (signed by Brennen 2026-09-28): the translation of the back text
+                                               box's placeholder ("Type the text for the back of the card here."),
+                                               measured through the real field at the defaults - the same rule as
+                                               S-P4, re-measured never edited. Same test re-derives it. -->
                                           <textarea id="back-braille-unicode" name="back_braille_unicode" rows="4" lang="und-Brai"
                                                     autocomplete="off" spellcheck="false"
+                                                    placeholder="⠠⠞⠽⠏⠑ ⠮ ⠞⠑⠭⠞&#10;⠿ ⠮ ⠃⠁⠉⠅ ⠷ ⠮&#10;⠉⠜⠙ ⠐⠓⠲"
                                                     aria-describedby="back-braille-unicode-help back-braille-unicode-status"></textarea>
                                           <!-- Upward half: braille here → back text above -->
                                           <div class="translate-row">
@@ -3602,97 +3795,6 @@
                                   <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
                                       Default: English (UEB), United States — contracted (grade 2). The BANA <em>Guidelines for Brailling Business Cards</em> (March 2024) says to follow <em>The Rules of Unified English Braille</em>, and every worked example in that fact sheet is contracted UEB. Contractions also pack more of a name, phone number, or e-mail address into the 13–14 cells a card row allows. <span id="language-help">Switch to uncontracted (grade 1) only if your reader has asked for it.</span>
                                   </div>
-                              </div>
-                          </fieldset>
-                      </div>
-
-                      <!-- Row Indicator Style (cylinder only) -->
-                      <div class="grade-selection" id="indicator-mode-selection">
-                          <fieldset>
-                              <legend class="grade-label"><h2 class="legend-heading">Row Indicator Style</h2></legend>
-                              <div class="radio-group" role="radiogroup" aria-required="true">
-                                  <label class="radio-option">
-                                      <input type="radio" name="indicator_mode" value="visual" checked aria-describedby="indicator-mode-visual-desc">
-                                      <span class="radio-text">Visual markers</span>
-                                  </label>
-                                  <span id="indicator-mode-visual-desc" class="sr-only">Default. A recessed triangle, plus the optional indicator letter, in marker cells at the start of every row. Uses one or two braille cells per row.</span>
-                                  <label class="radio-option">
-                                      <input type="radio" name="indicator_mode" value="tactile" aria-describedby="indicator-mode-tactile-desc">
-                                      <span class="radio-text">Tactile seam arrow</span>
-                                  </label>
-                                  <span id="indicator-mode-tactile-desc" class="sr-only">A raised arrow on the embossing plate and a matching recess on the counter plate, centred in the gap at the cylinder seam with the point toward the top. Uses no braille cells, so every cell in the row is available for text.</span>
-                              </div>
-                              <!-- Shown while the double-sided beta is on; updateDoubleSidedUI()
-                                   also disables the visual radio and appends this note's id to
-                                   its aria-describedby, so the lock reason travels with the
-                                   disabled option. -->
-                              <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
-                              <!-- Announced through #a11y-status. Still referenced by the disabled
-                                   "Visual markers" radio's aria-describedby, which reads this text
-                                   whether or not the box is visible - that wiring is unaffected. -->
-                              <div id="indicator-mode-lock-note" class="grade-note"
-                                   style="margin-top: 6px; font-size: 0.85em; display: none;">
-                                  <strong>Locked:</strong> Double-sided is on, so the Row Indicator Style stays on the tactile seam arrow — both cylinders of a double-sided pair need it. Choose Single-sided to pick visual markers.
-                              </div>
-                              <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
-                                  <strong>Tactile</strong> lets a blind user find the alignment point and tell which end is up by touch: the arrow is one continuous wedge, nothing like a braille dot, and raised-versus-recessed tells you which cylinder you are holding. It also frees the marker cells for text. Both plates of a pair must use the same style. Its dimensions live in the <strong>Tactile Indicator Dimensions</strong> submenu of Expert Mode.
-                              </div>
-                              <!-- Announced through #a11y-status - see that region's note. -->
-                              <div id="tactile-gap-warning" class="grade-note inline-warning"
-                                   style="margin-top: 0.6em; display: none;">
-                                  <strong>Warning:</strong> <span id="tactile-gap-message"></span>
-                              </div>
-                              <!-- A tactile row that would run off the card (the card's leading
-                                   edge sits at the alignment arrow). Announced through #a11y-status
-                                   on the hidden-to-shown edge, like the box above. -->
-                              <div id="card-fit-warning" class="grade-note inline-warning"
-                                   style="margin-top: 0.6em; display: none;">
-                                  <strong>Warning:</strong> <span id="card-fit-message"></span>
-                              </div>
-                          </fieldset>
-                      </div>
-
-                      <!-- Card Thickness Preset Selection -->
-                      <div class="grade-selection">
-                          <fieldset>
-                              <!-- The 0.3 / 0.4 numbers are the thickness of the PAPER CARD STOCK
-                                   the cylinders emboss - the stock standard paper business cards
-                                   come in. They are NOT the printer's layer height.
-                                   Corrected 2026-08-19 with Brennen's sign-off, undoing the
-                                   2026-08-18 "Print Layer Height" rename. That rename reasoned
-                                   that "both presets set card_thickness: 2.0, so nothing about the
-                                   card's thickness varies" - but card_thickness is the printed
-                                   PLASTIC PLATE's thickness, not the paper. What the presets
-                                   actually change is bowl DEPTH (0.5 -> 0.8 mm) and dot HEIGHT
-                                   (0.8 -> 1.0 mm); cylinders print standing upright, so both are
-                                   radial dimensions a layer-height setting cannot motivate and
-                                   thicker stock motivates directly. The sr-only descriptions had
-                                   said "layer height" since the feature first shipped, which is
-                                   what made the visible label look like the wrong one. -->
-                              <legend class="grade-label"><h2 class="legend-heading">Card Thickness</h2></legend>
-                              <!-- No aria-label here on purpose: the <legend> above is this
-                                   group's only name. Labelling the radiogroup as well made
-                                   NVDA announce two groups for one set of radios, which no
-                                   sibling group in this file does (audit F-N). -->
-                              <div class="radio-group thickness-toggle" role="radiogroup" aria-required="true">
-                                  <label class="radio-option">
-                                      <input type="radio" name="card_thickness_preset" value="0.4" checked aria-describedby="thickness-04-desc">
-                                      <span class="radio-text">0.4mm</span>
-                                  </label>
-                                  <span id="thickness-04-desc" class="sr-only">Preset settings optimized for embossing 0.4mm card stock. In the tactile style its cylinders carry one seam arrow per row.</span>
-                                  <label class="radio-option">
-                                      <input type="radio" name="card_thickness_preset" value="0.3" aria-describedby="thickness-03-desc">
-                                      <span class="radio-text">0.3mm</span>
-                                  </label>
-                                  <span id="thickness-03-desc" class="sr-only">Preset settings optimized for embossing 0.3mm card stock. In the tactile style its cylinders carry three evenly spaced seam arrows, so the preset can be felt.</span>
-                                  <label class="radio-option">
-                                      <input type="radio" name="card_thickness_preset" value="custom" aria-describedby="thickness-custom-desc">
-                                      <span class="radio-text">Custom</span>
-                                  </label>
-                                  <span id="thickness-custom-desc" class="sr-only">Custom settings - automatically selected when any parameter is modified from preset values</span>
-                              </div>
-                              <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
-                                  Selecting a card thickness preset will automatically adjust all braille dot and surface parameters to values tuned for embossing that card stock. This is the thickness of the paper business cards you feed through the cylinders — the printed plate itself is always 2 mm thick either way. "Custom" is automatically selected when you modify any parameter.
                               </div>
                           </fieldset>
                       </div>
@@ -3776,6 +3878,159 @@
                                               <span id="counter-plate-desc" class="sr-only">Creates recessed dots to support embossing process</span>
                                           </div>
                                       </fieldset>
+                                  </div>
+                              </div>
+                          </div>
+
+                          <!-- Submenu: Card Thickness (moved here from the main form on 2026-09-24,
+                               programme decision D-5; second submenu). The fieldset, its radios,
+                               ids and sr-only descriptions are exactly what the main form carried:
+                               the preset system, persistence and the request read them by id and
+                               name. Only the legend lost its h2 - a submenu is headed by its h3
+                               button. -->
+                          <div class="expert-submenu" id="card-thickness-submenu">
+                              <h3 class="expert-submenu-heading">
+                                  <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-card-thickness">
+                                      <span class="expert-submenu-title">Card Thickness</span>
+                                      <span class="expert-submenu-icon" aria-hidden="true">▼</span>
+                                  </button>
+                              </h3>
+                              <div id="expert-panel-card-thickness" class="expert-submenu-content" style="display: none;">
+                                  <div class="grade-selection">
+                                      <fieldset>
+                                          <!-- The 0.3 / 0.4 numbers are the thickness of the PAPER CARD STOCK
+                                               the cylinders emboss - the stock standard paper business cards
+                                               come in. They are NOT the printer's layer height.
+                                               Corrected 2026-08-19 with Brennen's sign-off, undoing the
+                                               2026-08-18 "Print Layer Height" rename. That rename reasoned
+                                               that "both presets set card_thickness: 2.0, so nothing about the
+                                               card's thickness varies" - but card_thickness is the printed
+                                               PLASTIC PLATE's thickness, not the paper. What the presets
+                                               actually change is bowl DEPTH (0.5 -> 0.8 mm) and dot HEIGHT
+                                               (0.8 -> 1.0 mm); cylinders print standing upright, so both are
+                                               radial dimensions a layer-height setting cannot motivate and
+                                               thicker stock motivates directly. The sr-only descriptions had
+                                               said "layer height" since the feature first shipped, which is
+                                               what made the visible label look like the wrong one. -->
+                                          <legend class="grade-label">Card Thickness</legend>
+                                          <!-- No aria-label here on purpose: the <legend> above is this
+                                               group's only name. Labelling the radiogroup as well made
+                                               NVDA announce two groups for one set of radios, which no
+                                               sibling group in this file does (audit F-N). -->
+                                          <div class="radio-group thickness-toggle" role="radiogroup" aria-required="true">
+                                              <label class="radio-option">
+                                                  <input type="radio" name="card_thickness_preset" value="0.4" checked aria-describedby="thickness-04-desc">
+                                                  <span class="radio-text">0.4mm</span>
+                                              </label>
+                                              <span id="thickness-04-desc" class="sr-only">Preset settings optimized for embossing 0.4mm card stock. In the tactile style its cylinders carry one seam arrow per row.</span>
+                                              <label class="radio-option">
+                                                  <input type="radio" name="card_thickness_preset" value="0.3" aria-describedby="thickness-03-desc">
+                                                  <span class="radio-text">0.3mm</span>
+                                              </label>
+                                              <span id="thickness-03-desc" class="sr-only">Preset settings optimized for embossing 0.3mm card stock. In the tactile style its cylinders carry three evenly spaced seam arrows, so the preset can be felt.</span>
+                                              <label class="radio-option">
+                                                  <input type="radio" name="card_thickness_preset" value="custom" aria-describedby="thickness-custom-desc">
+                                                  <span class="radio-text">Custom</span>
+                                              </label>
+                                              <span id="thickness-custom-desc" class="sr-only">Custom settings - automatically selected when any parameter is modified from preset values</span>
+                                          </div>
+                                          <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
+                                              Selecting a card thickness preset will automatically adjust all braille dot and surface parameters to values tuned for embossing that card stock. This is the thickness of the paper business cards you feed through the cylinders — the printed plate itself is always 2 mm thick either way. "Custom" is automatically selected when you modify any parameter.
+                                          </div>
+                                      </fieldset>
+                                  </div>
+                              </div>
+                          </div>
+
+                          <!-- Submenu: Row Indicator Style (2026-09-24, D-5; third submenu). The
+                               Visual / Tactile choice moved here from the main form, with its lock
+                               note, its notes and its two warning boxes, and the five tactile dials
+                               sit below it - everything about row indicators in one place. The
+                               submenu is ALWAYS shown; only the dials block hides in the visual
+                               style (updateIndicatorModeUI). Ids, names, values and sr-only
+                               descriptions are unchanged. -->
+                          <div class="expert-submenu" id="tactile-indicator-submenu">
+                              <h3 class="expert-submenu-heading">
+                                  <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-tactile">
+                                      <span class="expert-submenu-title">Row Indicator Style</span>
+                                      <span class="expert-submenu-icon" aria-hidden="true">▼</span>
+                                  </button>
+                              </h3>
+                              <div id="expert-panel-tactile" class="expert-submenu-content" style="display: none;">
+                                  <div class="grade-selection" id="indicator-mode-selection">
+                                      <fieldset>
+                                          <legend class="grade-label">Row Indicator Style</legend>
+                                          <div class="radio-group" role="radiogroup" aria-required="true">
+                                              <label class="radio-option">
+                                                  <input type="radio" name="indicator_mode" value="visual" checked aria-describedby="indicator-mode-visual-desc">
+                                                  <span class="radio-text">Visual markers</span>
+                                              </label>
+                                              <span id="indicator-mode-visual-desc" class="sr-only">Default. A recessed triangle, plus the optional indicator letter, in marker cells at the start of every row. Uses one or two braille cells per row.</span>
+                                              <label class="radio-option">
+                                                  <input type="radio" name="indicator_mode" value="tactile" aria-describedby="indicator-mode-tactile-desc">
+                                                  <span class="radio-text">Tactile seam arrow</span>
+                                              </label>
+                                              <span id="indicator-mode-tactile-desc" class="sr-only">A raised arrow on the embossing plate and a matching recess on the counter plate, centred in the gap at the cylinder seam with the point toward the top. Uses no braille cells, so every cell in the row is available for text.</span>
+                                          </div>
+                                          <!-- Shown while the double-sided beta is on; updateDoubleSidedUI()
+                                               also disables the visual radio and appends this note's id to
+                                               its aria-describedby, so the lock reason travels with the
+                                               disabled option. -->
+                                          <!-- User-facing wording signed off by Brennen (2026-08-16); reword only with his sign-off. -->
+                                          <!-- Announced through #a11y-status. Still referenced by the disabled
+                                               "Visual markers" radio's aria-describedby, which reads this text
+                                               whether or not the box is visible - that wiring is unaffected. -->
+                                          <div id="indicator-mode-lock-note" class="grade-note"
+                                               style="margin-top: 6px; font-size: 0.85em; display: none;">
+                                              <strong>Locked:</strong> Double-sided is on, so the Row Indicator Style stays on the tactile seam arrow — both cylinders of a double-sided pair need it. Choose Single-sided to pick visual markers.
+                                          </div>
+                                          <div class="grade-note" style="margin-top: 6px; font-size: 0.85em;">
+                                              <strong>Tactile</strong> lets a blind user find the alignment point and tell which end is up by touch: the arrow is one continuous wedge, nothing like a braille dot, and raised-versus-recessed tells you which cylinder you are holding. It also frees the marker cells for text. Both plates of a pair must use the same style. The arrow's size dials appear below when the tactile style is chosen.
+                                          </div>
+                                          <!-- Announced through #a11y-status - see that region's note. -->
+                                          <div id="tactile-gap-warning" class="grade-note inline-warning"
+                                               style="margin-top: 0.6em; display: none;">
+                                              <strong>Warning:</strong> <span id="tactile-gap-message"></span>
+                                          </div>
+                                          <!-- A tactile row that would run off the card (the card's leading
+                                               edge sits at the alignment arrow). Announced through #a11y-status
+                                               on the hidden-to-shown edge, like the box above. -->
+                                          <div id="card-fit-warning" class="grade-note inline-warning"
+                                               style="margin-top: 0.6em; display: none;">
+                                              <strong>Warning:</strong> <span id="card-fit-message"></span>
+                                          </div>
+                                      </fieldset>
+                                  </div>
+                                  <div class="grade-selection" id="tactile-indicator-dimensions">
+                                      <div class="grade-note" style="margin-bottom: 6px; font-size: 0.85em;">
+                                          Used only when Row Indicator Style is <strong>Tactile seam arrow</strong>. Both Card Thickness presets apply these values.
+                                      </div>
+                                      <div>
+                                          <label for="tactile_indicator_width">Indicator width around the cylinder (mm):</label>
+                                          <input type="number" id="tactile_indicator_width" name="tactile_indicator_width" value="4.0" step="0.1" min="2" max="10" style="width: 110px;" autocomplete="off">
+                                      </div>
+                                      <div style="margin-top: 6px;">
+                                          <label for="tactile_indicator_length">Indicator length along the cylinder axis (mm):</label>
+                                          <input type="number" id="tactile_indicator_length" name="tactile_indicator_length" value="10.0" step="0.1" min="2" max="15" style="width: 110px;" autocomplete="off">
+                                      </div>
+                                      <div style="margin-top: 6px;">
+                                          <label for="tactile_indicator_raise">Arrow raise above the surface (mm):</label>
+                                          <input type="number" id="tactile_indicator_raise" name="tactile_indicator_raise" value="0.5" step="0.1" min="0" max="2" style="width: 110px;" autocomplete="off">
+                                          <div class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
+                                              Keep this below the braille dot height so the dots — not the indicator — carry the rolling pressure.
+                                          </div>
+                                      </div>
+                                      <div style="margin-top: 6px;">
+                                          <label for="tactile_recess_clearance">Counter recess outline clearance (mm):</label>
+                                          <input type="number" id="tactile_recess_clearance" name="tactile_recess_clearance" value="0.2" step="0.05" min="0" max="1" style="width: 110px;" autocomplete="off">
+                                      </div>
+                                      <div style="margin-top: 6px;">
+                                          <label for="tactile_recess_extra_depth">Counter recess extra depth (mm):</label>
+                                          <input type="number" id="tactile_recess_extra_depth" name="tactile_recess_extra_depth" value="0.2" step="0.05" min="0" max="1" style="width: 110px;" autocomplete="off">
+                                          <div class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
+                                              Raise the clearance or the extra depth if the arrow binds instead of nesting. Large values thin the wall between the recess and the polygonal cutout.
+                                          </div>
+                                      </div>
                                   </div>
                               </div>
                           </div>
@@ -4040,8 +4295,9 @@
                                       <div style="margin-top: 6px;" id="cylinder-seam-offset-row">
                                           <label for="seam_offset_deg">Seam Offset (degrees):</label>
                                           <input type="number" id="seam_offset_deg" name="seam_offset_deg" value="355" step="1" min="0" max="360" style="width: 110px;" autocomplete="off">
+                                          <!-- S-SO1, signed off by Brennen 2026-10-01 (drafted in the 2026-09-30 help review: the old note said the braille turns; seam_offset_deg turns only the polygonal cutout, app/geometry_spec.py). Reword only with his sign-off. -->
                                           <div class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
-                                              Rotates the starting position of braille text around the cylinder
+                                              Turns the polygonal cutout around the cylinder's axis. The braille does not move.
                                           </div>
                                       </div>
                                       <!-- Announced through #a11y-status, not from here: hidden
@@ -4096,16 +4352,40 @@
                                        valid against its own step - the trap that once made
                                        the Generate button die silently. -->
                                   <div class="grade-selection" id="v2-keyed-cutouts-selection" hidden>
-                                      <fieldset>
+                                      <fieldset aria-describedby="v2-key-clearance-note">
                                           <legend class="grade-label" style="font-size: 1.2em; font-weight: 700;">Version 2 Keyed Cutouts</legend>
+                                          <!-- One dial PER KEY since 2026-09-25, so one gear's fit
+                                               can be tuned without moving the other three. The ids
+                                               are the flat request fields; every default is a whole
+                                               number of 0.005 steps (0.075 / 0.005 = 15) or the input
+                                               is :invalid on load and Generate dies silently. The
+                                               four labels S-K2..S-K5 and the shared note S-K1 were
+                                               signed off by Brennen 2026-09-28 (labels shortened, the
+                                               note names his printer settings; reword only with his
+                                               sign-off); S-V9 (signed 2026-08-28) retired with the
+                                               single dial. The note S-K1 (25 words, at the Step 6.8
+                                               ceiling) is the
+                                               FIELDSET's aria-describedby, not the dials' - one
+                                               description, one host (SOP 6.8 clause 5): a screen
+                                               reader hears it once on entering the group, not once
+                                               per dial (measured 96 -> 24 words per pass, 2026-09-25). -->
                                           <div>
-                                              <!-- S-V9, signed off by Brennen (2026-08-28);
-                                                   reword only with his sign-off. The help text
-                                                   is 16 words, under the Step 6.8 ceiling. -->
-                                              <label for="v2_key_clearance_mm">Key clearance (mm):</label>
-                                              <input type="number" id="v2_key_clearance_mm" name="v2_key_clearance_mm" value="0.110" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off" aria-describedby="v2-key-clearance-note">
-                                              <div class="grade-note" id="v2-key-clearance-note" style="margin-top: 4px; font-size: 0.85em;">Extra room around each gear peg, per side. 0.110 mm suits most printers; raise it if pegs bind.</div>
+                                              <label for="v2_key_clearance_a1_mm">Gear A1 clearance (mm):</label>
+                                              <input type="number" id="v2_key_clearance_a1_mm" name="v2_key_clearance_a1_mm" value="0.075" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off">
                                           </div>
+                                          <div style="margin-top: 6px;">
+                                              <label for="v2_key_clearance_a2_mm">Gear A2 clearance (mm):</label>
+                                              <input type="number" id="v2_key_clearance_a2_mm" name="v2_key_clearance_a2_mm" value="0.075" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off">
+                                          </div>
+                                          <div style="margin-top: 6px;">
+                                              <label for="v2_key_clearance_b1_mm">Gear B1 clearance (mm):</label>
+                                              <input type="number" id="v2_key_clearance_b1_mm" name="v2_key_clearance_b1_mm" value="0.075" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off">
+                                          </div>
+                                          <div style="margin-top: 6px;">
+                                              <label for="v2_key_clearance_b2_mm">Gear B2 clearance (mm):</label>
+                                              <input type="number" id="v2_key_clearance_b2_mm" name="v2_key_clearance_b2_mm" value="0.075" step="0.005" min="0" max="0.5" style="width: 110px;" autocomplete="off">
+                                          </div>
+                                          <div class="grade-note" id="v2-key-clearance-note" style="margin-top: 4px; font-size: 0.85em;">Room around each peg, per side. Defaults suit cylinders at 0.12 mm layers, gears at 0.2 mm; raise if a peg binds, lower if loose.</div>
                                       </fieldset>
                                   </div>
 
@@ -4119,49 +4399,6 @@
                                       <input type="number" id="card_height" name="card_height" value="52" step="0.1" min="30" max="150" autocomplete="off" tabindex="-1">
                                       <label for="card_thickness">Plate Thickness:</label>
                                       <input type="number" id="card_thickness" name="card_thickness" value="2.0" step="0.1" min="1" max="10" autocomplete="off" tabindex="-1">
-                                  </div>
-                              </div>
-                          </div>
-
-                          <!-- Submenu: Tactile Indicator Dimensions (shown only in tactile mode) -->
-                          <div class="expert-submenu" id="tactile-indicator-submenu">
-                              <h3 class="expert-submenu-heading">
-                                  <button type="button" class="expert-submenu-toggle" aria-expanded="false" aria-controls="expert-panel-tactile">
-                                      <span class="expert-submenu-title">Tactile Indicator Dimensions</span>
-                                      <span class="expert-submenu-icon" aria-hidden="true">▼</span>
-                                  </button>
-                              </h3>
-                              <div id="expert-panel-tactile" class="expert-submenu-content" style="display: none;">
-                                  <div class="grade-selection" id="tactile-indicator-dimensions">
-                                      <div class="grade-note" style="margin-bottom: 6px; font-size: 0.85em;">
-                                          Used only when Row Indicator Style is <strong>Tactile seam arrow</strong>. Both Card Thickness presets apply these values.
-                                      </div>
-                                      <div>
-                                          <label for="tactile_indicator_width">Indicator width around the cylinder (mm):</label>
-                                          <input type="number" id="tactile_indicator_width" name="tactile_indicator_width" value="4.0" step="0.1" min="2" max="10" style="width: 110px;" autocomplete="off">
-                                      </div>
-                                      <div style="margin-top: 6px;">
-                                          <label for="tactile_indicator_length">Indicator length along the cylinder axis (mm):</label>
-                                          <input type="number" id="tactile_indicator_length" name="tactile_indicator_length" value="10.0" step="0.1" min="2" max="15" style="width: 110px;" autocomplete="off">
-                                      </div>
-                                      <div style="margin-top: 6px;">
-                                          <label for="tactile_indicator_raise">Arrow raise above the surface (mm):</label>
-                                          <input type="number" id="tactile_indicator_raise" name="tactile_indicator_raise" value="0.5" step="0.1" min="0" max="2" style="width: 110px;" autocomplete="off">
-                                          <div class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
-                                              Keep this below the braille dot height so the dots — not the indicator — carry the rolling pressure.
-                                          </div>
-                                      </div>
-                                      <div style="margin-top: 6px;">
-                                          <label for="tactile_recess_clearance">Counter recess outline clearance (mm):</label>
-                                          <input type="number" id="tactile_recess_clearance" name="tactile_recess_clearance" value="0.2" step="0.05" min="0" max="1" style="width: 110px;" autocomplete="off">
-                                      </div>
-                                      <div style="margin-top: 6px;">
-                                          <label for="tactile_recess_extra_depth">Counter recess extra depth (mm):</label>
-                                          <input type="number" id="tactile_recess_extra_depth" name="tactile_recess_extra_depth" value="0.2" step="0.05" min="0" max="1" style="width: 110px;" autocomplete="off">
-                                          <div class="grade-note" style="margin-top: 4px; font-size: 0.85em;">
-                                              Raise the clearance or the extra depth if the arrow binds instead of nesting. Large values thin the wall between the recess and the polygonal cutout.
-                                          </div>
-                                      </div>
                                   </div>
                               </div>
                           </div>
@@ -5200,6 +5437,98 @@
         }
         updateEdgesToggle();
 
+        // Display settings drawer (2026-09-29). One open/closed state for every
+        // layout; it only shows on a phone, because on a wide screen the toggle
+        // is hidden and the controls always show. Not persisted: every load
+        // starts closed, like the other preview display settings.
+        const previewDisplayToggle = document.getElementById('preview-display-toggle');
+        const previewDisplayControls = document.getElementById('preview-display-controls');
+        const previewDisplayToggleChevron = document.getElementById('preview-display-toggle-chevron');
+        // The CSS's two compact blocks, written the same way: their union,
+        // and the landscape one alone.
+        const compactPreviewQuery = window.matchMedia('(max-width: 768px), (min-width: 769px) and (max-height: 500px)');
+        const landscapePreviewQuery = window.matchMedia('(min-width: 769px) and (max-height: 500px)');
+
+        // Landscape only: the controls sit beside the gear unless a group of
+        // them is wider than that space - the app's text size decides - and
+        // then the page keeps the overlay it had before the drawer (CSS
+        // .is-fallback). Measured every time in the position beside the gear,
+        // shown unseen for the measurement if the drawer is closed, so a
+        // smaller text size brings the gear back.
+        function fitPreviewDisplayPanel() {
+            const dock = previewDisplayToggle.parentElement;
+            dock.classList.remove('is-fallback');
+            if (!landscapePreviewQuery.matches) return;
+            const closed = !previewDisplayControls.classList.contains('is-open');
+            if (closed) previewDisplayControls.classList.add('is-measuring');
+            const panel = previewDisplayControls.getBoundingClientRect();
+            const tooWide = Array.from(previewDisplayControls.children).some((group) => {
+                const box = group.getBoundingClientRect();
+                return box.left < panel.left - 0.5 || box.right > panel.right + 0.5;
+            });
+            if (closed) previewDisplayControls.classList.remove('is-measuring');
+            if (!tooWide) return;
+            const toggleHadFocus = document.activeElement === previewDisplayToggle;
+            dock.classList.add('is-fallback');
+            // The gear is about to vanish; keep the keyboard in the controls.
+            if (toggleHadFocus) previewDisplayControls.querySelector('button:not([disabled])')?.focus();
+        }
+
+        function setPreviewDisplayDrawer(open) {
+            previewDisplayToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            previewDisplayControls.classList.toggle('is-open', open);
+            if (previewDisplayToggleChevron) previewDisplayToggleChevron.textContent = open ? '▲' : '▼';
+            fitPreviewDisplayPanel();
+        }
+
+        if (previewDisplayToggle && previewDisplayControls) {
+            landscapePreviewQuery.addEventListener('change', fitPreviewDisplayPanel);
+            window.addEventListener('resize', fitPreviewDisplayPanel);
+            // The groups and the gear change size with the app's text size,
+            // which fires no resize event; the gear is watched as well because
+            // the groups have no size while the drawer is closed. The check
+            // runs on the next frame, not inside the observer: showing or
+            // hiding the gear changes a watched size, and doing that inside
+            // the callback is what browsers report as a ResizeObserver loop.
+            // Every pass settles: in landscape the groups never shrink (see
+            // the CSS), and the gear's own change leads to one more pass that
+            // reaches the same answer.
+            if ('ResizeObserver' in window) {
+                let fitQueued = false;
+                const sizeWatcher = new ResizeObserver(() => {
+                    if (fitQueued) return;
+                    fitQueued = true;
+                    requestAnimationFrame(() => {
+                        fitQueued = false;
+                        fitPreviewDisplayPanel();
+                    });
+                });
+                sizeWatcher.observe(previewDisplayToggle);
+                Array.from(previewDisplayControls.children).forEach((group) => sizeWatcher.observe(group));
+            }
+            fitPreviewDisplayPanel();
+            previewDisplayToggle.addEventListener('click', () => {
+                setPreviewDisplayDrawer(previewDisplayToggle.getAttribute('aria-expanded') !== 'true');
+            });
+            // Escape closes the open drawer from the toggle or any control in
+            // it, and focus goes back to the toggle rather than to the page.
+            // Only while the toggle is on screen: a wide screen and the
+            // landscape fallback have no drawer to close.
+            previewDisplayToggle.parentElement.addEventListener('keydown', (event) => {
+                if (event.key !== 'Escape' || getComputedStyle(previewDisplayToggle).display === 'none') return;
+                if (previewDisplayToggle.getAttribute('aria-expanded') !== 'true') return;
+                setPreviewDisplayDrawer(false);
+                previewDisplayToggle.focus();
+            });
+            // Narrowing the window to a phone layout while one of the controls
+            // has focus would stow it out from under the keyboard: open instead.
+            compactPreviewQuery.addEventListener('change', () => {
+                if (compactPreviewQuery.matches && previewDisplayControls.contains(document.activeElement)) {
+                    setPreviewDisplayDrawer(true);
+                }
+            });
+        }
+
         // Font size adjustment functionality
         const fontSizes = [75, 87.5, 100, 112.5, 125, 150, 175, 200];
         let currentFontSizeIndex = 2; // Start at 100%
@@ -5413,9 +5742,18 @@
                prefix rides in the ready message rather than as a second write
                to the one live region. */
             const fusedVersion2 = lastGenerationUsedGears && lastGenerationUsedV2;
+            /* S-P1, signed off by Brennen 2026-09-28 ("with supports off" added to the
+               2026-09-24 draft; decision D-7); reword only with his sign-off. The
+               fused roller has a preferred way up since the v9 update - the chamfered
+               barrel edge and the vented, self-supporting gear socket are at the
+               bottom gear - so the fused ready message says which end goes down.
+               Since 2026-09-30 the Version 1 fused roller says it too (his
+               approved decision 5): its sockets are vented and self-supporting
+               printed that way up. */
+            const printBottomGearDown = 'Print it with the bottom gear on the build plate, with supports off. ';
             announceStatus('stl-ready',
-                (fusedVersion2 ? 'Cylinder generated with fixed gears for the Version 2 embosser. ' : '')
-                + (lastGenerationUsedGears && !fusedVersion2 ? 'Cylinder generated with integrated gears. ' : '')
+                (fusedVersion2 ? 'Cylinder generated with fixed gears for the Version 2 embosser. ' + printBottomGearDown : '')
+                + (lastGenerationUsedGears && !fusedVersion2 ? 'Cylinder generated with integrated gears. ' + printBottomGearDown : '')
                 + (lastGenerationUsedV2 && !fusedVersion2 ? 'Cylinder generated for the Version 2 embosser. ' : '')
                 + 'Your STL file is ready. Use the Download STL button to save it.'
                 + outstandingWarningSuffix());
@@ -5574,6 +5912,11 @@
         // current and future field with no extra bookkeeping.
         ['input', 'change'].forEach(eventName => {
             form.addEventListener(eventName, () => {
+                // A pristine braille field mirrors a translation made under the
+                // settings of the moment (2026-09-28): emptied here when an
+                // effective translation setting changed, exactly as it is when
+                // the text changes; hand-edited fields are never touched.
+                reconcilePristineBrailleFields();
                 resetToGenerateState();
                 // A finished A/B pair is invalidated by an edit for the same
                 // reason the STL is, and a blocking validation notice stops
@@ -6226,8 +6569,20 @@
         let brailleFieldProblem = null;
         // Set when a pristine field was emptied because the English text changed,
         // so the status line can keep saying why instead of falling back to the
-        // generic empty message.
+        // generic empty message. The reason ('text' or 'setting') picks the
+        // sentence: since 2026-09-28 a translation SETTING change empties a
+        // pristine field too, because Generate now fills the field on every
+        // run and a mirror made under yesterday's language or cell count must
+        // not outlive the change (hand-edited fields are never touched).
         let brailleFieldAutoCleared = false;
+        let brailleFieldAutoClearReason = null;
+
+        /* S-BF1 / S-BF2, signed off by Brennen 2026-09-28 (as drafted): the status
+           and the announcement when a translation setting emptied a pristine
+           field. The text-change pair keeps its existing wording. Reword only
+           with his sign-off. */
+        const S_BF1_SETTING_CLEARED_STATUS = 'Cleared because a translation setting changed — press Translate to Braille to refresh';
+        const S_BF2_SETTING_CLEARED_ANNOUNCE = 'Braille field cleared because a translation setting changed. Press Translate to Braille to refresh it.';
 
         function isBrailleUnicodeChar(ch) {
             const code = ch.codePointAt(0);
@@ -6266,13 +6621,74 @@
         // What the status line says when the field has nothing wrong with it.
         function brailleFieldBaselineStatus() {
             if (!isBrailleFieldActive()) {
-                return brailleFieldAutoCleared
-                    ? 'Cleared because the text changed — press Translate to Braille to refresh'
-                    : 'Empty — the text above will be translated';
+                if (!brailleFieldAutoCleared) return 'Empty — the text above will be translated';
+                return brailleFieldAutoClearReason === 'setting'
+                    ? S_BF1_SETTING_CLEARED_STATUS
+                    : 'Cleared because the text changed — press Translate to Braille to refresh';
             }
             return brailleFieldDirty
                 ? 'Edited — will be used as-is'
                 : 'Filled from translation — edit any cell you want to change.';
+        }
+
+        // What a translation depends on besides the text itself: the cells a
+        // row holds, the rows, the language table and the per-row tables, the
+        // capital-letter and number-sign choices and the placement mode. A
+        // pristine field is a mirror made under these; the key is remembered at
+        // fill time and compared on every form change, so the mirror is emptied
+        // (S-BF1 / S-BF2) when one of them really changes and left alone when a
+        // control fires without changing anything effective - the double-sided
+        // lock moving the style to tactile at the same cell count, a dot-size
+        // dial, X Adjust. Never derived from which control fired: what matters
+        // is whether the same text would translate the same way now.
+        function translationSettingsKey(side) {
+            const rows = parseInt(document.getElementById('grid_rows')?.value) || 4;
+            const table = document.getElementById('language-table')?.value || DEFAULT_LANGUAGE_TABLE;
+            const capitals = document.querySelector('input[name="capitalize_letters"]:checked')?.value || '';
+            const numberSigns = document.querySelector('input[name="repeat_number_sign"]:checked')?.value || '';
+            const placement = side === 'back'
+                ? backPlacementMode()
+                : (document.querySelector('input[name="placement_mode"]:checked')?.value || 'manual');
+            const prefix = side === 'back' ? 'back_line_lang_' : 'line_lang_';
+            const perRow = [];
+            for (let i = 1; i <= rows; i++) perRow.push(document.getElementById(`${prefix}${i}`)?.value || table);
+            return JSON.stringify([getAvailableColumns(), rows, table, capitals, numberSigns, placement, perRow]);
+        }
+        let brailleFieldMirrorKey = null;
+        let backBrailleFieldMirrorKey = null;
+
+        // Called from the form-wide change delegate: empties a pristine field
+        // whose mirror no longer matches the translation the text would get.
+        function reconcilePristineBrailleFields() {
+            if (!brailleFieldDirty && isBrailleFieldActive() && brailleFieldMirrorKey !== null
+                && translationSettingsKey('front') !== brailleFieldMirrorKey) {
+                clearPristineBrailleField('setting');
+            }
+            if (!backBrailleFieldDirty && isBackBrailleFieldActive() && backBrailleFieldMirrorKey !== null
+                && translationSettingsKey('back') !== backBrailleFieldMirrorKey) {
+                clearPristineBackBrailleField('setting');
+            }
+        }
+
+        // Writes a translation into the field as its pristine mirror. Used by
+        // the Translate to Braille button and, since 2026-09-28, by every
+        // Generate (Brennen's request: the braille about to be embossed is on
+        // screen without a second press). The field keeps its authority: a
+        // non-empty field, mirror or hand-edit, is embossed exactly as written
+        // on the next Generate, which sends the same body the translation did.
+        // Both callers announce from the field's own live region (Brennen's
+        // choice 2026-09-28, D-U4), beside the run's messages in #a11y-status.
+        function showTranslationInBrailleField(lines, warnings = []) {
+            const field = document.getElementById('braille-unicode');
+            if (!field) return;
+            field.value = trimTrailingEmptyLines(lines).join('\n');
+            brailleFieldDirty = false;
+            brailleFieldAutoCleared = false;
+            brailleFieldAutoClearReason = null;
+            brailleFieldMirrorKey = translationSettingsKey('front');
+            const note = warnings.length ? ` ${warnings.join(' ')}` : '';
+            setBrailleFieldStatus(`Filled from translation — edit any cell you want to change.${note}`);
+            announceBrailleField('Braille field updated from translation.');
         }
 
         // Holds the field to the same rules generation enforces, live: a paste
@@ -6415,6 +6831,7 @@
                 const wasDirty = brailleFieldDirty;
                 brailleFieldDirty = isBrailleFieldActive();
                 brailleFieldAutoCleared = false;
+                brailleFieldAutoClearReason = null;
                 resetToGenerateState();
                 updateBrailleFieldStatus();
                 // A problem announces itself; do not talk over it.
@@ -6437,12 +6854,7 @@
                         announceBrailleField(result.error);
                         return;
                     }
-                    field.value = trimTrailingEmptyLines(result.lines).join('\n');
-                    brailleFieldDirty = false;
-                    brailleFieldAutoCleared = false;
-                    const note = result.warnings.length ? ` ${result.warnings.join(' ')}` : '';
-                    setBrailleFieldStatus(`Filled from translation — edit any cell you want to change.${note}`);
-                    announceBrailleField('Braille field updated from translation.');
+                    showTranslationInBrailleField(result.lines, result.warnings);
                     resetToGenerateState();
                 } catch (error) {
                     log.error('Translate to Braille failed:', error);
@@ -6487,16 +6899,24 @@
             });
         }
 
-        // Called when the English inputs change. A pristine field only mirrors a
+        // Called when the English inputs change ('text') or a translation
+        // setting changes ('setting'). A pristine field only mirrors a
         // translation, so it is cleared rather than left silently stale; a dirty
         // field is never touched.
-        function onSourceTextChangedForBrailleField() {
+        function clearPristineBrailleField(reason) {
             if (brailleFieldDirty || !isBrailleFieldActive()) return;
             const field = document.getElementById('braille-unicode');
             if (field) field.value = '';
             brailleFieldAutoCleared = true;
+            brailleFieldAutoClearReason = reason;
             updateBrailleFieldStatus();
-            announceBrailleField('Braille field cleared because the text changed. Press Translate to Braille to refresh it.');
+            announceBrailleField(reason === 'setting'
+                ? S_BF2_SETTING_CLEARED_ANNOUNCE
+                : 'Braille field cleared because the text changed. Press Translate to Braille to refresh it.');
+        }
+
+        function onSourceTextChangedForBrailleField() {
+            clearPristineBrailleField('text');
         }
 
         // ------------------------------------------------------------------
@@ -6511,6 +6931,7 @@
         let backBrailleFieldDirty = false;
         let backBrailleFieldProblem = null;
         let backBrailleFieldAutoCleared = false;
+        let backBrailleFieldAutoClearReason = null;
 
         function getBackBrailleFieldValue() {
             return document.getElementById('back-braille-unicode')?.value || '';
@@ -6538,13 +6959,31 @@
 
         function backBrailleFieldBaselineStatus() {
             if (!isBackBrailleFieldActive()) {
-                return backBrailleFieldAutoCleared
-                    ? 'Cleared because the text changed — press Translate to Braille to refresh'
-                    : 'Empty — the text above will be translated';
+                if (!backBrailleFieldAutoCleared) return 'Empty — the text above will be translated';
+                return backBrailleFieldAutoClearReason === 'setting'
+                    ? S_BF1_SETTING_CLEARED_STATUS
+                    : 'Cleared because the text changed — press Translate to Braille to refresh';
             }
             return backBrailleFieldDirty
                 ? 'Edited — will be used as-is'
                 : 'Filled from translation — edit any cell you want to change.';
+        }
+
+        // The back's twin of showTranslationInBrailleField: the button and,
+        // since 2026-09-28, every double-sided Generate write the back
+        // translation here as its pristine mirror, announced from this
+        // field's own live region (D-U4).
+        function showTranslationInBackBrailleField(lines, warnings = []) {
+            const field = document.getElementById('back-braille-unicode');
+            if (!field) return;
+            field.value = trimTrailingEmptyLines(lines).join('\n');
+            backBrailleFieldDirty = false;
+            backBrailleFieldAutoCleared = false;
+            backBrailleFieldAutoClearReason = null;
+            backBrailleFieldMirrorKey = translationSettingsKey('back');
+            const note = warnings.length ? ` ${warnings.join(' ')}` : '';
+            setBackBrailleFieldStatus(`Filled from translation — edit any cell you want to change.${note}`);
+            announceBackBrailleField('Braille field updated from translation.');
         }
 
         function updateBackBrailleFieldStatus() {
@@ -6606,12 +7045,7 @@
                 textLines.push(line.trim() ? (await backTranslateWithLiblouis(line, tableName)).trim() : '');
             }
             const target = document.getElementById('back-text');
-            if (target) {
-                target.value = textLines.join('\n');
-                // A scripted write fires no input event: persist by hand, exactly
-                // as the field's own input listener would have.
-                persistValue('braille_prefs_back_text', target.value);
-            }
+            if (target) target.value = textLines.join('\n');
             return { lines: textLines };
         }
 
@@ -6625,6 +7059,7 @@
                 const wasDirty = backBrailleFieldDirty;
                 backBrailleFieldDirty = isBackBrailleFieldActive();
                 backBrailleFieldAutoCleared = false;
+                backBrailleFieldAutoClearReason = null;
                 resetToGenerateState();
                 updateBackBrailleFieldStatus();
                 // A problem announces itself; do not talk over it.
@@ -6647,12 +7082,7 @@
                         announceBackBrailleField(result.error);
                         return;
                     }
-                    field.value = trimTrailingEmptyLines(result.lines).join('\n');
-                    backBrailleFieldDirty = false;
-                    backBrailleFieldAutoCleared = false;
-                    const note = result.warnings.length ? ` ${result.warnings.join(' ')}` : '';
-                    setBackBrailleFieldStatus(`Filled from translation — edit any cell you want to change.${note}`);
-                    announceBackBrailleField('Braille field updated from translation.');
+                    showTranslationInBackBrailleField(result.lines, result.warnings);
                     resetToGenerateState();
                 } catch (error) {
                     log.error('Translate to Braille (back) failed:', error);
@@ -6697,16 +7127,24 @@
             });
         }
 
-        // Called when the Back of Card Text changes. Same rule as the front: a
-        // pristine field only mirrors a translation, so it is cleared rather
-        // than left silently stale; a hand-edited field is never touched.
-        function onBackSourceTextChangedForBackBrailleField() {
+        // Called when the Back of Card Text changes ('text') or a translation
+        // setting changes ('setting'). Same rule as the front: a pristine field
+        // only mirrors a translation, so it is cleared rather than left silently
+        // stale; a hand-edited field is never touched.
+        function clearPristineBackBrailleField(reason) {
             if (backBrailleFieldDirty || !isBackBrailleFieldActive()) return;
             const field = document.getElementById('back-braille-unicode');
             if (field) field.value = '';
             backBrailleFieldAutoCleared = true;
+            backBrailleFieldAutoClearReason = reason;
             updateBackBrailleFieldStatus();
-            announceBackBrailleField('Braille field cleared because the text changed. Press Translate to Braille to refresh it.');
+            announceBackBrailleField(reason === 'setting'
+                ? S_BF2_SETTING_CLEARED_ANNOUNCE
+                : 'Braille field cleared because the text changed. Press Translate to Braille to refresh it.');
+        }
+
+        function onBackSourceTextChangedForBackBrailleField() {
+            clearPristineBackBrailleField('text');
         }
 
         // Update the capitalization warning visibility based on toggle state and input content
@@ -6794,9 +7232,9 @@
         function updateIndicatorModeUI() {
             const tactile = isTactileIndicatorOn();
 
-            const submenu = document.getElementById('tactile-indicator-submenu');
-            if (submenu) submenu.style.display = tactile ? '' : 'none';
-
+            // The Row Indicator Style submenu itself is always shown (it holds the
+            // Visual / Tactile choice since 2026-09-24, D-5); only the dials block
+            // below the choice follows the style.
             const dimensions = document.getElementById('tactile-indicator-dimensions');
             if (dimensions) dimensions.style.display = tactile ? '' : 'none';
 
@@ -6901,9 +7339,15 @@
             if (isTactileIndicatorOn()) {
                 const indicatorWidth = parseFloat(document.getElementById('tactile_indicator_width')?.value) || 4.0;
                 const required = indicatorWidth + TACTILE_MIN_GAP_MARGIN_MM;
-                if (seamGap < required) {
+                // X Adjust slides the grid toward one side of the arrow, so the
+                // crowded side has seamGap/2 - |shift| of room: the same rule on
+                // the gap left after the shift (mirrors seam_gap_after_shift_mm
+                // in app/geometry_spec.py). A blank dial counts as no shift.
+                const xShift = parseFloat(document.getElementById('braille_x_adjust')?.value);
+                const seamGapAfterShift = seamGap - 2 * Math.abs(Number.isFinite(xShift) ? xShift : 0);
+                if (seamGapAfterShift < required) {
                     warningMsg.textContent = `The tactile indicator needs a seam gap of at least ${required.toFixed(1)} mm, ` +
-                        `but this layout leaves ${seamGap.toFixed(1)} mm. Reduce the number of braille cells, ` +
+                        `but this layout leaves ${seamGapAfterShift.toFixed(1)} mm. Reduce the number of braille cells, ` +
                         'increase the cylinder diameter, or narrow the indicator in Expert Mode.';
                     warningDiv.style.display = 'block';
                     if (wasHidden) {
@@ -7425,6 +7869,9 @@
                     window.updateGridColumnsForPlateType();
                 }
                 updateIndicatorModeUI();
+                // In Version 2 the X Adjust default follows the tactile style
+                // (V2_TACTILE_X_ADJUST_MM); a no-op in Version 1.
+                syncVersion2TactileXAdjust();
             });
         });
 
@@ -7442,6 +7889,35 @@
         // The Cylinder A / Cylinder B names (signed 2026-08-17) are static
         // markup in "Cylinders to Generate" since 2026-09-21: every run is a
         // pair unless one cylinder is chosen, so there is no relabel to do.
+
+        // The Row Indicator Style the double-sided lock displaced (2026-09-29,
+        // Brennen's finding from testing: a Version 1 card taken to
+        // Double-sided and back stayed on the tactile arrow). Only ever
+        // 'visual' - the lock moves nothing when the style is already tactile,
+        // so a tactile style the user chose themselves stays put. Choosing
+        // Single-sided gives it back (restoreSingleSidedIndicatorMode). While
+        // the lock holds, a version change works on this value rather than on
+        // the checked radio, which is the lock's. Dropped by Reset.
+        // Since 2026-10-01 (Brennen's decision) it is saved with the other
+        // design settings, so the give-back also works after a reload - never
+        // text, only 'visual' or nothing. restoreRememberedStyles() reads it
+        // back only when Double-sided itself came back on.
+        let singleSidedIndicatorMode = null;
+        const SINGLE_SIDED_STYLE_PREF = 'braille_prefs_single_sided_indicator_mode';
+
+        // One writer for each remembered style, so storage can never disagree
+        // with the variable: null removes the saved value.
+        function persistRememberedStyle(key, value) {
+            if (value === null) {
+                try { localStorage.removeItem(key); } catch (e) { log.debug('Could not clear saved setting', key, e); }
+            } else {
+                persistValue(key, value);
+            }
+        }
+        function setSingleSidedIndicatorMode(value) {
+            singleSidedIndicatorMode = value;
+            persistRememberedStyle(SINGLE_SIDED_STYLE_PREF, value);
+        }
 
         // Deliberately silent: the card-sides change
         // listener makes the one announcement, and the load-time restore must
@@ -7470,6 +7946,7 @@
             const visualRadio = document.querySelector('input[name="indicator_mode"][value="visual"]');
             const tactileRadio = document.querySelector('input[name="indicator_mode"][value="tactile"]');
             if (on && visualRadio?.checked && tactileRadio) {
+                setSingleSidedIndicatorMode('visual');
                 tactileRadio.checked = true;
                 // A real change event, so persistence, the column dial, and the
                 // tactile submenu react exactly as they do to a user click.
@@ -7496,16 +7973,42 @@
             return lockNote ? lockNote.textContent.replace(/\s+/g, ' ').trim() : '';
         }
 
+        // Single-sided gives back the style the double-sided lock displaced.
+        // Called from the card-sides change listener ONLY, after
+        // updateDoubleSidedUI() has re-enabled the visual radio - never by the
+        // silent load restore or by Reset. A real change event, as the lock
+        // itself uses, so persistence, the cell dial, the tactile panel and
+        // the Version 2 X Adjust default follow as for a click. Returns true
+        // when the style just moved, so the one announcement can say so.
+        function restoreSingleSidedIndicatorMode() {
+            if (isDoubleSidedOn() || singleSidedIndicatorMode === null) return false;
+            const remembered = singleSidedIndicatorMode;
+            setSingleSidedIndicatorMode(null);
+            const radio = document.querySelector(`input[name="indicator_mode"][value="${remembered}"]`);
+            if (!radio || radio.checked || radio.disabled) return false;
+            radio.checked = true;
+            radio.dispatchEvent(new Event('change', { bubbles: true }));
+            return true;
+        }
+
+        /* S-M14, signed off by Brennen 2026-10-01 (drafted 2026-09-29); reword only
+           with his sign-off. The mirror of S-V16: the clause the Single-sided
+           announcement gains when the Row Indicator Style just went back to
+           visual markers. */
+        const S_M14_STYLE_RESTORED = 'Row Indicator Style set to visual.';
+
         // Card sides: one change, ONE announcement (ADA SOP Section 12, C9):
         // the choice sentence plus, when turning double-sided on, the lock
-        // note that says why the Row Indicator Style just moved. Deferred by
-        // a tick on purpose - written synchronously it would queue ahead of
-        // the radio's own "selected", so the user would wait out the whole
-        // sentence before hearing whether the option they pressed took.
+        // note that says why the Row Indicator Style just moved, or, when
+        // turning it off, S-M14 if the style went back to visual markers.
+        // Deferred by a tick on purpose - written synchronously it would queue
+        // ahead of the radio's own "selected", so the user would wait out the
+        // whole sentence before hearing whether the option they pressed took.
         document.querySelectorAll('input[name="card_sides"]').forEach(radio => {
             radio.addEventListener('change', () => {
                 updateDoubleSidedUI();
                 const on = isDoubleSidedOn();
+                const styleRestored = restoreSingleSidedIndicatorMode();
                 persistValue('braille_prefs_double_sided_enabled', on ? '1' : '0');
                 resetToGenerateState();
                 refreshLiveWarnings();
@@ -7513,7 +8016,9 @@
                 const choice = on
                     ? 'Double-sided card selected. The Back of Card section is now active.'
                     : 'Single-sided card selected.';
-                const message = on ? `${choice} ${indicatorLockMessage()}` : choice;
+                const message = on
+                    ? `${choice} ${indicatorLockMessage()}`
+                    : [choice, styleRestored ? S_M14_STYLE_RESTORED : ''].filter(Boolean).join(' ');
                 setTimeout(() => announceStatus('embosser-setup', message), 0);
             });
         });
@@ -7696,30 +8201,43 @@
                 const totalColumns = getAvailableColumns() + getReservedMarkerColumns();
                 const footprint = seamChannelFootprintMm();
                 const gap = Math.PI * diameter - (totalColumns - 1) * cellSpacing;
+                // X Adjust slides the whole grid round the barrel (mm of arc;
+                // negative brings the first cell toward the arrow), so the
+                // room either side of the groove slides with it. Mirrors
+                // x_shift_mm in app/geometry_spec.py _seam_channel_block.
+                const xShift = parseFloat(document.getElementById('braille_x_adjust')?.value);
                 // Tactile mode (D-T6, D-T8): the groove runs down the arrow
                 // column itself and, on the embossing plate, steps round the
                 // raised arrows on the first-cell side, so that side needs half
                 // an arrow, the groove and a margin either side of it before
-                // the first cell's dots. Visual: between the last cell's dots
-                // and column 0's triangle.
+                // the first cell's dots; the last-cell side must still clear
+                // the straight groove's half-width and margin. Visual: between
+                // the last cell's dots and column 0's triangle.
                 let free;
                 let need;
+                // Finite in both modes: the isFinite guard below treats an
+                // Infinity as "mid-edit" and mutes the box (caught by
+                // seamChannel.spec.ts in visual mode, 2026-09-28).
+                let lastCellRoom = 0;
+                let lastCellNeed = 0;
                 if (isTactileIndicatorOn()) {
                     const indicatorWidth = parseFloat(document.getElementById('tactile_indicator_width')?.value);
-                    free = gap / 2 - footprint;
+                    free = gap / 2 + xShift - footprint;
                     need = indicatorWidth / 2 + SEAM_CHANNEL_WIDTH_MM + 2 * SEAM_CHANNEL_MARGIN_MM;
+                    lastCellRoom = gap / 2 - xShift - footprint;
+                    lastCellNeed = SEAM_CHANNEL_WIDTH_MM / 2 + SEAM_CHANNEL_MARGIN_MM;
                 } else {
-                    const lo = -(gap / 2 - footprint);
-                    const hi = gap / 2 - dotSpacing / 2;
+                    const lo = -(gap / 2 - footprint) + xShift;
+                    const hi = gap / 2 - dotSpacing / 2 + xShift;
                     free = hi - lo;
                     need = SEAM_CHANNEL_WIDTH_MM + 2 * SEAM_CHANNEL_MARGIN_MM;
                 }
 
                 // A dial that is empty or mid-edit gives NaN; the box stays
                 // quiet rather than guessing, and the server has the last word.
-                if (Number.isFinite(free) && Number.isFinite(need)) {
+                if (Number.isFinite(free) && Number.isFinite(need) && Number.isFinite(lastCellRoom)) {
                     /* S-C2 and S-C3, signed off by Brennen (2026-09-21), and S-C5, signed off by him 2026-09-23; reword only with his sign-off. Byte-for-byte the server's sentences. */
-                    if (free < need) {
+                    if (free < need || lastCellRoom < lastCellNeed) {
                         text = isTactileIndicatorOn()
                             ? 'The seam channel was left out: there is not enough room for it beside the alignment arrows. Reduce the number of braille cells, increase the cylinder diameter, or narrow the indicator.'
                             : 'The seam channel was left out: the seam gap is too narrow for it at this cell count and diameter.';
@@ -7770,10 +8288,14 @@
                 const gridWidth = (totalColumns - 1) * cellSpacing;
                 const halfGap = (Math.PI * diameter - gridWidth) / 2;
                 const cardLength = parseFloat(document.getElementById('card_width')?.value);
-                const need = halfGap + gridWidth + footprint;
+                // X Adjust moves the first cell along the card (negative
+                // toward the arrow), so the need moves with it: mirrors
+                // x_shift_mm in tactile_card_need_mm / tactile_max_cells.
+                const xShift = parseFloat(document.getElementById('braille_x_adjust')?.value);
+                const need = halfGap + xShift + gridWidth + footprint;
                 if (Number.isFinite(need) && Number.isFinite(cardLength) && need > cardLength) {
-                    // need(n) = pi * D / 2 + (n - 1) * cell / 2 + footprint
-                    const room = cardLength - (Math.PI * diameter) / 2 - footprint;
+                    // need(n) = pi * D / 2 + xShift + (n - 1) * cell / 2 + footprint
+                    const room = cardLength - (Math.PI * diameter) / 2 - xShift - footprint;
                     const maxCells = room < 0 ? 0 : Math.floor((room * 2) / cellSpacing) + 1;
                     /* S-T1, signed off by Brennen (2026-09-21); reword only with his sign-off. Byte-for-byte the server's sentence. */
                     text = `The last braille cell would run off the card: this layout needs ${need.toFixed(1)} mm of card ` +
@@ -7796,7 +8318,7 @@
         });
 
         // ---------------------------------------------------------------------
-        // Embosser Version 2 (keyed gear pegs) PROTOTYPE
+        // Embosser Version 2 (keyed gear pegs)
         // ---------------------------------------------------------------------
         // A Version 2 cylinder is keyed at both ends instead of bored through,
         // so its barrel is a fixed size and the polygonal-cutout and seam-offset
@@ -7812,6 +8334,17 @@
             cylinder_height_mm: 54,
             seam_offset_deg: 0
         };
+        // X Adjust in Version 2 WITH the tactile seam arrow (Brennen, 2026-09-28,
+        // after his print test of the X Adjust fix): the braille starts 2 mm of
+        // arc nearer the alignment arrow on both cylinders. Owned by
+        // app/geometry/version2.py V2_TACTILE_X_ADJUST_MM (a smoke test diffs
+        // them). A default, not a lock, applied on top of every card-stock
+        // preset the way the barrel is: on the user's version change, when the
+        // tactile style is chosen in Version 2, and by a preset chosen in
+        // Version 2 (both presets carry 0). Leaving Version 2 gives back the
+        // value the user had (the snapshot below); choosing visual markers in
+        // Version 2 gives it back too if the dial still reads the default.
+        const V2_TACTILE_X_ADJUST_MM = -2;
         // Every dial Version 2 overrides or hides, so turning it off gives back
         // exactly what the user had rather than a preset's idea of it.
         const V2_SNAPSHOT_IDS = [
@@ -7819,9 +8352,38 @@
             'cylinder_height_mm',
             'seam_offset_deg',
             'cylinder_polygonal_cutout_radius_mm',
-            'cylinder_polygonal_cutout_sides'
+            'cylinder_polygonal_cutout_sides',
+            'braille_x_adjust'
         ];
         let version1DialSnapshot = null;
+        // The Row Indicator Style the user had before Version 2 moved it to
+        // the tactile seam arrow (2026-09-24, decision D-4): Version 2
+        // DEFAULTS to tactile - a default, not a lock. Taken on the user's
+        // version change only, never on the silent load restore (which must
+        // not overrule a persisted choice) and never by a card-stock preset;
+        // given back on the way to Version 1 and dropped by Reset, like the
+        // dial snapshot above. Since 2026-10-01 (Brennen's decision) it is
+        // saved with the design settings, so leaving Version 2 gives it back
+        // after a reload too; restoreRememberedStyles() reads it back only
+        // when Version 2 itself came back on.
+        let version1IndicatorMode = null;
+        const VERSION1_STYLE_PREF = 'braille_prefs_version1_indicator_mode';
+        function setVersion1IndicatorMode(value) {
+            version1IndicatorMode = value;
+            persistRememberedStyle(VERSION1_STYLE_PREF, value);
+        }
+
+        // One key clearance dial per gear since 2026-09-25. The ids ARE the
+        // flat request fields (settings.schema.json version_2.key_clearance_*).
+        // The legacy shared dial's storage key is still read on load, and
+        // cleared on reset, so a value saved before the four dials is kept.
+        const V2_KEY_CLEARANCE_IDS = [
+            'v2_key_clearance_a1_mm',
+            'v2_key_clearance_a2_mm',
+            'v2_key_clearance_b1_mm',
+            'v2_key_clearance_b2_mm'
+        ];
+        const V2_LEGACY_CLEARANCE_PREF = 'braille_prefs_v2_key_clearance_mm';
 
         function isVersion2() {
             return document.querySelector('input[name="embosser_version"]:checked')?.value === '2';
@@ -7835,6 +8397,96 @@
             input.value = String(value);
             persistValue(`braille_prefs_${inputId}`, String(value));
         }
+
+        // The tactile seam arrow is the Version 2 default (D-4, 2026-09-24).
+        // Called from the version radios' change listener ONLY. Entering
+        // Version 2 remembers the style the user had and, if it was visual
+        // (and not held tactile by the double-sided lock), checks the tactile
+        // radio and dispatches its change - so persistence, the cell dial,
+        // the tactile dials and the fit warnings follow exactly as they do
+        // for a click, the mechanism updateDoubleSidedUI uses. Leaving
+        // Version 2 gives the remembered style back. Returns true when the
+        // style just moved, so the announcement can say so.
+        // While the double-sided lock holds tactile, the checked radio is the
+        // lock's and not the user's: both directions then work on the style
+        // the lock displaced (singleSidedIndicatorMode), and Single-sided
+        // shows the result - the Version 2 default, or the Version 1 style.
+        function applyVersion2IndicatorDefault() {
+            const checked = document.querySelector('input[name="indicator_mode"]:checked')?.value || 'visual';
+            const locked = isDoubleSidedOn();
+            const current = (locked && singleSidedIndicatorMode !== null) ? singleSidedIndicatorMode : checked;
+            if (isVersion2()) {
+                if (version1IndicatorMode === null) setVersion1IndicatorMode(current);
+                if (current !== 'visual') return false;
+                if (locked) {
+                    // The default lands under the lock, leaving nothing to
+                    // give back: Single-sided in Version 2 keeps the arrow.
+                    setSingleSidedIndicatorMode(null);
+                    return false;
+                }
+                const tactileRadio = document.querySelector('input[name="indicator_mode"][value="tactile"]');
+                if (!tactileRadio) return false;
+                tactileRadio.checked = true;
+                tactileRadio.dispatchEvent(new Event('change', { bubbles: true }));
+                return true;
+            }
+            if (version1IndicatorMode === null) return false;
+            const remembered = version1IndicatorMode;
+            setVersion1IndicatorMode(null);
+            if (locked) {
+                // The Version 1 style waits for Single-sided.
+                setSingleSidedIndicatorMode(remembered === 'visual' ? 'visual' : null);
+                return false;
+            }
+            const radio = document.querySelector(`input[name="indicator_mode"][value="${remembered}"]`);
+            if (radio && !radio.checked && !radio.disabled) {
+                radio.checked = true;
+                radio.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            return false;
+        }
+
+        // Snapshot ONCE, on the way into Version 2. Taking it again on a later
+        // call would capture Version 2's own overrides and lose the user's
+        // Version 1 dials for good. Called first thing in the version change
+        // listener - before the style default can move X Adjust - and again
+        // (a no-op then) by updateEmbosserVersionUI for the load restore.
+        function snapshotVersion1Dials() {
+            if (!isVersion2() || version1DialSnapshot !== null) return;
+            version1DialSnapshot = {};
+            V2_SNAPSHOT_IDS.forEach(id => {
+                const input = document.getElementById(id);
+                if (input) version1DialSnapshot[id] = input.value;
+            });
+        }
+
+        // X Adjust follows the Version 2 + tactile pair (see
+        // V2_TACTILE_X_ADJUST_MM): both on, the dial takes the default; in
+        // Version 2 with visual markers a dial still AT the default goes back
+        // to the value the user brought into Version 2, while a hand-set value
+        // is left alone. Outside Version 2 this touches nothing.
+        function syncVersion2TactileXAdjust() {
+            if (!isVersion2()) return;
+            const input = document.getElementById('braille_x_adjust');
+            if (!input) return;
+            if (isTactileIndicatorOn()) {
+                setAndPersistDial('braille_x_adjust', V2_TACTILE_X_ADJUST_MM);
+                return;
+            }
+            if (parseFloat(input.value) !== V2_TACTILE_X_ADJUST_MM) return;
+            if (version1DialSnapshot && 'braille_x_adjust' in version1DialSnapshot) {
+                setAndPersistDial('braille_x_adjust', version1DialSnapshot.braille_x_adjust);
+            }
+        }
+
+        /* S-V16, signed off by Brennen 2026-09-28 (shortened from the 2026-09-24
+           draft); reword only with his sign-off. The clause the version
+           announcement gains when the style just moved to tactile. */
+        const S_V16_STYLE_MOVED = 'Row Indicator Style set to tactile.';
+        /* S-X1, signed off by Brennen 2026-09-28 (shortened to match S-V16);
+           reword only with his sign-off. The clause the version announcement
+           gains when choosing Version 2 moved X Adjust to the tactile default. */
+        const S_X1_X_ADJUST_MOVED = `X Adjust set to ${V2_TACTILE_X_ADJUST_MM} mm.`;
 
         /* S-V10, signed off by Brennen (2026-08-28); reword only with his sign-off. */
         function embosserVersionAnnouncement() {
@@ -7877,16 +8529,9 @@
         function updateEmbosserVersionUI() {
             const on = isVersion2();
 
-            // Snapshot ONCE, on the way in. Taking it again on a later call
-            // would capture Version 2's own overrides and lose the user's
-            // Version 1 dials for good.
-            if (on && version1DialSnapshot === null) {
-                version1DialSnapshot = {};
-                V2_SNAPSHOT_IDS.forEach(id => {
-                    const input = document.getElementById(id);
-                    if (input) version1DialSnapshot[id] = input.value;
-                });
-            }
+            // Snapshot ONCE, on the way in (a no-op when the version change
+            // listener already took it).
+            snapshotVersion1Dials();
 
             if (on) {
                 // Applied ON TOP of the Card Thickness preset, which has already
@@ -7933,7 +8578,20 @@
 
         document.querySelectorAll('input[name="embosser_version"]').forEach(radio => {
             radio.addEventListener('change', () => {
+                // The Version 1 dials first: the style default below may move
+                // X Adjust through the style listener, and the snapshot must
+                // hold what the user had, not the Version 2 default.
+                snapshotVersion1Dials();
+                const xAdjustBefore = parseFloat(document.getElementById('braille_x_adjust')?.value);
+                // The style first, so the cell-count recommendation the version
+                // refresh makes below already sees the tactile layout (D-4).
+                const styleMoved = applyVersion2IndicatorDefault();
                 updateEmbosserVersionUI();
+                // X Adjust after the dials: Version 2 with the tactile arrow
+                // takes its default (a no-op if the style listener just did it);
+                // Version 1 got the snapshot back in the refresh above.
+                syncVersion2TactileXAdjust();
+                const xAdjustMoved = isVersion2() && isTactileIndicatorOn() && xAdjustBefore !== V2_TACTILE_X_ADJUST_MM;
                 persistValue('braille_prefs_embosser_version', isVersion2() ? '2' : '1');
                 resetToGenerateState();
                 refreshLiveWarnings();
@@ -7945,18 +8603,21 @@
                 // here would be overwritten by the bare note. The version
                 // sentence leads and the notes the refresh raised ride with it.
                 const gearNotes = updateGearRollersUI();
-                const message = [embosserVersionAnnouncement(), gearNotes].filter(Boolean).join(' ');
+                const styleNote = styleMoved ? S_V16_STYLE_MOVED : '';
+                const xAdjustNote = xAdjustMoved ? S_X1_X_ADJUST_MOVED : '';
+                const message = [embosserVersionAnnouncement(), styleNote, xAdjustNote, gearNotes].filter(Boolean).join(' ');
                 setTimeout(() => announceStatus('embosser-version', message), 0);
             });
         });
 
-        const v2ClearanceInput = document.getElementById('v2_key_clearance_mm');
-        if (v2ClearanceInput) {
-            v2ClearanceInput.addEventListener('input', () => {
-                persistValue('braille_prefs_v2_key_clearance_mm', v2ClearanceInput.value);
+        V2_KEY_CLEARANCE_IDS.forEach((id) => {
+            const input = document.getElementById(id);
+            if (!input) return;
+            input.addEventListener('input', () => {
+                persistValue('braille_prefs_' + id, input.value);
                 resetToGenerateState();
             });
-        }
+        });
 
         // Live overflow warning for auto mode. Runs the exact same banaAutoWrap
         // simulation generation uses (same capitalization and number-sign
@@ -8262,6 +8923,8 @@
                 'braille_prefs_back_placement_mode',
                 'braille_prefs_indicator_shapes',
                 'braille_prefs_indicator_mode',
+                'braille_prefs_single_sided_indicator_mode',
+                'braille_prefs_version1_indicator_mode',
                 'braille_prefs_tactile_indicator_width',
                 'braille_prefs_tactile_indicator_length',
                 'braille_prefs_tactile_indicator_raise',
@@ -8302,10 +8965,14 @@
                 'braille_prefs_cylinder_polygonal_cutout_sides',
                 'braille_prefs_seam_offset_deg',
                 'braille_prefs_double_sided_enabled',
-                'braille_prefs_back_text',
+                'braille_prefs_back_text', // never written since 2026-09-28; listed so Reset scrubs older values
                 'braille_prefs_gear_rollers_enabled',
                 'braille_prefs_seam_channel_enabled',
                 'braille_prefs_embosser_version',
+                'braille_prefs_v2_key_clearance_a1_mm',
+                'braille_prefs_v2_key_clearance_a2_mm',
+                'braille_prefs_v2_key_clearance_b1_mm',
+                'braille_prefs_v2_key_clearance_b2_mm',
                 'braille_prefs_v2_key_clearance_mm'
             ];
             keys.forEach(k => { try { localStorage.removeItem(k); } catch (e) { log.debug('Could not clear saved setting', k, e); } });
@@ -8402,6 +9069,9 @@
                 expertToggleText.textContent = visible ? 'Hide Expert Mode' : 'Show Expert Mode';
                 expertToggleIcon.textContent = visible ? '▲' : '▼';
                 expertToggleBtn.classList.toggle('active', visible);
+                // The state a screen reader announces. Missing until 2026-10-01: a
+                // reload with Expert Mode open read "Hide Expert Mode, collapsed".
+                expertToggleBtn.setAttribute('aria-expanded', String(visible));
             }
             // Double-sided beta toggle and back text (hidden storage until Phase 08)
             // Same keys as the retired checkboxes, so a saved choice carries
@@ -8427,11 +9097,12 @@
                 const radio = document.querySelector(`input[name="back_placement_mode"][value="${savedBackPlacement}"]`);
                 if (radio) radio.checked = true;
             }
-            const savedBackText = readPersisted('braille_prefs_back_text');
-            const backTextEl = document.getElementById('back-text');
-            if (backTextEl && savedBackText !== null && savedBackText !== undefined) {
-                backTextEl.value = savedBackText;
-            }
+            // No text or braille input is stored or restored (Brennen's rule,
+            // 2026-09-28): even a value kept only in this browser would look
+            // like the app collecting what people write. The back text was the
+            // one field that had been saved, so a value left over from before
+            // this date is scrubbed here on every load.
+            try { localStorage.removeItem('braille_prefs_back_text'); } catch (e) { log.debug('Could not scrub the stored back text:', e); }
             // Numeric/text inputs
             const map = [
                 ['grid_rows','braille_prefs_grid_rows'],
@@ -8607,12 +9278,11 @@
             if (seamChannelToggle) {
                 seamChannelToggle.addEventListener('change', () => persistValue('braille_prefs_seam_channel_enabled', seamChannelToggle.checked ? '1' : '0'));
             }
+            // Not persisted (privacy, 2026-09-28): the listener only keeps the
+            // back braille field's mirror honest.
             const backText = document.getElementById('back-text');
             if (backText) {
-                backText.addEventListener('input', () => {
-                    persistValue('braille_prefs_back_text', backText.value);
-                    onBackSourceTextChangedForBackBrailleField();
-                });
+                backText.addEventListener('input', onBackSourceTextChangedForBackBrailleField);
             }
         }
 
@@ -8690,12 +9360,14 @@
                 if (seamChannelReset) seamChannelReset.checked = true;
                 // Embosser version back to 1. The radio sweep above already
                 // did that (Version 1 is defaultChecked) and the input sweep
-                // put the clearance dial back to 0.110, so all that is left is
+                // put the four key clearance dials back to their defaults, so all that is left is
                 // to DROP the snapshot: without this, updateEmbosserVersionUI
                 // would see Version 1 selected, restore the remembered
                 // Version 2-era dials, and undo the reset it was called to
                 // finish.
                 version1DialSnapshot = null;
+                setVersion1IndicatorMode(null);
+                setSingleSidedIndicatorMode(null);
                 try { updateEmbosserVersionUI(); } catch (e) { log.error('Embosser version UI failed to refresh after reset to defaults:', e); }
                 try { updateDoubleSidedUI(); } catch (e) { log.error('Double-sided UI failed to refresh after reset to defaults:', e); }
                 // The radio sweep puts both placement toggles back to Auto; the
@@ -8842,6 +9514,11 @@
             // In Version 1 the skip list is empty and this behaves exactly as it
             // always has.
             const skipInVersion2 = isVersion2() ? Object.keys(V2_PRESET_OVERRIDES) : [];
+            // In Version 2 with the tactile arrow every preset's X Adjust IS the
+            // Version 2 default (V2_TACTILE_X_ADJUST_MM), so that value still
+            // reads as the chosen card stock; a hand-set value still reads as
+            // Custom, which is what protects it across a reload.
+            const version2TactileXAdjust = isVersion2() && isTactileIndicatorOn();
 
             for (const [inputId, expectedValue] of Object.entries(preset)) {
                 if (skipInVersion2.includes(inputId)) continue;
@@ -8849,7 +9526,9 @@
                 if (input) {
                     // Compare as numbers to handle floating point formatting differences
                     const currentValue = parseFloat(input.value);
-                    const presetValue = parseFloat(expectedValue);
+                    const presetValue = (version2TactileXAdjust && inputId === 'braille_x_adjust')
+                        ? V2_TACTILE_X_ADJUST_MM
+                        : parseFloat(expectedValue);
                     if (isNaN(currentValue) || Math.abs(currentValue - presetValue) > 0.0001) {
                         return false;
                     }
@@ -8936,6 +9615,11 @@
             if (isVersion2()) {
                 Object.entries(V2_PRESET_OVERRIDES).forEach(([id, value]) => setAndPersistDial(id, value));
             }
+            // Both presets carry X Adjust 0; in Version 2 with the tactile arrow
+            // the preset's value is the Version 2 default instead (every
+            // preset, Brennen 2026-09-28). A no-op on the silent load restore
+            // for the same reason as the barrel above.
+            syncVersion2TactileXAdjust();
 
             // Persist the selected preset
             try { localStorage.setItem('braille_prefs_thickness_preset', presetKey); } catch (e) { log.debug('Could not save the selected thickness preset:', e); }
@@ -9039,7 +9723,7 @@
             }
         })();
 
-        // Embosser version and its clearance dial are restored HERE, after the
+        // Embosser version and its key clearance dials are restored HERE, after the
         // Card Thickness preset IIFE above - NOT inside applyPersistedSettings,
         // which runs before it. The preset rewrites cylinder_diameter_mm on
         // every single load, so a Version 2 restore that ran earlier would be
@@ -9047,11 +9731,16 @@
         // size warning about a selection they never changed.
         (function restoreEmbosserVersion() {
             try {
-                const savedClearance = readPersisted('braille_prefs_v2_key_clearance_mm');
-                const clearanceInput = document.getElementById('v2_key_clearance_mm');
-                if (clearanceInput && savedClearance) {
-                    clearanceInput.value = savedClearance;
-                }
+                // A dial saved before 2026-09-25 (one shared value) seeds every
+                // dial that has no saved value of its own.
+                const legacyClearance = readPersisted(V2_LEGACY_CLEARANCE_PREF);
+                V2_KEY_CLEARANCE_IDS.forEach((id) => {
+                    const input = document.getElementById(id);
+                    const saved = readPersisted('braille_prefs_' + id) || legacyClearance;
+                    if (input && saved) {
+                        input.value = saved;
+                    }
+                });
                 // Only the two legal spellings are honoured; anything else in
                 // storage leaves Version 1 checked, which is the markup default.
                 const savedVersion = readPersisted('braille_prefs_embosser_version');
@@ -9063,9 +9752,43 @@
                 // preset overrides and the live warnings are all seeded by hand.
                 // Silently: a load restore is not a user action.
                 updateEmbosserVersionUI();
+                // The preset restore above rewrote X Adjust to the preset's 0
+                // (with the version radio still on Version 1, its own re-assert
+                // was a no-op), so in Version 2 with the tactile arrow the
+                // preset's value - the Version 2 default - is re-asserted here,
+                // exactly as the barrel is. A saved Custom stock applied nothing,
+                // so a hand-set X Adjust came back from storage and is kept.
+                if (document.querySelector('input[name="card_thickness_preset"]:checked')?.value !== 'custom') {
+                    syncVersion2TactileXAdjust();
+                }
                 refreshLiveWarnings();
             } catch (e) {
                 log.error('Embosser version failed to restore; the page is showing Version 1:', e);
+            }
+        })();
+
+        // The remembered Row Indicator Styles come back with the state they
+        // belong to (Brennen's decision, 2026-10-01): the double-sided one
+        // only when Double-sided was restored, the Version 2 one only when
+        // Version 2 was. A value without its state is stale and is removed.
+        // Silent, like every load restore: nothing moves here - the styles are
+        // given back only when the user chooses Single-sided or Version 1.
+        (function restoreRememberedStyles() {
+            try {
+                const sided = readPersisted(SINGLE_SIDED_STYLE_PREF);
+                if (sided === 'visual' && isDoubleSidedOn()) {
+                    singleSidedIndicatorMode = 'visual';
+                } else if (sided !== null && singleSidedIndicatorMode === null) {
+                    persistRememberedStyle(SINGLE_SIDED_STYLE_PREF, null);
+                }
+                const version1 = readPersisted(VERSION1_STYLE_PREF);
+                if ((version1 === 'visual' || version1 === 'tactile') && isVersion2()) {
+                    version1IndicatorMode = version1;
+                } else if (version1 !== null) {
+                    persistRememberedStyle(VERSION1_STYLE_PREF, null);
+                }
+            } catch (e) {
+                log.error('The remembered Row Indicator Styles failed to restore; Single-sided and Version 1 will keep the current style:', e);
             }
         })();
 
@@ -9833,7 +10556,10 @@
                 && (document.querySelector('input[name="shape_type"]:checked')?.value || 'cylinder') === 'cylinder';
 
             // The Braille (Unicode) field wins whenever it has content: its lines
-            // are embossed exactly as written, with no liblouis pass.
+            // are embossed exactly as written, with no liblouis pass - whether
+            // hand-edited or the pristine mirror a Translate or a Generate left
+            // (a mirror is emptied the moment the text or an effective
+            // translation setting changes, so it is never stale).
             const useBrailleField = isBrailleFieldActive();
 
             // Translate text to braille only for positive plates
@@ -9851,8 +10577,17 @@
                     resetToGenerateState();
                     return false;
                 }
-                translatedLines = brailleLines;
-                perLineLanguageTables = new Array(brailleLines.length).fill(tableName);
+                // Padded to grid_rows and given the same per-row tables the
+                // translated paths send (the back field path has always padded),
+                // so a Generate from the mirror the previous Generate left sends
+                // the same body it did - four e2e specs diff consecutive bodies
+                // (2026-09-28).
+                translatedLines = [...brailleLines];
+                while (translatedLines.length < availableRows) translatedLines.push('');
+                perLineLanguageTables = translatedLines.map((row, i) =>
+                    (placementMode === 'manual' && row.trim())
+                        ? (document.getElementById(`line_lang_${i + 1}`)?.value || tableName)
+                        : tableName);
                 // Receipt parity with the translated path (PR-10), so an incorrect
                 // braille report can be traced even when liblouis was bypassed.
                 log.debug('Translation receipt:', JSON.stringify({
@@ -10025,6 +10760,15 @@
                     resetToGenerateState();
                     return false;
                 }
+
+                // Show the braille that is about to be embossed (2026-09-28,
+                // Brennen's request): the field becomes the pristine mirror of
+                // this translation, exactly as Translate to Braille would have
+                // left it, so the cells are on screen without a second press,
+                // and its live region says so (his choice, D-U4).
+                if (translatedLines.some(line => line && line.trim())) {
+                    showTranslationInBrailleField(translatedLines);
+                }
             } else {
                 // Counter plates don't need text - just pass empty lines
                 translatedLines = ['', '', '', ''];
@@ -10153,6 +10897,12 @@
                 }
                 log.debug('Back lines translated:', backBrailleLines);
                 }
+                // The back's mirror, filled on Generate like the front's
+                // (2026-09-28); a back field that already had content was the
+                // source and shows itself.
+                if (backBrailleLines && !isBackBrailleFieldActive() && backBrailleLines.some(line => line && line.trim())) {
+                    showTranslationInBackBrailleField(backBrailleLines);
+                }
             }
             const settings = {
                 // The dial shows usable text cells. Add the marker columns on top:
@@ -10265,20 +11015,25 @@
                 settings.seam_channel_enabled = 0;
             }
 
-            // Embosser Version 2 (keyed gear pegs) PROTOTYPE: two flat fields,
-            // and NOTHING is added while Version 1 is selected, so a Version 1
-            // request body stays byte-identical to a pre-prototype one.
-            // The clearance is read from the BOUNDED dial with no fallback
-            // literal: an empty or unparseable value raises here rather than
-            // quietly shipping geometry at a clearance nobody asked for.
+            // Embosser Version 2 (keyed gear pegs): five flat fields - the
+            // version and one key clearance per gear (2026-09-25; the shared
+            // v2_key_clearance_mm is no longer sent) - and NOTHING is added
+            // while Version 1 is selected, so a Version 1 request body stays
+            // byte-identical to a pre-prototype one. Each clearance is read
+            // from its BOUNDED dial with no fallback literal: an empty or
+            // unparseable value raises here rather than quietly shipping
+            // geometry at a clearance nobody asked for.
             if (isVersion2()) {
-                const clearanceInput = document.getElementById('v2_key_clearance_mm');
-                const clearance = parseFloat(clearanceInput?.value);
-                if (!Number.isFinite(clearance)) {
-                    throw new Error('Key clearance (mm) is empty or not a number. Enter a value between 0 and 0.5.');
-                }
                 settings.embosser_version = 2;
-                settings.v2_key_clearance_mm = clearance;
+                V2_KEY_CLEARANCE_IDS.forEach((id) => {
+                    const clearance = parseFloat(document.getElementById(id)?.value);
+                    if (!Number.isFinite(clearance)) {
+                        const gear = id.slice('v2_key_clearance_'.length, -'_mm'.length).toUpperCase();
+                        /* S-K6, signed off by Brennen 2026-09-28 (matches the shortened dial labels); reword only with his sign-off. */
+                        throw new Error(`Gear ${gear} clearance (mm) is empty or not a number. Enter a value between 0 and 0.5.`);
+                    }
+                    settings[id] = clearance;
+                });
             }
 
             // Debug: Log the settings being sent
@@ -11767,7 +12522,7 @@
                         Verbatim from the BANA Business Cards Fact Sheet (approved March 2024).
                         Source of truth: docs/guides/_bana_business_cards_verified_source.md
                         If BANA publishes a revision, update the verified-source file first,
-                        then propagate to this panel, templates/index.html, and the Business Card Guide.
+                        then propagate to this panel and the Business Card Guide.
                     -->
                     <!-- What to Include Panel (BANA-focused content selection) -->
                     <div class="help-panel" role="tabpanel" aria-labelledby="tab-whattoinclude" id="helpPanelWhatToInclude">
@@ -11777,7 +12532,8 @@
                             <strong>The most important decision:</strong> Braille takes far more space than print. You cannot include everything — you must prioritize.
                         </div>
 
-                        <p><em>BANA wrote this guidance for printed business cards, and it transfers directly to the <strong>cylinders</strong> (jars, bottles, containers) this tool produces: a cylinder row holds about as many cells as a card line, so the same space constraints and prioritization strategies apply.</em></p>
+                        <!-- S-H4, signed off by Brennen 2026-10-01 (drafted in the 2026-09-30 help review: replaces the jars-and-bottles framing - the cylinders are the embosser's rollers.) Reword only with his sign-off. -->
+                        <p><em>BANA wrote this guidance for business cards, and business cards are what this tool's cylinders emboss: each braille row on the cylinders becomes one line on the card, so the same space limits and priorities apply.</em></p>
 
                         <h4>The Core Question</h4>
                         <p class="help-quote-block">
@@ -11880,7 +12636,8 @@
 
                         <p><strong>First:</strong> Decide <button type="button" class="btn-link" onclick="window.switchHelpTab('tab-whattoinclude')">what information to include</button>. Cylinder space is limited just like cards.</p>
 
-                        <p>Cylinders let you create braille labels that wrap around curved surfaces like bottles, jars, and containers.</p>
+                        <!-- S-H5, signed off by Brennen 2026-10-01 (drafted in the 2026-09-30 help review: replaces the braille-label framing). His call the same day: the cylinders-as-tactile-labels sentence is removed everywhere, so this paragraph no longer ends with it. Reword only with his sign-off. -->
+                        <p>The two cylinders are the rollers of the braille card embosser. <strong>Cylinder A</strong> (the embossing plate) carries the raised dots and <strong>Cylinder B</strong> (the counter plate) carries the matching recesses. The card is embossed as it passes between them.</p>
 
                         <h4>Key Cylinder Parameters</h4>
                         <table class="help-table">
@@ -11888,24 +12645,19 @@
                                 <tr><th>Parameter</th><th>What It Controls</th></tr>
                             </thead>
                             <tbody>
-                                <tr><td><strong>Outer Diameter</strong></td><td>The diameter of the object you're labeling (in mm). Measure around the widest part where the label will go.</td></tr>
-                                <tr><td><strong>Cylinder Height</strong></td><td>How tall the braille surface will be. This determines how many rows of braille can fit.</td></tr>
-                                <tr><td><strong>Wall Thickness</strong></td><td>Thickness of the cylinder wall. Thicker = sturdier but uses more material.</td></tr>
-                                <tr><td><strong>Polygon Cutout</strong></td><td>Number of flat sides for the inner shape. Higher numbers = smoother curve but larger file size.</td></tr>
-                                <tr><td><strong>Seam Offset</strong></td><td>Rotates where the "seam" (gap) in the cylinder appears. Adjust so the seam doesn't interrupt your text.</td></tr>
+                                <!-- S-H6, signed off by Brennen 2026-10-01 (drafted in the 2026-09-30 help review: the rows name the real Surface Dimensions dials. Wall Thickness is gone (there is no such dial) and Seam Offset turns only the polygonal cutout (app/geometry_spec.py).) Reword only with his sign-off. -->
+                                <tr><td><strong>Cylinder Diameter</strong></td><td>The roller's outside diameter in mm. The Card Thickness presets set 30.8 mm, the size the embosser was built for.</td></tr>
+                                <tr><td><strong>Cylinder Height</strong></td><td>The roller's length in mm: 52 for Version 1, and 54 for Version 2, which adds a 1 mm card shelf at each end.</td></tr>
+                                <tr><td><strong>Polygonal Cutout</strong></td><td>Version 1 with Standard gears only: the shaped hole through the cylinder, set by its radius and number of points. The presets set both. Version 2 and Simplified-gear cylinders do not use it.</td></tr>
+                                <tr><td><strong>Seam Offset</strong></td><td>Version 1 only: turns the polygonal cutout around the cylinder's axis, in degrees. The braille does not move.</td></tr>
                             </tbody>
                         </table>
-
-                        <h4>Measuring Your Container</h4>
-                        <ol>
-                            <li><strong>Outer diameter:</strong> Wrap a string around the container, mark where it meets, then measure the string. Divide by 3.14159 (π) to get diameter.</li>
-                            <li><strong>Height:</strong> Measure the flat area where braille will go. Leave margin at top and bottom.</li>
-                        </ol>
 
                         <h4>Text Capacity</h4>
                         <p>Each row holds a fixed number of braille cells:</p>
                         <ul>
-                            <li>By default, each row holds <strong>13 braille cells of text</strong> (2 additional cells are reserved for the indicator letter and the triangle alignment indicator). With indicator letters turned off, up to <strong>14 cells</strong> are available — the alignment triangles are always included.</li>
+                            <!-- S-H7, signed off by Brennen 2026-10-01 (drafted in the 2026-09-30 help review: the reserved cells belong to the Visual style only; the tactile sentence borrows signed S-T3's words.) Reword only with his sign-off. -->
+                            <li>By default, each row holds <strong>13 braille cells of text</strong>. In the Visual markers style, 2 more cells are reserved for the indicator letter and the triangle alignment indicator; with indicator letters turned off, up to <strong>14 cells</strong> are available — the alignment triangles are always included. The Tactile seam arrow style reserves no marker cells, but 13 text cells is the most that fits a 90 mm card measured from the alignment arrow.</li>
                             <li>Cells are spaced 6.5mm apart, so the default 13-cell layout needs about 91mm of circumference — the default 30.8mm-diameter cylinder (about 96.8mm around) fits it with room for the seam gap.</li>
                             <li>A larger diameter gives more circumference, which adds margin around the seam rather than more cells per row.</li>
                             <li>In the <strong>Tactile seam arrow</strong> style, the 0.4mm card thickness preset places one arrow per row and the 0.3mm preset places three evenly spaced arrows, so you can feel which preset a cylinder was made for — and a 0.3mm cylinder will not nest with a 0.4mm one.</li>
@@ -11914,7 +12666,8 @@
                         <h4>Tips for Best Results</h4>
                         <ul>
                             <li><strong>Print orientation:</strong> Print cylinders standing upright for best dot quality</li>
-                            <li><strong>Test fit:</strong> Print a small section first to verify the diameter matches your container</li>
+                            <!-- S-P2, signed off by Brennen 2026-09-28 (the shorter of three drafts; decision D-7) with the label "Fused Version 2 rollers:". The label became "Simplified-gear rollers:" in the 2026-09-30 help review, covering the Version 1 roller vented that day; the sentence is unchanged; signed off by him 2026-10-01. Reword only with his sign-off. -->
+                            <li><strong>Simplified-gear rollers:</strong> print with the bottom gear on the build plate and supports off. They lift off the embosser's peg without a vacuum.</li>
                             <!-- Seam placement bullet reworded and signed off by Brennen (2026-09-21); reword only with his sign-off. -->
                             <li><strong>Seam placement:</strong> Leave your slicer's seam mode on Aligned; the seam channel does the rest</li>
                             <!-- S-C4, reworded for tactile mode and signed off by Brennen (2026-09-21); reword only with his sign-off. -->
@@ -11952,13 +12705,22 @@
                             <li><strong>Translate to Braille ↓</strong> fills the braille box from the text above it.</li>
                             <li><strong>Translate to Text ↑</strong> reads pasted braille back into English, so you can check braille that came from somewhere else.</li>
                         </ul>
-                        <p>Whenever the braille box has content, <strong>those exact cells are what get embossed</strong> — clear it to go back to translating the text above.</p>
+                        <!-- S-H8, signed off by Brennen 2026-10-01 (drafted in the 2026-09-30 help review: adds the Generate fill and the automatic clearing of 2026-09-28 (D-U2).) Reword only with his sign-off. -->
+                        <p>Whenever the braille box has content, <strong>those exact cells are what get embossed</strong>. <strong>Generate STL</strong> also fills the box with the braille it embosses. Until you edit the box, it empties itself when you change the text or a translation setting; once you have edited it, clear it yourself to go back to translating the text above.</p>
 
                         <h4>File Names</h4>
-                        <p>Downloads are named <code>Embossing_Cylinder_{preset}_{name}.stl</code> and <code>Counter_Cylinder_{preset}_{name}.stl</code>, where <code>{preset}</code> is the selected card thickness and <code>{name}</code> is the first word of your text. Paste braille with no text and the name is back-translated from the braille for you.</p>
+                        <!-- S-H9, signed off by Brennen 2026-10-01 (drafted in the 2026-09-30 help review: adds the pair file (the default since 2026-09-21), the double-sided names and the Geared_ / V2_ segments. The file names themselves never change (training videos); only this description is new.) Reword only with his sign-off. -->
+                        <p>Downloads are named from the cylinders, the selected card thickness (<code>{preset}</code>) and the first word of your text (<code>{name}</code>):</p>
+                        <ul>
+                            <li><code>Cylinder_Pair_{preset}_{name}.stl</code> holds both cylinders. This is the default.</li>
+                            <li><code>Embossing_Cylinder_{preset}_{name}.stl</code> or <code>Counter_Cylinder_{preset}_{name}.stl</code> holds the one cylinder chosen under <strong>Cylinders to Generate</strong>. For a double-sided card they are <code>Cylinder_A_{preset}_{name}.stl</code> and <code>Cylinder_B_{preset}_{name}.stl</code>.</li>
+                            <li><code>Geared_</code> and then <code>V2_</code> are added before the preset for Simplified gears and for Version 2, for example <code>Cylinder_Pair_Geared_V2_0.4_jane.stl</code>.</li>
+                        </ul>
+                        <p>Paste braille with no text and the name is back-translated from the braille for you.</p>
 
                         <h4>Current Availability</h4>
-                        <p><strong>Cylinder shapes</strong> are available for labeling bottles, jars, and containers.</p>
+                        <!-- S-H10, signed off by Brennen 2026-10-01 (drafted in the 2026-09-30 help review: replaces the bottles-and-jars sentence.) Reword only with his sign-off. -->
+                        <p>The tool makes <strong>cylinders</strong> only: the two rollers of the braille card embosser chosen under <strong>Embosser setup</strong>.</p>
 
                         <h4>Key Settings</h4>
                         <table class="help-table">
@@ -11967,7 +12729,8 @@
                             </thead>
                             <tbody>
                                 <tr><td><strong>Placement Mode</strong></td><td>Auto Placement (handles wrapping)</td></tr>
-                                <tr><td><strong>Row Indicator Style</strong></td><td>Visual markers (default); choose Tactile seam arrow to free the marker cells and give a blind user a touch alignment point</td></tr>
+                                <!-- S-H11, signed off by Brennen 2026-10-01 (drafted in the 2026-09-30 help review: adds the Version 2 default (D-4, 2026-09-24), the double-sided lock and where the setting lives.) Reword only with his sign-off. -->
+                                <tr><td><strong>Row Indicator Style</strong></td><td>Visual markers (the Version 1 default) or Tactile seam arrow (the Version 2 default, and always used for double-sided cards). Tactile frees the marker cells and gives a blind user a touch alignment point. Under <strong>Row Indicator Style</strong> in Expert Mode</td></tr>
                                 <tr><td><strong>Capitalized Letters</strong></td><td>Enabled (default); disable it under <strong>Translation Options</strong> in Expert Mode to save one cell per capital, which is BANA's first suggestion when a name will not fit</td></tr>
                                 <tr><td><strong>Number Signs</strong></td><td>One number sign per number (default) — standard UEB; choose the repeating option only to match non-standard online translators. Also under <strong>Translation Options</strong></td></tr>
                                 <tr><td><strong>Language</strong></td><td>English (UEB) contracted, grade 2 (default) — what BANA's Business Cards Fact Sheet uses, and it fits more into each row</td></tr>
@@ -11983,7 +12746,7 @@
                         Verbatim from the BANA Business Cards Fact Sheet (approved March 2024).
                         Source of truth: docs/guides/_bana_business_cards_verified_source.md
                         If BANA publishes a revision, update the verified-source file first,
-                        then propagate to this panel, templates/index.html, and the Business Card Guide.
+                        then propagate to this panel and the Business Card Guide.
                     -->
                     <!-- Formatting Rules Panel -->
                     <div class="help-panel" role="tabpanel" aria-labelledby="tab-formatting" id="helpPanelFormatting" hidden>
@@ -12016,8 +12779,9 @@
                         <h4>Capitalization</h4>
                         <p>Each capital letter in braille adds a capitalization indicator (1 extra cell). The <strong>Capitalized Letters</strong> toggle, in the <strong>Translation Options</strong> submenu of Expert Mode, controls how capitals are handled:</p>
                         <ul>
-                            <li><strong>Disabled (default):</strong> Text is automatically converted to lowercase before translation. You can type normally — capitals are converted for you.</li>
-                            <li><strong>Enabled:</strong> Capital letters are preserved, adding indicator cells to the braille output.</li>
+                            <!-- S-H12, signed off by Brennen 2026-10-01 (drafted in the 2026-09-30 help review: the default is Enabled (capitalize_enabled is checked), so the two items swapped "(default)" and order; their sentences are unchanged.) Reword only with his sign-off. -->
+                            <li><strong>Enabled (default):</strong> Capital letters are preserved, adding indicator cells to the braille output.</li>
+                            <li><strong>Disabled:</strong> Text is automatically converted to lowercase before translation. You can type normally — capitals are converted for you.</li>
                         </ul>
                         <p><strong>Why disable capitals?</strong> Saves approximately 1 braille cell per capital letter. Braille readers understand this is standard practice for space-limited applications like labels and business cards.</p>
 
@@ -12048,6 +12812,19 @@
                                     <td><strong>Cylinders to Generate</strong></td>
                                     <td>Both cylinders (the default, one combined file), or Cylinder A or Cylinder B on its own</td>
                                 </tr>
+                                <!-- S-H1 and S-H2, signed off by Brennen 2026-09-28 (S-H1 reworded plainer; S-H2
+                                     redrafted on his instruction: the tactile arrows are for touch readers, their
+                                     count follows the card-stock preset, and the row must not be confused with the
+                                     slicer seam channel). The table above them is signed 2026-09-21. Reword only
+                                     with his sign-off. -->
+                                <tr>
+                                    <td><strong>Card Thickness</strong></td>
+                                    <td>Choose the 0.4 mm or 0.3 mm card stock, or Custom. A preset sets every dot and surface dial for you.</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Row Indicator Style</strong></td>
+                                    <td>Visual markers, or tactile arrows that a touch reader feels to line up each row: four arrows on 0.4 mm card stock (one per row), three on 0.3 mm.</td>
+                                </tr>
                                 <tr>
                                     <td><strong>Shape Selection</strong></td>
                                     <td>Output shape, braille dot shape (rounded/cone), and indicator letters on/off</td>
@@ -12062,11 +12839,8 @@
                                 </tr>
                                 <tr>
                                     <td><strong>Surface Dimensions</strong></td>
-                                    <td>Cylinder diameter, height, polygonal cutout, seam offset, and the slicer seam channel switch</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Tactile Indicator Dimensions</strong></td>
-                                    <td>Size, raise, and recess clearance of the tactile seam arrow. Appears only when Row Indicator Style is set to <strong>Tactile seam arrow</strong></td>
+                                    <!-- S-H3, signed off by Brennen 2026-09-28 as drafted on 2026-09-25 (the Version 2 clause added to this signed row); reword only with his sign-off. -->
+                                    <td>Cylinder diameter, height, polygonal cutout, seam offset, the slicer seam channel switch and, in Version 2, the four gear key clearance dials</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Translation Options</strong></td>
@@ -12079,7 +12853,8 @@
                         <ul>
                             <li><strong>Preview translations:</strong> Always preview before generating to catch warnings about text length or character issues</li>
                             <li><strong>Capitals and numbers:</strong> Open <strong>Translation Options</strong> to keep capital letters, or to repeat the number sign after each period</li>
-                            <li><strong>Custom cylinder sizes:</strong> Adjust diameter and height to match your specific container</li>
+                            <!-- S-H13, signed off by Brennen 2026-10-01 (drafted in the 2026-09-30 help review: replaces "match your specific container".) Reword only with his sign-off. -->
+                            <li><strong>Cylinder size:</strong> The Card Thickness presets set the diameter and height your embosser was built for. With Simplified gears that size is fixed</li>
                             <li><strong>Fine-tune spacing:</strong> Modify cell and line spacing for non-standard applications</li>
                             <li><strong>Printer calibration:</strong> Adjust dot dimensions if your 3D printer produces dots that are too large or small</li>
                         </ul>
@@ -12152,43 +12927,13 @@ f 505.312.4225</pre>
                             <p><strong>Result:</strong> 4 lines.</p>
                         </div>
 
-                        <h4>Cylinder Examples</h4>
-
-                        <h4>Example 4: Spice Jar Label</h4>
-                        <div class="example-box">
-                            <p><strong>Goal:</strong> Label a spice jar (diameter ~55mm) so it can be identified by touch.</p>
-                            <p><strong>Decision:</strong> A single word is all that's needed — just the spice name.</p>
-                            <p><strong>Type:</strong></p>
-                            <pre>cinnamon</pre>
-                            <p><strong>Result:</strong> 1 row, fits easily. Cylinder diameter set to 55mm.</p>
-                        </div>
-
-                        <h4>Example 5: Medicine Bottle</h4>
-                        <div class="example-box">
-                            <p><strong>Goal:</strong> Label a prescription bottle (diameter ~40mm) with drug name and dosage.</p>
-                            <p><strong>Decision:</strong> Two key pieces of info — the medication name and dosage.</p>
-                            <p><strong>Type:</strong></p>
-                            <pre>amoxicillin
-500mg</pre>
-                            <p><strong>Result:</strong> 2 rows. "amoxicillin" is at most 11 braille cells (fewer once contracted), within the default 13-cell row; abbreviate to "amox" if you add more per-row content.</p>
-                        </div>
-
-                        <h4>Example 6: Water Bottle ID Tag</h4>
-                        <div class="example-box">
-                            <p><strong>Goal:</strong> Identify a personal water bottle (diameter ~75mm) at a shared workplace.</p>
-                            <p><strong>Decision:</strong> Name plus one contact method. Omit organization — not needed to identify a personal item.</p>
-                            <p><strong>Type:</strong></p>
-                            <pre>j. smith
-555.867.5309</pre>
-                            <p><strong>Result:</strong> 2 rows on a 75mm cylinder (~13 cells per row). Initials save space.</p>
-                        </div>
+                        <!-- 2026-09-30 help review: the three jar, bottle and water-bottle "Cylinder Examples" were removed. The cylinders are the embosser's rollers, not labels, and their 55/40/75 mm diameters would not fit it. -->
 
                         <p><a href="https://github.com/BrennenJohnston/braille-cylinder-stl-generator/blob/main/docs/guides/BUSINESS_CARD_TRANSLATION_GUIDE.md#worked-examples--bana-braille--what-to-type" target="_blank" rel="noopener noreferrer">See "what to type" hints for all nine BANA examples in the full guide →</a></p>
                         <p><a href="https://www.brailleauthority.org/sites/default/files/2024-10/Business%20Cards%20Fact%20Sheet.pdf" target="_blank" rel="noopener noreferrer">See BANA's original worked examples in the Fact Sheet (PDF) →</a></p>
-                        <p><a href="https://github.com/BrennenJohnston/braille-cylinder-stl-generator/blob/main/docs/guides/CYLINDER_GUIDE.md#worked-examples" target="_blank" rel="noopener noreferrer">See more cylinder examples in the full guide →</a></p>
 
                         <div class="help-tab-sources">
-                            <p><small><strong>Sources:</strong> Business card examples take the content decisions from the <a href="https://www.brailleauthority.org/sites/default/files/2024-10/Business%20Cards%20Fact%20Sheet.pdf" target="_blank" rel="noopener noreferrer">BANA <em>Business Cards Fact Sheet</em></a> (approved March 2024); the braille shown alongside them is BANA's own, quoted verbatim from the PDF. Cylinder examples are based on <a href="https://www.brailleauthority.org/size-and-spacing-braille-characters" target="_blank" rel="noopener noreferrer">BANA <em>Size and Spacing of Braille Characters</em></a>.</small></p>
+                            <p><small><strong>Source:</strong> Business card examples take the content decisions from the <a href="https://www.brailleauthority.org/sites/default/files/2024-10/Business%20Cards%20Fact%20Sheet.pdf" target="_blank" rel="noopener noreferrer">BANA <em>Business Cards Fact Sheet</em></a> (approved March 2024); the braille shown alongside them is BANA's own, quoted verbatim from the PDF.</small></p>
                         </div>
                     </div>
 

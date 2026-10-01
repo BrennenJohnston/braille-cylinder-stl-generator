@@ -78,15 +78,25 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      (settings double_sided.interpoint_offset_x_mm/_y_mm → flat runtime
      interpoint_offset_x/_y; interpoint.py calls the y number offset_z).
    - Double-sided = 1:1 paired recesses on BOTH cylinders (no universal
-     counter grid) + Row Indicator Style locked to tactile. Footprints ship
+     counter grid) + Row Indicator Style locked to tactile. Single-sided GIVES
+     BACK the visual style the lock displaced (singleSidedIndicatorMode,
+     2026-09-29, Brennen's finding; the old "no snap-back" rule is retired) -
+     never on load restore, dropped by Reset; under the lock a version change
+     works on the displaced style, not the checked radio. SAVED across reloads
+     since 2026-10-01 (his decision): braille_prefs_single_sided_indicator_mode,
+     read back by restoreRememberedStyles() only when Double-sided was
+     restored too (a stale value is removed). Footprints ship
      FIXED — no UI dials (2026-08-16) — and KEYED to the card-stock preset
      since 2026-08-20: 0.3 preset → Option B dot ⌀1.2 (0.4 base + 0.4 dome,
      dome ⌀0.8) + bowl ⌀1.3 × 0.5 mm (still the schema/models defaults);
      0.4 preset → Q2 dot ⌀1.2 (0.5 base + 0.5 dome, dome ⌀1.0; total 1.0)
      + bowl ⌀1.4 × 0.5 mm (prints ⌀1.48 × 0.74). Source of truth:
      interpoint.DS_FOOTPRINTS_BY_PRESET = index.html DS_FOOTPRINTS (a smoke
-     test diffs them). The 0.4 package trips the crowding warning by design
-     (nominal gap 0.468; printed ridge 0.428, measured clean 2026-08-20).
+     test diffs them). The 0.4 package's nominal gap is 0.468 (printed
+     ridge 0.428, measured clean 2026-08-20): it tripped the crowding
+     warning by design until the reliable line became a PROVISIONAL 0.45
+     on 2026-08-23 (interpoint.SAME_SURFACE_GAP_RELIABLE_MM), and is quiet
+     now; the 0.34 floor still rejects.
      Die heights above 1.0 mm scrape the embosser housing — never raise
      them on your own.
    - csg-worker-manifold.js partitions dots per dot on is_recess (true →
@@ -122,7 +132,17 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      gears_{a,b}.bin — NEVER hand-edit them, and regenerate ONLY via
      scripts/derive_gear_assets.py (the manifest's sha256s are pinned by a
      test). 24 teeth, tip r 16.1093702290795, 10 mm thick, gears at z -36..-26
-     and +26..+36 in the browser frame. The VERSION 2 set lives beside them as
+     and +26..+36 in the browser frame. SOURCE since 2026-09-28: Brennen's
+     VERSION 1 gear holders (A1/A2/B1/B2 v6 (0.2) v3.stl in
+     Research/.../New Developement_2026_09_28/V1 Gears - the parts the standard
+     cylinders slide onto), each cut to its 10 mm gear ring by an exact
+     Manifold intersection and seated ON the barrel end (his call: the 72 mm
+     roller; the standard housing holds the rings 1 mm off). The 2026-08-24
+     'Rollers v7' gear samples vendored before were the NEW design's gears:
+     identical teeth, but B's hub is a 9 mm bore where the Version 1 housing
+     pin (13.7 x 6.25 + 10.17 x 2 mm) needs the 14 mm pocket - his print found
+     they never fitted the Version 1 embosser. Never call the v7 set the
+     Version 1 gears again. The VERSION 2 set lives beside them as
      v2_gears_{a,b}.bin + v2_gears_manifest.json (derived from the v8 Version 2
      gear STLs by scripts/derive_gear_assets_v2.py ONLY, since 2026-09-21;
      same rule, same pin test): same teeth and tip radius, bodies at
@@ -152,6 +172,15 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      (D-8a). CSG order is unchanged: gears join the RAISED stage, recesses
      still cut last. In FUSED Version 2 mode the gear stage also unions the
      two notch fills (spec gears.notch_fills, see 6d) after the rings.
+   - VERSION 1 AXIS CUTS (2026-09-30, Brennen's approved plan): the V1
+     fused roller also gets spec gears.axis_cuts, cut LAST - a 2 mm vent
+     z +/-37 and a 45 deg cone at each socket's blind end (8.5 deep, r 5.2
+     rim), from gears.axis_cut_blocks. Each cone runs
+     V1_SOCKET_CONE_INSET_MM 0.02 INSIDE the socket taper so the pin's
+     mouth chamfer, r 7.0 key bore and taper are bit-for-bit untouched (the
+     V1 housing pin is a close fit; 0.01 clipped the faceted taper by
+     0.0004). Never grow it into the taper the way Version 2's cone does,
+     and no barrel chamfer on V1 (his decision 4).
    - Naming: a `Geared_` segment is inserted ONLY when gears are on
      (Embossing_Cylinder_Geared_{preset}_{name}.stl). Toggle-off names never
      change — training videos use them.
@@ -203,11 +232,26 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      (2026-09-21) with its own gears switch (tab [Gears] since v2.9.0) for the fused
      Version 2 roller (D-V6 retired); NOT vendored into this repo. The V1
      .scad files stay 52 and untouched.
-   - Clearance 0.110 default, range 0.0-0.5, input step 0.005. Applied OUTWARD
-     to the four holes ONLY. TWO printed rounds bracketed it on 2026-08-29:
-     too loose at 0.15, too tight at 0.075. NOT the midpoint 0.1125 - an
-     off-step default renders the input :invalid and kills Generate silently;
-     0.110 / 0.005 = 22. Wrong-pair margin is 1.000 - c, so 0.890 here.
+   - Clearance: ONE DIAL PER KEY since 2026-09-25 (D-K1) -
+     v2_key_clearance_{a1,a2,b1,b2}_mm (schema version_2.key_clearance_*),
+     default 0.075 on all four (D-K6, 2026-09-26), range 0.0-0.5, input step
+     0.005, owned by
+     version2.V2_KEY_CLEARANCE_DEFAULTS_MM (a dict, one line per key: a
+     print round moves one gear without the others). Applied OUTWARD to
+     that key's hole ONLY. The legacy shared v2_key_clearance_mm is still
+     HONOURED (own field > shared field > the key's default, resolved by
+     version2.key_clearances() inside CardSettings) but has no default and
+     the web app no longer sends it; the OpenSCAD dial key_clearance_mm is
+     RETIRED for four (v2.11.0). History of the shared dial: 0.15 -> 0.075
+     -> 0.110 (2026-08-29, two rounds at 0.2 mm layers); then at cylinders
+     0.12 Fine Detail / gears 0.2 Strength (Brennen's rounds, 2026-09-24/25)
+     0.110 was loose, 0.095 fitted only A2/B2, the A1/B1 round at 0.085
+     settled the top gears at 0.075 with the bottom at 0.085 (D-K4), and the
+     print recorded 2026-09-26 brought A2/B2 to 0.075 too (D-K6; the
+     rotational-play analysis is in
+     Research/.../New Developement_2026_09_24/05_KEY_FIT_TOLERANCE_ANALYSIS.md).
+     An off-step default renders the input :invalid and kills Generate
+     silently; 0.075 / 0.005 = 15. Wrong-pair margin is 1.000 - c: 0.925.
    - The NUB DOES NOT FOLLOW THE DIAL, because gear A1's notch is already cut.
      Under the old shared-dial rule, tightening the holes GREW the nub into
      that notch. Never re-couple them. V2_NUB_CLEARANCE_MM is 0.30 since
@@ -257,6 +301,34 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      MakerWorld copy hides the switch (no assets there).
    - Naming: a `V2_` segment is inserted ONLY when Version 2 is on
      (Embossing_Cylinder_V2_{preset}_{name}.stl). Version 1 names never change.
+   - THE v9 UPDATE TO THE FUSED ROLLER (2026-09-24 programme, decisions D-1,
+     D-2, D-6, D-7; web develop e91e352 / af2d45f / 3a1c636): FUSED Version 2
+     ONLY, and every number lives in app/geometry/version2.py. (1) The barrel's
+     BOTTOM edge is chamfered 0.65 x 45 deg (V2_FUSED_BARREL_CHAMFER_MM, lip
+     1.0; spec cylinder.bottom_chamfer, cut on the bare barrel right after the
+     seam channel) because the gear face the barrel stands on reaches only
+     r 14.61 and the 15.4 barrel overhung it 0.79 mm; 0.65 leaves 0.14 (his v9
+     CAD's ledge at its STALE 30.5 barrel - the app stays 30.8, Q-3). (2) A
+     2 mm VENT runs the whole axis (V2_VENT_RADIUS_MM 1.0, z +/-38): the gears
+     already carry the hole from each socket into the buried peg, 0.05 mm
+     off-axis, so it is cut AFTER the gear union. (3) The bottom gear socket's
+     flat ceiling is REPLACED by a 45 deg cone to the vent (D-1; V2_GEAR_SOCKET
+     measured: bore r 7.0 A / 5.0 B, rim 5.3 / 3.3, ceiling 1.5 below the face;
+     cone A z -29.0..-24.2, B -29.0..-26.2) - zero overhang, no auto-support in
+     the socket; the "premade support" and its toggle were DROPPED (D-6).
+     (4) Since 2026-09-25 (D-K5) the TOP gear socket's floor (A1/B1) is the
+     mirror cone: V2_TOP_GEAR_SOCKET measured bore 7.0/5.0, rim 5.2/3.2 (the
+     floor vertex; the bottom table's 5.3/3.3 were read 0.1 up the taper and
+     stay as printed - O-2), floor 1.5 above the top face; cone z
+     floor-(rim-1) .. floor+0.5, emitted apex FIRST (z_from < z_to, r_from at
+     z_from - the worker's frustum reads it so). Not needed for supports
+     bottom-gear-down (that floor faces up); his call so both ends match.
+     CSG order: one step APPENDED - shell -> union raised -> subtract recesses
+     -> subtract axis cuts (spec gears.axis_cuts: vent, bottom cone, top
+     cone). The fused
+     roller now prints BOTTOM GEAR DOWN (S-P1 in the ready message, S-P2 in the
+     Cylinder Guide - both SIGNED 2026-09-28: "...with supports off."). The D-6 golden test is now "one VENTED body" and
+     the other six pairs regenerate byte-identical. Never re-couple a support.
    - Version 2 recommends the SAME cell counts as Version 1. The one-fewer
      rule was retired 2026-08-29 with the 30.5 barrel (seam gap 4.8 mm against
      the 4.0 needed) and the 30.8 barrel widens it to 5.76. Restore it only
@@ -265,6 +337,21 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      (14x14, 18x10, 16x12, 20x8, every corner r 0.500). Their STLs are still
      named "v7" - that is the gear body's version, not the peg's. No v7 PEG
      ever enters an R14 hole.
+
+6d2. Version 2 defaults the Row Indicator Style to TACTILE (2026-09-24, D-4): a
+   DEFAULT, not a lock. applyVersion2IndicatorDefault() runs FIRST in the
+   version radios' change listener - entering Version 2 remembers the style
+   (version1IndicatorMode, beside version1DialSnapshot) and, if visual and not
+   double-sided-locked, checks the tactile radio and dispatches its change;
+   leaving Version 2 gives it back; Reset drops the snapshot. The memory is
+   SAVED across reloads since 2026-10-01 (his decision):
+   braille_prefs_version1_indicator_mode, read back only when Version 2 was
+   restored too. NEVER on the
+   silent load restore (a visual choice made in Version 2 survives a reload)
+   and NEVER by a card-stock preset (test_smoke pins that neither
+   THICKNESS_PRESETS object names indicator_mode). The composed deferred
+   announcement gains S-V16 "Row Indicator Style set to tactile." (signed
+   2026-09-28) when the style moved.
 
 6e. Slicer seam channel (2026-09-20, sub-plan A of the 2026-09-20 programme;
    decisions D-1, D-2, D-13, D-14, D-15) - every cylinder, both plates, ON by
@@ -371,6 +458,21 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      THIS repo's own path (sibling checkout; skipped without it) to 0.01 mm
      both ways - V1, V2, gears, three arrows.
 
+6e2. Expert Mode order since 2026-09-24 (D-5): Cylinders to Generate, CARD
+   THICKNESS (#card-thickness-submenu / #expert-panel-card-thickness, the
+   preset radios moved from the main form, ids/names/descriptions unchanged),
+   ROW INDICATOR STYLE (#tactile-indicator-submenu / #expert-panel-tactile,
+   ALWAYS shown, holding #indicator-mode-selection - radios, lock note, the
+   #tactile-gap-warning and #card-fit-warning boxes - with the five tactile
+   dials below in #tactile-indicator-dimensions, which alone follows the
+   style), Shape Selection, Braille Spacing, Braille Dot Adjustments, Surface
+   Dimensions, Translation Options. Neither block is on the main form. e2e:
+   openApp() helpers wait for #embosser-setup-selection; the moved radios are
+   set through tests/e2e/helpers/menus.ts (selectThicknessPreset,
+   selectIndicatorMode - set at the source + change event) and their notes are
+   asserted after revealRowIndicatorPanel(); Playwright's check() refuses a
+   hidden radio.
+
 6f. One Generate / one Download (2026-09-21, sub-plan E of the 2026-09-20
    programme; D-8, D-9, D-10). Generate STL builds BOTH cylinders unless
    "Cylinders to Generate" - the FIRST Expert Mode submenu
@@ -444,6 +546,113 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      on 2026-09-23 as OpenSCAD v2.8.2 (tag on 75a19f5), re-vendored the same
      day - the recut replaced by the detour round the raised arrows (6e).
 
+6h. X Adjust on cylinders (2026-09-27, Brennen's request after his print of
+   the development build: the front's first cell sat too far from the arrow
+   and its last cell ran off the card; the back lost its first cells). Until
+   that day app/geometry_spec.py's cylinder path NEVER read braille_x_adjust
+   (Y Adjust worked) - the dial was sent, validated, stored and ignored, and
+   an earlier "fix" was confirmed on the spec alone. Now:
+   - The dial slides the WHOLE text grid round the barrel by its value in mm
+     of arc, added INSIDE apply_seam / apply_seam_mirrored (x_shift_angle =
+     braille_x_adjust / radius) - i.e. in the card frame both plates share
+     and AFTER the double-sided back mirror, so front dots, back dots and
+     their paired recesses all move together and A's theta is still minus
+     B's. Never add it to start_angle or inside _text_dot_placements: the
+     back mirror would flip it for the back text.
+   - The tactile arrows (TACTILE_SEAM_THETA), the tactile groove and the
+     Version 2 keys do NOT move - they are the reference the grid moves
+     against.
+   - DIRECTION (his words, verified on the preview and the exported STL):
+     from the default cylinder camera a NEGATIVE X moves Cylinder A's dots
+     and recesses LEFT and Cylinder B's RIGHT by |X| mm of arc; on both that
+     is the first cell moving TOWARD the arrow (A's column 0 sits right of
+     its arrow, B's left of its). Never re-derive or flip this.
+   - Room rules read the shift: seam channel (visual window slides; tactile
+     first-cell side gap/2 + shift - footprint vs 3.5, last-cell side
+     gap/2 - shift - footprint vs 0.75), the tactile arrow-gap rule
+     (gap - 2|shift|), tactile_card_need_mm / tactile_max_cells (need
+     + shift). index.html's updateSeamChannelUI, checkPhysicalFitNow and
+     updateCardFitUI mirror them (a test pins that all three read the dial).
+   - At 0 nothing changes: all eight golden pairs byte-identical. Proof of
+     the bytes is tests/e2e/xAdjust.spec.ts (real worker exports at 0 and
+     -3, dome-cap arcs measured; arrows at 0.0); the spec-level pins are in
+     tests/test_x_adjust_cylinder.py. Neither OpenSCAD file has an X Adjust
+     dial, so there is no parity to keep there.
+   - VERSION 2 DEFAULT -2 (2026-09-28, his call after the print test): in
+     Version 2 WITH the tactile style the dial defaults to -2 on EVERY
+     card-stock preset - version2.V2_TACTILE_X_ADJUST_MM, mirrored by
+     index.html V2_TACTILE_X_ADJUST_MM (test pinned). A UI default like the
+     V2 barrel, NOT a schema default (schema/models stay 0; cards, V1 and an
+     absent field unchanged): syncVersion2TactileXAdjust() runs in the
+     version change listener (after snapshotVersion1Dials(), which the
+     listener now calls FIRST so the style default cannot pollute the
+     snapshot), in the indicator-mode listener, in applyThicknessPreset()
+     (both presets carry 0) and in restoreEmbosserVersion() on load unless
+     the stock is Custom (the load-time preset restore rewrites the dial to
+     0 first). braille_x_adjust is in V2_SNAPSHOT_IDS (leaving V2 gives the
+     V1 value back; visual in V2 gives it back only while the dial still
+     reads -2). checkPresetMatch expects -2 for this dial in V2 tactile, so
+     the stock keeps its name; a hand-set value reads Custom, which is what
+     preserves it across a reload. Announcement clause S-X1 "X Adjust set to -2 mm." (signed 2026-09-28) rides
+     in the composed version announcement when the dial moved.
+
+6i. Text entry (2026-09-28, three of Brennen's user-testing findings):
+   - PRIVACY RULE: NO text or braille input is EVER persisted - not
+     #auto-text, the line1..N rows, #back-text, back_line1..N, nor either
+     Braille (Unicode) field. Only 3D design settings persist, and only in
+     the user's browser. Even a locally stored value would look like the
+     app collecting what people write. braille_prefs_back_text (the one
+     field that WAS saved, restored on the next visit while the front was
+     not) is retired: never written or read, scrubbed on every load
+     (localStorage.removeItem in applyPersistedSettings) and by Reset.
+     tests/test_text_privacy.py pins the source; tests/e2e/textPrivacy.spec.ts
+     proves it in a browser. Never add a text key to persistence again.
+   - GENERATE FILLS THE BRAILLE FIELD: every Generate writes the translation
+     it embosses into #braille-unicode (and #back-braille-unicode on a
+     double-sided run) as the PRISTINE mirror, via the same helper the
+     Translate button uses (showTranslationInBrailleField /
+     showTranslationInBackBrailleField; BOTH callers announce "Braille
+     field updated from translation." from the field's own live region -
+     his choice D-U4, 2026-09-28, over silence under C9). The field KEEPS
+     ITS AUTHORITY: a
+     non-empty field - mirror or hand-edit - is embossed verbatim on the
+     next Generate (Brennen's 2026-08-23 flow depends on it: overflowing
+     text, Translate truncates to what fits, Generate succeeds with the
+     overflow warning appended - completionWarnings.spec.ts pins it; a
+     "display-only mirror" was tried on 2026-09-28 and broke that flow by
+     re-translating into the truncation gate). To keep consecutive
+     requests byte-identical the FRONT field path now PADS `lines` to
+     grid_rows and takes per-row tables from the manual selects (the back
+     field path always padded) - four e2e specs diff consecutive bodies.
+   - PRISTINE FIELDS EMPTY WHEN AN EFFECTIVE TRANSLATION SETTING CHANGES
+     (not only on a text change): translationSettingsKey(side) =
+     [available cells, rows, language table, capitals, number signs,
+     placement mode, per-row tables] is remembered at fill time
+     (brailleFieldMirrorKey / backBrailleFieldMirrorKey) and
+     reconcilePristineBrailleFields() compares it on every form
+     input/change, clearing with reason 'setting' (S-BF1 / S-BF2, signed
+     2026-09-28).
+     A FINGERPRINT, never "which control fired": the double-sided lock's
+     tactile dispatch at the same cell count, a dot-size dial or X Adjust
+     leave the mirror alone (a selector-based version cleared the field
+     when Double-sided was chosen and broke the same 2026-08-23 flow).
+     Dirty fields are never touched. Without this, the auto-fill would
+     have embossed a stale mirror after a language or cell-count change.
+   - PLACEHOLDERS (all signed by Brennen 2026-09-28): #auto-text carries
+     S-P3 "Type the text you want in braille here."; #braille-unicode
+     carries S-P4, that sentence's EXACT translation at the defaults (UEB
+     g2, capitals, 13 cells: "⠠⠞⠽⠏⠑ ⠮ ⠞⠑⠭⠞" / "⠽ ⠺⠁⠝⠞ ⠔ ⠃⠗⠇" / "⠐⠓⠲");
+     #back-text's placeholder was SHORTENED on his word to "Type the text
+     for the back of the card here." (superseding 2026-08-17) and
+     #back-braille-unicode carries S-P5, its whole translation. RULE: if a
+     sample is reworded its braille is RE-MEASURED, never edited.
+     MEASURED through the real field, never typed from memory;
+     tests/e2e/textEntryPlaceholders.spec.ts re-derives them. Not spoken:
+     aria-describedby outranks a placeholder in the AX tree (CDP-checked).
+     Style: the --text-placeholder token in all three themes (#5b6472 /
+     #b0b8c4 / #7fd67f = 5.72 / 5.15 / 9.8:1 on --bg-input), opacity 1,
+     italic for text boxes, upright for textarea[lang="und-Brai"].
+
 ## Settings changes — order of operations
 7. settings.schema.json is the single source of truth. When adding or changing
    any parameter/default: update settings.schema.json FIRST, then
@@ -485,7 +694,9 @@ translation, Three.js preview. Working branch: develop — never commit to main.
     named braille-stl-generator-openscad — the two spellings are the same repo;
     OpenSCAD/VENDORED.json and a test both pin the GitHub name). Since
     OpenSCAD v2.9.0 (2026-09-23; v2.9.1 the same day, docs only; vendored
-    from v2.9.1) its Customizer uses
+    from v2.11.0 - 2026-10-01, tag on 8e64e06: per-gear key clearance, the
+    Version 1 gears and fused-roller vent, the S-SO1 Seam Offset wording and a
+    quick start without jar examples) its Customizer uses
     this app's section names (Card Sides, Gears, Cylinders to Generate, Row
     Indicator Style, Card Thickness), carries no BETA or sign-off labels, and
     renders both cylinders by default like 6f; its parameter names never

@@ -21,6 +21,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
+import { revealRowIndicatorPanel, selectIndicatorMode, selectThicknessPreset } from './helpers/menus';
 import fs from 'node:fs';
 import { selectCylinders, selectedCylinders } from './helpers/cylinders';
 
@@ -113,11 +114,17 @@ const BASELINE_NEGATIVE = {
 const FRONT_BRAILLE = '⠁⠃⠉';
 const BACK_BRAILLE = '⠙⠑⠋';
 
+// S-M11, signed 2026-09-21: the Single-sided sentence. S-M14, signed
+// 2026-10-01: the clause it gains when the Row
+// Indicator Style just went back to the visual markers the lock displaced.
+const S_M11_SINGLE = 'Single-sided card selected.';
+const S_M14_STYLE_RESTORED = 'Row Indicator Style set to visual.';
+
 async function openApp(page: Page) {
   await page.goto('/');
   await page.waitForLoadState('domcontentloaded');
   await page.waitForLoadState('networkidle');
-  await page.waitForSelector('#indicator-mode-selection');
+  await page.waitForSelector('#embosser-setup-selection');
   // Since 2026-09-21 Generate builds both cylinders by default; this spec
   // exercises one cylinder at a time, so choose Cylinder A (the old default)
   // under Cylinders to Generate. Pair tests choose 'both' themselves.
@@ -368,7 +375,7 @@ test.describe('Double-Sided Card beta', () => {
 
   test('toggle off sends the pre-feature payload for both plates', async ({ page }) => {
     await openApp(page);
-    await page.locator('input[name="indicator_mode"][value="tactile"]').check();
+    await selectIndicatorMode(page, 'tactile');
     await page.locator('#auto-text').fill('abc');
 
     const spec = await interceptGeometrySpec(page);
@@ -403,6 +410,7 @@ test.describe('Double-Sided Card beta', () => {
     await expect(page.locator('#back-text')).toBeEnabled();
     await expect(tactile).toBeChecked();
     await expect(visual).toBeDisabled();
+    await revealRowIndicatorPanel(page);
     await expect(page.locator('#indicator-mode-lock-note')).toBeVisible();
     await expect(page.locator('#front-entry-legend')).toHaveText('Front of Card — Enter Text for Braille Translation');
 
@@ -410,9 +418,93 @@ test.describe('Double-Sided Card beta', () => {
     await expect(backEntry).toHaveAttribute('disabled', '');
     await expect(visual).toBeEnabled();
     await expect(page.locator('#indicator-mode-lock-note')).toBeHidden();
-    // The tactile selection is deliberately kept (no surprise snap-back).
-    await expect(tactile).toBeChecked();
+    // Single-sided gives back the visual markers the lock displaced
+    // (Brennen's finding from testing, 2026-09-29, which retired the old
+    // "no surprise snap-back" rule), through a real change event - so the
+    // choice is persisted - and the one announcement says so.
+    await expect(visual).toBeChecked();
+    await expect(page.locator('#a11y-status')).toHaveText(`${S_M11_SINGLE} ${S_M14_STYLE_RESTORED}`);
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_indicator_mode'))).toBe('visual');
     await expect(page.locator('#front-entry-legend')).toHaveText('Enter Text for Braille Translation');
+
+    // The give-back is not a one-off: a second round trip behaves the same.
+    await double.check();
+    await expect(tactile).toBeChecked();
+    await single.check();
+    await expect(visual).toBeChecked();
+  });
+
+  test('Single-sided keeps a tactile style the user chose themselves', async ({ page }) => {
+    await openApp(page);
+    const tactile = page.locator('input[name="indicator_mode"][value="tactile"]');
+
+    await selectIndicatorMode(page, 'tactile');
+    await chooseDoubleSided(page);
+    await expect(tactile).toBeChecked();
+
+    // The lock moved nothing, so there is nothing to give back and the
+    // announcement is the choice sentence alone.
+    await page.locator('#card_sides_single').check();
+    await expect(page.locator('input[name="indicator_mode"][value="visual"]')).toBeEnabled();
+    await expect(tactile).toBeChecked();
+    await expect(page.locator('#a11y-status')).toHaveText(S_M11_SINGLE);
+  });
+
+  test('Reset while Double-sided is on leaves nothing to give back later', async ({ page }) => {
+    await openApp(page);
+    await chooseDoubleSided(page);
+    await page.locator('#reset-defaults-btn').click();
+    await expect(page.locator('#card_sides_single')).toBeChecked();
+    await expect(page.locator('input[name="indicator_mode"][value="visual"]')).toBeChecked();
+
+    // A tactile style chosen after the reset is the user's own: a later
+    // round trip through Double-sided must not replace it with the visual
+    // markers the lock displaced before the reset.
+    await selectIndicatorMode(page, 'tactile');
+    await chooseDoubleSided(page);
+    await page.locator('#card_sides_single').check();
+    await expect(page.locator('input[name="indicator_mode"][value="tactile"]')).toBeChecked();
+  });
+
+  // Since 2026-10-01 (Brennen's decision) the style the lock displaced is
+  // saved with the design settings, so Single-sided gives it back after a
+  // reload as well as within one visit.
+  test('Single-sided gives back the visual markers after a reload too', async ({ page }) => {
+    await openApp(page);
+    const visual = page.locator('input[name="indicator_mode"][value="visual"]');
+    const tactile = page.locator('input[name="indicator_mode"][value="tactile"]');
+    await chooseDoubleSided(page);
+    await expect(tactile).toBeChecked();
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_single_sided_indicator_mode'))).toBe('visual');
+
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('#embosser-setup-selection');
+    await expect(page.locator('#card_sides_double')).toBeChecked();
+    await expect(tactile).toBeChecked();
+    // The load restore is silent and moves nothing.
+    await expect(page.locator('#a11y-status')).toHaveText('');
+
+    await page.locator('#card_sides_single').check();
+    await expect(visual).toBeChecked();
+    await expect(page.locator('#a11y-status')).toHaveText(`${S_M11_SINGLE} ${S_M14_STYLE_RESTORED}`);
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_single_sided_indicator_mode'))).toBeNull();
+  });
+
+  test('a remembered style without Double-sided is dropped on load, and Reset clears it', async ({ page }) => {
+    await openApp(page);
+    // A stale value: saved, but the card came back single-sided.
+    await page.evaluate(() => localStorage.setItem('braille_prefs_single_sided_indicator_mode', 'visual'));
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('#embosser-setup-selection');
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_single_sided_indicator_mode'))).toBeNull();
+
+    await chooseDoubleSided(page);
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_single_sided_indicator_mode'))).toBe('visual');
+    await page.locator('#reset-defaults-btn').click();
+    await expect(page.locator('#card_sides_single')).toBeChecked();
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_single_sided_indicator_mode'))).toBeNull();
   });
 
   test('the Back of Card section is always present, and the choice survives a reload', async ({ page }) => {
@@ -469,7 +561,7 @@ test.describe('Double-Sided Card beta', () => {
     // The 0.3 preset switches the wire to the Option B package (validated
     // 2026-08-17) without any ds dials existing. The preset toast lands in
     // #error-text, which generate() reads on slow runs, so clear it first.
-    await page.locator('input[name="card_thickness_preset"][value="0.3"]').check();
+    await selectThicknessPreset(page, '0.3');
     await page.evaluate(() => { const t = document.getElementById('error-text'); if (t) t.textContent = ''; });
     await generate(page, spec, 2);
     const settings03 = (spec.bodies[1] as Record<string, unknown>).settings as Record<string, unknown>;
@@ -559,7 +651,7 @@ test.describe('Double-Sided Card beta', () => {
     // also clear of the line - still quiet. Both shipped packages are silent
     // now, which is the point: the box speaks about configurations the user
     // chose, not about the defaults they were handed.
-    await page.locator('input[name="card_thickness_preset"][value="0.3"]').check();
+    await selectThicknessPreset(page, '0.3');
     await expect(warning).toBeHidden();
 
     // The offsets stay adjustable by design (D1), but their dials arrive with
@@ -601,7 +693,7 @@ test.describe('Double-Sided Card beta', () => {
     // nozzle floor, the "generation will be blocked" variant.
     await page.locator('#interpoint_offset_x').fill('1.15');
     await page.locator('#interpoint_offset_y').fill('1.15');
-    await page.locator('input[name="card_thickness_preset"][value="0.4"]').check();
+    await selectThicknessPreset(page, '0.4');
     await expect(warning).toBeVisible();
     await expect(message).toContainText('0.326 mm');
     await expect(message).toContainText('generation will be blocked');
@@ -918,7 +1010,7 @@ test.describe('Double-Sided Card beta', () => {
     expect(await page.evaluate(() => localStorage.getItem('braille_prefs_back_placement_mode'))).toBe('manual');
 
     await page.reload();
-    await page.waitForSelector('#indicator-mode-selection');
+    await page.waitForSelector('#embosser-setup-selection');
     await expect(page.locator('#back_placement_mode_manual')).toBeChecked();
     await expect(page.locator('#back-dynamic-line-inputs')).toBeVisible();
 

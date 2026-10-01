@@ -2,29 +2,29 @@
 
 ## Overview
 
-Embosser **Version 2** is a new hardware design. Its drive gears are separate prints
-again — not the one-piece rollers of the gear BETA — but each of the four gears carries
-a **differently shaped peg**, and each end of each cylinder gets a **matching keyed
-through-cutout**, so a gear physically cannot be seated in the wrong place. The
-generator's job in Version 2 is the **cylinders only**: the gear files are assembly
-reference, and nothing gear-shaped is generated.
+Embosser **Version 2** is a new hardware design. With **Standard** gears its drive gears
+are separate prints — not the one-piece rollers of **Simplified** gears — but each of the
+four gears carries a **differently shaped peg**, and each end of each cylinder gets a
+**matching keyed through-cutout**, so a gear physically cannot be seated in the wrong
+place. The generator's job there is the **cylinders only**: the gear files are assembly
+reference. Since 2026-09-21 Version 2 with Simplified gears generates the fused one-piece
+roller with its Version 2 gears attached instead (§13).
 
-Version 1 — today's app, the double-sided BETA and the integrated-gears BETA included —
-stays reachable, byte-identical and supported indefinitely behind a selector that
-defaults to Version 1.
+Version 1 — with double-sided cards and its own Simplified gears — stays reachable,
+byte-identical and supported indefinitely behind a selector that defaults to Version 1.
 
 Every number in this document was read back out of the merged code, not out of the
 planning folder; where a number appears, the file that owns it is named. The single
 owner of the geometry is `app/geometry/version2.py`, the way `app/geometry/gears.py`
 owns the gear constants.
 
-**Status:** 🧪 PROTOTYPE (Created 2026-08-28)
+**Status:** ✅ Released (Created 2026-08-28; the "(prototype)" tag was dropped on 2026-09-20, decision D-7; the 54 mm barrel passed its print test on 2026-09-01)
 **Selector:** `embosser_version` (schema and runtime), integer enum `[1, 2]`, default `1`
 **Scope:** cylinders only, single-sided and double-sided flows, pair mode included
 
-> **This is a work-in-progress prototype.** The cylinder size, the cutout shapes and
-> the fit may all change as testing continues — the barrel has moved twice, 30.1 mm →
-> 30.5 mm → **30.8 mm**, and has now arrived at the size Version 1 has always used. The
+> **From prototype to release.** Until 2026-09-20 this was a work-in-progress prototype
+> whose size and fit changed with testing — the barrel moved twice, 30.1 mm → 30.5 mm →
+> **30.8 mm**, and arrived at the size Version 1 has always used. The
 > gear pegs have been cut to family R14 and measured; §11 records what that print found.
 
 ---
@@ -51,9 +51,9 @@ block, and every filename is exactly what the public training videos show.
 Version 2 sets the cylinder to **30.8 × 54.0 mm** (`V2_BARREL_DIAMETER_MM`,
 `V2_BARREL_HEIGHT_MM`) with a tolerance of **0.001 mm** (`V2_SIZE_TOLERANCE_MM`). Off
 that size the app shows S-V5 live and the spec carries the same sentence in
-`warnings` — but the request is **accepted**. This is deliberately unlike the gear
-BETA's hard size gate: the vendored gears cannot move with the barrel, whereas the
-Version 2 barrel is still being found by printing.
+`warnings` — but the request is **accepted**. This is deliberately unlike the fixed
+gears' hard size gate (S7 / S-G1): the vendored gears cannot move with the barrel,
+whereas the Version 2 barrel was found by printing.
 
 It has moved twice, and the search is now over. The prototype shipped at 30.1 mm; the
 first printed pair embossed with noticeably less pressure than Version 1, so on
@@ -84,12 +84,15 @@ All four keys are **rounded rectangles** with a corner radius of **0.500 mm**
 (`V2_KEY_CORNER_RADIUS_MM`), tessellated at **96 segments** per full circle
 (`V2_ARC_SEGMENTS`). `V2_KEY_PROFILES` owns the dimensions:
 
-| Key | Length × width (mm) | Where it sits | Section area at c = 0.110 (mm²) |
-|---|---|---|---|
-| `a1_square_14` | 14.0 × 14.0 | Cylinder A, **top** (the nub end) | 201.889 |
-| `a2_rect_18x10` | 18.0 × 10.0 | Cylinder A, bottom | 185.889 |
-| `b1_rect_16x12` | 16.0 × 12.0 | Cylinder B, **top** | 197.889 |
-| `b2_rect_20x8` | 20.0 × 8.0 | Cylinder B, bottom | 165.889 |
+| Key | Length × width (mm) | Where it sits | Default clearance c (mm) | Section area at that c (mm²) |
+|---|---|---|---|---|
+| `a1_square_14` | 14.0 × 14.0 | Cylinder A, **top** (the nub end) | 0.075 | 199.939 |
+| `a2_rect_18x10` | 18.0 × 10.0 | Cylinder A, bottom | 0.075 | 183.939 |
+| `b1_rect_16x12` | 16.0 × 12.0 | Cylinder B, **top** | 0.075 | 195.939 |
+| `b2_rect_20x8` | 20.0 × 8.0 | Cylinder B, bottom | 0.075 | 163.939 |
+
+(Area = (L + 2c)(W + 2c) − (4 − π)(0.5 + c)²; at the old shared 0.110 the four were
+201.889, 185.889, 197.889 and 165.889.)
 
 `KEY_PROFILES_BY_PLATE` maps plate type to `(bottom, top)`:
 `positive → ('a2_rect_18x10', 'a1_square_14')`, `negative → ('b2_rect_20x8',
@@ -257,19 +260,42 @@ Swap either half of that pairing and the wall is 0.55 mm. Pinned by
 
 ## 5. The Clearance
 
-One dial, `version_2.key_clearance_mm` (schema) / `v2_key_clearance_mm` (runtime):
-default **0.110 mm**, range **0.0–0.5 mm** (`V2_KEY_CLEARANCE_DEFAULT_MM`, `_MIN_MM`,
-`_MAX_MM`). It is applied as an **outward** growth of each hole profile — the hole gets
-bigger, the peg does not change.
+**One dial per key since 2026-09-25** (D-K1): `version_2.key_clearance_a1_mm`,
+`_a2_mm`, `_b1_mm`, `_b2_mm` (schema) / `v2_key_clearance_a1_mm` … (runtime), default
+**0.075 mm on all four** (D-K6, 2026-09-26 — kept as four separate numbers so a print
+round can move one gear without the others), range **0.0–0.5 mm** (`V2_KEY_CLEARANCE_DEFAULTS_MM`, a dict keyed
+by the §3 profile names and written out one line per key; `_MIN_MM`, `_MAX_MM`;
+`V2_KEY_CLEARANCE_FIELDS` maps each key to its runtime field). Each is applied as an
+**outward** growth of that one hole's profile — the hole gets bigger, the peg does not
+change — so one gear's fit can be tuned without moving the other three.
 
-**It governs the four holes and nothing else.** Two printed rounds bracketed it, both
-on 2026-08-29: at **0.15** all four peg holes were too loose, at **0.075** they were too
-tight, so the value lands between them at **0.110** (D-R3-1). The pegs measure exactly
-nominal (§11), so a hole is its peg plus 2c.
+**The legacy shared field `version_2.key_clearance_mm` / `v2_key_clearance_mm` is still
+honoured** (D-K2): it has no default any more and the web app no longer sends it, but
+`version2.key_clearances()` resolves every key as *its own field → the shared field →
+its default*, so a request saved before the four dials builds exactly the geometry it
+always did. `CardSettings` runs that resolution once at construction, so every reader
+downstream sees four numbers; `app/validation.py` range-checks all five fields when
+present and names the one at fault.
 
-Not the exact midpoint 0.1125: the dial's step is 0.005, and a default that is not a
-whole number of steps above the minimum renders the input `:invalid` and disables
-Generate with no message anyone can see. 0.110 / 0.005 = 22.
+**They govern the four holes and nothing else.** The number is Brennen's, after four
+printed rounds with the cylinders on Bambu Studio's 0.12 mm Fine Detail preset and the
+gears on 0.2 mm Strength. Two rounds on 2026-08-29 (cylinders at 0.2 mm layers) had
+bracketed ONE shared dial — at **0.15** all four peg holes were too loose, at **0.075**
+too tight — and it sat at **0.110** (D-R3-1). The 2026-09-24 round found the larger pegs
+a bit loose there: the thinner layers put less material into each perimeter, so a hole
+prints closer to its modelled size. **0.095** fitted **A2 and B2** but left A1 and B1 a
+touch loose (D-K3), which is why each key got its own dial; the A1/B1 round at 0.085
+settled the top gears at **0.075** with the bottom gears at 0.085 (D-K4), and the print
+recorded on 2026-09-26 brought A2 and B2 to **0.075** as well (D-K6). The
+pegs measure exactly nominal (§11), so a hole is its peg plus 2c. What a hand feels on
+A1 and B1 is largely *rotational* and limited by the fixed anti-rotation features
+(0.748° / 0.664° at the tooth tips) until the key takes over below about 0.084 / 0.087 —
+which is where the top gears now sit.
+
+Not a midpoint: the dial's step is 0.005, and a default that is not a whole number of
+steps above the minimum renders the input `:invalid` and disables Generate with no
+message anyone can see. 0.075 / 0.005 = 15 — pinned per key by
+`test_every_key_default_is_a_whole_number_of_dial_steps`.
 
 **The nub does NOT follow the dial** (D-V11, revised 2026-08-29). It is inset by
 `V2_NUB_CLEARANCE_MM` = **0.30 mm**, which is **derived**, never retyped, as
@@ -287,11 +313,11 @@ Raise `V2_NUB_CLEARANCE_MM` only alongside a matching gear A1. Note that a miter
 moves every *face* in by `c`, which on this triangle costs the base half-width
 `√3 · c` = 1.732 c — the inradius is what drops by exactly `c`.
 
-Raising the clearance eats into the error-proofing margins of §11: 0.890 mm at the
+Raising a clearance eats into the error-proofing margins of §11: 0.925 mm at the
 default, 0.500 mm at the maximum.
 
 The dial is bounded **at the source** (`min="0" max="0.5" step="0.005"` on the input),
-and 0.110 / 0.005 = 22 — a whole number of steps, so the shipped default is valid
+and 0.075 / 0.005 = 15 — a whole number of steps, so the shipped default is valid
 against its own step. **The step moved from 0.01 on 2026-08-29**, and had to:
 0.075 is not a multiple of 0.01, and a default that is invalid against its step makes
 the input `:invalid` and kills the Generate button silently. This repo has been bitten
@@ -306,12 +332,12 @@ adds `spec['keyed_cutouts']`:
 
 ```jsonc
 {
-  "clearance_mm": 0.110,
+  "clearances_mm": { "a2_rect_18x10": 0.075, "a1_square_14": 0.075 },   // this plate's two keys (2026-09-25)
   "halves": [
-    { "end": "bottom", "profile": [ {"x": …, "y": …}, … 100 points ],
-      "z_from": -27.01, "z_to": 0.01 },
-    { "end": "top",    "profile": [ … 100 points ],
-      "z_from": -0.01,  "z_to": 27.01 }
+    { "end": "bottom", "key": "a2_rect_18x10", "clearance_mm": 0.075,
+      "profile": [ {"x": …, "y": …}, … 100 points ], "z_from": -27.01, "z_to": 0.01 },
+    { "end": "top",    "key": "a1_square_14",  "clearance_mm": 0.075,
+      "profile": [ … 100 points ], "z_from": -0.01,  "z_to": 27.01 }
   ],
   "countersinks": [
     { "end": "bottom", "kind": "hull", "depth": 2.0,
@@ -411,13 +437,14 @@ class="legend-heading">`), and the "(prototype)" tag and the prototype notice ar
 | ~~Prototype notice~~ | ~~`v2-prototype-note`~~ | S-V4 retired 2026-09-20 (D-7) |
 | Size warning | `v2-size-warning` / `v2-size-message` | S-V5, the server's sentence verbatim |
 | Clearance fieldset | `v2-keyed-cutouts-selection` | Expert Mode, hidden in Version 1 |
-| Clearance dial | `v2_key_clearance_mm` | S-V9 label and help |
+| Clearance dials (four, 2026-09-25) | `v2_key_clearance_a1_mm`, `_a2_mm`, `_b1_mm`, `_b2_mm` | labels S-K2..S-K5 *"Gear A1 clearance (mm):"* etc. (signed by Brennen 2026-09-28, shortened; the top/bottom position lives in the OpenSCAD descriptions S-K7 and this spec); one shared help note `v2-key-clearance-note`, S-K1 (signed 2026-09-28), wired as the FIELDSET's `aria-describedby` — one description, one host (SOP 6.8 clause 5; a screen reader hears it once on entering the group, 25 words, not four times) *"Room around each peg, per side. Defaults suit cylinders at 0.12 mm layers, gears at 0.2 mm; raise if a peg binds, lower if loose."*; the empty-dial error S-K6 *"Gear A1 clearance (mm) is empty or not a number. Enter a value between 0 and 0.5."* (signed 2026-09-28) — S-V9 retired with the single dial |
 | Hidden rows | `cylinder-cutout-radius-row`, `cylinder-cutout-sides-row`, `cylinder-seam-offset-row` | inert in Version 2 |
+| X Adjust default (2026-09-28) | `braille_x_adjust` (Expert Mode → Braille Spacing) | **−2 mm in Version 2 with the tactile seam arrow, on every card-stock preset** (Brennen, after his print test of the X Adjust fix; `version2.V2_TACTILE_X_ADJUST_MM`, mirrored by `V2_TACTILE_X_ADJUST_MM` in the page). A default, not a lock, applied like the barrel: on the user's version change (the composed announcement gains S-X1 *"X Adjust set to -2 mm."*, signed by Brennen 2026-09-28), when the tactile style is chosen in Version 2, and by a preset chosen in Version 2 (both presets carry 0). Leaving Version 2 gives back the value the user had (`braille_x_adjust` joined `V2_SNAPSHOT_IDS`); visual markers in Version 2 give it back too while the dial still reads the default. The preset auto-detect expects −2 for this dial in Version 2 tactile, so the stock keeps its name (and its download segment) while a hand-set value reads as Custom — which is what keeps it across a reload: the load-time preset restore rewrites the dial to 0, and the Version 2 restore re-asserts the default after it unless the stock is Custom. The backend's absent-field fallback stays the schema's 0; Version 1 and cards are untouched. What it does: BRAILLE_SPACING_SPECIFICATIONS.md §5. |
 
 **Selecting Version 2** snapshots five cylinder dials, applies `V2_PRESET_OVERRIDES`
 (`cylinder_diameter_mm` 30.8, `cylinder_height_mm` 54, `seam_offset_deg` 0) on top of
-the Card Thickness preset, hides the three inert rows, reveals the clearance dial, joins
-pair mode, and announces S-V10 once — composed, since 2026-09-21, with whatever notes the
+the Card Thickness preset, hides the three inert rows, reveals the four clearance dials,
+and announces S-V10 once — composed, since 2026-09-21, with whatever notes the
 gear refresh returned (S3, S7 / S-G1) and deferred by a tick, the rule the gear and
 card-sides listeners follow (see below). **Selecting Version 1** restores the snapshot
 exactly.
@@ -475,22 +502,28 @@ which π·d − 91 falls under 4.0. See RECESS_INDICATOR_SPECIFICATIONS.md v3.6.
 
 ### 8.2 Request, filenames, persistence
 
-Only when Version 2 is on does `settings` gain `embosser_version: 2` and
-`v2_key_clearance_mm`. The clearance is read from the bounded dial with **no fallback
-literal** — an empty or unparseable value raises rather than quietly shipping geometry
-at a clearance nobody asked for.
+Only when Version 2 is on does `settings` gain `embosser_version: 2` and the four
+per-key clearances `v2_key_clearance_a1_mm`, `_a2_mm`, `_b1_mm`, `_b2_mm` (the shared
+`v2_key_clearance_mm` is no longer sent; §5). Each clearance is read from its bounded
+dial with **no fallback literal** — an empty or unparseable value raises, naming the
+gear, rather than quietly shipping geometry at a clearance nobody asked for. The
+`keyed_cutouts` block carries `clearances_mm` (the two keys this plate cuts) and each
+half its `key` and `clearance_mm`.
 
 Filenames insert a `V2_` segment the way `Geared_` is inserted (D-V12):
 `Embossing_Cylinder_V2_{preset}_{name}.stl`, `Counter_Cylinder_V2_…`,
 `Cylinder_Pair_V2_…`, and `Cylinder_A_V2_…` / `Cylinder_B_V2_…` with double-sided on.
 Version 1 names are byte-identical to today's.
 
-Persistence stores `braille_prefs_embosser_version` (`'1'` or `'2'` only) and
-`braille_prefs_v2_key_clearance_mm`. Both are restored **after** the Card Thickness
-preset IIFE, not inside `applyPersistedSettings()`, because the preset rewrites
+Persistence stores `braille_prefs_embosser_version` (`'1'` or `'2'` only) and one
+`braille_prefs_v2_key_clearance_{a1,a2,b1,b2}_mm` per dial; a
+`braille_prefs_v2_key_clearance_mm` saved before the four dials seeds every dial that
+has no saved value of its own. All are restored **after** the Card Thickness preset
+IIFE, not inside `applyPersistedSettings()`, because the preset rewrites
 `cylinder_diameter_mm` on every load and an earlier restore would be silently
-overwritten. Reset to defaults returns Version 1 and 0.110 mm, and **drops the
-snapshot** — otherwise the restore would undo the reset it was called to finish.
+overwritten. Reset to defaults returns Version 1 and each dial's own default, clears all
+five keys, and **drops the snapshot** — otherwise the restore would undo the reset it
+was called to finish.
 
 D-V10 said Version 2 reveals Generate Both Cylinders and reuses the signed Cylinder A /
 Cylinder B labels, because A and B are a matched, differently keyed pair and the pair is
@@ -520,7 +553,7 @@ Generate, the A/B labels are static markup there, and there is no Generate Both 
 | One watertight body, pockets, mouths, nub, minimum wall, as-built fit matrix, six mutations | `tests/test_version2_keyed.py` |
 | Schema and models agree | `tests/test_smoke.py::test_schema_and_models_agree_on_embosser_version_fields` |
 | The UI's numbers match the module | `tests/test_smoke.py::test_ui_version2_numbers_match_the_geometry_module` |
-| Cylinders only, clearance bounds, gears refused | `tests/test_version2_validation.py` |
+| Cylinders only, clearance bounds, the fused roller's size gate | `tests/test_version2_validation.py` |
 | The spec block, the warnings, z from the request's height | `tests/test_version2_spec.py` |
 | The committed golden pair | `tests/test_golden.py` — `v2_cylinderA_golden`, `v2_cylinderB_golden` |
 | The whole UI in three browsers | `tests/e2e/version2.spec.ts` |
@@ -550,7 +583,7 @@ Generate, the A/B labels are static markup there, and there is no Generate Both 
 A Version 2 counter cylinder exports as exactly **one** watertight body. A Version 2
 **embossing** cylinder exports as one watertight cylinder plus one small separate body
 per raised braille dot — the dome of each dot. That is the long-standing tangency issue
-in the dot geometry, present in Version 1 and with every beta off, and it is tracked
+in the dot geometry, present in Version 1 and with Standard gears, and it is tracked
 separately. It is the same exemption GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md §7
 records.
 
@@ -578,8 +611,9 @@ wrong-pair protrusion is pinned in
 | Clearance (mm) | Smallest wrong-pair margin (mm) |
 |---|---|
 | 0.00 | 1.000 |
-| 0.075 | 0.925 |
-| 0.110 (default) | 0.890 |
+| 0.075 (default, all four) | 0.925 |
+| 0.085 | 0.915 |
+| 0.110 | 0.890 |
 | 0.15 | 0.850 |
 | 0.30 | 0.700 |
 | 0.50 (maximum) | 0.500 |
@@ -661,13 +695,27 @@ mode; this section records only what changes on THIS document's side.
   `v2_gear_roller{A,B}_golden` pair, and `tests/e2e/version2.spec.ts`.
 - **Version 2 without gears is byte-identical** to before (the v2 golden pair did not
   change), and so is Version 1 gear mode.
+- **The v9 update (2026-09-24; decisions D-1, D-2, D-6).** Three more constants of this
+  module's are fused-mode-only: `V2_FUSED_BARREL_CHAMFER_MM` 0.65 (with `V2_FUSED_CHAMFER_LIP_MM`
+  1.0 and the guards `V2_CARD_SHELF_MM` 1.0, `V2_GEAR_ROOT_RADIUS_MM` 13.6613),
+  `V2_VENT_RADIUS_MM` 1.0 (`V2_VENT_OVERSHOOT_MM` 1.0), and the measured bottom-gear socket
+  table `V2_GEAR_SOCKET` (A2: bore r 7.0, rim r 5.3; B2: 5.0 / 3.3; ceiling 1.5 below the
+  face; mouth chamfer 1.0) with `V2_SOCKET_CONE_GROWTH_MM` 0.01 and `V2_SOCKET_CONE_OVERLAP_MM`
+  0.5. `bottom_chamfer_block(radius)` and `axis_cut_blocks(plate_type, height)` build
+  `cylinder.bottom_chamfer` and `gears.axis_cuts` (vent, the bottom socket cone, then since D-K5 the top socket cone); the owner of
+  what they mean is `GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md` §11.8. The keyed (separate-gear)
+  Version 2 cylinder carries none of them.
+- **Version 2 defaults the Row Indicator Style to the tactile seam arrow** since 2026-09-24
+  (decision D-4): a default set on the user's version change and given back on the way to
+  Version 1, after a reload too since 2026-10-01 — never a lock, never applied by the silent
+  load restore, never by a card-stock preset (`RECESS_INDICATOR_SPECIFICATIONS.md`).
 
 ---
 
 ## Related Documentation
 
-- `docs/KNOWN_ISSUES.md` — the user-facing prototype status (S-V13)
-- `GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md` — the Version 1 one-piece rollers
+- `docs/KNOWN_ISSUES.md` — the user-facing status (S-V13)
+- `GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md` — the one-piece rollers, Version 1 and (§11) Version 2
 - `RECESS_INDICATOR_SPECIFICATIONS.md` §3, v3.5 — the arrow column and the Version 2
   cell recommendation
 - `SURFACE_DIMENSIONS_SPECIFICATIONS.md` — cylinder size and the polygonal cutout
@@ -679,6 +727,14 @@ mode; this section records only what changes on THIS document's side.
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-09-30 | 1.21 | **Documentation review after the approved build.** The overview and status say released, not prototype or BETA, and name the fused Version 2 roller (§13); the size-gate note compares against the fixed gears' S7 / S-G1; the version listener reveals four clearance dials (pair mode is universal); the test table and related documents follow. |
+| 2026-09-28 | 1.20 | **X Adjust defaults to −2 mm in Version 2 with the tactile seam arrow, on every card-stock preset (§8).** Brennen's call after his print test of the X Adjust fix (BRAILLE_SPACING_SPECIFICATIONS.md §5, 2026-09-27): `version2.V2_TACTILE_X_ADJUST_MM`, mirrored by the page and applied the way the barrel preset is — on the version change (announcement clause S-X1, DRAFT), on choosing the tactile style in Version 2, by any preset chosen in Version 2, and re-asserted after the load-time preset restore unless the stock is Custom; the snapshot gives the Version 1 value back. The presets still carry 0, the schema fallback stays 0, Version 1 is byte-identical. |
+| 2026-09-26 | 1.19 | **All four defaults 0.075 mm (D-K6).** Brennen's next print brought A2 and B2 down to the top gears' 0.075; §2, §5, §6 and §11 carry the one value (the per-key dict and dials stay separate). The keyed golden pair regenerated once more. |
+| 2026-09-25 | 1.18 | **Documentation and accessibility pass.** §2's table carries each key's own default and section area (the 0.110 column is history); §5's whole-step sentence and §11's margin table name both defaults; §6's wire example shows `clearances_mm` and the per-half `key` / `clearance_mm`; §8.1: the S-K1 note is the fieldset's `aria-describedby`, one host (SOP 6.8 clause 5, measured 96 → 24 description words per pass on the opened page). The schema's `version_2` and `embosser_version` descriptions and four code comments stop calling Version 2 a prototype with one nub. |
+| 2026-09-25 | 1.17 | **Fused roller: the top gear socket (A1 / B1) is coned like the bottom one (D-K5).** §13's third axis cut, owned by GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md §11.8 (`V2_TOP_GEAR_SOCKET`, measured). The keyed cylinder is untouched. |
+| 2026-09-25 | 1.16 | **The defaults settle: A1 and B1 0.075 mm, A2 and B2 0.085 mm (D-K4).** Brennen's verdict on the A1/B1 print at 0.085: §5's numbers, the S-K1 note no longer quotes one value ("The defaults suit most printers"), the margins 0.925 / 0.915. The keyed Version 2 golden pair regenerated once more; nothing else moves. |
+| 2026-09-25 | 1.15 | **One key clearance dial per gear, and the default moves to 0.095 (D-K1..D-K3).** §5 rewritten: four fields `version_2.key_clearance_{a1,a2,b1,b2}_mm`, each default 0.095 (confirmed in print for A2 and B2 on 2026-09-25 at cylinders 0.12 Fine Detail / gears 0.2 Strength), the legacy shared `key_clearance_mm` honoured as a stand-in with no default, resolution own field → shared → default in `version2.key_clearances()`, the next A1/B1 test value 0.085 and why. §8.1: four dials with DRAFT labels S-K2..S-K5 and the DRAFT shared note S-K1 (S-V9 retired). §8.2: five keys on the wire, `clearances_mm` and per-half `key`/`clearance_mm` in the block, per-dial persistence with the legacy seed. The Version 2 golden pair was regenerated at 0.095 (holes 0.015 mm tighter per side); the fused pair's STLs are byte-identical and only their settings record changed. OpenSCAD parity: four `key_clearance_{a1,a2,b1,b2}_mm` dials, `key_clearance_mm` retired (v2.11.0). |
+| 2026-09-24 | 1.14 | **The v9 update to the fused roller, and the tactile default (programme 2026-09-24; decisions D-1, D-2, D-4, D-6).** §13 gains the fused-only constants (chamfer 0.65, vent r 1.0, the measured `V2_GEAR_SOCKET` table, the socket cone) — owned in full by GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md §11.8 — and the Version 2 tactile default. The keyed Version 2 cylinder is unchanged (its golden pair regenerated byte-identical). |
 | 2026-09-21 | 1.13 | **Pair mode is universal (programme sub-plan E).** §8.2's D-V10 paragraph: no Generate Both button to reveal — every run builds both cylinders unless one is chosen under Cylinders to Generate. Nothing else changed. |
 | 2026-09-21 | 1.12 | **Fixed gears on a Version 2 cylinder — fused mode (programme sub-plan B, phases B1-B7; decision D-6; D-V6 retired).** New §13: no keyed cutouts, the notch fill, the per-version size gate with S-G1 (signed 2026-09-21), the `_Geared_V2_` names and S-G2 (signed 2026-09-21), and where it is pinned. §1's gear rule flipped; §6 gains the fused `gears` block; §7 item 2 rewritten; §8's temporary-guard paragraph replaced (S-M13 retired; the version announcement now composes the gear notes and is deferred); §12 points both missing OpenSCAD features at the follow-on plan. The "(PROTOTYPE)" left in the title since 2026-09-20 removed (D-7). |
 | 2026-09-20 | 1.11 | **The selector joins the Embosser setup menu item, and the prototype tag goes (programme decisions D-7, D-8; phases C1-C4).** §8 rewritten: the version fieldset is nested inside `#embosser-setup-selection` with an h3 legend; the radio labels are "Version 1" / "Version 2" (S-V2 (signed 2026-09-21)′); the S-V4 prototype notice is retired and a visible comparison note (S-M2 (signed 2026-09-21)) added; S-V3 and S-V5 unchanged. The Gears choice is no longer hidden in Version 2 — a temporary guard resets it to Standard and appends S-M13 (signed 2026-09-21) to the S-V10 announcement until phase B6; the ready-message prefix is S-V8 (signed 2026-09-21)′ without "(prototype)". Strings signed off by Brennen 2026-09-21. |

@@ -13,9 +13,9 @@ set, vendored as binary assets and never reconstructed. Everything in this docum
 was verified against the merged code on 2026-08-24; where a number appears, the file
 that owns it is named.
 
-**Status:** ✅ BETA (Created 2026-08-24)
-**Toggle:** `gear_rollers.enabled` (schema) / `gear_rollers_enabled` (runtime), default
-false
+**Status:** ✅ Released 2026-09-20 (Created 2026-08-24)
+**Choice:** the Gears radio group (Standard / Simplified) in Embosser setup; on the wire
+`gear_rollers.enabled` (schema) / `gear_rollers_enabled` (runtime), default false
 **Scope:** cylinders only, both the single-sided and double-sided flows
 
 ---
@@ -50,9 +50,21 @@ and the filenames are exactly what the public training videos show.
 
 | File | Contents |
 |---|---|
-| `gears_a.bin` | Cylinder A's pair: gear A1 (top) + A2 (bottom), 15,210 vertices / 30,412 triangles, 547,478 bytes |
-| `gears_b.bin` | Cylinder B's pair: B1 + B2, 15,080 vertices / 30,152 triangles, 542,798 bytes |
-| `gears_manifest.json` | Provenance: the four source STLs with their sha256s, the transform constants, per-asset counts, bounds, volumes and output sha256s |
+| `gears_a.bin` | Cylinder A's pair: gear A1 (top) + A2 (bottom), 13,564 vertices / 27,120 triangles, 488,222 bytes |
+| `gears_b.bin` | Cylinder B's pair: B1 + B2, 13,236 vertices / 26,464 triangles, 476,414 bytes |
+| `gears_manifest.json` | Provenance: the four source holders with their sha256s, each ring's z band and seat shift, the transform constants, per-asset counts, bounds, volumes and output sha256s |
+
+**Source (since 2026-09-28).** The assets are the gear rings of Brennen's four Version 1 gear
+holders — `A1/A2/B1/B2 v6 (0.2) v3.stl`, the parts the standard Version 1 cylinders slide onto
+(the published kit's P03–P06 Embosser/Counter Holders). The script cuts each holder to its 10 mm
+ring by an exact Manifold intersection with the ring's z band (53..63 / −11..−1 in the assembly
+frame), checks that the barrel-side face is one solid disk, and seats the ring on the barrel end
+(1 mm toward the barrel: the standard housing holds it 1 mm off; Brennen's call, the 72 mm roller
+of his 2026-08-24 samples). Until 2026-09-28 the assets were the 2026-08-24 "Rollers v7 (Gear
+Sample …)" set: identical teeth, but its Cylinder B gears carry the newer design's ⌀9 bore where
+the Version 1 housing pin (⌀13.7 × 6.25 + ⌀10.17 × 2) needs the ⌀14 pocket — his print found they
+do not fit the Version 1 embosser. Research record: `01_V1_GEAR_FINDING.md` in the 2026-09-28
+development folder.
 
 ### 2.1 Binary format
 
@@ -83,8 +95,9 @@ not today's date, so identical inputs give identical bytes.
 
 ## 3. Gear Geometry (measured, not designed)
 
-Every figure below was measured from the reference STEP/STL files and is reproduced in
-`app/geometry/gears.py` and `gears_manifest.json`.
+Every figure below was measured from the 2026-08-24 reference STEP/STL files — the Version 1
+holders share that tooth ring to 0.012 mm; their hubs are the Version 1 kit's (§2) — and is
+reproduced in `app/geometry/gears.py` and `gears_manifest.json`.
 
 | Fact | Value |
 |---|---|
@@ -93,8 +106,8 @@ Every figure below was measured from the reference STEP/STL files and is reprodu
 | Tip radius | 16.1093702290795 mm (diameter 32.2187 mm) |
 | Root circle radius | 13.6613702290795 mm |
 | Gear thickness | 10.000 mm |
-| Tooth flanks | B-spline surfaces, axially crowned — a gear has a distinct top and bottom, and flipping one changes its geometry |
-| Bores | BLIND pockets, not through-holes: A wall r 7.0 (opening r 5.2), B wall r 4.5 (opening r 2.7) |
+| Tooth flanks | B-spline surfaces, herringbone (chevron tip lands) and axially crowned — a gear has a distinct top and bottom, and flipping one changes its geometry |
+| Bores | BLIND pockets, not through-holes. Since 2026-09-28 all four gears carry the Version 1 housing pocket: wall r 7.0 (⌀14) to about 6.75 mm deep, then r 5.2 (⌀10.4) to 8.5 mm; A1 adds the handle-connector lugs. The 2026-08-24 B samples had wall r 4.5 (opening r 2.7) — the newer design's hub, the reason they were replaced. |
 | Gear/barrel interface face | a FULL SOLID DISK out to r 14.609 |
 | Axis-to-axis distance of a meshed pair | 32.0473 mm |
 
@@ -102,8 +115,10 @@ A1 and A2 share one tooth clocking (0.0000° mismatch), as do B1 and B2, which i
 lets a pair mesh at both ends at once. A1 additionally carries the handle-connector
 interface features.
 
-**Consequence of the blind bores:** a one-piece roller has no through-path along its
-axis. That is why the barrel is forced solid rather than cut (§6).
+**Consequence of the blind bores:** the gears give a one-piece roller no through-path
+along its axis. That is why the barrel is forced solid rather than cut (§6). Since
+2026-09-30 a ⌀2 vent is cut along the axis after the union instead (§6.5), and the
+barrel stays solid around it.
 
 ---
 
@@ -122,6 +137,10 @@ That is the BROWSER frame: cylinder axis at x = y = 0, barrel centred on z = 0
 (spanning z −26..+26), gears at z −36..−26 and +26..+36. The OpenSCAD frame seats the
 barrel base at z = 0, so it is the same geometry translated +26.000 in z: gears at
 z −10..0 and 52..62.
+
+Since 2026-09-28 `p_sample` is a point of the holder's gear ring after the ring has been seated
+on the barrel end (z − 1 for the top gears, z + 1 for the bottom ones, in the assembly frame); the
+holders share the 2026-08-24 samples' assembly frame, so the constants above are unchanged.
 
 ### 4.1 Why those rotations
 
@@ -169,8 +188,8 @@ Brennen's deployment verdict the same day returned the default to the
 gear model pairs with — so **gear mode passes S7 on untouched dials again**.
 The 54 mm card-shelf barrel is Embosser Version 2 only (forced by its preset
 overrides). The gears themselves never moved: they are baked at fixed z (see
-5.1). Height still tells the gears BETA (52) apart from Embosser Version 2
-(54); both use the 30.8 diameter.
+5.1). Height still tells a Version 1 roller (52) from a Version 2 one (54), with
+or without fixed gears; both use the 30.8 diameter.
 
 ### 5.1 Why a rejection and not a warning
 
@@ -209,22 +228,26 @@ spec['gears'] = {
 }
 ```
 
-Exactly two keys. D-8a's arrow weld is not among them — it rides on the markers'
-`outline_delta` instead (§6.3), so the worker needs no gear-specific arrow code.
+Exactly two keys until 2026-09-30; since then a third, `'axis_cuts'`, carries the vent
+and the two socket cones (§6.5). D-8a's arrow weld is not among them — it rides on the
+markers' `outline_delta` instead (§6.3), so the worker needs no gear-specific arrow code.
 
 ### 6.1 CSG order
 
 `static/workers/csg-worker-manifold.js` unions the gears and their rings into the
 RAISED stage, immediately after the base and well before any recess is cut. The
 existing order — shell → raised dots → raised markers → subtract recess dots →
-subtract markers — is unchanged. **No transform is applied to the asset**, and the
+subtract markers — is unchanged, and since 2026-09-30 one step is appended: subtract
+the axis cuts (§6.5). **No transform is applied to the asset**, and the
 spec-frame theta negation that dots and markers receive does not apply to it: a gear
 is not a spec-frame feature, and Phase 01 baked its placement into the bytes.
 
 ### 6.2 The barrel is solid — and an empty `polygon_points` is not enough
 
 Decision D-2 forces the barrel solid while gears are on, because the blind bores mean a
-cutout would seal a cavity nothing can reach or drain.
+cutout would seal a cavity nothing can reach or drain. The axis cuts of §6.5 (Version 2
+since 2026-09-24, Version 1 since 2026-09-30) add a 2 mm vent joining the two gear
+sockets; the barrel around it stays solid.
 
 **Emitting `polygon_points: []` does NOT achieve that.** With no polygon,
 `createCylinderShellManifold` falls through to hollowing by wall thickness. Measured in
@@ -264,6 +287,61 @@ far below 0.1 mm print accuracy. Recess arrows are untouched; their 0.2 mm clear
 growth already overlaps. **With the toggle off the outline stays exactly 0.0**, so
 existing exports keep the tangency they ship with today.
 
+### 6.5 The vent and self-supporting sockets (2026-09-30)
+
+Brennen asked for Version 2's v9 socket change (§11.8, decisions D-1 and D-K5) on the
+Version 1 fused roller, so it prints as generated, bottom gear down, with no support inside
+the housing-pin socket. Version 1 gears carry no hole beyond the socket, so the vent is new.
+His requirement: the key diameter and the taper stay **exactly** as they are, because the
+Version 1 housing pin (⌀13.7 × 6.25 then ⌀10.17 × 2, so 8.25 deep) is a close fit. He
+approved the geometry plan's six decisions the same day: cone inside the taper, both ends,
+⌀2 vent, no barrel chamfer, the S-P1 print sentence, OpenSCAD parity.
+
+**The socket, measured by vertex fits on the vendored rings** (`V1_GEAR_SOCKET` /
+`V1_TOP_GEAR_SOCKET` in `app/geometry/gears.py`; identical on A1, A2, B1 and B2, and
+concentric with the roller axis to 0.00003 mm):
+
+| Depth from the gear's mouth | Feature |
+|---|---|
+| 0 to 1.0 mm | 45° mouth chamfer, r 8.0 to 7.0 |
+| 1.0 to 6.7 mm | the key bore, r 7.000 |
+| 6.7 to 8.5 mm | 45.000° taper, r 7.000 to 5.200 |
+| 8.5 mm | flat blind end, 1.5 mm from the barrel face (z ∓27.5) |
+
+**The cuts** (`axis_cut_blocks`, worker frame, the same block shape as Version 2's):
+
+| Cut | Shape |
+|---|---|
+| Vent | r 1.0, z −37.0..+37.0: mouth to mouth plus 1.0 overshoot |
+| Bottom cone (A2 / B2) | r 5.68 at z −28.0 narrowing at 45° to r 1.01 at z −23.33 |
+| Top cone (A1 / B1) | r 1.01 at z +23.33 widening at 45° to r 5.68 at z +28.0 |
+
+Each cone starts 0.5 mm short of the blind end, in the socket's air, and runs parallel to
+the taper **0.02 mm inside it** (`V1_SOCKET_CONE_INSET_MM`), so it removes material only
+beyond the old blind end. That is the difference from Version 2, whose cone grows 0.01 mm
+into its taper. The plan said 0.01: implementing it showed the taper's flat facets (a strip
+between a 57-gon and a 49-gon) dip up to 0.0107 mm inside the ideal cone, and the cutter's
+corners then clipped the taper by up to 0.0004 mm. At 0.02 every point sampled on the mouth
+chamfer, key bore and taper comes through at 0.000000 mm. All that remains of the flat end
+is a ring 0.02 mm wide, far below anything a printer lays. The cuts come last, after every
+union (§6.1), and remove 434.29 mm³ from each roller.
+
+**Not changed:** no barrel chamfer (decision 4: the 52 mm Version 1 barrel has no card shelf
+to spend, so the 0.79 mm ledge over the bottom gear stays), and nothing outside gear mode.
+
+**Proved (2026-09-30):** `tests/fixtures/gear_roller{A,B}_golden.*` regenerated (the six
+other golden files byte-identical); `test_gear_golden_fixture_is_vented_with_self_supporting_sockets`
+(air on the axis mouth to mouth, solid beside it, both cones' walls, the socket still open
+and its walls solid) and `test_gear_golden_fixture_keeps_the_pin_socket_exactly` (40,000
+points on both sockets' chamfer, bore and taper within 0.0001 mm of the roller's surface);
+`test_version_one_socket_table_matches_the_vendored_rings` pins the table to the bytes.
+Real Chromium exports of both cylinders: the same socket points within 0.000001 mm, and the
+cut region within 0.000002 mm of the golden pair.
+
+**Print sentence:** the Version 1 ready message now carries S-P1 after S5 (decision 5):
+"Cylinder generated with integrated gears. Print it with the bottom gear on the build
+plate, with supports off."
+
 ---
 
 ## 7. What "One Solid" Actually Means Today
@@ -274,7 +352,7 @@ On the **counter** plate a geared cylinder exports as exactly one watertight bod
 On the **embossing** plate the roller body is one watertight solid (49,738.478 mm³, same
 bounds) **plus one small separate body per raised braille dot** — the dome of each dot,
 0.614 mm³ each. That is the long-standing second tangency inside every rounded dot: it is
-present identically with gears off, it predates this beta, gears cannot fix it, and it is
+present identically with gears off, it predates this feature, gears cannot fix it, and it is
 tracked separately. Tests assert around it deliberately: exactly one body spans the full
 72 mm, no body has negative volume, and every other body must look like a known dome
 (under 1 mm³, watertight, entirely outside the barrel radius). A bare "one body" assertion
@@ -324,7 +402,8 @@ composes S-M10 (signed 2026-09-21) (*"Standard gears selected."* / *"Simplified 
 selected."*) with whatever notes `updateGearRollersUI()` raised (S3, S7) into ONE write,
 deferred by a tick so it lands after the form-wide live-warning refresh that bubbles
 behind it. Likewise S5 (*"Cylinder generated with integrated gears."*) is prepended to
-the ready message rather than announced separately.
+the ready message rather than announced separately; since 2026-09-30 the signed S-P1
+print sentence follows it in that same write (§6.5).
 
 **Version 2 (since 2026-09-21, phase B6).** The choice is left exactly as the user set
 it: Version 2 + Simplified is the fused Version 2 roller (§11). The temporary C2 guard
@@ -518,7 +597,8 @@ angle, and at r 10.0–13.0 everywhere outside the ±20° notch window.
   the gear stage unions the vendored set, the weld rings and then each `notch_fills[]`
   prism (`keyedPrismManifold`, the nub's helper — a simple CCW loop, `NonNegative`). CSG
   order unchanged: shell → gears (+rings +fills) → nub (absent in fused mode) → raised →
-  recesses.
+  recesses → **axis cuts** (the vent and the socket cone, since 2026-09-24 — §11.8; the
+  barrel chamfer is a shell-stage cut beside the seam channel).
 
 ### 11.5 What was proved (2026-09-21)
 
@@ -546,10 +626,87 @@ standard-gear names and the double-sided names never change.
 
 ### 11.7 OpenSCAD
 
-No Version 2 OpenSCAD counterpart yet: the fixed Version 2 gears (like the seam channel)
-are in the follow-on OpenSCAD-parity plan (programme plan §11) — `assets/v2_gears_{a,b}.stl`
-derived from the web `.bin`s for the desktop Version 2 file only; MakerWorld cannot ship
-assets (§10).
+`Braille_Cylinder_STL_Generator_EmbosserV2.scad` carries the fused roller since OpenSCAD
+v2.8.0 (2026-09-21; its `[Gears]` tab, `assets/v2_gears_{a,b}.stl` derived from the web
+`.bin`s, the same weld rings, notch fill and size gate). The v9 update below (§11.8) lands
+there as v2.10.0, and the Version 1 file's vent and socket cones (§6.5) as v2.11.0
+(2026-10-01, re-vendored here the same day); MakerWorld cannot ship assets (§10), so its
+copy hides the switch.
+
+### 11.8 The v9 update: chamfer, vent, self-supporting socket (2026-09-24; decisions D-1, D-2, D-6, D-7)
+
+The fused roller prints standing on its **bottom gear** (A2 / B2). Brennen's v9 CAD
+(research folder `New Developement_2026_09_24`, audit `01_V9_STL_AUDIT.md`) answered three
+things a printed 2026-09-21 build showed, and this app builds them from constants in
+`app/geometry/version2.py` — never retyped, mirrored by the OpenSCAD file and diffed by its
+tests. Fused Version 2 ONLY: Version 1 gear mode, Version 2 with separate gears and
+double-sided are byte-identical (the deep-equal and no-new-keys tests, and the six other
+golden pairs regenerating unchanged, prove it).
+
+- **The barrel's bottom edge is chamfered 0.65 mm × 45°** (`V2_FUSED_BARREL_CHAMFER_MM`,
+  lip 1.0; `spec['cylinder']['bottom_chamfer']`). Every gear body's faces are chamfered
+  1.5 mm from the 16.11 mm tips, so the face the barrel stands on reaches only r 14.61
+  while the barrel is r 15.40: a 0.79 mm ledge all round that the slicer supported. At
+  0.65 the ledge is 0.14 mm — what the v9 CAD prints at its ⌀30.5 barrel (the app stays
+  30.8, Q-3) — inside one extrusion width. Sliced with the 2026-09-20 spike's PrusaSlicer
+  setup: 149 mm of perimeter over air per plate became 50 mm, the floor set by the 24
+  tooth valleys any barrel on a gear has; 0.5 would have left 0.29 mm (74 mm), 0.8 flush.
+  It spends 0.65 of the 1 mm card shelf at that end. Cut on the bare barrel right after the
+  seam channel (`createCylinderShellManifold`): a ring from the lip below the face to
+  `size` above it, minus a 45° frustum, so nothing is coplanar.
+- **A ⌀2 vent runs the whole axis** (`V2_VENT_RADIUS_MM` 1.0, z ±(height/2 + 10 + 1) =
+  ±38). The housing peg is a snug fit in the bottom gear's socket and the socket ceiling was
+  blind, so the roller fought a vacuum coming off its peg. The vendored v8 gears ALREADY
+  carry the ⌀2 hole from each socket ceiling into their 15 mm peg, 0.05 mm off the fitted
+  axis; the solid barrel sealed it at the peg tips. The vent joins them, so the bottom
+  socket breathes out through the top gear's open mouth. Subtracted AFTER the gear union —
+  cutting the barrel first would let a peg refill a crescent of it.
+- **The bottom socket's flat ceiling is gone: its 45° taper continues to the vent**
+  (decision D-1; `V2_GEAR_SOCKET`, measured: bore r 7.0 A / 5.0 B, rim r 5.3 / 3.3,
+  ceiling 1.5 below the barrel face, mouth chamfer 1.0; cone from 0.5 below the ceiling at
+  rim + 0.51 up to r 1.01 — A z −29.0..−24.2, B −29.0..−26.2 in the worker frame). The flat
+  annulus around the ⌀3 vent mouth was the overhang the auto-supports fought: 36 mm of
+  perimeter and 106–265 mm of bridge per plate laid over air, ~1.7 m of support inside a
+  blind ⌀14 hole. The cone lays nothing over air and the slicer generates no support in the
+  socket at all (`02_CEILING_SUPPORT_RESEARCH.md`). The "premade support" and its toggle
+  were therefore dropped (D-6). A flat-topped peg cannot reach the cone: the straight bore is
+  5.7 mm deep before the taper starts. Item Q-1, the housing peg's real reach, was closed
+  by Brennen's 2026-09-30 print testing: the peg does not reach the cone.
+- **The top socket's floor is the same cone, since 2026-09-25 (decision D-K5,
+  `V2_TOP_GEAR_SOCKET`, measured: bore r 7.0 A1 / 5.0 B1, rim r 5.2 / 3.2 at the floor
+  vertex, floor 1.5 above the barrel's top face; cone from 0.5 above the floor at
+  rim + 0.51 down at 45° to r 1.01 — A z +29.0..+24.3, B +29.0..+26.3 in the worker
+  frame, emitted apex first because the worker's frustum and the golden renderer both
+  read `r_from` at `z_from`).** Printed bottom gear down that floor faces upward and
+  never needed support; Brennen asked for the top gears to match the bottom ones, so both
+  ends are alike and the roller prints support-free either way up (the barrel's top edge
+  keeps its square corner, so bottom-gear-down stays the advice). The bottom table's rim
+  5.3 / 3.3 was read 0.1 up the taper on 2026-09-24 and stays as printed and pinned
+  (O-2, recorded per gear, never averaged).
+- **CSG order:** one step appended — shell (seam channel, chamfer) → union raised (gears,
+  rings, fills, nub, dots, arrows) → subtract recesses → **subtract axis cuts** (vent,
+  bottom cone, top cone).
+  Both the worker and `tests/test_golden.py` build it so; the two agree on the gears, cone,
+  vent and chamfer to ≤ 0.0001 mm (real chromium exports against the regenerated golden
+  pair, 2026-09-24).
+- **Proved:** `tests/fixtures/v2_gear_roller{A,B}_golden.*` regenerated once (A 50 881.149
+  mm³ / 37 832 faces, B 52 281.651 / 89 624); the D-6 acceptance is now
+  `test_v2_gear_golden_fixture_is_one_vented_roller_with_no_void` — ONE body, air on the
+  axis from mouth to mouth, solid at r 1.5 beside it, the chamfer's and the cone's
+  air/solid probes, the socket bore still open, 24 teeth, the notch fill solid. The
+  vendored-surface test excludes the cut socket and the vent bore (the vent trues the
+  gears' own off-axis holes, which leaves asset points up to 0.05 mm into air).
+- **Orientation text (D-7):** the fused ready message gains S-P1 after S-G2, and the help
+  modal's Cylinder Guide gains S-P2 — both signed by Brennen 2026-09-28: S-P1 "Print it with the
+  bottom gear on the build plate, with supports off."; S-P2 "Fused Version 2 rollers: print with the
+  bottom gear on the build plate and supports off. They lift off the embosser's peg without a
+  vacuum." (the OpenSCAD [Gears] tab says "Print bottom gear down with supports off.", S-O1).
+- **Print test:** PASSED — Brennen printed the fused pair from the pushed build on
+  2026-09-24, bottom gear down ("passes 3D print check"). His print testing of 2026-09-30
+  (confirmed 2026-10-01) closed the rest: the housing peg does not reach the cone (Q-1),
+  the top-socket cone (D-K5, 2026-09-25) has been printed and fits, the 0.14 mm ledge
+  needed no support, and the Version 1 Simplified rollers (§6.5) print bottom gear down
+  with no socket support and fit the Version 1 housing pins.
 
 ---
 
@@ -557,6 +714,13 @@ assets (§10).
 
 | Date | Change |
 |---|---|
+| 2026-10-01 | **Print results recorded.** §11.8: Brennen's 2026-09-30 print testing closed Q-1 (the peg does not reach the cone), printed the top-socket cone (D-K5), found no support needed at the 0.14 mm ledge, and passed the Version 1 Simplified rollers. |
+| 2026-09-30 | **Documentation review after the approved build.** The header's status and choice lines name the released Gears radio group; §5 tells a Version 1 roller (52) from a Version 2 one (54) instead of "the gears BETA"; §6.2 notes the §6.5 vent beside the solid barrel; §9's dome note says "this feature". |
+| 2026-09-30 | **The Version 1 fused roller is vented and its sockets self-supporting (Brennen's approved plan).** New §6.5: the measured socket table, a ⌀2 axis vent and a 45° cone at each socket's blind end, cut last, each cone 0.02 mm inside the taper so the pin's chamfer, key bore and taper are untouched (0.01 was planned; the taper's facets made it clip by up to 0.0004 mm). §3, §6 and §6.1 updated for the third spec key and the appended CSG step. No barrel chamfer. The Version 1 ready message gains S-P1. Version 1 golden pair regenerated. |
+| 2026-09-28 | **The Version 1 gears are the Version 1 embosser's (Brennen's print test; decisions D-G1, D-G2 in the 2026-09-28 research folder).** §2 gains the source paragraph: the assets are now the gear rings of his four Version 1 holders (`A1/A2/B1/B2 v6`), cut by an exact Manifold intersection and seated on the barrel end, replacing the 2026-08-24 sample set whose Cylinder B gears carry the newer design's ⌀9 bore. §2's counts, §3's bores row and §4's seat note updated; teeth, transform constants, the 72 mm roller, the weld rings and S7 unchanged. Tooth counting in the derivation and the tests moved to the chevron apex. The V1 fused golden pair regenerated (the other six pairs byte-identical); the deep test compares the roller with the holders' rings; the OpenSCAD `assets/gears_a/b.stl` regenerated. |
+| 2026-09-25 | **Documentation pass.** §11.8's print-test line records the 2026-09-24 pass and the unprinted top cone. |
+| 2026-09-25 | **The top gear socket is coned like the bottom one (Brennen's decision D-K5).** §11.8 gains `V2_TOP_GEAR_SOCKET` (A1 / B1 measured off the v8 assets: bore 7.0 / 5.0, rim 5.2 / 3.2 at the floor vertex, floor 1.5 above the top face) and the third axis cut, emitted apex first; the CSG line reads vent, bottom cone, top cone. The fused golden pair regenerated; every other pair byte-identical. |
+| 2026-09-24 | **The v9 update: the fused roller's barrel is chamfered, its axis vented and its bottom gear socket made self-supporting (programme 2026-09-24, phases G1–G3; decisions D-1, D-2, D-6, D-7).** New §11.8 with the numbers, the slicing evidence, the appended CSG step and the regenerated golden pair; §11.4's order line and §11.7 (OpenSCAD v2.8.0 already carries the fused roller; v2.10.0 carries this) updated. Web develop `e91e352` (spec), `af2d45f` (worker), `3a1c636` (golden). |
 | 2026-09-21 | **Pair mode is universal (programme sub-plan E).** §8.1's pair paragraph: Generate STL builds both cylinders by default and Download STL saves the combined Geared pair file; `isPairModeOn()` and the relabel retired; the frozen single-cylinder names come from Cylinders to Generate. Nothing else changed. |
 | 2026-09-21 | **Version 2 fixed gears — the fused one-piece Version 2 roller (programme sub-plan B, phases B1-B7; decisions D-5, D-6).** New §11: the v8-derived `v2_gears_*` assets and their per-gear fitted axes (§11.1), the transform and frame (§11.2), the D-6 notch fill as an exact 0.05 mm parallel curve capped at 13.95 mm (§11.3), the fused spec / per-version size gate with S-G1 (signed 2026-09-21) / the worker's notch-fill union (§11.4), what the browser exports and the new `v2_gear_roller*` golden pair proved (§11.5), the UI and the composed `_Geared_V2_` names with S-G2 (signed 2026-09-21) (§11.6), and the OpenSCAD follow-on (§11.7). §1, §2, §5, §8 and §9.2 updated to match; the temporary S-M13 guard paragraph in §8 replaced; the "(BETA)" left in the title since 2026-09-20 removed (D-7). Open item: the Version 2 operating axis distance. |
 | 2026-09-20 | **Out of beta, into the Embosser setup menu (programme decisions D-7, D-8; phases C1-C4).** §1 retitled "Feature Rules" (the rules are unchanged). §8 rewritten: the checkbox fieldset is gone; the choice is the **Gears** radio group (`#gear_mode_standard` checked / `#gear_mode_fixed`, S-M3a/b (signed 2026-09-21), description S-M4 (signed 2026-09-21), S2 kept visible, S-M5 replacing S9′ with a link to the new help tab) inside `#embosser-setup-selection`, read only through `isGearRollersOn()`; one composed, deferred announcement per change (S-M10 (signed 2026-09-21) plus S3/S7); Version 2 no longer hides the choice — a temporary guard resets it to Standard and says so (S-M13 (signed 2026-09-21)) until phase B6 ships fixed Version 2 gears. Strings signed off by Brennen 2026-09-21. |

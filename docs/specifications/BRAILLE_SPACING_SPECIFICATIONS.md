@@ -145,15 +145,15 @@ The embossing plate and counter plate use **opposite angular directions** to ens
 ### Angular Direction Functions (AUTHORITATIVE)
 
 ```python
-# From geometry_spec.py
+# From geometry_spec.py (x_shift_angle = braille_x_adjust / radius, 0 by default — see Section 5, X Adjust on cylinders)
 
 def apply_seam(angle: float) -> float:
     """For embossing plate - content flows COUNTER-CLOCKWISE when viewed from above."""
-    return -angle
+    return -(angle + x_shift_angle)
 
 def apply_seam_mirrored(angle: float) -> float:
     """For counter plate - content flows CLOCKWISE when viewed from above."""
-    return +angle  # Note: positive, not negative
+    return angle + x_shift_angle  # Note: positive, not negative
 ```
 
 ### Visual Explanation
@@ -242,13 +242,35 @@ column_angle = start_angle + (N * cell_spacing_angle)
 dot_col_angle_offsets = [-dot_spacing_angle / 2, dot_spacing_angle / 2]
 ```
 
+### X Adjust on Cylinders (2026-09-27)
+
+`braille_x_adjust` (the X Adjust dial, mm, −10..10, default 0) slides the WHOLE text grid round the barrel by that many mm of arc. Until 2026-09-27 the cylinder path never read the dial — it was sent, validated and stored, then ignored, while Y Adjust worked — so a build that claimed to have fixed it on the strength of the spec alone was wrong; the proof now is the exported STL (tests/e2e/xAdjust.spec.ts measures the real worker's output).
+
+```python
+x_shift_angle = braille_x_adjust / radius            # mm of arc → radians
+
+apply_seam(angle)          = -(angle + x_shift_angle)   # Cylinder A (embossing)
+apply_seam_mirrored(angle) =   angle + x_shift_angle    # Cylinder B (counter)
+```
+
+The shift is added inside the two seam mappings, i.e. in the card frame the two plates share and AFTER the double-sided back grid's mirror (`interpoint.back_grid_transform`), so:
+
+- every grid feature moves by the same arc on both cylinders — front dots, back dots, their paired recesses and the visual-mode triangle/letter markers — and a pair still meets at `theta` and `−theta`;
+- the tactile arrows (`TACTILE_SEAM_THETA`), the tactile groove and the Version 2 keys do NOT move: they are the fixed reference the grid moves against;
+- the seam channel's free window in visual mode slides with the grid (its margins stay equal), and the tactile room rules read the shift (SURFACE_DIMENSIONS_SPECIFICATIONS.md §2.6), as does the card-fit need (RECESS_INDICATOR_SPECIFICATIONS.md §4, `tactile_card_need_mm`); the live UI boxes mirror all three;
+- at 0 every angle is exactly what it was before the dial reached cylinders (golden fixtures unchanged).
+
+**Direction (Brennen's request, 2026-09-27):** the preview's default cylinder camera sits on −X looking at the arrow column with +Z up, so screen-right is world −Y. Cylinder A's column 0 sits at spec theta `−start_angle` = world `+start_angle`, i.e. to the RIGHT of the arrow (the front's first cell is 8.13 mm of arc from the arrow's centre at 13 cells on 30.8 mm), and a NEGATIVE X moves A's dots and recesses LEFT, toward that arrow, by |X| mm of arc; Cylinder B's dots and recesses move RIGHT by the same arc (its first-cell recesses sit to the LEFT of its arrow). Physically: the card's leading edge sits at the arrow, so a negative X brings the front's first cell closer to the leading edge and moves the back's first cell (which reads from the card's far end) the same way along the card — the correction for a print whose front lost its last cell past the trailing edge while the back lost its first. Measured on the real worker's exports at X −3: every raised dot on A moved −3.00 mm of arc, every one on B +3.00, the arrows 0.00 (2026-09-27).
+
+**Version 2 default (2026-09-28):** after his print test Brennen set the dial's default to **−2 mm in Version 2 with the tactile seam arrow, on every card-stock preset** (`version2.V2_TACTILE_X_ADJUST_MM`). It is a page default like the Version 2 barrel — applied on the version change, on choosing tactile in Version 2 and by any preset chosen there, given back on the way out — not a schema default: the schema's `braille_x_adjust_mm` stays 0, so cards, Version 1 and a request that omits the field are unchanged. EMBOSSER_VERSION_2_KEYED_CUTOUTS_SPECIFICATIONS.md §8 has the mechanics.
+
 ---
 
 ## 6. Embossing Plate vs Counter Plate: Key Differences
 
 ### Summary Table
 
-> **Exception — double-sided (interpoint) BETA.** Everything in this section
+> **Exception — double-sided (interpoint) cards.** Everything in this section
 > describes single-sided mode, which is the default and is unchanged. When
 > `double_sided.enabled` is on (runtime name `double_sided_enabled`, a 0/1 int),
 > the counter plate does **not** generate the universal grid: each cylinder
@@ -690,6 +712,8 @@ makes the declared source of truth state what was already being enforced.
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-09-30 | 1.8 | Documentation review: Section 6's double-sided exception drops "BETA" (released 2026-09-20). |
+| 2026-09-27 | 1.7 | **X Adjust now works on cylinders (new Section 5 subsection).** The cylinder spec builder had never read `braille_x_adjust` (Y Adjust worked); the dial now slides the whole text grid round the barrel by its value in mm of arc, added inside `apply_seam` / `apply_seam_mirrored` after the double-sided back mirror, so both cylinders' dots and recesses move together and the pairing holds. Negative moves Cylinder A's grid left and Cylinder B's right as the default camera shows them — the first cell toward the alignment arrow on both (Brennen's request after his 2026-09-27 print). Arrows, tactile groove and Version 2 keys stay put; the seam-channel, arrow-gap and card-fit rules read the shift, mirrored live. Nothing changes at 0: all eight golden pairs byte-identical. Proof on the real worker's STL exports (tests/e2e/xAdjust.spec.ts) and in tests/test_x_adjust_cylinder.py. |
 | 2024-12-06 | 1.0 | Initial specification based on working backend.py and csg-worker implementations |
 | 2024-12-06 | 1.1 | Added Manifold theta negation fix (Bug 6) to correct reverse cell order on cylinders |
 | 2024-12-06 | 1.2 | Added triangle rotate_180 inversion fix to correct swapped triangle orientations |

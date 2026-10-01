@@ -19,6 +19,7 @@
  */
 
 import { expect, test, type Page } from '@playwright/test';
+import { revealRowIndicatorPanel, selectIndicatorMode, selectThicknessPreset } from './helpers/menus';
 import { selectCylinders } from './helpers/cylinders';
 
 // Signed 2026-08-28 by Brennen at the Phase 05 gate. Reword only with his sign-off.
@@ -41,10 +42,26 @@ const S3_CUTOUT_NOTE = 'The polygonal cutout is not used while integrated gears 
 const S_M10_FIXED = 'Simplified fixed gears selected.';
 const S_V10_ON = 'Version 2 selected: keyed gear-peg cutouts, 30.8 mm cylinder.';
 const S_V10_OFF = 'Version 1 selected.';
+// S-V16, signed by Brennen 2026-09-28 (shortened): the clause the version
+// announcement gains when choosing Version 2 moved the Row Indicator Style to
+// tactile, the Version 2 default (decision D-4).
+const S_V16_STYLE_MOVED = 'Row Indicator Style set to tactile.';
+// S-X1, signed by Brennen 2026-09-28 (shortened to match S-V16): the clause the
+// version announcement gains when choosing Version 2 moved X Adjust to the
+// Version 2 tactile default.
+const S_X1_X_ADJUST_MOVED = 'X Adjust set to -2 mm.';
+// S-M11, signed 2026-09-21: the Single-sided sentence. S-M14, signed
+// 2026-10-01: the clause it gains when the Row
+// Indicator Style just went back to the visual markers the lock displaced.
+const S_M11_SINGLE = 'Single-sided card selected.';
+const S_M14_STYLE_RESTORED = 'Row Indicator Style set to visual.';
 
 // The Version 2 preset barrel (D-V4), owned by app/geometry/version2.py.
 const V2_DIAMETER = '30.8';
 const V2_HEIGHT = '54';
+// X Adjust in Version 2 with the tactile arrow (Brennen, 2026-09-28), owned by
+// app/geometry/version2.py V2_TACTILE_X_ADJUST_MM; both card-stock presets carry 0.
+const V2_TACTILE_X_ADJUST = '-2';
 
 // Same transient failures the other beta specs tolerate: both workers signal
 // readiness asynchronously and Firefox is slower to spin them up.
@@ -55,7 +72,7 @@ async function openApp(page: Page) {
   await page.goto('/');
   await page.waitForLoadState('domcontentloaded');
   await page.waitForLoadState('networkidle');
-  await page.waitForSelector('#indicator-mode-selection');
+  await page.waitForSelector('#embosser-setup-selection');
   // Since 2026-09-21 Generate builds both cylinders by default; this spec
   // exercises one cylinder at a time, so choose Cylinder A (the old default)
   // under Cylinders to Generate. Pair tests choose 'both' themselves.
@@ -114,6 +131,22 @@ async function downloadName(page: Page, selector = '#download-stl-btn'): Promise
  * the input event the app already listens for exercises the same path a user's
  * edit would.
  */
+// One key clearance dial per gear since 2026-09-25 (the ids are the request
+// fields), each at its own printed-round default - 0.075 on all four since
+// D-K6 (2026-09-26); the map stays per dial so a future round can move one.
+const V2_KEY_CLEARANCE_IDS = [
+  'v2_key_clearance_a1_mm',
+  'v2_key_clearance_a2_mm',
+  'v2_key_clearance_b1_mm',
+  'v2_key_clearance_b2_mm',
+];
+const V2_KEY_CLEARANCE_DEFAULTS: Record<string, string> = {
+  v2_key_clearance_a1_mm: '0.075',
+  v2_key_clearance_a2_mm: '0.075',
+  v2_key_clearance_b1_mm: '0.075',
+  v2_key_clearance_b2_mm: '0.075',
+};
+
 async function setDial(page: Page, id: string, value: string) {
   await page.evaluate(([dialId, dialValue]) => {
     const el = document.getElementById(dialId) as HTMLInputElement | null;
@@ -223,9 +256,18 @@ test.describe('Embosser Version 2', () => {
 
     await selectVersion2(page);
 
-    await expect(page.locator('#a11y-status')).toHaveText(S_V10_ON);
+    // The tactile seam arrow is the Version 2 default (D-4, 2026-09-24): the
+    // style moves with the version, the ONE announcement says so, and the
+    // move persists like a click on the radio would. X Adjust moves with the
+    // tactile style (2026-09-28) and the same announcement says that too.
+    await expect(page.locator('#a11y-status')).toHaveText(`${S_V10_ON} ${S_V16_STYLE_MOVED} ${S_X1_X_ADJUST_MOVED}`);
+    await expect(page.locator('input[name="indicator_mode"][value="tactile"]')).toBeChecked();
+    await expect(page.locator('input[name="indicator_mode"][value="visual"]')).toBeEnabled();
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_indicator_mode'))).toBe('tactile');
     await expect(page.locator('#v2-keyed-cutouts-selection')).toBeVisible();
-    await expect(page.locator('#v2_key_clearance_mm')).toHaveValue('0.110');
+    for (const id of V2_KEY_CLEARANCE_IDS) {
+      await expect(page.locator(`#${id}`)).toHaveValue(V2_KEY_CLEARANCE_DEFAULTS[id]);
+    }
 
     // The gear choice stays visible - it is a menu item, not a beta toggle to
     // hide - and stays on Standard (the API still refuses gears with Version 2
@@ -257,10 +299,15 @@ test.describe('Embosser Version 2', () => {
 
     await selectVersion2(page);
     await expect(page.locator('#cylinder_diameter_mm')).toHaveValue(V2_DIAMETER);
+    await expect(page.locator('input[name="indicator_mode"][value="tactile"]')).toBeChecked();
 
+    // The style the user had comes back with the dials (D-4), with no clause
+    // added to the Version 1 sentence.
     await page.locator('#embosser_version_1').check();
     await expect(page.locator('#a11y-status')).toHaveText(S_V10_OFF);
     await expect(page.locator('#cylinder_diameter_mm')).toHaveValue(before);
+    await expect(page.locator('input[name="indicator_mode"][value="visual"]')).toBeChecked();
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_indicator_mode'))).toBe('visual');
     await expect(page.locator('#gear-rollers-selection')).toBeVisible();
     await expect(page.locator('#cylinder-seam-offset-row')).toBeVisible();
   });
@@ -280,7 +327,9 @@ test.describe('Embosser Version 2', () => {
     await selectVersion2(page);
     await expect(page.locator('#gear_mode_fixed')).toBeChecked();
     await expect(page.locator('#gear_mode_standard')).not.toBeChecked();
-    await expect(page.locator('#a11y-status')).toHaveText(`${S_V10_ON} ${S3_CUTOUT_NOTE}`);
+    await expect(page.locator('#a11y-status')).toHaveText(
+      `${S_V10_ON} ${S_V16_STYLE_MOVED} ${S_X1_X_ADJUST_MOVED} ${S3_CUTOUT_NOTE}`,
+    );
     expect(await page.evaluate(() => localStorage.getItem('braille_prefs_gear_rollers_enabled'))).toBe('1');
     // The preset barrel is already the fixed gears' 30.8 x 54, so no size note.
     await expect(page.locator('#gear-size-warning')).toBeHidden();
@@ -371,29 +420,33 @@ test.describe('Embosser Version 2', () => {
     await expect(page.locator('#v2-size-warning')).toBeHidden();
   });
 
-  test('the clearance dial is bounded at the source and refuses 0.51', async ({ page }) => {
+  test('each key clearance dial is bounded at the source and refuses 0.51', async ({ page }) => {
     await openApp(page);
     await openExpertDimensions(page);
     await selectVersion2(page);
 
-    const dial = page.locator('#v2_key_clearance_mm');
-    expect(await dial.getAttribute('min')).toBe('0');
-    expect(await dial.getAttribute('max')).toBe('0.5');
-    expect(await dial.getAttribute('step')).toBe('0.005');
+    // Four dials since 2026-09-25, one per gear; the shared dial is gone.
+    expect(await page.locator('#v2_key_clearance_mm').count()).toBe(0);
+    for (const id of V2_KEY_CLEARANCE_IDS) {
+      const dial = page.locator(`#${id}`);
+      expect(await dial.getAttribute('min')).toBe('0');
+      expect(await dial.getAttribute('max')).toBe('0.5');
+      expect(await dial.getAttribute('step')).toBe('0.005');
 
-    // 0.5 is legal; 0.51 is not. The bound lives on the input, so the browser
-    // itself refuses it — no hand-rolled check to drift out of step.
-    await setDial(page, 'v2_key_clearance_mm', '0.5');
-    expect(await dial.evaluate((el: HTMLInputElement) => el.checkValidity())).toBe(true);
-    await expect(page.locator('#action-btn')).toBeEnabled();
+      // 0.5 is legal; 0.51 is not. The bound lives on the input, so the browser
+      // itself refuses it — no hand-rolled check to drift out of step.
+      await setDial(page, id, '0.5');
+      expect(await dial.evaluate((el: HTMLInputElement) => el.checkValidity())).toBe(true);
+      await expect(page.locator('#action-btn')).toBeEnabled();
 
-    await setDial(page, 'v2_key_clearance_mm', '0.51');
-    expect(await dial.evaluate((el: HTMLInputElement) => el.checkValidity())).toBe(false);
+      await setDial(page, id, '0.51');
+      expect(await dial.evaluate((el: HTMLInputElement) => el.checkValidity())).toBe(false);
 
-    // And the shipped default must be a whole number of steps, or the dial
-    // would be :invalid on load and kill Generate silently.
-    await setDial(page, 'v2_key_clearance_mm', '0.110');
-    expect(await dial.evaluate((el: HTMLInputElement) => el.checkValidity())).toBe(true);
+      // And the shipped default must be a whole number of steps, or the dial
+      // would be :invalid on load and kill Generate silently.
+      await setDial(page, id, V2_KEY_CLEARANCE_DEFAULTS[id]);
+      expect(await dial.evaluate((el: HTMLInputElement) => el.checkValidity())).toBe(true);
+    }
   });
 
   test('the recommended cell count fits the barrel, and nothing warns on load', async ({
@@ -416,10 +469,13 @@ test.describe('Embosser Version 2', () => {
     // Neither the seam-collision warning nor the row-overflow one may fire.
     await expect(page.locator('#tactile-gap-warning')).toBeHidden();
     await expect(page.locator('#cylinder-overflow-warning')).toBeHidden();
-    await expect(page.locator('#a11y-status')).toHaveText(S_V10_ON);
+    // From a visual start the style moved with the version (D-4) and X Adjust
+    // with it, so the one announcement carries S-V16 and S-X1; no size or gap
+    // note rides with it.
+    await expect(page.locator('#a11y-status')).toHaveText(`${S_V10_ON} ${S_V16_STYLE_MOVED} ${S_X1_X_ADJUST_MOVED}`);
   });
 
-  test('the request gains exactly the two Version 2 keys and loses none', async ({ page }) => {
+  test('the request gains exactly the five Version 2 keys and loses none', async ({ page }) => {
     await openApp(page);
     await page.locator('#auto-text').fill('abc');
 
@@ -428,6 +484,9 @@ test.describe('Embosser Version 2', () => {
     await page.locator('#download-stl-btn').waitFor({ state: 'visible', timeout: 240_000 });
 
     await selectVersion2(page);
+    // One dial moved: only ITS field may carry the new number.
+    await openExpertDimensions(page);
+    await setDial(page, 'v2_key_clearance_a1_mm', '0.065');
     await generate(page, state, 2);
     await page.locator('#download-stl-btn').waitFor({ state: 'visible', timeout: 240_000 });
 
@@ -436,10 +495,19 @@ test.describe('Embosser Version 2', () => {
 
     const added = Object.keys(on).filter((k) => !(k in off));
     const removed = Object.keys(off).filter((k) => !(k in on));
-    expect(added.sort()).toEqual(['embosser_version', 'v2_key_clearance_mm']);
+    expect(added.sort()).toEqual(['embosser_version', ...V2_KEY_CLEARANCE_IDS].sort());
     expect(removed).toEqual([]);
     expect(on.embosser_version).toBe(2);
-    expect(on.v2_key_clearance_mm).toBe(0.110);
+    expect(on.v2_key_clearance_a1_mm).toBe(0.065);
+    expect(on.v2_key_clearance_a2_mm).toBe(0.075);
+    expect(on.v2_key_clearance_b1_mm).toBe(0.075);
+    expect(on.v2_key_clearance_b2_mm).toBe(0.075);
+    // The legacy shared field is never sent by this build.
+    expect('v2_key_clearance_mm' in on).toBe(false);
+    // Same key set, one changed value: Version 2 moved the style to tactile
+    // (D-4), which rides in the key every body already carries.
+    expect(off.indicator_mode).toBe('visual');
+    expect(on.indicator_mode).toBe('tactile');
 
     // Version 2 is cylinders-only, and the gear flag must never ride along.
     expect((state.bodies[1] as { shape_type: string }).shape_type).toBe('cylinder');
@@ -499,23 +567,188 @@ test.describe('Embosser Version 2', () => {
 
     await page.reload();
     await page.waitForLoadState('networkidle');
-    await page.waitForSelector('#indicator-mode-selection');
+    await page.waitForSelector('#embosser-setup-selection');
 
     await expect(page.locator('#embosser_version_2')).toBeChecked();
     // The card-thickness preset rewrites the diameter on every load, so this
     // also proves the Version 2 override is re-applied AFTER it.
     await expect(page.locator('#cylinder_diameter_mm')).toHaveValue(V2_DIAMETER);
+    // The tactile default persisted with the version (D-4).
+    await expect(page.locator('input[name="indicator_mode"][value="tactile"]')).toBeChecked();
     // A load restore is not a user action and must announce nothing.
     await expect(page.locator('#a11y-status')).toHaveText('');
 
     await page.locator('#reset-defaults-btn').click();
     await expect(page.locator('#embosser_version_1')).toBeChecked();
-    await expect(page.locator('#v2_key_clearance_mm')).toHaveValue('0.110');
+    await expect(page.locator('input[name="indicator_mode"][value="visual"]')).toBeChecked();
+    for (const id of V2_KEY_CLEARANCE_IDS) {
+      await expect(page.locator(`#${id}`)).toHaveValue(V2_KEY_CLEARANCE_DEFAULTS[id]);
+    }
     expect(
       await page.evaluate(
         () => (document.getElementById('cylinder-seam-offset-row') as HTMLElement).hidden,
       ),
     ).toBe(false);
+  });
+
+  test('a visual style chosen in Version 2 is kept, and a reload does not overrule it', async ({ page }) => {
+    // D-4: a default, not a lock. The user may go back to visual markers in
+    // Version 2, and the silent load restore must never move it again.
+    await openApp(page);
+    await selectVersion2(page);
+    await expect(page.locator('input[name="indicator_mode"][value="tactile"]')).toBeChecked();
+
+    await selectIndicatorMode(page, 'visual');
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_indicator_mode'))).toBe('visual');
+
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('#embosser-setup-selection');
+    await expect(page.locator('#embosser_version_2')).toBeChecked();
+    await expect(page.locator('input[name="indicator_mode"][value="visual"]')).toBeChecked();
+    await expect(page.locator('#a11y-status')).toHaveText('');
+
+    // Going back to Version 1 gives back the style the user had on the way in
+    // (visual) - which is also what they chose, so nothing moves.
+    await page.locator('#embosser_version_1').check();
+    await expect(page.locator('input[name="indicator_mode"][value="visual"]')).toBeChecked();
+  });
+
+  test('with Double-sided on, a version change leaves the locked tactile style alone', async ({ page }) => {
+    await openApp(page);
+    await page.locator('#card_sides_double').check();
+    await expect(page.locator('input[name="indicator_mode"][value="tactile"]')).toBeChecked();
+    await expect(page.locator('input[name="indicator_mode"][value="visual"]')).toBeDisabled();
+
+    // The style did not move, but X Adjust did (tactile was already on), so
+    // the announcement is the version sentence with the S-X1 clause alone.
+    await selectVersion2(page);
+    await expect(page.locator('#a11y-status')).toHaveText(`${S_V10_ON} ${S_X1_X_ADJUST_MOVED}`);
+    await expect(page.locator('input[name="indicator_mode"][value="tactile"]')).toBeChecked();
+    await revealRowIndicatorPanel(page);
+    await expect(page.locator('#indicator-mode-lock-note')).toBeVisible();
+
+    await page.locator('#embosser_version_1').check();
+    await expect(page.locator('#a11y-status')).toHaveText(S_V10_OFF);
+    await expect(page.locator('input[name="indicator_mode"][value="tactile"]')).toBeChecked();
+    await expect(page.locator('input[name="indicator_mode"][value="visual"]')).toBeDisabled();
+  });
+
+  // 2026-09-29 (Brennen's finding from testing): Single-sided gives back the
+  // style the double-sided lock displaced. While the lock holds, a version
+  // change works on that displaced style, so what Single-sided shows is the
+  // style the version rules say - never the lock's leftover tactile.
+  test('Single-sided after a Version 2 round trip under the lock gives back the Version 1 visual markers', async ({ page }) => {
+    await openApp(page);
+    const visual = page.locator('input[name="indicator_mode"][value="visual"]');
+    await page.locator('#card_sides_double').check();
+    await selectVersion2(page);
+    await page.locator('#embosser_version_1').check();
+    await expect(page.locator('#a11y-status')).toHaveText(S_V10_OFF);
+
+    await page.locator('#card_sides_single').check();
+    await expect(visual).toBeChecked();
+    await expect(page.locator('#a11y-status')).toHaveText(`${S_M11_SINGLE} ${S_M14_STYLE_RESTORED}`);
+  });
+
+  test('Single-sided in Version 2 keeps the Version 2 tactile default, and Version 1 then gives back visual', async ({ page }) => {
+    await openApp(page);
+    const visual = page.locator('input[name="indicator_mode"][value="visual"]');
+    const tactile = page.locator('input[name="indicator_mode"][value="tactile"]');
+    await page.locator('#card_sides_double').check();
+    await selectVersion2(page);
+
+    // The Version 2 default landed under the lock, so nothing comes back.
+    await page.locator('#card_sides_single').check();
+    await expect(visual).toBeEnabled();
+    await expect(tactile).toBeChecked();
+    await expect(page.locator('#a11y-status')).toHaveText(S_M11_SINGLE);
+
+    await page.locator('#embosser_version_1').check();
+    await expect(visual).toBeChecked();
+  });
+
+  test('Version 2, then Double-sided, then Version 1 and Single-sided gives back visual', async ({ page }) => {
+    await openApp(page);
+    const visual = page.locator('input[name="indicator_mode"][value="visual"]');
+    await selectVersion2(page);
+    await expect(page.locator('input[name="indicator_mode"][value="tactile"]')).toBeChecked();
+    await page.locator('#card_sides_double').check();
+
+    // Leaving Version 2 while locked: the Version 1 style waits for Single-sided.
+    await page.locator('#embosser_version_1').check();
+    await expect(visual).toBeDisabled();
+    await page.locator('#card_sides_single').check();
+    await expect(visual).toBeChecked();
+    await expect(page.locator('#a11y-status')).toHaveText(`${S_M11_SINGLE} ${S_M14_STYLE_RESTORED}`);
+  });
+
+  // Since 2026-10-01 (Brennen's decision) the style the user had before
+  // Version 2 is saved with the design settings, so leaving Version 2 gives it
+  // back after a reload as well as within one visit.
+  test('Version 1 gives back the visual markers after a reload in Version 2', async ({ page }) => {
+    await openApp(page);
+    const visual = page.locator('input[name="indicator_mode"][value="visual"]');
+    const tactile = page.locator('input[name="indicator_mode"][value="tactile"]');
+    await selectVersion2(page);
+    await expect(tactile).toBeChecked();
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_version1_indicator_mode'))).toBe('visual');
+
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('#embosser-setup-selection');
+    await expect(page.locator('#embosser_version_2')).toBeChecked();
+    await expect(tactile).toBeChecked();
+
+    await page.locator('#embosser_version_1').check();
+    await expect(visual).toBeChecked();
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_version1_indicator_mode'))).toBeNull();
+  });
+
+  test('under the lock, a reload keeps the Version 1 style waiting for Single-sided', async ({ page }) => {
+    await openApp(page);
+    const visual = page.locator('input[name="indicator_mode"][value="visual"]');
+    await selectVersion2(page);
+    await page.locator('#card_sides_double').check();
+
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('#embosser-setup-selection');
+    await page.locator('#embosser_version_1').check();
+    await expect(visual).toBeDisabled();
+    await page.locator('#card_sides_single').check();
+    await expect(visual).toBeChecked();
+    await expect(page.locator('#a11y-status')).toHaveText(`${S_M11_SINGLE} ${S_M14_STYLE_RESTORED}`);
+  });
+
+  test('a remembered Version 1 style is dropped when Version 1 comes back on load', async ({ page }) => {
+    await openApp(page);
+    await page.evaluate(() => localStorage.setItem('braille_prefs_version1_indicator_mode', 'visual'));
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('#embosser-setup-selection');
+    await expect(page.locator('#embosser_version_1')).toBeChecked();
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_version1_indicator_mode'))).toBeNull();
+  });
+
+  test('in Version 2, visual markers the user chose come back after Double-sided, X Adjust with them', async ({ page }) => {
+    await openApp(page);
+    const visual = page.locator('input[name="indicator_mode"][value="visual"]');
+    await selectVersion2(page);
+    await expect(page.locator('#braille_x_adjust')).toHaveValue(V2_TACTILE_X_ADJUST);
+    await selectIndicatorMode(page, 'visual');
+    await expect(page.locator('#braille_x_adjust')).toHaveValue('0');
+
+    // The lock moves the style to tactile and X Adjust to the tactile default...
+    await page.locator('#card_sides_double').check();
+    await expect(page.locator('input[name="indicator_mode"][value="tactile"]')).toBeChecked();
+    await expect(page.locator('#braille_x_adjust')).toHaveValue(V2_TACTILE_X_ADJUST);
+
+    // ...and Single-sided gives both back.
+    await page.locator('#card_sides_single').check();
+    await expect(visual).toBeChecked();
+    await expect(page.locator('#braille_x_adjust')).toHaveValue('0');
+    await expect(page.locator('#a11y-status')).toHaveText(`${S_M11_SINGLE} ${S_M14_STYLE_RESTORED}`);
   });
 
   test('the card stock stays 0.4 in Version 2 rather than flipping to Custom', async ({ page }) => {
@@ -545,7 +778,7 @@ test.describe('Embosser Version 2', () => {
 
     // The preset toast lands in #error-text, which generate() reads on slow
     // runs, so clear it before generating.
-    await page.locator('input[name="card_thickness_preset"][value="0.3"]').check();
+    await selectThicknessPreset(page, '0.3');
     await page.evaluate(() => { const t = document.getElementById('error-text'); if (t) t.textContent = ''; });
     await expect(page.locator('#cylinder_height_mm')).toHaveValue(V2_HEIGHT);
     await expect(page.locator('#cylinder_diameter_mm')).toHaveValue(V2_DIAMETER);
@@ -561,5 +794,102 @@ test.describe('Embosser Version 2', () => {
     // Version 2 (the snapshot, not the preset).
     await page.locator('#embosser_version_1').check();
     await expect(page.locator('#cylinder_height_mm')).toHaveValue('52');
+  });
+
+  test('choosing Version 2 sets X Adjust to the tactile default, sends it, and Version 1 gives back the value the user had', async ({
+    page,
+  }) => {
+    // Brennen, 2026-09-28, after his print test of the X Adjust fix: in
+    // Version 2 with the tactile seam arrow the braille starts 2 mm of arc
+    // nearer the alignment arrow. A default, not a lock, applied on the
+    // user's version change; the snapshot gives the Version 1 value back.
+    await openApp(page);
+    await page.locator('#auto-text').fill('abc');
+    await setDial(page, 'braille_x_adjust', '1.5');
+
+    await selectVersion2(page);
+    await expect(page.locator('#braille_x_adjust')).toHaveValue(V2_TACTILE_X_ADJUST);
+    expect(await page.evaluate(() => localStorage.getItem('braille_prefs_braille_x_adjust'))).toBe(V2_TACTILE_X_ADJUST);
+    await expect(page.locator('#a11y-status')).toHaveText(`${S_V10_ON} ${S_V16_STYLE_MOVED} ${S_X1_X_ADJUST_MOVED}`);
+
+    const state = watchGeometrySpecRequests(page);
+    await generate(page, state, 1);
+    const settings = (state.bodies[0] as { settings: Record<string, unknown> }).settings;
+    expect(settings.braille_x_adjust).toBe(V2_TACTILE_X_ADJUST);
+
+    await page.locator('#embosser_version_1').check();
+    await expect(page.locator('#braille_x_adjust')).toHaveValue('1.5');
+    await expect(page.locator('#a11y-status')).toHaveText(S_V10_OFF);
+  });
+
+  test('every card stock chosen in Version 2 keeps the tactile X Adjust default, and the stock never reads as Custom over it', async ({
+    page,
+  }) => {
+    await openApp(page);
+    await selectVersion2(page);
+    await expect(page.locator('#braille_x_adjust')).toHaveValue(V2_TACTILE_X_ADJUST);
+    await expect(page.locator('input[name="card_thickness_preset"][value="0.4"]')).toBeChecked();
+
+    // Both presets carry X Adjust 0; in Version 2 with the tactile arrow the
+    // preset's value is the default instead ("for all preset settings").
+    await selectThicknessPreset(page, '0.3');
+    await expect(page.locator('#braille_x_adjust')).toHaveValue(V2_TACTILE_X_ADJUST);
+    await expect(page.locator('input[name="card_thickness_preset"][value="0.3"]')).toBeChecked();
+    await selectThicknessPreset(page, '0.4');
+    await expect(page.locator('#braille_x_adjust')).toHaveValue(V2_TACTILE_X_ADJUST);
+    await expect(page.locator('input[name="card_thickness_preset"][value="0.4"]')).toBeChecked();
+
+    // A hand-set value still reads as Custom - that is what protects it
+    // across a reload - and the dial stays free.
+    await setDial(page, 'braille_x_adjust', '-2.5');
+    await expect(page.locator('input[name="card_thickness_preset"][value="custom"]')).toBeChecked();
+    await expect(page.locator('#braille_x_adjust')).toHaveValue('-2.5');
+  });
+
+  test('visual markers in Version 2 give back the Version 1 X Adjust, and the tactile arrow brings the default back', async ({
+    page,
+  }) => {
+    await openApp(page);
+    await selectVersion2(page);
+    await expect(page.locator('#braille_x_adjust')).toHaveValue(V2_TACTILE_X_ADJUST);
+
+    // The preset wrote 0 on load, so that is what the snapshot gives back.
+    await selectIndicatorMode(page, 'visual');
+    await expect(page.locator('#braille_x_adjust')).toHaveValue('0');
+    await selectIndicatorMode(page, 'tactile');
+    await expect(page.locator('#braille_x_adjust')).toHaveValue(V2_TACTILE_X_ADJUST);
+
+    // A hand-set value is not the default, so visual markers leave it alone.
+    await setDial(page, 'braille_x_adjust', '-3');
+    await selectIndicatorMode(page, 'visual');
+    await expect(page.locator('#braille_x_adjust')).toHaveValue('-3');
+  });
+
+  test('the tactile X Adjust default survives a reload, and so does a hand-set value', async ({ page }) => {
+    await openApp(page);
+    await selectVersion2(page);
+    await expect(page.locator('#braille_x_adjust')).toHaveValue(V2_TACTILE_X_ADJUST);
+
+    // The card-stock preset rewrites X Adjust to 0 on every load; the Version 2
+    // restore re-asserts the default after it, exactly as it does the barrel.
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('#embosser-setup-selection');
+    await expect(page.locator('#embosser_version_2')).toBeChecked();
+    await expect(page.locator('#braille_x_adjust')).toHaveValue(V2_TACTILE_X_ADJUST);
+    await expect(page.locator('#a11y-status')).toHaveText('');
+
+    // A hand-set value reads as Custom, which applies no preset on load, so
+    // it comes back exactly as saved.
+    await setDial(page, 'braille_x_adjust', '-3');
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('#embosser-setup-selection');
+    await expect(page.locator('#braille_x_adjust')).toHaveValue('-3');
+
+    // Reset to defaults puts everything back: Version 1, X Adjust 0.
+    await page.locator('#reset-defaults-btn').click();
+    await expect(page.locator('#embosser_version_1')).toBeChecked();
+    await expect(page.locator('#braille_x_adjust')).toHaveValue('0.0');
   });
 });

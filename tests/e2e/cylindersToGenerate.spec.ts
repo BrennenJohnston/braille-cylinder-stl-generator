@@ -30,7 +30,7 @@ async function openApp(page: Page) {
   await page.goto('/');
   await page.waitForLoadState('domcontentloaded');
   await page.waitForLoadState('networkidle');
-  await page.waitForSelector('#indicator-mode-selection');
+  await page.waitForSelector('#embosser-setup-selection');
 }
 
 /** Record every /geometry_spec REQUEST body without interfering with the run. */
@@ -213,7 +213,7 @@ test.describe('Cylinders to Generate', () => {
     expect(await page.evaluate(() => localStorage.getItem('braille_prefs_plate_type'))).toBe('negative');
 
     await page.reload();
-    await page.waitForSelector('#indicator-mode-selection');
+    await page.waitForSelector('#embosser-setup-selection');
     expect(await selectedCylinders(page)).toBe('negative');
 
     await page.locator('#reset-defaults-btn').click();

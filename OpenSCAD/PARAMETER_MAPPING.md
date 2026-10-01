@@ -29,7 +29,10 @@ Version 1 file has no such tab.
 
 | OpenSCAD | Web API | Web UI Label | Default | Range |
 |----------|---------|--------------|---------|-------|
-| `key_clearance_mm` | `v2_key_clearance_mm` | Key clearance (mm) | 0.110 | 0–0.5 |
+| `key_clearance_a1_mm` | `v2_key_clearance_a1_mm` | Gear A1 (top of Cylinder A) key clearance (mm) | 0.075 | 0–0.5 |
+| `key_clearance_a2_mm` | `v2_key_clearance_a2_mm` | Gear A2 (bottom of Cylinder A) key clearance (mm) | 0.075 | 0–0.5 |
+| `key_clearance_b1_mm` | `v2_key_clearance_b1_mm` | Gear B1 (top of Cylinder B) key clearance (mm) | 0.075 | 0–0.5 |
+| `key_clearance_b2_mm` | `v2_key_clearance_b2_mm` | Gear B2 (bottom of Cylinder B) key clearance (mm) | 0.075 | 0–0.5 |
 
 Three Version 1 parameters are **not present in the Version 2 file** and have no
 Version 2 equivalent to map:
@@ -46,8 +49,10 @@ not the Version 1 one — see [Gears](#gears) below.
 On the web that is `gear_rollers_enabled: 1` together with `embosser_version: 2`.
 
 On the web side these ride inside `settings` as the flat names
-`embosser_version` (integer 1 or 2) and `v2_key_clearance_mm`, and nothing is
-added to the request while Version 1 is selected.
+`embosser_version` (integer 1 or 2) and the four `v2_key_clearance_{a1,a2,b1,b2}_mm`,
+and nothing is added to the request while Version 1 is selected. The web app's
+older shared `v2_key_clearance_mm` is still honoured there for saved requests; this
+file's shared `key_clearance_mm` dial was retired for the four in 2.11.0.
 
 ### Text Input - Pre-Translated Braille
 | OpenSCAD Parameter | Web App Equivalent | Notes |
@@ -244,8 +249,9 @@ on the 30.8 mm cylinder); see
 | `braille_y_adjust` | Y Adjust | 0.0 mm | -10 to 10 mm |
 
 > Removed in v2.2.0: `braille_x_adjust`. On a cylinder the X axis is the angular
-> wrap around the seam, so a linear "X adjust" had no useful meaning. Use
-> `seam_offset_degrees` (Cylinder Dimensions) for angular pattern offset.
+> wrap around the seam, so a linear "X adjust" had no useful meaning.
+> `seam_offset_degrees` (Cylinder Dimensions) turns only the polygonal cutout;
+> it does not move the pattern.
 
 ### Expert Mode - Emboss Dot Dimensions (Rounded Shape)
 | OpenSCAD Parameter | Web App Equivalent | Default | Range |
@@ -391,7 +397,7 @@ and the polygonal cutout are unchanged — only surface features differ.
 
 ### 6. **Cylinder Support**
 - Full parametric control over diameter, height, and polygonal cutout
-- Seam offset allows rotation adjustment
+- Seam offset turns the polygonal cutout (the braille does not move)
 - Supports both rounded and cone dot shapes on curved surfaces
 
 ## Default Values Alignment

@@ -652,7 +652,7 @@ always cuts deeper. With the two footprints the app actually ships:
 | Bowl | Mouth radius `a` | Nominal depth `h` | Sphere radius `R` | Python cuts | Worker cuts |
 |---|---|---|---|---|---|
 | Single-sided default, 1.8 x 0.8 mm | 0.9 mm | 0.8 mm | 0.90625 mm | 0.800 mm | about **0.906 mm** (+0.106) |
-| Double-sided BETA, 1.3 x 0.5 mm | 0.65 mm | 0.5 mm | 0.6725 mm | 0.500 mm | **0.667-0.672 mm** measured (+0.17) |
+| Double-sided (0.3 preset), 1.3 x 0.5 mm | 0.65 mm | 0.5 mm | 0.6725 mm | 0.500 mm | **0.667-0.672 mm** measured (+0.17) |
 
 The double-sided figure is a measured range rather than a single number because the worker
 subtracts a 24-segment faceted sphere (`createManifoldSphere(sphereR, 24)`), whose flat
@@ -1007,9 +1007,9 @@ differs from the schema. See "Reading the default tables" in the Overview for wh
 | `cone_counter_dot_flat_hat` | 0.4 mm | **1.0 mm** | **0.8 mm** | Cone tip diameter |
 | `cone_counter_dot_height` | 0.8 mm | **0.7 mm** | **0.5 mm** | Cone depth |
 
-### Double-Sided (BETA) Footprints
+### Double-Sided Footprints
 
-The double-sided beta does not use the dials above. Its dot and bowl sizes are **fixed
+Double-sided cards do not use the dials above. Its dot and bowl sizes are **fixed
 packages** with no UI controls, keyed to the card-stock preset since 2026-08-20 — the
 print matrix showed one footprint cannot serve both stocks (the 0.4 package tears
 0.35 mm card; Option B under-forms 0.4 mm card):
@@ -1261,6 +1261,7 @@ Use these logs to verify that:
 | 2026-08-21 | 1.8 | Section 5 gains **"A depth of 0 mm means no recess, not a default one"**. A bowl depth of 0 mm used to reach both CSG workers, whose divide-by-zero guard silently substituted **0.8 mm** - geometry the user never asked for, and the single-sided depth even on a double-sided run (whose own default is 0.5 mm). `app/geometry_spec.py` now declines to emit a depthless bowl on all three paths, which also fixes a `ZeroDivisionError` -> HTTP 500 on the card counter plate that no one had reported. Single-sided 0 mm stays legal and means a flat counter plate (schema minimum 0.0 and the UI `min="0"` are unchanged), reported through `spec['warnings']` and the log; double-sided 0 mm is now rejected in `validate_double_sided_settings`, which retires the nominal-diameter workaround that stood at `app/validation.py:396`. **No shipped dimension moved**: 0.8 mm single-sided and 0.5 mm double-sided are byte-identical before and after. |
 | 2026-08-21 | 1.7 | Section 7 gains **"Raised-dot base embed"**, and Bug 3 cross-references it. Raised dots are now sunk below the shell surface by twice the 64-segment facet sagitta so they fuse with the shell instead of exporting as separate connected bodies - measured 6 bodies down to 1 on a real browser export, 32 down to 1 on the OpenSCAD single-sided default. **No dimension changed**: the base frustum is lengthened downward along its own taper, so its radius at the surface and the dot's height above it are byte-stable (browser dome apex 16.400001 mm before and after). Recesses are unaffected. Both generators moved together (`static/workers/csg-worker-manifold.js`, OpenSCAD 2.6.1); `tests/fixtures/*_golden.stl` were NOT regenerated - their renderer already sank a 0.05 mm skirt of its own. |
 | 2026-08-20 | 1.6 | Section 9's double-sided footprints table now carries TWO packages keyed to the card-stock preset (research memory FD-8/FD-9): 0.3 preset → Option B (unchanged, still the schema default), 0.4 preset → the Q2 print-matrix winner (base height 0.5, dome Ø1.0 × 0.5, bowl Ø1.4) — one footprint cannot serve both stocks (Q2 tears 0.35 mm card; Option B under-forms 0.4 mm card). Records the 1.0 mm die-height housing ceiling. |
+| 2026-09-30 | 1.9 | Documentation review: the double-sided footprint section and the bowl-depth table drop "BETA" (released 2026-09-20); the table row names the 0.3 preset package it measures. |
 ---
 
 ## 13. Related Documentation
