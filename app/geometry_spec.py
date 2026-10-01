@@ -719,6 +719,13 @@ def extract_cylinder_geometry_spec(
             # separate-gear spec.
             spec['cylinder']['bottom_chamfer'] = version2.bottom_chamfer_block(radius)
             spec['gears']['axis_cuts'] = version2.axis_cut_blocks(plate_type, height)
+        else:
+            # The Version 1 fused roller gets the same vent and self-supporting
+            # sockets (2026-09-30, Brennen's approved plan), cut last the same
+            # way - but each cone stays a hair inside its socket's taper, so the
+            # housing pin's bore and taper are exactly as vendored, and there
+            # is no barrel chamfer. Numbers: app/geometry/gears.py.
+            spec['gears']['axis_cuts'] = gears.axis_cut_blocks(plate_type, height)
 
     # Counts recesses declined for having no depth, so the omission is reported
     # once per request rather than silently or once per dot.

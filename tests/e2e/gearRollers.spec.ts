@@ -30,6 +30,10 @@ import { selectCylinders } from './helpers/cylinders';
 const CUTOUT_NOTE = 'The polygonal cutout is not used while integrated gears are on.';
 const SIZE_WARNING_START = 'Integrated gears are matched to the reference roller and only fit a';
 const GEARS_READY = 'Cylinder generated with integrated gears.';
+// S-P1, signed 2026-09-28 for the fused Version 2 roller; since 2026-09-30 the
+// Version 1 fused roller's ready message carries it too (approved decision 5),
+// now that its sockets are vented and self-supporting printed that way up.
+const S_P1_PRINT = 'Print it with the bottom gear on the build plate, with supports off.';
 
 // The reference roller the vendored gears were measured against. Anything else
 // is rejected by app/validation.py, so the UI warns before a generate. The
@@ -307,8 +311,8 @@ test.describe('Gear-integrated one-piece rollers', () => {
     await page.locator('#download-stl-btn').waitFor({ state: 'visible', timeout: 240_000 });
 
     // S5 rides in the ready announcement rather than as a second write: the
-    // live region holds one message at a time.
-    await expect(page.locator('#a11y-status')).toContainText(GEARS_READY);
+    // live region holds one message at a time. S-P1 follows it.
+    await expect(page.locator('#a11y-status')).toContainText(`${GEARS_READY} ${S_P1_PRINT}`);
 
     expect(await downloadName(page)).toBe('Embossing_Cylinder_Geared_0.4_abc.stl');
   });
@@ -324,6 +328,7 @@ test.describe('Gear-integrated one-piece rollers', () => {
     // Public training videos show this name. It must not move.
     expect(await downloadName(page)).toBe('Embossing_Cylinder_0.4_abc.stl');
     await expect(page.locator('#a11y-status')).not.toContainText(GEARS_READY);
+    await expect(page.locator('#a11y-status')).not.toContainText(S_P1_PRINT);
   });
 
   test('the counter plate asks for the B gear set', async ({ page }) => {

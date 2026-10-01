@@ -2227,21 +2227,22 @@ function processGeometrySpec(spec, gearAsset = null) {
             }
         }
 
-        // Fused Version 2, the v9 update (2026-09-24, decisions D-1 and D-2):
-        // the axis cuts come LAST, after every union. The 2 mm vent has to
-        // pass through the buried pegs, which only exist once the gears are
-        // unioned in (their own holes sit 0.05 mm off the axis, so cutting the
-        // barrel first would let a peg refill a crescent of it), and the
-        // socket cone cuts the gear body itself: it continues the bottom
-        // socket's 45 degree taper up to the vent so the socket ceiling prints
-        // with no support. Absent block, absent cut - Version 1 and
-        // separate-gear rollers are untouched. Numbers: app/geometry/version2.py.
+        // Fused rollers' axis cuts (Version 2's v9 update, 2026-09-24, D-1 and
+        // D-2; Version 1 since 2026-09-30): they come LAST, after every union.
+        // The 2 mm vent has to pass through whatever the gears bring to the
+        // axis, which only exists once they are unioned in (Version 2's buried
+        // pegs carry holes 0.05 mm off the axis, so cutting the barrel first
+        // would let a peg refill a crescent of it), and each socket cone cuts
+        // the gear body itself: it carries the socket's 45 degree taper on to
+        // the vent so the blind end prints with no support. Absent block,
+        // absent cut - separate-gear and gearless rollers are untouched.
+        // Numbers: app/geometry/version2.py and app/geometry/gears.py.
         if (gears && Array.isArray(gears.axis_cuts) && gears.axis_cuts.length > 0) {
             const axisCutters = [];
             for (const cut of gears.axis_cuts) {
                 const length = cut.z_to - cut.z_from;
                 if (!(length > 0)) {
-                    throw new Error(`Version 2 axis cut ${cut.kind}: z_to ${cut.z_to} must be above z_from ${cut.z_from}`);
+                    throw new Error(`Axis cut ${cut.kind}: z_to ${cut.z_to} must be above z_from ${cut.z_from}`);
                 }
                 let cutter;
                 if (cut.kind === 'vent') {
@@ -2249,7 +2250,7 @@ function processGeometrySpec(spec, gearAsset = null) {
                 } else if (cut.kind === 'cone') {
                     cutter = createManifoldFrustum(cut.r_from, cut.r_to, length, AXIS_CUT_SEGMENTS);
                 } else {
-                    throw new Error(`unknown Version 2 axis cut kind ${cut.kind}`);
+                    throw new Error(`unknown axis cut kind ${cut.kind}`);
                 }
                 const placed = cutter.translate([0, 0, (cut.z_from + cut.z_to) / 2]);
                 cutter.delete();
@@ -2257,13 +2258,13 @@ function processGeometrySpec(spec, gearAsset = null) {
             }
             const unionedCuts = batchUnionManifold(axisCutters);
             if (!unionedCuts) {
-                throw new Error('Version 2 axis cuts produced no geometry');
+                throw new Error('Axis cuts produced no geometry');
             }
             const vented = result.subtract(unionedCuts);
             result.delete();
             unionedCuts.delete();
             result = vented;
-            console.log(`Manifold CSG Worker: Subtracted ${gears.axis_cuts.length} axis cuts (vent and socket cone, fused Version 2)`);
+            console.log(`Manifold CSG Worker: Subtracted ${gears.axis_cuts.length} axis cuts (vent and socket cones, fused roller)`);
         }
 
         // For cylinders: the coordinate system is already correct (Z-up)

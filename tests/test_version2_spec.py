@@ -179,13 +179,19 @@ def test_version_two_without_gears_is_byte_identical_to_before():
 
 
 def test_version_one_gear_mode_carries_no_notch_fill_and_the_version_one_asset():
-    """The Version 1 one-piece roller is untouched by the fused Version 2 work."""
+    """
+    The Version 1 one-piece roller takes nothing from the fused Version 2 work:
+    its own gears, no notch fill, no barrel chamfer - and since 2026-09-30 its
+    own vent and socket cones from app/geometry/gears.py, never Version 2's.
+    """
+    from app.geometry import gears
+
     settings = {'grid_columns': 14, 'indicator_mode': 'tactile', 'gear_rollers_enabled': 1}
     cylinder = {'diameter': 30.8, 'height': 52.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0}
     spec = build_spec('positive', settings, cylinder)
     assert spec['gears']['asset'] == 'gears_a'
     assert 'notch_fills' not in spec['gears']
-    assert 'axis_cuts' not in spec['gears']
+    assert spec['gears']['axis_cuts'] == gears.axis_cut_blocks('positive', 52.0)
     assert 'solid' not in spec['cylinder']
     assert 'bottom_chamfer' not in spec['cylinder']
     assert spec['warnings'] == [CARD_FIT_WARNING]

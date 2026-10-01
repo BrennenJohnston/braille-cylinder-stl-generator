@@ -569,10 +569,11 @@ def _build_ds_cylinder_mesh(spec, shell=None):
         solid = trimesh.boolean.difference(
             [solid, trimesh.boolean.union(cutters, engine='manifold')], engine='manifold'
         )
-    # Fused Version 2, the v9 update (2026-09-24, decisions D-1 and D-2): the
-    # axis cuts come LAST, after every union, as in the worker - the 2 mm vent
-    # has to pass through the buried pegs, and the socket cone cuts the gear
-    # body itself. Absent key, absent cut.
+    # Fused rollers (Version 2's v9 update, 2026-09-24, D-1 and D-2; Version 1
+    # since 2026-09-30): the axis cuts come LAST, after every union, as in the
+    # worker - the 2 mm vent has to pass through whatever the gears bring to
+    # the axis, and each socket cone cuts the gear body itself. Absent key,
+    # absent cut.
     axis_cutters = []
     for cut in spec.get('gears', {}).get('axis_cuts', []):
         if cut['kind'] == 'vent':
@@ -584,7 +585,7 @@ def _build_ds_cylinder_mesh(spec, shell=None):
         elif cut['kind'] == 'cone':
             axis_cutters.append(_frustum(cut['r_from'], cut['z_from'], cut['r_to'], cut['z_to'], _AXIS_CUT_SECTIONS))
         else:
-            raise ValueError(f'unknown Version 2 axis cut kind {cut["kind"]!r}')
+            raise ValueError(f'unknown axis cut kind {cut["kind"]!r}')
     if axis_cutters:
         solid = trimesh.boolean.difference(
             [solid, trimesh.boolean.union(axis_cutters, engine='manifold')], engine='manifold'
@@ -898,7 +899,11 @@ def generate_gear_golden_fixtures():
                     'rings of the Version 1 holders Brennen exported, seated on the barrel ends): the '
                     'holder-to-program transform is already baked into those bytes. Since 2026-09-20 the '
                     'barrel also carries the slicer seam channel (V 1.0 x 0.5 mm, cut from the bare '
-                    'shell before the gears join, so the gear discs fill its overshoot).'
+                    'shell before the gears join, so the gear discs fill its overshoot). Since 2026-09-30 '
+                    'the roller is vented along its axis and each gear socket ends in a 45 degree cone '
+                    'instead of a flat blind end (app/geometry/gears.py axis_cut_blocks), cut last; each '
+                    "cone runs 0.02 mm inside its socket's taper, so the pin's chamfer, bore and taper "
+                    'are untouched.'
                 ),
                 'cylinder_diameter_note': (
                     'ds_cylinder*_golden uses 30.75 mm; this pair uses 30.8 mm because the '
@@ -910,7 +915,7 @@ def generate_gear_golden_fixtures():
                 'back_lines': DS_FIXTURE_BACK_LINES,
                 'settings': GEAR_FIXTURE_SETTINGS,
                 'cylinder_params': GEAR_FIXTURE_CYLINDER_PARAMS,
-                'generated': '2026-09-28',
+                'generated': '2026-09-30',
                 'trimesh_version': importlib.metadata.version('trimesh'),
                 'manifold3d_version': importlib.metadata.version('manifold3d'),
             },
@@ -1039,6 +1044,83 @@ def test_gear_golden_fixture_has_material_where_a_tooth_is(fixtures_dir, plate_t
     assert mesh.contains(np.array(inside)).all()
     assert not mesh.contains(np.array(outside)).any()
     assert spec['gears']['asset'] == GEAR_FIXTURE_ASSETS[plate_type]
+
+
+@pytest.mark.parametrize('plate_type', ['positive', 'negative'])
+def test_gear_golden_fixture_is_vented_with_self_supporting_sockets(fixtures_dir, plate_type):
+    """
+    Since 2026-09-30 (Brennen's approved plan) the Version 1 fused roller is
+    vented along its axis and each socket ends in a 45 degree cone instead of a
+    flat blind end. Fixture frame: barrel 0..52, the bottom gear's mouth at -10
+    and its old blind end at -1.5, the top's blind end at 53.5 and mouth at 62.
+    The bottom cone's wall is r = 3.68 - z (z -2.0..2.67), the top's
+    r = 1.01 + (z - 49.33) (z 49.33..54.0).
+    """
+    trimesh = pytest.importorskip('trimesh')
+    import numpy as np
+
+    mesh = trimesh.load(str(fixtures_dir / f'{GEAR_FIXTURE_NAMES[plate_type]}.stl'), file_type='stl', force='mesh')
+    mesh.merge_vertices()
+    rollers = [body for body in mesh.split(only_watertight=False) if body.bounds[1][2] - body.bounds[0][2] > 70.0]
+    assert len(rollers) == 1
+    roller = rollers[0]
+
+    # The vent: air on the axis from mouth to mouth, solid barrel at r 1.5
+    # beside it wherever neither cone is (each wall passes r 1.5 inside z 2.2
+    # and beyond z 49.8).
+    assert not roller.contains(np.array([[0.0, 0.0, float(z)] for z in range(-9, 62)])).any()
+    assert roller.contains(np.array([[1.5, 0.0, float(z)] for z in range(3, 49)])).all()
+    # The bottom cone above the old blind end: air inside its wall, solid outside.
+    assert not roller.contains(np.array([[4.7, 0.0, -1.2], [3.5, 0.0, 0.0], [2.0, 0.0, 1.5]])).any()
+    assert roller.contains(np.array([[5.1, 0.0, -1.2], [3.9, 0.0, 0.0], [2.0, 0.0, 2.5]])).all()
+    # The top cone, its mirror below the old blind end.
+    assert not roller.contains(np.array([[4.7, 0.0, 53.2], [3.5, 0.0, 52.0], [2.0, 0.0, 50.5]])).any()
+    assert roller.contains(np.array([[5.1, 0.0, 53.2], [3.9, 0.0, 52.0], [2.0, 0.0, 49.5]])).all()
+    # Beyond the blind ends the pin socket is open and the same size: air just
+    # inside the r 7.0 key bore and the taper (r 6.1 at depth 7.6), solid just
+    # outside. The top gear is probed below A1's handle-connector slot.
+    assert not roller.contains(
+        np.array([[6.9, 0.0, -6.0], [5.95, 0.0, -2.4], [6.9, 0.0, 56.0], [5.95, 0.0, 54.4]])
+    ).any()
+    assert roller.contains(np.array([[7.1, 0.0, -6.0], [6.25, 0.0, -2.4], [7.1, 0.0, 56.0], [6.25, 0.0, 54.4]])).all()
+
+
+@pytest.mark.parametrize('plate_type', ['positive', 'negative'])
+def test_gear_golden_fixture_keeps_the_pin_socket_exactly(fixtures_dir, plate_type):
+    """
+    Brennen's requirement for the 2026-09-30 cut: the key bore and the taper
+    stay EXACTLY as vendored, because the Version 1 housing pin is a close fit.
+    Points sampled on both sockets' mouth chamfer, key bore and taper - every
+    socket surface but the flat blind end the cone removes - lie on the
+    roller's surface to float precision. The cone runs 0.02 mm inside the
+    taper because at 0.01 its corners clipped the taper's facets by up to
+    0.0004 mm; this test is what caught that.
+    """
+    trimesh = pytest.importorskip('trimesh')
+    import numpy as np
+
+    from app.geometry import gears
+
+    roller = trimesh.load(str(fixtures_dir / f'{GEAR_FIXTURE_NAMES[plate_type]}.stl'), file_type='stl', force='mesh')
+    asset = load_gear_asset(GEAR_FIXTURE_ASSETS[plate_type])
+    asset.apply_translation([0.0, 0.0, 26.0])  # fixture frame
+    socket = gears.V1_GEAR_SOCKET[plate_type]
+    centres = asset.triangles_center
+    radial = np.hypot(centres[:, 0], centres[:, 1])
+    points = []
+    for mouth, sign in ((_GEAR_FIXTURE_Z_MIN, 1.0), (_GEAR_FIXTURE_Z_MAX, -1.0)):
+        depth = (centres[:, 2] - mouth) * sign
+        faces = np.where(
+            (radial < socket['bore_radius'] + socket['mouth_chamfer'] + 0.05)
+            & (depth > 0.0)
+            & (depth < socket['depth'] - 1e-4)
+        )[0]
+        sampled, _ = trimesh.sample.sample_surface_even(asset.submesh([faces], append=True), 20000, seed=11)
+        points.append(sampled)
+    points = np.vstack(points)
+    assert len(points) > 20000
+    _, distances, _ = trimesh.proximity.closest_point(roller, points)
+    assert float(distances.max()) < 1e-4
 
 
 # ---------------------------------------------------------------------------

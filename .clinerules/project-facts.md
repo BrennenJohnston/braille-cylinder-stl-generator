@@ -166,6 +166,15 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      (D-8a). CSG order is unchanged: gears join the RAISED stage, recesses
      still cut last. In FUSED Version 2 mode the gear stage also unions the
      two notch fills (spec gears.notch_fills, see 6d) after the rings.
+   - VERSION 1 AXIS CUTS (2026-09-30, Brennen's approved plan): the V1
+     fused roller also gets spec gears.axis_cuts, cut LAST - a 2 mm vent
+     z +/-37 and a 45 deg cone at each socket's blind end (8.5 deep, r 5.2
+     rim), from gears.axis_cut_blocks. Each cone runs
+     V1_SOCKET_CONE_INSET_MM 0.02 INSIDE the socket taper so the pin's
+     mouth chamfer, r 7.0 key bore and taper are bit-for-bit untouched (the
+     V1 housing pin is a close fit; 0.01 clipped the faceted taper by
+     0.0004). Never grow it into the taper the way Version 2's cone does,
+     and no barrel chamfer on V1 (his decision 4).
    - Naming: a `Geared_` segment is inserted ONLY when gears are on
      (Embossing_Cylinder_Geared_{preset}_{name}.stl). Toggle-off names never
      change — training videos use them.

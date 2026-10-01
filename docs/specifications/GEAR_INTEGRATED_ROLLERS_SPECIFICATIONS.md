@@ -115,8 +115,10 @@ A1 and A2 share one tooth clocking (0.0000° mismatch), as do B1 and B2, which i
 lets a pair mesh at both ends at once. A1 additionally carries the handle-connector
 interface features.
 
-**Consequence of the blind bores:** a one-piece roller has no through-path along its
-axis. That is why the barrel is forced solid rather than cut (§6).
+**Consequence of the blind bores:** the gears give a one-piece roller no through-path
+along its axis. That is why the barrel is forced solid rather than cut (§6). Since
+2026-09-30 a ⌀2 vent is cut along the axis after the union instead (§6.5), and the
+barrel stays solid around it.
 
 ---
 
@@ -226,15 +228,17 @@ spec['gears'] = {
 }
 ```
 
-Exactly two keys. D-8a's arrow weld is not among them — it rides on the markers'
-`outline_delta` instead (§6.3), so the worker needs no gear-specific arrow code.
+Exactly two keys until 2026-09-30; since then a third, `'axis_cuts'`, carries the vent
+and the two socket cones (§6.5). D-8a's arrow weld is not among them — it rides on the
+markers' `outline_delta` instead (§6.3), so the worker needs no gear-specific arrow code.
 
 ### 6.1 CSG order
 
 `static/workers/csg-worker-manifold.js` unions the gears and their rings into the
 RAISED stage, immediately after the base and well before any recess is cut. The
 existing order — shell → raised dots → raised markers → subtract recess dots →
-subtract markers — is unchanged. **No transform is applied to the asset**, and the
+subtract markers — is unchanged, and since 2026-09-30 one step is appended: subtract
+the axis cuts (§6.5). **No transform is applied to the asset**, and the
 spec-frame theta negation that dots and markers receive does not apply to it: a gear
 is not a spec-frame feature, and Phase 01 baked its placement into the bytes.
 
@@ -280,6 +284,61 @@ watertight promise. 5 µm makes it a real overlap: 2.5% of the recess nesting cl
 far below 0.1 mm print accuracy. Recess arrows are untouched; their 0.2 mm clearance
 growth already overlaps. **With the toggle off the outline stays exactly 0.0**, so
 existing exports keep the tangency they ship with today.
+
+### 6.5 The vent and self-supporting sockets (2026-09-30)
+
+Brennen asked for Version 2's v9 socket change (§11.8, decisions D-1 and D-K5) on the
+Version 1 fused roller, so it prints as generated, bottom gear down, with no support inside
+the housing-pin socket. Version 1 gears carry no hole beyond the socket, so the vent is new.
+His requirement: the key diameter and the taper stay **exactly** as they are, because the
+Version 1 housing pin (⌀13.7 × 6.25 then ⌀10.17 × 2, so 8.25 deep) is a close fit. He
+approved the geometry plan's six decisions the same day: cone inside the taper, both ends,
+⌀2 vent, no barrel chamfer, the S-P1 print sentence, OpenSCAD parity.
+
+**The socket, measured by vertex fits on the vendored rings** (`V1_GEAR_SOCKET` /
+`V1_TOP_GEAR_SOCKET` in `app/geometry/gears.py`; identical on A1, A2, B1 and B2, and
+concentric with the roller axis to 0.00003 mm):
+
+| Depth from the gear's mouth | Feature |
+|---|---|
+| 0 to 1.0 mm | 45° mouth chamfer, r 8.0 to 7.0 |
+| 1.0 to 6.7 mm | the key bore, r 7.000 |
+| 6.7 to 8.5 mm | 45.000° taper, r 7.000 to 5.200 |
+| 8.5 mm | flat blind end, 1.5 mm from the barrel face (z ∓27.5) |
+
+**The cuts** (`axis_cut_blocks`, worker frame, the same block shape as Version 2's):
+
+| Cut | Shape |
+|---|---|
+| Vent | r 1.0, z −37.0..+37.0: mouth to mouth plus 1.0 overshoot |
+| Bottom cone (A2 / B2) | r 5.68 at z −28.0 narrowing at 45° to r 1.01 at z −23.33 |
+| Top cone (A1 / B1) | r 1.01 at z +23.33 widening at 45° to r 5.68 at z +28.0 |
+
+Each cone starts 0.5 mm short of the blind end, in the socket's air, and runs parallel to
+the taper **0.02 mm inside it** (`V1_SOCKET_CONE_INSET_MM`), so it removes material only
+beyond the old blind end. That is the difference from Version 2, whose cone grows 0.01 mm
+into its taper. The plan said 0.01: implementing it showed the taper's flat facets (a strip
+between a 57-gon and a 49-gon) dip up to 0.0107 mm inside the ideal cone, and the cutter's
+corners then clipped the taper by up to 0.0004 mm. At 0.02 every point sampled on the mouth
+chamfer, key bore and taper comes through at 0.000000 mm. All that remains of the flat end
+is a ring 0.02 mm wide, far below anything a printer lays. The cuts come last, after every
+union (§6.1), and remove 434.29 mm³ from each roller.
+
+**Not changed:** no barrel chamfer (decision 4: the 52 mm Version 1 barrel has no card shelf
+to spend, so the 0.79 mm ledge over the bottom gear stays), and nothing outside gear mode.
+
+**Proved (2026-09-30):** `tests/fixtures/gear_roller{A,B}_golden.*` regenerated (the six
+other golden files byte-identical); `test_gear_golden_fixture_is_vented_with_self_supporting_sockets`
+(air on the axis mouth to mouth, solid beside it, both cones' walls, the socket still open
+and its walls solid) and `test_gear_golden_fixture_keeps_the_pin_socket_exactly` (40,000
+points on both sockets' chamfer, bore and taper within 0.0001 mm of the roller's surface);
+`test_version_one_socket_table_matches_the_vendored_rings` pins the table to the bytes.
+Real Chromium exports of both cylinders: the same socket points within 0.000001 mm, and the
+cut region within 0.000002 mm of the golden pair.
+
+**Print sentence:** the Version 1 ready message now carries S-P1 after S5 (decision 5):
+"Cylinder generated with integrated gears. Print it with the bottom gear on the build
+plate, with supports off."
 
 ---
 
@@ -341,7 +400,8 @@ composes S-M10 (signed 2026-09-21) (*"Standard gears selected."* / *"Simplified 
 selected."*) with whatever notes `updateGearRollersUI()` raised (S3, S7) into ONE write,
 deferred by a tick so it lands after the form-wide live-warning refresh that bubbles
 behind it. Likewise S5 (*"Cylinder generated with integrated gears."*) is prepended to
-the ready message rather than announced separately.
+the ready message rather than announced separately; since 2026-09-30 the signed S-P1
+print sentence follows it in that same write (§6.5).
 
 **Version 2 (since 2026-09-21, phase B6).** The choice is left exactly as the user set
 it: Version 2 + Simplified is the fused Version 2 roller (§11). The temporary C2 guard
@@ -648,6 +708,7 @@ golden pairs regenerating unchanged, prove it).
 
 | Date | Change |
 |---|---|
+| 2026-09-30 | **The Version 1 fused roller is vented and its sockets self-supporting (Brennen's approved plan).** New §6.5: the measured socket table, a ⌀2 axis vent and a 45° cone at each socket's blind end, cut last, each cone 0.02 mm inside the taper so the pin's chamfer, key bore and taper are untouched (0.01 was planned; the taper's facets made it clip by up to 0.0004 mm). §3, §6 and §6.1 updated for the third spec key and the appended CSG step. No barrel chamfer. The Version 1 ready message gains S-P1. Version 1 golden pair regenerated. |
 | 2026-09-28 | **The Version 1 gears are the Version 1 embosser's (Brennen's print test; decisions D-G1, D-G2 in the 2026-09-28 research folder).** §2 gains the source paragraph: the assets are now the gear rings of his four Version 1 holders (`A1/A2/B1/B2 v6`), cut by an exact Manifold intersection and seated on the barrel end, replacing the 2026-08-24 sample set whose Cylinder B gears carry the newer design's ⌀9 bore. §2's counts, §3's bores row and §4's seat note updated; teeth, transform constants, the 72 mm roller, the weld rings and S7 unchanged. Tooth counting in the derivation and the tests moved to the chevron apex. The V1 fused golden pair regenerated (the other six pairs byte-identical); the deep test compares the roller with the holders' rings; the OpenSCAD `assets/gears_a/b.stl` regenerated. |
 | 2026-09-25 | **Documentation pass.** §11.8's print-test line records the 2026-09-24 pass and the unprinted top cone. |
 | 2026-09-25 | **The top gear socket is coned like the bottom one (Brennen's decision D-K5).** §11.8 gains `V2_TOP_GEAR_SOCKET` (A1 / B1 measured off the v8 assets: bore 7.0 / 5.0, rim 5.2 / 3.2 at the floor vertex, floor 1.5 above the top face) and the third axis cut, emitted apex first; the CSG line reads vent, bottom cone, top cone. The fused golden pair regenerated; every other pair byte-identical. |

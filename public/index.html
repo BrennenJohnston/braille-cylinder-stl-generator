@@ -5744,10 +5744,14 @@
                2026-09-24 draft; decision D-7); reword only with his sign-off. The
                fused roller has a preferred way up since the v9 update - the chamfered
                barrel edge and the vented, self-supporting gear socket are at the
-               bottom gear - so the fused ready message says which end goes down. */
+               bottom gear - so the fused ready message says which end goes down.
+               Since 2026-09-30 the Version 1 fused roller says it too (his
+               approved decision 5): its sockets are vented and self-supporting
+               printed that way up. */
+            const printBottomGearDown = 'Print it with the bottom gear on the build plate, with supports off. ';
             announceStatus('stl-ready',
-                (fusedVersion2 ? 'Cylinder generated with fixed gears for the Version 2 embosser. Print it with the bottom gear on the build plate, with supports off. ' : '')
-                + (lastGenerationUsedGears && !fusedVersion2 ? 'Cylinder generated with integrated gears. ' : '')
+                (fusedVersion2 ? 'Cylinder generated with fixed gears for the Version 2 embosser. ' + printBottomGearDown : '')
+                + (lastGenerationUsedGears && !fusedVersion2 ? 'Cylinder generated with integrated gears. ' + printBottomGearDown : '')
                 + (lastGenerationUsedV2 && !fusedVersion2 ? 'Cylinder generated for the Version 2 embosser. ' : '')
                 + 'Your STL file is ready. Use the Download STL button to save it.'
                 + outstandingWarningSuffix());
