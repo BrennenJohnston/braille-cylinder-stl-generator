@@ -543,7 +543,9 @@ def test_one_piece_roller_matches_brennens_version_1_gears(geometry_stack, asset
 
         points, _ = trimesh.sample.sample_surface(holder, 40000, seed=99)
         cut_plane = z_low if z_low > 0 else z_high
-        on_ring = (points[:, 2] >= z_low) & (points[:, 2] <= z_high) & (np.abs(points[:, 2] - cut_plane) > INTERFACE_BAND_MM)
+        on_ring = (
+            (points[:, 2] >= z_low) & (points[:, 2] <= z_high) & (np.abs(points[:, 2] - cut_plane) > INTERFACE_BAND_MM)
+        )
         points = points[on_ring]
         assert len(points) > 1000
 

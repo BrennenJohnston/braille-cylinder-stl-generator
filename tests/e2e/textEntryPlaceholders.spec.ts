@@ -67,7 +67,7 @@ test.describe('Text entry placeholders', () => {
     await expect(page.locator('#back-braille-unicode')).toHaveValue(braillePlaceholder!);
   });
 
-  test('placeholders read as hints in every theme and are not the braille field\'s spoken description', async ({ page }) => {
+  test('placeholders read as hints in every theme', async ({ page }) => {
     await openApp(page);
 
     for (const theme of ['light', 'dark', 'high-contrast']) {
@@ -93,6 +93,13 @@ test.describe('Text entry placeholders', () => {
       expect(measured.brailleStyle, theme).toBe('normal');
       expect(measured.textOpacity, theme).toBe('1');
     }
+  });
+
+  test('the braille placeholder is not the braille field\'s spoken description', async ({ page, browserName }) => {
+    // Until 2026-09-30 this check closed the test above, so Firefox and WebKit
+    // failed it in CI on the CDP call alone, after their theme checks passed.
+    test.skip(browserName !== 'chromium', 'the computed accessibility tree is read over CDP, which only Chromium has');
+    await openApp(page);
 
     // The computed accessibility tree: the braille field is described by its
     // help sentence and status, never by the braille placeholder.

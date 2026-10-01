@@ -186,7 +186,9 @@ def ring_only(checker: Checker, role: str, asset: str, holder: trimesh.Trimesh) 
     barrel_side_z = z_low if z_low > 0 else z_high
     probe_z = barrel_side_z + (RING_CUT_FACE_PROBE_MM if z_low > 0 else -RING_CUT_FACE_PROBE_MM)
     loops = ring.slice(probe_z).to_polygons()
-    checker.check(len(loops) == 1, f'{role} barrel-side face is one solid disk', f'{len(loops)} loop(s) at z {probe_z:.4f}')
+    checker.check(
+        len(loops) == 1, f'{role} barrel-side face is one solid disk', f'{len(loops)} loop(s) at z {probe_z:.4f}'
+    )
 
     packed = ring.to_mesh()
     mesh = trimesh.Trimesh(
@@ -196,7 +198,11 @@ def ring_only(checker: Checker, role: str, asset: str, holder: trimesh.Trimesh) 
     )
     mesh.merge_vertices()
     bodies = mesh.split(only_watertight=False)
-    checker.check(len(bodies) == 1 and mesh.is_watertight, f'{role} ring is one watertight body', f'{len(bodies)} body(ies), watertight={mesh.is_watertight}')
+    checker.check(
+        len(bodies) == 1 and mesh.is_watertight,
+        f'{role} ring is one watertight body',
+        f'{len(bodies)} body(ies), watertight={mesh.is_watertight}',
+    )
     lo, hi = float(mesh.vertices[:, 2].min()), float(mesh.vertices[:, 2].max())
     checker.check(
         abs(lo - z_low) <= Z_BAND_TOL_MM and abs(hi - z_high) <= Z_BAND_TOL_MM,
@@ -230,7 +236,9 @@ def tooth_clusters(vertices: np.ndarray, gap_deg: float = TOOTH_MID_GAP_DEG) -> 
     """
     z_mid = (vertices[:, 2].min() + vertices[:, 2].max()) / 2.0
     radius = np.hypot(vertices[:, 0], vertices[:, 1])
-    band = vertices[(radius > (TIP_RADIUS_MM - TIP_BAND_DEPTH_MM)) & (np.abs(vertices[:, 2] - z_mid) <= TOOTH_MID_PLANE_HALF_MM)]
+    band = vertices[
+        (radius > (TIP_RADIUS_MM - TIP_BAND_DEPTH_MM)) & (np.abs(vertices[:, 2] - z_mid) <= TOOTH_MID_PLANE_HALF_MM)
+    ]
     if len(band) == 0:
         return 0
     angles = np.sort(np.degrees(np.arctan2(band[:, 1], band[:, 0])) % 360.0)
@@ -403,7 +411,7 @@ def derive(source: Path, out_dir: Path) -> dict:
             'header_bytes': 14,
         },
         'transform': {
-            'source': '01_SAMPLE_GEOMETRY_AUDIT.md section 10.2 (the holders share the samples\' assembly frame)',
+            'source': "01_SAMPLE_GEOMETRY_AUDIT.md section 10.2 (the holders share the samples' assembly frame)",
             'a': 'p_programA = Rz(180) * (p_sample - (-16.0000, 0.0000, 0)) - (0, 0, 26.0000)',
             'b': 'p_programB = (p_sample - (+16.0473, -0.0079, 0)) - (0, 0, 26.0000)',
             'constants': {
