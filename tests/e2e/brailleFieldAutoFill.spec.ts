@@ -49,7 +49,16 @@ async function interceptGeometrySpec(page: Page) {
   return state;
 }
 
+// What Generate reports while a worker is still starting. A Generate pressed
+// before the liblouis worker is up fails its translation and says "Translation
+// failed for the following lines", not "not initialized" - reliably on Firefox,
+// whose workers start slower. The other generate helpers (doubleSided,
+// gearRollers, cylindersToGenerate) already retry on it; this one did not, so
+// it failed 2 to 6 of its 6 tests per Firefox run on Windows (2026-09-30).
+const TRANSIENT_ERRORS = /Manifold 3D engine|not initialized|Translating|Generating|STL generation failed|Translation failed/;
+
 async function generate(page: Page, state: { called: number }, n: number) {
+  let lastError = '';
   for (let attempt = 0; attempt < 15; attempt++) {
     await page.locator('#action-btn').click();
     for (let waited = 0; waited < 3000 && state.called < n; waited += 100) {
@@ -59,12 +68,13 @@ async function generate(page: Page, state: { called: number }, n: number) {
     const notice = await page.locator('#error-message').getAttribute('class');
     const isInfo = notice?.includes('info') ?? false;
     const error = await page.locator('#error-text').textContent();
-    if (error && !isInfo && !/Manifold 3D engine|not initialized/.test(error)) {
+    if (error && !isInfo && !TRANSIENT_ERRORS.test(error)) {
       throw new Error(`Generation was blocked before reaching /geometry_spec: ${error}`);
     }
+    lastError = error || lastError;
     await page.waitForTimeout(1000);
   }
-  throw new Error('The workers never became ready');
+  throw new Error(`Generation never reached /geometry_spec; last error: ${lastError}`);
 }
 
 function trimTrailingEmpty(lines: string[]) {

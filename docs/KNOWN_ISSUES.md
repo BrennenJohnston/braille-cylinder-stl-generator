@@ -123,12 +123,16 @@ seconds and whole spec files failed with `Worker message timeout`. `init` now ge
 seconds and every other message keeps the 10-second budget, so the page survives a slow
 start instead of giving up on it.
 
-**Open (found 2026-09-30): `brailleFieldAutoFill.spec.ts` fails intermittently in Firefox
-on Windows.** Its generate step stops at "Translation failed for the following lines". On
-2026-09-30 it failed 6 of its 6 tests in a full Chromium + Firefox run, 3 when re-run with
-`--workers=2`, and 2 with the committed `public/index.html` of that day, so that day's
-help-text edits are not the cause. CI (Linux, one worker, two retries) passes. Not yet
-diagnosed.
+**`brailleFieldAutoFill.spec.ts` failed intermittently in Firefox on Windows (found
+2026-09-30, fixed 2026-10-01).** Its generate step stopped at "Translation failed for the
+following lines": 6 of its 6 tests in a full Chromium + Firefox run, 3 at `--workers=2`, and
+2 with the committed `public/index.html` of that day. The cause was the test's own helper. A
+Generate pressed before the liblouis worker is up fails its translation with exactly that
+sentence, not "not initialized", and every other generate helper already retries on it; this
+one, written 2026-09-28, did not. It now uses the same list of transient messages, and the
+file passed 18 of 18 in Firefox at four workers, three runs each. (The app's own wording for
+a Generate pressed during start-up - a "Translation failed" message that lists causes like
+special characters - is unchanged.)
 
 The OpenSCAD version has this feature: the double-sided port shipped in the OpenSCAD
 generator v2.6 and was refined in v2.7 (2026-08-23).

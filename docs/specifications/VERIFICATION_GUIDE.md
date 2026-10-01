@@ -90,8 +90,9 @@ npx playwright test tests/e2e/ --project=chromium --project=firefox
 
 Expected: **334 tests, 2 of them skipped by design**, in about 15 minutes. Measured
 2026-09-30 on Windows: 322 passed, 2 skipped, 10 failed under full parallel load — every
-failed file passed again on its own with `--workers=2`, except a known local Firefox
-failure in `brailleFieldAutoFill.spec.ts` (see [KNOWN_ISSUES.md](../KNOWN_ISSUES.md)).
+failed file passed again on its own with `--workers=2`, except the Firefox failures in
+`brailleFieldAutoFill.spec.ts`, a test-helper bug fixed on 2026-10-01 (see
+[KNOWN_ISSUES.md](../KNOWN_ISSUES.md)).
 CI (Linux, one worker, two retries) passes all three browsers.
 
 Chromium + Firefox is the local pass bar. Two notes on what you may see:
