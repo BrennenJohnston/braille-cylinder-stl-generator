@@ -4,7 +4,7 @@
 
 This application uses **client-side CSG (Constructive Solid Geometry)** as the **exclusive method** for generating braille STL files. A **dual-worker architecture** is employed:
 
-- **Standard Worker** (`csg-worker.js`): Uses `three-bvh-csg` for flat cards - fast but may produce non-manifold edges on complex geometry
+- **Standard Worker** (`csg-worker.js`): Uses `three-bvh-csg` for flat cards - fast but may produce non-manifold edges on complex geometry (flat cards are parked: the page offers only cylinders)
 - **Manifold Worker** (`csg-worker-manifold.js`): Uses Manifold WASM for cylinders - guarantees watertight/manifold output
 
 > **BUG FIX (2024-12-08):** Prior to this fix, the CSG worker existed but was never integrated into the frontend. The code incorrectly went directly to the server-side `/generate_braille_stl` endpoint. This has been corrected - the frontend now properly initializes the CSG worker and uses client-side generation exclusively. Server-side fallback has been intentionally disabled to ensure the correct generation path is always used.
@@ -23,7 +23,7 @@ This application uses **client-side CSG (Constructive Solid Geometry)** as the *
 ### Performance
 - **Fast enough**: Typical braille card (50-100 dots) generates in 5-15 seconds
 - **Predictable**: No variability from serverless cold starts or function reuse
-- **Progressive**: User sees progress in browser console
+- **Progressive**: User sees progress in browser console (the 3D engine's own messages on every site; the page's step-by-step messages only when it is served from `localhost` or `127.0.0.1`, see Debugging)
 
 ### Bundle Size
 - **Minimal impact**: Adds ~215-295 KB minified (~60-80 KB gzipped)
@@ -58,7 +58,7 @@ This application uses **client-side CSG (Constructive Solid Geometry)** as the *
 │  │ (cards)       │  │ manifold.js        │                     │
 │  │               │  │ (cylinders)        │                     │
 │  │ three-bvh-csg │  │ Manifold WASM      │                     │
-│  │ Fast, ~200KB  │  │ Watertight, ~2.5MB │                     │
+│  │ Fast, ~300KB  │  │ Watertight, ~1.1MB │                     │
 │  └───────┬───────┘  └─────────┬──────────┘                     │
 │          │                    │                                 │
 │          └────────┬───────────┘                                 │
@@ -78,9 +78,9 @@ This application uses **client-side CSG (Constructive Solid Geometry)** as the *
          │  │  - Returns JSON spec (no booleans)       │  │
          │  └──────────────────────────────────────────┘  │
          │  ┌──────────────────────────────────────────┐  │
-         │  │  POST /generate_braille_stl (DISABLED)   │  │
-         │  │  - Server-side fallback REMOVED          │  │
-         │  │  - Endpoint exists but not used by UI    │  │
+         │  │  POST /generate_braille_stl (410 Gone)   │  │
+         │  │  - Server-side generation removed        │  │
+         │  │  - Answers 410 Gone since 2.0.0          │  │
          │  └──────────────────────────────────────────┘  │
          └────────────────────────────────────────────────┘
 ```
@@ -131,7 +131,7 @@ The `/geometry_spec` endpoint returns JSON describing primitives:
         "top_radius": 0.75,
         "base_height": 0.2,
         "dome_height": 0.6,
-        "dome_radius": 1.2
+        "dome_radius": 0.76875
       }
     }
   ],
@@ -142,7 +142,7 @@ The `/geometry_spec` endpoint returns JSON describing primitives:
       "y": 40.0,
       "z": 2.0,
       "size": 2.5,
-      "depth": 0.5
+      "depth": 0.6
     },
     {
       "type": "rect",
@@ -156,6 +156,8 @@ The `/geometry_spec` endpoint returns JSON describing primitives:
   ]
 }
 ```
+
+This example is a card spec (flat cards are parked). In a rounded dot, `dome_radius` is the radius of the sphere the dome is cut from, (r² + h²) / 2h with r = `top_radius` and h = `dome_height`; it is not the dome's base radius. The page now builds only cylinders: a cylinder spec (`extract_cylinder_geometry_spec` in `app/geometry_spec.py`) has a `cylinder` block (`radius`, `height`, `thickness`, `polygon_points`, and `seam_channel` when the groove fits), dots of type `cylinder_dot` placed by angle (`theta`, `radius`, `is_recess`), `markers`, `indicator_mode` and `warnings`, plus `gears` or `keyed_cutouts` (and a few more `cylinder` keys) when those features are on.
 
 ## Files Added/Modified
 
@@ -194,6 +196,10 @@ If CSG generation fails, users will see an error message. Common causes:
 5. CSG worker throws error during generation
 6. Worker timeout (2 minute limit)
 
+### Worker Start-up
+
+The page starts the braille translator, the card worker and the 3D engine one after another when it loads. Generate STL, the Translate buttons and Preview Braille Translation wait for a translator that is still starting, and Generate STL also waits for a 3D engine that is still starting, instead of failing (the `liblouisSettled` and `manifoldSettled` promises in `public/index.html`); while a press waits, a one-sentence notice says so. A worker that does not start in time (30 seconds for the translator, 60 seconds for the 3D engine) still gives the old error message. Details: [UI_INTERFACE_CORE_SPECIFICATIONS.md](../specifications/UI_INTERFACE_CORE_SPECIFICATIONS.md), section 4.14.
+
 ### Browser Requirements
 
 For STL generation to work, the browser must support:
@@ -210,21 +216,21 @@ For STL generation to work, the browser must support:
 - ✅ Edge 80+
 - ✅ Firefox 114+ (Module workers stable)
 - ✅ Safari 15+ (Module workers supported)
-- ✅ Mobile Safari (iOS 15+) - with lazy WASM loading
+- ✅ Mobile Safari (iOS 15+) - with background WASM loading
 - ✅ Chrome for Android
 
 ### Mobile Support (2024-12-08 Fix)
 
-The Manifold worker now uses **lazy WASM loading** to improve mobile compatibility:
+The Manifold worker uses **background WASM loading** to improve mobile compatibility:
 
 1. **Worker loads immediately**: The worker script loads and signals "ready" quickly
-2. **WASM loads on-demand**: The ~2.5MB Manifold WASM module loads when first cylinder is generated
+2. **WASM loads in the background**: The ~1.1 MB Manifold WASM module starts loading as soon as the worker starts, without delaying its "ready" signal; if that load fails, it is tried again when the first cylinder is generated
 3. **Better error messages**: Mobile-specific error messages guide users if loading fails
 
 **Mobile Considerations:**
 - First cylinder generation may take longer due to WASM loading
 - Manifold WASM is vendored under `/static/vendor/manifold-3d/`; no third-party CDN access is required. The app works offline and under Firefox Enhanced Tracking Protection (Strict), Safari content blockers, and locked-down corporate networks.
-- If WASM fails to load (vendored file missing or server error), users see a helpful error with mobile-specific guidance
+- If WASM fails to load (vendored file missing or server error), users see an error that names `/static/vendor/manifold-3d/` and asks them to refresh; the advice for mobile devices appears when the 3D engine itself did not start
 - Desktop browser recommended for best performance
 
 ### Not Supported (Will Show Error)
@@ -253,7 +259,7 @@ The Manifold worker now uses **lazy WASM loading** to improve mobile compatibili
 
 ### Server Fallback (DISABLED)
 Server-side fallback has been intentionally disabled as of 2024-12-08.
-- The `/generate_braille_stl` endpoint still exists but is not used by the frontend
+- The `/generate_braille_stl` endpoint answers 410 Gone: server-side generation was removed in 2.0.0 (January 2026)
 - All STL generation uses client-side CSG exclusively
 - This ensures consistent behavior and surfaces bugs immediately
 
@@ -261,14 +267,7 @@ Server-side fallback has been intentionally disabled as of 2024-12-08.
 
 ### Enable Debug Logging
 
-Browser console:
-```javascript
-// Check worker status
-console.log('CSG Worker ready:', csgWorkerReady);
-
-// Check if worker object exists
-console.log('CSG Worker:', csgWorker);
-```
+The worker variables (`csgWorker`, `csgWorkerReady`, `manifoldWorker`) are declared inside the page's module script, so the browser console cannot read them. To see the page's own debug messages, including the ones below, serve the page from `localhost` or `127.0.0.1`: its `log` helper (`public/index.html`) prints them only there. On any other address the page prints only its errors, while the 3D engine's own messages (they start with `Manifold CSG Worker:`) print everywhere.
 
 ### Console Messages
 
@@ -280,18 +279,18 @@ CSG Worker initialized and ready
 CSG Worker ready for client-side STL generation
 ```
 
-**Successful generation:**
+**Successful generation** (a cylinder; for a card the worker is named `Standard CSG` instead of `Manifold CSG`):
 ```
 Starting client-side CSG generation...
 Fetching geometry specification from /geometry_spec...
 Received geometry specification: {...}
 Geometry spec contains: X dots, Y markers
-Sending geometry spec to CSG worker...
-CSG Worker completed successfully
+Sending geometry spec to Manifold CSG worker...
+Manifold CSG Worker completed successfully
 Client-side CSG generation complete: filename.stl
 ```
 
-**On error (no fallback):**
+**On error (no fallback):** the console prints the first line, and the page's message box shows the second.
 ```
 Client-side CSG generation failed: [error message]
 STL generation failed: [error message]
@@ -324,9 +323,9 @@ STL generation failed: [error message]
 ### No Special Configuration Required
 
 The client-side approach works out-of-the-box on Vercel Hobby:
-- Static files in `static/` are served via CDN
+- Only `public/index.html` is a static build; every other path, `static/` included, goes to the Flask app through `wsgi.py` (`vercel.json` routes; `serve_static` in `backend.py`), which sends `.js`, `.wasm` and `.json` files with 24-hour browser caching
 - `/geometry_spec` endpoint is a lightweight serverless function
-- No WASM configuration needed (pure JS)
+- No Vercel configuration for WASM: `manifold.wasm` is an ordinary file under `static/vendor/manifold-3d/`, and the Content-Security-Policy that `backend.py` sets allows WebAssembly (`'wasm-unsafe-eval'`)
 - No file tracing configuration needed
 
 ### Existing Vercel Config
@@ -349,29 +348,33 @@ The client-side approach works out-of-the-box on Vercel Hobby:
 
 ### Cache Behavior
 
-**Counter plates** (negative) continue to use Vercel Blob caching:
-- First request: generates and uploads to Blob storage
-- Subsequent requests: redirect to cached Blob URL
-- Client-side generation doesn't interfere with this
-
-**Positive plates** are not cached (text-dependent)
+There is no server-side cache. Both plates, embossing and counter, are generated in the browser on every Generate, and no STL file is uploaded to or stored on the server. Redis and Vercel Blob storage were removed in 2.0.0; `backend.py` answers 410 Gone on the old `/lookup_stl` and `/debug/blob_upload` endpoints.
 
 ## Maintenance
 
 ### Updating three-bvh-csg
 
+These libraries are no longer npm entries of this project (removed 2026-10-02), so fetch them in an empty temporary folder outside the repository:
+
 ```bash
-npm install three-bvh-csg@latest three-mesh-bvh@latest
-Copy-Item node_modules\three-bvh-csg\build\index.module.js static\vendor\three-bvh-csg\ -Force
-Copy-Item node_modules\three-mesh-bvh\build\index.module.js static\vendor\three-mesh-bvh\ -Force
+npm install --no-save three-bvh-csg@latest three-mesh-bvh@latest
+# PowerShell, from the temporary folder
+Copy-Item node_modules\three-bvh-csg\build\index.module.js <repo>\static\vendor\three-bvh-csg\ -Force
+Copy-Item node_modules\three-mesh-bvh\build\index.module.js <repo>\static\vendor\three-mesh-bvh\ -Force
 ```
+
+Then point the copies' imports at the local files, as the current copies do: `from 'three'` becomes `from '/static/three.module.js'` in both files, and `from 'three-mesh-bvh'` in `three-bvh-csg` becomes `from '/static/vendor/three-mesh-bvh/index.module.js'`. The npm builds use these bare names, and the page and its workers have no import map to resolve them.
 
 ### Updating Three.js
 
-When updating `static/three.module.js`, also update `static/examples/STLExporter.js`:
+When updating `static/three.module.js`, also update `static/examples/STLExporter.js`. `three` is not an npm entry of this project either, so fetch the version you are updating to in an empty temporary folder (today's `static/three.module.js` is revision 166: its `REVISION` constant):
 ```bash
-Copy-Item node_modules\three\examples\jsm\exporters\STLExporter.js static\examples\ -Force
+npm install --no-save three@<version>
+# PowerShell, from the temporary folder
+Copy-Item node_modules\three\examples\jsm\exporters\STLExporter.js <repo>\static\examples\ -Force
 ```
+
+Then change the copy's first line from `from 'three'` to `from '/static/three.module.js'`, as the current copy has it.
 
 ## Comparison to Alternatives
 
@@ -388,7 +391,7 @@ Copy-Item node_modules\three\examples\jsm\exporters\STLExporter.js static\exampl
 ### vs. Client-Side manifold3d (WASM)
 | Factor | three-bvh-csg | manifold3d |
 |--------|---------------|------------|
-| Bundle size | ~215 KB | ~2-3 MB |
+| Bundle size | ~295 KB | ~1.1 MB |
 | Browser support | ✅ Excellent | Good (WASM required) |
 | Memory management | ✅ Automatic (GC) | ❌ Manual (`delete()` calls) |
 | Performance | Good | ✅ Excellent |
@@ -406,15 +409,13 @@ Copy-Item node_modules\three\examples\jsm\exporters\STLExporter.js static\exampl
 
 ### User Can't Generate STL
 1. Check browser console for errors
-2. Try with `useClientSideCSG = false` in console
-3. Refresh page and retry
-4. Check internet connection (for spec fetch)
-5. Try smaller model
+2. Refresh page and retry
+3. Check internet connection (for spec fetch)
+4. Try smaller model
 
 ### STL is Invalid
 1. Open in slicer, check for errors
-2. Compare with server-generated version
-3. Report geometry edge case
+2. Report geometry edge case
 
 ### Slow Performance
 1. Check browser task manager (memory usage)

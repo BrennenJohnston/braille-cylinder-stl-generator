@@ -1,5 +1,7 @@
 # Client-Side CSG Implementation - Complete Summary
 
+> **Historical record, written 2025-12-08.** It describes the project at that time. For how it works now, see [CLIENT_SIDE_CSG_DOCUMENTATION.md](CLIENT_SIDE_CSG_DOCUMENTATION.md).
+
 ## Implementation Status: ✅ COMPLETE (Bug Fixed 2024-12-08)
 
 All planned features have been successfully implemented. The braille STL generator now uses client-side CSG as the **exclusive** generation method.
