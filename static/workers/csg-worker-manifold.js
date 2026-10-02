@@ -290,11 +290,18 @@ function createManifoldBox(width, height, depth, centered = true) {
     return Manifold.cube([width, height, depth], centered);
 }
 
+// DOT_DOME_WELD_MM mirrors the OpenSCAD constant of the same name. A dome cap cut
+// at exactly its frustum's top plane only touches the frustum, and unless the
+// dome is a half-sphere it exported as a separate body, one per raised dot.
+const DOT_DOME_WELD_MM = 0.005;
+const DOT_DOME_HEMISPHERE_TOL_MM = 1e-6;
+
 /**
  * Create a spherical cap (dome) for rounded dots
  * Uses sphere intersection with a half-space
+ * extendBelow lowers only the cutting plane: the cap continues that far below z=0.
  */
-function createSphericalCap(radius, capHeight, segments = 24) {
+function createSphericalCap(radius, capHeight, segments = 24, extendBelow = 0) {
     if (capHeight >= 2 * radius) {
         // Full hemisphere or more - just use hemisphere
         capHeight = radius;
@@ -303,15 +310,15 @@ function createSphericalCap(radius, capHeight, segments = 24) {
     const sphere = createManifoldSphere(radius, segments);
 
     // Create cutting box to trim sphere into a cap
-    // The cap rises from z=0 to z=capHeight
+    // The cap rises from z=-extendBelow to z=capHeight
     // Sphere center at z = capHeight - radius (so top of sphere is at z=capHeight)
     const sphereCenterZ = capHeight - radius;
 
-    // Cut off everything below z=0
+    // Cut off everything below z=-extendBelow
     const cutBoxSize = radius * 4;
     const cutBox = createManifoldBox(cutBoxSize, cutBoxSize, cutBoxSize, true);
-    // Position cut box below z=0
-    const positionedCutBox = cutBox.translate([0, 0, -cutBoxSize / 2]);
+    // Position cut box below z=-extendBelow
+    const positionedCutBox = cutBox.translate([0, 0, -cutBoxSize / 2 - extendBelow]);
 
     // Position sphere and subtract cut box
     const positionedSphere = sphere.translate([0, 0, sphereCenterZ]);
@@ -379,8 +386,15 @@ function createCylinderDotManifold(spec) {
                 const positionedFrustum = frustum.translate([0, 0, frustumHeight / 2 - baseEmbed]);
                 frustum.delete();
 
-                // Create dome on top of frustum
-                const dome = createSphericalCap(domeRadius, domeHeight, 24);
+                // Create dome on top of frustum. A dome that is not a half-sphere
+                // continues DOT_DOME_WELD_MM below the frustum's top plane so the two
+                // overlap; the sphere is not moved, so the dot's apex and height are
+                // unchanged. Half-sphere domes (every preset and double-sided
+                // package) already fuse with their base and are built exactly as
+                // before. domeRadius is the SPHERE radius, equal to domeHeight only
+                // for a half-sphere.
+                const domeWeld = Math.abs(domeHeight - domeRadius) <= DOT_DOME_HEMISPHERE_TOL_MM ? 0 : DOT_DOME_WELD_MM;
+                const dome = createSphericalCap(domeRadius, domeHeight, 24, domeWeld);
                 const positionedDome = dome.translate([0, 0, baseHeight]);
                 dome.delete();
 
