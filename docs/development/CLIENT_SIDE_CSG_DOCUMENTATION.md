@@ -323,7 +323,7 @@ STL generation failed: [error message]
 ### No Special Configuration Required
 
 The client-side approach works out-of-the-box on Vercel Hobby:
-- Only `public/index.html` is a static build; every other path, `static/` included, goes to the Flask app through `wsgi.py` (`vercel.json` routes; `serve_static` in `backend.py`), which sends `.js`, `.wasm` and `.json` files with 24-hour browser caching
+- Only `public/index.html` is a static build; every other path, `static/` included, goes to the Flask app through `wsgi.py` (`vercel.json` routes). Flask's built-in static route serves `static/`, with `Cache-Control: no-cache`, so the browser checks each file again on each visit (measured on the live site, 2026-10-02). The `serve_static` view in `backend.py`, which would send 24-hour caching, is never reached: the built-in route has the same pattern and was registered first
 - `/geometry_spec` endpoint is a lightweight serverless function
 - No Vercel configuration for WASM: `manifold.wasm` is an ordinary file under `static/vendor/manifold-3d/`, and the Content-Security-Policy that `backend.py` sets allows WebAssembly (`'wasm-unsafe-eval'`)
 - No file tracing configuration needed
