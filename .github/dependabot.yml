@@ -2,12 +2,16 @@ version: 2
 # Low-noise configuration for a single maintainer.
 # - Routine version updates run monthly and are grouped into a single PR per
 #   ecosystem, so at most one PR per ecosystem appears each month.
-# - Security updates are handled separately by GitHub Dependabot alerts and are
-#   NOT limited by this file; genuine vulnerabilities still open PRs promptly.
+# - Security updates need Dependabot alerts and security updates switched on
+#   in the repository's settings (both off when this was written, 2026-10-02;
+#   round R1's Gate C decides). GitHub's target-branch reference: they always
+#   target the default branch (main), and with target-branch set the options
+#   below do not apply to them.
 updates:
   # Python dependencies
   - package-ecosystem: "pip"
     directory: "/"
+    target-branch: "develop"
     schedule:
       interval: "monthly"
       day: "monday"
@@ -29,6 +33,7 @@ updates:
   # Node.js dependencies
   - package-ecosystem: "npm"
     directory: "/"
+    target-branch: "develop"
     schedule:
       interval: "monthly"
       day: "monday"
@@ -50,6 +55,7 @@ updates:
   # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
+    target-branch: "develop"
     schedule:
       interval: "monthly"
     open-pull-requests-limit: 3
