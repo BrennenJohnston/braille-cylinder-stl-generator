@@ -1,5 +1,7 @@
 # Linting Notes
 
+> **Historical record, written 2025-10-10: the two sections "Current Status" and "Remaining Linting Issues".** They describe the lint state after the Phase 1.2 and 2.1 refactor; today `python -m ruff check .` reports "All checks passed!". The two sections after them, "Running Linting Tools" and "Pre-commit Hooks", are kept current.
+
 ## Current Status (After Phase 1.2 & 2.1)
 
 ✅ **Completed:**
@@ -50,13 +52,13 @@ python -m ruff format .
 # Run tests
 python -m pytest -q
 
-# Type checking (when implemented)
-python -m mypy .
+# Type checking: CI runs this and ignores the result (continue-on-error)
+python -m mypy app/ backend.py wsgi.py
 ```
 
 ## Pre-commit Hooks
 
-Pre-commit hooks are installed and will run automatically on commit to:
+After `pre-commit install` (once per clone), these hooks from `.pre-commit-config.yaml` run on every commit:
 - Fix trailing whitespace
 - Fix end-of-file
 - Check YAML/JSON syntax

@@ -1,5 +1,7 @@
 # Code Audit Report
 
+> **Historical record, written 2026-01-28.** It describes the project at that time. For how it works now, see [PROJECT_STRUCTURE.md](../../PROJECT_STRUCTURE.md).
+
 **File Audited:** `public/index.html`
 **Audit Date:** 2026-01-28
 **Methodology:** Forge Pattern Analysis

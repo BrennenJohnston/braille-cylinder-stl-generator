@@ -1,5 +1,7 @@
 # Browser Compatibility Audit Report
 
+> **Historical record, written 2025-12-08 and revised until 2026-05-27.** It describes the project at that time. For how it works now, see [CLIENT_SIDE_CSG_DOCUMENTATION.md](CLIENT_SIDE_CSG_DOCUMENTATION.md).
+
 ## Document Purpose
 
 This document is a browser compatibility audit for the Braille Card and Cylinder STL Generator application. It analyzes all web technologies used and their support across major browsers, platforms, and devices.
