@@ -1,5 +1,7 @@
 # Manifold Worker Validation Against Specifications
 
+> **Historical record, written 2025-12-06.** It describes the project at that time. For how it works now, see [RECESS_INDICATOR_SPECIFICATIONS.md](../specifications/RECESS_INDICATOR_SPECIFICATIONS.md).
+
 ## Validation Date: December 6, 2024
 
 This document validates `csg-worker-manifold.js` against the specifications in `RECESS_INDICATOR_SPECIFICATIONS.md`.

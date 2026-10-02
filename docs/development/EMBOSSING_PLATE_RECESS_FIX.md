@@ -1,5 +1,7 @@
 # Embossing Plate Recessed Shapes Fix
 
+> **Historical record, written 2025-11-29.** It describes the project at that time. For how it works now, see [RECESS_INDICATOR_SPECIFICATIONS.md](../specifications/RECESS_INDICATOR_SPECIFICATIONS.md).
+
 ## Problem Statement
 The embossing plate recessed shapes (character indicators and triangle markers) were not working, even though the counter plate and indicator symbols on that plate had been fixed previously.
 

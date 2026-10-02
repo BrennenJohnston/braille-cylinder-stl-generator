@@ -6,6 +6,8 @@
 
 > **What's actually shipping today (vs. the rest of this doc):** Section 1 ("Install and Vendor manifold3d") is the recipe used in production. The full Manifold worker that runs in production is `static/workers/csg-worker-manifold.js`, which is significantly more complex than the illustrative snippet in section 2 below — the snippet is kept as a minimal-viable reference; consult the actual worker file for the production code. Section 3's "engine selection" + "cascade fallback" snippets are forward-looking design only: production routes by `shape_type` (cylinders → Manifold worker, cards → three-bvh-csg worker) with no UI toggle and no fallback for cylinders. Sections 4 and 5 are explicitly optional and are NOT implemented.
 
+> **Historical record, written 2025-11-30: this introduction, "Why Add manifold3d?", sections 2 to 5, the Testing Checklist, Bundle Size Impact and the two "When to Use" sections.** They are the plan for adding Manifold, written before it shipped, and describe the project at that time. For how it works now, see [CLIENT_SIDE_CSG_DOCUMENTATION.md](CLIENT_SIDE_CSG_DOCUMENTATION.md). The two boxes above, section 1 and the Maintenance Notes are kept current.
+
 This document outlines how to add client-side manifold3d (WASM) as an additional CSG engine for watertight mesh output, at the cost of a larger bundle size (~2-3 MB).
 
 ## Why Add manifold3d?
@@ -425,5 +427,5 @@ async function tryClientSideCSG(requestData) {
 
 - Update manifold3d: only as its own planned change, never as a routine update: new golden fixtures and a print check first, then the section 1 recipe with the new version number.
 - Check for memory leaks: Monitor browser memory usage
-- WASM caching: Vercel serves .wasm with correct MIME type automatically
+- WASM caching: the Flask app serves `.wasm` files as `application/wasm`, with `Cache-Control: no-cache` (measured on the live site, 2026-10-02)
 - Security: WASM files should be served from same origin (CORS)
