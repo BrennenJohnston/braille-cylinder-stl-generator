@@ -1,5 +1,7 @@
 # Vercel Optimization Roadmap
 
+> **Historical record, written 2025-09-26 and revised until 2026-05-29.** It describes the project at that time. For how it works now, see [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md).
+
 ⚠️ **ARCHITECTURE UPDATE (2026-01-05):** Phases 3 and 4 (Redis/Blob caching) have been **DEPRECATED and REMOVED** from the application. The application now uses client-side CSG generation exclusively, eliminating all external service dependencies. This document is maintained for historical reference.
 
 ---

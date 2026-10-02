@@ -17,8 +17,9 @@ v2.0.0 has no external service dependencies. The server is Flask serving static 
       `upstream_tag` against the latest tag on
       [braille-cylinder-stl-generator-openscad](https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad/releases).
       If it is behind, copy that release's
-      `makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad` (plus any
-      changed docs) into `OpenSCAD/`, update every field in `VENDORED.json`
+      `makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad` into
+      `OpenSCAD/` as `Braille_Cylinder_STL_Generator.scad` (the name
+      `VENDORED.json` records), plus any changed docs, update every field in `VENDORED.json`
       including a fresh `sha256` for **each** file you copied, and re-run
       `pytest tests/test_vendored_openscad.py`.
       Nothing automated can detect this drift — the check needs the network, so
@@ -40,7 +41,7 @@ No environment variables are required. Vercel auto-detects Python from `requirem
 | Variable | Purpose |
 |----------|---------|
 | `FLASK_ENV` | Set to `production` for strict security mode |
-| `PRODUCTION_DOMAIN` | Your domain for CORS (Vercel domains are allowed by default) |
+| `PRODUCTION_DOMAIN` | Your domain(s) for CORS, comma-separated. If it is not set, the app accepts requests from any origin, without credentials, and logs a CORS warning at start-up |
 | `LOG_LEVEL` | Logging verbosity (default: INFO) |
 
 ## Post-deployment testing
@@ -73,8 +74,8 @@ Old endpoints (`/generate_braille_stl`, `/generate_counter_plate_stl`, `/lookup_
 
 ## Troubleshooting
 
-**"Manifold worker not available" on mobile:**
-Expected on first load — WASM loads lazily. Refresh if it times out.
+**"The 3D engine is still loading."**
+Expected when Generate STL is pressed in the first seconds after the page opens: generation starts by itself when the engine is ready. If the page says "Cylinder generation requires the Manifold 3D engine which failed to load", the engine did not start within 60 seconds: refresh the page.
 
 **STL generation fails:**
 Check the browser console. Usually a WASM loading issue. Try a different browser.

@@ -1,5 +1,7 @@
 # Vercel Deployment with Liblouis JavaScript Build
 
+> **Historical record, written 2025-08-12 and revised until 2026-02-03.** It describes the project at that time. For how it works now, see [LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md](../specifications/LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md).
+
 ## 🎯 **Overview**
 
 This deployment strategy uses the [liblouis/js-build](https://github.com/liblouis/js-build) repository, which provides pre-compiled JavaScript binaries of liblouis using Emscripten. This approach is perfect for Vercel because:
