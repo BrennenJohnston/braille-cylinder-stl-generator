@@ -977,11 +977,11 @@ def test_gear_golden_fixture_is_a_one_piece_roller(fixtures_dir, plate_type):
     """
     The shape of the thing: 72 mm tall, gears at both ends, 24 teeth on each.
 
-    Body counting is deliberately not a bare "== 1". On the EMBOSS plate the
-    raised dot domes come out as separate small bodies - the recorded second
-    tangency inside every rounded dot, which predates this beta and is present
-    with gears off too. So: exactly one body is the roller, and every other
-    body must look like one of those domes.
+    Body counting is deliberately not a bare "== 1". The fixture is one body
+    (this renderer sinks a whole sphere into each dot's frustum), but until
+    2026-10-01 the browser worker left a dome that is not a half-sphere as a
+    separate small body, so the tolerance stays as a guard: exactly one body
+    is the roller, and every other body must look like such a dome.
     """
     trimesh = pytest.importorskip('trimesh')
     import numpy as np
@@ -1363,9 +1363,9 @@ def test_v2_golden_fixture_is_a_keyed_cylinder(fixtures_dir, plate_type):
     Cylinder A only, and a 15.050 mm rim.
 
     Body counting is deliberately not a bare "== 1", for the same reason the
-    gear fixture gives: on the EMBOSS plate the raised dot domes come out as
-    separate small bodies (the recorded second tangency inside every rounded
-    dot, which predates all three betas).
+    gear fixture gives: the fixture is one body, and the tolerance for a small
+    dot-dome body stays as a guard (until 2026-10-01 the browser worker left
+    a dome that is not a half-sphere as a separate body).
     """
     trimesh = pytest.importorskip('trimesh')
     import numpy as np
@@ -1684,7 +1684,8 @@ def test_v2_gear_golden_fixture_is_one_vented_roller_with_no_void(fixtures_dir, 
     for body in bodies:
         if body is roller:
             continue
-        # Only the recorded dot-dome tangency bodies may exist beside the roller.
+        # Only a small dot-dome body may sit beside the roller: a guard, because until
+        # 2026-10-01 the browser worker left a dome that is not a half-sphere separate.
         assert body.volume < 1.0
         assert np.hypot(body.vertices[:, 0], body.vertices[:, 1]).min() >= version2.V2_BARREL_DIAMETER_MM / 2
 

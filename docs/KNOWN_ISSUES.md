@@ -178,11 +178,12 @@ the roller's axis instead, joining the two gear sockets, and each socket ends in
 cone: the roller prints bottom gear down with no support inside the sockets and lifts off
 the embosser's peg without a vacuum.
 
-**Known limitation, inherited not introduced.** On the EMBOSSING plate the exported
-file is one watertight roller plus one small separate body per raised braille dot —
-the dome of each dot. That is a long-standing tangency issue in the dot geometry,
-present with gears off too, and it is tracked separately. The counter plate exports as
-exactly one body.
+**Known limitation, fixed 2026-10-01.** With custom dot sizes whose dome is not a
+half-sphere (dome height different from half the dome diameter), the embossing
+cylinder's file used to contain one small separate body per raised dot. The two
+card-stock presets were never affected. Those domes now overlap their bases by a hidden
+0.005 mm, so every cylinder exports as one body. The dot's height and shape are
+unchanged.
 
 **OpenSCAD:** the desktop build gets integrated gears; the MakerWorld single-file
 variant does not. Tested in the real product 2026-08-25: MakerWorld's customizer
@@ -194,7 +195,9 @@ sign-off. The MakerWorld paragraph was re-signed the same day, when a probe of
 the real customizer replaced the reasoning about mesh size with the tested
 reason. The pair filename, the "Version 1 ... (Version 2's size is 30.8 × 54.0, below)"
 clause and the vent sentences of "The barrel prints solid" were added on 2026-09-30 and
-signed off by him on 2026-10-01.
+signed off by him on 2026-10-01. The "Known limitation" paragraph was reworded on
+2026-10-01 to record the dome fix; that wording is a DRAFT awaiting his sign-off
+(R1-Q-13).
 
 Full technical detail: `docs/specifications/GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md`.
 

@@ -349,14 +349,17 @@ plate, with supports off."
 On the **counter** plate a geared cylinder exports as exactly one watertight body
 (measured in Chromium: 50,952.888 mm³, z −36.000..36.000).
 
-On the **embossing** plate the roller body is one watertight solid (49,738.478 mm³, same
-bounds) **plus one small separate body per raised braille dot** — the dome of each dot,
-0.614 mm³ each. That is the long-standing second tangency inside every rounded dot: it is
-present identically with gears off, it predates this feature, gears cannot fix it, and it is
-tracked separately. Tests assert around it deliberately: exactly one body spans the full
-72 mm, no body has negative volume, and every other body must look like a known dome
-(under 1 mm³, watertight, entirely outside the barrel radius). A bare "one body" assertion
-would be a test this generator cannot pass.
+On the **embossing** plate the roller is one watertight solid too when its domes are
+half-spheres, as both card-stock presets' are (measured 2026-10-01 at the 0.4 preset: the
+Version 1 and Version 2 Simplified-gear pair files hold two bodies each, one per roller).
+Until 2026-10-01 a custom dot size whose dome was not a
+half-sphere left **one small separate body per raised braille dot** — the dome of each dot,
+0.614 mm³ each for the schema's dome of 1.5 × 0.6 mm on a 2.0 × 0.2 mm base, present
+identically with gears off. Those domes now overlap their base by 0.005 mm and fuse
+(BRAILLE_DOT_SHAPE_SPECIFICATIONS.md §3, "Dome weld (custom domes)"). The tests still
+assert around such bodies, as a guard: exactly one body spans the full 72 mm, no body has
+negative volume, and every other body must look like a known dome (under 1 mm³,
+watertight, entirely outside the barrel radius).
 
 **The combined pair file is exempt from every one-body claim** (2026-08-25): a pair run
 merges Cylinder A and Cylinder B into one `Cylinder_Pair_Geared_*` STL that deliberately
@@ -714,6 +717,7 @@ golden pairs regenerating unchanged, prove it).
 
 | Date | Change |
 |---|---|
+| 2026-10-01 | **§7: the loose dot domes are fixed.** The embossing roller is one body with half-sphere domes (both presets; measured at 0.4); a custom dome that is not a half-sphere, which used to leave one 0.614 mm³ body per raised dot, now overlaps its base by 0.005 mm (BRAILLE_DOT_SHAPE_SPECIFICATIONS.md §3). The tests' dome tolerance stays as a guard. |
 | 2026-10-01 | **Print results recorded.** §11.8: Brennen's 2026-09-30 print testing closed Q-1 (the peg does not reach the cone), printed the top-socket cone (D-K5), found no support needed at the 0.14 mm ledge, and passed the Version 1 Simplified rollers. |
 | 2026-09-30 | **Documentation review after the approved build.** The header's status and choice lines name the released Gears radio group; §5 tells a Version 1 roller (52) from a Version 2 one (54) instead of "the gears BETA"; §6.2 notes the §6.5 vent beside the solid barrel; §9's dome note says "this feature". |
 | 2026-09-30 | **The Version 1 fused roller is vented and its sockets self-supporting (Brennen's approved plan).** New §6.5: the measured socket table, a ⌀2 axis vent and a 45° cone at each socket's blind end, cut last, each cone 0.02 mm inside the taper so the pin's chamfer, key bore and taper are untouched (0.01 was planned; the taper's facets made it clip by up to 0.0004 mm). §3, §6 and §6.1 updated for the third spec key and the appended CSG step. No barrel chamfer. The Version 1 ready message gains S-P1. Version 1 golden pair regenerated. |
