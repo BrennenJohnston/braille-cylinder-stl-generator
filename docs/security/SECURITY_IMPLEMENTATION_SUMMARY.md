@@ -1,5 +1,7 @@
 # Security Implementation Summary
 
+> **Historical record, written 2025-12-06 and revised until 2026-02-16.** It describes the project at that time. For how it works now, see [SECURITY.md](../../SECURITY.md) and the headers `set_security_headers` adds in `backend.py`.
+
 **Last updated:** January 2026
 
 > **Note:** This document was originally written for the pre-2026 architecture that included Redis and Blob storage. Those systems were removed in v2.0.0. Items related to Redis TLS, rate limiting, and blob storage are historical.

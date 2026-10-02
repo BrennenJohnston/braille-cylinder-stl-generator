@@ -1,6 +1,8 @@
 # Security Audit Report
 **Braille Business Card & Cylinder STL Generator**
 
+> **Historical record, written 2025-12-07 and revised until 2026-02-16.** It describes the project at that time. For how it works now, see [SECURITY.md](../../SECURITY.md) and the headers `set_security_headers` adds in `backend.py`.
+
 **Audit Date:** December 7, 2025
 **Auditor:** Full Security Review
 **Project Version:** Pre-release stable milestone
