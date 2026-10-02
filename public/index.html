@@ -11775,6 +11775,12 @@
         // Manifold CSG Worker for cylinders (guarantees watertight/manifold output)
         let manifoldWorker = null;
         let manifoldWorkerReady = false;
+        // Start-up state of the 3D engine, as for the translator: Generate waits on
+        // manifoldSettled while it is 'loading'; only 'failed' keeps the old error.
+        let manifoldState = 'loading';   // 'loading' | 'ready' | 'failed'
+        let resolveManifoldSettled;
+        const manifoldSettled = new Promise((resolve) => { resolveManifoldSettled = resolve; });
+        const MANIFOLD_START_LIMIT_MS = 60000;
         let manifoldRequestId = 0;
         let pendingManifoldRequests = new Map();
 
@@ -12009,6 +12015,15 @@
             // Initialize Manifold CSG Worker for cylinder generation (guarantees manifold output)
             // MOBILE FIX (2024-12-08): Worker now uses lazy WASM loading to improve mobile compatibility.
             // The worker signals 'ready' immediately, and WASM loads on-demand during first generation.
+            // Past MANIFOLD_START_LIMIT_MS without 'ready', Generate reports the old error;
+            // the worker is kept, so a late 'ready' still makes it usable on the next press.
+            setTimeout(() => {
+                if (manifoldState === 'loading') {
+                    log.error('Manifold CSG Worker did not report ready within the start-up limit');
+                    manifoldState = 'failed';
+                    resolveManifoldSettled();
+                }
+            }, MANIFOLD_START_LIMIT_MS);
             try {
                 log.debug('Initializing Manifold CSG worker for cylinders...');
 
@@ -12028,6 +12043,8 @@
 
                     if (type === 'ready') {
                         manifoldWorkerReady = true;
+                        manifoldState = 'ready';
+                        resolveManifoldSettled();
                         if (wasmLoading) {
                             log.debug('Manifold CSG Worker ready (WASM loading in background)');
                         } else {
@@ -12069,33 +12086,25 @@
                     log.error('Manifold CSG Worker error:', error);
                     // Don't set manifoldWorkerReady to false here - worker may recover on retry
                     // The worker handles WASM loading on-demand
+                    // An error before 'ready' means the script did not load: end the wait now.
+                    if (manifoldState === 'loading') {
+                        manifoldState = 'failed';
+                        resolveManifoldSettled();
+                    }
                 };
 
-                // Wait for ready signal - now much faster since WASM loads lazily
-                // Short timeout (5 seconds) just for worker file to load
-                await new Promise((resolve, reject) => {
-                    const timeout = setTimeout(() => {
-                        if (!manifoldWorkerReady) {
-                            reject(new Error('Manifold CSG Worker failed to load. Your browser may not support module workers.'));
-                        }
-                    }, 5000); // 5 seconds for worker script (not WASM)
-
-                    const checkReady = setInterval(() => {
-                        if (manifoldWorkerReady) {
-                            clearTimeout(timeout);
-                            clearInterval(checkReady);
-                            resolve();
-                        }
-                    }, 100);
-                });
-
-                log.debug('Manifold CSG Worker ready for cylinder STL generation (WASM loads on first use)');
+                // Not awaited: 'ready' or the start-up limit settles manifoldSettled,
+                // which Generate waits on. A 5 s wait here used to discard a worker
+                // that was merely slow, for the rest of the visit.
+                log.debug('Manifold CSG worker created; Generate waits for its ready signal (WASM loads on first use)');
 
             } catch (manifoldError) {
                 log.error('Failed to initialize Manifold CSG worker:', manifoldError);
                 log.error('Cylinder generation requires the Manifold worker. Please refresh and try again.');
                 manifoldWorkerReady = false;
                 manifoldWorker = null;
+                manifoldState = 'failed';
+                resolveManifoldSettled();
                 // Per specification: NO FALLBACK - cylinder generation requires Manifold worker
                 // Users will see an error when attempting to generate cylinders
             }
@@ -12187,6 +12196,8 @@
             if (shapeType === 'cylinder') {
                 // Cylinders require Manifold worker - NO FALLBACK to standard worker
                 // Standard worker produces non-manifold edges on curved surfaces
+                // A press while the engine is still starting waits for it instead of failing.
+                if (manifoldState === 'loading') await manifoldSettled;
                 if (!manifoldWorkerReady || !manifoldWorker) {
                     // Provide mobile-friendly error message
                     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);

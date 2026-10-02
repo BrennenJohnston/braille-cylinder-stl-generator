@@ -2,16 +2,18 @@
  * E2E tests for pressing Generate or Translate while the page is still
  * starting (2026-10-01).
  *
- * The braille translator (liblouis) runs in a web worker that takes a few
- * seconds to start. Until 2026-10-01 a Generate STL or Translate to Braille
- * pressed in that window failed at once with "Translation failed for the
- * following lines" (or a "not initialized" status), as if the text were at
- * fault. The translator now reports a start-up state, and anything that needs
- * it waits until start-up has ended; when start-up fails for good, the old
- * message still appears.
+ * The braille translator (liblouis) and the 3D engine (Manifold) run in web
+ * workers that take a few seconds to start, the engine only after the
+ * translator. Until 2026-10-01 a Generate STL or Translate to Braille pressed
+ * in that window failed at once: "Translation failed for the following lines"
+ * (or a "not initialized" status), as if the text were at fault, or "requires
+ * the Manifold 3D engine which failed to load", as if it never would. Both
+ * workers now report a start-up state, and anything that needs one waits
+ * until its start-up has ended; when start-up fails for good, the old message
+ * still appears.
  *
- * Each test holds the translator's script back with a route delay, so the
- * worker is still starting when the button is pressed, once.
+ * Each test holds a worker's script back with a route delay, so the worker is
+ * still starting when the button is pressed, once.
  *
  * @see docs/specifications/UI_INTERFACE_CORE_SPECIFICATIONS.md
  */
@@ -21,6 +23,8 @@ import { selectCylinders } from './helpers/cylinders';
 
 const TRANSLATOR_SCRIPT = '**/static/liblouis-worker.js';
 const TRANSLATOR_DELAY_MS = 4000;
+const ENGINE_SCRIPT = '**/static/workers/csg-worker-manifold.js';
+const ENGINE_DELAY_MS = 6000;
 const BRAILLE = /[⠀-⣿]/;
 
 async function delayTranslator(page: Page) {
@@ -65,6 +69,14 @@ async function waitUntil(condition: () => Promise<boolean> | boolean, timeoutMs:
   return condition();
 }
 
+/** Let the translator answer first, so the 3D engine is the only thing still starting. */
+async function translateFirst(page: Page) {
+  const field = page.locator('#braille-unicode');
+  await page.locator('#translate-to-braille-btn').click();
+  await waitUntil(async () => BRAILLE.test(await field.inputValue()), 20_000);
+  expect(await field.inputValue()).toMatch(BRAILLE);
+}
+
 /** Capture each /geometry_spec request body and stop it there: these tests are about start-up, not geometry. */
 async function captureGeometryRequests(page: Page) {
   const bodies: Array<Record<string, unknown> | null> = [];
@@ -82,11 +94,11 @@ async function captureGeometryRequests(page: Page) {
 test.describe('Pressing a button while the translator is starting', () => {
   test.describe.configure({ timeout: 90_000 });
 
-  // The 3D engine starts only after the translator, so this press can still
-  // find the engine starting; this test checks the translation step only.
-  test('Generate pressed while the translator is starting waits for it and translates the text', async ({ page }) => {
+  // The 3D engine starts only after the translator, so this press waits for
+  // both, one after the other.
+  test('Generate pressed while the translator is starting waits and then generates', async ({ page }) => {
     await delayTranslator(page);
-    await captureGeometryRequests(page);
+    const bodies = await captureGeometryRequests(page);
     await openApp(page);
     await selectCylinders(page, 'positive');
     await page.locator('#auto-text').fill('hello world');
@@ -94,12 +106,12 @@ test.describe('Pressing a button while the translator is starting', () => {
 
     await page.locator('#action-btn').click();
 
-    // Generate writes the braille it is about to emboss into the field.
-    const field = page.locator('#braille-unicode');
-    await waitUntil(async () => BRAILLE.test(await field.inputValue()), 20_000);
-    const shown = await errorTexts(page);
-    expect(await field.inputValue(), `#error-text showed: ${JSON.stringify(shown)}`).toMatch(BRAILLE);
-    expect(shown.filter((text) => text.includes('Translation failed'))).toEqual([]);
+    await waitUntil(() => bodies.length >= 1, 20_000);
+    await page.waitForTimeout(1000);
+    expect(bodies, `#error-text showed: ${JSON.stringify(await errorTexts(page))}`).toHaveLength(1);
+    const lines = (bodies[0]?.lines ?? []) as string[];
+    expect(lines.some((line) => BRAILLE.test(line))).toBe(true);
+    expect((await errorTexts(page)).filter((text) => text.includes('Translation failed'))).toEqual([]);
   });
 
   test('Translate to Braille pressed while the translator is starting fills the field', async ({ page }) => {
@@ -130,6 +142,51 @@ test.describe('Pressing a button while the translator is starting', () => {
         timeout: 20_000,
       })
       .toBe(true);
+    await page.waitForTimeout(1000);
+    expect(bodies).toHaveLength(0);
+  });
+});
+
+test.describe('Pressing Generate while the 3D engine is starting', () => {
+  test.describe.configure({ timeout: 180_000 });
+
+  test('Generate pressed while the 3D engine is starting waits and then offers the download', async ({ page }) => {
+    await page.route(ENGINE_SCRIPT, async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, ENGINE_DELAY_MS));
+      await route.continue();
+    });
+    await openApp(page);
+    await selectCylinders(page, 'positive');
+    await page.locator('#auto-text').fill('hello world');
+    await translateFirst(page);
+    await recordErrorTexts(page);
+
+    await page.locator('#action-btn').click();
+
+    const download = page.locator('#download-stl-btn');
+    await waitUntil(() => download.isVisible(), 120_000);
+    const shown = await errorTexts(page);
+    expect(await download.isVisible(), `#error-text showed: ${JSON.stringify(shown)}`).toBe(true);
+    expect(shown.filter((text) => text.includes('Manifold 3D engine'))).toEqual([]);
+  });
+
+  test('a 3D engine that cannot load still stops Generate with the engine message', async ({ page }) => {
+    await page.route(ENGINE_SCRIPT, (route) => route.abort());
+    const bodies = await captureGeometryRequests(page);
+    await openApp(page);
+    await selectCylinders(page, 'positive');
+    await page.locator('#auto-text').fill('hello world');
+    await translateFirst(page);
+    await recordErrorTexts(page);
+
+    await page.locator('#action-btn').click();
+
+    const failedToLoad = 'Cylinder generation requires the Manifold 3D engine which failed to load.';
+    await waitUntil(async () => (await errorTexts(page)).some((text) => text.includes(failedToLoad)), 20_000);
+    expect(
+      (await errorTexts(page)).some((text) => text.includes(failedToLoad)),
+      `#error-text showed: ${JSON.stringify(await errorTexts(page))}`,
+    ).toBe(true);
     await page.waitForTimeout(1000);
     expect(bodies).toHaveLength(0);
   });
