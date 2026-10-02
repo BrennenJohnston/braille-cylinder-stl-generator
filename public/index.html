@@ -6751,6 +6751,7 @@
             if (placementMode === 'auto') {
                 const src = (document.getElementById('auto-text')?.value || '').trim();
                 if (!src) return { error: 'Enter text in the Auto Placement box first, then press Translate to Braille.' };
+                await waitForTranslatorStart();
                 const wrap = await banaAutoWrap(src, getAvailableColumns(), rows, tableName);
                 if (wrap.error) {
                     return { error: (wrap.warnings && wrap.warnings.length) ? wrap.warnings.join(' ') : 'Unable to wrap text per BANA rules.' };
@@ -6762,6 +6763,7 @@
             if (!sourceLines.some(line => line && line.trim())) {
                 return { error: 'Enter text in at least one line above, then press Translate to Braille.' };
             }
+            await waitForTranslatorStart();
             const brailleLines = [];
             for (let i = 0; i < sourceLines.length; i++) {
                 const line = (sourceLines[i] || '').trim();
@@ -6796,6 +6798,7 @@
                 }
             }
 
+            await waitForTranslatorStart();
             const tableName = document.getElementById('language-table')?.value || DEFAULT_LANGUAGE_TABLE;
             const placementMode = document.querySelector('input[name="placement_mode"]:checked')?.value || 'manual';
 
@@ -7008,6 +7011,7 @@
                     /* S-D3 (signed 2026-09-21; 2026-09-20 programme, sub-plan D). */
                     return { error: 'Enter text in at least one Back Line first, then press Translate to Braille.' };
                 }
+                await waitForTranslatorStart();
                 const manual = await translateBackManualLines();
                 if (manual.failedLine) {
                     return { error: `Back line ${manual.failedLine} could not be translated: ${manual.error?.message || manual.error}` };
@@ -7016,6 +7020,7 @@
             }
             const src = (document.getElementById('back-text')?.value || '').trim();
             if (!src) return { error: 'Enter text in the Back of Card Text box first, then press Translate to Braille.' };
+            await waitForTranslatorStart();
             const wrap = await banaAutoWrap(src, getAvailableColumns(), rows, tableName);
             if (wrap.error) {
                 return { error: (wrap.warnings && wrap.warnings.length) ? wrap.warnings.join(' ') : 'Unable to wrap text per BANA rules.' };
@@ -7039,6 +7044,7 @@
                     }
                 }
             }
+            await waitForTranslatorStart();
             const tableName = document.getElementById('language-table')?.value || DEFAULT_LANGUAGE_TABLE;
             const textLines = [];
             for (const line of lines) {
@@ -10117,6 +10123,7 @@
                     errorDiv.style.display = 'flex';
                     return;
                 }
+                await waitForTranslatorStart();
                 for (let i = 0; i < lines.length; i++) {
                     if (lines[i].trim()) {
                         try {
@@ -10146,6 +10153,7 @@
                     errorDiv.style.display = 'flex';
                     return;
                 }
+                await waitForTranslatorStart();
                 try {
                     // Use unified available columns helper
                     const cols = getAvailableColumns();
@@ -10511,6 +10519,13 @@
         // every early exit returns false - so Generate Both can chain Cylinder A
         // into Cylinder B and stop the moment either one fails.
         async function runGenerateForCurrentPlate() {
+            if (generateWaitingForStartup) return false;
+            generateWaitingForStartup = true;
+            try {
+                await waitForTranslatorStart();
+            } finally {
+                generateWaitingForStartup = false;
+            }
             errorDiv.style.display = 'none';
             errorText.textContent = '';
             // Clear the class too, not just the text. The progress notice below
@@ -11181,6 +11196,8 @@
             // =====================================================================
 
             try {
+                if (shapeType === 'cylinder') await waitForEngineStart();
+
                 // Update loading message for client-side generation
                 // SAFETY: Do not overwrite truncation or other blocking errors
                 if (!(errorDiv.classList.contains('error-message') && !errorDiv.classList.contains('info'))) {
@@ -11782,6 +11799,42 @@
         const manifoldSettled = new Promise((resolve) => { resolveManifoldSettled = resolve; });
         const MANIFOLD_START_LIMIT_MS = 60000;
         let manifoldRequestId = 0;
+
+        /* S-L1 and S-L2: DRAFT 2026-10-01, awaiting Brennen's sign-off (round R1, Gate B). */
+        const TRANSLATOR_LOADING_NOTICE = 'The braille translator is still loading. This starts as soon as it is ready.';
+        const ENGINE_LOADING_NOTICE = 'The 3D engine is still loading. Generation starts as soon as it is ready.';
+
+        // While a press waits for a worker that is still starting, one sentence says
+        // so in the informational style; the #error-message mirror announces it once.
+        // Called by the buttons, never inside translateWithLiblouis: the live
+        // overflow checks call that while a person types, and must stay silent.
+        async function waitForWorkerStart(isLoading, settled, notice) {
+            if (!isLoading()) return;
+            errorText.textContent = notice;
+            errorDiv.style.display = 'flex';
+            errorDiv.className = 'error-message info';
+            try {
+                await settled;
+            } finally {
+                // Only this notice is taken down; a message written meanwhile stays.
+                if (errorText.textContent === notice) {
+                    errorDiv.style.display = 'none';
+                    errorText.textContent = '';
+                }
+            }
+        }
+
+        function waitForTranslatorStart() {
+            return waitForWorkerStart(() => liblouisState === 'loading', liblouisSettled, TRANSLATOR_LOADING_NOTICE);
+        }
+
+        function waitForEngineStart() {
+            return waitForWorkerStart(() => manifoldState === 'loading', manifoldSettled, ENGINE_LOADING_NOTICE);
+        }
+
+        // A Generate press while an earlier one still waits for start-up is ignored:
+        // the button is not yet disabled then, and both runs would start once it ends.
+        let generateWaitingForStartup = false;
         let pendingManifoldRequests = new Map();
 
         // Function to send message to worker and get response.

@@ -115,6 +115,13 @@ a worker-backed button without waiting for readiness can fail locally while pass
 The suite's helpers wait for readiness and rethrow anything that is not the documented
 not-ready message; a bare press is the bug, not the browser.
 
+Since 2026-10-01 the app itself waits: Generate, Translate to Braille, Translate to Text and
+Preview pressed while the braille translator or the 3D engine is still starting wait for it
+and say so, instead of failing, so the misleading "Translation failed" (and the 3D engine's
+"failed to load") at start-up are gone. The helpers keep their retries. Under heavy local
+load a retry can now start a second generation after the first press has waited for a slow
+3D engine; re-run such a file alone at `--workers=2` before counting it.
+
 Worker startup itself used to be the other half of this. Every message to the liblouis
 worker shared one 10-second timeout, including `init` — and an `init` that times out is
 terminal, because the catch around it nulls the worker and disables translation for the
@@ -132,7 +139,8 @@ sentence, not "not initialized", and every other generate helper already retries
 one, written 2026-09-28, did not. It now uses the same list of transient messages, and the
 file passed 18 of 18 in Firefox at four workers, three runs each. (The app's own wording for
 a Generate pressed during start-up - a "Translation failed" message that lists causes like
-special characters - is unchanged.)
+special characters - is unchanged.) Since 2026-10-01 a Generate pressed during start-up waits
+for the translator instead, so that message no longer appears for it.
 
 The OpenSCAD version has this feature: the double-sided port shipped in the OpenSCAD
 generator v2.6 and was refined in v2.7 (2026-08-23).
