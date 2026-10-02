@@ -196,8 +196,7 @@ the real customizer replaced the reasoning about mesh size with the tested
 reason. The pair filename, the "Version 1 ... (Version 2's size is 30.8 × 54.0, below)"
 clause and the vent sentences of "The barrel prints solid" were added on 2026-09-30 and
 signed off by him on 2026-10-01. The "Known limitation" paragraph was reworded on
-2026-10-01 to record the dome fix; that wording is a DRAFT awaiting his sign-off
-(R1-Q-13).
+2026-10-01 to record the dome fix and signed off by him the same day (R1-Q-13).
 
 Full technical detail: `docs/specifications/GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md`.
 
