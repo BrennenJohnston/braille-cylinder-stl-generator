@@ -11757,6 +11757,12 @@
         // Initialize liblouis web worker and 3D viewer on page load
         let liblouisWorker = null;
         let liblouisReady = false;
+        // Start-up state of the translator. Anything that needs it while it is
+        // still starting waits on liblouisSettled instead of failing; only
+        // 'failed' keeps the old "not initialized" error.
+        let liblouisState = 'loading';   // 'loading' | 'ready' | 'failed'
+        let resolveLiblouisSettled;
+        const liblouisSettled = new Promise((resolve) => { resolveLiblouisSettled = resolve; });
         let workerMessageId = 0;
         let pendingWorkerMessages = new Map();
 
@@ -11894,6 +11900,8 @@
                 const initResult = await sendWorkerMessage('init', {}, 30000);
                 if (initResult.success) {
                     liblouisReady = true;
+                    liblouisState = 'ready';
+                    resolveLiblouisSettled();
                     log.debug('Liblouis web worker initialized successfully');
                 } else {
                     throw new Error('Failed to initialize liblouis worker: ' + initResult.error);
@@ -11905,6 +11913,9 @@
                 log.debug('Web worker failed - disabling liblouis translation');
                 liblouisReady = false;
                 liblouisWorker = null;
+                // Every way out of start-up settles the wait, so no caller waits forever.
+                liblouisState = 'failed';
+                resolveLiblouisSettled();
 
                 // Show user that translation is disabled
                 const errorDiv = document.getElementById('error-message');
@@ -12107,6 +12118,8 @@
 
         // Function to translate text using liblouis web worker
         async function translateWithLiblouis(text, grade, tableName = null) {
+            // A press during start-up waits for it to end instead of failing.
+            if (liblouisState === 'loading') await liblouisSettled;
             if (!liblouisReady || !liblouisWorker) {
                 throw new Error('Liblouis worker not initialized - translation preview unavailable on this deployment');
             }
@@ -12134,6 +12147,7 @@
         // pass. This is what lets a braille reader check what they pasted, and
         // what supplies a file name when braille is the only thing entered.
         async function backTranslateWithLiblouis(braille, tableName = null) {
+            if (liblouisState === 'loading') await liblouisSettled;
             if (!liblouisReady || !liblouisWorker) {
                 throw new Error('Liblouis worker not initialized - back-translation unavailable on this deployment');
             }
