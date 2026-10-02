@@ -2714,7 +2714,7 @@ a few seconds, longer on a slow device. Since 2026-10-01 (Brennen's decision R1-
 | Settles on | the answer to `init`; any failure, including the 30 s `init` limit | the worker's `ready` message; an error before `ready`; a failure to create the worker; `MANIFOLD_START_LIMIT_MS` (60 s) without `ready` |
 | Promise waited on | `liblouisSettled` | `manifoldSettled` |
 | Who waits | `translateWithLiblouis` and `backTranslateWithLiblouis`, so every caller, the live overflow checks included | `generateSTLClientSide` (Generate only) |
-| Sentence while a button waits (PROPOSED, S-L1 / S-L2) | "The braille translator is still loading. This starts as soon as it is ready." | "The 3D engine is still loading. Generation starts as soon as it is ready." |
+| Sentence while a button waits (S-L1 / S-L2, signed 2026-10-02) | "The braille translator is still loading. This starts as soon as it is ready." | "The 3D engine is still loading. Generation starts as soon as it is ready." |
 
 - `'failed'` keeps the old messages ("Translation failed for the following lines ...",
   "Cylinder generation requires the Manifold 3D engine which failed to load ...").
@@ -3381,6 +3381,7 @@ Low vision users benefit from enhanced depth perception:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.36 | 2026-10-02 | **§4.14: S-L1 and S-L2 signed.** Brennen approved both loading sentences as written at Gate B of round R1 (R1-Q-14), and chose to leave the notice where the app's other progress messages are, including on a phone, where that box is at the top of the page (R1-Q-20). Wording unchanged. |
 | 1.35 | 2026-10-01 | **§4.14 (new): waiting for a worker at start-up** (round R1, phases B1 to B3; Brennen's decision R1-Q-04, "Wait, then generate"). The translator and the 3D engine have start-up states and settle promises; Generate, Translate and Preview wait instead of failing and say so (S-L1, S-L2, PROPOSED until Gate B); the 3D engine's 5 s start-up limit became 60 s and no longer discards a slow worker; a second Generate press during the wait is ignored. Tests: `tests/e2e/startupWait.spec.ts`. |
 | 1.34 | 2026-10-01 | **§4.5: the Expert Mode restore sets `aria-expanded`** (found in the 2026-09-30 review, fixed on Brennen's word): a reload with Expert Mode open used to be announced as collapsed; pinned by `tests/e2e/expertModeRestore.spec.ts`. |
 | 1.33 | 2026-09-30 | **Documentation review after the approved build.** The two-file warning is gone (`templates/index.html` was deleted on 2026-07-30). §4.8's table-of-contents entry, the accordion handler note and §4.11 follow the Embosser setup item: the heading outline re-measured at 7 / 15 / 15, three h2 sections and eight Expert Mode h3s, the legend example is Card sides. §6.1 describes the action button as it is since 2026-08-18 (always Generate STL, with a separate Download STL button). §8's tab table, JavaScript API and trigger buttons match the eight help tabs. The gear size note names both versions. |

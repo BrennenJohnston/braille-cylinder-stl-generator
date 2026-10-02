@@ -25,7 +25,7 @@ const TRANSLATOR_SCRIPT = '**/static/liblouis-worker.js';
 const TRANSLATOR_DELAY_MS = 4000;
 const ENGINE_SCRIPT = '**/static/workers/csg-worker-manifold.js';
 const ENGINE_DELAY_MS = 6000;
-// S-L1 and S-L2 (DRAFT 2026-10-01, awaiting Brennen's sign-off at Gate B).
+// S-L1 and S-L2, signed off by Brennen 2026-10-02 (round R1, Gate B); reword only with his sign-off.
 const TRANSLATOR_NOTICE = 'The braille translator is still loading. This starts as soon as it is ready.';
 const ENGINE_NOTICE = 'The 3D engine is still loading. Generation starts as soon as it is ready.';
 const BRAILLE = /[\u2800-\u28FF]/;
