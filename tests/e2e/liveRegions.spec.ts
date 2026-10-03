@@ -214,6 +214,26 @@ test.describe('Live region announcements', () => {
     await expect(page.locator('#a11y-status')).toHaveText('');
   });
 
+  test('switching to Manual Placement does not repeat the Auto Placement warning', async ({ page }) => {
+    await openApp(page);
+    await page.locator('#auto-text').fill(OVER_LONG);
+    await waitForWarning(page, 'auto-overflow-warning', 'auto-text');
+    const warning = await visibleText(page, 'auto-overflow-warning');
+
+    await recordAnnouncements(page);
+    // A click on the radio straight from the text box, as a mouse user does:
+    // leaving the box fires its change event while Auto Placement is still
+    // selected, which schedules one more check of that text. Found 2026-10-02
+    // (round R1, F1): the check repeated the warning about 270 ms after the
+    // switch, for a box no longer on screen.
+    await page.locator('#placement_mode_manual').click();
+    await expect(page.locator('#line1')).toBeVisible();
+    await page.waitForTimeout(1500);
+
+    expect(await announcements(page)).not.toContain(warning);
+    await expect(page.locator('#a11y-status')).not.toHaveText(warning);
+  });
+
   test('cylinder overflow announces its own text once, then releases the channel', async ({ page }) => {
     await openApp(page);
     await goManual(page);

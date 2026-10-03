@@ -293,10 +293,13 @@ check that you can find them there.
    obliged to do the same. The accepted cost is that hovering these three
    buttons with a mouse no longer shows a tooltip.
 
-**Known and deliberate, not a finding:** three descriptions are still over the
-25-word ceiling — Tactile seam arrow (43 w), the 3D preview (38 w), Visual
-markers (26 w). Brennen decided to leave them (FD-25d). Say if any of them
-grated; do not treat them as a fail.
+**Known and deliberate, not a finding:** five descriptions are over the 25-word
+ceiling — Tactile seam arrow (43 w), the 3D preview (38 w), Visual markers
+(26 w), and, found in the 2026-10-02 re-measure, the 0.3mm card preset (26 w) and
+"Repeat the number sign after each period" (27 w). Brennen decided to leave all
+five (FD-25d on 2026-08-22; the last two at Gate F of round R1, R1-Q-28). All but
+the 3D preview are in Expert Mode. Say if any of them grated; do not treat them
+as a fail.
 
 ---
 
@@ -388,3 +391,4 @@ Anything NVDA said that I did not expect at all:
 | 1.3 | 2026-09-21 | **Heading counts follow sub-plan E (2026-09-21; NOT yet run).** Part 2: nine headings on load (the "Select Plate to Generate" h2 moved into Expert Mode as the first level-3 "Cylinders to Generate"), fifteen with Expert Mode open, sixteen with Double-sided; the counts line says 9 / 15 / 16. |
 | 1.4 | 2026-09-30 | **Re-measured in Chromium after the approved build (NOT yet run with NVDA).** Part 2: seven headings on load, fifteen with Expert Mode open and fifteen with Double-sided chosen — Row Indicator Style and Card Thickness moved into Expert Mode on 2026-09-24 (D-5) and the tactile dials no longer add a heading. Part 4: Auto Placement is stop 20; the Embosser setup item (2026-09-20) put five stops before it. The results template follows. |
 | 1.5 | 2026-10-02 | **Re-measured for 2.2.0 in Chromium (round R1, phase F1; NOT yet run with NVDA).** Every part checked at `553f830` against Chromium's computed accessibility tree: the five landmarks, the 7 / 15 / 15 heading outlines with no skipped level, both skip links and where the next `Tab` goes, Auto Placement at stop 20 of a 28-stop ring, one GitHub link, the four text-field stops (13 words on the braille field) and Generate inside the form all match. Changed: Part 2 says seven headings where two sentences and the results template still said six; Part 4's note gives today's 19 of 28; Part 5's arrow question names the two Embosser setup buttons whose names also end in an arrow. Found and left for Gate F: two Expert Mode descriptions over the 25-word ceiling that FD-25d does not cover, the 0.3mm preset (26 words) and "Repeat the number sign after each period" (27 words). |
+| 1.6 | 2026-10-02 | **Round R1, phase F2 (NOT yet run with NVDA).** Part 5's "known and deliberate" note lists all five descriptions over the 25-word ceiling: Brennen kept the two that F1 found (the 0.3mm preset, 26 words; "Repeat the number sign after each period", 27 words) at Gate F (R1-Q-28), beside FD-25d's three. |

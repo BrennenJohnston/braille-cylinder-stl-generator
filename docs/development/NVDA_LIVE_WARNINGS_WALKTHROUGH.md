@@ -7,7 +7,7 @@ Level AA) failure. A blind user who overran a line saw the warning and heard
 silence.
 
 The automated checks already prove each region *can* announce, and that the
-accessibility tree still holds exactly six `role="status"` nodes. **Only
+accessibility tree still holds exactly seven `role="status"` nodes. **Only
 listening proves it announces usefully**, which is what this walkthrough is for.
 
 **Who runs this:** Brennen, or anyone with NVDA installed.
@@ -306,7 +306,7 @@ tools (`F12`), **Network** tab, tick **Disable cache**, choose a slow setting in
 the throttling list (Slow 4G, or Slow 3G if your browser lists that), keep the
 developer tools open (throttling stops when they close), click once inside the
 page, and repeat the step. The page then takes about 20 seconds to appear, and
-both sentences are spoken (measured with similar throttling). Set throttling back
+both sentences are shown (measured with similar throttling). Set throttling back
 to **No throttling** afterwards.
 
 **Fail if:** a red error says the translation failed or that the 3D engine
@@ -370,6 +370,7 @@ Anything NVDA said that I did not expect at all:
 
 | Version | Date | Changes |
 |---|---|---|
+| 1.8 | 2026-10-02 | **Round R1, phase F2 (NOT yet run with NVDA).** The Auto Placement warning is no longer repeated after a switch to Manual Placement (Brennen's decision R1-Q-27; found in F1 and listed in v1.7); no step changes, since Step 4 never expected an announcement. The introduction counts seven `role="status"` nodes (seven since 2026-08-31), and Step 14 says the two sentences are shown, which is what was measured. |
 | 1.7 | 2026-10-02 | **Re-measured for 2.2.0 in Chromium, and the loading notice added (round R1, phase F1; NOT yet run with NVDA).** Every step replayed at `553f830` by keyboard, with every live-region change recorded: each quoted sentence is the page's own text character for character, the load is still silent, and each warning is still written once per episode. Changed: Step 12 now hears two announcements at the second 9, the seam-channel note (since 2026-09-20) and then the warning; Step 13 says where the warning box sits since 2026-09-24. New Part 6 (Step 14): the loading notice, S-L1 and S-L2 (signed 2026-10-02), with the throttling recipe; the results template gains row 14 (13 listening steps). Found and left for Gate F: clicking Manual Placement straight from the Auto Placement Text box (or pressing Shift+Tab and Down together) re-announces the Part 1 warning about 270 ms later, from a check still pending; the introduction's six status nodes are seven since 2026-08-31. |
 | 1.6 | 2026-09-30 | **Documentation review:** the control step opens Expert Mode → Card Thickness first, where the preset radios live since 2026-09-24 (D-5); the related-documents line says "double-sided flow". |
 | 1.5 | 2026-08-22 | **Part 3 gains the F-J change** (item F, D6): the **Disabled** capitals radio no longer carries its own `aria-describedby` description, so selecting it now speaks one utterance fewer. Its sr-only text duplicated both the note this walkthrough already quotes AND the visible `.grade-note` beneath the radios, which is unchanged and still on screen. **No quoted sentence in this document changed** - the caps note's wording and its once-per-episode gate are untouched - so every existing step, count and fail condition still stands; Step 9 simply gained a new fail condition for the duplicate returning. Nothing else in the app was changed by that item that this walkthrough covers. |

@@ -2412,6 +2412,15 @@ Each of the three writes and clears through a small helper so no call site can d
 `updateCapsWarning()`. All three announce **only on the transition from hidden to
 shown**, for the reason `ds-back-overflow-warning` does.
 
+**Since 2026-10-02 (round R1, phase F2) the Auto Placement check also does nothing
+unless Auto Placement is selected.** `computeAutoOverflowNow()` hides its box quietly
+and returns while Manual Placement is chosen, both at its start and just before it
+paints. A check could be scheduled by the text box's change event an instant before
+the switch (a click on the Manual Placement radio straight from the box, or Shift+Tab
+and Down pressed together), and it then repeated the warning for a box no longer on
+screen, about 270 ms after the switch (measured in phase F1).
+`tests/e2e/liveRegions.spec.ts` pins it.
+
 **The capitalization note is the one that had to be measured rather than reasoned
 about.** Its text is fixed, so the expectation was that the "an unchanged string is
 not a mutation" property above would suppress its repeats by itself. It does not:
@@ -3381,6 +3390,7 @@ Low vision users benefit from enhanced depth perception:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.37 | 2026-10-02 | **§4.10: the Auto Placement warning is no longer repeated after a switch to Manual Placement** (round R1, phase F2; Brennen's decision R1-Q-27, "Fix it in F2"). `computeAutoOverflowNow()` now does nothing unless Auto Placement is selected; before, a check scheduled as focus left the text box could run after the switch and speak the warning for a box no longer shown. New test in `tests/e2e/liveRegions.spec.ts`. |
 | 1.36 | 2026-10-02 | **§4.14: S-L1 and S-L2 signed.** Brennen approved both loading sentences as written at Gate B of round R1 (R1-Q-14), and chose to leave the notice where the app's other progress messages are, including on a phone, where that box is at the top of the page (R1-Q-20). Wording unchanged. |
 | 1.35 | 2026-10-01 | **§4.14 (new): waiting for a worker at start-up** (round R1, phases B1 to B3; Brennen's decision R1-Q-04, "Wait, then generate"). The translator and the 3D engine have start-up states and settle promises; Generate, Translate and Preview wait instead of failing and say so (S-L1, S-L2, PROPOSED until Gate B); the 3D engine's 5 s start-up limit became 60 s and no longer discards a slow worker; a second Generate press during the wait is ignored. Tests: `tests/e2e/startupWait.spec.ts`. |
 | 1.34 | 2026-10-01 | **§4.5: the Expert Mode restore sets `aria-expanded`** (found in the 2026-09-30 review, fixed on Brennen's word): a reload with Expert Mode open used to be announced as collapsed; pinned by `tests/e2e/expertModeRestore.spec.ts`. |

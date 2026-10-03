@@ -8641,6 +8641,10 @@
             announceStatus('auto-overflow-warning', '');
         }
 
+        function isAutoPlacementSelected() {
+            return document.querySelector('input[name="placement_mode"]:checked')?.value === 'auto';
+        }
+
         function computeAutoOverflow() {
             if (autoOverflowTimer) clearTimeout(autoOverflowTimer);
             autoOverflowTimer = setTimeout(() => {
@@ -8654,7 +8658,11 @@
             const languageSelect = document.getElementById('language-table');
             const tableName = languageSelect?.value || DEFAULT_LANGUAGE_TABLE;
             const src = (autoText?.value || '').trim();
-            if (!src) {
+            // Only Auto Placement shows this box. A check can be scheduled by the
+            // text box's change event an instant before Manual Placement is
+            // chosen, or still be translating when it is, and must not then speak
+            // for a box that is no longer on screen.
+            if (!src || !isAutoPlacementSelected()) {
                 hideAutoOverflow();
                 return;
             }
@@ -8682,6 +8690,10 @@
                     messages.push(`Your text needs ${needs} but the plate has ${rows}.`);
                 }
 
+                if (!isAutoPlacementSelected()) {
+                    hideAutoOverflow();
+                    return;
+                }
                 if (messages.length) {
                     // Announce only as the warning appears. This recomputes on
                     // every keystroke and the text carries a live cell count, so
