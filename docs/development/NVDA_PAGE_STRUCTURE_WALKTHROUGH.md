@@ -180,8 +180,8 @@ Verified by probe on 2026-08-23 in all three states: `SKIPPED LEVELS: none`.
 > `build/a11yverify/post15_7c/headings.cjs`, re-run after item G moved the
 > markup.
 
-**The question only you can answer:** having pressed `H` six times, did you know
-what this page is and where things are? Or is it six labels that happen to be
+**The question only you can answer:** having pressed `H` seven times, did you know
+what this page is and where things are? Or is it seven labels that happen to be
 correctly nested? Write a sentence either way.
 
 ---
@@ -226,9 +226,10 @@ the Embosser version radio group, the Gears radio group, "Open Embosser Setup he
 the Card sides radio group and "Which setup should I choose?".
 
 > **This number did not improve, and the honest expectation is that it will
-> sound no better than last time.** Audit finding F-F opened at *14 of 32*, and
-> it is still 14 of 32. Item G added a skip link (+1) and removed a duplicate
-> GitHub link (−1), and they cancelled exactly. What changed is that a keyboard
+> sound no better than last time.** Audit finding F-F opened at *14 of 32*. Item
+> G added a skip link (+1) and removed a duplicate GitHub link (−1), and they
+> cancelled exactly; the Embosser setup item (2026-09-20) then made it *19 of
+> 28* (measured 2026-10-02). What changed is that a keyboard
 > user no longer has to walk the ring — Part 3 is the fix, not this. Reordering
 > the columns to shorten the ring was offered and declined, because it would put
 > DOM order out of step with visual order for sighted keyboard users (WCAG
@@ -278,7 +279,9 @@ check that you can find them there.
    WCAG 2.5.3). **Write down exactly what NVDA says.** If it reads "down arrow"
    and that is noise to you, say so — it becomes a finding worth a decision. If
    it is silent or helpful, that closes the question. The same applies to "Help
-   me choose what to include →" and the banner's "Change Theme to →".
+   me choose what to include →", to the Embosser setup item's "Open Embosser
+   Setup help →" and "Which setup should I choose? →" (both added 2026-09-20),
+   and to the banner's "Change Theme to →".
 2. **The three font-size buttons in the banner.** Tab to **Decrease font size**.
    **Expected: the name once, and nothing after it** — *"Decrease font size,
    button."* If you hear the words a second time as a description, that is a
@@ -353,7 +356,7 @@ Part | What I heard | Count | Expected | Pass/Fail
   6  full flow minutes    |      | (no target) |
   6  "out of form" before Generate? |  | NO      |
 
-Did the six headings tell me what this page is?          yes / no — why:
+Did the seven headings tell me what this page is?        yes / no — why:
 
 Does the tab-ring length still matter now the skip links exist?   yes / no
   (yes reopens F-F and puts the column reorder back on the table)
@@ -384,3 +387,4 @@ Anything NVDA said that I did not expect at all:
 | 1.0 | 2026-08-23 | Created as POST15_7 item G Part 5 — the closing re-listen for the whole A–I programme. Expected counts are measured, not predicted: landmarks **5** and heading outline **6 / 11 / 12 with no skipped levels** from `axprobe.cjs` and `build/a11yverify/post15_7c/headings.cjs` re-run on 2026-08-23 after the banner move; description budget **226 w** from `axprobe.cjs`; tab ring **32** with the first task control at stop **15**. Part 4 states plainly that F-F's number did **not** improve and says what would reopen it. Part 6 is timed but deliberately has no target. |
 | 1.3 | 2026-09-21 | **Heading counts follow sub-plan E (2026-09-21; NOT yet run).** Part 2: nine headings on load (the "Select Plate to Generate" h2 moved into Expert Mode as the first level-3 "Cylinders to Generate"), fifteen with Expert Mode open, sixteen with Double-sided; the counts line says 9 / 15 / 16. |
 | 1.4 | 2026-09-30 | **Re-measured in Chromium after the approved build (NOT yet run with NVDA).** Part 2: seven headings on load, fifteen with Expert Mode open and fifteen with Double-sided chosen — Row Indicator Style and Card Thickness moved into Expert Mode on 2026-09-24 (D-5) and the tactile dials no longer add a heading. Part 4: Auto Placement is stop 20; the Embosser setup item (2026-09-20) put five stops before it. The results template follows. |
+| 1.5 | 2026-10-02 | **Re-measured for 2.2.0 in Chromium (round R1, phase F1; NOT yet run with NVDA).** Every part checked at `553f830` against Chromium's computed accessibility tree: the five landmarks, the 7 / 15 / 15 heading outlines with no skipped level, both skip links and where the next `Tab` goes, Auto Placement at stop 20 of a 28-stop ring, one GitHub link, the four text-field stops (13 words on the braille field) and Generate inside the form all match. Changed: Part 2 says seven headings where two sentences and the results template still said six; Part 4's note gives today's 19 of 28; Part 5's arrow question names the two Embosser setup buttons whose names also end in an arrow. Found and left for Gate F: two Expert Mode descriptions over the 25-word ceiling that FD-25d does not cover, the 0.3mm preset (26 words) and "Repeat the number sign after each period" (27 words). |

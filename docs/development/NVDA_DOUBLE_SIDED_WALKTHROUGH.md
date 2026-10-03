@@ -70,17 +70,19 @@ order they arrive in.
 
 ## Part 1 — Finding the choice while single-sided
 
-**Step 1.** Load the page fresh, click once on an empty part of the page so focus
-is inside it, then press `Tab` once.
+**Step 1.** Load the page fresh and press `Tab` once, **without clicking in the
+page first**: a click moves the browser's starting point, and a click on an empty
+part of the page lands inside the main area, so the first `Tab` goes to
+"Decrease brightness" instead (measured 2026-10-02).
 
 > **Expect:** the skip link, which NVDA announces role-first:
 > "same page link, Skip to main content"
 >
 > This one is easy to miss on a first run. The link is invisible until it takes
 > focus and then slides into the **top-left corner** over 0.3 s, so watch that
-> corner rather than the middle of the page. If you hear "Decrease font size"
-> instead, you have gone one control too far — `Shift+Tab` back one and listen
-> again.
+> corner rather than the middle of the page. If you hear "Skip to braille text
+> entry" instead, you have gone one control too far — `Shift+Tab` back one and
+> listen again (there are two skip links since 2026-08-23).
 
 **Step 2.** Keep pressing `Tab` until you reach the **Card sides** radio group
 inside the Embosser setup item (it comes after the Embosser version and Gears
@@ -94,7 +96,9 @@ radio groups, before the front text box).
 > "checked" on Single-sided.
 
 **Step 3.** Do **not** press an arrow key yet. Press `Tab` on through the front
-text box until you reach the Back of Card heading area.
+entry. When you reach the **Auto Placement Text** box, type `hello`: Part 6
+cannot generate without some front text, and the page never keeps text between
+visits. Then keep pressing `Tab` until you reach the Back of Card heading area.
 
 > **Expect:** you go straight from the front entry controls to the Select
 > Language combo box. You must **not** land on "Back of Card Text" — while the
@@ -133,7 +137,7 @@ radio group and hear its state again.
 ## Part 3 — The Back of Card text box
 
 **Step 6.** Press `Tab` seven times from the radio group: past "Which setup should I
-choose?", then the front entry's six controls (its Auto Placement toggle, text box,
+choose?", then the front entry's five controls (its Auto Placement toggle, text box,
 Translate to Braille, Braille (Unicode) box and Translate to Text).
 
 > **Expect (since 2026-09-21), on the seventh press:** "Auto Placement, radio button,
@@ -149,9 +153,11 @@ Translate to Braille, Braille (Unicode) box and Translate to Text).
 
 > **Expect:** "Back of Card Text, edit, multi line, blank" — then the help text:
 > "Your text is translated with the language selected below and wrapped across
-> the braille rows for you, keeping whole words together. Press Enter only where
-> you want to force the start of a new row. The back has the same number of rows
-> and cells per row as the front."
+> the braille rows for you, keeping whole words together." The two sentences that
+> follow it on screen ("Press Enter only where you want to force the start of a
+> new row. The back has the same number of rows and cells per row as the front.")
+> are visible text, not part of the help NVDA reads on focus (since 2026-09-20);
+> read them with the arrow keys.
 >
 > NVDA may also read the placeholder: "Type the text for the back of the card
 > here." (shortened on 2026-09-28).
@@ -260,6 +266,12 @@ and B", then `Shift+Tab` back to "Hide Expert Mode" and press `Enter` to close i
 > - "Both cylinders are ready. Use the Download STL button to save one file with
 >   both cylinders spaced for printing on one plate." (S-E5 (signed 2026-09-21), 2026-09-21)
 >
+> You will also hear "Braille field updated from translation." once for each side
+> (every Generate fills both braille boxes, since 2026-09-28) and short progress
+> lines such as "Generating 3D model (client-side CSG)..." and "Generating
+> counter plate...". They come from a second live region and may fall between
+> the three above.
+>
 > **Nothing downloads by itself, and no Save As dialog should appear yet.** Until
 > 2026-08-18 the run started both downloads on its own, which made Chrome ask
 > "wants to: Download multiple files" — a prompt that names no file, gives no
@@ -303,13 +315,17 @@ and B", then `Shift+Tab` back to "Hide Expert Mode" and press `Enter` to close i
 
 ## Part 7 — The braille preview, both sides
 
-**Step 20.** `Shift+Tab` back up to the "Show Expert Mode" button and press
-`Enter`.
+**Step 20.** `Shift+Tab` back up to the "Show Expert Mode" button (two presses
+from Download STL) and press `Enter`.
 
-> **Expect:** "Show Expert Mode, button, collapsed" before you press, and after
-> pressing, the button reports **expanded**.
+> **Expect:** "Show Expert Mode, button, collapsed" before you press. After
+> pressing, focus moves by itself to the first control inside, so NVDA says
+> "Preview Braille Translation, button" (as in step 10); the toggle, now "Hide
+> Expert Mode", reports **expanded** if you `Shift+Tab` back to it.
 
-**Step 21.** `Tab` once to "Preview Braille Translation" and press `Enter`.
+**Step 21.** Focus is already on "Preview Braille Translation" (step 20 put it
+there): press `Enter`. Do not press `Tab` first: one `Tab` moves on to the
+Cylinders to Generate button.
 
 **Step 22.** Use `NVDA key` + `Down arrow` (say-all) to read the preview region.
 
@@ -437,3 +453,4 @@ Anything NVDA said that I did not expect at all:
 | 1.6 | 2026-09-21 | **Back of Card parity (programme sub-plan D, 2026-09-21; NOT yet run).** Part 3 gains the back placement toggle and the Manual rows (step 6, new step 6a for the text box). |
 | 1.5 | 2026-09-21 | **One Generate, one Download (programme sub-plan E, 2026-09-21; NOT yet run).** Part 5 now checks the "Cylinders to Generate" radios inside Expert Mode (three options, both first, fixed A/B names); Part 6 runs the pair from the one Generate STL button and saves the combined file from the one Download STL button (S-E5 / S-E6 (signed 2026-09-21) expected wording); step 3 and steps 26–27 no longer expect the removed buttons or the main-form plate group. The "(Beta)" left in the title on 2026-09-20 dropped (D-7). |
 | 1.7 | 2026-09-30 | **Re-measured in Chromium after the approved build (NOT yet run with NVDA).** Row Indicator Style and Card Thickness live in Expert Mode since 2026-09-24 (D-5): steps 10, 13, 25 and 26 now open it, with Tab counts measured in Chromium; step 6 is seven presses (the front entry sits between Card sides and the back); step 6a quotes the 2026-09-28 back placeholder; step 23 adds S-M14 (draft) for the visual markers coming back. |
+| 1.8 | 2026-10-02 | **Re-measured for 2.2.0 in Chromium (round R1, phase F1; NOT yet run with NVDA).** All 28 steps replayed at `553f830` by keyboard, reading Chromium's computed accessibility tree and every live-region change. **As written, the run broke at step 16:** the walkthrough never typed any front text and none is kept between visits, so Generate answered "Please enter text in at least one line, or paste braille into the Braille (Unicode) field." and steps 17 to 19, 21 and 22 had nothing to work on. Step 3 now types `hello` into the front box on the way past, and with it steps 16 to 27 run as written (one file, `Cylinder_Pair_0.4_hello.stl`). Also changed: step 1 no longer clicks in the page first (a click on an empty part lands in `main`, so the first `Tab` went to "Decrease brightness") and its recovery line names the second skip link; step 6 counts five front controls, not six; step 6a quotes the one sentence NVDA reads as help (the other two are visible text since 2026-09-20); step 16 lists the "Braille field updated from translation." and progress announcements; steps 20 and 21 follow the focus move to "Preview Braille Translation" when Expert Mode opens. Every other step matched. |
