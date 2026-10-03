@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Nothing you type is remembered any more** (2026-09-28, Brennen's privacy rule). The Back of Card text used to come back on your next visit while the front text did not. No text or braille input is stored now - not the front text, the manual rows, the back text, nor either Braille (Unicode) field - and a back text saved by an earlier version is removed the next time the page loads. Only 3D design settings are kept, and only in your own browser.
 
 ### Changed
-- **Second documentation pass** (2026-10-02, Brennen's decision "Full second pass"). The 39 documents the 2026-09-30 review had skipped (`PROJECT_STRUCTURE.md`, `docs/RELEASING.md`, `docs/development/`, `docs/deployment/`, `docs/security/`, `SECURITY.md`, two specifications and the documentation front page) were each read in full and checked against the code. 13 living documents were corrected; 23 dated reports and plans got a one-line "historical record" banner, with their text otherwise left as written; 3 needed nothing. Two corrections worth knowing: `docs/RELEASING.md` now describes the release flow the project actually uses (the release commit on `develop`, a pull request to `main`, the tag on the merge commit), and the tactile arrow's apex is about 22.6°, not 44° (`RECESS_INDICATOR_SPECIFICATIONS.md`). Questions that need a decision were listed for review rather than changed.
+- **Second documentation pass** (2026-10-02, Brennen's decision "Full second pass"). The 39 documents the 2026-09-30 review had skipped (`PROJECT_STRUCTURE.md`, `docs/RELEASING.md`, `docs/development/`, `docs/deployment/`, `docs/security/`, `SECURITY.md`, two specifications and the documentation front page) were each read in full and checked against the code. 13 living documents were corrected; 23 dated reports and plans got a one-line "historical record" banner, with their text otherwise left as written; 3 needed nothing. Two corrections worth knowing: `docs/RELEASING.md` now describes the release flow the project actually uses (the release commit on `develop`, a pull request to `main`, the tag on the merge commit), and the tactile arrow's apex is about 22.6°, not 44° (`RECESS_INDICATOR_SPECIFICATIONS.md`). Questions that need a decision were listed for review rather than changed. After Brennen's review, the feature checklist's advice on radio groups asks for a `<fieldset>` with a `<legend>`, and the 1.0.0, 1.1.0 and 1.2.0 headings below show 2025, the year of their tags, instead of 2024.
 - **Dependency updates now arrive on develop** (2026-10-02, Brennen's decision "Target develop + alerts on"). Dependabot's monthly grouped update pull requests (Python, npm and GitHub Actions) now open against `develop`, where the project's own testing happens, instead of `main`, and CI now also runs on pull requests to `develop`, so each of them is tested before it is merged. Security update pull requests work differently: GitHub always opens them against the default branch, `main`, and only when Dependabot alerts and security updates are switched on in the repository's settings. Both have been on since 2026-10-02 (Brennen's decision).
 - **Three unused npm entries removed** (2026-10-02, Brennen's decision). `package.json` listed `manifold-3d`, `three-bvh-csg` and `three-mesh-bvh`, but the app has always loaded its own copies of those libraries from `static/vendor/`, so nothing used the npm versions; `manifold-3d` even asked for 3.5.4 while the app ships 2.5.1. Their dependency tree carried the only `npm audit` findings (2 high, through `sharp`); `npm audit` now finds 0. `liblouis` stays, because the translator keeps a fallback path into it. The recipe for refreshing the vendored Manifold copy (`docs/development/OPTIONAL_MANIFOLD3D_PATH.md` section 1) now fetches exactly 2.5.1 into a temporary folder instead of relying on the removed entry.
 - **The vendored OpenSCAD copy is refreshed to upstream v2.11.0** (`OpenSCAD/`, 2026-10-01, cut on Brennen's word). The Version 1 single-file build carries the Version 1 fused roller's vent and self-supporting gear sockets (its gear switch stays hidden, as MakerWorld cannot ship the gear meshes) and a Seam Offset description that says the dial turns only the polygonal cutout; the MakerWorld quick start (Markdown and PDF) has no jar or bottle examples; the parameter mapping and the coordinate-system document follow. `VENDORED.json` records the tag (commit `8e64e06`) and the new hashes, and `PARAMETER_MAPPING.md` keeps its one edited line.
@@ -294,7 +294,7 @@ GitHub community infrastructure and license change.
 
 ---
 
-## [1.2.0] - 2024-12-08
+## [1.2.0] - 2025-12-08
 
 Documentation release.
 
@@ -309,7 +309,7 @@ Documentation release.
 
 ---
 
-## [1.1.0] - 2024-12-08
+## [1.1.0] - 2025-12-08
 
 - Mobile compatibility improvements (lazy WASM loading)
 - Dead code cleanup (~680 lines removed)
@@ -317,7 +317,7 @@ Documentation release.
 
 ---
 
-## [1.0.0] - 2024-09-27
+## [1.0.0] - 2025-09-27
 
 First stable release.
 

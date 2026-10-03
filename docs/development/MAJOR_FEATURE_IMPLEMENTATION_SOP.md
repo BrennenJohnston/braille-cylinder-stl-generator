@@ -50,4 +50,4 @@ Changes to the UI typically touch these files:
 
 - **Skipping the specs**: Reading existing specs before coding prevents naming conflicts and duplicate work. This saved hours on the thickness preset feature.
 - **No error handling on localStorage**: Wrap all `localStorage.setItem()` calls in try-catch.
-- **Missing ARIA attributes**: All form controls need labels. Radio groups need `role="radiogroup"`.
+- **Missing ARIA attributes**: All form controls need labels. Radio groups go in a `<fieldset>` with a `<legend>`; if `role="radiogroup"` is added on top, leave it unnamed ([finding F-N](SCREEN_READER_UX_RESEARCH_AND_FLOW_AUDIT.md)).
