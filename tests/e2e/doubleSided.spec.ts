@@ -370,7 +370,7 @@ async function enableBeta(page: Page, frontText: string, backText: string) {
   await page.locator('#back-text').fill(backText);
 }
 
-test.describe('Double-Sided Card beta', () => {
+test.describe('Double-sided cards', () => {
   test.describe.configure({ timeout: 120_000 });
 
   test('toggle off sends the pre-feature payload for both plates', async ({ page }) => {
@@ -1050,7 +1050,7 @@ test.describe('Double-Sided Card beta', () => {
     await expect(warning).toBeHidden();
   });
 
-  test('the preview shows both sides with the beta on and neither heading with it off', async ({ page }) => {
+  test('the preview shows both sides with Double-sided chosen and neither heading with Single-sided', async ({ page }) => {
     await openApp(page);
     await enableBeta(page, 'abc', 'def');
     await page.locator('#expert-toggle').click();

@@ -7,9 +7,9 @@
  * Primarily designed for cylinder generation where three-bvh-csg produces
  * non-manifold edges due to complex curved surface boolean operations.
  *
- * MOBILE FIX (2024-12-08): Removed top-level await which caused issues on
- * some mobile browsers. WASM is now loaded lazily on first generation request.
- * This improves compatibility with Safari iOS and older mobile browsers.
+ * MOBILE FIX (2025-12-08): no top-level await (it broke Safari iOS and older
+ * mobile browsers). The WASM starts loading in the background at start-up; a
+ * generate request that finds it not ready waits for that load or retries it.
  */
 
 let wasm = null;
@@ -21,7 +21,7 @@ let initError = null;
 let initPromise = null;  // Track initialization promise to avoid duplicate loads
 let initAttempted = false;  // Track if we've attempted initialization
 
-// Initialize Manifold WASM module (lazy - called on first use)
+// Initialize Manifold WASM module (called at start-up, and again on demand)
 async function initManifold() {
     // Return immediately if already initialized
     if (wasm && manifoldReady) return true;
@@ -148,7 +148,7 @@ function raisedDotBaseEmbed(cylRadius) {
 }
 
 /**
- * Gear-integrated one-piece rollers (BETA): the vendored gear assets.
+ * Gear-integrated one-piece rollers (Simplified gears): the vendored gear assets.
  *
  * The bytes under /static/assets/gears/ are a 1:1 replication of the reference
  * gears and are ALREADY IN THIS WORKER'S FRAME - scripts/derive_gear_assets.py
@@ -2126,7 +2126,7 @@ function processGeometrySpec(spec, gearAsset = null) {
         // Perform CSG operations
         let result = base;
 
-        // Gear-integrated one-piece rollers (BETA). Unioned right after the
+        // Gear-integrated one-piece rollers (Simplified gears). Unioned right after the
         // base, inside the RAISED stage and well before any recess is cut, so
         // the existing CSG order is untouched. Nothing is transformed here: the
         // asset arrives already in this frame (see loadGearAsset above).
@@ -2515,7 +2515,7 @@ self.onmessage = async function(event) {
         return;
     }
 
-    // For generation requests, ensure Manifold is initialized (lazy loading)
+    // For generation requests, ensure Manifold is initialized (wait or retry)
     if (type === 'generate') {
         // Attempt initialization if not ready
         if (!manifoldReady) {
