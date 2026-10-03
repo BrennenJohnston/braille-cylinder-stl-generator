@@ -286,7 +286,7 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      grown 0.05 as an EXACT parallel_curve (a mitre pushes A's apex 0.10 out),
      z height/2-0.05 .. height/2+depth+0.05, capped at
      V2_NOTCH_FILL_MAX_RADIUS_MM 13.95 < 15.938 (mating tip circle at the V1
-     operating distance; the V2 distance is an OPEN item). Without it a
+     operating distance; the V2 distance is the same, confirmed 2026-10-02). Without it a
      solid barrel seals an undrainable void; the D-6 acceptance is ONE body
      from mesh.split(only_watertight=False). Golden pair
      tests/fixtures/v2_gear_roller{A,B}_golden.* (regenerate only via

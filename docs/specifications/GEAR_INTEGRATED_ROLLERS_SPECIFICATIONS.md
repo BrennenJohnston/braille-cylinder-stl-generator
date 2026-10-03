@@ -576,8 +576,9 @@ triangle's apex 0.10 mm further out), from `z = height/2 − 0.05` to
 `V2_NOTCH_FILL_MAX_RADIUS_MM` 13.95, and a module-level assertion keeps that below the
 mating gear's tip circle at the Version 1 operating distance (32.0473 − 16.1094 = 15.938
 mm), so the fill can never touch the other roller's teeth. **The Version 2 operating axis
-distance is not known** — recorded as an open item; the fill sits inside the root circle's
-neighbourhood either way.
+distance is the same 32.0473 mm** — confirmed by Brennen on 2026-10-02 (it had been an open
+item); `V2_OPERATING_AXIS_DISTANCE_MM` and a second assertion check the same 1.99 mm clearance
+against it. The fill sits inside the root circle's neighbourhood either way.
 
 The weld rings (§6.3, r 8.0–13.0 × 0.1 mm at ±height/2) are unchanged: containment
 probes in the derive script prove all four v8 gears solid at r 8.0 and 9.5 at every
@@ -717,6 +718,7 @@ golden pairs regenerating unchanged, prove it).
 
 | Date | Change |
 |---|---|
+| 2026-10-02 | **§11.3: the Version 2 axis distance is recorded.** Brennen confirmed that Version 2 meshes at the Version 1 distance, 32.0473 mm (round R1, R1-Q-16), which closes the open item: `version2.V2_OPERATING_AXIS_DISTANCE_MM` and a second import-time assertion check the notch fill's 1.99 mm clearance against it, with a test in `tests/test_version2_fused.py`. No geometry changes. |
 | 2026-10-01 | **§7: the loose dot domes are fixed.** The embossing roller is one body with half-sphere domes (both presets; measured at 0.4); a custom dome that is not a half-sphere, which used to leave one 0.614 mm³ body per raised dot, now overlaps its base by 0.005 mm (BRAILLE_DOT_SHAPE_SPECIFICATIONS.md §3). The tests' dome tolerance stays as a guard. |
 | 2026-10-01 | **Print results recorded.** §11.8: Brennen's 2026-09-30 print testing closed Q-1 (the peg does not reach the cone), printed the top-socket cone (D-K5), found no support needed at the 0.14 mm ledge, and passed the Version 1 Simplified rollers. |
 | 2026-09-30 | **Documentation review after the approved build.** The header's status and choice lines name the released Gears radio group; §5 tells a Version 1 roller (52) from a Version 2 one (54) instead of "the gears BETA"; §6.2 notes the §6.5 vent beside the solid barrel; §9's dome note says "this feature". |
