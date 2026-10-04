@@ -70,19 +70,21 @@ order they arrive in.
 
 ## Part 1 — Finding the choice while single-sided
 
-**Step 1.** Load the page fresh and press `Tab` once, **without clicking in the
-page first**: a click moves the browser's starting point, and a click on an empty
-part of the page lands inside the main area, so the first `Tab` goes to
-"Decrease brightness" instead (measured 2026-10-02).
+**Step 1.** Load the page fresh, press `Ctrl+Home`, and press `Tab` once,
+**without clicking in the page first**: a click moves the browser's starting point,
+and a click on an empty part of the page lands inside the main area, so the first
+`Tab` goes to "Decrease brightness" instead (measured 2026-10-02). `Ctrl+Home` puts
+NVDA at the top, because NVDA returns you to where you last were on the address.
 
-> **Expect:** the skip link, which NVDA announces role-first:
-> "same page link, Skip to main content"
+> **Expect:** with NVDA, "Skip to braille text entry, same page link": NVDA starts
+> a `Tab` from its own reading position, which is already on the first skip link
+> (measured 2026-10-04). Press `Shift+Tab` once: "Skip to main content, same page
+> link" (NVDA may say the role first or last).
 >
 > This one is easy to miss on a first run. The link is invisible until it takes
 > focus and then slides into the **top-left corner** over 0.3 s, so watch that
-> corner rather than the middle of the page. If you hear "Skip to braille text
-> entry" instead, you have gone one control too far — `Shift+Tab` back one and
-> listen again (there are two skip links since 2026-08-23).
+> corner rather than the middle of the page (there are two skip links since
+> 2026-08-23).
 
 **Step 2.** Keep pressing `Tab` until you reach the **Card sides** radio group
 inside the Embosser setup item (it comes after the Embosser version and Gears
@@ -180,7 +182,10 @@ Wait about two seconds without pressing any key.
 >
 > This is the live warning added in Phase 02. It must arrive **without you
 > moving focus** — a sighted user sees the red box appear, and a blind user has
-> to be told. Note whether it interrupted your typing (it should not; it waits).
+> to be told. Note whether it interrupted your typing (it should not; it waits
+> for a pause, and if you type slower than about four keys a second it can come
+> once as soon as the text first overflows, with that moment's numbers; measured
+> 2026-10-04).
 
 **Step 9.** Select all and shorten it back to `Second side`. Wait two seconds.
 
@@ -218,6 +223,10 @@ controls (many do not — that is correct behaviour and not a fail).
 > plus **both** descriptions — the normal one about marker cells, *and* the
 > "Locked: Double-sided is on…" note. The lock reason must travel with the
 > disabled option, so a blind user learns *why* it is unavailable.
+>
+> Measured 2026-10-04: in browse mode the arrow keys reach it ("radio button,
+> unavailable, not checked, Visual markers"), and `NVDA+Numpad 5` (desktop layout)
+> then reports it with both descriptions.
 
 ---
 
@@ -303,9 +312,10 @@ and B", then `Shift+Tab` back to "Hide Expert Mode" and press `Enter` to close i
 
 **Step 19.** Press `Enter` on "Download STL".
 
-> **Expect:** your browser's normal download announcement — **one file, named
-> `Cylinder_Pair_…`, for one press**, and no "Download multiple files" prompt at
-> any point. The button stays where it is and keeps its name.
+> **Expect:** **one file, named `Cylinder_Pair_…`, for one press**, and no
+> "Download multiple files" prompt at any point. The button stays where it is and
+> keeps its name. Chrome may say nothing about the download (measured 2026-10-04
+> with Chrome 150: only its tab label was spoken), so check your Downloads folder.
 >
 > If instead you hear "The combined file could not be built. Download STL now
 > saves Cylinder A; press it again for Cylinder B." (S-E6 (signed 2026-09-21)), press it twice
@@ -454,3 +464,4 @@ Anything NVDA said that I did not expect at all:
 | 1.5 | 2026-09-21 | **One Generate, one Download (programme sub-plan E, 2026-09-21; NOT yet run).** Part 5 now checks the "Cylinders to Generate" radios inside Expert Mode (three options, both first, fixed A/B names); Part 6 runs the pair from the one Generate STL button and saves the combined file from the one Download STL button (S-E5 / S-E6 (signed 2026-09-21) expected wording); step 3 and steps 26–27 no longer expect the removed buttons or the main-form plate group. The "(Beta)" left in the title on 2026-09-20 dropped (D-7). |
 | 1.7 | 2026-09-30 | **Re-measured in Chromium after the approved build (NOT yet run with NVDA).** Row Indicator Style and Card Thickness live in Expert Mode since 2026-09-24 (D-5): steps 10, 13, 25 and 26 now open it, with Tab counts measured in Chromium; step 6 is seven presses (the front entry sits between Card sides and the back); step 6a quotes the 2026-09-28 back placeholder; step 23 adds S-M14 (draft) for the visual markers coming back. |
 | 1.8 | 2026-10-02 | **Re-measured for 2.2.0 in Chromium (round R1, phase F1; NOT yet run with NVDA).** All 28 steps replayed at `553f830` by keyboard, reading Chromium's computed accessibility tree and every live-region change. **As written, the run broke at step 16:** the walkthrough never typed any front text and none is kept between visits, so Generate answered "Please enter text in at least one line, or paste braille into the Braille (Unicode) field." and steps 17 to 19, 21 and 22 had nothing to work on. Step 3 now types `hello` into the front box on the way past, and with it steps 16 to 27 run as written (one file, `Cylinder_Pair_0.4_hello.stl`). Also changed: step 1 no longer clicks in the page first (a click on an empty part lands in `main`, so the first `Tab` went to "Decrease brightness") and its recovery line names the second skip link; step 6 counts five front controls, not six; step 6a quotes the one sentence NVDA reads as help (the other two are visible text since 2026-09-20); step 16 lists the "Braille field updated from translation." and progress announcements; steps 20 and 21 follow the focus move to "Preview Braille Translation" when Expert Mode opens. Every other step matched. |
+| 1.9 | 2026-10-04 | **Run with NVDA (round R1, walk F: the session drove NVDA 2026.2 and Chrome 150 at Brennen's request, reading NVDA's own speech log), then corrected (phase F6).** 27 of 27 steps matched. Changed: step 1 (press `Ctrl+Home`; with NVDA the first `Tab` gives the second skip link and `Shift+Tab` the first, so the old recovery line is now the normal path); step 8 (a slow typist can hear the warning at the first overflow); step 12 (browse mode and `NVDA+Numpad 5` reach the unavailable radio with both descriptions); step 19 (Chrome may say nothing about the saved file). Since the same day the front section's group name follows Card sides at once (F5). Results: `WALK_F_RESULTS_2026-10-04.md` in the round folder. |

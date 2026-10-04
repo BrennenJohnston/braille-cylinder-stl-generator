@@ -71,6 +71,15 @@ rule in those two apply here unchanged.
 5. **Then reload once more and leave the page alone**, because Part 1 is about
    what the page sounds like before you have touched it.
 
+6. **How NVDA moves with `Tab`** (measured 2026-10-04 in walk F of round R1, NVDA
+   2026.2 with Chrome). After a load, press `Ctrl+Home` before anything else: NVDA
+   puts you back where you last were on this address, and after a skip link the
+   address ends in `#main-content` or `#front-entry-heading`, so a reloaded page
+   reopens there. From the top, NVDA's first `Tab` goes to the **second** skip link,
+   "Skip to braille text entry": NVDA starts a `Tab` from its own reading position,
+   which is already on the first link. `Shift+Tab` then reaches "Skip to main
+   content". Parts 3 and 4 count with this in mind.
+
 ### What changed since you last listened
 
 The 2026-08-22 run heard the page as it was **before items A–I**. Since then:
@@ -84,9 +93,13 @@ of that has been heard by a person.**
 
 ## Part 1 — Landmarks (`D`)
 
-Press `D` repeatedly from the top of the page. NVDA moves through landmarks.
+Press `Ctrl+Home`, then `D` repeatedly. NVDA moves through landmarks.
 
-**Expected: five, in this order.**
+**Expected: five, in this order, in three presses** (measured 2026-10-04). NVDA
+announces two landmarks that start at the same place together: the second press
+says "main landmark" with "3D STL Preview, region", the third "Braille Cylinder
+Configuration, region" with "Custom Braille STL Generator, form", and a fourth says
+"no next landmark".
 
 | # | You should hear | Note |
 |---|---|---|
@@ -96,8 +109,8 @@ Press `D` repeatedly from the top of the page. NVDA moves through landmarks.
 | 4 | **region, Braille Cylinder Configuration** | |
 | 5 | **form, Custom Braille STL Generator** | |
 
-**Count to write down: how many landmarks `D` reached, and whether "banner" was
-among them.**
+**Count to write down: how many landmarks you heard (5), in how many presses (3),
+and whether "banner" was among them.**
 
 **Fail if:** there is no banner; or the chrome (font size, theme, GitHub, help)
 is announced *inside* `main` rather than inside the banner. That was audit
@@ -148,6 +161,11 @@ h2  Enter Text for Braille Translation
 h2  Back of Card — Enter Text for Braille Translation
 ```
 
+NVDA says the name of a heading that is also its group's label twice, once for the
+group and once for the heading: "Card sides, grouping, Card sides, heading, level 3"
+(measured 2026-10-04). That is expected; whether it is too much is a question for a
+later round.
+
 ### 2b — With Expert Mode open
 
 Open Expert Mode, then press `H` from the top again.
@@ -190,17 +208,21 @@ correctly nested? Write a sentence either way.
 
 There are two now. Both are invisible until focused.
 
-1. Reload. Press `Tab` **once**. You should hear **"Skip to main content, link"**.
+1. Reload and press `Ctrl+Home` (Before you start, item 6). Press `Tab` **once**:
+   with NVDA you hear **"Skip to braille text entry, link"**. Press `Shift+Tab`:
+   **"Skip to main content, link"**.
 2. Press `Enter`. **You should land on `main`** — NVDA should say something, not
-   nothing. Then press `Tab` once: expected next stop is **Decrease brightness,
-   button**.
-3. Reload. Press `Tab` **twice**. Second stop: **"Skip to braille text entry,
-   link"**.
+   nothing. It says "main landmark" and then reads the whole main area in one go,
+   several hundred words (measured 2026-10-04); `Ctrl` stops it. Then press `Tab`
+   once: expected next stop is **Decrease brightness, button**.
+3. Reload, press `Ctrl+Home`, and press `Tab` **once**: **"Skip to braille text
+   entry, link"**.
 4. Press `Enter`. **Expected: "Enter Text for Braille Translation, heading level
    2"**. Then `Tab` once: expected **Auto Placement, radio button, checked**.
 
 **Counts to write down: keystrokes from page load to the braille text entry
-using link 2. Expected: three (Tab, Tab, Enter).**
+using link 2. Expected with NVDA: two (Tab, Enter), after `Ctrl+Home`. Without a
+screen reader it is three (Tab, Tab, Enter).**
 
 **Fail if:** pressing `Enter` on either link announces nothing and leaves you
 where you were. That was the state of link 1 until 2026-08-23 — a fragment link
@@ -215,11 +237,13 @@ textarea precisely because Manual hides that textarea.
 
 ## Part 4 — Tab from the top, and count
 
-Reload. `Tab` from the top, counting, until you reach **Auto Placement** (the
-first control that does the app's job).
+Reload, press `Ctrl+Home`, and `Tab` from the top, counting, until you reach
+**Auto Placement** (the first control that does the app's job).
 
-**Expected: it is stop 20 — nineteen stops come first** (measured 2026-09-30 in
-Chromium; fourteen until the Embosser setup item arrived on 2026-09-20). In order: two
+**Expected: the page has nineteen stops before it** (measured 2026-09-30 in
+Chromium; fourteen until the Embosser setup item arrived on 2026-09-20). **With
+NVDA it is the 19th `Tab`**, because NVDA's first `Tab` goes straight to the second
+skip link (Before you start, item 6; measured 2026-10-04). In order: two
 skip links, three font-size buttons, theme, GitHub, help, brightness −/+, contrast
 −/+, Edges, "Help me choose what to include", then the Embosser setup item's five:
 the Embosser version radio group, the Gears radio group, "Open Embosser Setup help",
@@ -276,7 +300,10 @@ check that you can find them there.
    Braille ↓", "Translate to Text ↑" — and those arrows *are* part of the visible
    text, so they are deliberately **not** hidden from the accessible name
    (hiding them would put the spoken name out of step with the printed label,
-   WCAG 2.5.3). **Write down exactly what NVDA says.** If it reads "down arrow"
+   WCAG 2.5.3). **Write down exactly what NVDA says.** Measured 2026-10-04: at
+   NVDA's default symbol level ("some") they are spoken as words, "down arrow",
+   "up arrow" and "right arrow" (NVDA's own symbol table); whether that is noise
+   is still your question. If it reads "down arrow"
    and that is noise to you, say so — it becomes a finding worth a decision. If
    it is silent or helpful, that closes the question. The same applies to "Help
    me choose what to include →", to the Embosser setup item's "Open Embosser
@@ -340,16 +367,16 @@ Speech log windowed with nvdaspeech.py?   yes / no
 
 Part | What I heard | Count | Expected | Pass/Fail
 -----|--------------|-------|----------|----------
-  1  landmarks      |      | 5 incl. banner |
+  1  landmarks      |      | 5 incl. banner, 3 presses |
   2a headings load  |      | 7              |
   2b + expert mode  |      | 15             |
   2c + double-sided |      | 15             |
   2  any skipped levels?  |      | none      |
   3  link 1 lands on      |      | main      |
   3  link 2 lands on      |      | the h2    |
-  3  keystrokes to task   |      | 3         |
+  3  keystrokes to task   |      | 2 (NVDA)  |
   3  link 2 in Manual mode|      | works     |
-  4  stops before task    |      | 19        |
+  4  stops before task    |      | 18 (NVDA; 19 in the page) |
   4  GitHub links heard   |      | 1         |
   5  words on Translate to Braille |  | name+role only |
   5  words on Braille (Unicode)    |  | ~13            |
@@ -392,3 +419,4 @@ Anything NVDA said that I did not expect at all:
 | 1.4 | 2026-09-30 | **Re-measured in Chromium after the approved build (NOT yet run with NVDA).** Part 2: seven headings on load, fifteen with Expert Mode open and fifteen with Double-sided chosen — Row Indicator Style and Card Thickness moved into Expert Mode on 2026-09-24 (D-5) and the tactile dials no longer add a heading. Part 4: Auto Placement is stop 20; the Embosser setup item (2026-09-20) put five stops before it. The results template follows. |
 | 1.5 | 2026-10-02 | **Re-measured for 2.2.0 in Chromium (round R1, phase F1; NOT yet run with NVDA).** Every part checked at `553f830` against Chromium's computed accessibility tree: the five landmarks, the 7 / 15 / 15 heading outlines with no skipped level, both skip links and where the next `Tab` goes, Auto Placement at stop 20 of a 28-stop ring, one GitHub link, the four text-field stops (13 words on the braille field) and Generate inside the form all match. Changed: Part 2 says seven headings where two sentences and the results template still said six; Part 4's note gives today's 19 of 28; Part 5's arrow question names the two Embosser setup buttons whose names also end in an arrow. Found and left for Gate F: two Expert Mode descriptions over the 25-word ceiling that FD-25d does not cover, the 0.3mm preset (26 words) and "Repeat the number sign after each period" (27 words). |
 | 1.6 | 2026-10-02 | **Round R1, phase F2 (NOT yet run with NVDA).** Part 5's "known and deliberate" note lists all five descriptions over the 25-word ceiling: Brennen kept the two that F1 found (the 0.3mm preset, 26 words; "Repeat the number sign after each period", 27 words) at Gate F (R1-Q-28), beside FD-25d's three. |
+| 1.7 | 2026-10-04 | **Run with NVDA (round R1, walk F: the session drove NVDA 2026.2 and Chrome 150 at Brennen's request, reading NVDA's own speech log), then corrected (phase F6).** Every count matched or differed only in how NVDA moves: Before you start item 6 is new (press `Ctrl+Home` after a load; NVDA's first `Tab` goes to the second skip link); Part 1 hears the five landmarks in three presses; Part 2 notes the doubled heading names; Parts 3 and 4 count with NVDA (two keystrokes to the task; Auto Placement is the 19th `Tab`), and Part 3 notes that link 1 makes NVDA read the whole main area; Part 5's arrow question gains the measured answer. The template's Expected cells follow. Results: `WALK_F_RESULTS_2026-10-04.md` in the round folder. |
