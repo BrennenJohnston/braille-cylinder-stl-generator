@@ -585,6 +585,12 @@ heading, see UI_INTERFACE_CORE_SPECIFICATIONS.md §4.11 — so `updateDoubleSide
 writes to **`#front-entry-heading`**, not to `#front-entry-legend`. Assigning
 `textContent` to the legend would delete the heading element. The legend keeps its id;
 `tests/e2e/doubleSided.spec.ts` reads it, and reads the same text either way.
+Since 2026-10-04 (round R1, phase F5) the front fieldset is also named by
+`aria-labelledby="front-entry-heading"`: named from the legend alone, NVDA kept the
+group's old name after the heading changed (walk F; before the fix the name failed to
+follow in every switch to Single-sided that was tried, after it the name followed in four
+switches out of four). The name, the legend and the heading are unchanged; the test above
+also checks the relation and the group's accessible name in both states.
 
 ### 7.2 The tactile lock
 
@@ -1000,6 +1006,7 @@ and separated**. Full record: the research folder's `00_PROJECT_MEMORY.md`, FD-8
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-10-04 | 1.23 | **§7.1: the front entry's group name follows the relabel at once** (round R1, phase F5; finding R1-F-12 of walk F, Brennen's R1-Q-31). The front fieldset gains `aria-labelledby="front-entry-heading"`: with its name taken from the legend alone, NVDA kept the old group name after a Card sides change. Re-checked with NVDA: four switches, the right name each time. |
 | 2026-10-01 | 1.22 | **§7.2: the displaced style survives a reload** (Brennen's decision): saved as `braille_prefs_single_sided_indicator_mode`, read back only with Double-sided, cleared by Reset. |
 | 2026-10-01 | 1.21 | **§5: the two server strings stop calling double-sided a beta** (Brennen's sign-off, 2026-10-01). Gate 1 now reads "Double-sided mode requires the tactile row indicator style: ... or choose Single-sided. ..." and the forced-tactile warning "Double-sided mode locks the row indicator style to the tactile seam arrows; ...". |
 | 2026-09-30 | 1.20 | **Documentation review after the approved build.** Present-tense beta and toggle wording now names the Card sides choice (Overview, §3.1, §4, §6.1, §7.3, §7.6, §10, Related Documentation); §4's capacity is 13 cells a row (52 a side, 104 a card) and its filenames lead with the default `Cylinder_Pair_` file; §7.3 carries the provisional 0.45 mm reliable line of 2026-08-23, so the 0.4 preset's 0.468 gap is quiet; §7.1 quotes the S-M15 draft of the visible note and §7.4 the 2026-09-28 back placeholder; Translate ↑ no longer persists the back text. The two server strings that still said "Double-sided mode is a beta" (§5 gate 1, the forced-tactile warning) were quoted as the code had them (reworded 2026-10-01, v1.21). |

@@ -3569,11 +3569,14 @@
 
                       <!-- Text Input Section moved into form (separate scrollable pane) -->
                       <div class="line-input-group">
-                          <fieldset class="line-input-fieldset">
+                          <fieldset class="line-input-fieldset" aria-labelledby="front-entry-heading">
                               <!-- Both ids are load-bearing. updateDoubleSidedUI() relabels
                                    the HEADING "Front of Card — …" while Double-sided is
                                    chosen and restores this exact text for Single-sided; the
-                                   legend id is what the doubleSided e2e spec reads. -->
+                                   legend id is what the doubleSided e2e spec reads.
+                                   aria-labelledby names the group by that heading: named from
+                                   the legend alone, NVDA kept the old name after a relabel
+                                   (walk F, 2026-10-04). -->
                               <legend class="grade-label" id="front-entry-legend"><h2 class="legend-heading" id="front-entry-heading" tabindex="-1">Enter Text for Braille Translation</h2></legend>
                               <div class="grade-note" style="margin-bottom: 0.8em; font-size: 0.85em;">
                                   <strong>Note:</strong> Contracted braille combines letters into single cells, so the character limit is only confirmed <em>after translation</em> — the program will warn you automatically if it's too long.
