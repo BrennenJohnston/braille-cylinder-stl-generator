@@ -6855,6 +6855,10 @@
 
             button.addEventListener('click', async () => {
                 const originalLabel = button.textContent;
+                // Disabling a focused button drops focus to the page body, which
+                // strands a keyboard user at the top of the form; focus goes back
+                // to the button when the translation ends, unless it moved on.
+                const hadFocus = document.activeElement === button;
                 button.disabled = true;
                 button.textContent = 'Translating…';
                 try {
@@ -6874,6 +6878,7 @@
                 } finally {
                     button.disabled = false;
                     button.textContent = originalLabel;
+                    if (hadFocus && document.activeElement === document.body) button.focus();
                 }
             });
 
@@ -6881,6 +6886,7 @@
 
             textButton.addEventListener('click', async () => {
                 const originalLabel = textButton.textContent;
+                const hadFocus = document.activeElement === textButton;
                 textButton.disabled = true;
                 textButton.textContent = 'Translating…';
                 try {
@@ -6905,6 +6911,7 @@
                 } finally {
                     textButton.disabled = false;
                     textButton.textContent = originalLabel;
+                    if (hadFocus && document.activeElement === document.body) textButton.focus();
                 }
             });
         }
@@ -7086,6 +7093,7 @@
 
             button.addEventListener('click', async () => {
                 const originalLabel = button.textContent;
+                const hadFocus = document.activeElement === button;
                 button.disabled = true;
                 button.textContent = 'Translating…';
                 try {
@@ -7105,6 +7113,7 @@
                 } finally {
                     button.disabled = false;
                     button.textContent = originalLabel;
+                    if (hadFocus && document.activeElement === document.body) button.focus();
                 }
             });
 
@@ -7112,6 +7121,7 @@
 
             textButton.addEventListener('click', async () => {
                 const originalLabel = textButton.textContent;
+                const hadFocus = document.activeElement === textButton;
                 textButton.disabled = true;
                 textButton.textContent = 'Translating…';
                 try {
@@ -7136,6 +7146,7 @@
                 } finally {
                     textButton.disabled = false;
                     textButton.textContent = originalLabel;
+                    if (hadFocus && document.activeElement === document.body) textButton.focus();
                 }
             });
         }

@@ -2077,6 +2077,15 @@ Accessibility requirements:
   than a colour-only cue.
 - Each button disables itself and shows "Translating…" while the worker runs, then restores
   its label in a `finally` block so a worker failure can never leave it stuck.
+- **Since 2026-10-04 (round R1, phase F4) each button keeps keyboard focus.** Disabling a
+  focused button drops focus to the page body: after Translate to Braille the next Tab
+  started from the top of the form and NVDA repeated "main landmark, region, form landmark,
+  grouping" (walk F). All four handlers, front and back, remember whether their button had
+  focus and, in the same `finally`, give it back while focus is still on the body: the
+  pattern Generate uses, except that focus a user has moved on during the wait is left
+  alone. Re-checked with NVDA: the field's sentence is said, and the next Tab says only the
+  next control. Pinned by `tests/e2e/brailleField.spec.ts` ("the four Translate buttons
+  keep keyboard focus").
 
 ### 4.8 The Embosser Setup Menu Item: Three Either/Or Choices, a Disabled Section, and a Locked Radio Option
 
@@ -3395,6 +3404,7 @@ Low vision users benefit from enhanced depth perception:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.39 | 2026-10-04 | **§4.7: the four Translate buttons keep keyboard focus** (round R1, phase F4; finding R1-F-11 of walk F, Brennen's R1-Q-31). Each disabled itself while working and so dropped focus to the page body, and the next Tab repeated the page's landmarks. Each handler now gives focus back to its button in its `finally` while focus is still on the body. Pinned by `tests/e2e/brailleField.spec.ts`. |
 | 1.38 | 2026-10-04 | **§3.8: the preview's brightness and contrast are quiet at start-up** (round R1, phase F3; finding R1-F-10 of walk F, Brennen's R1-Q-31). Every page load made NVDA say "Normal, Normal": the start-up call rewrote the same word into both live value displays and added their tooltips. The markup now carries the start-up name and tooltip, and the steppers write text and `title` only when they change; the HTML and JavaScript examples follow. Presses still announce once. Pinned by `tests/e2e/liveRegions.spec.ts`. |
 | 1.37 | 2026-10-02 | **§4.10: the Auto Placement warning is no longer repeated after a switch to Manual Placement** (round R1, phase F2; Brennen's decision R1-Q-27, "Fix it in F2"). `computeAutoOverflowNow()` now does nothing unless Auto Placement is selected; before, a check scheduled as focus left the text box could run after the switch and speak the warning for a box no longer shown. New test in `tests/e2e/liveRegions.spec.ts`. |
 | 1.36 | 2026-10-02 | **§4.14: S-L1 and S-L2 signed.** Brennen approved both loading sentences as written at Gate B of round R1 (R1-Q-14), and chose to leave the notice where the app's other progress messages are, including on a phone, where that box is at the top of the page (R1-Q-20). Wording unchanged. |

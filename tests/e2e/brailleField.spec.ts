@@ -270,4 +270,36 @@ test.describe('Editable Unicode braille field', () => {
     // The braille stays untouched: it is still what gets embossed
     await expect(page.locator('#braille-unicode')).toHaveValue('\u2813\u2811\u2807\u2807\u2815');
   });
+
+  test('the four Translate buttons keep keyboard focus', async ({ page }) => {
+    // Each button disables itself while it works, and a disabled button loses
+    // focus to the page body: after Translate to Braille the next Tab started
+    // from the top of the form and NVDA repeated the landmarks (walk F,
+    // 2026-10-04). Pressed from the keyboard, focus must come back.
+    await openApp(page);
+    await page.locator('#line1').fill('hello');
+    const focusedId = () => page.evaluate(() => document.activeElement?.id ?? '');
+    const pressFromKeyboard = async (id: string) => {
+      await page.locator(`#${id}`).focus();
+      await page.keyboard.press('Enter');
+    };
+
+    await pressFromKeyboard('translate-to-braille-btn');
+    await expect(page.locator('#braille-unicode')).not.toHaveValue('');
+    await expect.poll(focusedId).toBe('translate-to-braille-btn');
+
+    await pressFromKeyboard('translate-to-text-btn');
+    await expect(page.locator('#braille-unicode-status')).toContainText('Text above filled from this braille');
+    await expect.poll(focusedId).toBe('translate-to-text-btn');
+
+    await page.locator('#card_sides_double').check();
+    await page.locator('#back-text').fill('world');
+    await pressFromKeyboard('back-translate-to-braille-btn');
+    await expect(page.locator('#back-braille-unicode')).not.toHaveValue('');
+    await expect.poll(focusedId).toBe('back-translate-to-braille-btn');
+
+    await pressFromKeyboard('back-translate-to-text-btn');
+    await expect(page.locator('#back-braille-unicode-status')).toContainText('Text above filled from this braille');
+    await expect.poll(focusedId).toBe('back-translate-to-text-btn');
+  });
 });
