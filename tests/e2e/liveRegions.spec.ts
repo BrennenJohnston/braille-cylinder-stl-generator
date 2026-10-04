@@ -166,6 +166,41 @@ test.describe('Live region announcements', () => {
     }
   });
 
+  test("the preview's brightness and contrast are not rewritten at start-up", async ({ page }) => {
+    // Both values are live regions that ship holding "Normal" and their
+    // tooltip. NVDA announced "Normal, Normal" on every load (walk F,
+    // 2026-10-04): writing the same word again still replaces the text node,
+    // and adding or changing the title is a change too. The parser only adds
+    // nodes and sets no attributes after the fact, so any of these is a write.
+    await page.addInitScript(() => {
+      const store = window as unknown as { __previewRewrites: string[] };
+      store.__previewRewrites = [];
+      new MutationObserver((records) => {
+        for (const record of records) {
+          const node = record.target;
+          const element = node instanceof Element ? node : node.parentElement;
+          const value = element?.closest('#brightness-value, #contrast-value');
+          if (!value) continue;
+          if (record.type === 'attributes') {
+            store.__previewRewrites.push(`${value.id}: ${record.attributeName}`);
+          } else if (record.type === 'characterData' || record.removedNodes.length > 0) {
+            store.__previewRewrites.push(`${value.id}: "${value.textContent}"`);
+          }
+        }
+      }).observe(document, { childList: true, characterData: true, attributes: true, subtree: true });
+    });
+    await openApp(page);
+    await page.waitForTimeout(1500);
+    const rewrites = await page.evaluate(
+      () => (window as unknown as { __previewRewrites: string[] }).__previewRewrites,
+    );
+    expect(rewrites).toEqual([]);
+
+    // A real change still writes the value, so it is still announced.
+    await page.locator('#brightness-increase').click();
+    await expect(page.locator('#brightness-value')).not.toHaveText('Normal');
+  });
+
   test('showing a warning does not add a live region to the tree', async ({ page }) => {
     await openApp(page);
     // Polled, not read once: the init-time throwaway announcers take a second to

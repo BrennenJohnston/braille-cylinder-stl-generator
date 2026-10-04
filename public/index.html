@@ -3367,7 +3367,7 @@
                                         aria-label="Decrease brightness" aria-controls="brightness-value">
                                     <span aria-hidden="true">−</span>
                                 </button>
-                                <span class="font-size-display preview-stepper-value" id="brightness-value" role="status" aria-live="polite">Normal</span>
+                                <span class="font-size-display preview-stepper-value" id="brightness-value" role="status" aria-live="polite" title="140% of base lighting (normal)">Normal</span>
                                 <button type="button" id="brightness-increase" class="font-size-btn preview-stepper-btn"
                                         aria-label="Increase brightness" aria-controls="brightness-value">
                                     <span aria-hidden="true">+</span>
@@ -3381,7 +3381,7 @@
                                         aria-label="Decrease contrast" aria-controls="contrast-value">
                                     <span aria-hidden="true">−</span>
                                 </button>
-                                <span class="font-size-display preview-stepper-value" id="contrast-value" role="status" aria-live="polite">Normal</span>
+                                <span class="font-size-display preview-stepper-value" id="contrast-value" role="status" aria-live="polite" title="0.6× ambient / 1.4× directional">Normal</span>
                                 <button type="button" id="contrast-increase" class="font-size-btn preview-stepper-btn"
                                         aria-label="Increase contrast" aria-controls="contrast-value">
                                     <span aria-hidden="true">+</span>
@@ -5287,8 +5287,14 @@
             const meta = getBrightnessMeta(previewBrightnessLevel);
             const valueEl = document.getElementById('brightness-value');
             if (valueEl) {
-                valueEl.textContent = `${meta.name}`;
-                valueEl.setAttribute('title', `${meta.percent}% of base lighting (${meta.name.toLowerCase()})`);
+                // The markup holds the start-up name and tooltip, so start-up
+                // writes nothing: replacing the text, even with the same word,
+                // or adding the title made NVDA announce "Normal, Normal" on
+                // every page load (walk F, 2026-10-04).
+                const name = `${meta.name}`;
+                if (valueEl.textContent !== name) valueEl.textContent = name;
+                const title = `${meta.percent}% of base lighting (${meta.name.toLowerCase()})`;
+                if (valueEl.getAttribute('title') !== title) valueEl.setAttribute('title', title);
             }
 
             const decreaseBtn = document.getElementById('brightness-decrease');
@@ -5307,8 +5313,9 @@
             const meta = getContrastMeta(previewContrastLevel);
             const valueEl = document.getElementById('contrast-value');
             if (valueEl) {
-                valueEl.textContent = `${meta.name}`;
-                valueEl.setAttribute('title', meta.ratioText);
+                const name = `${meta.name}`;
+                if (valueEl.textContent !== name) valueEl.textContent = name;
+                if (valueEl.getAttribute('title') !== meta.ratioText) valueEl.setAttribute('title', meta.ratioText);
             }
 
             const decreaseBtn = document.getElementById('contrast-decrease');

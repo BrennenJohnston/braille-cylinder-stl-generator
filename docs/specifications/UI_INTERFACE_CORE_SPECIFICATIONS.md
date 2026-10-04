@@ -1088,7 +1088,7 @@ Shininess offsets are added to the per-theme `STL_MATERIAL_SETTINGS.shininess` b
                     aria-label="Decrease brightness" aria-controls="brightness-value">
                 <span aria-hidden="true">−</span>
             </button>
-            <span class="font-size-display preview-stepper-value" id="brightness-value" role="status" aria-live="polite">Normal</span>
+            <span class="font-size-display preview-stepper-value" id="brightness-value" role="status" aria-live="polite" title="140% of base lighting (normal)">Normal</span>
             <button type="button" id="brightness-increase" class="font-size-btn preview-stepper-btn"
                     aria-label="Increase brightness" aria-controls="brightness-value">
                 <span aria-hidden="true">+</span>
@@ -1103,7 +1103,7 @@ Shininess offsets are added to the per-theme `STL_MATERIAL_SETTINGS.shininess` b
                     aria-label="Decrease contrast" aria-controls="contrast-value">
                 <span aria-hidden="true">−</span>
             </button>
-            <span class="font-size-display preview-stepper-value" id="contrast-value" role="status" aria-live="polite">Normal</span>
+            <span class="font-size-display preview-stepper-value" id="contrast-value" role="status" aria-live="polite" title="0.6× ambient / 1.4× directional">Normal</span>
             <button type="button" id="contrast-increase" class="font-size-btn preview-stepper-btn"
                     aria-label="Increase contrast" aria-controls="contrast-value">
                 <span aria-hidden="true">+</span>
@@ -1120,6 +1120,8 @@ Shininess offsets are added to the per-theme `STL_MATERIAL_SETTINGS.shininess` b
     </div>
 </div>
 ```
+
+**Quiet at start-up (since 2026-10-04, round R1, phase F3).** The two value displays are live regions, and NVDA announced them when their text was rewritten, even with the same word, and when their `title` was added or changed. At start-up the page wrote "Normal" over "Normal" and added both tooltips, so every page load said "Normal, Normal" with nothing to say what it was (walk F). The markup therefore carries the start-up name and tooltip (level 3), and both stepper functions write the text and the `title` only when they change. A press still announces the new value once, followed by its tooltip and the button's new name. Pinned by `tests/e2e/liveRegions.spec.ts` ("the preview's brightness and contrast are not rewritten at start-up").
 
 #### JavaScript Implementation
 
@@ -1150,8 +1152,10 @@ function updateBrightnessStepper() {
     const name = brightnessLevelNames[previewBrightnessLevel];
     const percent = Math.round((BRIGHTNESS_MULTIPLIERS[previewBrightnessLevel] || 1) * 100);
     const value = document.getElementById('brightness-value');
-    value.textContent = `${name}`;
-    value.setAttribute('title', `${percent}% of base lighting`);
+    // Written only when they change: see "Quiet at start-up" above.
+    if (value.textContent !== name) value.textContent = name;
+    const title = `${percent}% of base lighting (${name.toLowerCase()})`;
+    if (value.getAttribute('title') !== title) value.setAttribute('title', title);
 
     const dec = document.getElementById('brightness-decrease');
     const inc = document.getElementById('brightness-increase');
@@ -1171,8 +1175,9 @@ function updateContrastStepper() {
     const name = contrastLevelNames[previewContrastLevel];
     const ratios = CONTRAST_SETTINGS[previewContrastLevel];
     const value = document.getElementById('contrast-value');
-    value.textContent = name;
-    value.setAttribute('title', `${ratios.ambientRatio}× ambient / ${ratios.directionalRatio}× directional`);
+    if (value.textContent !== name) value.textContent = name;
+    const title = `${ratios.ambientRatio.toFixed(1)}× ambient / ${ratios.directionalRatio.toFixed(1)}× directional`;
+    if (value.getAttribute('title') !== title) value.setAttribute('title', title);
 
     const dec = document.getElementById('contrast-decrease');
     const inc = document.getElementById('contrast-increase');
@@ -3390,6 +3395,7 @@ Low vision users benefit from enhanced depth perception:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.38 | 2026-10-04 | **§3.8: the preview's brightness and contrast are quiet at start-up** (round R1, phase F3; finding R1-F-10 of walk F, Brennen's R1-Q-31). Every page load made NVDA say "Normal, Normal": the start-up call rewrote the same word into both live value displays and added their tooltips. The markup now carries the start-up name and tooltip, and the steppers write text and `title` only when they change; the HTML and JavaScript examples follow. Presses still announce once. Pinned by `tests/e2e/liveRegions.spec.ts`. |
 | 1.37 | 2026-10-02 | **§4.10: the Auto Placement warning is no longer repeated after a switch to Manual Placement** (round R1, phase F2; Brennen's decision R1-Q-27, "Fix it in F2"). `computeAutoOverflowNow()` now does nothing unless Auto Placement is selected; before, a check scheduled as focus left the text box could run after the switch and speak the warning for a box no longer shown. New test in `tests/e2e/liveRegions.spec.ts`. |
 | 1.36 | 2026-10-02 | **§4.14: S-L1 and S-L2 signed.** Brennen approved both loading sentences as written at Gate B of round R1 (R1-Q-14), and chose to leave the notice where the app's other progress messages are, including on a phone, where that box is at the top of the page (R1-Q-20). Wording unchanged. |
 | 1.35 | 2026-10-01 | **§4.14 (new): waiting for a worker at start-up** (round R1, phases B1 to B3; Brennen's decision R1-Q-04, "Wait, then generate"). The translator and the 3D engine have start-up states and settle promises; Generate, Translate and Preview wait instead of failing and say so (S-L1, S-L2, PROPOSED until Gate B); the 3D engine's 5 s start-up limit became 60 s and no longer discards a slow worker; a second Generate press during the wait is ignored. Tests: `tests/e2e/startupWait.spec.ts`. |
