@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Batch processing
 - OpenSCAD export option
 
-## [2.2.0] - 2026-10-04
+## [2.2.0] - 2026-10-05
 
 Version 2.2.0 gathers the embosser choices into one Embosser setup item and adds Embosser Version 2 with keyed gear pegs, double-sided (interpoint) cards, Simplified gears fixed to the cylinders, a slicer seam channel on every cylinder, and one Generate STL and one Download STL for the pair. It was released after Brennen tested the development build and 3D-printed and tested the cylinders.
 
