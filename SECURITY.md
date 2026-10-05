@@ -5,7 +5,7 @@
 If you find a security vulnerability, please report it privately:
 
 1. **Do not** open a public issue
-2. Email the maintainer through GitHub
+2. Report it through GitHub's private vulnerability reporting: open this repository's **Security** tab and choose **Report a vulnerability** (<https://github.com/BrennenJohnston/braille-cylinder-stl-generator/security/advisories/new>)
 3. Include a description, steps to reproduce, potential impact, and a suggested fix if you have one
 
 ## Response timeline
@@ -28,7 +28,5 @@ For details, see [docs/security/](docs/security/).
 
 | Version | Supported |
 |---------|-----------|
-| 2.0.x | Yes |
-| 1.3.x | Yes |
-| 1.2.x | Yes |
-| < 1.2 | No |
+| 2.2.x | Yes |
+| < 2.2 | No |
