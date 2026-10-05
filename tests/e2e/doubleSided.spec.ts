@@ -370,7 +370,7 @@ async function enableBeta(page: Page, frontText: string, backText: string) {
   await page.locator('#back-text').fill(backText);
 }
 
-test.describe('Double-Sided Card beta', () => {
+test.describe('Double-sided cards', () => {
   test.describe.configure({ timeout: 120_000 });
 
   test('toggle off sends the pre-feature payload for both plates', async ({ page }) => {
@@ -396,6 +396,9 @@ test.describe('Double-Sided Card beta', () => {
     const backEntry = page.locator('#back-entry-fieldset');
     const visual = page.locator('input[name="indicator_mode"][value="visual"]');
     const tactile = page.locator('input[name="indicator_mode"][value="tactile"]');
+    // Named by its heading, so the name NVDA hears follows the relabel at once:
+    // named from the legend alone, NVDA kept the old name (walk F, 2026-10-04).
+    const frontGroup = page.locator('fieldset:has(#front-entry-legend)');
 
     await expect(single).toBeChecked();
     await expect(visual).toBeChecked();
@@ -404,6 +407,8 @@ test.describe('Double-Sided Card beta', () => {
     await expect(backEntry).toHaveAttribute('disabled', '');
     await expect(page.locator('#back-text')).toBeDisabled();
     await expect(page.locator('#front-entry-legend')).toHaveText('Enter Text for Braille Translation');
+    await expect(frontGroup).toHaveAttribute('aria-labelledby', 'front-entry-heading');
+    await expect(frontGroup).toHaveAccessibleName('Enter Text for Braille Translation');
 
     await double.check();
     await expect(backEntry).not.toHaveAttribute('disabled');
@@ -413,6 +418,7 @@ test.describe('Double-Sided Card beta', () => {
     await revealRowIndicatorPanel(page);
     await expect(page.locator('#indicator-mode-lock-note')).toBeVisible();
     await expect(page.locator('#front-entry-legend')).toHaveText('Front of Card — Enter Text for Braille Translation');
+    await expect(frontGroup).toHaveAccessibleName('Front of Card — Enter Text for Braille Translation');
 
     await single.check();
     await expect(backEntry).toHaveAttribute('disabled', '');
@@ -426,6 +432,7 @@ test.describe('Double-Sided Card beta', () => {
     await expect(page.locator('#a11y-status')).toHaveText(`${S_M11_SINGLE} ${S_M14_STYLE_RESTORED}`);
     expect(await page.evaluate(() => localStorage.getItem('braille_prefs_indicator_mode'))).toBe('visual');
     await expect(page.locator('#front-entry-legend')).toHaveText('Enter Text for Braille Translation');
+    await expect(frontGroup).toHaveAccessibleName('Enter Text for Braille Translation');
 
     // The give-back is not a one-off: a second round trip behaves the same.
     await double.check();
@@ -1050,7 +1057,7 @@ test.describe('Double-Sided Card beta', () => {
     await expect(warning).toBeHidden();
   });
 
-  test('the preview shows both sides with the beta on and neither heading with it off', async ({ page }) => {
+  test('the preview shows both sides with Double-sided chosen and neither heading with Single-sided', async ({ page }) => {
     await openApp(page);
     await enableBeta(page, 'abc', 'def');
     await page.locator('#expert-toggle').click();

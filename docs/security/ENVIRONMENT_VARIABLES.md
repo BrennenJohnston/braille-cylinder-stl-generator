@@ -38,6 +38,14 @@ Python logging level. Defaults to `INFO`. Use `DEBUG` only in development.
 
 Set to `1` to log Python version and platform info on startup. Only useful when debugging deployment issues. Reveals system information, so don't leave it on.
 
+### PORT
+
+The port `python backend.py` listens on, for a local server. Defaults to `5001`. Vercel does not use it.
+
+### Developer-only variables
+
+`ENABLE_3D_BOOLEANS` and `FORCE_CLIENT_CSG` are read only by the Python geometry modules `app/geometry/cylinder.py` and `app/geometry/booleans.py`, which the deployed app does not import. They have no effect on Vercel.
+
 ## Removed variables
 
 If you're migrating from v1.x, remove these from your Vercel config:

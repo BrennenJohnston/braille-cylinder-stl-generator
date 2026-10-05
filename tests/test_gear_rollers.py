@@ -615,10 +615,10 @@ def test_a_browser_generated_roller_carries_its_gears(geometry_stack, asset_name
         count, _ = tooth_band_phase(solid.vertices, z_low, z_high)
         assert count == TOOTH_COUNT
 
-    # Any OTHER body can only be one of the raised dot domes that this
-    # generator has separated since before the gear beta: a known, recorded,
-    # deliberately deferred second tangency inside every rounded dot. Pin its
-    # signature so a NEW kind of loose body cannot hide behind it.
+    # Any OTHER body can only be a raised dot dome: until 2026-10-01 this
+    # generator left a dome that is not a half-sphere as a separate body (it
+    # now overlaps its base by 0.005 mm). Pin that signature as a guard so a
+    # NEW kind of loose body cannot hide behind it.
     for body in bodies:
         if body is solid:
             continue

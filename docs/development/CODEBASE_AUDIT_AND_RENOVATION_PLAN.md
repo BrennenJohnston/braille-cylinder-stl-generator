@@ -1,5 +1,7 @@
 # Codebase Audit and Renovation Plan
 
+> **Historical record, written 2026-01-05.** It describes the project at that time. For how it works now, see [CLIENT_SIDE_CSG_DOCUMENTATION.md](CLIENT_SIDE_CSG_DOCUMENTATION.md).
+
 **Created:** 2026-01-05
 **Updated:** 2026-01-05
 **Purpose:** Audit of the Braille STL Generator architecture and renovation plan to remove external dependencies and create a low-maintenance deployment.

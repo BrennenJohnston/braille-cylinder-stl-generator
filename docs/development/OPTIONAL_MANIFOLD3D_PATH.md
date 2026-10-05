@@ -1,10 +1,12 @@
 # Client-Side manifold3d Path (Implemented)
 
-> **Status (2026-05-26): Implemented.** Manifold-3D is vendored locally under [`static/vendor/manifold-3d/`](../../static/vendor/manifold-3d/) and loaded same-origin by both [`static/workers/csg-worker-manifold.js`](../../static/workers/csg-worker-manifold.js) and [`static/workers/csg-worker.js`](../../static/workers/csg-worker.js). The `manifold-3d` npm dependency is pinned in `package.json` so the vendored copy can be refreshed reproducibly via `npm install` followed by the copy step in section 1 below.
+> **Status (2026-05-26): Implemented.** Manifold-3D is vendored locally under [`static/vendor/manifold-3d/`](../../static/vendor/manifold-3d/) and loaded same-origin by both [`static/workers/csg-worker-manifold.js`](../../static/workers/csg-worker-manifold.js) and [`static/workers/csg-worker.js`](../../static/workers/csg-worker.js). The `manifold-3d` npm entry was removed from `package.json` on 2026-10-02 (nothing loads it); section 1 below gives the pinned recipe for refreshing the vendored copy.
 >
 > Why vendor locally: the previous CDN load (`cdn.jsdelivr.net` with `unpkg.com` fallback — see [#61](https://github.com/BrennenJohnston/braille-cylinder-stl-generator/pull/61) for context on the previous npm-dep removal) was silently blocked by Firefox Enhanced Tracking Protection (Strict), Safari content blockers, uBlock Origin, corporate proxies, and offline use — causing cylinder generation to fail on Firefox 114+ and Safari 15+ users while Chrome users with a clean profile never saw the issue.
 
 > **What's actually shipping today (vs. the rest of this doc):** Section 1 ("Install and Vendor manifold3d") is the recipe used in production. The full Manifold worker that runs in production is `static/workers/csg-worker-manifold.js`, which is significantly more complex than the illustrative snippet in section 2 below — the snippet is kept as a minimal-viable reference; consult the actual worker file for the production code. Section 3's "engine selection" + "cascade fallback" snippets are forward-looking design only: production routes by `shape_type` (cylinders → Manifold worker, cards → three-bvh-csg worker) with no UI toggle and no fallback for cylinders. Sections 4 and 5 are explicitly optional and are NOT implemented.
+
+> **Historical record, written 2025-11-30: this introduction, "Why Add manifold3d?", sections 2 to 5, the Testing Checklist, Bundle Size Impact and the two "When to Use" sections.** They are the plan for adding Manifold, written before it shipped, and describe the project at that time. For how it works now, see [CLIENT_SIDE_CSG_DOCUMENTATION.md](CLIENT_SIDE_CSG_DOCUMENTATION.md). The two boxes above, section 1 and the Maintenance Notes are kept current.
 
 This document outlines how to add client-side manifold3d (WASM) as an additional CSG engine for watertight mesh output, at the cost of a larger bundle size (~2-3 MB).
 
@@ -26,17 +28,22 @@ This document outlines how to add client-side manifold3d (WASM) as an additional
 
 ### 1. Install and Vendor manifold3d
 
+The app ships the vendored `manifold-3d` 2.5.1 in `static/vendor/manifold-3d/`. The npm entry was removed from `package.json` on 2026-10-02 because nothing loads it and its dependency tree carried `npm audit` findings. Changing the vendored version changes every cylinder's geometry and needs new golden fixtures and a print check, so it is never done as a routine update.
+
+To fetch the same files again, in an empty temporary folder outside the repository:
 ```bash
-npm install manifold-3d
+npm install --no-save manifold-3d@2.5.1
 ```
 
-Copy WASM files to static:
+Then copy the two files into the repository (replace `<repo>` with the repository folder):
 ```bash
-# PowerShell
-New-Item -ItemType Directory -Force -Path static\vendor\manifold-3d
-Copy-Item node_modules\manifold-3d\manifold.js static\vendor\manifold-3d\ -Force
-Copy-Item node_modules\manifold-3d\manifold.wasm static\vendor\manifold-3d\ -Force
+# PowerShell, from the temporary folder
+New-Item -ItemType Directory -Force -Path <repo>\static\vendor\manifold-3d
+Copy-Item node_modules\manifold-3d\manifold.js <repo>\static\vendor\manifold-3d\ -Force
+Copy-Item node_modules\manifold-3d\manifold.wasm <repo>\static\vendor\manifold-3d\ -Force
 ```
+
+Checked on 2026-10-02: the files this recipe produces are identical to the vendored ones (`manifold.wasm` byte for byte; `manifold.js` as git stores it, a Windows checkout differing only in line endings).
 
 ### 2. Create manifold3d Worker
 
@@ -418,7 +425,7 @@ async function tryClientSideCSG(requestData) {
 
 ## Maintenance Notes
 
-- Update manifold3d: `npm install manifold-3d@latest`
+- Update manifold3d: only as its own planned change, never as a routine update: new golden fixtures and a print check first, then the section 1 recipe with the new version number.
 - Check for memory leaks: Monitor browser memory usage
-- WASM caching: Vercel serves .wasm with correct MIME type automatically
+- WASM caching: the Flask app serves `.wasm` files as `application/wasm`, with `Cache-Control: no-cache` (measured on the live site, 2026-10-02)
 - Security: WASM files should be served from same origin (CORS)

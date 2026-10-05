@@ -20,13 +20,13 @@ python -m ruff check .
 python -m pytest tests/ -v
 ```
 
-Expected, measured 2026-09-30:
+Expected, measured 2026-10-04:
 
 | Command | Expected result |
 |---------|-----------------|
 | `python -m ruff check .` | `All checks passed!` |
 | `python -m ruff format --check .` | every file already formatted (CI runs this too) |
-| `python -m pytest tests/ -v` | `744 passed, 4 skipped` in about a minute |
+| `python -m pytest tests/ -v` | `746 passed, 4 skipped` in about a minute |
 
 ### The fast loop
 
@@ -36,10 +36,10 @@ While you are working, this one takes well under a second:
 python -m pytest tests/test_smoke.py -q
 ```
 
-Expected: `52 passed`.
+Expected: `53 passed`.
 
-Use it between edits, but run the full suite before you commit — the smoke file is 52 of
-the 748 tests and does not cover geometry or the vendored OpenSCAD copy.
+Use it between edits, but run the full suite before you commit — the smoke file is 53 of
+the 750 tests and does not cover geometry or the vendored OpenSCAD copy.
 
 ---
 
@@ -88,11 +88,11 @@ their JSON metadata from the current code.
 npx playwright test tests/e2e/ --project=chromium --project=firefox
 ```
 
-Expected: **334 tests, 2 of them skipped by design**, in about 15 minutes. Measured
-2026-09-30 on Windows: 322 passed, 2 skipped, 10 failed under full parallel load — every
-failed file passed again on its own with `--workers=2`, except the Firefox failures in
-`brailleFieldAutoFill.spec.ts`, a test-helper bug fixed on 2026-10-01 (see
-[KNOWN_ISSUES.md](../KNOWN_ISSUES.md)).
+Expected: **378 tests, 2 of them skipped by design** (both in Firefox), in about 15
+minutes. Measured 2026-10-04 on Windows with all three browsers (`npx playwright test`,
+567 tests, 16.6 minutes): 551 passed, 9 skipped by design (2 in Firefox, 7 in WebKit),
+7 failed under full parallel load, all in Chromium — both failed files passed again on
+their own with `--workers=2`.
 CI (Linux, one worker, two retries) passes all three browsers.
 
 Chromium + Firefox is the local pass bar. Two notes on what you may see:
@@ -227,6 +227,7 @@ fixed your files. Run `git add -A` and commit again; the second attempt succeeds
 | 1.0 | 2025 | Original guide, written for the Phase 0 / Phase 1.1 refactor (13 tests) |
 | 2.0 | 2026-08-18 | Full rewrite to current reality: the named checks and their real counts (ruff clean, 119 pytest, 30 smoke), the e2e bar at 104 tests, golden fixtures including the double-sided pair and how to regenerate it, port 5001, the double-sided end-to-end check, and a pointer to the accessibility SOP |
 | 2.1 | 2026-09-30 | Counts re-measured after the approved build (744 pytest + 4 skipped, 52 smoke, 334 e2e in Chromium + Firefox) and `ruff format --check` added; the double-sided check follows the Card sides choice and the one Generate / one Download flow; the golden table lists all four pairs; the WebKit note follows KNOWN_ISSUES' 2026-08-21 correction. |
+| 2.2 | 2026-10-04 | Counts re-measured before release 2.2.0 (746 pytest + 4 skipped, 750 collected; 53 smoke; 378 e2e tests in Chromium + Firefox, 2 skipped by design); the local e2e measurement is now the three-browser run (567 tests: 551 passed, 9 skipped by design, 7 load failures whose files passed alone at `--workers=2`). |
 
 ---
 

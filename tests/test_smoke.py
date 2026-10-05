@@ -1301,3 +1301,42 @@ def test_ui_thickness_presets_never_set_the_row_indicator_style():
     block = match.group(1)
     assert "'0.4': {" in block and "'0.3': {" in block
     assert 'indicator_mode' not in block
+
+
+def test_every_shipped_rounded_dot_is_a_half_sphere():
+    """
+    The cylinder worker welds a rounded dot's dome to its base with a hidden
+    0.005 mm overlap (DOT_DOME_WELD_MM) only when the dome is NOT a half-sphere.
+    A half-sphere already shares its base ring with the frustum and fuses, and
+    skipping the weld for it is what keeps every preset export byte-identical.
+    So every package the app ships - both card-stock presets in
+    THICKNESS_PRESETS, both double-sided packages in DS_FOOTPRINTS and their
+    copy in interpoint.DS_FOOTPRINTS_BY_PRESET - must have a dome height of half
+    its dome diameter. A future package that is not a half-sphere changes that
+    package's export and must re-open the question with the owner.
+    """
+    import re
+    from pathlib import Path
+
+    from app.geometry import interpoint
+
+    html = (Path(__file__).resolve().parents[1] / 'public' / 'index.html').read_text(encoding='utf-8')
+    packages = {}
+    for block_name, prefix in (('THICKNESS_PRESETS', 'rounded_dot'), ('DS_FOOTPRINTS', 'ds_dot')):
+        match = re.search(rf'const {block_name} = \{{(.*?)\n {{8}}\}};', html, re.DOTALL)
+        assert match, f'{block_name} block not found in public/index.html'
+        for preset in re.finditer(r"'(0\.[34])': \{(.*?)\}", match.group(1), re.DOTALL):
+            values = dict(re.findall(rf'({prefix}_dome_(?:diameter|height)): ([0-9.]+)', preset.group(2)))
+            packages[f'{block_name} {preset.group(1)}'] = (
+                float(values[f'{prefix}_dome_diameter']),
+                float(values[f'{prefix}_dome_height']),
+            )
+    for preset, package in interpoint.DS_FOOTPRINTS_BY_PRESET.items():
+        packages[f'interpoint.DS_FOOTPRINTS_BY_PRESET {preset}'] = (
+            package['ds_dot_dome_diameter'],
+            package['ds_dot_dome_height'],
+        )
+
+    assert len(packages) == 6, sorted(packages)
+    for name, (dome_diameter, dome_height) in packages.items():
+        assert dome_height * 2 == pytest.approx(dome_diameter, abs=1e-9), name

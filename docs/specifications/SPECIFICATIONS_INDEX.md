@@ -6,7 +6,7 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 
 > **v2.0.0 Architecture (2026-01-05):** This project uses a **100% client-side STL generation** architecture. Server-side STL generation was removed. The caching system (Redis + Vercel Blob) was also removed. See [CODEBASE_AUDIT_AND_RENOVATION_PLAN.md](../development/CODEBASE_AUDIT_AND_RENOVATION_PLAN.md) for migration details.
 
-**Last Updated:** 2026-09-30
+**Last Updated:** 2026-10-02
 **Total Specification Documents:** 16
 
 ---
@@ -332,11 +332,11 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 - Why client-side CSG (Vercel compatibility, no timeouts)
 - Component architecture diagram
 - Data flow and worker communication
-- Bundle size impact (~215 KB)
+- Bundle size impact (about 295 KB for three-bvh-csg and three-mesh-bvh; Manifold about 1.1 MB)
 - Browser compatibility
 
 ### [MANIFOLD_CYLINDER_FIX.md](../development/MANIFOLD_CYLINDER_FIX.md)
-**Purpose:** Implementation details for Manifold WASM cylinder generation
+**Purpose:** The December 2025 record of how the Manifold worker came to build the cylinders (a historical record since 2026-10-02; for how it works now, see CLIENT_SIDE_CSG_DOCUMENTATION)
 **Covers:**
 - Dual-worker architecture (three-bvh-csg for cards, Manifold for cylinders)
 - Same-origin vendored WASM loading (`/static/vendor/manifold-3d/`)
@@ -350,12 +350,10 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 **Purpose:** Standard Operating Procedure for implementing major features
 **Status:** ✅ Complete (Created 2025-12-07)
 **Covers:**
-- 6-phase implementation workflow (Investigation → Specification → Implementation → Documentation → Verification → Finalization)
-- Detailed checklists for each phase
-- Case study: Card Thickness Preset System implementation
-- Common pitfalls and how to avoid them
-- File change impact matrix
-- Specification template and quick-start guide for contributors
+- What to read before you start (this index, the related specifications, `settings.schema.json`)
+- The key files a feature touches
+- A code, documentation and testing checklist (persistence is for design settings only)
+- Common mistakes, from the Card Thickness Preset System
 
 **Target Audience:**
 - Contributors
@@ -425,7 +423,7 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 |--------|---------|---------------|---------------|
 | `static/liblouis-worker.js` | Braille translation | All | LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS (Section 3) |
 | `static/workers/csg-worker.js` | CSG operations (three-bvh-csg) | **Cards only** | STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS (Section 4), CLIENT_SIDE_CSG_DOCUMENTATION |
-| `static/workers/csg-worker-manifold.js` | CSG with Manifold WASM | **Cylinders only** | MANIFOLD_CYLINDER_FIX, MANIFOLD_WORKER_VALIDATION |
+| `static/workers/csg-worker-manifold.js` | CSG with Manifold WASM | **Cylinders only** | CLIENT_SIDE_CSG_DOCUMENTATION, STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS (MANIFOLD_CYLINDER_FIX and MANIFOLD_WORKER_VALIDATION are historical records) |
 
 **Coverage:** 3/3 workers documented (100%)
 
@@ -562,7 +560,7 @@ All specifications include sections on known issues, edge cases, and workarounds
 
 ### Understanding the Application Flow
 
-1. **Start Here:** [README.md](./README.md) — Project overview
+1. **Start Here:** [README.md](../../README.md) — Project overview
 2. **UI Basics:** UI_INTERFACE_CORE_SPECIFICATIONS — How users interact
 3. **Input System:** BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS — Text entry
 4. **Translation:** LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS — Text to braille
@@ -729,6 +727,16 @@ Section Reference: SURFACE_DIMENSIONS_SPECIFICATIONS.md (Section 2.1)
 
 ---
 
+## Other documents in this folder
+
+These sit beside the specifications and are not counted among them:
+
+- [VERIFICATION_GUIDE.md](./VERIFICATION_GUIDE.md) — the living end-to-end verification steps
+- [SURFACE_DIMENSIONS_VERIFICATION_REPORT.md](./SURFACE_DIMENSIONS_VERIFICATION_REPORT.md) — a dated verification report (historical)
+- [BRAILLE_DOT_ADJUSTMENTS_VERIFICATION_REPORT.md](./BRAILLE_DOT_ADJUSTMENTS_VERIFICATION_REPORT.md) — a dated verification report (historical)
+
+---
+
 ## Version History
 
 | Date | Changes |
@@ -746,6 +754,7 @@ Section Reference: SURFACE_DIMENSIONS_SPECIFICATIONS.md (Section 2.1)
 | 2026-07-29 | Added the editable Unicode braille field (BRAILLE_TEXT_INPUT §6.3) and converted the Repeat Number Sign checkbox to a Number Signs radio group (§6.2). Ported the OpenSCAD tactile row indicator into the app: RECESS_INDICATOR_SPECIFICATIONS v3.0 §4, plus `indicators.indicator_mode` and five `indicators.tactile_*` fields in SETTINGS_SCHEMA §3.6. |
 | 2026-08-16 | Added INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md documenting the Double-Sided Card (BETA): paired Cylinder A/B generation with 1:1 recesses, the interpoint offset, validation gates, worker dot partition, and UI. Incremented total spec count to 14; related updates already in BRAILLE_TEXT_INPUT v1.3, UI_INTERFACE v1.10, STL_EXPORT v1.5, SETTINGS_SCHEMA §5, and BRAILLE_SPACING v1.4. |
 | 2026-09-30 | Documentation review after Brennen approved the build: present-tense beta wording, the retired double-sided toggle, the Version 2 preset height (54 mm) and per-key clearance dials, and the fused rollers' axis vent brought up to date across the specs; the gear entry gains the axis cuts |
+| 2026-10-02 | Second documentation pass (round R1): new section "Other documents in this folder" linking VERIFICATION_GUIDE.md and the two verification reports (the count of 16 specifications is unchanged and right); the "Start Here" link points to the project README (it pointed to a `docs/specifications/README.md` that does not exist); the CLIENT_SIDE_CSG bundle sizes, the MAJOR_FEATURE_IMPLEMENTATION_SOP description and the historical status of MANIFOLD_CYLINDER_FIX and MANIFOLD_WORKER_VALIDATION brought up to date |
 
 ---
 

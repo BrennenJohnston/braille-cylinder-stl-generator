@@ -115,6 +115,13 @@ a worker-backed button without waiting for readiness can fail locally while pass
 The suite's helpers wait for readiness and rethrow anything that is not the documented
 not-ready message; a bare press is the bug, not the browser.
 
+Since 2026-10-01 the app itself waits: Generate, Translate to Braille, Translate to Text and
+Preview pressed while the braille translator or the 3D engine is still starting wait for it
+and say so, instead of failing, so the misleading "Translation failed" (and the 3D engine's
+"failed to load") at start-up are gone. The helpers keep their retries. Under heavy local
+load a retry can now start a second generation after the first press has waited for a slow
+3D engine; re-run such a file alone at `--workers=2` before counting it.
+
 Worker startup itself used to be the other half of this. Every message to the liblouis
 worker shared one 10-second timeout, including `init` — and an `init` that times out is
 terminal, because the catch around it nulls the worker and disables translation for the
@@ -132,7 +139,8 @@ sentence, not "not initialized", and every other generate helper already retries
 one, written 2026-09-28, did not. It now uses the same list of transient messages, and the
 file passed 18 of 18 in Firefox at four workers, three runs each. (The app's own wording for
 a Generate pressed during start-up - a "Translation failed" message that lists causes like
-special characters - is unchanged.)
+special characters - is unchanged.) Since 2026-10-01 a Generate pressed during start-up waits
+for the translator instead, so that message no longer appears for it.
 
 The OpenSCAD version has this feature: the double-sided port shipped in the OpenSCAD
 generator v2.6 and was refined in v2.7 (2026-08-23).
@@ -178,11 +186,12 @@ the roller's axis instead, joining the two gear sockets, and each socket ends in
 cone: the roller prints bottom gear down with no support inside the sockets and lifts off
 the embosser's peg without a vacuum.
 
-**Known limitation, inherited not introduced.** On the EMBOSSING plate the exported
-file is one watertight roller plus one small separate body per raised braille dot —
-the dome of each dot. That is a long-standing tangency issue in the dot geometry,
-present with gears off too, and it is tracked separately. The counter plate exports as
-exactly one body.
+**Known limitation, fixed 2026-10-01.** With custom dot sizes whose dome is not a
+half-sphere (dome height different from half the dome diameter), the embossing
+cylinder's file used to contain one small separate body per raised dot. The two
+card-stock presets were never affected. Those domes now overlap their bases by a hidden
+0.005 mm, so every cylinder exports as one body. The dot's height and shape are
+unchanged.
 
 **OpenSCAD:** the desktop build gets integrated gears; the MakerWorld single-file
 variant does not. Tested in the real product 2026-08-25: MakerWorld's customizer
@@ -194,7 +203,8 @@ sign-off. The MakerWorld paragraph was re-signed the same day, when a probe of
 the real customizer replaced the reasoning about mesh size with the tested
 reason. The pair filename, the "Version 1 ... (Version 2's size is 30.8 × 54.0, below)"
 clause and the vent sentences of "The barrel prints solid" were added on 2026-09-30 and
-signed off by him on 2026-10-01.
+signed off by him on 2026-10-01. The "Known limitation" paragraph was reworded on
+2026-10-01 to record the dome fix and signed off by him the same day (R1-Q-13).
 
 Full technical detail: `docs/specifications/GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md`.
 

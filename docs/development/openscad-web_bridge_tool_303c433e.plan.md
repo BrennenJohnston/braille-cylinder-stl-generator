@@ -92,6 +92,8 @@ todos:
 
 ## Bidirectional OpenSCAD-Web Parametric Generator Tool
 
+> **Historical record, written before 2026-01-12 and added to the repository on 2026-01-28.** It describes a plan for a separate tool at that time, not this app, and [openscad-web_bridge_tool_CONSOLIDATED.plan.md](openscad-web_bridge_tool_CONSOLIDATED.plan.md) supersedes it. For how this app works now, see [PROJECT_STRUCTURE.md](../../PROJECT_STRUCTURE.md).
+
 ## Feasibility Report Summary
 
 **Overall Feasibility: HIGH (v1, “same-geometry-source” approach)** — A general-purpose *parameter/schema + validation harness* is achievable if we **do not attempt geometry translation**. The proven path is: OpenSCAD remains the geometry source, and the web app runs OpenSCAD (WASM) to generate STL.

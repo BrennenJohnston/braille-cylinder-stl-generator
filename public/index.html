@@ -1701,7 +1701,7 @@
         .radio-text {
             cursor: pointer;
         }
-        /* Double-Sided Card beta toggle: a radio-row look with an explicit
+        /* The seam channel checkbox: a radio-row look with an explicit
            44px touch target (WCAG 2.5.8; same convention as the toolbar). */
         .ds-toggle-option {
             min-height: 44px;
@@ -3367,7 +3367,7 @@
                                         aria-label="Decrease brightness" aria-controls="brightness-value">
                                     <span aria-hidden="true">−</span>
                                 </button>
-                                <span class="font-size-display preview-stepper-value" id="brightness-value" role="status" aria-live="polite">Normal</span>
+                                <span class="font-size-display preview-stepper-value" id="brightness-value" role="status" aria-live="polite" title="140% of base lighting (normal)">Normal</span>
                                 <button type="button" id="brightness-increase" class="font-size-btn preview-stepper-btn"
                                         aria-label="Increase brightness" aria-controls="brightness-value">
                                     <span aria-hidden="true">+</span>
@@ -3381,7 +3381,7 @@
                                         aria-label="Decrease contrast" aria-controls="contrast-value">
                                     <span aria-hidden="true">−</span>
                                 </button>
-                                <span class="font-size-display preview-stepper-value" id="contrast-value" role="status" aria-live="polite">Normal</span>
+                                <span class="font-size-display preview-stepper-value" id="contrast-value" role="status" aria-live="polite" title="0.6× ambient / 1.4× directional">Normal</span>
                                 <button type="button" id="contrast-increase" class="font-size-btn preview-stepper-btn"
                                         aria-label="Increase contrast" aria-controls="contrast-value">
                                     <span aria-hidden="true">+</span>
@@ -3569,11 +3569,14 @@
 
                       <!-- Text Input Section moved into form (separate scrollable pane) -->
                       <div class="line-input-group">
-                          <fieldset class="line-input-fieldset">
+                          <fieldset class="line-input-fieldset" aria-labelledby="front-entry-heading">
                               <!-- Both ids are load-bearing. updateDoubleSidedUI() relabels
-                                   the HEADING "Front of Card — …" while the double-sided beta
-                                   is on and restores this exact text when it is off; the
-                                   legend id is what the doubleSided e2e spec reads. -->
+                                   the HEADING "Front of Card — …" while Double-sided is
+                                   chosen and restores this exact text for Single-sided; the
+                                   legend id is what the doubleSided e2e spec reads.
+                                   aria-labelledby names the group by that heading: named from
+                                   the legend alone, NVDA kept the old name after a relabel
+                                   (walk F, 2026-10-04). -->
                               <legend class="grade-label" id="front-entry-legend"><h2 class="legend-heading" id="front-entry-heading" tabindex="-1">Enter Text for Braille Translation</h2></legend>
                               <div class="grade-note" style="margin-bottom: 0.8em; font-size: 0.85em;">
                                   <strong>Note:</strong> Contracted braille combines letters into single cells, so the character limit is only confirmed <em>after translation</em> — the program will warn you automatically if it's too long.
@@ -3972,7 +3975,7 @@
                                               </label>
                                               <span id="indicator-mode-tactile-desc" class="sr-only">A raised arrow on the embossing plate and a matching recess on the counter plate, centred in the gap at the cylinder seam with the point toward the top. Uses no braille cells, so every cell in the row is available for text.</span>
                                           </div>
-                                          <!-- Shown while the double-sided beta is on; updateDoubleSidedUI()
+                                          <!-- Shown while Double-sided is chosen; updateDoubleSidedUI()
                                                also disables the visual radio and appends this note's id to
                                                its aria-describedby, so the lock reason travels with the
                                                disabled option. -->
@@ -5287,8 +5290,14 @@
             const meta = getBrightnessMeta(previewBrightnessLevel);
             const valueEl = document.getElementById('brightness-value');
             if (valueEl) {
-                valueEl.textContent = `${meta.name}`;
-                valueEl.setAttribute('title', `${meta.percent}% of base lighting (${meta.name.toLowerCase()})`);
+                // The markup holds the start-up name and tooltip, so start-up
+                // writes nothing: replacing the text, even with the same word,
+                // or adding the title made NVDA announce "Normal, Normal" on
+                // every page load (walk F, 2026-10-04).
+                const name = `${meta.name}`;
+                if (valueEl.textContent !== name) valueEl.textContent = name;
+                const title = `${meta.percent}% of base lighting (${meta.name.toLowerCase()})`;
+                if (valueEl.getAttribute('title') !== title) valueEl.setAttribute('title', title);
             }
 
             const decreaseBtn = document.getElementById('brightness-decrease');
@@ -5307,8 +5316,9 @@
             const meta = getContrastMeta(previewContrastLevel);
             const valueEl = document.getElementById('contrast-value');
             if (valueEl) {
-                valueEl.textContent = `${meta.name}`;
-                valueEl.setAttribute('title', meta.ratioText);
+                const name = `${meta.name}`;
+                if (valueEl.textContent !== name) valueEl.textContent = name;
+                if (valueEl.getAttribute('title') !== meta.ratioText) valueEl.setAttribute('title', meta.ratioText);
             }
 
             const decreaseBtn = document.getElementById('contrast-decrease');
@@ -5772,7 +5782,7 @@
         // first word of the source text. Braille pasted straight into the
         // Braille (Unicode) field has no English source, so it is back-translated
         // for the name; `untitled` is the last resort.
-        // Double-sided beta pairs are named Cylinder_A_{preset}_{name}.stl
+        // Double-sided cylinders are named Cylinder_A_{preset}_{name}.stl
         // (embossing) and Cylinder_B_{preset}_{name}.stl (counter) instead —
         // the single-sided names stay untouched (training videos depend on them).
         function getThicknessPresetSegment() {
@@ -6751,6 +6761,7 @@
             if (placementMode === 'auto') {
                 const src = (document.getElementById('auto-text')?.value || '').trim();
                 if (!src) return { error: 'Enter text in the Auto Placement box first, then press Translate to Braille.' };
+                await waitForTranslatorStart();
                 const wrap = await banaAutoWrap(src, getAvailableColumns(), rows, tableName);
                 if (wrap.error) {
                     return { error: (wrap.warnings && wrap.warnings.length) ? wrap.warnings.join(' ') : 'Unable to wrap text per BANA rules.' };
@@ -6762,6 +6773,7 @@
             if (!sourceLines.some(line => line && line.trim())) {
                 return { error: 'Enter text in at least one line above, then press Translate to Braille.' };
             }
+            await waitForTranslatorStart();
             const brailleLines = [];
             for (let i = 0; i < sourceLines.length; i++) {
                 const line = (sourceLines[i] || '').trim();
@@ -6796,6 +6808,7 @@
                 }
             }
 
+            await waitForTranslatorStart();
             const tableName = document.getElementById('language-table')?.value || DEFAULT_LANGUAGE_TABLE;
             const placementMode = document.querySelector('input[name="placement_mode"]:checked')?.value || 'manual';
 
@@ -6845,6 +6858,10 @@
 
             button.addEventListener('click', async () => {
                 const originalLabel = button.textContent;
+                // Disabling a focused button drops focus to the page body, which
+                // strands a keyboard user at the top of the form; focus goes back
+                // to the button when the translation ends, unless it moved on.
+                const hadFocus = document.activeElement === button;
                 button.disabled = true;
                 button.textContent = 'Translating…';
                 try {
@@ -6864,6 +6881,7 @@
                 } finally {
                     button.disabled = false;
                     button.textContent = originalLabel;
+                    if (hadFocus && document.activeElement === document.body) button.focus();
                 }
             });
 
@@ -6871,6 +6889,7 @@
 
             textButton.addEventListener('click', async () => {
                 const originalLabel = textButton.textContent;
+                const hadFocus = document.activeElement === textButton;
                 textButton.disabled = true;
                 textButton.textContent = 'Translating…';
                 try {
@@ -6895,6 +6914,7 @@
                 } finally {
                     textButton.disabled = false;
                     textButton.textContent = originalLabel;
+                    if (hadFocus && document.activeElement === document.body) textButton.focus();
                 }
             });
         }
@@ -6920,7 +6940,7 @@
         }
 
         // ------------------------------------------------------------------
-        // Back of Card braille field (double-sided beta)
+        // Back of Card braille field (double-sided mode)
         // ------------------------------------------------------------------
         // A 1:1 mirror of the front field above (Brennen's call, 2026-08-31):
         // same validation, same status wording, same authority rule - the back
@@ -7008,6 +7028,7 @@
                     /* S-D3 (signed 2026-09-21; 2026-09-20 programme, sub-plan D). */
                     return { error: 'Enter text in at least one Back Line first, then press Translate to Braille.' };
                 }
+                await waitForTranslatorStart();
                 const manual = await translateBackManualLines();
                 if (manual.failedLine) {
                     return { error: `Back line ${manual.failedLine} could not be translated: ${manual.error?.message || manual.error}` };
@@ -7016,6 +7037,7 @@
             }
             const src = (document.getElementById('back-text')?.value || '').trim();
             if (!src) return { error: 'Enter text in the Back of Card Text box first, then press Translate to Braille.' };
+            await waitForTranslatorStart();
             const wrap = await banaAutoWrap(src, getAvailableColumns(), rows, tableName);
             if (wrap.error) {
                 return { error: (wrap.warnings && wrap.warnings.length) ? wrap.warnings.join(' ') : 'Unable to wrap text per BANA rules.' };
@@ -7039,6 +7061,7 @@
                     }
                 }
             }
+            await waitForTranslatorStart();
             const tableName = document.getElementById('language-table')?.value || DEFAULT_LANGUAGE_TABLE;
             const textLines = [];
             for (const line of lines) {
@@ -7073,6 +7096,7 @@
 
             button.addEventListener('click', async () => {
                 const originalLabel = button.textContent;
+                const hadFocus = document.activeElement === button;
                 button.disabled = true;
                 button.textContent = 'Translating…';
                 try {
@@ -7092,6 +7116,7 @@
                 } finally {
                     button.disabled = false;
                     button.textContent = originalLabel;
+                    if (hadFocus && document.activeElement === document.body) button.focus();
                 }
             });
 
@@ -7099,6 +7124,7 @@
 
             textButton.addEventListener('click', async () => {
                 const originalLabel = textButton.textContent;
+                const hadFocus = document.activeElement === textButton;
                 textButton.disabled = true;
                 textButton.textContent = 'Translating…';
                 try {
@@ -7123,6 +7149,7 @@
                 } finally {
                     textButton.disabled = false;
                     textButton.textContent = originalLabel;
+                    if (hadFocus && document.activeElement === document.body) textButton.focus();
                 }
             });
         }
@@ -7389,7 +7416,7 @@
             announceStatus('tactile-gap-warning', '');
         }
 
-        // Double-sided (interpoint) beta: printability thresholds for the ridge
+        // Double-sided (interpoint): printability thresholds for the ridge
         // of material between a raised dot and the nearest back-side recess on
         // the SAME cylinder surface. Mirrors app/geometry/interpoint.py
         // (SAME_SURFACE_GAP_RELIABLE_MM / SAME_SURFACE_GAP_FLOOR_MM): below
@@ -7514,17 +7541,17 @@
             return TACTILE_ARROW_LAYOUT_BY_PRESET[chosen] ? chosen : '0.4';
         }
 
-        // Live same-surface crowding warning for the double-sided beta,
+        // Live same-surface crowding warning for double-sided mode,
         // recomputed with the seam-gap warning on every form change. Hidden
         // whenever the card is single-sided. The offset dial
         // ids are the flat CardSettings names; absent dials fall back to the
         // 1.25/1.25 mm defaults. The footprints come from the preset package
-        // above - so on the 0.4 preset this warning shows whenever the beta
-        // is on: the Q2 package's 0.468 mm nominal gap sits below the 0.50 mm
-        // reliable line by design, and its printed 0.428 mm ridge was
+        // above. The 0.4 preset's Q2 package has a 0.468 mm nominal gap: it
+        // warned against the old 0.50 mm reliable line and is quiet against
+        // the provisional 0.45 (2026-08-23); its printed 0.428 mm ridge was
         // measured printing clean on 2026-08-20 (FD-8b).
-        // The crowding warning can now persist for a whole session (the 0.4
-        // preset package sits below the reliable line by design), and
+        // The crowding warning can persist for a whole session (for example
+        // with an offset moved away from 1.25 mm), and
         // announceStatus rewrites the shared #a11y-status region even for
         // identical text - which would re-announce this warning on every form
         // change and stomp other sources' announcements (e.g. the back-text
@@ -7881,7 +7908,7 @@
 
         updateIndicatorModeUI();
 
-        // Double-Sided Card beta: the toggle reveals the Back of Card section,
+        // Double-sided: the Card sides choice enables the Back of Card section,
         // relabels the front entry while on, and locks the Row Indicator Style
         // to the tactile seam arrow — the backend hard-rejects double-sided
         // requests with any other style, so this lock is what keeps that error
@@ -8024,7 +8051,7 @@
         });
 
         // ---------------------------------------------------------------------
-        // Gear-integrated one-piece rollers (BETA)
+        // Gear-integrated one-piece rollers (Simplified gears)
         // ---------------------------------------------------------------------
         // The reference roller the vendored gears were measured against. The
         // server rejects anything else while gears are on (app/geometry/gears.py
@@ -8635,6 +8662,10 @@
             announceStatus('auto-overflow-warning', '');
         }
 
+        function isAutoPlacementSelected() {
+            return document.querySelector('input[name="placement_mode"]:checked')?.value === 'auto';
+        }
+
         function computeAutoOverflow() {
             if (autoOverflowTimer) clearTimeout(autoOverflowTimer);
             autoOverflowTimer = setTimeout(() => {
@@ -8648,7 +8679,11 @@
             const languageSelect = document.getElementById('language-table');
             const tableName = languageSelect?.value || DEFAULT_LANGUAGE_TABLE;
             const src = (autoText?.value || '').trim();
-            if (!src) {
+            // Only Auto Placement shows this box. A check can be scheduled by the
+            // text box's change event an instant before Manual Placement is
+            // chosen, or still be translating when it is, and must not then speak
+            // for a box that is no longer on screen.
+            if (!src || !isAutoPlacementSelected()) {
                 hideAutoOverflow();
                 return;
             }
@@ -8676,6 +8711,10 @@
                     messages.push(`Your text needs ${needs} but the plate has ${rows}.`);
                 }
 
+                if (!isAutoPlacementSelected()) {
+                    hideAutoOverflow();
+                    return;
+                }
                 if (messages.length) {
                     // Announce only as the warning appears. This recomputes on
                     // every keystroke and the text carries a live cell count, so
@@ -8702,12 +8741,12 @@
             }
         }
 
-        // Live overflow warning for the double-sided beta's Back of Card text.
+        // Live overflow warning for the Back of Card text (double-sided mode).
         // Same job as computeAutoOverflow above, same machinery: the shared
         // banaAutoWrap simulation, a 250 ms debounce, and its OWN run-id counter
         // so a slow liblouis round-trip cannot repaint the box after a newer
-        // keystroke has already answered it. Gated on the beta toggle — with the
-        // beta off this costs nothing and the region is hidden immediately
+        // keystroke has already answered it. Gated on Double-sided — with
+        // Single-sided this costs nothing and the region is hidden immediately
         // rather than 250 ms later.
         let backOverflowTimer = null;
         let backOverflowRun = 0;
@@ -8840,7 +8879,7 @@
         // field. Evaluating one at a time is what let a warning survive the edit
         // that fixed it. The two FRONT overflow boxes describe different inputs, so
         // only the one for the active placement mode may be on screen. The back-of-
-        // card box is a third, independent one: it describes the beta's own text and
+        // card box is a third, independent one: it describes the back's own text and
         // can be up beside a front warning, so it is not part of that either/or.
         function refreshLiveWarnings() {
             checkPhysicalFit();
@@ -9073,7 +9112,7 @@
                 // reload with Expert Mode open read "Hide Expert Mode, collapsed".
                 expertToggleBtn.setAttribute('aria-expanded', String(visible));
             }
-            // Double-sided beta toggle and back text (hidden storage until Phase 08)
+            // Card sides choice (the back text itself is never stored, 2026-09-28)
             // Same keys as the retired checkboxes, so a saved choice carries
             // over to the Embosser setup radios (2026-09-20).
             const savedDoubleSided = readPersisted('braille_prefs_double_sided_enabled');
@@ -9295,8 +9334,8 @@
         // Restored double-sided state fires no events either: reveal the Back of
         // Card section and apply the tactile lock by hand when it came back on.
         // The try stays so a throw here cannot stop page startup; the catch says
-        // so out loud, because swallowing it leaves the entire beta UI dead -
-        // no Back of Card section, no tactile lock, no A/B labels - with nothing
+        // so out loud, because swallowing it leaves the entire double-sided UI dead -
+        // no usable Back of Card section, no tactile lock - with nothing
         // anywhere to say why.
         try { updateDoubleSidedUI(); } catch (e) { log.error('Double-sided UI failed to initialise:', e); }
         // Restored settings are written straight to the DOM and fire no events, so
@@ -10103,9 +10142,9 @@
             errorDiv.style.display = 'none';
             let previewHTML = '';
 
-            // Double-sided beta: the exact test the generate handler uses (toggle
-            // checked AND shape cylinder), so the preview can never disagree with the
-            // STL about which mode you are in. With the beta OFF nothing below changes
+            // Double-sided: the exact test the generate handler uses (Double-sided
+            // chosen AND shape cylinder), so the preview can never disagree with the
+            // STL about which mode you are in. With Single-sided nothing below changes
             // and the preview output stays byte-identical to the single-sided one.
             const doubleSidedOn = isDoubleSidedOn()
                 && (document.querySelector('input[name="shape_type"]:checked')?.value || 'cylinder') === 'cylinder';
@@ -10117,6 +10156,7 @@
                     errorDiv.style.display = 'flex';
                     return;
                 }
+                await waitForTranslatorStart();
                 for (let i = 0; i < lines.length; i++) {
                     if (lines[i].trim()) {
                         try {
@@ -10146,6 +10186,7 @@
                     errorDiv.style.display = 'flex';
                     return;
                 }
+                await waitForTranslatorStart();
                 try {
                     // Use unified available columns helper
                     const cols = getAvailableColumns();
@@ -10179,7 +10220,7 @@
                 }
             }
 
-            // Double-sided beta: show BOTH sides. The back rows come from the SAME
+            // Double-sided: show BOTH sides. The back rows come from the SAME
             // banaAutoWrap call the generate handler makes, so what you read here is
             // what gets embossed. Only braille and shorthand are interpolated (both
             // are drawn from fixed alphabets), never raw user text.
@@ -10511,6 +10552,13 @@
         // every early exit returns false - so Generate Both can chain Cylinder A
         // into Cylinder B and stop the moment either one fails.
         async function runGenerateForCurrentPlate() {
+            if (generateWaitingForStartup) return false;
+            generateWaitingForStartup = true;
+            try {
+                await waitForTranslatorStart();
+            } finally {
+                generateWaitingForStartup = false;
+            }
             errorDiv.style.display = 'none';
             errorText.textContent = '';
             // Clear the class too, not just the text. The progress notice below
@@ -10547,8 +10595,8 @@
             const languageSelect = document.getElementById('language-table');
             const tableName = languageSelect?.value || DEFAULT_LANGUAGE_TABLE;
 
-            // Double-sided (interpoint) beta — cylinder-only. The Double-Sided
-            // Card checkbox is the single source of truth. When ON, BOTH plates
+            // Double-sided (interpoint) — cylinder-only. isDoubleSidedOn() (the
+            // Card sides choice) is the single source of truth. When ON, BOTH plates
             // carry text: Cylinder A (positive) needs the front lines for its
             // raised dots and Cylinder B (negative) needs the same front lines
             // to place its 1:1 paired recesses.
@@ -10775,7 +10823,7 @@
                 log.debug('Counter plate selected - no text translation needed');
             }
 
-            // Double-sided beta: the Back of Card text runs through the SAME
+            // Double-sided: the Back of Card text runs through the SAME
             // banaAutoWrap pass the front's auto placement uses - same language table,
             // same capitalization setting, same contracted-grade default, newlines
             // still hard row breaks - so both sides of the card wrap by one set of
@@ -10977,7 +11025,7 @@
 
             const gearRollersOn = isGearRollersOn();
 
-            // Double-sided beta settings ride inside `settings` under the FLAT
+            // Double-sided settings ride inside `settings` under the FLAT
             // CardSettings names (the grouped `_mm` schema spellings would be
             // silently ignored by the backend). The flag is 0/1 like
             // indicator_shapes. The offsets stay adjustable by design (D1);
@@ -10985,7 +11033,7 @@
             // footprints have no dials: the wire carries the package for the
             // selected card-stock preset (0.3 -> Option B, validated
             // 2026-08-17; 0.4 -> the Q2 print-matrix winner, validated
-            // 2026-08-20 - see DS_FOOTPRINTS). When the beta is off nothing is
+            // 2026-08-20 - see DS_FOOTPRINTS). With Single-sided nothing is
             // added, keeping the request payload byte-identical to the
             // single-sided one.
             if (doubleSidedOn) {
@@ -11001,8 +11049,8 @@
                 settings.ds_bowl_depth = dsFootprints.ds_bowl_depth;
             }
 
-            // Gear beta: one flat flag, and NOTHING is added when it is off, so a
-            // toggle-off request body stays byte-identical to a pre-beta one. The
+            // Gears: one flat flag, and NOTHING is added for Standard gears, so a
+            // Standard body stays byte-identical to one sent before gears existed. The
             // gear geometry has no dials to send: it is vendored 1:1 sample data.
             if (gearRollersOn) {
                 settings.gear_rollers_enabled = 1;
@@ -11181,6 +11229,8 @@
             // =====================================================================
 
             try {
+                if (shapeType === 'cylinder') await waitForEngineStart();
+
                 // Update loading message for client-side generation
                 // SAFETY: Do not overwrite truncation or other blocking errors
                 if (!(errorDiv.classList.contains('error-message') && !errorDiv.classList.contains('info'))) {
@@ -11268,7 +11318,7 @@
 
 
         // ---------------------------------------------------------------------
-        // Generate Both Cylinders (double-sided beta only)
+        // Generate Both Cylinders (the default, single- or double-sided)
         // ---------------------------------------------------------------------
         // A double-sided pair is only usable if both cylinders come out of ONE
         // set of settings, so this runs the ordinary single-plate pipeline twice
@@ -11757,6 +11807,12 @@
         // Initialize liblouis web worker and 3D viewer on page load
         let liblouisWorker = null;
         let liblouisReady = false;
+        // Start-up state of the translator. Anything that needs it while it is
+        // still starting waits on liblouisSettled instead of failing; only
+        // 'failed' keeps the old "not initialized" error.
+        let liblouisState = 'loading';   // 'loading' | 'ready' | 'failed'
+        let resolveLiblouisSettled;
+        const liblouisSettled = new Promise((resolve) => { resolveLiblouisSettled = resolve; });
         let workerMessageId = 0;
         let pendingWorkerMessages = new Map();
 
@@ -11769,7 +11825,49 @@
         // Manifold CSG Worker for cylinders (guarantees watertight/manifold output)
         let manifoldWorker = null;
         let manifoldWorkerReady = false;
+        // Start-up state of the 3D engine, as for the translator: Generate waits on
+        // manifoldSettled while it is 'loading'; only 'failed' keeps the old error.
+        let manifoldState = 'loading';   // 'loading' | 'ready' | 'failed'
+        let resolveManifoldSettled;
+        const manifoldSettled = new Promise((resolve) => { resolveManifoldSettled = resolve; });
+        const MANIFOLD_START_LIMIT_MS = 60000;
         let manifoldRequestId = 0;
+
+        /* S-L1 and S-L2 signed off by Brennen 2026-10-02 (round R1, Gate B); reword only with his sign-off. */
+        const TRANSLATOR_LOADING_NOTICE = 'The braille translator is still loading. This starts as soon as it is ready.';
+        const ENGINE_LOADING_NOTICE = 'The 3D engine is still loading. Generation starts as soon as it is ready.';
+
+        // While a press waits for a worker that is still starting, one sentence says
+        // so in the informational style; the #error-message mirror announces it once.
+        // Called by the buttons, never inside translateWithLiblouis: the live
+        // overflow checks call that while a person types, and must stay silent.
+        async function waitForWorkerStart(isLoading, settled, notice) {
+            if (!isLoading()) return;
+            errorText.textContent = notice;
+            errorDiv.style.display = 'flex';
+            errorDiv.className = 'error-message info';
+            try {
+                await settled;
+            } finally {
+                // Only this notice is taken down; a message written meanwhile stays.
+                if (errorText.textContent === notice) {
+                    errorDiv.style.display = 'none';
+                    errorText.textContent = '';
+                }
+            }
+        }
+
+        function waitForTranslatorStart() {
+            return waitForWorkerStart(() => liblouisState === 'loading', liblouisSettled, TRANSLATOR_LOADING_NOTICE);
+        }
+
+        function waitForEngineStart() {
+            return waitForWorkerStart(() => manifoldState === 'loading', manifoldSettled, ENGINE_LOADING_NOTICE);
+        }
+
+        // A Generate press while an earlier one still waits for start-up is ignored:
+        // the button is not yet disabled then, and both runs would start once it ends.
+        let generateWaitingForStartup = false;
         let pendingManifoldRequests = new Map();
 
         // Function to send message to worker and get response.
@@ -11894,6 +11992,8 @@
                 const initResult = await sendWorkerMessage('init', {}, 30000);
                 if (initResult.success) {
                     liblouisReady = true;
+                    liblouisState = 'ready';
+                    resolveLiblouisSettled();
                     log.debug('Liblouis web worker initialized successfully');
                 } else {
                     throw new Error('Failed to initialize liblouis worker: ' + initResult.error);
@@ -11905,6 +12005,9 @@
                 log.debug('Web worker failed - disabling liblouis translation');
                 liblouisReady = false;
                 liblouisWorker = null;
+                // Every way out of start-up settles the wait, so no caller waits forever.
+                liblouisState = 'failed';
+                resolveLiblouisSettled();
 
                 // Show user that translation is disabled
                 const errorDiv = document.getElementById('error-message');
@@ -11996,8 +12099,17 @@
             }
 
             // Initialize Manifold CSG Worker for cylinder generation (guarantees manifold output)
-            // MOBILE FIX (2024-12-08): Worker now uses lazy WASM loading to improve mobile compatibility.
-            // The worker signals 'ready' immediately, and WASM loads on-demand during first generation.
+            // MOBILE FIX (2025-12-08): the worker avoids top-level await, for mobile compatibility.
+            // It signals 'ready' at once and loads the WASM in the background; a generate waits for it or retries it.
+            // Past MANIFOLD_START_LIMIT_MS without 'ready', Generate reports the old error;
+            // the worker is kept, so a late 'ready' still makes it usable on the next press.
+            setTimeout(() => {
+                if (manifoldState === 'loading') {
+                    log.error('Manifold CSG Worker did not report ready within the start-up limit');
+                    manifoldState = 'failed';
+                    resolveManifoldSettled();
+                }
+            }, MANIFOLD_START_LIMIT_MS);
             try {
                 log.debug('Initializing Manifold CSG worker for cylinders...');
 
@@ -12017,6 +12129,8 @@
 
                     if (type === 'ready') {
                         manifoldWorkerReady = true;
+                        manifoldState = 'ready';
+                        resolveManifoldSettled();
                         if (wasmLoading) {
                             log.debug('Manifold CSG Worker ready (WASM loading in background)');
                         } else {
@@ -12058,33 +12172,25 @@
                     log.error('Manifold CSG Worker error:', error);
                     // Don't set manifoldWorkerReady to false here - worker may recover on retry
                     // The worker handles WASM loading on-demand
+                    // An error before 'ready' means the script did not load: end the wait now.
+                    if (manifoldState === 'loading') {
+                        manifoldState = 'failed';
+                        resolveManifoldSettled();
+                    }
                 };
 
-                // Wait for ready signal - now much faster since WASM loads lazily
-                // Short timeout (5 seconds) just for worker file to load
-                await new Promise((resolve, reject) => {
-                    const timeout = setTimeout(() => {
-                        if (!manifoldWorkerReady) {
-                            reject(new Error('Manifold CSG Worker failed to load. Your browser may not support module workers.'));
-                        }
-                    }, 5000); // 5 seconds for worker script (not WASM)
-
-                    const checkReady = setInterval(() => {
-                        if (manifoldWorkerReady) {
-                            clearTimeout(timeout);
-                            clearInterval(checkReady);
-                            resolve();
-                        }
-                    }, 100);
-                });
-
-                log.debug('Manifold CSG Worker ready for cylinder STL generation (WASM loads on first use)');
+                // Not awaited: 'ready' or the start-up limit settles manifoldSettled,
+                // which Generate waits on. A 5 s wait here used to discard a worker
+                // that was merely slow, for the rest of the visit.
+                log.debug('Manifold CSG worker created; Generate waits for its ready signal (WASM loads in the background)');
 
             } catch (manifoldError) {
                 log.error('Failed to initialize Manifold CSG worker:', manifoldError);
                 log.error('Cylinder generation requires the Manifold worker. Please refresh and try again.');
                 manifoldWorkerReady = false;
                 manifoldWorker = null;
+                manifoldState = 'failed';
+                resolveManifoldSettled();
                 // Per specification: NO FALLBACK - cylinder generation requires Manifold worker
                 // Users will see an error when attempting to generate cylinders
             }
@@ -12107,6 +12213,8 @@
 
         // Function to translate text using liblouis web worker
         async function translateWithLiblouis(text, grade, tableName = null) {
+            // A press during start-up waits for it to end instead of failing.
+            if (liblouisState === 'loading') await liblouisSettled;
             if (!liblouisReady || !liblouisWorker) {
                 throw new Error('Liblouis worker not initialized - translation preview unavailable on this deployment');
             }
@@ -12134,6 +12242,7 @@
         // pass. This is what lets a braille reader check what they pasted, and
         // what supplies a file name when braille is the only thing entered.
         async function backTranslateWithLiblouis(braille, tableName = null) {
+            if (liblouisState === 'loading') await liblouisSettled;
             if (!liblouisReady || !liblouisWorker) {
                 throw new Error('Liblouis worker not initialized - back-translation unavailable on this deployment');
             }
@@ -12173,6 +12282,8 @@
             if (shapeType === 'cylinder') {
                 // Cylinders require Manifold worker - NO FALLBACK to standard worker
                 // Standard worker produces non-manifold edges on curved surfaces
+                // A press while the engine is still starting waits for it instead of failing.
+                if (manifoldState === 'loading') await manifoldSettled;
                 if (!manifoldWorkerReady || !manifoldWorker) {
                     // Provide mobile-friendly error message
                     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -12214,7 +12325,7 @@
             // Wire spelling: the back braille travels as a TOP-LEVEL back_lines key
             // beside lines (the request has no `text` object — text.back_lines is
             // only the saved-settings spelling). Absent entirely when the
-            // double-sided beta is off, keeping the payload byte-identical.
+            // card is single-sided, keeping the payload byte-identical.
             if (backLines) {
                 specRequestBody.back_lines = backLines;
             }

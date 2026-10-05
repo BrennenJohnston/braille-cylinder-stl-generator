@@ -1,5 +1,7 @@
 # Vercel Deployment Guide for Braille Card Generator
 
+> **Historical record, written 2025-08-12.** It describes the project at that time. For how it works now, see [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md).
+
 ## 🚀 Quick Deploy
 
 ### Option 1: Deploy from GitHub (Recommended)

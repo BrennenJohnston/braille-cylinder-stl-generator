@@ -1,6 +1,6 @@
 {
   "name": "braille-cylinder-stl-generator",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Web application for generating 3D-printable STL files for braille embossing cylinders",
   "private": true,
   "license": "SEE LICENSE IN LICENSE",
@@ -35,10 +35,7 @@
     "liblouis"
   ],
   "dependencies": {
-    "liblouis": "^0.4.0",
-    "manifold-3d": "^3.5.4",
-    "three-bvh-csg": "^0.0.18",
-    "three-mesh-bvh": "^0.9.15"
+    "liblouis": "^0.4.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

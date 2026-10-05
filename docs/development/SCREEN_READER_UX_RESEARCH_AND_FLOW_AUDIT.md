@@ -1,5 +1,7 @@
 # Screen-Reader UX Research and Flow Audit
 
+> **Historical record, written 2026-08-22 and revised until 2026-08-25.** It is the research record behind the screen-reader work and describes the project at that time. Its finding numbers (F-A to F-S) and criteria (C1 to C10) are kept exactly as written, because other documents cite them. The criteria are still in force through [ADA_ACCESSIBILITY_VALIDATION_SOP.md](ADA_ACCESSIBILITY_VALIDATION_SOP.md) section 12, and its verbosity rule through step 6.8 of the same SOP. For how the page works now, see [UI_INTERFACE_CORE_SPECIFICATIONS.md](../specifications/UI_INTERFACE_CORE_SPECIFICATIONS.md).
+
 **Status:** research and audit — **the fixes are now under way.** All eight decision
 points were put to Brennen on 2026-08-22 and **all eight are answered** (§2.4); he
 chose the recommended option in every case, so §2.6 is an approved plan rather than a

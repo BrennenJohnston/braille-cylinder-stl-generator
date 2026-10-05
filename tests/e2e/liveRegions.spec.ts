@@ -166,6 +166,41 @@ test.describe('Live region announcements', () => {
     }
   });
 
+  test("the preview's brightness and contrast are not rewritten at start-up", async ({ page }) => {
+    // Both values are live regions that ship holding "Normal" and their
+    // tooltip. NVDA announced "Normal, Normal" on every load (walk F,
+    // 2026-10-04): writing the same word again still replaces the text node,
+    // and adding or changing the title is a change too. The parser only adds
+    // nodes and sets no attributes after the fact, so any of these is a write.
+    await page.addInitScript(() => {
+      const store = window as unknown as { __previewRewrites: string[] };
+      store.__previewRewrites = [];
+      new MutationObserver((records) => {
+        for (const record of records) {
+          const node = record.target;
+          const element = node instanceof Element ? node : node.parentElement;
+          const value = element?.closest('#brightness-value, #contrast-value');
+          if (!value) continue;
+          if (record.type === 'attributes') {
+            store.__previewRewrites.push(`${value.id}: ${record.attributeName}`);
+          } else if (record.type === 'characterData' || record.removedNodes.length > 0) {
+            store.__previewRewrites.push(`${value.id}: "${value.textContent}"`);
+          }
+        }
+      }).observe(document, { childList: true, characterData: true, attributes: true, subtree: true });
+    });
+    await openApp(page);
+    await page.waitForTimeout(1500);
+    const rewrites = await page.evaluate(
+      () => (window as unknown as { __previewRewrites: string[] }).__previewRewrites,
+    );
+    expect(rewrites).toEqual([]);
+
+    // A real change still writes the value, so it is still announced.
+    await page.locator('#brightness-increase').click();
+    await expect(page.locator('#brightness-value')).not.toHaveText('Normal');
+  });
+
   test('showing a warning does not add a live region to the tree', async ({ page }) => {
     await openApp(page);
     // Polled, not read once: the init-time throwaway announcers take a second to
@@ -212,6 +247,26 @@ test.describe('Live region announcements', () => {
     await page.locator('#auto-text').fill('hi');
     await expect(page.locator('#auto-overflow-warning')).toBeHidden();
     await expect(page.locator('#a11y-status')).toHaveText('');
+  });
+
+  test('switching to Manual Placement does not repeat the Auto Placement warning', async ({ page }) => {
+    await openApp(page);
+    await page.locator('#auto-text').fill(OVER_LONG);
+    await waitForWarning(page, 'auto-overflow-warning', 'auto-text');
+    const warning = await visibleText(page, 'auto-overflow-warning');
+
+    await recordAnnouncements(page);
+    // A click on the radio straight from the text box, as a mouse user does:
+    // leaving the box fires its change event while Auto Placement is still
+    // selected, which schedules one more check of that text. Found 2026-10-02
+    // (round R1, F1): the check repeated the warning about 270 ms after the
+    // switch, for a box no longer on screen.
+    await page.locator('#placement_mode_manual').click();
+    await expect(page.locator('#line1')).toBeVisible();
+    await page.waitForTimeout(1500);
+
+    expect(await announcements(page)).not.toContain(warning);
+    await expect(page.locator('#a11y-status')).not.toHaveText(warning);
   });
 
   test('cylinder overflow announces its own text once, then releases the channel', async ({ page }) => {

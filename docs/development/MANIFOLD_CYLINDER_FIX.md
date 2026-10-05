@@ -1,5 +1,7 @@
 # Manifold Cylinder Fix - Zero Non-Manifold Edges
 
+> **Historical record, written 2025-12-08.** It describes the project at that time. For how it works now, see [CLIENT_SIDE_CSG_DOCUMENTATION.md](CLIENT_SIDE_CSG_DOCUMENTATION.md).
+
 > **STATUS: ✅ IMPLEMENTED (2024-12-08)**
 > The Manifold worker has been fully integrated into the frontend. Cylinder generation now automatically uses the Manifold worker, guaranteeing zero non-manifold edges.
 

@@ -7,7 +7,7 @@ Level AA) failure. A blind user who overran a line saw the warning and heard
 silence.
 
 The automated checks already prove each region *can* announce, and that the
-accessibility tree still holds exactly six `role="status"` nodes. **Only
+accessibility tree still holds exactly seven `role="status"` nodes. **Only
 listening proves it announces usefully**, which is what this walkthrough is for.
 
 **Who runs this:** Brennen, or anyone with NVDA installed.
@@ -81,14 +81,21 @@ What that run measured, and what changed because of it:
 
 **Expected:** none of the three sentences above. Hearing any of them is a
 regression — the first two would mean the throwaway announcers became audible,
-the third that the load-time restore is showing its notice again.
+the third that the load-time restore is showing its notice again. NVDA's own
+reading of the page from the top (its automatic say-all on page load) is not an
+announcement. Since 2026-10-04 (round R1, phase F3) a load no longer says
+"Normal, Normal" either (the 3D preview's brightness and contrast values); hearing
+that again is a regression too.
 
 **Control step — keep it, it is the fix's positive proof.** Open **Show Expert
 Mode** → **Card Thickness** (the preset radios moved there on 2026-09-24) and click the
 card-thickness preset that is **already selected**. Clicking it again re-applies
 it, which is a real user action, so the notice must appear on screen AND be
 spoken **once**. (Both presets pin the same 4 rows and 13 text cells, so this
-cannot move any number quoted later in this walkthrough.)
+cannot move any number quoted later in this walkthrough.) From the keyboard,
+`Space` does nothing on a radio that is already selected (Chrome sends no click
+for it): press `Escape` to leave focus mode, then `Enter`, and NVDA clicks the
+preset (measured 2026-10-04).
 
 **Fail if:** Step 0 speaks the preset sentence (the load leak returned), or the
 control click is silent (the deliberate path broke — the fix was meant to skip
@@ -117,7 +124,11 @@ alpha bravo charlie delta echo foxtrot golf hotel india juliet kilo lima
 > but the plate has 4.
 
 **How many times:** exactly **one**. The check is debounced by 250 ms, so it
-lands after you pause, not on each letter.
+lands after you pause, not on each letter. If you type slower than about four keys
+a second, the pause between two keys is enough: the warning then comes once, as
+soon as the text first overflows, while you are still typing, and its numbers are
+for the text so far (at "india": 50 cells and 5 rows, measured 2026-10-04). The
+same holds in Steps 3, 5 and 10. Once is still the rule.
 
 **Fail if:** you hear nothing at all; or you hear it repeatedly while typing.
 
@@ -208,7 +219,8 @@ screen as visible text beneath the radios.
 
 ## Part 4 — One warning does not swallow another
 
-**Step 10.** Leave capitals disabled and type `Hello` in Line 1 (the capital note
+**Step 10.** Set **Capitalized Letters** to **Disabled** again (Step 9 turned it
+back on) and type `Hello` in Line 1 (the capital note
 appears and is announced once). Now extend Line 1 past thirteen cells, e.g.:
 
 ```
@@ -247,19 +259,75 @@ preset-owned, so no automated test can type into the dial reliably.
 Available Braille Cells**. Clear it, then type `9999` one digit at a time,
 pausing about half a second between digits.
 
-**Expected:** **one** warning announcement, shortly after the value first becomes
-too big to fit (at the second 9) — not one per digit. It begins "Warning: This
+**Expected (re-measured 2026-10-02):** **two** announcements, both when the value
+first becomes too big to fit (at the second 9), and nothing for the third and
+fourth digits — not one per digit. First, at once, the seam-channel note "The
+seam channel was left out: the seam gap is too narrow for it at this cell count
+and diameter." (it joined this part on 2026-09-20 with the slicer seam channel);
+then, a quarter of a second later, the warning, which begins "Warning: This
 layout does not fit around the cylinder: 99 braille cells …" — 99, because the
 announcement lands when the value FIRST fails, and the gate then stays quiet
-while the later digits change the on-screen number to 999 and 9999. The count is
-the thing under test.
+while the later digits change the number in it to 999 and 9999. The count is the
+thing under test: write down whether you heard both, and in which order.
 
-**Step 13.** Clear the dial and type `13`.
+**Step 13.** Clear the dial and type `13` without pausing between the digits: a
+pause after the `1` lets the check run on the in-between value 1 and announce that
+Line 1 "needs 5 cells but 1 are available" (measured 2026-10-04).
 
-**Expected:** the warning leaves the screen; NVDA says **nothing new**.
+**Expected:** the warning clears (its box sits in the Row Indicator Style submenu
+since 2026-09-24, so you see it only while that submenu is open); NVDA says
+**nothing new**.
 
 **Fail if:** you hear an announcement per digit — that is the pre-fix behaviour
 returning.
+
+---
+
+## Part 6 — The loading notice (added for 2.2.0)
+
+Since round R1 (2026-10-01), pressing **Generate STL** while the page is still
+starting no longer fails. The page waits for the braille translator and the 3D
+engine, then generates by itself, and while it waits it shows and speaks one
+sentence (S-L1 and S-L2, signed by Brennen at Gate B, 2026-10-02):
+
+> The braille translator is still loading. This starts as soon as it is ready.
+
+> The 3D engine is still loading. Generation starts as soon as it is ready.
+
+**Before this step,** set **Placement Mode** back to **Auto Placement** and close
+Expert Mode (**Hide Expert Mode**). Both are remembered across a reload, and the
+keys below assume them.
+
+**Step 14.** Hard-reload the page (`Ctrl+F5`) and press `Ctrl+Home`. As fast as
+you can: `Tab`, `Enter` (with NVDA the first `Tab` is already the second skip link;
+see the page-structure walkthrough, Before you start, item 6), then `Tab`, `Tab` to
+the **Auto Placement Text** box, type `hi`, then `Tab` seven times to **Generate STL
+file from entered text** and press `Space`.
+
+**Expected:** NVDA says, each **once**: "Generating Cylinder A (1 of 2)..." and
+the translator sentence (both are written at the same moment, so either may come
+first); when the translator is ready, "Braille field updated from translation."
+and, if the 3D engine is still starting, the 3D engine sentence (these two also in
+either order); then the usual
+generation messages, ending with "Both cylinders are ready. Use the Download STL
+button to save one file with both cylinders spaced for printing on one plate."
+No red error appears, and neither loading sentence is said twice (the progress
+line "Generating 3D model (client-side CSG)..." is written once for each cylinder,
+and NVDA says it once; measured 2026-10-04).
+
+**On a fast computer the notice may never appear, and that is a pass.** On a
+local build the translator was ready about 0.6 seconds after the page loaded and
+the 3D engine about 0.9 seconds (measured 2026-10-02), long before anyone can
+type and press Generate. To hear it on purpose: open the browser's developer
+tools (`F12`), **Network** tab, tick **Disable cache**, choose a slow setting in
+the throttling list (Slow 4G, or Slow 3G if your browser lists that), keep the
+developer tools open (throttling stops when they close), click once inside the
+page, and repeat the step. The page then takes about 20 seconds to appear, and
+both sentences are shown (measured with similar throttling). Set throttling back
+to **No throttling** afterwards.
+
+**Fail if:** a red error says the translation failed or that the 3D engine
+"failed to load"; or you hear either loading sentence more than once.
 
 ---
 
@@ -291,8 +359,9 @@ Step | What I heard | Times heard | Matched expected? | Pass/Fail
  11  |              |             |                   |
  12  |              |             |                   |
  13  |              |             |                   |
+ 14  |              |             |                   |
 
-Overall verdict:            /12 listening steps passed
+Overall verdict:            /13 listening steps passed
 Did anything talk over you while you were still typing?
 
 Step 0 - on a fresh load, before touching anything, did I hear:
@@ -318,6 +387,9 @@ Anything NVDA said that I did not expect at all:
 
 | Version | Date | Changes |
 |---|---|---|
+| 1.9 | 2026-10-04 | **Run with NVDA (round R1, walk F: the session drove NVDA 2026.2 and Chrome 150 at Brennen's request, reading NVDA's own speech log), then corrected (phase F6).** 12 of 13 listening steps passed their counts; every warning was said once per episode. Changed: Step 0 adds that NVDA's own say-all is not an announcement and that the load no longer says "Normal, Normal" (fixed that day, F3); the control step gains the keyboard route (`Escape`, then `Enter`; `Space` does nothing on a selected radio); Step 1 notes that a slow typist hears the warning at the first overflow, with that moment's numbers (Steps 3, 5, 10 too); Step 10 sets capitals to Disabled again; Step 13 is typed without a pause (a pause announced the in-between value 1); Step 14 presses `Ctrl+Home` and `Tab`, `Enter` for the second skip link, and its progress line is said once. Step 12's two announcements were judged acceptable by Brennen (R1-Q-29). Results: `WALK_F_RESULTS_2026-10-04.md` in the round folder. |
+| 1.8 | 2026-10-02 | **Round R1, phase F2 (NOT yet run with NVDA).** The Auto Placement warning is no longer repeated after a switch to Manual Placement (Brennen's decision R1-Q-27; found in F1 and listed in v1.7); no step changes, since Step 4 never expected an announcement. The introduction counts seven `role="status"` nodes (seven since 2026-08-31), and Step 14 says the two sentences are shown, which is what was measured. |
+| 1.7 | 2026-10-02 | **Re-measured for 2.2.0 in Chromium, and the loading notice added (round R1, phase F1; NOT yet run with NVDA).** Every step replayed at `553f830` by keyboard, with every live-region change recorded: each quoted sentence is the page's own text character for character, the load is still silent, and each warning is still written once per episode. Changed: Step 12 now hears two announcements at the second 9, the seam-channel note (since 2026-09-20) and then the warning; Step 13 says where the warning box sits since 2026-09-24. New Part 6 (Step 14): the loading notice, S-L1 and S-L2 (signed 2026-10-02), with the throttling recipe; the results template gains row 14 (13 listening steps). Found and left for Gate F: clicking Manual Placement straight from the Auto Placement Text box (or pressing Shift+Tab and Down together) re-announces the Part 1 warning about 270 ms later, from a check still pending; the introduction's six status nodes are seven since 2026-08-31. |
 | 1.6 | 2026-09-30 | **Documentation review:** the control step opens Expert Mode → Card Thickness first, where the preset radios live since 2026-09-24 (D-5); the related-documents line says "double-sided flow". |
 | 1.5 | 2026-08-22 | **Part 3 gains the F-J change** (item F, D6): the **Disabled** capitals radio no longer carries its own `aria-describedby` description, so selecting it now speaks one utterance fewer. Its sr-only text duplicated both the note this walkthrough already quotes AND the visible `.grade-note` beneath the radios, which is unchanged and still on screen. **No quoted sentence in this document changed** - the caps note's wording and its once-per-episode gate are untouched - so every existing step, count and fail condition still stands; Step 9 simply gained a new fail condition for the duplicate returning. Nothing else in the app was changed by that item that this walkthrough covers. |
 | 1.0 | 2026-08-21 | Created with the accessibility hygiene bundle, when `#auto-overflow-warning`, `#cylinder-overflow-warning` and `#caps-warning` were wired to `#a11y-status`. Expected wording is the boxes' own on-screen text — no new strings were authored. Counts come from measured runs: 1 announcement per episode for all three, against 11 per 11 keystrokes for the capitalization note before its gate was added. |

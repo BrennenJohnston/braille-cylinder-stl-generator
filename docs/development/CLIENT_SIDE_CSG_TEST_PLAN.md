@@ -1,5 +1,7 @@
 # Client-Side CSG Testing Plan
 
+> **Historical record, written 2025-11-30.** It describes the project at that time. For how it works now, see [VERIFICATION_GUIDE.md](../specifications/VERIFICATION_GUIDE.md).
+
 ## Implementation Status
 - ✅ Vendored three-bvh-csg and three-mesh-bvh libraries
 - ✅ Added STLExporter from three.js examples

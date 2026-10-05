@@ -88,6 +88,7 @@ def index_explicit():
    - 4.9 [Button Contrast Tokens and the 44 px Action Button](#49-button-contrast-tokens-and-the-44-px-action-button)
    - 4.10 [Live Regions Must Already Be in the Accessibility Tree](#410-live-regions-must-already-be-in-the-accessibility-tree)
    - 4.11 [Heading Outline](#411-heading-outline)
+   - 4.14 [Waiting for a Worker at Start-up](#414-waiting-for-a-worker-at-start-up)
 5. [Scrollbar Customization](#5-scrollbar-customization)
    - 5.1 [Form Scroll Area Scrollbar](#51-form-scroll-area-scrollbar)
    - 5.2 [Global Page Scrollbar](#52-global-page-scrollbar)
@@ -1087,7 +1088,7 @@ Shininess offsets are added to the per-theme `STL_MATERIAL_SETTINGS.shininess` b
                     aria-label="Decrease brightness" aria-controls="brightness-value">
                 <span aria-hidden="true">−</span>
             </button>
-            <span class="font-size-display preview-stepper-value" id="brightness-value" role="status" aria-live="polite">Normal</span>
+            <span class="font-size-display preview-stepper-value" id="brightness-value" role="status" aria-live="polite" title="140% of base lighting (normal)">Normal</span>
             <button type="button" id="brightness-increase" class="font-size-btn preview-stepper-btn"
                     aria-label="Increase brightness" aria-controls="brightness-value">
                 <span aria-hidden="true">+</span>
@@ -1102,7 +1103,7 @@ Shininess offsets are added to the per-theme `STL_MATERIAL_SETTINGS.shininess` b
                     aria-label="Decrease contrast" aria-controls="contrast-value">
                 <span aria-hidden="true">−</span>
             </button>
-            <span class="font-size-display preview-stepper-value" id="contrast-value" role="status" aria-live="polite">Normal</span>
+            <span class="font-size-display preview-stepper-value" id="contrast-value" role="status" aria-live="polite" title="0.6× ambient / 1.4× directional">Normal</span>
             <button type="button" id="contrast-increase" class="font-size-btn preview-stepper-btn"
                     aria-label="Increase contrast" aria-controls="contrast-value">
                 <span aria-hidden="true">+</span>
@@ -1119,6 +1120,8 @@ Shininess offsets are added to the per-theme `STL_MATERIAL_SETTINGS.shininess` b
     </div>
 </div>
 ```
+
+**Quiet at start-up (since 2026-10-04, round R1, phase F3).** The two value displays are live regions, and NVDA announced them when their text was rewritten, even with the same word, and when their `title` was added or changed. At start-up the page wrote "Normal" over "Normal" and added both tooltips, so every page load said "Normal, Normal" with nothing to say what it was (walk F). The markup therefore carries the start-up name and tooltip (level 3), and both stepper functions write the text and the `title` only when they change. A press still announces the new value once, followed by its tooltip and the button's new name. Pinned by `tests/e2e/liveRegions.spec.ts` ("the preview's brightness and contrast are not rewritten at start-up").
 
 #### JavaScript Implementation
 
@@ -1149,8 +1152,10 @@ function updateBrightnessStepper() {
     const name = brightnessLevelNames[previewBrightnessLevel];
     const percent = Math.round((BRIGHTNESS_MULTIPLIERS[previewBrightnessLevel] || 1) * 100);
     const value = document.getElementById('brightness-value');
-    value.textContent = `${name}`;
-    value.setAttribute('title', `${percent}% of base lighting`);
+    // Written only when they change: see "Quiet at start-up" above.
+    if (value.textContent !== name) value.textContent = name;
+    const title = `${percent}% of base lighting (${name.toLowerCase()})`;
+    if (value.getAttribute('title') !== title) value.setAttribute('title', title);
 
     const dec = document.getElementById('brightness-decrease');
     const inc = document.getElementById('brightness-increase');
@@ -1170,8 +1175,9 @@ function updateContrastStepper() {
     const name = contrastLevelNames[previewContrastLevel];
     const ratios = CONTRAST_SETTINGS[previewContrastLevel];
     const value = document.getElementById('contrast-value');
-    value.textContent = name;
-    value.setAttribute('title', `${ratios.ambientRatio}× ambient / ${ratios.directionalRatio}× directional`);
+    if (value.textContent !== name) value.textContent = name;
+    const title = `${ratios.ambientRatio.toFixed(1)}× ambient / ${ratios.directionalRatio.toFixed(1)}× directional`;
+    if (value.getAttribute('title') !== title) value.setAttribute('title', title);
 
     const dec = document.getElementById('contrast-decrease');
     const inc = document.getElementById('contrast-increase');
@@ -2071,6 +2077,15 @@ Accessibility requirements:
   than a colour-only cue.
 - Each button disables itself and shows "Translating…" while the worker runs, then restores
   its label in a `finally` block so a worker failure can never leave it stuck.
+- **Since 2026-10-04 (round R1, phase F4) each button keeps keyboard focus.** Disabling a
+  focused button drops focus to the page body: after Translate to Braille the next Tab
+  started from the top of the form and NVDA repeated "main landmark, region, form landmark,
+  grouping" (walk F). All four handlers, front and back, remember whether their button had
+  focus and, in the same `finally`, give it back while focus is still on the body: the
+  pattern Generate uses, except that focus a user has moved on during the wait is left
+  alone. Re-checked with NVDA: the field's sentence is said, and the next Tab says only the
+  next control. Pinned by `tests/e2e/brailleField.spec.ts` ("the four Translate buttons
+  keep keyboard focus").
 
 ### 4.8 The Embosser Setup Menu Item: Three Either/Or Choices, a Disabled Section, and a Locked Radio Option
 
@@ -2411,6 +2426,15 @@ Each of the three writes and clears through a small helper so no call site can d
 `updateCapsWarning()`. All three announce **only on the transition from hidden to
 shown**, for the reason `ds-back-overflow-warning` does.
 
+**Since 2026-10-02 (round R1, phase F2) the Auto Placement check also does nothing
+unless Auto Placement is selected.** `computeAutoOverflowNow()` hides its box quietly
+and returns while Manual Placement is chosen, both at its start and just before it
+paints. A check could be scheduled by the text box's change event an instant before
+the switch (a click on the Manual Placement radio straight from the box, or Shift+Tab
+and Down pressed together), and it then repeated the warning for a box no longer on
+screen, about 270 ms after the switch (measured in phase F1).
+`tests/e2e/liveRegions.spec.ts` pins it.
+
 **The capitalization note is the one that had to be measured rather than reasoned
 about.** Its text is fixed, so the expectation was that the "an unchanged string is
 not a mutation" property above would suppress its repeats by itself. It does not:
@@ -2697,6 +2721,44 @@ none. A screen reader hears it on entering the group and then only the four labe
 Measured on the opened page with the Step 6.8 probe: the note cost 24 words × 4 hosts =
 96 per pass wired to the dials, 24 × 1 on the fieldset. The same pattern already carries
 the Embosser setup notes (§4.8).
+
+### 4.14 Waiting for a Worker at Start-up
+
+Two web workers do the heavy lifting: the braille translator (liblouis,
+`static/liblouis-worker.js`) and the 3D engine (Manifold,
+`static/workers/csg-worker-manifold.js`). The page starts them one after another after
+the `load` event (the translator, then the card worker, then the 3D engine), which takes
+a few seconds, longer on a slow device. Since 2026-10-01 (Brennen's decision R1-Q-04,
+"Wait, then generate") a button pressed during that time waits instead of failing.
+
+| | Translator | 3D engine |
+|---|---|---|
+| State (`public/index.html`) | `liblouisState`: `'loading'`, then `'ready'` or `'failed'` | `manifoldState`: the same three |
+| Settles on | the answer to `init`; any failure, including the 30 s `init` limit | the worker's `ready` message; an error before `ready`; a failure to create the worker; `MANIFOLD_START_LIMIT_MS` (60 s) without `ready` |
+| Promise waited on | `liblouisSettled` | `manifoldSettled` |
+| Who waits | `translateWithLiblouis` and `backTranslateWithLiblouis`, so every caller, the live overflow checks included | `generateSTLClientSide` (Generate only) |
+| Sentence while a button waits (S-L1 / S-L2, signed 2026-10-02) | "The braille translator is still loading. This starts as soon as it is ready." | "The 3D engine is still loading. Generation starts as soon as it is ready." |
+
+- `'failed'` keeps the old messages ("Translation failed for the following lines ...",
+  "Cylinder generation requires the Manifold 3D engine which failed to load ...").
+  The 3D engine used to get 5 s and then be discarded for the rest of the visit; now a
+  late `ready`, even after the 60 s limit, makes it usable on the next press.
+- The sentence appears only when a press actually waits: the buttons call
+  `waitForTranslatorStart()` / `waitForEngineStart()` (Generate, Translate to Braille and
+  Translate to Text for the front and the back, Preview Braille Translation), after their
+  own empty-input checks. The live overflow checks wait silently. The sentence is written
+  to `#error-message` with class `info` and announced once, by the existing mirror into
+  `#a11y-status` (§4.10); no live region was added. It is taken down when the wait ends,
+  unless another message has replaced it.
+- Generate shows the engine's sentence just before "Generating 3D model (client-side
+  CSG)...", so a person hears the translator's sentence first, then the engine's, then the
+  usual progress.
+- A Generate press while an earlier press still waits for the translator is ignored
+  (`generateWaitingForStartup`): until the run disables the button, both would start once
+  the wait ended.
+- Tests: `tests/e2e/startupWait.spec.ts` (both waits; both sentences, shown once and taken
+  down; a translator and an engine that cannot start still give the old messages; the
+  double press; neither sentence when both workers are ready).
 
 ---
 
@@ -3342,6 +3404,11 @@ Low vision users benefit from enhanced depth perception:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.39 | 2026-10-04 | **§4.7: the four Translate buttons keep keyboard focus** (round R1, phase F4; finding R1-F-11 of walk F, Brennen's R1-Q-31). Each disabled itself while working and so dropped focus to the page body, and the next Tab repeated the page's landmarks. Each handler now gives focus back to its button in its `finally` while focus is still on the body. Pinned by `tests/e2e/brailleField.spec.ts`. |
+| 1.38 | 2026-10-04 | **§3.8: the preview's brightness and contrast are quiet at start-up** (round R1, phase F3; finding R1-F-10 of walk F, Brennen's R1-Q-31). Every page load made NVDA say "Normal, Normal": the start-up call rewrote the same word into both live value displays and added their tooltips. The markup now carries the start-up name and tooltip, and the steppers write text and `title` only when they change; the HTML and JavaScript examples follow. Presses still announce once. Pinned by `tests/e2e/liveRegions.spec.ts`. |
+| 1.37 | 2026-10-02 | **§4.10: the Auto Placement warning is no longer repeated after a switch to Manual Placement** (round R1, phase F2; Brennen's decision R1-Q-27, "Fix it in F2"). `computeAutoOverflowNow()` now does nothing unless Auto Placement is selected; before, a check scheduled as focus left the text box could run after the switch and speak the warning for a box no longer shown. New test in `tests/e2e/liveRegions.spec.ts`. |
+| 1.36 | 2026-10-02 | **§4.14: S-L1 and S-L2 signed.** Brennen approved both loading sentences as written at Gate B of round R1 (R1-Q-14), and chose to leave the notice where the app's other progress messages are, including on a phone, where that box is at the top of the page (R1-Q-20). Wording unchanged. |
+| 1.35 | 2026-10-01 | **§4.14 (new): waiting for a worker at start-up** (round R1, phases B1 to B3; Brennen's decision R1-Q-04, "Wait, then generate"). The translator and the 3D engine have start-up states and settle promises; Generate, Translate and Preview wait instead of failing and say so (S-L1, S-L2, PROPOSED until Gate B); the 3D engine's 5 s start-up limit became 60 s and no longer discards a slow worker; a second Generate press during the wait is ignored. Tests: `tests/e2e/startupWait.spec.ts`. |
 | 1.34 | 2026-10-01 | **§4.5: the Expert Mode restore sets `aria-expanded`** (found in the 2026-09-30 review, fixed on Brennen's word): a reload with Expert Mode open used to be announced as collapsed; pinned by `tests/e2e/expertModeRestore.spec.ts`. |
 | 1.33 | 2026-09-30 | **Documentation review after the approved build.** The two-file warning is gone (`templates/index.html` was deleted on 2026-07-30). §4.8's table-of-contents entry, the accordion handler note and §4.11 follow the Embosser setup item: the heading outline re-measured at 7 / 15 / 15, three h2 sections and eight Expert Mode h3s, the legend example is Card sides. §6.1 describes the action button as it is since 2026-08-18 (always Generate STL, with a separate Download STL button). §8's tab table, JavaScript API and trigger buttons match the eight help tabs. The gear size note names both versions. |
 | 1.32 | 2026-09-29 | **§3.8: the Display settings drawer for phones** (Brennen's finding: on a phone the preview toolbar hid the model, 67 % of the viewer at 390 × 844). Portrait: a gear + "Display settings" button under the viewer opens the controls below it, never over the model. Phone landscape: a 44 px gear in the viewer's corner opens them along the bottom beside it, falling back to the old overlay when the app text size makes them too wide. Wide screens unchanged. Button words S-PD1 (DRAFT). Pinned by `tests/e2e/previewDisplayDrawer.spec.ts`. |

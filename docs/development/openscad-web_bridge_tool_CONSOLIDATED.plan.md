@@ -19,6 +19,8 @@ outputs:
   - "Generated Vercel-ready web app template that runs OpenSCAD via WASM (client-side) + schema-driven UI"
 ---
 
+> **Historical record, written 2026-01-12.** It describes a plan for a separate tool at that time, not this app. For how this app works now, see [PROJECT_STRUCTURE.md](../../PROJECT_STRUCTURE.md).
+
 ## Executive feasibility verdict (should we proceed?)
 
 **Proceed with v1** if the goal is: **turn an OpenSCAD Customizer-enabled `.scad` into a web app** (Vercel deployable) that provides matching param inputs and generates STL client-side, plus an automated **schema/UI/STL parity validator**.

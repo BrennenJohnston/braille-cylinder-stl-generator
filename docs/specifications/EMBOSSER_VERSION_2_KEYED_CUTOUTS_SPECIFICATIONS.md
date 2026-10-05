@@ -580,15 +580,17 @@ Generate, the A/B labels are static markup there, and there is no Generate Both 
 
 ## 10. What "One Solid" Actually Means
 
-A Version 2 counter cylinder exports as exactly **one** watertight body. A Version 2
-**embossing** cylinder exports as one watertight cylinder plus one small separate body
-per raised braille dot — the dome of each dot. That is the long-standing tangency issue
-in the dot geometry, present in Version 1 and with Standard gears, and it is tracked
-separately. It is the same exemption GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md §7
-records.
+A Version 2 counter cylinder exports as exactly **one** watertight body, and so does a
+Version 2 **embossing** cylinder whose domes are half-spheres, as both card-stock presets'
+are (measured 2026-10-01 at the 0.4 preset: the Version 2 pair file, with and without
+Simplified gears, holds two bodies, one per cylinder). Until 2026-10-01 a custom dot size whose dome was not a half-sphere left one
+small separate body per raised braille dot, in Version 1 and Version 2 alike; those domes
+now overlap their base by 0.005 mm (BRAILLE_DOT_SHAPE_SPECIFICATIONS.md §3, "Dome weld
+(custom domes)"; GEAR_INTEGRATED_ROLLERS_SPECIFICATIONS.md §7).
 
-Body counting in the fixture tests is therefore never a bare `== 1`: exactly one body
-is the cylinder, and every other body must look like one of those domes.
+Body counting in the fixture tests is still not a bare `== 1`: exactly one body is the
+cylinder, and every other body must look like a dot dome. The fixtures themselves are one
+body each; the tolerance stays as a guard.
 
 ---
 
@@ -682,7 +684,7 @@ mode; this section records only what changes on THIS document's side.
   0.05 as an EXACT parallel curve (never a mitre — it pushes A's apex 0.10 mm out), from
   `height/2 − 0.05` to `height/2 + depth + 0.05`, capped at `V2_NOTCH_FILL_MAX_RADIUS_MM`
   13.95 and asserted at import to sit below the mating tip circle (15.938 mm at the
-  Version 1 operating distance; the Version 2 distance is an open item). It rides in
+  operating distance, 32.0473 mm for Version 2 as for Version 1, confirmed 2026-10-02). It rides in
   `spec['gears']['notch_fills']` and joins the worker's gear stage.
 - **D-V6 is retired.** `validate_embosser_version_settings()` no longer refuses gears
   with Version 2; `validate_gear_rollers_settings()` picks the reference barrel by
@@ -727,6 +729,8 @@ mode; this section records only what changes on THIS document's side.
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-10-02 | 1.23 | **§13: the Version 2 axis distance is recorded.** Brennen confirmed that Version 2 meshes at the Version 1 distance, 32.0473 mm (round R1, R1-Q-16), so the notch fill's check against the mating tip circle (15.938 mm) holds for Version 2: `version2.V2_OPERATING_AXIS_DISTANCE_MM` and a second import-time assertion record it. No geometry changes. |
+| 2026-10-01 | 1.22 | **§10: the loose dot domes are fixed.** A Version 2 embossing cylinder is one body with half-sphere domes (both presets; measured at 0.4); a custom dome that is not a half-sphere, which used to leave one small body per raised dot, now overlaps its base by 0.005 mm (BRAILLE_DOT_SHAPE_SPECIFICATIONS.md §3). The fixture tests' dome tolerance stays as a guard. |
 | 2026-09-30 | 1.21 | **Documentation review after the approved build.** The overview and status say released, not prototype or BETA, and name the fused Version 2 roller (§13); the size-gate note compares against the fixed gears' S7 / S-G1; the version listener reveals four clearance dials (pair mode is universal); the test table and related documents follow. |
 | 2026-09-28 | 1.20 | **X Adjust defaults to −2 mm in Version 2 with the tactile seam arrow, on every card-stock preset (§8).** Brennen's call after his print test of the X Adjust fix (BRAILLE_SPACING_SPECIFICATIONS.md §5, 2026-09-27): `version2.V2_TACTILE_X_ADJUST_MM`, mirrored by the page and applied the way the barrel preset is — on the version change (announcement clause S-X1, DRAFT), on choosing the tactile style in Version 2, by any preset chosen in Version 2, and re-asserted after the load-time preset restore unless the stock is Custom; the snapshot gives the Version 1 value back. The presets still carry 0, the schema fallback stays 0, Version 1 is byte-identical. |
 | 2026-09-26 | 1.19 | **All four defaults 0.075 mm (D-K6).** Brennen's next print brought A2 and B2 down to the top gears' 0.075; §2, §5, §6 and §11 carry the one value (the per-key dict and dials stay separate). The keyed golden pair regenerated once more. |

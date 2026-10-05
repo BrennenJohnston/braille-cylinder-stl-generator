@@ -141,6 +141,14 @@ def test_the_fill_can_never_reach_the_other_roller():
     assert version2.MATING_TIP_CIRCLE_RADIUS_MM - version2.V2_NOTCH_FILL_MAX_RADIUS_MM > 1.9
 
 
+def test_the_fill_clears_the_other_roller_at_the_version_2_distance():
+    """Brennen confirmed on 2026-10-02 that Version 2 meshes at the Version 1 distance (round R1, R1-Q-16)."""
+    assert version2.V2_OPERATING_AXIS_DISTANCE_MM == 32.0473
+    assert version2.V2_MATING_TIP_CIRCLE_RADIUS_MM == pytest.approx(32.0473 - 16.1093702290795)
+    assert version2.V2_NOTCH_FILL_MAX_RADIUS_MM < version2.V2_MATING_TIP_CIRCLE_RADIUS_MM
+    assert version2.V2_MATING_TIP_CIRCLE_RADIUS_MM - version2.V2_NOTCH_FILL_MAX_RADIUS_MM > 1.9
+
+
 @pytest.mark.parametrize('plate_type, gear, shape', [('positive', 'A1', 'triangle'), ('negative', 'B1', 'square')])
 def test_fill_block_spans_barrel_face_to_notch_floor(plate_type, gear, shape):
     block = version2.notch_fill_block(plate_type, 54.0)

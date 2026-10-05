@@ -756,16 +756,22 @@ def _wire_points(points: list[tuple[float, float]]) -> list[dict]:
 # The fill's outer edge must never reach the other roller: at the Version 1
 # operating distance of 32.0473 mm the mating gear's tip circle passes
 # 32.0473 - 16.1093702290795 = 15.938 mm from this axis, so the cap below keeps
-# 1.99 mm clear. The Version 2 operating distance is NOT yet known (open item,
-# 01_V2_GEAR_AUDIT.md section 7); on the A gear the notch is open air past the
-# 13.66 root circle anyway, so nothing beyond it needs filling.
+# 1.99 mm clear. Version 2 meshes at the same distance: Brennen confirmed it on
+# 2026-10-02 (it was an open item, 01_V2_GEAR_AUDIT.md section 7), and the second
+# assert below checks the cap against it. On the A gear the notch is open air past
+# the 13.66 root circle anyway, so nothing beyond it needs filling.
 V2_NOTCH_FILL_GROWTH_MM = 0.05
 V2_NOTCH_FILL_MAX_RADIUS_MM = 13.95
 V2_NOTCH_FILL_OVERLAP_MM = 0.05
 V1_OPERATING_AXIS_DISTANCE_MM = 32.0473
+V2_OPERATING_AXIS_DISTANCE_MM = 32.0473  # the same as Version 1, confirmed by Brennen on 2026-10-02
 GEAR_TIP_RADIUS_MM = 16.1093702290795
 MATING_TIP_CIRCLE_RADIUS_MM = V1_OPERATING_AXIS_DISTANCE_MM - GEAR_TIP_RADIUS_MM
+V2_MATING_TIP_CIRCLE_RADIUS_MM = V2_OPERATING_AXIS_DISTANCE_MM - GEAR_TIP_RADIUS_MM
 assert V2_NOTCH_FILL_MAX_RADIUS_MM < MATING_TIP_CIRCLE_RADIUS_MM, 'the notch fill would reach the other roller'
+assert V2_NOTCH_FILL_MAX_RADIUS_MM < V2_MATING_TIP_CIRCLE_RADIUS_MM, (
+    'the notch fill would reach the other Version 2 roller'
+)
 
 
 def notch_fill_outline(plate_type: str) -> list[tuple[float, float]]:

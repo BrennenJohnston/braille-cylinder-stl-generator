@@ -1,5 +1,7 @@
 # Character Marker Fix for Manifold Worker
 
+> **Historical record, written 2025-12-06.** It describes the project at that time. For how it works now, see [RECESS_INDICATOR_SPECIFICATIONS.md](../specifications/RECESS_INDICATOR_SPECIFICATIONS.md).
+
 ## Problem
 
 When testing cylinder generation with text like "test test", the character indicators on braille rows 1 and 2 were displaying as "a more recessed rectangle shape with a small square within it" instead of showing the letter "T" or a clean rectangle fallback.

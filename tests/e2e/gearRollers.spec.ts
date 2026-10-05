@@ -317,7 +317,7 @@ test.describe('Gear-integrated one-piece rollers', () => {
     expect(await downloadName(page)).toBe('Embossing_Cylinder_Geared_0.4_abc.stl');
   });
 
-  test('toggle-off downloads keep the pre-beta filename', async ({ page }) => {
+  test('Standard-gear downloads keep the original filename', async ({ page }) => {
     await openApp(page);
     await page.locator('#auto-text').fill('abc');
 

@@ -20,7 +20,8 @@
 ## Security
 
 - [Security Audit Report](security/SECURITY_AUDIT_REPORT.md) — findings from the December 2025 audit
-- [Security Implementation Summary](security/SECURITY_IMPLEMENTATION_SUMMARY.md) — current security posture
+- [Security Policy](../SECURITY.md) — how to report a vulnerability, and the supported versions
+- [Security Implementation Summary](security/SECURITY_IMPLEMENTATION_SUMMARY.md) — the December 2025 to February 2026 security work (historical)
 
 ## Other
 

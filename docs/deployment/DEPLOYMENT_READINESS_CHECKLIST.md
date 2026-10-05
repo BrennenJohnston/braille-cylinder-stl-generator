@@ -1,5 +1,7 @@
 # Deployment Readiness Checklist ✅
 
+> **Historical record, written 2025-10-10.** It describes the project at that time. For how it works now, see [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md).
+
 **Date:** October 10, 2025
 **Branch:** `refactor/phase-0-safety-net`
 **Status:** Ready for Production Deployment

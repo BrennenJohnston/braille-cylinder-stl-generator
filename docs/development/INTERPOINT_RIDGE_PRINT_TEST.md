@@ -44,7 +44,8 @@ the interpoint offset** — it is fixed at 1.25/1.25 in the browser. The OpenSCA
 Customizer exposes `interpoint_offset_x_mm` and `interpoint_offset_y_mm` as
 sliders over 1.15–1.35, which is what makes the ladder below reachable at all.
 
-Repo: `braille-stl-generator-openscad`, on `develop`.
+Repo: `braille-cylinder-stl-generator-openscad` on GitHub (the local clone's
+folder is named `braille-stl-generator-openscad`), on `develop`.
 
 Set these and change **nothing else** between rungs:
 
@@ -141,12 +142,16 @@ one sentence on what you saw.** Then:
 | Lowest pass is P, highest fail is F | The boundary is between F and P. The reliable line should sit **at or a little above P**, with the margin stated as a margin, not disguised as a measurement. |
 | Everything fails, including rung 4 | Something is wrong with the printer, the profile, or the filament — rung 4 is known clean. Stop and diagnose that before drawing any conclusion about the gap. |
 
-**Whatever the number turns out to be, it changes in four places and they must
+**Whatever the number turns out to be, it changes in six places and they must
 move together:** `app/geometry/interpoint.py` (source of truth),
-`DS_SAME_SURFACE_GAP_RELIABLE_MM` in `public/index.html`, `DS_GAP_RELIABLE` in
-the OpenSCAD generator, and the MakerWorld variant. Four tests assert against it,
-two specs document it, and the value is currently labelled **provisional** at
-every one of those sites — that label comes off only when this test has run.
+`DS_SAME_SURFACE_GAP_RELIABLE_MM` in `public/index.html`, and `DS_GAP_RELIABLE`
+in the OpenSCAD repository's two generators (`Braille_Cylinder_STL_Generator.scad`
+and `Braille_Cylinder_STL_Generator_EmbosserV2.scad`) and its two MakerWorld
+files (`makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad` and
+`..._MakerWorld_v2.scad`). This repository's vendored `OpenSCAD/` copy follows
+when it is re-vendored. Four tests assert against it, two specs document it, and
+the value is currently labelled **provisional** at every one of those sites —
+that label comes off only when this test has run.
 
 Also pending on this result: `ds-gap-warning` is deliberately excluded from the
 generate-completion message (finding F-R), because Brennen's condition for

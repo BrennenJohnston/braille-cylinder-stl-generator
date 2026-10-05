@@ -1,5 +1,7 @@
 # Python Version Update for Vercel
 
+> **Historical record, written 2025-10-10.** It describes the project at that time. For how it works now, see [README.md](../../README.md).
+
 ## Issue
 Vercel no longer supports Python 3.9. The build was failing with:
 - "Warning: Python version "3.9" detected in pyproject.toml is not installed and will be ignored"

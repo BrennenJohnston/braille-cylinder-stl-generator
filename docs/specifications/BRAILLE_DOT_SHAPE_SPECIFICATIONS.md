@@ -355,6 +355,48 @@ R = 0.9225 / 1.2
 R = 0.76875mm
 ```
 
+### Dome weld (custom domes)
+
+The Manifold worker (`createCylinderDotManifold` in `csg-worker-manifold.js`) builds a
+rounded dot from the frustum and a spherical cap cut from the sphere of radius `R`. Until
+2026-10-01 the cap was cut at exactly the frustum's top plane, so the dome met its base on
+one circle with no overlap:
+
+- A **half-sphere** dome (dome height equal to half the dome diameter, so `R` equals the
+  dome height) is cut at the sphere's equator, and it fuses with the frustum. Both
+  card-stock presets and both double-sided packages use one (0.4: dome 1.0 × 0.5 mm;
+  0.3: dome 0.8 × 0.4 mm).
+- **Any other dome** only touched the frustum, and the export held one small separate
+  body per raised dot. Measured on real exports of the text `hello world` (21 raised dots)
+  with the schema dot sizes above (base 2.0 × 0.2 mm, dome 1.5 × 0.6 mm, `R` = 0.76875 mm):
+  23 bodies in the pair file, 21 of them loose domes of 0.614 mm³.
+
+**The rule since 2026-10-01:** when `|dome_height - dome_radius| > 1e-6`
+(`DOT_DOME_HEMISPHERE_TOL_MM`, millimetres), the cap's cutting plane moves down by
+`DOT_DOME_WELD_MM` = **0.005 mm** (the `extendBelow` argument of `createSphericalCap`). Only
+the cut moves: the sphere stays where it was, so the dome's apex and the dot's height are
+unchanged (apex 16.200 mm from the axis before and after, on the 30.8 mm cylinder). The
+extra 0.005 mm of cap lies inside the frustum, which widens below its top whenever the base
+is wider than the dome, as in the schema default and every shipped package. A half-sphere
+dome is built exactly as before, which keeps every preset export byte-identical.
+
+| Pair file, text `hello world` | Bodies before | Bodies after |
+|---|---|---|
+| The seven preset configurations (0.4 and 0.3 presets, Version 1 and Version 2 with and without Simplified gears, double-sided, tactile) | 2 | 2, byte-identical files |
+| Custom shallow dome: base 2.0 × 0.2 mm, dome 1.5 × 0.6 mm | 23 | **2** |
+| Custom tall dome: base 1.5 × 0.5 mm, dome 1.0 × 0.7 mm | 2 | 2 (the file changes; still one body per cylinder) |
+
+Tests: `tests/e2e/domeWeld.spec.ts` counts the bodies of a real Cylinder A export for the
+shallow dome (22 before the weld, 1 after), the tall dome and the 0.4 preset;
+`test_every_shipped_rounded_dot_is_a_half_sphere` in `tests/test_smoke.py` fails if a preset
+or a double-sided package stops being a half-sphere, because such a package would get the
+weld and its export would change.
+
+The OpenSCAD generator welds **every** rounded dot the same way (`DOT_DOME_WELD_MM = 0.005`
+in both `.scad` files), half-spheres included; the web app skips half-spheres so that no
+approved export changes. The dome-only shape (base height 0) and `csg-worker.js` are
+unchanged.
+
 ---
 
 ## 4. Counter Plate: Hemisphere Recess Shape
@@ -892,9 +934,10 @@ pieces. Recesses get **no** embed (`baseEmbed = 0` when `isRecess`): they are
 subtracted, so they never had the problem, and zeroing it keeps their geometry
 byte-identical.
 
-**Known, reported, not fixed:** inside every *rounded* dot the dome's base circle
-meets the frustum's top with zero overlap and mismatched tessellation. It welds
-today, but it is a tangency rather than an overlap.
+**Dome junction:** inside every *rounded* dot the dome's base circle meets the
+frustum's top. A half-sphere dome fuses there with zero overlap (measured); since
+2026-10-01 any other dome overlaps its base by 0.005 mm, because until then it exported
+as a separate body (Section 3, "Dome weld (custom domes)").
 
 ### Orientation Rotations
 
@@ -1262,6 +1305,7 @@ Use these logs to verify that:
 | 2026-08-21 | 1.7 | Section 7 gains **"Raised-dot base embed"**, and Bug 3 cross-references it. Raised dots are now sunk below the shell surface by twice the 64-segment facet sagitta so they fuse with the shell instead of exporting as separate connected bodies - measured 6 bodies down to 1 on a real browser export, 32 down to 1 on the OpenSCAD single-sided default. **No dimension changed**: the base frustum is lengthened downward along its own taper, so its radius at the surface and the dot's height above it are byte-stable (browser dome apex 16.400001 mm before and after). Recesses are unaffected. Both generators moved together (`static/workers/csg-worker-manifold.js`, OpenSCAD 2.6.1); `tests/fixtures/*_golden.stl` were NOT regenerated - their renderer already sank a 0.05 mm skirt of its own. |
 | 2026-08-20 | 1.6 | Section 9's double-sided footprints table now carries TWO packages keyed to the card-stock preset (research memory FD-8/FD-9): 0.3 preset → Option B (unchanged, still the schema default), 0.4 preset → the Q2 print-matrix winner (base height 0.5, dome Ø1.0 × 0.5, bowl Ø1.4) — one footprint cannot serve both stocks (Q2 tears 0.35 mm card; Option B under-forms 0.4 mm card). Records the 1.0 mm die-height housing ceiling. |
 | 2026-09-30 | 1.9 | Documentation review: the double-sided footprint section and the bowl-depth table drop "BETA" (released 2026-09-20); the table row names the 0.3 preset package it measures. |
+| 2026-10-01 | 2.0 | Section 3 gains **"Dome weld (custom domes)"**. A rounded dome that is not a half-sphere only touched its base and exported as one loose body per raised dot (shallow custom dome 1.5 × 0.6 mm on 2.0 × 0.2 mm: 23 bodies in the `hello world` pair file); its cap now continues 0.005 mm below the frustum's top plane (`DOT_DOME_WELD_MM` in `csg-worker-manifold.js`), the sphere unmoved, so the apex is unchanged (16.200 mm before and after). Half-sphere domes (every preset and double-sided package) are built exactly as before: the seven preset exports are byte-identical. Section 7's note on the dome junction now says the same. |
 ---
 
 ## 13. Related Documentation

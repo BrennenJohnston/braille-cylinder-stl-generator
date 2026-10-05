@@ -320,8 +320,8 @@ def _key_at(plate_type, z):
 def test_the_cylinder_is_one_watertight_body(plate_type):
     """
     The counter plate must be a single solid; so must the emboss plate here,
-    because this builder carries no braille dots and therefore none of the
-    loose domes the gear specification exempts.
+    because this builder carries no braille dots and therefore no dot-dome body
+    of the kind the fixture tests tolerate as a guard.
     """
     mesh = _cylinder(plate_type, 0.075)
     assert mesh.is_watertight
