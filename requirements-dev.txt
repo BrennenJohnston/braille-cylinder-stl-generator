@@ -22,6 +22,6 @@ networkx==3.7            # Graph backend trimesh imports lazily for sections —
 # Development tools
 pytest==9.1.1
 pytest-cov==7.1.0
-ruff==0.16.9               # Linting and formatting
-mypy==2.3.1               # Type checking
+ruff==0.16.10               # Linting and formatting
+mypy==2.4.0               # Type checking
 pre-commit==4.6.2          # Git hooks
