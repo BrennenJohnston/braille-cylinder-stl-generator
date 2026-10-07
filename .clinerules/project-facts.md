@@ -698,11 +698,23 @@ translation, Three.js preview. Working branch: develop — never commit to main.
     Version 1 gears and fused-roller vent, the S-SO1 Seam Offset wording and a
     quick start without jar examples) its Customizer uses
     this app's section names (Card Sides, Gears, Cylinders to Generate, Row
-    Indicator Style, Card Thickness), carries no BETA or sign-off labels, and
+    Indicator Style, Card Thickness; the last three as "Expert Mode - " tabs
+    since 2026-10-07, see 16), carries no BETA or sign-off labels, and
     renders both cylinders by default like 6f; its parameter names never
     changed. Its CI runs only on PRs to its main, so its full local suite is
     the real gate - and tests/cross_platform_validation.py runs only in that
     CI (pytest does not collect it), so run it by hand before a PR.
+16. LAYOUT PARITY WITH THE OPENSCAD CUSTOMIZER (Brennen, 2026-10-07). The
+    OpenSCAD repo's Customizer mirrors this app's UI top to bottom: the same
+    sections in the same order under the same names, and everything this app
+    keeps under Expert Mode in an "Expert Mode - <submenu>" tab; its
+    tests/test_customizer_layout.py pins that order. So a change here that
+    adds, moves, renames or reorders a UI control or section is not finished
+    until the OpenSCAD repo follows in the same round: its four model files,
+    that test, and its generated MakerWorld fixed-gear file. When you finish
+    such a change, say that the OpenSCAD repo needs the matching change. The
+    rule was missing until a MakerWorld test showed the interpoint offsets
+    beside the braille text instead of in Expert Mode.
 
 ## Spec map — load exactly ONE file, only when the task matches
 Specs live in docs/specifications/.
