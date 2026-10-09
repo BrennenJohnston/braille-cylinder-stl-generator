@@ -320,3 +320,69 @@ test.describe('The same tools on the Back of Card braille field', () => {
     await expect(page.locator('#back_braille_six_key')).not.toBeChecked();
   });
 });
+
+/**
+ * Press Translate to Braille until the field fills: the liblouis worker
+ * starts asynchronously and reports "not initialized" until it is ready
+ * (reliably on Firefox). Any other status is a real failure.
+ */
+async function translateToBraille(page: Page) {
+  const field = page.locator('#braille-unicode');
+  for (let attempt = 0; attempt < 15; attempt++) {
+    await page.locator('#translate-to-braille-btn').click();
+    for (let waited = 0; waited < 4000; waited += 200) {
+      if ((await field.inputValue()) !== '') return;
+      await page.waitForTimeout(200);
+    }
+    const status = await page.locator('#braille-unicode-status').textContent();
+    if (status && !/[Ll]iblouis|not initialized|unavailable/.test(status)) {
+      throw new Error(`Translate to Braille reported: ${status}`);
+    }
+    await page.waitForTimeout(1000);
+  }
+  throw new Error('The liblouis worker never became ready');
+}
+
+test.describe('Auto Placement translates each typed line whole', () => {
+  test.describe.configure({ timeout: 120_000 });
+
+  // The default row: 13 text cells, contracted UEB, capitals on.
+  test('a capital passage over two rows keeps one indicator and one terminator', async ({ page }) => {
+    await openApp(page);
+    await expect(page.locator('#grid_columns')).toHaveValue('13');
+    await page.locator('#auto-text').fill('ROOM ROOM ROOM ROOM');
+    await translateToBraille(page);
+    await expect(page.locator('#braille-unicode')).toHaveValue('⠠⠠⠠⠗⠕⠕⠍ ⠗⠕⠕⠍\n⠗⠕⠕⠍ ⠗⠕⠕⠍⠠⠄');
+  });
+
+  test('an e-mail address divides with the line continuation sign, noted in the field status', async ({ page }) => {
+    await openApp(page);
+    await page.locator('#auto-text').fill('first.last@example.com');
+    await translateToBraille(page);
+    await expect(page.locator('#braille-unicode')).toHaveValue('⠋⠊⠗⠌⠲⠇⠁⠌⠈⠁⠐\n⠑⠭⠁⠍⠏⠇⠑⠲⠉⠕⠍');
+    await expect(page.locator('#braille-unicode-status')).toContainText(
+      '"first.last@example.com" is divided across rows. Each row but the last ends with the line continuation sign (dot 5).',
+    );
+  });
+
+  test('Generate sends the divided address and shows the note in the field, not as an error', async ({ page }) => {
+    await openApp(page);
+    await page.locator('#auto-text').fill('first.last@example.com');
+    const spec = await interceptGeometrySpec(page);
+    await generate(page, spec);
+    expect(spec.lines?.slice(0, 2)).toEqual(['⠋⠊⠗⠌⠲⠇⠁⠌⠈⠁⠐', '⠑⠭⠁⠍⠏⠇⠑⠲⠉⠕⠍']);
+    await expect(page.locator('#braille-unicode-status')).toContainText('line continuation sign (dot 5)');
+    await expect(page.locator('#error-text')).not.toContainText('line continuation sign');
+  });
+
+  test('a divided number keeps one number sign', async ({ page }) => {
+    await openApp(page);
+    // 13 cells: the 13-cell number fits whole, so a longer one is needed.
+    await page.locator('#auto-text').fill('1,000,000,000,000');
+    await translateToBraille(page);
+    const rows = (await page.locator('#braille-unicode').inputValue()).split('\n');
+    expect(rows.length).toBe(2);
+    expect(rows[0].endsWith('⠐')).toBe(true);
+    expect([...rows.join('')].filter((cell) => cell === '⠼')).toHaveLength(1);
+  });
+});

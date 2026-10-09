@@ -4540,6 +4540,7 @@
         import { OrbitControls } from '/static/OrbitControls.js';
         import { createSixKeyEntry, describeCell } from '/static/braille-six-key.js';
         import { asciiToCells } from '/static/braille-ascii.js';
+        import { layoutParagraph } from '/static/braille-wrap.js';
 
         // Dynamic viewport height fix for iOS Safari (address bar handling)
         function setVH() {
@@ -6704,7 +6705,14 @@
             }
             return brailleFieldDirty
                 ? 'Edited — will be used as-is'
-                : 'Filled from translation — edit any cell you want to change.';
+                : withMirrorNotes('Filled from translation — edit any cell you want to change.', brailleFieldMirrorNotes);
+        }
+
+        // A divided word's note (S-DC1) describes the mirror it came with, so it
+        // stays on the status line while the field still holds that mirror -
+        // a form change re-reads the baseline, and Generate's pair run makes one.
+        function withMirrorNotes(status, notes) {
+            return notes.length ? `${status} ${notes.join(' ')}` : status;
         }
 
         // What a translation depends on besides the text itself: the cells a
@@ -6732,6 +6740,8 @@
         }
         let brailleFieldMirrorKey = null;
         let backBrailleFieldMirrorKey = null;
+        let brailleFieldMirrorNotes = [];
+        let backBrailleFieldMirrorNotes = [];
 
         // Called from the form-wide change delegate: empties a pristine field
         // whose mirror no longer matches the translation the text would get.
@@ -6754,7 +6764,8 @@
         // on the next Generate, which sends the same body the translation did.
         // Both callers announce from the field's own live region (Brennen's
         // choice 2026-09-28, D-U4), beside the run's messages in #a11y-status.
-        function showTranslationInBrailleField(lines, warnings = []) {
+        // `notes` (a divided word's dot-5 note, S-DC1) follow the warnings.
+        function showTranslationInBrailleField(lines, warnings = [], notes = []) {
             const field = document.getElementById('braille-unicode');
             if (!field) return;
             field.value = trimTrailingEmptyLines(lines).join('\n');
@@ -6762,7 +6773,9 @@
             brailleFieldAutoCleared = false;
             brailleFieldAutoClearReason = null;
             brailleFieldMirrorKey = translationSettingsKey('front');
-            const note = warnings.length ? ` ${warnings.join(' ')}` : '';
+            brailleFieldMirrorNotes = notes;
+            const messages = [...warnings, ...notes];
+            const note = messages.length ? ` ${messages.join(' ')}` : '';
             setBrailleFieldStatus(`Filled from translation — edit any cell you want to change.${note}`);
             announceBrailleField('Braille field updated from translation.');
         }
@@ -6832,7 +6845,7 @@
                 if (wrap.error) {
                     return { error: (wrap.warnings && wrap.warnings.length) ? wrap.warnings.join(' ') : 'Unable to wrap text per BANA rules.' };
                 }
-                return { lines: wrap.brailleLines, warnings: wrap.warnings || [] };
+                return { lines: wrap.brailleLines, warnings: wrap.warnings || [], notes: wrap.notes || [] };
             }
 
             const sourceLines = getDynamicLineValues();
@@ -6939,7 +6952,7 @@
                         announceBrailleField(result.error);
                         return;
                     }
-                    showTranslationInBrailleField(result.lines, result.warnings);
+                    showTranslationInBrailleField(result.lines, result.warnings, result.notes);
                     resetToGenerateState();
                 } catch (error) {
                     log.error('Translate to Braille failed:', error);
@@ -7155,14 +7168,14 @@
             }
             return backBrailleFieldDirty
                 ? 'Edited — will be used as-is'
-                : 'Filled from translation — edit any cell you want to change.';
+                : withMirrorNotes('Filled from translation — edit any cell you want to change.', backBrailleFieldMirrorNotes);
         }
 
         // The back's twin of showTranslationInBrailleField: the button and,
         // since 2026-09-28, every double-sided Generate write the back
         // translation here as its pristine mirror, announced from this
         // field's own live region (D-U4).
-        function showTranslationInBackBrailleField(lines, warnings = []) {
+        function showTranslationInBackBrailleField(lines, warnings = [], notes = []) {
             const field = document.getElementById('back-braille-unicode');
             if (!field) return;
             field.value = trimTrailingEmptyLines(lines).join('\n');
@@ -7170,7 +7183,9 @@
             backBrailleFieldAutoCleared = false;
             backBrailleFieldAutoClearReason = null;
             backBrailleFieldMirrorKey = translationSettingsKey('back');
-            const note = warnings.length ? ` ${warnings.join(' ')}` : '';
+            backBrailleFieldMirrorNotes = notes;
+            const messages = [...warnings, ...notes];
+            const note = messages.length ? ` ${messages.join(' ')}` : '';
             setBackBrailleFieldStatus(`Filled from translation — edit any cell you want to change.${note}`);
             announceBackBrailleField('Braille field updated from translation.');
         }
@@ -7211,7 +7226,7 @@
             if (wrap.error) {
                 return { error: (wrap.warnings && wrap.warnings.length) ? wrap.warnings.join(' ') : 'Unable to wrap text per BANA rules.' };
             }
-            return { lines: wrap.brailleLines, warnings: wrap.warnings || [] };
+            return { lines: wrap.brailleLines, warnings: wrap.warnings || [], notes: wrap.notes || [] };
         }
 
         // Back-translates the back braille field into the Back of Card Text box
@@ -7277,7 +7292,7 @@
                         announceBackBrailleField(result.error);
                         return;
                     }
-                    showTranslationInBackBrailleField(result.lines, result.warnings);
+                    showTranslationInBackBrailleField(result.lines, result.warnings, result.notes);
                     resetToGenerateState();
                 } catch (error) {
                     log.error('Translate to Braille (back) failed:', error);
@@ -7801,15 +7816,25 @@
         // BANA-compliant-ish auto wrapping for braille rows
         // Policy:
         // - User newlines are hard row breaks: each input line starts on a new row
-        // - Prefer not to divide words across lines
-        // - Hyphenated words may break after a hyphen (hyphen remains at end of line)
-        // - If a single non-hyphenated word exceeds the row width in braille cells,
-        //   we attempt a simple syllable-like split; if none found, we warn and abort
-        // Returns { textLines, brailleLines, warnings, rowsNeeded, rowsNeededIsExact }
+        // - Each input line is translated once, whole, and cut into rows only
+        //   between its braille words (layoutParagraph in static/braille-wrap.js,
+        //   since 2026-10-09), so an indicator spanning words - a capital
+        //   passage - is not repeated per row; a word longer than a row is
+        //   divided in its own braille, an address or a number with the dot-5
+        //   line continuation sign, noted once in `notes`
+        // - A line that cannot be laid out that way falls back to the per-row
+        //   layout below (wrapParagraphLegacy):
+        //   - Prefer not to divide words across lines
+        //   - Hyphenated words may break after a hyphen (hyphen remains at end of line)
+        //   - If a single non-hyphenated word exceeds the row width in braille cells,
+        //     we attempt a simple syllable-like split; if none found, we warn and abort
+        // Returns { textLines, brailleLines, warnings, notes, rowsNeeded, rowsNeededIsExact }
         // (textLines/brailleLines are always exactly `rows` long) or
         // { error: true, warnings } when a word cannot be divided per BANA.
+        // `notes` are informational, never a reason to block Generate.
         async function banaAutoWrap(src, cols, rows, tableName) {
             const warnings = [];
+            const notes = [];
             const textLines = [];
             const brailleLines = [];
 
@@ -7871,14 +7896,14 @@
             if (!paragraphs.length) {
                 // Return empty lines matching requested rows
                 for (let r = 0; r < rows; r++) { textLines.push(''); brailleLines.push(''); }
-                return { textLines, brailleLines, warnings, rowsNeeded: 0, rowsNeededIsExact: true };
+                return { textLines, brailleLines, warnings, notes, rowsNeeded: 0, rowsNeededIsExact: true };
             }
 
             // Wrap one paragraph into rows of at most `cols` braille cells.
             // Returns { rows: [{text, braille}], truncated } or { error: true }
             // after pushing a warning (word that cannot be divided per BANA).
             // maxRows bounds the translation work for pathological inputs.
-            async function wrapParagraph(paragraph, maxRows) {
+            async function wrapParagraphLegacy(paragraph, maxRows) {
                 const out = [];
                 const words = paragraph.split(' ');
                 let currentText = '';
@@ -7984,14 +8009,19 @@
                     else if (overflowLine === null) overflowLine = p + 1;
                     continue;
                 }
-                const wrapped = await wrapParagraph(paragraph, maxTrackedRows - rowsNeeded);
+                const remainingRows = maxTrackedRows - rowsNeeded;
+                const wrapped = await layoutParagraph(paragraph, cols, translateText, remainingRows)
+                    ?? await wrapParagraphLegacy(paragraph, remainingRows);
                 if (wrapped.error) {
                     return { error: true, warnings };
                 }
                 for (const row of wrapped.rows) {
                     rowsNeeded++;
-                    if (rowsNeeded <= rows) { textLines.push(row.text); brailleLines.push(row.braille); }
-                    else if (overflowLine === null) overflowLine = p + 1;
+                    if (rowsNeeded <= rows) {
+                        textLines.push(row.text);
+                        brailleLines.push(row.braille);
+                        for (const note of row.notes || []) if (!notes.includes(note)) notes.push(note);
+                    } else if (overflowLine === null) overflowLine = p + 1;
                 }
                 if (wrapped.truncated) {
                     rowsNeededIsExact = false;
@@ -8017,7 +8047,7 @@
                 textLines.length = rows; brailleLines.length = rows;
             }
 
-            return { textLines, brailleLines, warnings, rowsNeeded, rowsNeededIsExact };
+            return { textLines, brailleLines, warnings, notes, rowsNeeded, rowsNeededIsExact };
         }
 
         function updatePlacementUI() {
@@ -10792,6 +10822,7 @@
 
             // Translate text to braille only for positive plates
             let translatedLines = [];
+            let autoWrapNotes = [];
             let perLineLanguageTables = [];
             let translationErrors = [];
             if ((plateType === 'positive' || doubleSidedOn) && useBrailleField) {
@@ -10872,6 +10903,7 @@
                                 return false;
                             }
                             translatedLines = wrap.brailleLines;
+                            autoWrapNotes = wrap.notes || [];
                             // Provide per-line language tables (single table for all lines in auto mode)
                             perLineLanguageTables = new Array(rows).fill(tableName);
                             // Update originalLines to reflect the per-line source segments
@@ -10995,7 +11027,7 @@
                 // left it, so the cells are on screen without a second press,
                 // and its live region says so (his choice, D-U4).
                 if (translatedLines.some(line => line && line.trim())) {
-                    showTranslationInBrailleField(translatedLines);
+                    showTranslationInBrailleField(translatedLines, [], autoWrapNotes);
                 }
             } else {
                 // Counter plates don't need text - just pass empty lines
@@ -11009,6 +11041,7 @@
             // still hard row breaks - so both sides of the card wrap by one set of
             // rules. Every failure blocks generation: wrong braille must never emboss.
             let backBrailleLines = null;
+            let backWrapNotes = [];
             // The back's per-line tables travel only when they carry information:
             // Manual placement for the back (D-11). Auto placement and the back
             // braille field use the master table, as they always have, and send
@@ -11122,6 +11155,7 @@
                     // banaAutoWrap always returns exactly `rows` lines, so the wire shape
                     // (back_lines padded to grid_rows) is unchanged.
                     backBrailleLines = backWrap.brailleLines;
+                    backWrapNotes = backWrap.notes || [];
                 }
                 log.debug('Back lines translated:', backBrailleLines);
                 }
@@ -11129,7 +11163,7 @@
                 // (2026-09-28); a back field that already had content was the
                 // source and shows itself.
                 if (backBrailleLines && !isBackBrailleFieldActive() && backBrailleLines.some(line => line && line.trim())) {
-                    showTranslationInBackBrailleField(backBrailleLines);
+                    showTranslationInBackBrailleField(backBrailleLines, [], backWrapNotes);
                 }
             }
             const settings = {
