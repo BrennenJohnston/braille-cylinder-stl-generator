@@ -6,3 +6,8 @@
 # ending conversion would change those bytes, so a fresh Windows clone would
 # fail the check for no real reason. Never normalize this folder.
 OpenSCAD/** -text
+
+# The vendored liblouis 3.39.0 engine and tables are byte-provenance-tracked:
+# static/vendor/liblouis-3.39.0/README.txt and tables.json record a SHA-256 per
+# file and tests/test_vendored_liblouis.py checks them. Never normalize them.
+static/vendor/liblouis-3.39.0/** -text
