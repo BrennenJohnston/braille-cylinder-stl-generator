@@ -12240,6 +12240,8 @@
             });
         }
 
+        const LIBLOUIS_WORKER_URL = '/static/liblouis-module-worker.js';
+
         window.addEventListener('load', async () => {
             try {
                 // Initialize liblouis web worker
@@ -12247,7 +12249,7 @@
 
                 // Test if worker file is accessible first
                 try {
-                    const workerResponse = await fetch('/static/liblouis-worker.js');
+                    const workerResponse = await fetch(LIBLOUIS_WORKER_URL);
                     if (!workerResponse.ok) {
                         throw new Error(`Worker file not accessible: ${workerResponse.status}`);
                     }
@@ -12257,7 +12259,9 @@
                     throw new Error('Cannot access worker file: ' + fetchError.message);
                 }
 
-                liblouisWorker = new Worker('/static/liblouis-worker.js');
+                // A module worker: it imports static/liblouis-engine.js, which runs
+                // liblouis 3.39.0 as WebAssembly (the engine round, 2026-10-09).
+                liblouisWorker = new Worker(LIBLOUIS_WORKER_URL, { type: 'module' });
 
                 // Handle worker messages
                 liblouisWorker.onmessage = function(e) {
