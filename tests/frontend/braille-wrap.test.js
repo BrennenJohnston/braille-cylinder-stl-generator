@@ -6,9 +6,10 @@
  *
  * The translator is a table of the app's real liblouis worker output
  * (en-ueb-g2.ctb, capitals kept), captured 2026-10-09 through
- * /static/liblouis-worker.js on the vendored 3.2.0 engine. It throws on any
- * text it does not hold, so a test cannot pass on a translation nobody
- * checked.
+ * /static/liblouis-worker.js on the vendored 3.2.0 engine and kept in
+ * fixtures/ueb-g2-captured-3.2.0.json, which liblouis-engine.test.js also
+ * checks against the 3.39.0 engine. It throws on any text it does not hold,
+ * so a test cannot pass on a translation nobody checked.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -21,53 +22,9 @@ import {
   packWords,
   wordKind,
 } from '../../static/braille-wrap.js';
+import captured from './fixtures/ueb-g2-captured-3.2.0.json';
 
-const UEB_G2 = {
-  'ROOM ROOM ROOM ROOM': '⠠⠠⠠⠗⠕⠕⠍ ⠗⠕⠕⠍ ⠗⠕⠕⠍ ⠗⠕⠕⠍⠠⠄',
-  'Hello world': '⠠⠓⠑⠇⠇⠕ ⠸⠺',
-  'first.last@example.com': '⠋⠊⠗⠌⠲⠇⠁⠌⠈⠁⠑⠭⠁⠍⠏⠇⠑⠲⠉⠕⠍',
-  'first.': '⠋⠌⠲',
-  'first.last@': '⠋⠊⠗⠌⠲⠇⠁⠌⠈⠁',
-  'first.last@example.': '⠋⠊⠗⠌⠲⠇⠁⠌⠈⠁⠑⠭⠁⠍⠏⠇⠑⠲',
-  'last@example.com': '⠇⠁⠌⠈⠁⠑⠭⠁⠍⠏⠇⠑⠲⠉⠕⠍',
-  'example.com': '⠑⠭⠁⠍⠏⠇⠑⠲⠉⠕⠍',
-  com: '⠉⠕⠍',
-  'See you at first.last@example.com': '⠠⠎⠑⠑ ⠽ ⠁⠞ ⠋⠊⠗⠌⠲⠇⠁⠌⠈⠁⠑⠭⠁⠍⠏⠇⠑⠲⠉⠕⠍',
-  '206.555.0147': '⠼⠃⠚⠋⠲⠑⠑⠑⠲⠚⠁⠙⠛',
-  '206.': '⠼⠃⠚⠋⠲',
-  '206.555.': '⠼⠃⠚⠋⠲⠑⠑⠑⠲',
-  '555.0147': '⠼⠑⠑⠑⠲⠚⠁⠙⠛',
-  '0147': '⠼⠚⠁⠙⠛',
-  'Call 206.555.0147 today': '⠠⠉⠁⠇⠇ ⠼⠃⠚⠋⠲⠑⠑⠑⠲⠚⠁⠙⠛ ⠞⠙',
-  '1,000,000,000': '⠼⠁⠂⠚⠚⠚⠂⠚⠚⠚⠂⠚⠚⠚',
-  '1,': '⠼⠁⠂',
-  '1,000,': '⠼⠁⠂⠚⠚⠚⠂',
-  '1,000,000,': '⠼⠁⠂⠚⠚⠚⠂⠚⠚⠚⠂',
-  '000,000,000': '⠼⠚⠚⠚⠂⠚⠚⠚⠂⠚⠚⠚',
-  '000,000': '⠼⠚⠚⠚⠂⠚⠚⠚',
-  '000': '⠼⠚⠚⠚',
-  'self-addressed': '⠎⠑⠇⠋⠤⠁⠙⠙⠗⠑⠎⠎⠫',
-  'self-': '⠎⠑⠇⠋⠤',
-  addressed: '⠁⠙⠙⠗⠑⠎⠎⠫',
-  '10/31/2026': '⠼⠁⠚⠸⠌⠼⠉⠁⠸⠌⠼⠃⠚⠃⠋',
-  '10/': '⠼⠁⠚⠸⠌',
-  '10/31/': '⠼⠁⠚⠸⠌⠼⠉⠁⠸⠌',
-  '31/2026': '⠼⠉⠁⠸⠌⠼⠃⠚⠃⠋',
-  '2026': '⠼⠃⠚⠃⠋',
-  'schoolchildren/teachers/parents': '⠎⠡⠕⠕⠇⠡⠊⠇⠙⠗⠢⠸⠌⠞⠂⠡⠻⠎⠸⠌⠏⠜⠢⠞⠎',
-  'schoolchildren/': '⠎⠡⠕⠕⠇⠡⠊⠇⠙⠗⠢⠸⠌',
-  'schoolchildren/teachers/': '⠎⠡⠕⠕⠇⠡⠊⠇⠙⠗⠢⠸⠌⠞⠂⠡⠻⠎⠸⠌',
-  'teachers/parents': '⠞⠂⠡⠻⠎⠸⠌⠏⠜⠢⠞⠎',
-  parents: '⠏⠜⠢⠞⠎',
-  'l.schimmelfennig@usace.army': '⠇⠲⠎⠡⠊⠍⠍⠑⠇⠋⠢⠝⠊⠛⠈⠁⠥⠎⠁⠉⠑⠲⠜⠍⠽',
-  'l.': '⠰⠇⠲',
-  'l.schimmelfennig@': '⠇⠲⠎⠡⠊⠍⠍⠑⠇⠋⠢⠝⠊⠛⠈⠁',
-  'l.schimmelfennig@usace.': '⠇⠲⠎⠡⠊⠍⠍⠑⠇⠋⠢⠝⠊⠛⠈⠁⠥⠎⠁⠉⠑⠲',
-  'schimmelfennig@usace.army': '⠎⠡⠊⠍⠍⠑⠇⠋⠢⠝⠊⠛⠈⠁⠥⠎⠁⠉⠑⠲⠜⠍⠽',
-  'usace.army': '⠥⠎⠁⠉⠑⠲⠜⠍⠽',
-  army: '⠜⠍⠽',
-  bcdfghjklmnpqrstvwxzbcdfghjklm: '⠃⠉⠙⠋⠣⠚⠅⠇⠍⠝⠏⠟⠗⠌⠧⠺⠭⠵⠃⠉⠙⠋⠣⠚⠅⠇⠍',
-};
+const UEB_G2 = captured;
 
 /** A translator answering only from a table. */
 const tableTranslator = (table) => async (text) => {
