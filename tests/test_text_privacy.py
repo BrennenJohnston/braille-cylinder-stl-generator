@@ -25,7 +25,7 @@ def test_no_text_or_braille_input_is_persisted():
 
 def test_six_key_entry_is_never_persisted():
     # An input method for one visit (Brennen, 2026-10-09): off on every load.
-    assert re.findall(r"braille_prefs_\w*six_key", HTML) == []
+    assert re.findall(r'braille_prefs_\w*six_key', HTML) == []
     assert 'id="braille_six_key"' in HTML
 
 
