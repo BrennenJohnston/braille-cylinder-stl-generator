@@ -653,6 +653,52 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      #b0b8c4 / #7fd67f = 5.72 / 5.15 / 9.8:1 on --bg-input), opacity 1,
      italic for text boxes, upright for textarea[lang="und-Brai"].
 
+6j. Transcriber tools (2026-10-09, ported from openscad-assistive-forge
+   5.2.0 after a braille transcriber's review; plan and decisions in
+   Research/.../New Developement_2026_10_09/01_TRANSCRIBER_TOOLS_PLAN.md).
+   Both Braille (Unicode) fields, front and back, one set of helpers
+   (wireBrailleEntryTools(side)):
+   - SIX-KEY ENTRY: checkbox #braille_six_key / #back_braille_six_key
+     before the field; static/braille-six-key.js (KeyboardEvent.code, chord
+     emitted on the last release, Space = U+2800). An INPUT METHOD, not a
+     setting: never persisted (test_text_privacy pins no
+     braille_prefs_*six_key), off on every load, off after Reset, and its
+     input/change events stop at the box so the form delegate never
+     invalidates a built STL. Each cell announced once as its dots from
+     the field's live region (the field's "edited" sentence is skipped
+     while sixKeyInserting).
+   - CONVERT BRAILLE ASCII: #convert-braille-ascii-btn /
+     #back-convert-braille-ascii-btn after Translate to Text;
+     static/braille-ascii.js, the en-us-brf.dis map. A SPACE STAYS U+0020
+     (invariant 4), never U+2800; the lowercase NABCC forms are refused.
+   - REPEAT RULE: announceInBrailleRegion() empties a field region that
+     holds the same words and rewrites them after 100 ms (NVDA drops an
+     identical rewrite). EXPOSED_STATUS_NODES stays 7 - no new region.
+   - WHOLE-LINE AUTO PLACEMENT: banaAutoWrap lays each typed line out with
+     layoutParagraph() (static/braille-wrap.js): translated once, cut only
+     between braille words, an over-long address/number divided in its own
+     braille with dot 5 (U+2810) ending each row but the last, ONE number
+     sign across a divided number (UEB 6.10, Brennen's decision), the sign
+     dropped only as BANA's last resort. The engine has no inputPos, so a
+     division point is accepted when the head alone is a prefix OR the
+     tail alone is a suffix of the word's braille (both must agree). What
+     it cannot place falls back per line to wrapParagraphLegacy (the old
+     per-row algorithm, unchanged). The dot-5 note (S-DC1) rides in
+     wrap.notes, NEVER in warnings: the S0 "extra content was not placed"
+     gate and #error-text are untouched. A pristine field keeps its notes
+     on its status line (brailleFieldMirrorNotes).
+   - Strings S-SK1..S-SK6, S-BA1..S-BA5, S-BF3, S-BF4, S-DC1, S-NS1 and
+     S-H15 signed by Brennen 2026-10-09 as drafted; reword only with his
+     sign-off. He also kept both refinements (head-or-tail point test, the
+     per-line fallback instead of an error) and raised every .btn-translate
+     to 44 px on desktop (all 2026-10-09).
+   - RULE 16 EXCEPTION (his decision 2026-10-09): these are input methods
+     for a browser field, not layout, and the Customizer's Line_N fields
+     already take Unicode braille - the OpenSCAD repo gets NO change. Do
+     not "fix" the gap.
+   - Follow-up recorded, not built: the liblouis 3.39.0 engine upgrade (a
+     separate round) would give inputPos and retire the prefix/suffix cut.
+
 ## Settings changes — order of operations
 7. settings.schema.json is the single source of truth. When adding or changing
    any parameter/default: update settings.schema.json FIRST, then
@@ -698,11 +744,23 @@ translation, Three.js preview. Working branch: develop — never commit to main.
     Version 1 gears and fused-roller vent, the S-SO1 Seam Offset wording and a
     quick start without jar examples) its Customizer uses
     this app's section names (Card Sides, Gears, Cylinders to Generate, Row
-    Indicator Style, Card Thickness), carries no BETA or sign-off labels, and
+    Indicator Style, Card Thickness; the last three as "Expert Mode - " tabs
+    since 2026-10-07, see 16), carries no BETA or sign-off labels, and
     renders both cylinders by default like 6f; its parameter names never
     changed. Its CI runs only on PRs to its main, so its full local suite is
     the real gate - and tests/cross_platform_validation.py runs only in that
     CI (pytest does not collect it), so run it by hand before a PR.
+16. LAYOUT PARITY WITH THE OPENSCAD CUSTOMIZER (Brennen, 2026-10-07). The
+    OpenSCAD repo's Customizer mirrors this app's UI top to bottom: the same
+    sections in the same order under the same names, and everything this app
+    keeps under Expert Mode in an "Expert Mode - <submenu>" tab; its
+    tests/test_customizer_layout.py pins that order. So a change here that
+    adds, moves, renames or reorders a UI control or section is not finished
+    until the OpenSCAD repo follows in the same round: its four model files,
+    that test, and its generated MakerWorld fixed-gear file. When you finish
+    such a change, say that the OpenSCAD repo needs the matching change. The
+    rule was missing until a MakerWorld test showed the interpoint offsets
+    beside the braille text instead of in Expert Mode.
 
 ## Spec map — load exactly ONE file, only when the task matches
 Specs live in docs/specifications/.

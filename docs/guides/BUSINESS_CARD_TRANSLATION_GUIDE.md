@@ -118,7 +118,7 @@ The dot-5 line continuation indicator is preferred; omitting it is BANA's "last 
   hogwarts.edu
   ```
 
-  The dot-5 continuation indicator is a braille typographic detail the translator emits; you do not type it.
+  Auto Placement adds the dot-5 line continuation indicator when it divides an address for you. A split you make in Manual Placement gets none; if you want it, add ⠐ (dot 5) at the end of the first row in the Braille (Unicode) field, for example with six-key entry (k on its own).
 
 ### Web addresses
 
