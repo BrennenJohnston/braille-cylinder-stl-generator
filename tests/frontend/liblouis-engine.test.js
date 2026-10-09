@@ -92,3 +92,53 @@ describe('what 3.39.0 translates differently (the newer engine is the reference)
     expect(translate(mod, 'en-ueb-g2.ctb', 'A & B').braille).toBe('⠠⠁ ⠈⠯ ⠰⠠⠃');
   });
 });
+
+describe('the vendored build against native liblouis 3.39.0 (decision E2)', () => {
+  const REFERENCE = new URL('../fixtures/liblouis-reference/', import.meta.url);
+  const read = (name) => JSON.parse(readFileSync(new URL(name, REFERENCE), 'utf8'));
+  const asWire = (braille) => braille.split(BLANK).join(' ');
+
+  it('gives native 3.39.0 cells for the whole English corpus, both grades', () => {
+    // corpus.json and english-corpus-3.39.0.json are the forge's (4355e8a),
+    // the second written by the native release engine.
+    const corpus = read('corpus.json');
+    const native = read('english-corpus-3.39.0.json');
+    const differences = [];
+    for (const [table, rows] of Object.entries(native.tables)) {
+      const files = new Set([...index.closures['unicode.dis'], ...index.closures[table]]);
+      installTables(mod, [...files].map((name) => ({ name, bytes: readFileSync(new URL(`tables/${name}`, VENDOR)) })));
+      for (const { id, text } of corpus) {
+        // A row of several lines is translated line by line, as the native
+        // reference was (one input line, one output line).
+        const now = text
+          .split('\n')
+          .map((line) => translate(mod, table, line).braille)
+          .join('\n');
+        if (now !== asWire(rows[id])) differences.push(`${table} ${id}: ${rows[id]} -> ${now}`);
+      }
+    }
+    expect(differences).toEqual([]);
+    expect(corpus).toHaveLength(145);
+  });
+
+  it('gives native 3.39.0 cells for three samples in every translation table', () => {
+    const reference = read('table-samples-3.39.0.json');
+    installTables(
+      mod,
+      Object.keys(index.files).map((name) => ({ name, bytes: readFileSync(new URL(`tables/${name}`, VENDOR)) }))
+    );
+    const differences = [];
+    for (const [table, expected] of Object.entries(reference.tables)) {
+      const now = reference.samples.map((sample) => {
+        try {
+          return translate(mod, table, sample).braille;
+        } catch (error) {
+          return `ERROR ${error.message}`;
+        }
+      });
+      if (JSON.stringify(now) !== JSON.stringify(expected)) differences.push(`${table}: ${JSON.stringify(now)}`);
+    }
+    expect(differences).toEqual([]);
+    expect(Object.keys(reference.tables)).toHaveLength(323);
+  }, 300_000);
+});
