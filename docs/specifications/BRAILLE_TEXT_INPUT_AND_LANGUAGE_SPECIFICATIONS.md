@@ -997,12 +997,12 @@ Since 2026-10-09 (transcriber tools, ported from the OpenSCAD Assistive Forge's 
 
 ### Braille ASCII
 
-**Convert braille ASCII** converts the field's content in place from braille ASCII (the North American code that BRF files and braille keyboard programs write) to Unicode cells, with the 64-character map of liblouis's `en-us-brf.dis` (`static/braille-ascii.js`). Letters may be in either case, Unicode braille already in the field passes through, line breaks stay, and a space stays the ASCII space the request carries between words (`.clinerules/project-facts.md` invariant 4). The lowercase NABCC forms `` ` { | } ~ `` are refused.
+**Convert braille ASCII** converts the field's content in place from braille ASCII (the North American code that BRF files and braille keyboard programs write) to Unicode cells, with the 64-character map of liblouis's `en-us-brf.dis` (`static/braille-ascii.js`). Letters may be in either case, Unicode braille already in the field passes through, line breaks stay, and a space stays the ASCII space the request carries between words (`.clinerules/project-facts.md` invariant 4). The lowercase NABCC forms `` ` { | } ~ ``, which some BRF files and braille keyboard programs write, are read as the cells of `@ [ \ ] ^`, just as lowercase letters are read as capitals (Brennen, 2026-10-09), so every printable ASCII character converts and only other characters are refused.
 
 | Result | Field | Status line and announcement |
 |--------|-------|------------------------------|
 | Converted | Rewritten, then its `input` event fires (hand-edited, validated, Generate reset) | S-BA2 "Converted 1 line of braille ASCII to braille cells." / S-BA3 "Converted {n} lines of braille ASCII to braille cells." |
-| A character that is neither braille ASCII nor braille | Untouched | S-BA4 `Line {i} contains "{char}", which is not a braille ASCII character.` |
+| A character that is neither printable ASCII nor braille (for example `é`, or a tab) | Untouched | S-BA4 `Line {i} contains "{char}", which is not a braille ASCII character.` |
 | Empty field | Untouched | S-BA5 "Paste braille ASCII in the Braille (Unicode) field first, then press Convert braille ASCII." |
 
 When the converted braille breaks one of the field's own rules (a row longer than the plate), the validation message is the one said. Focus stays on the button.
@@ -1898,8 +1898,9 @@ None required. All implementations match the specification exactly.
 
 ---
 
-*Document Version: 1.12*
-*Last Updated: 2026-10-09 - Brennen signed every transcriber-tool string as drafted (Section 6.3, S-DC1 in Section 9) and kept both refinements of the division-point search: a point found from either side, and the per-line fallback when none is usable.*
+*Document Version: 1.13*
+*Last Updated: 2026-10-09 - Convert braille ASCII reads the lowercase NABCC forms `` ` { | } ~ `` as `@ [ \ ] ^` (Brennen's decision); only characters outside printable ASCII and braille are refused (Section 6.3).*
+*Previous: 1.12, 2026-10-09 - Brennen signed every transcriber-tool string as drafted (Section 6.3, S-DC1 in Section 9) and kept both refinements of the division-point search: a point found from either side, and the per-line fallback when none is usable.*
 *Previous: 1.11, 2026-10-09 - Transcriber tools, ported from the OpenSCAD Assistive Forge's 5.2.0 build. Section 6.3 gains Six-Key Entry and Braille ASCII (both braille fields; strings DRAFT), and Section 9 is rewritten: each typed line is translated whole and cut only between braille words (a capital passage keeps one indicator), a long address or number divides with the dot-5 line continuation sign and one number sign (UEB 6.10, Brennen's decision), and the per-row layout remains as the fallback.*
 *Previous: 1.10, 2026-09-30 - Documentation review after the approved build: Section 1 shows the main form as it is (Row Indicator Style and Card Thickness are Expert Mode submenus since 2026-09-24, Cylinders to Generate since 2026-09-21; the Back of Card section sits between the boxes); the `back_lines` section names the Card sides choice and the `#a11y-status` announcement; the storage table describes `braille_prefs_plate_type` (Cylinders to Generate) and `braille_prefs_double_sided_enabled` (the Card sides choice).*
 *Previous: 1.9, 2026-09-28 - Three of Brennen's user-testing findings. (1) Privacy: no text or braille input is persisted any more - `braille_prefs_back_text` retired and scrubbed (Section 11's rule). (2) Generate fills the Braille (Unicode) field with the translation it embosses, front and back, announced from the field's live region (D-U4); a pristine field is now also emptied when an effective translation setting changes (Section 6.3; S-BF1 / S-BF2 signed). (3) Placeholders: the text box carries the sample S-P3 "Type the text you want in braille here.", the back box its shortened sample, and the braille boxes their exact translations S-P4 / S-P5, styled with the new `--text-placeholder` token (Section 3). All five strings signed by Brennen 2026-09-28.*

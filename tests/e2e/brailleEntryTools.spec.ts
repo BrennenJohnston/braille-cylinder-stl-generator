@@ -238,15 +238,22 @@ test.describe('Convert braille ASCII on the Braille (Unicode) field', () => {
       .toHaveText('Converted 2 lines of braille ASCII to braille cells.');
   });
 
+  test('reads the lowercase NABCC forms ` { | } ~ as @ [ \\ ] ^', async ({ page }) => {
+    await openApp(page);
+    await page.locator('#braille-unicode').fill('`{|}~');
+    await page.locator('#convert-braille-ascii-btn').click();
+    await expect(page.locator('#braille-unicode')).toHaveValue('⠈⠪⠳⠻⠘');
+  });
+
   test('refuses a character that is not braille ASCII and leaves the field as it was', async ({ page }) => {
     await openApp(page);
-    await page.locator('#braille-unicode').fill('ab{');
+    await page.locator('#braille-unicode').fill('abé');
     await page.locator('#convert-braille-ascii-btn').click();
-    await expect(page.locator('#braille-unicode')).toHaveValue('ab{');
+    await expect(page.locator('#braille-unicode')).toHaveValue('abé');
     await expect(page.locator('#braille-unicode-status'))
-      .toHaveText('Line 1 contains "{", which is not a braille ASCII character.');
+      .toHaveText('Line 1 contains "é", which is not a braille ASCII character.');
     await expect(page.locator('#braille-unicode-live'))
-      .toHaveText('Line 1 contains "{", which is not a braille ASCII character.');
+      .toHaveText('Line 1 contains "é", which is not a braille ASCII character.');
   });
 
   test('on an empty field, says what to paste first', async ({ page }) => {
@@ -305,11 +312,11 @@ test.describe('The same tools on the Back of Card braille field', () => {
   test('a refusal on the back leaves the back field as it was', async ({ page }) => {
     await openApp(page);
     await page.locator('#card_sides_double').check();
-    await page.locator('#back-braille-unicode').fill('ab~');
+    await page.locator('#back-braille-unicode').fill('ab€');
     await page.locator('#back-convert-braille-ascii-btn').click();
-    await expect(page.locator('#back-braille-unicode')).toHaveValue('ab~');
+    await expect(page.locator('#back-braille-unicode')).toHaveValue('ab€');
     await expect(page.locator('#back-braille-unicode-status'))
-      .toHaveText('Line 1 contains "~", which is not a braille ASCII character.');
+      .toHaveText('Line 1 contains "€", which is not a braille ASCII character.');
   });
 
   test('Reset turns the back box off too', async ({ page }) => {

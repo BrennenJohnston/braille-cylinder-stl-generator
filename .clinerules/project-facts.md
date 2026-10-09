@@ -670,7 +670,9 @@ translation, Three.js preview. Working branch: develop — never commit to main.
    - CONVERT BRAILLE ASCII: #convert-braille-ascii-btn /
      #back-convert-braille-ascii-btn after Translate to Text;
      static/braille-ascii.js, the en-us-brf.dis map. A SPACE STAYS U+0020
-     (invariant 4), never U+2800; the lowercase NABCC forms are refused.
+     (invariant 4), never U+2800; the lowercase NABCC forms ` { | } ~ read
+     as @ [ \ ] ^ (his decision 2026-10-09), so only characters outside
+     printable ASCII (and braille) are refused.
    - REPEAT RULE: announceInBrailleRegion() empties a field region that
      holds the same words and rewrites them after 100 ms (NVDA drops an
      identical rewrite). EXPOSED_STATUS_NODES stays 7 - no new region.

@@ -3,9 +3,11 @@
  * braille keyboard programs use, converted to Unicode braille cells. No DOM.
  *
  * Ported from openscad-assistive-forge src/js/braille-ascii.js (release
- * 5.2.0, 4355e8a), the same author's code, with one change: a space stays
+ * 5.2.0, 4355e8a), the same author's code, with two changes: a space stays
  * the ASCII space, the word separator the braille field and the request
- * carry (.clinerules/project-facts.md invariant 4), not U+2800.
+ * carry (.clinerules/project-facts.md invariant 4), not U+2800; and the
+ * lowercase NABCC forms are read as their uppercase cells (Brennen,
+ * 2026-10-09), where the forge refuses them.
  */
 
 /**
@@ -18,12 +20,19 @@ export const BRAILLE_ASCII =
 
 const CELL_INDEX = new Map([...BRAILLE_ASCII].map((ch, index) => [ch, index]));
 
+/**
+ * Some BRF files and braille keyboard programs write five of the 64 in
+ * lowercase, 0x20 above their uppercase forms, the way letters are.
+ */
+const NABCC_LOWERCASE = new Map([['`', '@'], ['{', '['], ['|', '\\'], ['}', ']'], ['~', '^']]);
+
 const BRAILLE_FIRST = 0x2800;
 const BRAILLE_LAST = 0x28ff;
 
 /**
- * Convert braille ASCII to Unicode braille. Letters may be in either case;
- * Unicode braille cells and spaces pass through and line breaks stay. When
+ * Convert braille ASCII to Unicode braille. Letters, and ` { | } ~ for
+ * @ [ \ ] ^, may be in either case; Unicode braille cells and spaces pass
+ * through and line breaks stay. When
  * any other character is found, nothing is converted.
  * @param {string} text
  * @returns {{ text: string, invalid: { line: number, char: string } | null }}
@@ -41,7 +50,8 @@ export function asciiToCells(text) {
         cells += ch;
         continue;
       }
-      const index = CELL_INDEX.get(/[a-z]/.test(ch) ? ch.toUpperCase() : ch);
+      const upper = /[a-z]/.test(ch) ? ch.toUpperCase() : (NABCC_LOWERCASE.get(ch) ?? ch);
+      const index = CELL_INDEX.get(upper);
       if (index === undefined) {
         return { text, invalid: { line: i + 1, char: ch } };
       }

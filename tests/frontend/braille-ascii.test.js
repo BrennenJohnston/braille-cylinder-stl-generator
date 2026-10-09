@@ -90,15 +90,27 @@ describe('asciiToCells', () => {
   });
 
   it('converts nothing when a character is not braille ASCII, and says where', () => {
-    expect(asciiToCells('ab\nc{d')).toEqual({
-      text: 'ab\nc{d',
-      invalid: { line: 2, char: '{' },
+    expect(asciiToCells('ab\ncéd')).toEqual({
+      text: 'ab\ncéd',
+      invalid: { line: 2, char: 'é' },
     });
   });
 
-  it('refuses the lowercase forms of the NABCC characters', () => {
-    for (const ch of ['`', '{', '|', '}', '~']) {
-      expect(asciiToCells(ch).invalid).toEqual({ line: 1, char: ch });
+  it('reads the lowercase NABCC forms as the cells of @ [ \\ ] ^', () => {
+    // Some BRF files and braille keyboard programs write these five in
+    // lowercase, 0x20 above their uppercase forms, as letters are.
+    const pairs = { '`': '@', '{': '[', '|': '\\', '}': ']', '~': '^' };
+    for (const [lower, upper] of Object.entries(pairs)) {
+      expect(asciiToCells(lower)).toEqual(asciiToCells(upper));
+      expect(asciiToCells(lower).invalid).toBeNull();
     }
+    expect(asciiToCells('{').text).toBe(cellOf('246'));
+  });
+
+  it('accepts every printable ASCII character, so only other characters are refused', () => {
+    for (let code = 0x20; code <= 0x7e; code++) {
+      expect(asciiToCells(String.fromCharCode(code)).invalid).toBeNull();
+    }
+    expect(asciiToCells('\t').invalid).toEqual({ line: 1, char: '\t' });
   });
 });
