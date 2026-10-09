@@ -1007,7 +1007,7 @@ Since 2026-10-09 (transcriber tools, ported from the OpenSCAD Assistive Forge's 
 
 When the converted braille breaks one of the field's own rules (a row longer than the plate), the validation message is the one said. Focus stays on the button.
 
-Both tools sit on the Back of Card field too, mirrored (`back_braille_six_key`, `back-convert-braille-ascii-btn`), each field with its own six-key state, status line and live region. The non-braille validation error and the Translate to Text refusal end with S-BF3, naming both routes: "Press Translate to Braille to convert text, or Convert braille ASCII if you pasted braille typed as keyboard characters." The help paragraph under each field names the two tools (S-BF4). Strings S-SK1 to S-SK4, S-BA1 to S-BA5, S-BF3 and S-BF4 are DRAFT until Brennen signs them.
+Both tools sit on the Back of Card field too, mirrored (`back_braille_six_key`, `back-convert-braille-ascii-btn`), each field with its own six-key state, status line and live region. The non-braille validation error and the Translate to Text refusal end with S-BF3, naming both routes: "Press Translate to Braille to convert text, or Convert braille ASCII if you pasted braille typed as keyboard characters." The help paragraph under each field names the two tools (S-BF4). Strings S-SK1 to S-SK6 (S-SK5 / S-SK6 are the "dots …" and "space" words), S-BA1 to S-BA5, S-BF3 and S-BF4 are DRAFT until Brennen signs them.
 
 ### Validation Before Generation
 
