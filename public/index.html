@@ -2732,7 +2732,9 @@
             font-weight: 600;
             color: var(--text-primary);
             cursor: pointer;
-            min-height: 32px;
+            /* 44 px on every viewport (Brennen, 2026-10-09; it was 32 px on
+               desktop and 44 px only below 768 px). */
+            min-height: 44px;
             transition: background 0.2s, border-color 0.2s;
         }
 
@@ -2744,12 +2746,6 @@
         .btn-translate:disabled {
             opacity: 0.6;
             cursor: progress;
-        }
-
-        /* A new control meets the project's 44 px floor on desktop too; the
-           older translate buttons beside it reach 44 px only on mobile. */
-        .btn-convert-ascii {
-            min-height: 44px;
         }
 
         @media (max-width: 768px) {
@@ -3640,7 +3636,7 @@
                                   <!-- Six-key entry (transcriber tools, 2026-10-09): an input method for this
                                        field, not a design setting - never saved, off on every load, turned off
                                        by Reset, and its events stop here so toggling it never invalidates a
-                                       built STL. S-SK1 / S-SK2 are DRAFT until Brennen signs them. The help is
+                                       built STL. S-SK1 / S-SK2 signed by Brennen 2026-10-09. The help is
                                        visible and not wired as a description (37 words, over the SOP 6.8
                                        ceiling). -->
                                   <label class="radio-option ds-toggle-option" for="braille_six_key">
@@ -3663,8 +3659,8 @@
                                   <!-- Upward half of the two-way translation: braille here → text above -->
                                   <div class="translate-row">
                                       <button type="button" id="translate-to-text-btn" class="btn-translate">Translate to Text ↑</button>
-                                      <!-- S-BA1 DRAFT (transcriber tools, 2026-10-09). -->
-                                      <button type="button" id="convert-braille-ascii-btn" class="btn-translate btn-convert-ascii">Convert braille ASCII</button>
+                                      <!-- S-BA1, signed by Brennen 2026-10-09 (transcriber tools). -->
+                                      <button type="button" id="convert-braille-ascii-btn" class="btn-translate">Convert braille ASCII</button>
                                       <span id="braille-unicode-status" class="grade-note" style="margin: 0; font-size: 0.85em;"></span>
                                   </div>
                                   <!-- ADA SOP Step 6.8: the id sits on the FIRST SENTENCE, not the div. The rest of
@@ -3774,7 +3770,7 @@
                                            for lines. Wired by wireBackBrailleField(); validation, the
                                            status line and the sr-only live region all mirror the front's. -->
                                       <div class="braille-field" style="margin-top: 1em;">
-                                          <!-- The front field's six-key box, mirrored (same rules, DRAFT strings). -->
+                                          <!-- The front field's six-key box, mirrored (same rules, same signed strings). -->
                                           <label class="radio-option ds-toggle-option" for="back_braille_six_key">
                                               <input type="checkbox" id="back_braille_six_key">
                                               <span class="radio-text">Six-key entry</span>
@@ -3792,7 +3788,7 @@
                                           <!-- Upward half: braille here → back text above -->
                                           <div class="translate-row">
                                               <button type="button" id="back-translate-to-text-btn" class="btn-translate">Translate to Text ↑</button>
-                                              <button type="button" id="back-convert-braille-ascii-btn" class="btn-translate btn-convert-ascii">Convert braille ASCII</button>
+                                              <button type="button" id="back-convert-braille-ascii-btn" class="btn-translate">Convert braille ASCII</button>
                                               <span id="back-braille-unicode-status" class="grade-note" style="margin: 0; font-size: 0.85em;"></span>
                                           </div>
                                           <!-- Same sentence-split describedby rule as the front field
@@ -6624,8 +6620,9 @@
         const S_BF2_SETTING_CLEARED_ANNOUNCE = 'Braille field cleared because a translation setting changed. Press Translate to Braille to refresh it.';
 
         /* Transcriber tools (2026-10-09 plan): six-key entry and braille ASCII
-           conversion on both braille fields. Every string here is DRAFT until
-           Brennen signs it. A six-key cell is announced as describeCell() in
+           conversion on both braille fields. Every string here was signed by
+           Brennen 2026-10-09 as drafted; reword only with his sign-off. A
+           six-key cell is announced as describeCell() in
            static/braille-six-key.js words it (S-SK5 / S-SK6). */
         const S_SK3_SIX_KEY_ON = 'Six-key entry is on.';
         const S_SK4_SIX_KEY_OFF = 'Six-key entry is off.';
@@ -13034,7 +13031,7 @@
                         <p>Whenever the braille box has content, <strong>those exact cells are what get embossed</strong>. <strong>Generate STL</strong> also fills the box with the braille it embosses. Until you edit the box, it empties itself when you change the text or a translation setting; once you have edited it, clear it yourself to go back to translating the text above.</p>
 
                         <h4>Typing or Pasting Braille</h4>
-                        <!-- S-H15, DRAFT (transcriber tools, 2026-10-09): awaiting Brennen's sign-off. -->
+                        <!-- S-H15, signed by Brennen 2026-10-09 (transcriber tools). Reword only with his sign-off. -->
                         <p>Two more tools sit beside each braille box, for when you already know the braille you want:</p>
                         <ul>
                             <li><strong>Six-key entry</strong>, the checkbox above the box, lets you type braille as on a Perkins brailler: hold the keys of one cell together and let go. f, d and s are dots 1, 2 and 3; j, k and l are dots 4, 5 and 6; Space makes a blank cell. It is off each time the page opens.</li>
@@ -13095,9 +13092,9 @@
                         <p><strong>Why only one number sign?</strong> In Unified English Braille, a period (or comma) inside a number keeps "numeric mode" active, so the digits after it do not need another number sign (<code lang="und-Brai">⠼</code>). For example, <code>206.616.7678</code> translates to <code lang="und-Brai">⠼⠃⠚⠋⠲⠋⠁⠋⠲⠛⠋⠛⠓</code> — exactly 13 braille cells, which fits a default row. This is correct UEB, matching BANA's guidance above. The Computer shorthand in the translation preview reflects this: digits after each period stay digits (<code>2 0 6 . 6 1 6 . 7 6 7 8</code>).</p>
                         <p><strong>Why hyphens and parentheses give you three number signs.</strong> UEB numeric mode survives a period or comma, but a <strong>hyphen or parenthesis terminates it</strong>, so the digits after each one need a fresh number sign. <code>206-543-4779</code> therefore translates to <code lang="und-Brai">⠼⠃⠚⠋⠤⠼⠑⠙⠉⠤⠼⠙⠛⠛⠊</code> — 15 cells with three <code lang="und-Brai">⠼</code>, which will not fit a 13-cell row and wraps to a second line. That is <em>correct</em> UEB from liblouis, not a bug, and no setting in this app removes those signs. Retype the number in BANA's period form (<code>206.543.4779</code>) and it becomes 13 cells with one number sign. If you must keep the hyphens and still fit one row, translate first and then delete the extra cells by hand in the <strong>Braille (Unicode)</strong> field under the text inputs — that field is used exactly as you leave it.</p>
                         <p><strong>Some online translators repeat the number sign</strong> after each period as well. That output is non-standard and uses extra braille cells. If you need to match it, choose <strong>"Repeat the number sign after each period (non-standard)"</strong> under <strong>Number Signs</strong> in the <strong>Translation Options</strong> submenu of Expert Mode — but be aware the longer result may no longer fit on one row.</p>
-                        <!-- S-NS1, DRAFT (2026-10-09): rewritten for Brennen's decision that a divided
+                        <!-- S-NS1, signed by Brennen 2026-10-09: rewritten for his decision that a divided
                              number keeps one number sign (UEB 6.10); the braille is the measured output
-                             of tests/frontend/braille-wrap.test.js. Awaiting his sign-off. -->
+                             of tests/frontend/braille-wrap.test.js. Reword only with his sign-off. -->
                         <p><strong>Splitting a long number across two rows:</strong> when a number is too long for one row, Auto Placement divides it after a period or comma and ends the row with the line continuation sign (<code lang="und-Brai">⠐</code>, dot 5). The number keeps its one number sign, because numeric mode carries on across the division (UEB 6.10). For example, with 8 cells to a row, <code>206.555.0147</code> becomes <code lang="und-Brai">⠼⠃⠚⠋⠲⠐</code> then <code lang="und-Brai">⠑⠑⠑⠲⠚⠁⠙⠛</code>. A split you type yourself in Manual Placement is translated row by row, so the second row starts with a new number sign and the first row gets no dot 5.</p>
 
                         <h4>E-mail Addresses (BANA, verbatim)</h4>

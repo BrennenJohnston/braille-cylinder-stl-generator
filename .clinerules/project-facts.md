@@ -688,7 +688,10 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      gate and #error-text are untouched. A pristine field keeps its notes
      on its status line (brailleFieldMirrorNotes).
    - Strings S-SK1..S-SK6, S-BA1..S-BA5, S-BF3, S-BF4, S-DC1, S-NS1 and
-     S-H15 are DRAFT until Brennen signs them.
+     S-H15 signed by Brennen 2026-10-09 as drafted; reword only with his
+     sign-off. He also kept both refinements (head-or-tail point test, the
+     per-line fallback instead of an error) and raised every .btn-translate
+     to 44 px on desktop (all 2026-10-09).
    - RULE 16 EXCEPTION (his decision 2026-10-09): these are input methods
      for a browser field, not layout, and the Customizer's Line_N fields
      already take Unicode braille - the OpenSCAD repo gets NO change. Do

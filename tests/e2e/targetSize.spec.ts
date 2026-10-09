@@ -135,14 +135,19 @@ test.describe('numeric dial hit targets', () => {
   });
 });
 
-test.describe('transcriber tool hit targets', () => {
-  // The six-key box's target is its whole row (the label), as the forge's
-  // axe target-size finding required; the convert button is its own target.
-  // Measured at a desktop viewport, where the translate buttons beside the
-  // convert button are shorter.
-  const TARGETS = ['label[for="braille_six_key"]', '#convert-braille-ascii-btn'];
+test.describe('braille field hit targets', () => {
+  // The six-key boxes' target is their whole row (the label), as the forge's
+  // axe target-size finding required. Every translate and convert button is
+  // held to 44 px at desktop width too since 2026-10-09 (Brennen's decision;
+  // they were 32 px there). The back field's controls are measured while
+  // disabled: the fieldset dims them but they keep their size.
+  const TARGETS = [
+    'label[for="braille_six_key"]', 'label[for="back_braille_six_key"]',
+    '#translate-to-braille-btn', '#translate-to-text-btn', '#convert-braille-ascii-btn',
+    '#back-translate-to-braille-btn', '#back-translate-to-text-btn', '#back-convert-braille-ascii-btn',
+  ];
 
-  test('the six-key row and the convert button meet the 44 x 44 floor', async ({ page }) => {
+  test('the six-key rows and every translate and convert button meet the 44 x 44 floor', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto('/');
     await page.waitForLoadState('networkidle');

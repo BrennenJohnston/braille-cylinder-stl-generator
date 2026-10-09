@@ -2096,14 +2096,15 @@ BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md §6.3. Accessibility requireme
 - The checkbox is native, in the `.radio-option.ds-toggle-option` row the Slicer Seam
   Channel switch uses, so its whole label row is the 44 px target. Its help sits visibly
   under it and is not wired as a description (37 words, over the Step 6.8 ceiling).
-- The Convert button is a `.btn-translate` with no `aria-describedby`, plus
-  `.btn-convert-ascii` for a 44 px minimum height at desktop width too. The two translate
-  buttons beside it reach 44 px only below 768 px (32 px on desktop): reported, not
-  changed here.
+- The Convert button is a `.btn-translate` with no `aria-describedby`. Since 2026-10-09
+  every `.btn-translate` (the four Translate buttons and the two Convert buttons) has a
+  44 px minimum height at every width (Brennen's decision; the Translate buttons were 32 px
+  on desktop and reached 44 px only below 768 px).
 - The Convert button never disables itself, so focus stays on it; its outcome goes to the
   field's status line and live region like the Translate buttons'.
-- Pinned by `tests/e2e/brailleEntryTools.spec.ts` and the "transcriber tool hit targets"
-  test in `tests/e2e/targetSize.spec.ts`.
+- Pinned by `tests/e2e/brailleEntryTools.spec.ts` and the "braille field hit targets"
+  test in `tests/e2e/targetSize.spec.ts`, which measures all eight targets at desktop
+  width.
 
 ### 4.8 The Embosser Setup Menu Item: Three Either/Or Choices, a Disabled Section, and a Locked Radio Option
 
@@ -2717,7 +2718,7 @@ Total description words in one full read of the default page: **430 → 226**, m
 the live accessibility tree.
 
 Since 2026-10-09 the unwired remainder of `#braille-unicode-help`'s paragraph, and of the
-back field's, also names six-key entry and Convert braille ASCII (S-BF4, DRAFT). The kept
+back field's, also names six-key entry and Convert braille ASCII (S-BF4, signed 2026-10-09). The kept
 sentence is unchanged, so what is spoken on the field is unchanged.
 
 **A trap the probe alone will not show you.** `#braille-unicode` carries **two**
@@ -3435,6 +3436,7 @@ Low vision users benefit from enhanced depth perception:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.41 | 2026-10-09 | **Brennen's decisions on the transcriber tools.** Every transcriber-tool string signed as drafted. §4.7: all `.btn-translate` buttons are 44 px tall at every width (the Translate buttons were 32 px on desktop); the `.btn-convert-ascii` rule is gone. The target-size test now measures all eight braille-field targets. |
 | 1.40 | 2026-10-09 | **Transcriber tools on both braille fields** (ported from the OpenSCAD Assistive Forge's 5.2.0 build). §4.7: a Six-key entry checkbox before each field and a Convert braille ASCII button after Translate to Text; the checkbox's label row and the button are 44 px targets (the button's 32 px desktop neighbours reported, not changed). §4.10: a field region that already holds a message empties and rewrites it after 100 ms, so a repeated six-key cell is heard; still 7 status nodes. §4.13: the help paragraphs' unwired remainder names the two tools. Strings DRAFT. Pinned by `tests/e2e/brailleEntryTools.spec.ts` and `tests/e2e/targetSize.spec.ts`. |
 | 1.39 | 2026-10-04 | **§4.7: the four Translate buttons keep keyboard focus** (round R1, phase F4; finding R1-F-11 of walk F, Brennen's R1-Q-31). Each disabled itself while working and so dropped focus to the page body, and the next Tab repeated the page's landmarks. Each handler now gives focus back to its button in its `finally` while focus is still on the body. Pinned by `tests/e2e/brailleField.spec.ts`. |
 | 1.38 | 2026-10-04 | **§3.8: the preview's brightness and contrast are quiet at start-up** (round R1, phase F3; finding R1-F-10 of walk F, Brennen's R1-Q-31). Every page load made NVDA say "Normal, Normal": the start-up call rewrote the same word into both live value displays and added their tooltips. The markup now carries the start-up name and tooltip, and the steppers write text and `title` only when they change; the HTML and JavaScript examples follow. Presses still announce once. Pinned by `tests/e2e/liveRegions.spec.ts`. |
