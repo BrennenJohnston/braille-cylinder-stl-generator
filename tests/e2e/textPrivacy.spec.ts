@@ -86,4 +86,26 @@ test.describe('Text input privacy', () => {
     await page.locator('input[name="placement_mode"][value="auto"]').check();
     await expect(page.locator('#auto-text')).toHaveValue('');
   });
+
+  test('six-key entry and braille ASCII store nothing, and the box is off after a reload', async ({ page }) => {
+    await openApp(page);
+    const before = await page.evaluate(() => Object.keys(localStorage).sort());
+
+    await page.locator('#braille_six_key').check();
+    await page.locator('#braille-unicode').focus();
+    for (const key of ['f', 'd', 'k']) await page.keyboard.down(key);
+    for (const key of ['k', 'd', 'f']) await page.keyboard.up(key);
+    await expect(page.locator('#braille-unicode')).toHaveValue('⠓');
+    await page.locator('#braille-unicode').fill('zq');
+    await page.locator('#convert-braille-ascii-btn').click();
+    await expect(page.locator('#braille-unicode')).toHaveValue('⠵⠟');
+
+    expect(await page.evaluate(() => Object.keys(localStorage).sort())).toEqual(before);
+    expect(await storageEntriesMentioning(page, '⠓')).toEqual([]);
+    expect(await storageEntriesMentioning(page, '⠵⠟')).toEqual([]);
+
+    await reload(page);
+    await expect(page.locator('#braille_six_key')).not.toBeChecked();
+    await expect(page.locator('#braille-unicode')).toHaveValue('');
+  });
 });

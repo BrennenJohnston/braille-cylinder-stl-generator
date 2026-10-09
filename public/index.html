@@ -2746,6 +2746,12 @@
             cursor: progress;
         }
 
+        /* A new control meets the project's 44 px floor on desktop too; the
+           older translate buttons beside it reach 44 px only on mobile. */
+        .btn-convert-ascii {
+            min-height: 44px;
+        }
+
         @media (max-width: 768px) {
             .btn-translate {
                 min-height: 44px;
@@ -3631,6 +3637,17 @@
                               </div>
                               <!-- Editable Unicode braille field: the authoritative text when non-empty -->
                               <div class="braille-field" style="margin-top: 1em;">
+                                  <!-- Six-key entry (transcriber tools, 2026-10-09): an input method for this
+                                       field, not a design setting - never saved, off on every load, turned off
+                                       by Reset, and its events stop here so toggling it never invalidates a
+                                       built STL. S-SK1 / S-SK2 are DRAFT until Brennen signs them. The help is
+                                       visible and not wired as a description (37 words, over the SOP 6.8
+                                       ceiling). -->
+                                  <label class="radio-option ds-toggle-option" for="braille_six_key">
+                                      <input type="checkbox" id="braille_six_key">
+                                      <span class="radio-text">Six-key entry</span>
+                                  </label>
+                                  <div class="grade-note" id="braille-six-key-help" style="margin: 6px 0 0.8em; font-size: 0.85em;">Type a cell by holding its keys together and letting go: f, d, s are dots 1, 2, 3 and j, k, l are dots 4, 5, 6. Space makes a blank cell. Every other key works as usual.</div>
                                   <label for="braille-unicode" class="line-label">Braille (Unicode) — one line per row</label>
                                   <!-- S-P4 (rule signed by Brennen 2026-09-28): the placeholder is EXACTLY what
                                        Translate to Braille puts here for the text box's sample (S-P3) at the
@@ -3646,6 +3663,8 @@
                                   <!-- Upward half of the two-way translation: braille here → text above -->
                                   <div class="translate-row">
                                       <button type="button" id="translate-to-text-btn" class="btn-translate">Translate to Text ↑</button>
+                                      <!-- S-BA1 DRAFT (transcriber tools, 2026-10-09). -->
+                                      <button type="button" id="convert-braille-ascii-btn" class="btn-translate btn-convert-ascii">Convert braille ASCII</button>
                                       <span id="braille-unicode-status" class="grade-note" style="margin: 0; font-size: 0.85em;"></span>
                                   </div>
                                   <!-- ADA SOP Step 6.8: the id sits on the FIRST SENTENCE, not the div. The rest of
@@ -3655,7 +3674,7 @@
                                        also describes itself with #braille-unicode-status, so the ceiling here
                                        is 25 MINUS that live status (8-12 words). -->
                                   <div class="grade-note" style="margin-top: 0.6em; font-size: 0.85em;">
-                                      <span id="braille-unicode-help">Accepts braille characters only (U+2800–U+28FF).</span> Press <strong>Translate to Braille</strong> to fill this field from the text above, then edit any cell you want to change — or paste braille straight in and press <strong>Translate to Text</strong> to read it back in English. <strong>Whenever this field has content it is used exactly as written</strong>, so what you read here is what gets embossed. Clear it to go back to translating the text above.
+                                      <span id="braille-unicode-help">Accepts braille characters only (U+2800–U+28FF).</span> Press <strong>Translate to Braille</strong> to fill this field from the text above, then edit any cell you want to change. You can also paste braille, type it with six-key entry, or paste braille ASCII and press <strong>Convert braille ASCII</strong>. Press <strong>Translate to Text</strong> to read it back in English. <strong>Whenever this field has content it is used exactly as written</strong>, so what you read here is what gets embossed. Clear it to go back to translating the text above.
                                   </div>
                                   <div id="braille-unicode-live" class="sr-only" role="status" aria-live="polite"></div>
                               </div>
@@ -4512,6 +4531,8 @@
         import * as THREE from '/static/three.module.js';
         import { STLLoader } from '/static/STLLoader.js';
         import { OrbitControls } from '/static/OrbitControls.js';
+        import { createSixKeyEntry, describeCell } from '/static/braille-six-key.js';
+        import { asciiToCells } from '/static/braille-ascii.js';
 
         // Dynamic viewport height fix for iOS Safari (address bar handling)
         function setVH() {
@@ -6594,6 +6615,45 @@
         const S_BF1_SETTING_CLEARED_STATUS = 'Cleared because a translation setting changed — press Translate to Braille to refresh';
         const S_BF2_SETTING_CLEARED_ANNOUNCE = 'Braille field cleared because a translation setting changed. Press Translate to Braille to refresh it.';
 
+        /* Transcriber tools (2026-10-09 plan): six-key entry and braille ASCII
+           conversion on both braille fields. Every string here is DRAFT until
+           Brennen signs it. A six-key cell is announced as describeCell() in
+           static/braille-six-key.js words it (S-SK5 / S-SK6). */
+        const S_SK3_SIX_KEY_ON = 'Six-key entry is on.';
+        const S_SK4_SIX_KEY_OFF = 'Six-key entry is off.';
+        const S_BF3_ROUTES = 'Press Translate to Braille to convert text, or Convert braille ASCII if you pasted braille typed as keyboard characters.';
+        const S_BA5_ASCII_EMPTY = 'Paste braille ASCII in the Braille (Unicode) field first, then press Convert braille ASCII.';
+        function sBa2Converted(lines) {
+            return lines === 1
+                ? 'Converted 1 line of braille ASCII to braille cells.'
+                : `Converted ${lines} lines of braille ASCII to braille cells.`;
+        }
+        function sBa4NotBrailleAscii(invalid) {
+            return `Line ${invalid.line} contains "${invalid.char}", which is not a braille ASCII character.`;
+        }
+
+        // A field region that still holds the same words says nothing when they
+        // are written again: NVDA dropped a repeated six-key cell until the
+        // region was emptied and rewritten after a gap (measured in the forge's
+        // 5.2.0 build). A newer message cancels a pending repeat.
+        const BRAILLE_LIVE_REPEAT_GAP_MS = 100;
+        const brailleLiveRepeats = new Map();
+        function announceInBrailleRegion(regionId, message) {
+            const live = document.getElementById(regionId);
+            if (!live) return;
+            clearTimeout(brailleLiveRepeats.get(regionId));
+            brailleLiveRepeats.delete(regionId);
+            if (live.textContent !== message) {
+                live.textContent = message;
+                return;
+            }
+            live.textContent = '';
+            brailleLiveRepeats.set(regionId, setTimeout(() => {
+                brailleLiveRepeats.delete(regionId);
+                live.textContent = message;
+            }, BRAILLE_LIVE_REPEAT_GAP_MS));
+        }
+
         function isBrailleUnicodeChar(ch) {
             const code = ch.codePointAt(0);
             return code >= BRAILLE_UNICODE_START && code <= BRAILLE_UNICODE_END;
@@ -6614,8 +6674,7 @@
         }
 
         function announceBrailleField(message) {
-            const live = document.getElementById('braille-unicode-live');
-            if (live) live.textContent = message;
+            announceInBrailleRegion('braille-unicode-live', message);
         }
 
         // `highlight` marks states the user should notice (hand-edits, errors).
@@ -6730,7 +6789,7 @@
                     if (!isBrailleUnicodeChar(ch)) {
                         return `Line ${i + 1} of the Braille (Unicode) field contains "${ch}", which is not a braille character. ` +
                                'Only braille characters (U+2800–U+28FF) and spaces are allowed. ' +
-                               'Use Translate to Braille, or paste Unicode braille rather than plain text.';
+                               S_BF3_ROUTES;
                     }
                 }
                 const cells = line.trim().length;
@@ -6803,7 +6862,8 @@
                 for (const ch of line) {
                     if (ch !== ' ' && !isBrailleUnicodeChar(ch)) {
                         return { error: `The Braille (Unicode) field contains "${ch}", which is not a braille character. ` +
-                                        'Only braille characters (U+2800–U+28FF) and spaces can be translated back to text.' };
+                                        'Only braille characters (U+2800–U+28FF) and spaces can be translated back to text. ' +
+                                        S_BF3_ROUTES };
                     }
                 }
             }
@@ -6847,8 +6907,9 @@
                 brailleFieldAutoClearReason = null;
                 resetToGenerateState();
                 updateBrailleFieldStatus();
-                // A problem announces itself; do not talk over it.
-                if (brailleFieldProblem) return;
+                // A problem announces itself; do not talk over it. A six-key
+                // cell is announced as its dots by insertSixKeyCell instead.
+                if (brailleFieldProblem || sixKeyInserting) return;
                 if (!brailleFieldDirty) {
                     announceBrailleField('Braille field cleared. The text above will be translated instead.');
                 } else if (!wasDirty) {
@@ -6919,6 +6980,108 @@
             });
         }
 
+        // Six-key entry and braille ASCII conversion, the same on both fields.
+        // Both write the field and fire its own input event, so the result is a
+        // hand edit exactly like a paste: marked dirty, validated, embossed
+        // verbatim, and Generate reset.
+        const sixKeyEntries = { front: null, back: null };
+        // Set while a six-key cell is inserted, so the field's input listener
+        // leaves the announcement to the cell: spoken once, as its dots.
+        let sixKeyInserting = false;
+
+        function brailleEntryTools(side) {
+            return side === 'back'
+                ? {
+                    field: 'back-braille-unicode', box: 'back_braille_six_key', convert: 'back-convert-braille-ascii-btn',
+                    announce: announceBackBrailleField, setStatus: setBackBrailleFieldStatus,
+                    problem: () => backBrailleFieldProblem,
+                }
+                : {
+                    field: 'braille-unicode', box: 'braille_six_key', convert: 'convert-braille-ascii-btn',
+                    announce: announceBrailleField, setStatus: setBrailleFieldStatus,
+                    problem: () => brailleFieldProblem,
+                };
+        }
+
+        function setSixKeyEntry(side, on) {
+            const tools = brailleEntryTools(side);
+            sixKeyEntries[side] = on ? createSixKeyEntry() : null;
+            const message = on ? S_SK3_SIX_KEY_ON : S_SK4_SIX_KEY_OFF;
+            // A problem the status line is reporting stays on it.
+            if (!tools.problem()) tools.setStatus(message);
+            tools.announce(message);
+        }
+
+        function insertSixKeyCell(side, field, cell) {
+            const tools = brailleEntryTools(side);
+            const problemBefore = tools.problem();
+            field.setRangeText(cell, field.selectionStart, field.selectionEnd, 'end');
+            sixKeyInserting = true;
+            try {
+                field.dispatchEvent(new Event('input', { bubbles: true }));
+            } finally {
+                sixKeyInserting = false;
+            }
+            // Said at once, never debounced: a cell nobody hears cannot be
+            // checked. A problem this cell caused (a row grown past the plate)
+            // is said with it rather than instead of it.
+            const dots = describeCell(cell);
+            const problem = tools.problem();
+            tools.announce(problem && problem !== problemBefore ? `${dots}. ${problem}` : dots);
+        }
+
+        function convertBrailleAscii(side, field) {
+            const tools = brailleEntryTools(side);
+            if (!field.value.trim()) {
+                tools.setStatus(S_BA5_ASCII_EMPTY, true);
+                tools.announce(S_BA5_ASCII_EMPTY);
+                return;
+            }
+            const { text, invalid } = asciiToCells(field.value);
+            if (invalid) {
+                const message = sBa4NotBrailleAscii(invalid);
+                tools.setStatus(message, true);
+                tools.announce(message);
+                return;
+            }
+            field.value = text;
+            field.dispatchEvent(new Event('input', { bubbles: true }));
+            // The field's own check has already spoken for a result that cannot
+            // be embossed (a row longer than the plate); do not talk over it.
+            if (tools.problem()) return;
+            const message = sBa2Converted(text.split('\n').filter(line => line.trim() !== '').length);
+            tools.setStatus(message);
+            tools.announce(message);
+        }
+
+        function wireBrailleEntryTools(side) {
+            const tools = brailleEntryTools(side);
+            const field = document.getElementById(tools.field);
+            if (!field) return;
+            const box = document.getElementById(tools.box);
+            if (box) {
+                // Off on every load, including a reload the browser would
+                // otherwise restore the box's state on.
+                box.checked = false;
+                // An input method, not a design setting: kept from the
+                // form-wide delegate, which would invalidate the built STL.
+                box.addEventListener('input', event => event.stopPropagation());
+                box.addEventListener('change', event => {
+                    event.stopPropagation();
+                    setSixKeyEntry(side, box.checked);
+                });
+            }
+            field.addEventListener('keydown', event => {
+                if (sixKeyEntries[side]?.keyDown(event)) event.preventDefault();
+            });
+            field.addEventListener('keyup', event => {
+                const cell = sixKeyEntries[side]?.keyUp(event);
+                if (cell) insertSixKeyCell(side, field, cell);
+            });
+            field.addEventListener('blur', () => sixKeyEntries[side]?.reset());
+            document.getElementById(tools.convert)?.addEventListener('click', () => convertBrailleAscii(side, field));
+        }
+
         // Called when the English inputs change ('text') or a translation
         // setting changes ('setting'). A pristine field only mirrors a
         // translation, so it is cleared rather than left silently stale; a dirty
@@ -6966,8 +7129,7 @@
         }
 
         function announceBackBrailleField(message) {
-            const live = document.getElementById('back-braille-unicode-live');
-            if (live) live.textContent = message;
+            announceInBrailleRegion('back-braille-unicode-live', message);
         }
 
         function setBackBrailleFieldStatus(message, highlight = false) {
@@ -7057,7 +7219,8 @@
                 for (const ch of line) {
                     if (ch !== ' ' && !isBrailleUnicodeChar(ch)) {
                         return { error: `The Braille (Unicode) field contains "${ch}", which is not a braille character. ` +
-                                        'Only braille characters (U+2800–U+28FF) and spaces can be translated back to text.' };
+                                        'Only braille characters (U+2800–U+28FF) and spaces can be translated back to text. ' +
+                                        S_BF3_ROUTES };
                     }
                 }
             }
@@ -8913,6 +9076,7 @@
 
         wireBrailleField();
         wireBackBrailleField();
+        wireBrailleEntryTools('front');
 
         // Initialize placement UI
         updatePlacementUI();
@@ -9397,6 +9561,13 @@
                 // Seam channel back to its default: on.
                 const seamChannelReset = document.getElementById('seam_channel_enabled');
                 if (seamChannelReset) seamChannelReset.checked = true;
+                // Six-key entry off, quietly: refreshLiveWarnings() below puts
+                // the field's status line back.
+                ['front', 'back'].forEach(side => {
+                    const box = document.getElementById(brailleEntryTools(side).box);
+                    if (box) box.checked = false;
+                    sixKeyEntries[side] = null;
+                });
                 // Embosser version back to 1. The radio sweep above already
                 // did that (Version 1 is defaultChecked) and the input sweep
                 // put the four key clearance dials back to their defaults, so all that is left is

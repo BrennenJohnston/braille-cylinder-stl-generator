@@ -134,3 +134,24 @@ test.describe('numeric dial hit targets', () => {
     ).toEqual([]);
   });
 });
+
+test.describe('transcriber tool hit targets', () => {
+  // The six-key box's target is its whole row (the label), as the forge's
+  // axe target-size finding required; the convert button is its own target.
+  // Measured at a desktop viewport, where the translate buttons beside the
+  // convert button are shorter.
+  const TARGETS = ['label[for="braille_six_key"]', '#convert-braille-ascii-btn'];
+
+  test('the six-key row and the convert button meet the 44 x 44 floor', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('#braille-unicode');
+    for (const selector of TARGETS) {
+      const box = await page.locator(selector).boundingBox();
+      expect(box, `${selector} is not rendered`).not.toBeNull();
+      expect(box!.height, `${selector} height`).toBeGreaterThanOrEqual(MIN_TARGET_PX);
+      expect(box!.width, `${selector} width`).toBeGreaterThanOrEqual(MIN_TARGET_PX);
+    }
+  });
+});
