@@ -278,7 +278,7 @@ The cylinder height determines the **vertical extent** of the cylindrical shell:
 **Key Relationships:**
 - Braille content is vertically centered within the height
 - Affects `first_row_center_y` calculation for vertical positioning
-- Must accommodate `(grid_rows - 1) * line_spacing + 2 * dot_spacing`
+- Must accommodate `(grid_rows - 1) * line_spacing + 2 * dot_spacing`, plus the dot or bowl radius at each end: enforced since 2026-10-09, with Y Adjust and the tactile arrows (the dots stay on the card, the arrows on the barrel; `BRAILLE_SPACING_SPECIFICATIONS.md` §12)
 
 #### geometry_spec.py Implementation
 
@@ -1477,8 +1477,9 @@ first_row_center_y = height - space_above - dot_spacing
 
 ---
 
-*Document Version: 1.7*
-*Last Updated: 2026-09-30*
+*Document Version: 1.8*
+*Last Updated: 2026-10-09 - the cylinder height's "must accommodate" the rows is now enforced (Rows limit fix; BRAILLE_SPACING_SPECIFICATIONS.md §12).*
+*Previous: 1.7, 2026-09-30*
 *Revision Notes (1.6, 2026-09-20): New §2.6 Slicer Seam Channel and a Document History row — the groove every cylinder carries since 2026-09-20, its Expert Mode switch, wire, constants, placement and fit rules, worker cut and golden regeneration. The Table of Contents gained the 2.6 entry. No other section changed.*
 *Revision Notes: Added detailed debug logging information and troubleshooting checklist for cylinder dot positioning (Section 10.7)*
 *Revision Notes (1.2, 2026-08-21): Documentation only — the Source Files Referenced line named `templates/index.html`, an empty deprecated folder; it now names `public/index.html`. Part of the templates/ reference sweep (Phase 07b).*

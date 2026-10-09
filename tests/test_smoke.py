@@ -330,7 +330,10 @@ def test_validation_negative_plate_skips_column_check(client):
 # docs/specifications/RECESS_INDICATOR_SPECIFICATIONS.md.
 
 
-TACTILE_CYLINDER_PARAMS = {'diameter': 60.0, 'height': 40.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0}
+# 52 mm tall: four per-row arrows need 42.04 mm of barrel (the recess tip runs
+# 1.02 mm past the arrow), so the 40 mm these tests used until 2026-10-09 put
+# the outer arrows past the ends - refused since by the rows-fit gate.
+TACTILE_CYLINDER_PARAMS = {'diameter': 60.0, 'height': 52.0, 'wall_thickness': 2.0, 'seam_offset_deg': 0.0}
 
 
 def _tactile_spec(client, plate_type: str, lines: list[str], cylinder_params=None, **settings_overrides):
@@ -592,11 +595,11 @@ def test_three_spaced_layout_places_three_arrows_at_fixed_heights_on_both_plates
 
 def test_three_spaced_layout_ignores_the_row_count_and_the_row_shift(client):
     """
-    A preset marking, not a row marking: 2 rows, 6 rows and a braille_y_adjust
+    A preset marking, not a row marking: 2 rows, 5 rows and a braille_y_adjust
     all leave the three arrows exactly where they were (Brennen, 2026-09-20).
     """
-    # The API accepts at most 4 lines; the remaining rows of a 6-row grid are empty.
-    for rows, lines in ((2, ['⠁', '']), (6, ['⠁', '', '', ''])):
+    # 5 rows, not 6: six rows' dots no longer fit the 52 mm barrel (rows-fit gate).
+    for rows, lines in ((2, ['⠁', '']), (5, ['⠁', '', '', '', ''])):
         markers = _tactile_spec(
             client, 'positive', lines, STANDARD_CYLINDER_PARAMS, grid_rows=rows, tactile_indicator_layout='three_spaced'
         )['markers']
@@ -713,7 +716,8 @@ def test_three_spaced_layout_is_ignored_outside_tactile_mode(client):
             'indicator_mode': 'visual',
             'tactile_indicator_layout': 'three_spaced',
         },
-        'cylinder_params': TACTILE_CYLINDER_PARAMS,  # 40 mm: would be rejected in tactile mode
+        # 40 mm: the three-arrow gate would reject it in tactile mode
+        'cylinder_params': {**TACTILE_CYLINDER_PARAMS, 'height': 40.0},
     }
     resp = client.post('/geometry_spec', json=payload, headers={'Content-Type': 'application/json'})
     assert resp.status_code == 200, resp.data

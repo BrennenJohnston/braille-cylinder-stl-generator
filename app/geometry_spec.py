@@ -1563,6 +1563,46 @@ def tactile_arrow_y_positions(settings: Any, height: float, first_row_center_y: 
     return positions
 
 
+def braille_rows_extent(settings: Any, height: float) -> dict[str, float | None]:
+    """
+    How far the cylinder's braille rows reach above and below its mid-height,
+    in mm, as the row loops place them: centred on the height, then moved by
+    braille_y_adjust (Brennen's Rows-limit decisions, 2026-10-09).
+
+    'dots_top' / 'dots_bottom' reach the far edge of the outer dots, using the
+    widest dot or recess of either plate (_seam_channel_footprint's radius), so
+    both plates of a pair pass or fail together. 'arrows_top' / 'arrows_bottom'
+    reach the per-row tactile arrows' larger outline: grown by the recess
+    clearance (or the gear weld, if larger) with the mitred apex the worker
+    cuts, so the tip moves delta * sqrt(1 + (2 * length / width) ** 2) and the
+    flat base delta. They are None without per-row arrows; the three-arrow
+    layout has its own gate (validate_tactile_arrow_fit).
+    """
+    double_sided = int(getattr(settings, 'double_sided_enabled', 0)) == 1
+    dot_spacing = float(settings.dot_spacing)
+    widest_radius = _seam_channel_footprint(settings, double_sided) - dot_spacing / 2.0
+    span = (int(settings.grid_rows) - 1) * float(settings.line_spacing)
+    top_row = span / 2.0 + float(settings.braille_y_adjust)
+    bottom_row = top_row - span
+    extent: dict[str, float | None] = {
+        'dots_top': top_row + dot_spacing + widest_radius,
+        'dots_bottom': bottom_row - dot_spacing - widest_radius,
+        'arrows_top': None,
+        'arrows_bottom': None,
+    }
+    tactile = str(getattr(settings, 'indicator_mode', 'visual')).strip().lower() == 'tactile'
+    per_row = str(getattr(settings, 'tactile_indicator_layout', 'per_row')).strip().lower() != 'three_spaced'
+    if tactile and per_row:
+        width = float(getattr(settings, 'tactile_indicator_width', 4.0))
+        length = float(getattr(settings, 'tactile_indicator_length', 10.0))
+        delta = float(getattr(settings, 'tactile_recess_clearance', 0.2))
+        if int(getattr(settings, 'gear_rollers_enabled', 0)) == 1:
+            delta = max(delta, gears.GEAR_ARROW_WELD_MM)
+        extent['arrows_top'] = top_row + length / 2.0 + delta * math.sqrt(1.0 + (2.0 * length / width) ** 2)
+        extent['arrows_bottom'] = bottom_row - length / 2.0 - delta
+    return extent
+
+
 def _create_tactile_indicator_spec(
     y_local: float,
     radius: float,

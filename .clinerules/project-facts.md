@@ -701,6 +701,19 @@ translation, Three.js preview. Working branch: develop — never commit to main.
    - Follow-up recorded, not built: the liblouis 3.39.0 engine upgrade (a
      separate round) would give inputPos and retire the prefix/suffix cut.
 
+6k. Rows limit (2026-10-09, Brennen's decisions; plan 04 in the 2026_10_09
+   research folder). MAX_LINES in app/validation.py is the dial's 200, not
+   4: a request may fill its own grid_rows, and a line past grid_rows must
+   be empty (the counter plate still sends four empty lines). Fit is a
+   separate REFUSAL, validate_braille_rows_fit, from
+   geometry_spec.braille_rows_extent: the dots stay inside the CARD height
+   (centred; the card, not the 54 mm Version 2 barrel, is the limit there),
+   the per-row tactile arrows (recess, mitred tip) on the BARREL; Y Adjust
+   included. S-R1 (barrel) / S-R2 (card) signed 2026-10-09; the page mirrors
+   the rule in #rows-fit-warning (Braille Spacing panel), and
+   tests/test_rows_limit.py diffs its copy. Defaults: 5 visual / 4 tactile
+   rows fit 52 mm. OpenSCAD gets the same check as a follow-on (his call).
+
 ## Settings changes — order of operations
 7. settings.schema.json is the single source of truth. When adding or changing
    any parameter/default: update settings.schema.json FIRST, then

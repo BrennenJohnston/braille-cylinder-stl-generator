@@ -8,7 +8,7 @@ ensuring security, correctness, and helpful error messages.
 from typing import Any
 
 from app.geometry import gears, interpoint, version2
-from app.geometry_spec import TACTILE_ARROW_LAYOUTS, TACTILE_THREE_SPACED_PITCH_MM
+from app.geometry_spec import TACTILE_ARROW_LAYOUTS, TACTILE_THREE_SPACED_PITCH_MM, braille_rows_extent
 from app.utils import get_logger
 
 # Configure logging
@@ -16,7 +16,11 @@ logger = get_logger(__name__)
 
 # Validation constants
 MAX_LINE_LENGTH = 50
-MAX_LINES = 4
+# The Rows dial's ceiling (grid_rows 1-200 in validate_settings). The count a
+# request may fill is its own Rows (requested_rows); this only bounds the list.
+# It was a fixed 4, the original card's, until 2026-10-09: that refused every
+# request with Rows 5+ (Brennen's Rows-limit decisions).
+MAX_LINES = 200
 BRAILLE_UNICODE_START = 0x2800
 BRAILLE_UNICODE_END = 0x28FF
 
@@ -29,12 +33,28 @@ class ValidationError(ValueError):
         self.details = details or {}
 
 
-def validate_lines(lines: Any) -> bool:
+def requested_rows(settings_data: Any) -> int:
+    """
+    The request's Rows, for counting its lines. A missing or unreadable value
+    counts as the default 4; validate_settings reports an out-of-range one.
+    """
+    try:
+        rows = int((settings_data or {}).get('grid_rows', 4))
+    except (TypeError, ValueError, AttributeError):
+        return 4
+    return min(max(rows, 1), MAX_LINES)
+
+
+def validate_lines(lines: Any, rows: int = 4) -> bool:
     """
     Validate the lines input for security and correctness.
 
     Args:
         lines: Input lines to validate
+        rows: The request's Rows. The geometry reads only that many lines, so
+            a line past it must be empty: content there would be dropped
+            without a word. (The counter plate sends four empty lines whatever
+            Rows is.)
 
     Returns:
         True if valid
@@ -53,6 +73,12 @@ def validate_lines(lines: Any) -> bool:
     for i, line in enumerate(lines):
         if not isinstance(line, str):
             raise ValidationError(f'Line {i + 1} must be a string', {'line_number': i + 1, 'type': type(line).__name__})
+
+        if i >= rows and line.strip():
+            raise ValidationError(
+                f'Too many lines provided. Maximum is {rows} lines.',
+                {'provided': len(lines), 'max': rows, 'line_number': i + 1},
+            )
 
         # Check length to prevent extremely long inputs
         if len(line) > MAX_LINE_LENGTH:
@@ -726,6 +752,51 @@ def validate_tactile_arrow_fit(settings_data: dict, shape_type: str, cylinder_pa
     return True
 
 
+def validate_braille_rows_fit(settings: Any, shape_type: str, cylinder_params: dict) -> bool:
+    """
+    Refuse a cylinder whose braille rows would run off the card or the barrel
+    (Brennen's Rows-limit decisions, 2026-10-09).
+
+    The dots must stay inside the card height, centred on the barrel (a 52 mm
+    card sits in the middle of Version 2's 54 mm barrel), and inside the
+    barrel when the card is the taller of the two; the per-row tactile arrows
+    must stay on the barrel. Distances come from
+    geometry_spec.braille_rows_extent, the row loops' own arithmetic, so a
+    request that passes here places nothing past an end. A refusal, not a
+    warning, as for the three-arrow layout: dots past the card emboss nothing,
+    and an arrow past the end notches the rim or a fixed gear.
+
+    S-R1 (the barrel) and S-R2 (the card), signed by Brennen 2026-10-09 as
+    drafted; reword only with his sign-off. public/index.html shows the same
+    sentences live before Generate.
+    """
+    if str(shape_type).strip().lower() != 'cylinder':
+        return True
+    _, height = gears.cylinder_dimensions(cylinder_params)
+    card = float(settings.card_height)
+    rows = int(settings.grid_rows)
+    extent = braille_rows_extent(settings, height)
+    dots_need = 2.0 * max(extent['dots_top'], -extent['dots_bottom'])
+    card_limits = card < height
+    if card_limits and dots_need > card + 1e-9:
+        raise ValidationError(
+            f"These {rows} rows need {gears._format_mm(dots_need)} mm of the card's {gears._format_mm(card)} mm "
+            'height, so the top and bottom rows would run off the card. Use fewer rows or a smaller line spacing.',
+            {'key': 'grid_rows', 'value': rows, 'need_mm': dots_need, 'card_height': card},
+        )
+    barrel_need = 0.0 if card_limits else dots_need
+    if extent['arrows_top'] is not None:
+        barrel_need = max(barrel_need, 2.0 * max(extent['arrows_top'], -extent['arrows_bottom']))
+    if barrel_need > height + 1e-9:
+        raise ValidationError(
+            f"These {rows} rows need {gears._format_mm(barrel_need)} mm of the cylinder's "
+            f'{gears._format_mm(height)} mm height, so the top and bottom rows would run off the ends. '
+            'Use fewer rows, a smaller line spacing, or a taller cylinder.',
+            {'key': 'grid_rows', 'value': rows, 'need_mm': barrel_need, 'cylinder_height_mm': height},
+        )
+    return True
+
+
 def validate_shape_type(shape_type: str) -> str:
     """
     Validate and normalize shape_type parameter.
@@ -814,12 +885,14 @@ def validate_request_has_content(lines: list[str], plate_type: str) -> bool:
     return True
 
 
-def validate_original_lines(original_lines: Any) -> bool:
+def validate_original_lines(original_lines: Any, rows: int = 4) -> bool:
     """
     Validate optional original_lines parameter.
 
     Args:
         original_lines: Original text lines before braille conversion
+        rows: The request's Rows; as for validate_lines, a line past it must
+            be empty
 
     Returns:
         True if valid
@@ -842,6 +915,11 @@ def validate_original_lines(original_lines: Any) -> bool:
         if not isinstance(line, str):
             raise ValidationError(
                 f'original_line {i + 1} must be a string', {'line_number': i + 1, 'type': type(line).__name__}
+            )
+        if i >= rows and line.strip():
+            raise ValidationError(
+                f'Too many original_lines. Maximum is {rows}.',
+                {'provided': len(original_lines), 'max': rows, 'line_number': i + 1},
             )
         if len(line) > MAX_LINE_LENGTH * 2:  # More lenient for original text
             raise ValidationError(

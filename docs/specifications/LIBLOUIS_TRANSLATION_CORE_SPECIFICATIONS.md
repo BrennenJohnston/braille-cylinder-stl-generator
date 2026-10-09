@@ -727,7 +727,7 @@ When a request arrives at `/generate_braille_stl`:
 ```
 1. Validate request is JSON
 2. Extract request fields (lines, settings, etc.)
-3. validate_lines(lines) — Basic input validation
+3. validate_lines(lines, rows) — Basic input validation (rows = the request's grid_rows)
 4. validate_settings(settings_data) — Settings range validation
 5. validate_braille_lines(lines, plate_type) — Braille Unicode validation
 6. Validate plate_type, grade, shape_type
@@ -739,18 +739,21 @@ When a request arrives at `/generate_braille_stl`:
 **Source:** `app/validation.py` (lines 30-71)
 
 ```python
-def validate_lines(lines: Any) -> bool:
+def validate_lines(lines: Any, rows: int = 4) -> bool:
     """
     Validate the lines input for security and correctness.
     """
     if not isinstance(lines, list):
         raise ValidationError('Lines must be a list', {'type': type(lines).__name__})
 
+    # MAX_LINES is 200, the Rows dial's ceiling (it was 4 until 2026-10-09).
     if len(lines) > MAX_LINES:
         raise ValidationError(
             f'Too many lines provided. Maximum is {MAX_LINES} lines.',
             {'provided': len(lines), 'max': MAX_LINES}
         )
+    # A line past the request's Rows must be empty (see BRAILLE_SPACING §12);
+    # the per-line checks below are unchanged.
 
     for i, line in enumerate(lines):
         if not isinstance(line, str):
@@ -873,7 +876,7 @@ else:
 │  ┌────────────────┐   Fail  ┌─────────────────┐                         │
 │  │ validate_lines │────────▶│ 400: Line Error │                         │
 │  │ - Is list?     │         └─────────────────┘                         │
-│  │ - ≤4 lines?    │                                                     │
+│  │ - ≤ Rows lines?│                                                     │
 │  │ - All strings? │                                                     │
 │  │ - ≤50 chars?   │                                                     │
 │  │ - No XSS?      │                                                     │
@@ -1512,8 +1515,9 @@ Tables are processed left-to-right:
 
 ---
 
-*Document Version: 1.4*
-*Last Updated: 2026-09-30 — documentation review: the Braille (Unicode) field is also filled by every Generate STL (2026-09-28) and an unedited one empties when the text or a translation setting changes*
+*Document Version: 1.5*
+*Last Updated: 2026-10-09 — the line count follows the request's own Rows (a line past it must be empty; 200 at most) instead of a fixed four, which refused Rows 5+; the fit of those rows is checked separately (BRAILLE_SPACING_SPECIFICATIONS.md §12).*
+*Previous: 1.4, 2026-09-30 — documentation review: the Braille (Unicode) field is also filled by every Generate STL (2026-09-28) and an unedited one empties when the text or a translation setting changes*
 *Previous: 1.3, 2026-07-30 — added the `backTranslate` worker message (braille → text) used by the "Translate to Text" button and by STL file naming*
 *Revised 2026-08-21 (v1.3) — `templates/index.html` reference sweep (Phase 07b). Section 7 and Appendix C now cite `public/index.html` by function name (`translateWithLiblouis()`, `loadLanguageOptions()`) instead of a deleted file with stale line numbers. Section 13's dated verification tables are left exactly as recorded, with a note that `templates/index.html` has since been removed.*
 *Cross-System Compliance Verification Completed: 2024-12-06*
