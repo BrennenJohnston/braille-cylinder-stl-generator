@@ -58,12 +58,17 @@ async function recordRegion(page: Page, regionId: string) {
   );
 }
 
-/** The braille lines sent to /geometry_spec; the request is aborted. */
+/** The front and back braille lines of the first /geometry_spec request; aborted. */
 async function interceptGeometrySpec(page: Page) {
-  const state: { lines: string[] | null; called: boolean } = { lines: null, called: false };
+  const state: { lines: string[] | null; backLines: string[] | null; called: boolean } =
+    { lines: null, backLines: null, called: false };
   await page.route('**/geometry_spec', async (route) => {
+    if (!state.called) {
+      const body = route.request().postDataJSON();
+      state.lines = body?.lines ?? null;
+      state.backLines = body?.back_lines ?? null;
+    }
     state.called = true;
-    state.lines = route.request().postDataJSON()?.lines ?? null;
     await route.abort();
   });
   return state;
@@ -249,5 +254,69 @@ test.describe('Convert braille ASCII on the Braille (Unicode) field', () => {
     await page.locator('#convert-braille-ascii-btn').click();
     await expect(page.locator('#braille-unicode-status'))
       .toHaveText('Paste braille ASCII in the Braille (Unicode) field first, then press Convert braille ASCII.');
+  });
+});
+
+test.describe('The same tools on the Back of Card braille field', () => {
+  test.describe.configure({ timeout: 120_000 });
+
+  test('are unavailable while the card is single-sided', async ({ page }) => {
+    await openApp(page);
+    await expect(page.locator('#back_braille_six_key')).toBeDisabled();
+    await expect(page.locator('#back-convert-braille-ascii-btn')).toBeDisabled();
+  });
+
+  test('six-key entry types into the back field only and speaks from its own region', async ({ page }) => {
+    await openApp(page);
+    await page.locator('#card_sides_double').check();
+    await turnSixKeyOn(page, 'back_braille_six_key');
+    await expect(page.locator('#back-braille-unicode-status')).toHaveText('Six-key entry is on.');
+    const seen = await recordRegion(page, 'back-braille-unicode-live');
+
+    await page.locator('#back-braille-unicode').focus();
+    await chord(page, ['f', 'd', 'k']);
+    await expect(page.locator('#back-braille-unicode')).toHaveValue('⠓');
+    await expect.poll(async () => (await seen()).filter(Boolean)).toEqual(['dots 1 2 5']);
+    // The front is untouched, and its box was never turned on.
+    await expect(page.locator('#braille-unicode')).toHaveValue('');
+    await expect(page.locator('#braille_six_key')).not.toBeChecked();
+    await page.locator('#braille-unicode').focus();
+    await page.keyboard.press('f');
+    await expect(page.locator('#braille-unicode')).toHaveValue('f');
+  });
+
+  test('converted braille ASCII on the back is sent as the back lines', async ({ page }) => {
+    await openApp(page);
+    await page.locator('#card_sides_double').check();
+    await page.locator('#braille-unicode').fill('⠁');
+    await page.locator('#back-braille-unicode').fill(BRAILLE_ASCII_SAMPLE);
+    await page.locator('#back-convert-braille-ascii-btn').click();
+    await expect(page.locator('#back-braille-unicode')).toHaveValue(BRAILLE_ASCII_CELLS);
+    await expect(page.locator('#back-braille-unicode-status'))
+      .toHaveText('Converted 1 line of braille ASCII to braille cells.');
+    // The front field's status is not the one that answered.
+    await expect(page.locator('#braille-unicode-status')).not.toContainText('Converted');
+
+    const spec = await interceptGeometrySpec(page);
+    await generate(page, spec);
+    expect(spec.backLines?.[0]).toBe(BRAILLE_ASCII_CELLS);
+  });
+
+  test('a refusal on the back leaves the back field as it was', async ({ page }) => {
+    await openApp(page);
+    await page.locator('#card_sides_double').check();
+    await page.locator('#back-braille-unicode').fill('ab~');
+    await page.locator('#back-convert-braille-ascii-btn').click();
+    await expect(page.locator('#back-braille-unicode')).toHaveValue('ab~');
+    await expect(page.locator('#back-braille-unicode-status'))
+      .toHaveText('Line 1 contains "~", which is not a braille ASCII character.');
+  });
+
+  test('Reset turns the back box off too', async ({ page }) => {
+    await openApp(page);
+    await page.locator('#card_sides_double').check();
+    await turnSixKeyOn(page, 'back_braille_six_key');
+    await page.locator('#reset-defaults-btn').click();
+    await expect(page.locator('#back_braille_six_key')).not.toBeChecked();
   });
 });

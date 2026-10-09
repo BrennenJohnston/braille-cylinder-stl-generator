@@ -3774,6 +3774,12 @@
                                            for lines. Wired by wireBackBrailleField(); validation, the
                                            status line and the sr-only live region all mirror the front's. -->
                                       <div class="braille-field" style="margin-top: 1em;">
+                                          <!-- The front field's six-key box, mirrored (same rules, DRAFT strings). -->
+                                          <label class="radio-option ds-toggle-option" for="back_braille_six_key">
+                                              <input type="checkbox" id="back_braille_six_key">
+                                              <span class="radio-text">Six-key entry</span>
+                                          </label>
+                                          <div class="grade-note" id="back-braille-six-key-help" style="margin: 6px 0 0.8em; font-size: 0.85em;">Type a cell by holding its keys together and letting go: f, d, s are dots 1, 2, 3 and j, k, l are dots 4, 5, 6. Space makes a blank cell. Every other key works as usual.</div>
                                           <label for="back-braille-unicode" class="line-label">Braille (Unicode) — one line per row</label>
                                           <!-- S-P5 (signed by Brennen 2026-09-28): the translation of the back text
                                                box's placeholder ("Type the text for the back of the card here."),
@@ -3786,13 +3792,14 @@
                                           <!-- Upward half: braille here → back text above -->
                                           <div class="translate-row">
                                               <button type="button" id="back-translate-to-text-btn" class="btn-translate">Translate to Text ↑</button>
+                                              <button type="button" id="back-convert-braille-ascii-btn" class="btn-translate btn-convert-ascii">Convert braille ASCII</button>
                                               <span id="back-braille-unicode-status" class="grade-note" style="margin: 0; font-size: 0.85em;"></span>
                                           </div>
                                           <!-- Same sentence-split describedby rule as the front field
                                                (ADA SOP Step 6.8): the id sits on the FIRST sentence only,
                                                and the ceiling here is 25 minus the live status. -->
                                           <div class="grade-note" style="margin-top: 0.6em; font-size: 0.85em;">
-                                              <span id="back-braille-unicode-help">Accepts braille characters only (U+2800–U+28FF).</span> Press <strong>Translate to Braille</strong> to fill this field from the text above, then edit any cell you want to change — or paste braille straight in and press <strong>Translate to Text</strong> to read it back in English. <strong>Whenever this field has content it is used exactly as written</strong>, so what you read here is what gets embossed. Clear it to go back to translating the text above.
+                                              <span id="back-braille-unicode-help">Accepts braille characters only (U+2800–U+28FF).</span> Press <strong>Translate to Braille</strong> to fill this field from the text above, then edit any cell you want to change. You can also paste braille, type it with six-key entry, or paste braille ASCII and press <strong>Convert braille ASCII</strong>. Press <strong>Translate to Text</strong> to read it back in English. <strong>Whenever this field has content it is used exactly as written</strong>, so what you read here is what gets embossed. Clear it to go back to translating the text above.
                                           </div>
                                           <div id="back-braille-unicode-live" class="sr-only" role="status" aria-live="polite"></div>
                                       </div>
@@ -7248,8 +7255,9 @@
                 backBrailleFieldAutoClearReason = null;
                 resetToGenerateState();
                 updateBackBrailleFieldStatus();
-                // A problem announces itself; do not talk over it.
-                if (backBrailleFieldProblem) return;
+                // A problem announces itself; do not talk over it. A six-key
+                // cell is announced as its dots by insertSixKeyCell instead.
+                if (backBrailleFieldProblem || sixKeyInserting) return;
                 if (!backBrailleFieldDirty) {
                     announceBackBrailleField('Braille field cleared. The text above will be translated instead.');
                 } else if (!wasDirty) {
@@ -9077,6 +9085,7 @@
         wireBrailleField();
         wireBackBrailleField();
         wireBrailleEntryTools('front');
+        wireBrailleEntryTools('back');
 
         // Initialize placement UI
         updatePlacementUI();
