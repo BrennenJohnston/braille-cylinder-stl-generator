@@ -687,6 +687,24 @@ them server-side; the attributes announce the range, they do not define it.
 | `braille_x_adjust` | -10 | 10 | HTML `min`/`max` |
 | `braille_y_adjust` | -10 | 10 | HTML `min`/`max` |
 
+**How many rows fit is checked from the request itself (2026-10-09).** The `grid_rows`
+range is 1–200, but until 2026-10-09 the server also capped every request at four
+lines (`MAX_LINES = 4`, the original card's), so Rows 5 or more failed at Generate.
+Since then a request may fill its own Rows (a line past Rows must be empty: the
+geometry reads only Rows lines), and `validate_braille_rows_fit` in
+`app/validation.py` refuses rows that would leave the cylinder, using
+`app/geometry_spec.py` `braille_rows_extent`, the row loops' own arithmetic. Rows are
+centred on the height and moved by Y Adjust; the outer dots reach the dot spacing
+plus the widest dot or bowl radius past the outer row centre, and the per-row
+tactile arrows' recess reaches length/2 plus the clearance times
+√(1 + (2·length/width)²) above it (the mitred tip, 6.02 mm at the defaults). **The
+dots must stay inside the card height** (the 52 mm card sits in the middle of
+Version 2's 54 mm barrel) and **the arrows on the barrel** (Brennen's decisions). The
+refusal is S-R2 (card) or S-R1 (barrel), signed 2026-10-09, and the Braille Spacing
+panel shows the same sentence live in `#rows-fit-warning`. At the defaults 5 visual
+and 4 tactile rows fit 52 mm, and 5 tactile rows fit 54 mm. Pinned by
+`tests/test_rows_limit.py` and `tests/e2e/rowsFit.spec.ts`.
+
 Two things about `grid_columns` are worth stating, because the dial and the wire
 field are not the same number. The dial counts TEXT cells only; the request adds
 `getReservedMarkerColumns()` on top, so a dial reading 20 sends 22 and the server
@@ -712,6 +730,7 @@ makes the declared source of truth state what was already being enforced.
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-10-09 | 1.9 | **The Rows limit (Section 12).** The fixed four-line cap is gone (Rows 5+ failed at Generate); a request fills its own Rows, and rows whose dots would leave the card or whose tactile arrows would leave the barrel are refused (S-R1 / S-R2, signed), shown live in the Braille Spacing panel. |
 | 2026-09-30 | 1.8 | Documentation review: Section 6's double-sided exception drops "BETA" (released 2026-09-20). |
 | 2026-09-27 | 1.7 | **X Adjust now works on cylinders (new Section 5 subsection).** The cylinder spec builder had never read `braille_x_adjust` (Y Adjust worked); the dial now slides the whole text grid round the barrel by its value in mm of arc, added inside `apply_seam` / `apply_seam_mirrored` after the double-sided back mirror, so both cylinders' dots and recesses move together and the pairing holds. Negative moves Cylinder A's grid left and Cylinder B's right as the default camera shows them — the first cell toward the alignment arrow on both (Brennen's request after his 2026-09-27 print). Arrows, tactile groove and Version 2 keys stay put; the seam-channel, arrow-gap and card-fit rules read the shift, mirrored live. Nothing changes at 0: all eight golden pairs byte-identical. Proof on the real worker's STL exports (tests/e2e/xAdjust.spec.ts) and in tests/test_x_adjust_cylinder.py. |
 | 2024-12-06 | 1.0 | Initial specification based on working backend.py and csg-worker implementations |

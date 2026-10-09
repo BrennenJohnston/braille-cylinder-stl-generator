@@ -4182,6 +4182,13 @@
                                           <input type="number" id="braille_x_adjust" name="braille_x_adjust" value="0.0" step="0.1" min="-10" max="10" style="width: 110px;" autocomplete="off">
                                       </div>
                                   </div>
+                                  <!-- Rows that would run off the card or the barrel (S-R1 / S-R2, signed
+                                       2026-10-09): Generate is refused with the same sentence. Announced
+                                       through #a11y-status on the hidden-to-shown edge, like the card-fit box. -->
+                                  <div id="rows-fit-warning" class="grade-note inline-warning"
+                                       style="margin-top: 0.6em; display: none;">
+                                      <strong>Warning:</strong> <span id="rows-fit-message"></span>
+                                  </div>
                               </div>
                           </div>
 
@@ -8537,6 +8544,80 @@
             }
         }
 
+        // Rows fit (Brennen's Rows-limit decisions, 2026-10-09). Mirrors
+        // app/geometry_spec.py braille_rows_extent and app/validation.py
+        // validate_braille_rows_fit dial for dial, and shows the server's
+        // sentence word for word, so the box and the refusal at Generate say
+        // the same thing: the dots stay on the card, the per-row arrows on the
+        // barrel. Hidden-to-shown announcement gate, as for the boxes above.
+        const ROWS_FIT_GEAR_ARROW_WELD_MM = 0.005;
+
+        // app/geometry/gears.py _format_mm: 52, not 52.000.
+        function formatMmLikeServer(value) {
+            return value.toFixed(3).replace(/0+$/, '').replace(/\.$/, '') || '0';
+        }
+
+        function rowsFitMessage() {
+            const shapeType = document.querySelector('input[name="shape_type"]:checked')?.value || 'cylinder';
+            if (shapeType !== 'cylinder') return '';
+            const value = (id) => parseFloat(document.getElementById(id)?.value);
+            const rows = parseInt(document.getElementById('grid_rows')?.value, 10);
+            const lineSpacing = value('line_spacing');
+            const dotSpacing = value('dot_spacing');
+            const yAdjust = value('braille_y_adjust');
+            const height = value('cylinder_height_mm');
+            const card = value('card_height');
+            if (![rows, lineSpacing, dotSpacing, yAdjust, height, card].every(Number.isFinite)) return '';
+
+            const widest = seamChannelFootprintMm() - dotSpacing / 2;
+            const span = (rows - 1) * lineSpacing;
+            const topRow = span / 2 + yAdjust;
+            const bottomRow = topRow - span;
+            const dotsNeed = 2 * Math.max(topRow + dotSpacing + widest, -(bottomRow - dotSpacing - widest));
+            const cardLimits = card < height;
+            if (cardLimits && dotsNeed > card + 1e-9) {
+                /* S-R2, signed off by Brennen 2026-10-09 (as drafted); reword only with his sign-off. */
+                return `These ${rows} rows need ${formatMmLikeServer(dotsNeed)} mm of the card's ${formatMmLikeServer(card)} mm ` +
+                    'height, so the top and bottom rows would run off the card. Use fewer rows or a smaller line spacing.';
+            }
+            let barrelNeed = cardLimits ? 0 : dotsNeed;
+            const perRowArrows = isTactileIndicatorOn()
+                && TACTILE_ARROW_LAYOUT_BY_PRESET[activeArrowLayoutPreset()] !== 'three_spaced';
+            if (perRowArrows) {
+                const width = value('tactile_indicator_width');
+                const length = value('tactile_indicator_length');
+                let delta = value('tactile_recess_clearance');
+                if (isGearRollersOn()) delta = Math.max(delta, ROWS_FIT_GEAR_ARROW_WELD_MM);
+                if ([width, length, delta].every(Number.isFinite) && width > 0) {
+                    const arrowsTop = topRow + length / 2 + delta * Math.sqrt(1 + (2 * length / width) ** 2);
+                    const arrowsBottom = bottomRow - length / 2 - delta;
+                    barrelNeed = Math.max(barrelNeed, 2 * Math.max(arrowsTop, -arrowsBottom));
+                }
+            }
+            if (barrelNeed > height + 1e-9) {
+                /* S-R1, signed off by Brennen 2026-10-09 (as drafted); reword only with his sign-off. */
+                return `These ${rows} rows need ${formatMmLikeServer(barrelNeed)} mm of the cylinder's ` +
+                    `${formatMmLikeServer(height)} mm height, so the top and bottom rows would run off the ends. ` +
+                    'Use fewer rows, a smaller line spacing, or a taller cylinder.';
+            }
+            return '';
+        }
+
+        function updateRowsFitUI() {
+            const warning = document.getElementById('rows-fit-warning');
+            const message = document.getElementById('rows-fit-message');
+            if (!warning || !message) return;
+            const wasHidden = warning.style.display === 'none';
+            const text = rowsFitMessage();
+            warning.style.display = text ? 'block' : 'none';
+            message.textContent = text;
+            if (text) {
+                if (wasHidden) announceStatus('rows-fit', text);
+            } else {
+                announceStatus('rows-fit', '');
+            }
+        }
+
         document.getElementById('seam_channel_enabled')?.addEventListener('change', () => {
             updateSeamChannelUI();
             resetToGenerateState();
@@ -9090,6 +9171,7 @@
             updateVersion2SizeWarning();
             updateSeamChannelUI();
             updateCardFitUI();
+            updateRowsFitUI();
             updateCapsWarning();
             updateBrailleFieldStatus();
             updateBackBrailleFieldStatus();

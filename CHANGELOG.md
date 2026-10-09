@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Five or more braille rows can be generated again.** The Rows dial allows up to 200, but the server refused any request with more than four lines ("Too many lines provided. Maximum is 4 lines."), a limit left over from the original card. A request may now fill its own Rows. How many rows actually fit is checked instead: rows whose dots would run off the card, or whose tactile arrows would run off the cylinder, are refused with a sentence that says how much height they need, and the Braille Spacing panel shows the same sentence before you press Generate. At the default spacing 5 rows fit a 52 mm cylinder with visual markers and 4 with tactile arrows. Wording signed off by Brennen on 2026-10-09.
+
 ### Added
 - **Transcriber tools on both Braille (Unicode) fields**, front and back, ported from the OpenSCAD Assistive Forge's 5.2.0 build after a braille transcriber's review. **Six-key entry**: a checkbox before the field; with it on, f, d, s and j, k, l type braille as on a Perkins brailler (keys held together make one cell, Space a blank cell, every other key works as usual), and a screen reader hears each cell's dots. It is an input method, so it is never saved and starts off on every visit. **Convert braille ASCII**: a button beside Translate to Text that turns braille ASCII, as BRF files and braille keyboard programs write it, into braille cells in place; anything that is not braille ASCII is refused with the character named and the field left as it was. Wording signed off by Brennen on 2026-10-09.
 

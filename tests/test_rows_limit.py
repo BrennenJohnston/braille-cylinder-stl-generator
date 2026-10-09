@@ -147,3 +147,28 @@ class TestFit:
         status, error = post([''] * 6, {'grid_rows': 6})
         assert status == 400
         assert error.startswith('These 6 rows need 56.8 mm')
+
+
+class TestThePageMirrorsTheServer:
+    """public/index.html shows the rule live; its copies are diffed, not trusted."""
+
+    def test_the_gear_weld_and_both_sentences_match(self):
+        import re
+        from pathlib import Path
+
+        from app.geometry import gears
+
+        html = (Path(__file__).resolve().parents[1] / 'public' / 'index.html').read_text(encoding='utf-8')
+        weld = re.search(r'const ROWS_FIT_GEAR_ARROW_WELD_MM = ([0-9.]+);', html)
+        assert weld and float(weld.group(1)) == gears.GEAR_ARROW_WELD_MM
+        # The pieces the page joins; tests/e2e/rowsFit.spec.ts reads the joined
+        # sentences off the page and compares them with the server's.
+        for piece in (
+            "mm of the card's ${formatMmLikeServer(card)} mm ",
+            "'height, so the top and bottom rows would run off the card. Use fewer rows or a smaller line spacing.'",
+            "mm of the cylinder's ",
+            'mm height, so the top and bottom rows would run off the ends. ',
+            "'Use fewer rows, a smaller line spacing, or a taller cylinder.'",
+        ):
+            assert piece in html, piece
+        assert 'updateRowsFitUI();' in html
