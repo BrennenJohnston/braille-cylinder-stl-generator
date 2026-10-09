@@ -1,0 +1,5695 @@
+{
+ "liblouis": "3.39.0",
+ "source": "liblouis-3.39.0-win64.zip (official release), share/liblouis/tables",
+ "files": {
+  "Es-Es-G0.utb": {
+   "bytes": 8232,
+   "sha256": "c52b598132a3e51e1511622744c369ea1c54be9de9737f591d8ee1373622ac6f"
+  },
+  "IPA-unicode-range.uti": {
+   "bytes": 13188,
+   "sha256": "6c33175ce5460533e10fc56be4d65352cced12d9e92433d1f47477c65b4d6132"
+  },
+  "IPA.utb": {
+   "bytes": 9081,
+   "sha256": "1a0a678531860509613c924feea090432844a6e91e2663064ccbde7730ebbafa"
+  },
+  "Lv-Lv-g1.utb": {
+   "bytes": 20418,
+   "sha256": "1df77b14270e62cf6318b81c6890d355a2ce84426d309eeef81d19b9c55a6d35"
+  },
+  "Pl-Pl-g1.utb": {
+   "bytes": 10370,
+   "sha256": "99171a94db59484da2c1a1f700c95fab77da35d6b0635b360ff91edb2e9b93aa"
+  },
+  "afr-za-g1.ctb": {
+   "bytes": 2658,
+   "sha256": "06f0cee02ce6cb5e05460e42cb501c1b55ffc5196bbeab2c1a11b07ae3e6aeb1"
+  },
+  "afr-za-g2.ctb": {
+   "bytes": 30125,
+   "sha256": "055670a8d314a6f48f9664d45e9065214e9f8e16eed87fe3139962508f9c0141"
+  },
+  "akk-borger.utb": {
+   "bytes": 45982,
+   "sha256": "4bb69e1fb7c50e42af0efab59c6d69a73b240c7324e9a7d51edbc9a9eb9fa0ce"
+  },
+  "akk.utb": {
+   "bytes": 50441,
+   "sha256": "7abd2a3b54e32c88cb9accc335b3518a42a8a6fe9d12668c2a88028df6af5111"
+  },
+  "ancient-languages-borger.utb": {
+   "bytes": 3495,
+   "sha256": "0e878633417626ffd88be83e71ad0d061fea7c2f84e1f87e58cbbc60e6dd92c4"
+  },
+  "ancient-languages-us.utb": {
+   "bytes": 3484,
+   "sha256": "a946e7595a92d5aa519def708da75a01484ec959a3063bebc92da28703cdebd7"
+  },
+  "ar-ar-comp8.utb": {
+   "bytes": 9197,
+   "sha256": "a88a588bafd749976bb6c436a665cd5d7ee92fc6c85978608b2683e519d70108"
+  },
+  "ar-ar-g1-core.uti": {
+   "bytes": 10492,
+   "sha256": "0d413c8418905422e8237362ddc8f7664ad9a09fa6375d2533d722a76aac3019"
+  },
+  "ar-ar-g1.utb": {
+   "bytes": 1210,
+   "sha256": "a741060a016ac6eaad5befbec6945f1170a5427017379da06c1417b001c9c61b"
+  },
+  "ar-ar-g2.ctb": {
+   "bytes": 11780,
+   "sha256": "85fd8adb49a0af2f80f253be46e46227227bbfebac62a6cce31ac50bfdff4a48"
+  },
+  "ar-ar-math.uti": {
+   "bytes": 20865,
+   "sha256": "4e848d02dc70cde47421d1036c5daf08cbf3306019d9875d8a07b588214695f4"
+  },
+  "ar.tbl": {
+   "bytes": 512,
+   "sha256": "d70424627ee28f09eb7c7a81433a88d23399869e9907e550ecfc9b80c9d391e5"
+  },
+  "as-in-g1.utb": {
+   "bytes": 1216,
+   "sha256": "f1121cad2a033fa41697ea49c07ff9d5f98b567135651e168c1d710e31aa59ee"
+  },
+  "as.tbl": {
+   "bytes": 566,
+   "sha256": "92d5b50002a6df26ef0b113c59767693c766e21466a6596476bc6057e848efbf"
+  },
+  "aw-in-g1.utb": {
+   "bytes": 1216,
+   "sha256": "b2cb4677d21553fd9c066a0e7a56a0ca60c1f762202a45306328c12ddd42b33c"
+  },
+  "awa.tbl": {
+   "bytes": 563,
+   "sha256": "1977180de92b37e1d0c6d1fd2d21d9a6258a77aa22fd1cf5c6f08bfcc3fa03a6"
+  },
+  "ba.utb": {
+   "bytes": 2465,
+   "sha256": "ea4c417620305ab522535906b575e5054e4a5e307e1699df79c79187a31d7ad6"
+  },
+  "be-in-g1.utb": {
+   "bytes": 1215,
+   "sha256": "a8ab96a2502c2525f458d1a9034256034447073b19fea94065670068e0f27e7e"
+  },
+  "bel-comp.utb": {
+   "bytes": 1530,
+   "sha256": "3612944e9b50e1ea13ce0e68849280b39785a3af8987f50a27186811ab699b6d"
+  },
+  "bel-detailed.utb": {
+   "bytes": 1033,
+   "sha256": "09f743f578402bf65113ed0618eff141431d8cc9236ccb1ce5af625f83e7dbb9"
+  },
+  "bel.utb": {
+   "bytes": 1839,
+   "sha256": "b2f4f6f5bce3b5a59d4cd2b3c1b9321952199a10acd89f40f70b7f1ea10d8b39"
+  },
+  "bengali.cti": {
+   "bytes": 10370,
+   "sha256": "1ca6191e95f91b70c9d0488b4afe9d33697f6541291984ea5dfda99c9d24b972"
+  },
+  "bg.ctb": {
+   "bytes": 6820,
+   "sha256": "c6fe1d04213715fcb28d6d3f128aa764990d70fa56cd1b13086f9f3a2d333d1e"
+  },
+  "bg.dis": {
+   "bytes": 1749,
+   "sha256": "63ceb927603bd11619bd07588c2d1803b261291a425c4538c34b4fb624d2cb3d"
+  },
+  "bg.tbl": {
+   "bytes": 686,
+   "sha256": "fc6c1874333a7b851f1a433751c06f9638e9d230e83550b3807169e9fc716d1e"
+  },
+  "bg.utb": {
+   "bytes": 18140,
+   "sha256": "3a99d6c61cd4ab0cfb3ebc2d4a3eed6b0db315af529fc49eb17340cb80563f1d"
+  },
+  "bh.ctb": {
+   "bytes": 926,
+   "sha256": "4ed0006c1d44591bc81f3c4979910778439bb1952bc703cc98dd9419b4baf7c5"
+  },
+  "bh.tbl": {
+   "bytes": 546,
+   "sha256": "fe7855918bbc3a8ac720efa2d6bc0fcc036495244d728446362ae1965b75f677"
+  },
+  "bn.tbl": {
+   "bytes": 564,
+   "sha256": "6dbd7b0217c5d3af0926e966dc59ceda0f9914dc6952e0d04c7ff9f9c0a7aab2"
+  },
+  "bo.ctb": {
+   "bytes": 7248,
+   "sha256": "fbbaca502cfda75ebe4c1ba23de5b8678f596e2ca4535ec1f98cc3568c2cb2af"
+  },
+  "bo.tbl": {
+   "bytes": 682,
+   "sha256": "df30ef07c4a7b16df7aa0bb43d7af3ee1256929ecd2d16b326dfbe2bc84fcb73"
+  },
+  "boxes.ctb": {
+   "bytes": 10305,
+   "sha256": "ab017858e9585b6ec9547755dcdc69a23286af5e2e3903ffb9d85dc56cee8303"
+  },
+  "br-in-g1.utb": {
+   "bytes": 1214,
+   "sha256": "a930baff32abfd40b4b46319108942ed999070f289906b3363414629c3672c38"
+  },
+  "bra.tbl": {
+   "bytes": 559,
+   "sha256": "49977418fe747834221f8e7a4248b73688dd599b8d80fd43cdf893d7c227905e"
+  },
+  "braille-patterns.cti": {
+   "bytes": 26431,
+   "sha256": "5e24558303fa6db1642ee99dde12c43a42938edc7de26e87d09d4acfbeae6bbe"
+  },
+  "ca-chardefs.cti": {
+   "bytes": 16118,
+   "sha256": "d26470d7d9ab8cc65a42e3fcca748f20b547fb6a0f9e6e00c6c9c7413e6fb8b2"
+  },
+  "ca-g1.ctb": {
+   "bytes": 1758,
+   "sha256": "d665fe7f24ccd074fa39ad850bbb783c2afdd105a76d11074fa11acddedf31aa"
+  },
+  "ca.tbl": {
+   "bytes": 561,
+   "sha256": "661f352e862e63dc2117edb992e6d0621932e175eae7e8317ce44d91d00909e3"
+  },
+  "chr-us-g1.ctb": {
+   "bytes": 5562,
+   "sha256": "8c60519d98dd9de0c88c8cd1c3b3ec1b8e0030915f8b22029d52483a463251e7"
+  },
+  "ckb-chardefs.cti": {
+   "bytes": 8563,
+   "sha256": "2fd157dcff9c5eebeb62c505ab0aa90df63099c340f1ae36ecb9ffad69da29f5"
+  },
+  "ckb-g1.ctb": {
+   "bytes": 1210,
+   "sha256": "16291ab4c166c1069dad6da5f46ef90acb443025f34b7f2bb8da078bf358fdd5"
+  },
+  "ckb-translation.cti": {
+   "bytes": 3541,
+   "sha256": "7c1b7a710e9ce5478ee1ae99539b14acc888d829d0a1526069f36a657e9aa8ed"
+  },
+  "ckb.tbl": {
+   "bytes": 563,
+   "sha256": "2aa65f2e5604d234a819e901639f4d49e7c1d0a8559d873c19745d642386b305"
+  },
+  "compress.cti": {
+   "bytes": 1419,
+   "sha256": "c257f6407730cfac4ca718b2f3dce369c482b774bf69e04e547d2be902f00dc0"
+  },
+  "controlchars.cti": {
+   "bytes": 1045,
+   "sha256": "fce2908c639023efd748bd3ac077ca7db120a838e97031c32796ecf59da0d0e3"
+  },
+  "cop-eg-comp8.utb": {
+   "bytes": 8665,
+   "sha256": "75a7ad3de65c963b75503978c9fa9cb0db8e9df603678a9309c64c83607df834"
+  },
+  "cop.utb": {
+   "bytes": 8976,
+   "sha256": "81161b027ffb5a0f53c7b36a3b82523589e51591e7513259fa9e7c455afe0ef5"
+  },
+  "corrections.cti": {
+   "bytes": 1492,
+   "sha256": "f50149c6dd2f9fc08645eac0267d39ff041364d72a8800ac8c6f77201f3ab37c"
+  },
+  "countries.cti": {
+   "bytes": 6703,
+   "sha256": "1b703a89b87835e9aec777d561950493bf863eb8a204efa7d9d44ec2f1542e93"
+  },
+  "critical-apparatus.uti": {
+   "bytes": 2192,
+   "sha256": "d1a2d5515b0dfdb315bede0b9d40b78797601f423e672bc6bb3305124253a56b"
+  },
+  "cs-chardefs.cti": {
+   "bytes": 24259,
+   "sha256": "1c6c9b752633325b64a20da94a53d2dd39b37d7f5edcb68ba731e39ff00ef4de"
+  },
+  "cs-comp8.utb": {
+   "bytes": 13503,
+   "sha256": "7fa4b71b92dc7e68da9f3a574b3ed20042ea40435e744416d21fe506f20dcd26"
+  },
+  "cs-g1.ctb": {
+   "bytes": 1354,
+   "sha256": "68609921c9d7f2e4a8402de30a0e34392387b11a5b43f537c724375eb3c8f718"
+  },
+  "cs-translation.cti": {
+   "bytes": 2527,
+   "sha256": "3feda17ccb8c229072addea637390abb68a3b320b791bb80a148323f3fc1546c"
+  },
+  "cs.tbl": {
+   "bytes": 632,
+   "sha256": "a78af51905c835a354817be36738a496be03e9005f8af84119b09da05418bcf0"
+  },
+  "cuneiform-transliterated-compact.utb": {
+   "bytes": 12682,
+   "sha256": "501de5f12582188fbd714cd132ef148266cded9736e77f0e4bca70b2dae85b93"
+  },
+  "cuneiform-transliterated.utb": {
+   "bytes": 6296,
+   "sha256": "92d3d56f943a5fee311fd1f7658b61ad2a940d42a72c3eb6e3adc351f533bbed"
+  },
+  "cy-cy-g1.utb": {
+   "bytes": 13797,
+   "sha256": "ef7811605ba5c6c4a8b280bcdf3062671880bbb3e2428de5d902be3fe085b8e1"
+  },
+  "cy-cy-g2.ctb": {
+   "bytes": 4305,
+   "sha256": "401d3491729a441c49c570026e47c01808ef9049d163886c31c3930b8f38ad17"
+  },
+  "cy.tbl": {
+   "bytes": 602,
+   "sha256": "86a2a478808b37746721fca4868e0f0c9d9c00ab9a76e07c1043f5d25279276b"
+  },
+  "da-dk-6miscChars.cti": {
+   "bytes": 19519,
+   "sha256": "64f1d203e9e268d9b07c6705096056fdaf6562ba953c0af23b34a6e1e217f363"
+  },
+  "da-dk-6miscChars_1993.cti": {
+   "bytes": 20699,
+   "sha256": "23266a8779d2a7cd3aca15ab38e3a3a9b7537ce1280d86c59cdbe06b28ea8d8b"
+  },
+  "da-dk-8miscChars.cti": {
+   "bytes": 3473,
+   "sha256": "cac918f2b7107c9802498c16634d1dcf6cc6ae5f77f61adec364948f2b487744"
+  },
+  "da-dk-8miscChars_1993.cti": {
+   "bytes": 3947,
+   "sha256": "c79d659e287b721cd9d1931bcacf849cb93d10eeb87496f96bcf6a85993fdce1"
+  },
+  "da-dk-g08.ctb": {
+   "bytes": 11761,
+   "sha256": "6fa9335a257ced7544061684d384a7f19aabecd14426a7d5180935ca4814eb64"
+  },
+  "da-dk-g08_1993.ctb": {
+   "bytes": 13618,
+   "sha256": "2028b2afc951efd6ab144f4868d5e8ef910d788a2bffcfcd53710595fd2695c2"
+  },
+  "da-dk-g16-lit_1993.ctb": {
+   "bytes": 9461,
+   "sha256": "c039fe86b7cd9a83adb17d109698c5137b9e703ba134ea1b061f33fd29cdb95b"
+  },
+  "da-dk-g16.ctb": {
+   "bytes": 7785,
+   "sha256": "49a1c24ff9dc8e84b931b36d88631e9ecf6ff5d6470cb1d51b68d3dcaad4e478"
+  },
+  "da-dk-g16_1993.ctb": {
+   "bytes": 8189,
+   "sha256": "00d396f5312fb2d2fb0d5d1770391e1397b0f052366ae5b462ab1978084564d8"
+  },
+  "da-dk-g18.ctb": {
+   "bytes": 24445,
+   "sha256": "754cd0458a5faf47093b1b1a7b22f453121b236e238a64086808fa9850f5652f"
+  },
+  "da-dk-g18_1993.ctb": {
+   "bytes": 25298,
+   "sha256": "c944dcf44bc49f710abc43c54c2017a5297d1e8d31ab619484a442123274d488"
+  },
+  "da-dk-g2.dic": {
+   "bytes": 61628,
+   "sha256": "57562e4c739af43e2c932358c0ad26878a5d5066449736ed34eb4a1c8054349e"
+  },
+  "da-dk-g26-lit_1993.ctb": {
+   "bytes": 21622,
+   "sha256": "84c97d6a2fc9b1c3c21beba41ff4ebb19a9233bdbef609e515637fc08d3c1701"
+  },
+  "da-dk-g26.ctb": {
+   "bytes": 34197,
+   "sha256": "719d6c077b32df30fa255d4bb3c26695b62cbce4672ed292f8f24320c5197228"
+  },
+  "da-dk-g26_1993.ctb": {
+   "bytes": 29159,
+   "sha256": "ff0ebd89cba9c0799899bc5569cca70e84ecf4fb22ab493a741a06179f8bb349"
+  },
+  "da-dk-g26l-lit_1993.ctb": {
+   "bytes": 15932,
+   "sha256": "0518f44e21190ff61cb6a3c1a5caec7839d77dd1a3330c545b671d33ed418089"
+  },
+  "da-dk-g26l_1993.ctb": {
+   "bytes": 15048,
+   "sha256": "7a2f9308778f23ce62c6008a61f3ab8c81259aabc9ad6609152c5eedf109e959"
+  },
+  "da-dk-g28.ctb": {
+   "bytes": 74632,
+   "sha256": "ad40fd25cddec5a0e4514dab5c9baa701f110bf6e5180c7d108936480f093588"
+  },
+  "da-dk-g28_1993.ctb": {
+   "bytes": 62022,
+   "sha256": "5a4d47cc08574ba631ad5bea39d585aa9e1c0cd4fd2b739296b0fa73a24ec356"
+  },
+  "da-dk-g28l_1993.ctb": {
+   "bytes": 50229,
+   "sha256": "614b38e9d9842f5613604ed0d2f33ddf00db53a6a7bf8723df91bc45e52bf704"
+  },
+  "da-dk-octobraille.dis": {
+   "bytes": 13377,
+   "sha256": "700247513bee5b9b22315ad7f8db0a1d859c67d2995bd74b730240798c77878c"
+  },
+  "da-dk-octobraille_1993.dis": {
+   "bytes": 13251,
+   "sha256": "446dbce89feae48bbb71a10890150eea4354de05a5689408cb8ac8019da3030d"
+  },
+  "de-accents-detailed.cti": {
+   "bytes": 17422,
+   "sha256": "2dea8b5a6e29be7948e92995c80026b07657b339291ab5bc285ea4d3cd180e10"
+  },
+  "de-accents.cti": {
+   "bytes": 17339,
+   "sha256": "dda45222bef6546a2d7e854f135a3a2a732bc469f5ceff2f9ddf5ec384c5c56e"
+  },
+  "de-chardefs6.cti": {
+   "bytes": 16907,
+   "sha256": "10b7c9bd19cb365258fd02a8b9891f01b158966562af2cb43b953d41e53e91b4"
+  },
+  "de-chardefs8.cti": {
+   "bytes": 19998,
+   "sha256": "a964937e3429ae3cb14e9e65333380fc9607d6412a9a12f6690c703cd975a4b0"
+  },
+  "de-chess.ctb": {
+   "bytes": 1489,
+   "sha256": "4778126e933d94ee3f05419de1a3c1e9e82cddeb9abf91823b0b0f36be4f565b"
+  },
+  "de-comp6.utb": {
+   "bytes": 15147,
+   "sha256": "c8bc8a94b944fbc66358c218f54ae6b057b733f55d4db8e389f915b43d6eb7c2"
+  },
+  "de-de-comp8.ctb": {
+   "bytes": 9333,
+   "sha256": "2e9fcedabc70d9c1cb49fb479bd8eb7601f0f24f1e4602ae98632c78b1ab07e2"
+  },
+  "de-de.dis": {
+   "bytes": 14594,
+   "sha256": "b4916e5162f2f7dcb6fd2430a22af76aada2541d26e74f5040bf5d7732f671a0"
+  },
+  "de-eurobrl6.dis": {
+   "bytes": 2264,
+   "sha256": "f173bdad9627971897ef7375637637f1ccf955a7b5d0892edb08493f8f51f665"
+  },
+  "de-eurobrl6u.dis": {
+   "bytes": 2091,
+   "sha256": "d2ec0c0a4cc52d8ffe14cbfc79ecbfb01c3dafc26082bbcf539ffe0092ce0e56"
+  },
+  "de-g0-core.uti": {
+   "bytes": 26880,
+   "sha256": "6723c8008a12129af7493258837728419bf0befa5b9b54d8d04fd592087a02f4"
+  },
+  "de-g0-detailed.utb": {
+   "bytes": 3033,
+   "sha256": "9af7c79dad3894cec1a640d386dfff4114b29cf9d35229c986009169859d7a18"
+  },
+  "de-g0.utb": {
+   "bytes": 1848,
+   "sha256": "b88f982aa7e52336ca390ccbee759706efe037353ffeccb744b0f414b81e92cc"
+  },
+  "de-g1-core-patterns.dic": {
+   "bytes": 36095,
+   "sha256": "1ba956bb9a0f2fbf68b5d46f3d29c8d6c9d13232450c21586662b79c6c0dde17"
+  },
+  "de-g1-core.cti": {
+   "bytes": 2747,
+   "sha256": "66ef532f4cfaada7951b6b2b2c155ec8e1cae55fecf7db95c8f737dc3e9b5fe9"
+  },
+  "de-g1-detailed.ctb": {
+   "bytes": 2844,
+   "sha256": "83555c97265d9b62b7fad1db6054157205171a98ca8ae0335e8f819a9706710f"
+  },
+  "de-g1.ctb": {
+   "bytes": 1788,
+   "sha256": "9c6090b1c45dd01ea7588c8be1f2f7e1569851625150f5a43d125d71cdfdea7c"
+  },
+  "de-g2-core-patterns.dic": {
+   "bytes": 192568,
+   "sha256": "9eba4bdef06d83a14eb6711e9a5fcfe3c48502520cdbaec1b7a2799d3355940a"
+  },
+  "de-g2-core.cti": {
+   "bytes": 34300,
+   "sha256": "953533b3e08cd46f11fd0d26d6096cc038235942fc6e78d56e432116c2a32b96"
+  },
+  "de-g2-detailed.ctb": {
+   "bytes": 2274,
+   "sha256": "489a86e1ead02d61e04a17ae0e22e6f0311047bf6708f7378b5a3ba3b595fefb"
+  },
+  "de-g2.ctb": {
+   "bytes": 1866,
+   "sha256": "eb34cc6bea143ba925912b1f5feff55baf512b19e9d3ba7fed0d9e07ce7cc177"
+  },
+  "devanagari.cti": {
+   "bytes": 12718,
+   "sha256": "b1d7aafbecc22ac88f8ccad2cd06ee27b198595141821d5186094bf917ccc44a"
+  },
+  "digits6Dots.uti": {
+   "bytes": 918,
+   "sha256": "ad1e81b943415139576d4ba1c14d7208f1b8738112d2844c4c1cc4f878ff3ddd"
+  },
+  "digits6DotsPlusDot6.uti": {
+   "bytes": 1065,
+   "sha256": "542fecae399ba5cddb0f4b698c4f6e5f62486960117058f64d63b57a82fd7301"
+  },
+  "digits8Dots.uti": {
+   "bytes": 928,
+   "sha256": "fdd2b2e72c5745bf50d96a793b527dddbe50a001048c64b7d1def0ebef5aa5ba"
+  },
+  "dra.ctb": {
+   "bytes": 905,
+   "sha256": "3e48552048a40b23251b2ec13f36b82c3249ff640367d8403d7bf3327d5bcd3a"
+  },
+  "dra.tbl": {
+   "bytes": 688,
+   "sha256": "74227745e1d48afebb9c80d9846261242fc6bb2d6a61771ace6bc67b1dd65499"
+  },
+  "el.ctb": {
+   "bytes": 30752,
+   "sha256": "0c09c4314f906e89b5a38ed9ea52740b8a0727b06e1f9c7870fb67996f184822"
+  },
+  "en-GB-g2.ctb": {
+   "bytes": 19588,
+   "sha256": "b9bd51b2d511a3e6b60944c94e8aeb1d45f9dc321f5d3a4b99489653b40dfd36"
+  },
+  "en-chardefs.cti": {
+   "bytes": 8629,
+   "sha256": "b09648dd8467c62df0008b2326a70df6a31c02baf48ce177561ebbba835b95e9"
+  },
+  "en-chess.ctb": {
+   "bytes": 1498,
+   "sha256": "b8d9d6c9b06f83494363a417db42422f5e81d8cc064e7f5810a24bf0f168dcae"
+  },
+  "en-g3-patterns.dic": {
+   "bytes": 78006,
+   "sha256": "78751444a157c4b162122b690d76d48ea5a06c4edc60a6ba1fe41ebf3cf5e64d"
+  },
+  "en-g3.ctb": {
+   "bytes": 65206,
+   "sha256": "e2e6be9a54880ee054336c27988357947b8d9d9636bfacecba817564bcbc234f"
+  },
+  "en-gb-comp8.ctb": {
+   "bytes": 12745,
+   "sha256": "861d5844bca129dcdff59e044460988b6d7e58115663388179829655f62e1bde"
+  },
+  "en-gb-g1.utb": {
+   "bytes": 14246,
+   "sha256": "45576b315a63f4182796f1f457469381be0324cfd7cbe290c53e64bf4e3bdb00"
+  },
+  "en-in-g1.ctb": {
+   "bytes": 3425,
+   "sha256": "40fe5c4787bbb3d343be949c2291a20316349e24066cbc5613cf9ad0c9d6c5be"
+  },
+  "en-nabcc.utb": {
+   "bytes": 7265,
+   "sha256": "9b5c147a4db73783c2e9d9cc6e9a7554f7ed58462b3fbc6ea14e4ff480256cae"
+  },
+  "en-nz-g1.utb": {
+   "bytes": 2681,
+   "sha256": "7cb39259b221414580bb2e4e8749afc8ea6956e2bcc35173276ed4f5094a86f7"
+  },
+  "en-nz-g2.ctb": {
+   "bytes": 1874,
+   "sha256": "73a2baeec2ae4bc7857507fb4d9985940f50df6e4f1bc22cb730d6ea601736c6"
+  },
+  "en-ueb-chardefs.uti": {
+   "bytes": 27834,
+   "sha256": "66b60686cdf901acaa0a6615bf96745883f7e8a5f974eaa355a34c2c417efea0"
+  },
+  "en-ueb-g1.ctb": {
+   "bytes": 5368,
+   "sha256": "1f77969efa61620b5af30eda2930068f8a239e18601b235505527601cc3d03ed"
+  },
+  "en-ueb-g2.ctb": {
+   "bytes": 149628,
+   "sha256": "74ff8d2dd6f51ba2cb43934f100b2f3c31a0b37c9d782e3c57367df1de84dfb0"
+  },
+  "en-ueb-math.ctb": {
+   "bytes": 2045,
+   "sha256": "d4fa2926bdc0e46fedf0f18e755b3c50a904e5e5b16b635eac88eff6a086f75d"
+  },
+  "en-us-brf.dis": {
+   "bytes": 2438,
+   "sha256": "47ff9400f4b8a0206b0c1942e13c32b539d17ec099dcd1097873a1b9f5cb8b3c"
+  },
+  "en-us-comp6.ctb": {
+   "bytes": 4934,
+   "sha256": "0083bb6a7d9f826c0886c3ce785e0e48734071fac5eb53139ce3f8dd8cfd7695"
+  },
+  "en-us-comp8-ext.utb": {
+   "bytes": 26122,
+   "sha256": "bf73d68461820d7dd3b8dc31638d3bbd1acc7fb74c5deb4a96464bcee8fde23c"
+  },
+  "en-us-comp8.ctb": {
+   "bytes": 1632,
+   "sha256": "23194fbfa9cc2a4f771094aee830825128c44565b797c55815c4a949415dc29f"
+  },
+  "en-us-compbrl.uti": {
+   "bytes": 2166,
+   "sha256": "1a3486a6260eb15a0ffd8b4b973496c192135d3e6dba7d9c0648507458673ebc"
+  },
+  "en-us-emphasis.uti": {
+   "bytes": 1442,
+   "sha256": "ea3fcd8adf2a3f0f2f5f0c07ffe2377bb369a2754372c355396b6f65af4ad10d"
+  },
+  "en-us-g1.ctb": {
+   "bytes": 4307,
+   "sha256": "66711029e284b365540a24a3df22c9c6ba12ef155cd3990decd01208e9204468"
+  },
+  "en-us-g2.ctb": {
+   "bytes": 28009,
+   "sha256": "b379e29f81b537eb0f7e7b1af3a1ea5be79323d475358a64732b421b837f2d1b"
+  },
+  "en-us-interline.ctb": {
+   "bytes": 27976,
+   "sha256": "814ee3a98005cb85b0ca0267da894c6aca822edca2fe58054b66ab718a439230"
+  },
+  "en-us-mathtext.ctb": {
+   "bytes": 20448,
+   "sha256": "2ade1f913f2c33626819d1dee466e31a53f79244a6186096db4a1141e9d9b6e7"
+  },
+  "en_CA.ctb": {
+   "bytes": 8104,
+   "sha256": "a87107060d908a9e79a3863d0b93bb36105f1e6fec356236f2d3d3ca5ce67756"
+  },
+  "en_CA.tbl": {
+   "bytes": 725,
+   "sha256": "8a5b5397820642a4c72a509555d04112359e1b60d6e4e22d1a383a72831e36dd"
+  },
+  "en_GB.tbl": {
+   "bytes": 835,
+   "sha256": "8f37e21899206795f946e4206e974871891d3419d81b87f52854393efaea5144"
+  },
+  "en_US-comp8-ext.tbl": {
+   "bytes": 389,
+   "sha256": "8a74616bed7cb2b9d8d117588f6920aa843074189574becd63b9fd42ca94b179"
+  },
+  "en_US.tbl": {
+   "bytes": 839,
+   "sha256": "f74bbb3daa17ee81669f0a946f3600ec5e761dddd9772f7402d4980650ad4f95"
+  },
+  "eo-g1-x-system.ctb": {
+   "bytes": 2961,
+   "sha256": "0075c3de334c9d97bf80ed08ed427a15d2b6e747e1c0996e16258aa2bef1dac2"
+  },
+  "eo-g1.ctb": {
+   "bytes": 6095,
+   "sha256": "4290bb69e5eb522d3a810763740c9d2447d8149ade6a6f363044bf2dcef6d7b0"
+  },
+  "eo.tbl": {
+   "bytes": 340,
+   "sha256": "f8c3ff8963ad95714d40d6861255311960b38e5ccb31064abc794270e587484a"
+  },
+  "es-chardefs.cti": {
+   "bytes": 14572,
+   "sha256": "36e28906a77fe24d15bf5023208a7d71c4465098b972c4f6fa0ccc237a0914a8"
+  },
+  "es-g1.ctb": {
+   "bytes": 1281,
+   "sha256": "ab1fc501d1a2294d9cade8e302f631940b95587b390ae572fdc0dfc7f47aba38"
+  },
+  "es-g2.ctb": {
+   "bytes": 25676,
+   "sha256": "6b7f7699a40717604646026a8ddc975e85f2e43ebd47843fc588e2ff80e5ef1e"
+  },
+  "es-new.dis": {
+   "bytes": 7611,
+   "sha256": "82df2853bef625ace44a0f97204e1f242747449d55b85fa278bfa7d973de6ea4"
+  },
+  "es-no.utb": {
+   "bytes": 2684,
+   "sha256": "41a7cf046aa342f8627a2ec55ddea38184ce4b7107afe7b2582c28973821f52f"
+  },
+  "es-old.dis": {
+   "bytes": 7605,
+   "sha256": "cc79e313f9eaa4c81fa1b9420e0edf688d073bbcddf3db69eadab2de5df29a42"
+  },
+  "es.tbl": {
+   "bytes": 605,
+   "sha256": "d5b1e74da03c6a3f3451b20d4de2c3c5a575a8bfb094a9182f45292128d4848f"
+  },
+  "et-6dot.utb": {
+   "bytes": 9405,
+   "sha256": "a653f8458cba833cf7ba38bd7352fe6670d6cd480c14fc39294af8f1c6f63598"
+  },
+  "et-g0.utb": {
+   "bytes": 5402,
+   "sha256": "951bf633d602fa05864ebe57a10268a8aef696768b2adc88b9616411ca8f3477"
+  },
+  "ethio-g1.ctb": {
+   "bytes": 7772,
+   "sha256": "fe3bdadf3f95569a7354bbf338a04804989c1f1c9a7beed68b24a8674248982f"
+  },
+  "eurodefs.cti": {
+   "bytes": 3046,
+   "sha256": "82d23c8adbc67211c1fb783b435c94a5299cfc94344851b713eb1bf5a0792c1f"
+  },
+  "fa-ir-comp8.ctb": {
+   "bytes": 5672,
+   "sha256": "ab289481de206b595ee92b6684d6c9e8d4a93103ee52b2efbdc0b3cf5fed1354"
+  },
+  "fa-ir-g1.utb": {
+   "bytes": 6171,
+   "sha256": "07396a4225c20f8725bf0150c5282cfb0419d290b18cbbcd38db087dffdb5d48"
+  },
+  "fi-fi-8dot.ctb": {
+   "bytes": 8558,
+   "sha256": "a1047fd03924b7e5a9cc8cbb17f0c7d33ece76f4df043b7a9b3114ecd287e275"
+  },
+  "fi.utb": {
+   "bytes": 12716,
+   "sha256": "eb19cbbfb43287d951b86792883c477c76276ee14609bee30500248090acaa5c"
+  },
+  "fil-g2.ctb": {
+   "bytes": 14199,
+   "sha256": "50d6b8082e098b1e3ee080403c47faaf0ae261b9b41c76982c4a3d86e522520f"
+  },
+  "fr-bfu-comp6-puncs-math.uti": {
+   "bytes": 12897,
+   "sha256": "adb868643ae6620c10a8d67f385d5c308e9df2002ae25dd1b2b417c7c4ade644"
+  },
+  "fr-bfu-comp6.utb": {
+   "bytes": 7726,
+   "sha256": "714ce0204755844eb99dc4e88bba7f0fa9fcf470abf1019defe340aef5df0dbf"
+  },
+  "fr-bfu-comp68.cti": {
+   "bytes": 10685,
+   "sha256": "eb5aca4fc8b1f1516c73c410401616b339633913c5aca31b4f14697b54a4cf49"
+  },
+  "fr-bfu-comp8.utb": {
+   "bytes": 16446,
+   "sha256": "ca5cb3667af6a2522b5697686de2de6dd87c44784e72a52dc91ae46b502d4248"
+  },
+  "fr-bfu-g2.ctb": {
+   "bytes": 144390,
+   "sha256": "d709c4fcd3806384ce0e90d3dac82efc4a9fb8a74f74eedc6545106f79ac459e"
+  },
+  "ga-g1.utb": {
+   "bytes": 2992,
+   "sha256": "964deabdd4ecc2ea66c414909c6fb6529daaa05218a306c4153798daecb83e1e"
+  },
+  "ga-g2.ctb": {
+   "bytes": 5218,
+   "sha256": "ce40ef89d21489331743f219f11f28bfaff8f73ed17353080a4fb89c19b581af"
+  },
+  "gd.ctb": {
+   "bytes": 5289,
+   "sha256": "357b47518e2a02e7b49040c0072c951b3ede1ba05d49877689ba9e07da69bcf2"
+  },
+  "gd.tbl": {
+   "bytes": 698,
+   "sha256": "c5b3433a6ebd0ec066518e39ea35f7abfb984dfd4588fca76aaab56e7537d0b9"
+  },
+  "gez.tbl": {
+   "bytes": 677,
+   "sha256": "9f22a11711ebfa4beb45a316082a8362c9752b3911a999f39a9bf1b318e45e2a"
+  },
+  "gon.ctb": {
+   "bytes": 944,
+   "sha256": "79673962a65dac7e96e0087dbad0f824b6414e07246e25c0b475aa1c70767f1d"
+  },
+  "gon.tbl": {
+   "bytes": 546,
+   "sha256": "1a1276a74cfa8ed9ab06dc5608de2b2f4ee08ca6c64965ca7b9d70f8f3ab6b35"
+  },
+  "gr-pl-comp8.uti": {
+   "bytes": 16000,
+   "sha256": "fee57c48f85e69f55b3508924fa54a5625a7ce4821c81851aa6083738b52ea8f"
+  },
+  "grc-international-common.uti": {
+   "bytes": 3669,
+   "sha256": "df6b92243983c72142b9c061429113d113c963f04143e84d8ec51a5ae8f9bf18"
+  },
+  "grc-international-composed.uti": {
+   "bytes": 16304,
+   "sha256": "70e3636b18ea3a58bae39033d92891e570a211bde024009e33d4a52dafe4050d"
+  },
+  "grc-international-decomposed.uti": {
+   "bytes": 16446,
+   "sha256": "37f1af372dbc982c3b9d2a36769664032dacf25d95b8384789947a695717211a"
+  },
+  "grc-international-en-composed.utb": {
+   "bytes": 2167,
+   "sha256": "26c2f38d862f75be7b1aae4c015da10d6ff983367fa9b41e4c11e351b844ba95"
+  },
+  "grc-international-en.utb": {
+   "bytes": 4843,
+   "sha256": "f3b7b151662a2ddb186f0c85734dc525d36db4f1b16c2d9bf86723f3c7321f97"
+  },
+  "grc-international-es.utb": {
+   "bytes": 18757,
+   "sha256": "3fdece5655428415a527acac4ae71d1f6948f36d18a6603ad1b11ff2294ee50d"
+  },
+  "gu-in-g1.utb": {
+   "bytes": 1217,
+   "sha256": "e0fb6ab92f5a864a805918aa17bd1cb8dd46f8efdc770ebbc24ad0fd8fd9b626"
+  },
+  "gu.tbl": {
+   "bytes": 566,
+   "sha256": "6f5ec49d7515c292bf7c8681d771cac3b3c692b1ffc645e94edaf7d10635b865"
+  },
+  "gujarati.cti": {
+   "bytes": 9603,
+   "sha256": "634fdcdf7057d80ac628fec21cfbc10c64d156875a460826758888bdfaf56649"
+  },
+  "gurumuki.cti": {
+   "bytes": 17908,
+   "sha256": "b0b26793617c8b0e59fec084c517818fbaf25db4dcda147db297758899fe1c46"
+  },
+  "haw-us-g1.ctb": {
+   "bytes": 1582,
+   "sha256": "4f96c11d84f8ff76ac5719fb57feddb2c44bd520de6a8f7a06acf70863e7351d"
+  },
+  "hbo-cantillated-rules.uti": {
+   "bytes": 3059,
+   "sha256": "4d56d86cb13901036f5a3429ca2ad28ec454397c82690c1bd1973462b11443ff"
+  },
+  "hbo-cantillated.utb": {
+   "bytes": 4089,
+   "sha256": "2e0cc733aa65dc7da6514610b4037d13cc4c3cdf43ad39d41d14a9dc3a184069"
+  },
+  "hbo-common-rules.uti": {
+   "bytes": 5160,
+   "sha256": "bc2ab0f35464dfb470ab7b2fd05077d94de3028c252862e8fc9da71b49b13104"
+  },
+  "hbo-ihbc-rules.uti": {
+   "bytes": 2293,
+   "sha256": "002f84ae026fb9697963914402ae733181b9b7c33e107444577651629325ad14"
+  },
+  "hbo-slim-rules.uti": {
+   "bytes": 2494,
+   "sha256": "2099d2a8e03184184d91a2ad2075979bfa0e454033d9a6ccbf89fa8a435ad293"
+  },
+  "hbo-slim.utb": {
+   "bytes": 3708,
+   "sha256": "4aafe93a9c0aa19aa689f4483c3cea6f27cb3b7f16e213b357cadbfde9060fed"
+  },
+  "hbo.utb": {
+   "bytes": 4028,
+   "sha256": "07e37124f1b50b3b37aa639a82cfc5ff5f84d8b055e2adced664b6d3c2c80d3d"
+  },
+  "he-IL-comp8.utb": {
+   "bytes": 19251,
+   "sha256": "57afcba4f977110133a256a20374cca2272381d492da2cffc50b5b9507dea190"
+  },
+  "he-IL.utb": {
+   "bytes": 10748,
+   "sha256": "ef5020b87c7dc088132d946a67d535e2041b61b03a32d1634fa32f42013648d9"
+  },
+  "he-common-consonants.uti": {
+   "bytes": 3263,
+   "sha256": "5e9585a16d4284afd779fc91777c2b47bc72ba9f7b80a745976f27792b808f64"
+  },
+  "he-common-vowels-ihbc.uti": {
+   "bytes": 6203,
+   "sha256": "28e33395ff03332511e7a7d5b33e6ae2ece1fbb968cfb96b75e88dd21595d805"
+  },
+  "hi-in-g1.utb": {
+   "bytes": 1216,
+   "sha256": "7f1a82781b90b62f1a6fee91b247300db5e9d7aeb82df9d28f3fb86c80c1d109"
+  },
+  "hi.tbl": {
+   "bytes": 560,
+   "sha256": "a54a1f4b9d0de805905d98119b2b81b75cd511f9c55b278fb68facaa26022c13"
+  },
+  "hr-chardefs.cti": {
+   "bytes": 16521,
+   "sha256": "58c7e6860579a9eb02b69c9c5ecf44e282b7824b6c66d28163605852e58b6c8c"
+  },
+  "hr-comp8.tbl": {
+   "bytes": 690,
+   "sha256": "c2a8ba0d68409925b44df5d7df367b6a902ff665da266ea380d5c7368deba98a"
+  },
+  "hr-comp8.utb": {
+   "bytes": 10517,
+   "sha256": "c839dbff791c6c835c3db2cb443877dbe3b3111a1b28ebdc20cf3e990c1579aa"
+  },
+  "hr-digits.uti": {
+   "bytes": 1443,
+   "sha256": "3109290593218256740272f0973af752e9f1bb71e1b0f3f1951623c37880f448"
+  },
+  "hr-g1.ctb": {
+   "bytes": 1510,
+   "sha256": "5395a52a73c052978122fd74439d4be4bdbb1aab2518be0dd230b5071f00fa36"
+  },
+  "hr-g1.tbl": {
+   "bytes": 148,
+   "sha256": "f2f9721dc53b5dbf0a7a127bafc9f8eb7833e2b29d2e7a1a7aebd3c84af0c85d"
+  },
+  "hr-translation.cti": {
+   "bytes": 8470,
+   "sha256": "5aabf0c04bdbc41f26c8bbbeb3eacc1b872dc3b0551f56c796df57b1ce4ed67b"
+  },
+  "ht-frenchcompatibility.uti": {
+   "bytes": 2711,
+   "sha256": "700ee00d005262477de5265219f807e9c2c3bfd42738739bf4a80a0f1ea7178a"
+  },
+  "ht-g1.utb": {
+   "bytes": 4028,
+   "sha256": "8bf1613d96d09a25d6c99d985a27d7c870d6b54394e444bc135535b8bed0490f"
+  },
+  "hu-backtranslate-correction.dis": {
+   "bytes": 1355,
+   "sha256": "1cea785cd63a9f7fba8634e0fefbf19467271582409b9a634c535ce6e5fa112f"
+  },
+  "hu-backtranslate-word-corrections.cti": {
+   "bytes": 310288,
+   "sha256": "b6241a815fa4a9655438c26646dcddb0df2f4b407010aec21c13a7ad01d5612a"
+  },
+  "hu-chardefs.cti": {
+   "bytes": 12637,
+   "sha256": "72cca28ea5e9374bece4694313cca5f2fc55c7fa99ed2f4ee362f3725fb9acc5"
+  },
+  "hu-exceptionwords.cti": {
+   "bytes": 257639,
+   "sha256": "bf2df944bd6ff187dd54e57120851e3b37309bbaf1c5a352bae954941656aa96"
+  },
+  "hu-hu-comp8.ctb": {
+   "bytes": 7217,
+   "sha256": "2d7dcfe9e169903084d4a43cafe7d0e52fd9487167afbacafa2ce63a6da8bc8e"
+  },
+  "hu-hu-g1.ctb": {
+   "bytes": 5153,
+   "sha256": "0af739290b327dfe66f301776a419e9530745ebf334ecb48a7e167dfe260a638"
+  },
+  "hu-hu-g1_braille_input.cti": {
+   "bytes": 18642,
+   "sha256": "284a4e4dbab5121f565d0e79f03e4706786560acd0a4acc614d8908f5197a392"
+  },
+  "hu-hu-g2.ctb": {
+   "bytes": 13457,
+   "sha256": "046a87722cce3abd50a6989d2159e508bf05f231809e0c744860ebd9ea515a92"
+  },
+  "hu-hu-g2_exceptions.cti": {
+   "bytes": 42363,
+   "sha256": "3241167f2b59453258c346b971f949c71e727846ed272a1f842b2c6c33c3b5e8"
+  },
+  "hy.ctb": {
+   "bytes": 5426,
+   "sha256": "7aff3610ad148be843f22bdc48b61ab1dee4411085a5a007ba7a3bf4ad56e98a"
+  },
+  "hy.tbl": {
+   "bytes": 684,
+   "sha256": "85d610dbdba823c31622030d715328b8aee37b5273f479eaca2c85fc79bd73eb"
+  },
+  "hyph_cs_CZ.dic": {
+   "bytes": 21743,
+   "sha256": "3ecd88309b2ff7fc06bc1acb9a4b5d71045e6321cd2c0bd22e8dbb5740eeb150"
+  },
+  "hyph_da_DK.dic": {
+   "bytes": 61398,
+   "sha256": "4f5a3a7514b1f9da74f8e9de75f333012b0f130b440b2b0dc92fec3990a2bf2e"
+  },
+  "hyph_de_DE.dic": {
+   "bytes": 36801,
+   "sha256": "6c39958409cf679e9b7231dcb3088d652ffcc1ff7962035d0f440e5d3ef2c856"
+  },
+  "hyph_en_US.dic": {
+   "bytes": 36467,
+   "sha256": "9199c3592b28167fcddfda503c3cf4522a6211788ce45c898ca275460888ca2b"
+  },
+  "hyph_eo.dic": {
+   "bytes": 10667,
+   "sha256": "88e1b16447e28b15539a3afcbd5ef6b796f885c72fdbd728292d8e0126d3458a"
+  },
+  "hyph_es_ES.dic": {
+   "bytes": 4217,
+   "sha256": "a2aaee7b41a4451ae20d263cf1e926a895d94937087d20abb75dfc8a281bdfcd"
+  },
+  "hyph_fr_FR.dic": {
+   "bytes": 7979,
+   "sha256": "6b4d394eba588f23a8f24e59ca5672adb4133f2386b78ccda59da091b518ea54"
+  },
+  "hyph_hu_HU.dic": {
+   "bytes": 876243,
+   "sha256": "58c101cf5516cd2f6835bf2216014a95efc1fba3bed9976027a3f36c9b4b44fa"
+  },
+  "hyph_it_IT.dic": {
+   "bytes": 2206,
+   "sha256": "0a8c12793e89e42d21bd278e5e9fbfa7baf3eeac8c95deb19bc610b8e08869d9"
+  },
+  "hyph_nb_NO.dic": {
+   "bytes": 186678,
+   "sha256": "c6c9b07d9f2c60bb47857fd629d9a453026312c894665d22c72e8e1699420f6c"
+  },
+  "hyph_nl_NL.dic": {
+   "bytes": 83525,
+   "sha256": "3d39067eb1331290207e754a60d61c38c812379affeae3cafd640997de427060"
+  },
+  "hyph_nn_NO.dic": {
+   "bytes": 186678,
+   "sha256": "c6c9b07d9f2c60bb47857fd629d9a453026312c894665d22c72e8e1699420f6c"
+  },
+  "hyph_pl_PL.dic": {
+   "bytes": 30551,
+   "sha256": "e4195bd2bed6543d8c1df83a775c922b08ea3a1eaadfb97179ce163e47aa706b"
+  },
+  "hyph_pt_PT.dic": {
+   "bytes": 1288,
+   "sha256": "6f18ee89de6db21d9b06120a5527ec41d8132514fc112ccfe7d289ba91649840"
+  },
+  "hyph_ru.dic": {
+   "bytes": 67536,
+   "sha256": "bde8de5c60f982ccd45721cec83d49c3cd7e9a9a03c4084da039154f8b5fe7ef"
+  },
+  "hyph_sv_SE.dic": {
+   "bytes": 31259,
+   "sha256": "5c9e1ded87a89c71418aeb3bd24fe69b03db51e984b8b62f491a4d849699919e"
+  },
+  "is-chardefs6.cti": {
+   "bytes": 7541,
+   "sha256": "dcf84eccc0eae4d348fd24fd6463c93803f73a2b3598d06953c90c18803ca3e2"
+  },
+  "is-chardefs8.cti": {
+   "bytes": 21242,
+   "sha256": "fdec00e449017bfe4814bad25114940577d5807896b2ec7c70846ccdbc097d42"
+  },
+  "is.ctb": {
+   "bytes": 5901,
+   "sha256": "b7d05ebfe1ebfb40838baa10a06e0d7f5bfa9eb20056dbf47b4b3807556a6a61"
+  },
+  "is.tbl": {
+   "bytes": 571,
+   "sha256": "e634ff448f132158f694be0edd6c73ca4fbedf066d84fdc6c6439f8520611f3f"
+  },
+  "it-it-comp6.utb": {
+   "bytes": 12767,
+   "sha256": "f1c5a46401f3c712ae84fa6ba1796674ac3fc02091be36c4a6e4e39d0746a19e"
+  },
+  "it-it-comp8.utb": {
+   "bytes": 28939,
+   "sha256": "485fc6818665f68a0ed35de550637d2a65a505d51d27019cc111a3018a0c895e"
+  },
+  "iu-ca-g1.ctb": {
+   "bytes": 8172,
+   "sha256": "99e0351aa5dea5aa682dd9d7f8a0a51e36721fc1e331f63702d6aea53832c18d"
+  },
+  "ja-kantenji-ucs2.utb": {
+   "bytes": 262294,
+   "sha256": "1719e08ef1490d20f0b254046776b7dcc9ec78188b3e25ca1a4d37f85ddb85fd"
+  },
+  "ja-kantenji.utb": {
+   "bytes": 1563,
+   "sha256": "fbbcaf300b5a1e8f0de8b0714e1bcff65a1a5c44ffa138a86b5f858c5b152686"
+  },
+  "ja-rokutenkanji.utb": {
+   "bytes": 216124,
+   "sha256": "b0bdee5f8f99a9aa0c7afd13d16eef09dd953089a2b357d3a785676ec7b2ddd1"
+  },
+  "ka-in-g1.utb": {
+   "bytes": 1215,
+   "sha256": "01c843ca073a4c7084aadc3f35cff062568e8ffd82f120738e934a10c76f64aa"
+  },
+  "ka.utb": {
+   "bytes": 3869,
+   "sha256": "6d1de8aa8cfa4d163f8e87551a30434d4fcc2566db157dff4a33359cff5ddea0"
+  },
+  "kannada.cti": {
+   "bytes": 12153,
+   "sha256": "a1e23fa41f20ea05933b7c2ae79504ef664208a739d693bc6ebd5c89d54e7b14"
+  },
+  "kh-in-g1.utb": {
+   "bytes": 1192,
+   "sha256": "b2be1ceae832790b0b9fcb68258c4d063b54ececb13bd4d3f3b09590f0ce2977"
+  },
+  "kha.tbl": {
+   "bytes": 561,
+   "sha256": "486ebf0e6ce088debe3343227dcd4c3a93899344204672d1c471daca36d746a1"
+  },
+  "kk.utb": {
+   "bytes": 2723,
+   "sha256": "eea9ac22ec93bfc984b1eac3025b37941c3d84a2e3f627a2ec83a25f33147798"
+  },
+  "km-g1.utb": {
+   "bytes": 9165,
+   "sha256": "3abf487d11c490d81cde84e0ee7d16bc96f4d18859b8e2d89fa95dc986730005"
+  },
+  "kmr.tbl": {
+   "bytes": 4775,
+   "sha256": "2916acf428c1f732de0331e0671760291fe5a3c2d4349023d2908eadd1ea2701"
+  },
+  "kn.tbl": {
+   "bytes": 564,
+   "sha256": "9884f202d473b877eddd0797a396e5534a7e46c30bd3ae2d0c861380c5949765"
+  },
+  "ko-2006-g1.ctb": {
+   "bytes": 1779,
+   "sha256": "fcf19e7adf9aa9d7af7a4a25e5fdc292b48c37c989881af6a0976508c4d597fe"
+  },
+  "ko-2006-g2.ctb": {
+   "bytes": 1975,
+   "sha256": "72b7fc874c2a1f7c87d89631d7d8fa4912af8de65174d355af84022df810633b"
+  },
+  "ko-2006.cti": {
+   "bytes": 3959,
+   "sha256": "f87188f5f99913ac9c20dfa948c5d9eb0575e8b73368ef02257470ef500f707a"
+  },
+  "ko-chars.cti": {
+   "bytes": 382348,
+   "sha256": "c284a1a6b4891d36914499ae2f64c07b8ff26cc231388fcc4a220325fccee887"
+  },
+  "ko-g1-rules.cti": {
+   "bytes": 23681,
+   "sha256": "8f32f3584b81d32b2d6da509555e71767b0129e2917ba5af3bd98d03fc83175a"
+  },
+  "ko-g1.ctb": {
+   "bytes": 1694,
+   "sha256": "88fb02c4fc904ea9a11c922a7ad971d79cdd05949f9c06d698748ab9e9975733"
+  },
+  "ko-g2-rules.cti": {
+   "bytes": 274776,
+   "sha256": "02054535b3a6d9212f4fc1c1bcc6370c7ead2eafd52b18e19f364d23471361fc"
+  },
+  "ko-g2.ctb": {
+   "bytes": 1896,
+   "sha256": "9ab34529c96d60ae7fd3cf321f755c022f06ac98b2b7db719c07e823bcea878a"
+  },
+  "ko.cti": {
+   "bytes": 5600,
+   "sha256": "fde98715a3e7d4dd7627fa7a5fd2e7c7c3bb8960be0a4a9083e7aaf4df2d517e"
+  },
+  "kok.ctb": {
+   "bytes": 927,
+   "sha256": "4dea9d6e5228ec5cdca826ea35a080d0603ed6137720affc1b0f647c53d6d049"
+  },
+  "kok.tbl": {
+   "bytes": 550,
+   "sha256": "baa5a23b7d7bcb8de245bc2a7a290a6ba2e8047ff3188b02b164da2d8e87c5a5"
+  },
+  "kru.ctb": {
+   "bytes": 926,
+   "sha256": "6a3e4fd2d5f6672a10e069c857b137853725b175e009a368f29fb3e3a0f356b4"
+  },
+  "kru.tbl": {
+   "bytes": 548,
+   "sha256": "28d247bf80943de402483c90ba9d29690d3c0fced98865ec1c96860c7db0962d"
+  },
+  "ks-in-g1.utb": {
+   "bytes": 1219,
+   "sha256": "8c37ff459ab13181094725de45be7f7b357116f85ac7a083bd82c4d9b3a124ff"
+  },
+  "latinLetterDef6Dots.uti": {
+   "bytes": 1993,
+   "sha256": "644b8b0c9a49ec88d487d2068933995cfa4d77cabb64ec5db26ae04b3d458f71"
+  },
+  "latinLetterDef8Dots.uti": {
+   "bytes": 1788,
+   "sha256": "3b6d481e1c568ce6642e9300c3f039bda1effd2f8342cd5e5a4129faa674ebee"
+  },
+  "latinLowercase.uti": {
+   "bytes": 10446,
+   "sha256": "723d625c4b4ba57ebc30d519cf320188b608fee7f73b6417df0ae6b8a155a99a"
+  },
+  "latinUppercaseComp6.uti": {
+   "bytes": 1868,
+   "sha256": "d777e0ab7c0c7a0c3a6a685f1aa74c4c57fea7766f6e16cf25f8ffa1a8be0b5b"
+  },
+  "lg-ug-g1.utb": {
+   "bytes": 2205,
+   "sha256": "5c113986db5d56b21d7cba17d98ed7f2b77d0cfea27c908c703c177f451e606b"
+  },
+  "litdigits6Dots.uti": {
+   "bytes": 957,
+   "sha256": "d73f34e2f1638807def50ae3a768e0df3af53dc0291e8ba0d2ac5b063b16c1be"
+  },
+  "litdigits6DotsPlusDot6.uti": {
+   "bytes": 981,
+   "sha256": "5a85fc12df45bd13dff67e3924aa562ffc7ad282c321ff025fcd26a76fcf5349"
+  },
+  "lo-g1.utb": {
+   "bytes": 148569,
+   "sha256": "ecb1da6bdc971b3a55e3eac1696d66f8ebd389799a9e07afc9fc0ee175dd7b3e"
+  },
+  "loweredDigits6Dots.uti": {
+   "bytes": 926,
+   "sha256": "7dc6e70c78258c393dd7a8fad0280c3f0163621f051a3ac6b4ffc97f9ca49221"
+  },
+  "loweredDigits8Dots.uti": {
+   "bytes": 936,
+   "sha256": "a41d317ee0a03a24e4ee15122a8623b97d6f93b3a5286f2a30eb5652f4a05554"
+  },
+  "lt-6dot.utb": {
+   "bytes": 12976,
+   "sha256": "608314fb708d52047ad60f6c86c77fc48634c9803ac5e9558e82e0835c0e2ad1"
+  },
+  "lt-8dot.utb": {
+   "bytes": 11448,
+   "sha256": "639080f0211d962bfccbb25ee1e68d7082a05467f85c744ab073779a8ce6b855"
+  },
+  "lt.ctb": {
+   "bytes": 17489,
+   "sha256": "529d06000cc98336b49490cd97fbb9702df9cf2c635d724f7c2f05d48012685f"
+  },
+  "lv.tbl": {
+   "bytes": 677,
+   "sha256": "6c2558159298bdf74b305527e6d8a0df3396563469a714542e52be50d6599889"
+  },
+  "malayalam.cti": {
+   "bytes": 29803,
+   "sha256": "45c5cff84f3f8cbd82f3cc120b6b631de6d8955d110af71c89e31898395a8cc0"
+  },
+  "mao-nz-g1.ctb": {
+   "bytes": 2542,
+   "sha256": "6c2c31d77bae963de4ab4d6eb7d2952d6d3e7e3689047f8fd561f499f77c04be"
+  },
+  "marburg_single_cell_defs.cti": {
+   "bytes": 1515,
+   "sha256": "c56db362b8e37ea8960265abc56fc65ad6a8f18369d16b172cd85474d571b94b"
+  },
+  "marburg_unicode_defs.cti": {
+   "bytes": 15548,
+   "sha256": "33f01df57657dc6936b430549722f625ecbc01aa3520178bafe409fb7e792916"
+  },
+  "mk-g1.utb": {
+   "bytes": 5520,
+   "sha256": "0b11872d29bc0c10dee679cac8819751d763bc87ab73518595e8404f63a7bdb5"
+  },
+  "ml-in-g1.utb": {
+   "bytes": 1219,
+   "sha256": "d1d2fbba7ceeb03a512dd0dd2044b7d3e61752cc7e1e264079f9f491a1e78c97"
+  },
+  "ml.tbl": {
+   "bytes": 678,
+   "sha256": "5b6ce86992b161152833ba95bd571783cf74aa0943db29d41c3b8f89117a96ed"
+  },
+  "mn-MN-common.cti": {
+   "bytes": 3290,
+   "sha256": "b078b041c67abd52d568ec855061387fb949971e93ad235e30d1608c0f716d20"
+  },
+  "mn-MN-g1.utb": {
+   "bytes": 1947,
+   "sha256": "8f323ea79f344ef059632952f8243c62e6866e7f0d3b80af5c8902e983b21b8c"
+  },
+  "mn-MN-g2.ctb": {
+   "bytes": 1943,
+   "sha256": "99bab9a0b4a395c1b2ce59a8625e6729cd4cbf19f28cf2500111023ce6c01c97"
+  },
+  "mn-in-g1.utb": {
+   "bytes": 1216,
+   "sha256": "7c26b92d50cf2c155bd50688651dbea613b20201c404e83e9b28925e55954b8c"
+  },
+  "mni.tbl": {
+   "bytes": 567,
+   "sha256": "505ed4c22c9b53f48b21e0185c10548d9eab782f0fa1a46b6af629d373280d64"
+  },
+  "mr-in-g1.utb": {
+   "bytes": 1218,
+   "sha256": "08e3db44441b76e3edf8fdcbb54ce265c67d2d8305e4174732466b87aa9b5ab9"
+  },
+  "mr.tbl": {
+   "bytes": 564,
+   "sha256": "ef7d6605ad25d3b9a5a8e6570830ca6050395be69300510032d439a9ed013cce"
+  },
+  "ms-my-g2.ctb": {
+   "bytes": 145417,
+   "sha256": "4d9285589949aed7c51b3b2e3a43135a96fd35c35af17c96bc3c16ef5bf707e8"
+  },
+  "mt.ctb": {
+   "bytes": 4551,
+   "sha256": "f56eaa3d7ab0278806bd090b2de65e23f73df630508fac4b621ce18146f715bc"
+  },
+  "mt.tbl": {
+   "bytes": 682,
+   "sha256": "d913f34632880008d1193b6da581639973cd750ae40622e295742141b8618467"
+  },
+  "mun.ctb": {
+   "bytes": 922,
+   "sha256": "c5d42ca31a132a1c7f62644c67d51a6150f65c08747781621758d320d61a608d"
+  },
+  "mun.tbl": {
+   "bytes": 546,
+   "sha256": "ccbe5268faf28869b932f3f1f102aba169ea88391f93790836473c4b852b09c8"
+  },
+  "mwr.ctb": {
+   "bytes": 927,
+   "sha256": "cecec7678d4f59e3363611e703126779bfc14c5bf8d5269613bb70ac37520582"
+  },
+  "mwr.tbl": {
+   "bytes": 550,
+   "sha256": "0baa27b4a0ebf645ee28f37e7e86afe3d4ec4770a1f7e7baf900836ba6b69627"
+  },
+  "my-g1.utb": {
+   "bytes": 20203,
+   "sha256": "057d56a06ead50966de1c89922d3e4bf27fb92cb6613e7be86bf759984b0955a"
+  },
+  "my-g2.ctb": {
+   "bytes": 119212,
+   "sha256": "451443e35205d13502f63367f5c82762cf6456266fc46ae65942353f901dc239"
+  },
+  "ne.ctb": {
+   "bytes": 892,
+   "sha256": "2c47e8bc1226d763e4285e3a3bc6b1b7f080466a04aa66534162f034a0681982"
+  },
+  "ne.tbl": {
+   "bytes": 562,
+   "sha256": "0cd901aab3a043ffd9fa87ed8471a74219c5911e976c619f2bf6e0060bf6511a"
+  },
+  "nemethdefs.cti": {
+   "bytes": 19290,
+   "sha256": "295877c6854975786fe812a56a49340227cc14adf32201f71d518888c4f7c617"
+  },
+  "nl-BE.dis": {
+   "bytes": 12004,
+   "sha256": "5e62ff8ed4e61963de8180d1e4eaad492ce87898fb4b98957e4565f751967e9a"
+  },
+  "nl-NL-g0.utb": {
+   "bytes": 30135,
+   "sha256": "f4646527379dc438f2a41e8b19acd219ad77b9700514fa9014429d2207a82119"
+  },
+  "nl-chardefs.uti": {
+   "bytes": 27413,
+   "sha256": "a27ef1ad206eddabd9ec94f54054c4286ceff9643895e33b83e16fd64ace1cee"
+  },
+  "nl-comp8.utb": {
+   "bytes": 19775,
+   "sha256": "22ae23fd19e9840f856205dc9d9f40b711dbbc90dd31e0941a893f7ce1d6cc55"
+  },
+  "nl-print.dis": {
+   "bytes": 10647,
+   "sha256": "847f83497060f8a72b9ac12ee09db915b4f154d394669ef6e2a8a6e76dab5769"
+  },
+  "nl-unicode.dis": {
+   "bytes": 16643,
+   "sha256": "187442caa92a2fed8ed73d4e26536bd171f90e359a7a9bbb2eda79453318cf45"
+  },
+  "no-no-8dot-fallback-6dot-g0.utb": {
+   "bytes": 2233,
+   "sha256": "0161b6b86ae7cc09932da9f0a0c4a4768bdb1b9d143b40fedaaa65100f8eefa4"
+  },
+  "no-no-8dot.utb": {
+   "bytes": 33108,
+   "sha256": "c8ed6421a20f24b603e0cd1987272c37c9ac5ef984cf4492e1645a76bdf913e4"
+  },
+  "no-no-braillo-047-01.dis": {
+   "bytes": 7819,
+   "sha256": "53629bc76000f09337859aebd77b34761e4f7793a4c6eb3bf13bc59acb51ba07"
+  },
+  "no-no-chardefs6.uti": {
+   "bytes": 14026,
+   "sha256": "62a710fb08cbd55a70f4fb32e5f7aa89359982e6c66f98c8d36154c531c9dc98"
+  },
+  "no-no-comp8.ctb": {
+   "bytes": 21015,
+   "sha256": "93081751a8a881b549adc446d1b9936bd98fa1db39ac0f5a77e462987ebbd710"
+  },
+  "no-no-cyrillic6dot.uti": {
+   "bytes": 5038,
+   "sha256": "5c8e05d82c79c8400bf8716bd09bca833e52213453705b0b1390d23553e3d2b1"
+  },
+  "no-no-g0.utb": {
+   "bytes": 8443,
+   "sha256": "e9a7e1f07c23c880299d85d00aedd7151be40e7d047f01b860b67f52b6daf8a0"
+  },
+  "no-no-g1.ctb": {
+   "bytes": 7116,
+   "sha256": "51cebc2c6e28ef91cc754e1d51ce46a97d8714b34a34479547556443297a0a5e"
+  },
+  "no-no-g2.ctb": {
+   "bytes": 16774,
+   "sha256": "6ae94abb854f446e74a09018c0a8065249814cb64e48f183d4c9ce2aaf57389d"
+  },
+  "no-no-g3.ctb": {
+   "bytes": 129626,
+   "sha256": "4e788870b20afa7a1bc89622e199c28a00f15f9f45dcaead28aa26d4f45ddc52"
+  },
+  "no-no-generic.ctb": {
+   "bytes": 13478,
+   "sha256": "637239f3cbafbb2ec91fca8c29cd660d0119acafb969e0a737ae07b22c082f72"
+  },
+  "no-no-generic.dis": {
+   "bytes": 14173,
+   "sha256": "77fe0e4687a42b7e3eea51dfc2c8c0b33860709fc84cdb8b9a2e61b874e23d3c"
+  },
+  "no-no-latinLetterDef6Dots_diacritics.uti": {
+   "bytes": 52005,
+   "sha256": "553029d72e65f2c0d4381026d391345c7b05304c838c5acc8c45f0155b423282"
+  },
+  "no-no.dis": {
+   "bytes": 13644,
+   "sha256": "448c47933e2af161ec8b8c06aae337220222af9d55ec715d44b1ccd4666b5c80"
+  },
+  "np-in-g1.utb": {
+   "bytes": 1217,
+   "sha256": "8ddee1ebac394da77a8a8ca3d89a1922c117ccea20d97a6723c5e4a0ff67693e"
+  },
+  "nso-za-g1.utb": {
+   "bytes": 1394,
+   "sha256": "d288fef0b4f5138eac7f803f19d2b97bc5bbc3520becd7acc825daa7198b01a4"
+  },
+  "nso-za-g2.ctb": {
+   "bytes": 1391,
+   "sha256": "6cfb336afcab3c47d84de66b462f8569c51f53e63138a9fe0810a4a8a0a369d9"
+  },
+  "ny-mw.utb": {
+   "bytes": 2560,
+   "sha256": "a5d3e38dd8d34a8d8b25b714ed53e003954c7b9dcdbb6e8c2c4bffa60c7b0378"
+  },
+  "or-in-g1.utb": {
+   "bytes": 1211,
+   "sha256": "3af8b8bf17081ec7d807ff9208360953c212343d5f6084032383c981ca846ca0"
+  },
+  "or.tbl": {
+   "bytes": 560,
+   "sha256": "d66a45c9a3b58bb4a7be3198f713c0e758a9271c751cf02baf55db5f9d63653e"
+  },
+  "oriya.cti": {
+   "bytes": 9533,
+   "sha256": "3a2bd6b9f6663e8d5f3fe34d6b62bce83351249c9df3ca4f449bab281b336ca5"
+  },
+  "ovd-6g0.utb": {
+   "bytes": 1918,
+   "sha256": "75b46bd64cf3c26445b5c291216784256054c4d4177be025552273b4365a079f"
+  },
+  "ovd-8g0.utb": {
+   "bytes": 2988,
+   "sha256": "adfbf107e3cb2312d37b7d5565ddbfc2e6fc49dccb5ce268c744b601908cbd36"
+  },
+  "pa.tbl": {
+   "bytes": 564,
+   "sha256": "3c0828ffd5ba0937037a4d2faa9fd6e61938b1557ac59b46bdd372f4c6d3c3c0"
+  },
+  "pi.ctb": {
+   "bytes": 924,
+   "sha256": "b2f06885d546d2ad17615c1421bd139b77e2d7da4a4374eabf95e68addb1504a"
+  },
+  "pi.tbl": {
+   "bytes": 542,
+   "sha256": "fbd4b5effef0ddaee32adfe6d9d1822c9e0d087177f44095eb7cedc9c04911a5"
+  },
+  "pl-pl-comp8.ctb": {
+   "bytes": 18337,
+   "sha256": "ba2a13a16ba0fb50aba08d7f53b0a4b02af30eaf704450ebcc95a29872c00fc2"
+  },
+  "pl.tbl": {
+   "bytes": 230,
+   "sha256": "3b88f55ae87371dd8511e708294286cc828070ba6371472a9ffed31cdbf71030"
+  },
+  "printables.cti": {
+   "bytes": 1834,
+   "sha256": "bcfb64c2131951536576ecc95eedfecf0b211f3394da5471d8d4c3a9587a510a"
+  },
+  "pt-comp6.utb": {
+   "bytes": 15255,
+   "sha256": "45709e13426835abf35064f90bfa708f373fc04762c1da9a90b723da73026708"
+  },
+  "pt-pt-comp8.ctb": {
+   "bytes": 25178,
+   "sha256": "b470b406ef61d1798e0f90b115afc5921695090788e1626b87970e96ba4c1482"
+  },
+  "pt-pt-g1.utb": {
+   "bytes": 98356,
+   "sha256": "192e87b3e8e06d03b0ceb227f2105d04e3f04d045514faf5bd2fbf63967874e7"
+  },
+  "pt-pt-g2.ctb": {
+   "bytes": 21560,
+   "sha256": "a333fe2b97e3d369df722ed7c4f757b1bbb9bcc389e26cac388851ad10f68fd6"
+  },
+  "pt.tbl": {
+   "bytes": 628,
+   "sha256": "b66a4d739cc01a646d619d611a1def06b51497490b28898a31e9fbf994a721b3"
+  },
+  "pu-in-g1.utb": {
+   "bytes": 1861,
+   "sha256": "40dca4281e577e12d15174e5a4b13a1c28a82a34671d2117fc6eba477c6954b5"
+  },
+  "quotation-marks.uti": {
+   "bytes": 1180,
+   "sha256": "6df92d5b59a3d2dc8b2bc762f45f56ced898d20774e96cfc28ba615a7fd46350"
+  },
+  "ro-g0.utb": {
+   "bytes": 2812,
+   "sha256": "69a7b255c68571f049dfe0ecf09c638ef6e409eaf7f53751a6a8b7bc0251ab15"
+  },
+  "ro.ctb": {
+   "bytes": 5008,
+   "sha256": "2d4f5ac806851667b242484a89dde6844eaaa07468e681b87ba5aa17f721980a"
+  },
+  "ro.tbl": {
+   "bytes": 684,
+   "sha256": "f10cce2f13bd996c1351dcb484ad3395e4c5d38ea5aa36d6585146276b3ff56a"
+  },
+  "ru-brf.dis": {
+   "bytes": 2526,
+   "sha256": "65c3b75acede2d80a9ff3a6c125a368edace3a33cad7bd671eec419fcc14f9af"
+  },
+  "ru-comp6.utb": {
+   "bytes": 7271,
+   "sha256": "464c0a77f54b214209a210623381e1e84972fcbbf604bd0a3cddf9be82e3aa14"
+  },
+  "ru-comp8.utb": {
+   "bytes": 35774,
+   "sha256": "60848bec15c842fd30e98690a15fadf07a3bf8a6c81ee1b67458bf5444a7e40d"
+  },
+  "ru-letters.dis": {
+   "bytes": 2832,
+   "sha256": "892a5e2d19bd03898f7c3b3f979f90d95b888f3eba079db39a9d97799adaf6c3"
+  },
+  "ru-litbrl-detailed.utb": {
+   "bytes": 4339,
+   "sha256": "1c30338ec2d4c1a1999665a706831019dfde517f4b7a6a32ea6ae8ab459066fe"
+  },
+  "ru-litbrl.ctb": {
+   "bytes": 33096,
+   "sha256": "62ad4db22f1cc20eaf6ee5ca46c2f687117a22f749cddef5bb38807708a41d65"
+  },
+  "ru-math.uti": {
+   "bytes": 15084,
+   "sha256": "8a7936dbf62fcc7e1a29ab9b9566841678fd1dfde7e992e1a60163d072eb1418"
+  },
+  "ru-ru-g1.ctb": {
+   "bytes": 21716,
+   "sha256": "480f855da9720ae91f90adaff0cd1033e1e7b2d667dcd1d3edfd7d48e9abe1d4"
+  },
+  "ru-unicode.dis": {
+   "bytes": 3025,
+   "sha256": "7e66186425570743caf2c60e5b14722ce0600535d28e3fe602a50077eb0d3d7a"
+  },
+  "rw-rw-g1.utb": {
+   "bytes": 2985,
+   "sha256": "ca25288c2fe03d6de9c6fba658ad8297e5ba49605f62afadf048695f05d701d4"
+  },
+  "sa-in-g1.utb": {
+   "bytes": 1219,
+   "sha256": "8c6b223766fbeea8606c29967f88f44746cfad7d95fa05c63cb19c509e62d9b5"
+  },
+  "sa.tbl": {
+   "bytes": 566,
+   "sha256": "90c65258b1e2ca3e160843731d1d604de54122fd8e704e934c2baebc759389b1"
+  },
+  "sah.utb": {
+   "bytes": 2644,
+   "sha256": "e7aafb5c3085cbc460ae92b33331b31550493d6b961d4f3f6cd744204a90e829"
+  },
+  "sd.tbl": {
+   "bytes": 562,
+   "sha256": "4f08ecdaac9c2d025ffc38981601d438e4f13b5e1e442cc8e034fd045a1540e8"
+  },
+  "se-se.ctb": {
+   "bytes": 10241,
+   "sha256": "84e43a1d8b8a28f58b2a8025c72bb313ba9df1db9ff79a4c8a2a1095057c8fe6"
+  },
+  "se-se.dis": {
+   "bytes": 14691,
+   "sha256": "cd236f6ef0826db9cb91694ff474c2acb521032400ccbfde64aa5f59cf9cb0d6"
+  },
+  "si-in-g1.utb": {
+   "bytes": 1217,
+   "sha256": "df2eb54e7112328b4a5d9b915a269598d2a209c397d53992975a1f2ab5f68404"
+  },
+  "sin.cti": {
+   "bytes": 10964,
+   "sha256": "97890166edc2fc4855a3e7d4178a2362682d86d3bbc35fb0622793f772247f60"
+  },
+  "sin.utb": {
+   "bytes": 1355,
+   "sha256": "82d52dca31068b635005667489dc1f561914b431bf15ed503880fe8ccc6ea9be"
+  },
+  "sk-g1.ctb": {
+   "bytes": 78098,
+   "sha256": "5066d39916270e3e1523afab12f5185911c89b281b716dfbc3e3a893e2de8050"
+  },
+  "sk-sk-g1.utb": {
+   "bytes": 5935,
+   "sha256": "ec7ffcbb7cd0368b9ae2b5076212e13c31c8493828371970627cd959b0e5109f"
+  },
+  "sk-sk.utb": {
+   "bytes": 3048,
+   "sha256": "417dcb8e07be9d5a61c3194d5f576398f98f4cd865d5ccdab3f3efa76609b246"
+  },
+  "sl-si-comp8.ctb": {
+   "bytes": 8945,
+   "sha256": "413fd726d86fad6f4d8d2c07ed60cedfe0c528347673721f62d5eac9d0993825"
+  },
+  "sl-si-g1.utb": {
+   "bytes": 16220,
+   "sha256": "a22e1109aa1d5dc2a5577746c60768cf6fed7765ec2071322b8d436e472126cb"
+  },
+  "sl.tbl": {
+   "bytes": 643,
+   "sha256": "aa4e12938ec20afed84e13bfe9213bcaf54ed7863ced01f339852ac16daab560"
+  },
+  "smi-6g0.utb": {
+   "bytes": 1903,
+   "sha256": "562330760fd5e8d841d8393fadd4a51d22b5dcb950c2843e6b177872a3db03b9"
+  },
+  "smi-8g0.utb": {
+   "bytes": 1731,
+   "sha256": "90a5bd969325d29faa32bd16dd9320c35fe570f7b9a03874ad56db3595c5fe1f"
+  },
+  "sot-za-g1.ctb": {
+   "bytes": 2720,
+   "sha256": "54077c1200cc71b4d9a0aafc6485b6ae30f0e78020e72a6c5eaf77bfd6319c0d"
+  },
+  "sot-za-g2.ctb": {
+   "bytes": 6276,
+   "sha256": "3a063ac8432f0f892cd7c2e60d4df79ce9e53fdb3a4f64b608a108eb24183513"
+  },
+  "spaces.uti": {
+   "bytes": 2108,
+   "sha256": "8fdd5a9f42caa6f583540b026d7c5af13760b02029cbd08c052b2393cb8829da"
+  },
+  "sr-Cyrl.ctb": {
+   "bytes": 2158,
+   "sha256": "48ccc3936a570a0bca3a239d020dac9c72407eccea272ec4cbb952189d241ad0"
+  },
+  "sr-common.cti": {
+   "bytes": 4885,
+   "sha256": "29e57c321c1178348c5857474e6c125b7202d53c0d855e903e7cb38aa812dd58"
+  },
+  "sr-cyrletters.cti": {
+   "bytes": 4222,
+   "sha256": "34b0ce12ad5566200d00b4df85c1762e008aef67c979fe481e02ca4dd0cbce33"
+  },
+  "sr-g1.ctb": {
+   "bytes": 1966,
+   "sha256": "a5e5d9adc4bee6c7ed4a2f317ace60b11a3c74700a5c3c85e670df34eb43f5e1"
+  },
+  "sr-latletters.cti": {
+   "bytes": 1991,
+   "sha256": "499bb97c2fd74309e10741975fb24cd4a7013f7fcec713cb83f5238b394b3f44"
+  },
+  "sv-1989.ctb": {
+   "bytes": 9604,
+   "sha256": "ae8d430cd57cd94e5f66f197dbc60de8903f6866cb0b6f298ead0d084365ec4f"
+  },
+  "sv-1996.ctb": {
+   "bytes": 7740,
+   "sha256": "6d02d6060ca8c0d01371983d37e6be21b4d6fcc156410ace687ccc66069a89d1"
+  },
+  "sv-6common.uti": {
+   "bytes": 29847,
+   "sha256": "c98b651fe9841ba3494105932859b995ada86e63eba6ee3a6bbaec8a191226b1"
+  },
+  "sv-6g0d.utb": {
+   "bytes": 14510,
+   "sha256": "bda7bddae6e989661c6f85b3a500e36795738f62598d56fc3a0225316fef7850"
+  },
+  "sv-6g0p.utb": {
+   "bytes": 2483,
+   "sha256": "ea4f39f67d5d6518601606c4b364887cc6d9c4520f059897c1c7e3e17814abd6"
+  },
+  "sv-6g1.uti": {
+   "bytes": 2433,
+   "sha256": "9e39e1178f653b88aa33afade8b13a11481b693ab7ca5612c7bb67c7235bb85b"
+  },
+  "sv-6g1d.ctb": {
+   "bytes": 2299,
+   "sha256": "ba445fc27bac2e8a50bf0e74a719a4c3c36ca647fc5d373ef797822f98165b74"
+  },
+  "sv-6g2.uti": {
+   "bytes": 6080,
+   "sha256": "b133f958c3177f206fc74f80d87acff6450a582c6e4e6d71904354b2a7edb6d2"
+  },
+  "sv-6g2d.ctb": {
+   "bytes": 2266,
+   "sha256": "51a0a1b2ec67749a407937c7a3b8070e773d520f7c1418c5e45df2b71d3d4249"
+  },
+  "sv-8g0d.utb": {
+   "bytes": 16480,
+   "sha256": "edcceb9dd1252e4ec399ca898e97f4e82db56ccff0267447ea1c2b167a1d6e35"
+  },
+  "sv-8g0n.utb": {
+   "bytes": 35008,
+   "sha256": "26199c72ca7611a3a4514a0345145fc931b02000197e3cb25477ed2fd94df236"
+  },
+  "sv-8g1.uti": {
+   "bytes": 4871,
+   "sha256": "2f3ebb6fc09c00daadfe77ee101f6720054b405ff840ed6b998ebd8c92cada5f"
+  },
+  "sv-8g1d.ctb": {
+   "bytes": 3168,
+   "sha256": "a88a2e27621d9170981f764cfa6e8f52820ea9d26e798761f26008919160384f"
+  },
+  "sv-8g1n.ctb": {
+   "bytes": 3091,
+   "sha256": "7102fb10d2bfe11b5efe83c9fcf3427ba25c27a8fb941ba5a69f294e3319e69d"
+  },
+  "sv-8g2.uti": {
+   "bytes": 11967,
+   "sha256": "7de7ec7b3c6467d74f537b70c59f67f0514c5f793ac1f30ff41e6898e82d8b63"
+  },
+  "sv-8g2d.ctb": {
+   "bytes": 3145,
+   "sha256": "cd5ba70fc22f137658a25f19767fb012f4bc0689e81efa678f18148a2a6152c6"
+  },
+  "sv-8g2n.ctb": {
+   "bytes": 3068,
+   "sha256": "375b6a546916e6ddab275ed3bb56a1941ccb42010d4074493e5d0da21c9154ce"
+  },
+  "sv-g0.utb": {
+   "bytes": 2485,
+   "sha256": "cf4468ad1cf4d9a9746e374ce666cd6eca6719c5b3dbc224aeacd0352853435a"
+  },
+  "sv-g1.ctb": {
+   "bytes": 2204,
+   "sha256": "ba6802a7f9b55da580a90205993e2079f58b8e3b07b3bcab7e001ed803ae3cb7"
+  },
+  "sv-g2.ctb": {
+   "bytes": 2187,
+   "sha256": "5690aceff81eb46a7e59f208f8608ecf5340c3d740cb1c8aadf3ddeff3f0b8ea"
+  },
+  "sv-phon.uti": {
+   "bytes": 5892,
+   "sha256": "f21851c5edd3eb9a4eb1e1ae882172a2def0bce5b768c6a9335a6f00cf8151ad"
+  },
+  "sw-ke-g1-2.ctb": {
+   "bytes": 2794,
+   "sha256": "b5ddbdb763d596b52c07ea5d6713c4afa77675c91287285c61bf099d7aa28ef3"
+  },
+  "sw-ke-g1-3.ctb": {
+   "bytes": 3145,
+   "sha256": "826c460d0b6657434e0cb43b2fd33c71580a8f1995faf8f0ff6b8814ae7dfd3e"
+  },
+  "sw-ke-g1-4.ctb": {
+   "bytes": 3429,
+   "sha256": "e2f4fb6bc7af10d850d609c6460c90bd9c3718f40ff6e0c130d47826f04d6d86"
+  },
+  "sw-ke-g1-5.ctb": {
+   "bytes": 2640,
+   "sha256": "5df723e95ebed33487025eb9b6e2dbfd0899cccba5dab5808d49ed4bd6c0254c"
+  },
+  "sw-ke-g1.utb": {
+   "bytes": 7168,
+   "sha256": "ff7bc9f0df442598a37f108c6a114a61a25da21f3ea7fd7b47d9bea21ac82abe"
+  },
+  "sw-ke-g2.ctb": {
+   "bytes": 8346,
+   "sha256": "078680af08bbe4fed07c28c78a4bc4a4c1dfecffdb23f169d72e06ab4db39f93"
+  },
+  "syc.utb": {
+   "bytes": 6985,
+   "sha256": "36599fb53c3a4fa52953655c9898bc6bb1ffe1310d9ed9f7e688ae7d69460064"
+  },
+  "ta-ta-g1.ctb": {
+   "bytes": 5039,
+   "sha256": "56958b4fa7af215ebe60aa9d1212dc77213a0b6ffd2d52d9a042fbb7a5a21b1e"
+  },
+  "ta.ctb": {
+   "bytes": 920,
+   "sha256": "c79f9191bc9472746c5fb4d3b6fdb90f09cbb549482d2318e06f8b4e0a78866f"
+  },
+  "ta.tbl": {
+   "bytes": 678,
+   "sha256": "5fe389287e7dba7943c86384909b1cb43d037c83a7e1e8182e5302640aa0b3cc"
+  },
+  "tamil.cti": {
+   "bytes": 3218,
+   "sha256": "0619036eceb37a7569620ab69b0f454cf51b6b4b361d9e886f677e0b87738064"
+  },
+  "te-in-g1.utb": {
+   "bytes": 1213,
+   "sha256": "e51b0e97ae80aa708b984d178c90ccaf0762a59ac481ebf585ed3b354789e825"
+  },
+  "te.tbl": {
+   "bytes": 562,
+   "sha256": "3a1922b31e5d68e286fa942393049cbef652289bf6046f137a62921b5aa09fa3"
+  },
+  "telugu.cti": {
+   "bytes": 9977,
+   "sha256": "8e3c9b5fe920c894c064c511c1534f38e70011805fa1ad0a8ec42f5dd14f9f86"
+  },
+  "text_nabcc.dis": {
+   "bytes": 21650,
+   "sha256": "f3b10172236afd9921ac385c94a66d0ae23dbbf92afee92ae81ab31933088fbc"
+  },
+  "th-comp8-backward.utb": {
+   "bytes": 7035,
+   "sha256": "587b7bc61be52b415114472e6c60f8963f886dec77df1d27960bdade927d3f70"
+  },
+  "th-g0.utb": {
+   "bytes": 5079,
+   "sha256": "8b48036dab9950676633dadf23b9cb3fb8592928bcd89b7277e3cf605d9b8b2a"
+  },
+  "th-g1.utb": {
+   "bytes": 4536,
+   "sha256": "7fc0478bf3446f9fdd5cdba80640ce72f05cef7077d42522e509d45f07bc40af"
+  },
+  "th-g1.uti": {
+   "bytes": 14556,
+   "sha256": "93ac7033defc5513b2e8a7a9d1066054eaf1ed171413731ab99ae11ca2abbe3d"
+  },
+  "th-g2.ctb": {
+   "bytes": 51311,
+   "sha256": "10246c6d77c74fe488d77b3e25c9a72449464afeef0713a00392e63750ebfd5a"
+  },
+  "tr-g1.ctb": {
+   "bytes": 7359,
+   "sha256": "4f4cefdfc02ad0d652f166c3a10b087be6c8109ba838d3610684ce31639998ff"
+  },
+  "tr-g2.ctb": {
+   "bytes": 30777,
+   "sha256": "647f12a970fd129a42a38ea6b4a6f580f95b9914b81452c27964f703b22e262a"
+  },
+  "tr-g2.tbl": {
+   "bytes": 613,
+   "sha256": "64a21bd707640e441dfe7f9f24997635ec9f7927f0397af94b7869c1e769d36f"
+  },
+  "tr.ctb": {
+   "bytes": 21937,
+   "sha256": "1a07e267ff664bdfb75f0765534df7b7b45db1cfe52714ab46ee4d7d7ff4aac8"
+  },
+  "tr.tbl": {
+   "bytes": 682,
+   "sha256": "9abc141ad1053e927954eed5c1765a69cf886abeae37d4ea5f8f9d986662bafe"
+  },
+  "tsn-za-g1.ctb": {
+   "bytes": 1142,
+   "sha256": "4eb81ffe6e8e99121e7a2c2f72924172f53b0cf74989d79a847b4c45289d318f"
+  },
+  "tsn-za-g2.ctb": {
+   "bytes": 1139,
+   "sha256": "ba70e963db3acc98e2d2a226d2e694d5b5f3f608f99dd9edb4c360eb2b04c14e"
+  },
+  "tt.utb": {
+   "bytes": 2678,
+   "sha256": "82e17f02776831baa4d5dae1c76a560e45e368934cd564a5da55dda46127e69a"
+  },
+  "uga.utb": {
+   "bytes": 2764,
+   "sha256": "cf73d7cfbf1de24ee63f931faffe2aeeb4e249aa6d90a2a8aa1ebae9e5ccacb7"
+  },
+  "uk-comp.utb": {
+   "bytes": 1908,
+   "sha256": "62ddacf40c443a5978582f5947008778d4ae17ea33a281604157a61c4dc86308"
+  },
+  "uk-detailed.utb": {
+   "bytes": 1031,
+   "sha256": "6c5129b53ae06b21e3ee4984a247e615186ce859a613d14f4d142494fcd435c8"
+  },
+  "uk.utb": {
+   "bytes": 3509,
+   "sha256": "6609a6b4b5ad038ac5a5e41f4c64f02153f00d59ed6c957fa0712b0c1d9aae2c"
+  },
+  "ukchardefs.cti": {
+   "bytes": 3234,
+   "sha256": "a87fbd5d78b1b92eeb62ae9aaaa95329d0a05df4c23c9ff7e97718fe5f31fc5c"
+  },
+  "ukmaths_single_cell_defs.cti": {
+   "bytes": 1532,
+   "sha256": "f564b99039e13a8b88b22d5ce4ef2bda791ba8e665c9bf1272cb0e388e64901e"
+  },
+  "ukmaths_unicode_defs.cti": {
+   "bytes": 15549,
+   "sha256": "536ecafda4055eb70b36de2fa22c5562a15d9abaf69d546a0b7e0abdf3f851dc"
+  },
+  "uni-text.dis": {
+   "bytes": 14616,
+   "sha256": "41fcb780e24ff791a75cca5bb6018fc0a54ab5ac532fecfa05c3014699427633"
+  },
+  "unicode-braille.utb": {
+   "bytes": 24833,
+   "sha256": "0f35d056045cd0651d6fe79f843733a625793f7dd0487f1dd805485a94e79e26"
+  },
+  "unicode-without-blank.dis": {
+   "bytes": 902,
+   "sha256": "360e1d40b5d6204b0ef20b3b74cf4b661279117c3a29fc296660abd5981b24f3"
+  },
+  "unicode.dis": {
+   "bytes": 5974,
+   "sha256": "eccd0df31bce67a449d73e227ede8a4c2d6de6438b5b6ba520b24d27b11331ab"
+  },
+  "ur-pk-g1.utb": {
+   "bytes": 12252,
+   "sha256": "ed43b821f11906b9a565c59e80cbc561e618952b0afebf3a761e7a3b461f0f8e"
+  },
+  "ur-pk-g2.ctb": {
+   "bytes": 53499,
+   "sha256": "bea93bfa235c0072394f21fd3b8766772a09c3dc428f8422e1d909b74f2c2915"
+  },
+  "us-table.dis": {
+   "bytes": 1562,
+   "sha256": "c257f792b4c2727f8a24852ef171217d94608a6ed4a1b0a6f16f4214143d46d9"
+  },
+  "uz-g1.utb": {
+   "bytes": 3538,
+   "sha256": "1436f90b3320b25dcc440558b09e251ef1e3ec9128d9c2bb98b8561de19b91f7"
+  },
+  "ve-za-g1.utb": {
+   "bytes": 2702,
+   "sha256": "732f1fe1a3f7d780d64f6a412265e5936e43252ac5862b5c1fe2cf0ecd4db7da"
+  },
+  "ve-za-g2.ctb": {
+   "bytes": 4842,
+   "sha256": "b7341cb4a17006c8d7f0e54772447858c03e85b7831e4d0ef64f9479230e12c6"
+  },
+  "vi-cb8.utb": {
+   "bytes": 1941,
+   "sha256": "26713c06c700dd551b744ebdfaf24cdd16ab2f892f2d404049bf9eccf4a7e563"
+  },
+  "vi-charsdef.uti": {
+   "bytes": 1243,
+   "sha256": "b0c4fa6594c0d6c9503650cd12825874fba8afa98a638c21f2c4ac8e2a248872"
+  },
+  "vi-lettersdef.uti": {
+   "bytes": 11032,
+   "sha256": "8776e47c3b26514cdd9b59440ece7bbd5469e16434fdbd6bed4038d31f52a67d"
+  },
+  "vi-puncsdef.uti": {
+   "bytes": 12804,
+   "sha256": "54100d241ac8f3ee7eaf0c12cef412a5fa89d912beff7035c16126bb21ed8910"
+  },
+  "vi-saigon-g1.ctb": {
+   "bytes": 21897,
+   "sha256": "fe5dd40fd749ac525b87cdd2f4d932f3f0d9d4fbe65f0bb51f5dc03cddb6319f"
+  },
+  "vi-vn-g0.utb": {
+   "bytes": 3243,
+   "sha256": "8e1a73e110687bef6ed048ab68d99d7c0cf519cd1bdd5af1d30c8d128902d90e"
+  },
+  "vi-vn-g1.ctb": {
+   "bytes": 17509,
+   "sha256": "f6d6d6e83c3b77e69e27ab35e0d4eef3c5713918f6e5a71b2aeda0e416cc0695"
+  },
+  "vi-vn-g2.ctb": {
+   "bytes": 22557,
+   "sha256": "4883c38fc3d1309ee5363328b22afe20579c97c8783c3889fb45fc825954f60f"
+  },
+  "wiskunde-chardefs.cti": {
+   "bytes": 18559,
+   "sha256": "bb8137afea49fd6a6b57bddfd25a938d195d6454eda838752b72a61cd5fe2d3f"
+  },
+  "wordcx.dis": {
+   "bytes": 3853,
+   "sha256": "869b7244171b5c644b6a76f345a62663ff7e4862cf1a1d071447717644bc70f9"
+  },
+  "xh-za-g1.utb": {
+   "bytes": 2265,
+   "sha256": "9c230902e2c909df94d8ab65ac79ae8a53b22188a2cce1d36134f9a881ce2ac5"
+  },
+  "xh-za-g2.ctb": {
+   "bytes": 8862,
+   "sha256": "b770fd8d1cdd2eb99037f72279ba8724b70859180d135c1bc55bcd21c008d74e"
+  },
+  "yi.utb": {
+   "bytes": 11550,
+   "sha256": "168e0cb81b631809f813b84f5779a21d49d8157060706a945632443acc9fc4da"
+  },
+  "zh-chn.ctb": {
+   "bytes": 1263136,
+   "sha256": "6fc300ad59dd50e24d651dfa7f8a300c99a97ad59751b2e6747ce158f32261c8"
+  },
+  "zh-hk.ctb": {
+   "bytes": 265226,
+   "sha256": "04f133a96c4ed5e9e2a01bd6e1619e855053be0343381c2d50a38fd9990df420"
+  },
+  "zh-tw.ctb": {
+   "bytes": 1467570,
+   "sha256": "c877ac29c52706653599039cc5aa452f18b578a4c4ae2bf9f882c2e849ffd33c"
+  },
+  "zh_CHN.tbl": {
+   "bytes": 888,
+   "sha256": "64dbed9d1b846bdf9bce80f8c63d538395be54fe87ca824ab4b1564aa8b598a9"
+  },
+  "zhcn-cbs.ctb": {
+   "bytes": 1064683,
+   "sha256": "ccdec0636989eb1232a1c8d67a421e2b958e900d19a383b0c2d5c0ecab57fbb5"
+  },
+  "zhcn-g1.ctb": {
+   "bytes": 676085,
+   "sha256": "79e8cae1fce16e9f7cde7415146818255382c86d4cb4155bc67ad8d1a601ad50"
+  },
+  "zhcn-g2.ctb": {
+   "bytes": 617600,
+   "sha256": "abfe83cafc7a1980497ce6c9eb222defdce3eb261fb60279fb56ac65eb1c9e24"
+  },
+  "zu-za-g1.utb": {
+   "bytes": 1069,
+   "sha256": "c94f460c22a2a6e50c7f0ed9ca08f129b020ebbc5956f4f3eee204d78ced1016"
+  },
+  "zu-za-g2.ctb": {
+   "bytes": 1067,
+   "sha256": "ec60f34adde8c7d1fb1fddca5fb8e38ebc8fd0f47a520e48982a9bf75dcbe38c"
+  }
+ },
+ "closures": {
+  "Es-Es-G0.utb": [
+   "Es-Es-G0.utb",
+   "digits6DotsPlusDot6.uti",
+   "latinLetterDef8Dots.uti"
+  ],
+  "IPA-unicode-range.uti": [
+   "IPA-unicode-range.uti"
+  ],
+  "IPA.utb": [
+   "IPA.utb",
+   "spaces.uti",
+   "IPA-unicode-range.uti"
+  ],
+  "Lv-Lv-g1.utb": [
+   "Lv-Lv-g1.utb",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti"
+  ],
+  "Pl-Pl-g1.utb": [
+   "Pl-Pl-g1.utb",
+   "spaces.uti",
+   "text_nabcc.dis",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti"
+  ],
+  "afr-za-g1.ctb": [
+   "afr-za-g1.ctb",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "afr-za-g2.ctb": [
+   "afr-za-g2.ctb",
+   "afr-za-g1.ctb",
+   "IPA-unicode-range.uti",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "akk-borger.utb": [
+   "akk-borger.utb",
+   "spaces.uti",
+   "litdigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "en-ueb-chardefs.uti",
+   "text_nabcc.dis",
+   "latinUppercaseComp6.uti"
+  ],
+  "akk.utb": [
+   "akk.utb",
+   "spaces.uti",
+   "litdigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "en-ueb-chardefs.uti",
+   "text_nabcc.dis",
+   "latinUppercaseComp6.uti"
+  ],
+  "ancient-languages-borger.utb": [
+   "ancient-languages-borger.utb",
+   "hbo-cantillated-rules.uti",
+   "cuneiform-transliterated.utb",
+   "grc-international-composed.uti",
+   "akk-borger.utb",
+   "syc.utb",
+   "uga.utb",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "en-ueb-chardefs.uti",
+   "hbo-common-rules.uti",
+   "spaces.uti",
+   "grc-international-common.uti",
+   "text_nabcc.dis",
+   "latinUppercaseComp6.uti",
+   "he-common-consonants.uti",
+   "he-common-vowels-ihbc.uti"
+  ],
+  "ancient-languages-us.utb": [
+   "ancient-languages-us.utb",
+   "hbo-cantillated-rules.uti",
+   "cuneiform-transliterated.utb",
+   "grc-international-composed.uti",
+   "akk.utb",
+   "syc.utb",
+   "uga.utb",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "en-ueb-chardefs.uti",
+   "hbo-common-rules.uti",
+   "spaces.uti",
+   "grc-international-common.uti",
+   "text_nabcc.dis",
+   "latinUppercaseComp6.uti",
+   "he-common-consonants.uti",
+   "he-common-vowels-ihbc.uti"
+  ],
+  "ar-ar-comp8.utb": [
+   "ar-ar-comp8.utb",
+   "text_nabcc.dis",
+   "braille-patterns.cti",
+   "latinLetterDef8Dots.uti",
+   "countries.cti"
+  ],
+  "ar-ar-g1-core.uti": [
+   "ar-ar-g1-core.uti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "braille-patterns.cti",
+   "loweredDigits6Dots.uti",
+   "litdigits6Dots.uti",
+   "latinLetterDef6Dots.uti"
+  ],
+  "ar-ar-g1.utb": [
+   "ar-ar-g1.utb",
+   "ar-ar-g1-core.uti",
+   "ar-ar-math.uti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "braille-patterns.cti",
+   "loweredDigits6Dots.uti",
+   "litdigits6Dots.uti",
+   "latinLetterDef6Dots.uti"
+  ],
+  "ar-ar-g2.ctb": [
+   "ar-ar-g2.ctb",
+   "ar-ar-g1-core.uti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "braille-patterns.cti",
+   "loweredDigits6Dots.uti",
+   "litdigits6Dots.uti",
+   "latinLetterDef6Dots.uti"
+  ],
+  "ar-ar-math.uti": [
+   "ar-ar-math.uti"
+  ],
+  "ar.tbl": [
+   "ar.tbl",
+   "ar-ar-g1.utb",
+   "ar-ar-g1-core.uti",
+   "ar-ar-math.uti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "braille-patterns.cti",
+   "loweredDigits6Dots.uti",
+   "litdigits6Dots.uti",
+   "latinLetterDef6Dots.uti"
+  ],
+  "as-in-g1.utb": [
+   "as-in-g1.utb",
+   "bengali.cti",
+   "en-in-g1.ctb",
+   "braille-patterns.cti",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "as.tbl": [
+   "as.tbl",
+   "as-in-g1.utb",
+   "braille-patterns.cti",
+   "bengali.cti",
+   "en-in-g1.ctb",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "aw-in-g1.utb": [
+   "aw-in-g1.utb",
+   "devanagari.cti",
+   "en-in-g1.ctb",
+   "braille-patterns.cti",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "awa.tbl": [
+   "awa.tbl",
+   "aw-in-g1.utb",
+   "braille-patterns.cti",
+   "devanagari.cti",
+   "en-in-g1.ctb",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "ba.utb": [
+   "ba.utb",
+   "ru-litbrl.ctb",
+   "braille-patterns.cti",
+   "ru-unicode.dis",
+   "spaces.uti",
+   "litdigits6Dots.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "ru-math.uti",
+   "IPA-unicode-range.uti",
+   "unicode.dis"
+  ],
+  "be-in-g1.utb": [
+   "be-in-g1.utb",
+   "bengali.cti",
+   "en-in-g1.ctb",
+   "braille-patterns.cti",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "bel-comp.utb": [
+   "bel-comp.utb",
+   "ru-comp8.utb",
+   "loweredDigits6Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "bel-detailed.utb": [
+   "bel-detailed.utb",
+   "bel.utb",
+   "ru-litbrl-detailed.utb",
+   "ru-litbrl.ctb",
+   "ru-unicode.dis",
+   "spaces.uti",
+   "litdigits6Dots.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "ru-math.uti",
+   "braille-patterns.cti",
+   "IPA-unicode-range.uti",
+   "unicode.dis"
+  ],
+  "bel.utb": [
+   "bel.utb",
+   "ru-litbrl.ctb",
+   "ru-unicode.dis",
+   "spaces.uti",
+   "litdigits6Dots.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "ru-math.uti",
+   "braille-patterns.cti",
+   "IPA-unicode-range.uti",
+   "unicode.dis"
+  ],
+  "bengali.cti": [
+   "bengali.cti",
+   "braille-patterns.cti"
+  ],
+  "bg.ctb": [
+   "bg.ctb"
+  ],
+  "bg.dis": [
+   "bg.dis"
+  ],
+  "bg.tbl": [
+   "bg.tbl",
+   "bg.ctb",
+   "braille-patterns.cti"
+  ],
+  "bg.utb": [
+   "bg.utb",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti"
+  ],
+  "bh.ctb": [
+   "bh.ctb",
+   "spaces.uti",
+   "devanagari.cti",
+   "text_nabcc.dis",
+   "braille-patterns.cti"
+  ],
+  "bh.tbl": [
+   "bh.tbl",
+   "bh.ctb",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "devanagari.cti",
+   "text_nabcc.dis"
+  ],
+  "bn.tbl": [
+   "bn.tbl",
+   "be-in-g1.utb",
+   "braille-patterns.cti",
+   "bengali.cti",
+   "en-in-g1.ctb",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "bo.ctb": [
+   "bo.ctb",
+   "loweredDigits6Dots.uti"
+  ],
+  "bo.tbl": [
+   "bo.tbl",
+   "bo.ctb",
+   "braille-patterns.cti",
+   "loweredDigits6Dots.uti"
+  ],
+  "boxes.ctb": [
+   "boxes.ctb"
+  ],
+  "br-in-g1.utb": [
+   "br-in-g1.utb",
+   "devanagari.cti",
+   "en-in-g1.ctb",
+   "braille-patterns.cti",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "bra.tbl": [
+   "bra.tbl",
+   "br-in-g1.utb",
+   "braille-patterns.cti",
+   "devanagari.cti",
+   "en-in-g1.ctb",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "braille-patterns.cti": [
+   "braille-patterns.cti"
+  ],
+  "ca-chardefs.cti": [
+   "ca-chardefs.cti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "loweredDigits6Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "ca-g1.ctb": [
+   "ca-g1.ctb",
+   "ca-chardefs.cti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "loweredDigits6Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "ca.tbl": [
+   "ca.tbl",
+   "ca-g1.ctb",
+   "braille-patterns.cti",
+   "ca-chardefs.cti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "loweredDigits6Dots.uti"
+  ],
+  "chr-us-g1.ctb": [
+   "chr-us-g1.ctb",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "ckb-chardefs.cti": [
+   "ckb-chardefs.cti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti"
+  ],
+  "ckb-g1.ctb": [
+   "ckb-g1.ctb",
+   "ckb-chardefs.cti",
+   "braille-patterns.cti",
+   "ckb-translation.cti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "countries.cti",
+   "litdigits6Dots.uti"
+  ],
+  "ckb-translation.cti": [
+   "ckb-translation.cti",
+   "countries.cti",
+   "litdigits6Dots.uti"
+  ],
+  "ckb.tbl": [
+   "ckb.tbl",
+   "ckb-g1.ctb",
+   "braille-patterns.cti",
+   "ckb-chardefs.cti",
+   "ckb-translation.cti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "countries.cti",
+   "litdigits6Dots.uti"
+  ],
+  "compress.cti": [
+   "compress.cti"
+  ],
+  "controlchars.cti": [
+   "controlchars.cti"
+  ],
+  "cop-eg-comp8.utb": [
+   "cop-eg-comp8.utb",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "compress.cti",
+   "latinLetterDef8Dots.uti",
+   "digits8Dots.uti"
+  ],
+  "cop.utb": [
+   "cop.utb",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "litdigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "en-ueb-chardefs.uti",
+   "text_nabcc.dis",
+   "latinUppercaseComp6.uti"
+  ],
+  "corrections.cti": [
+   "corrections.cti"
+  ],
+  "countries.cti": [
+   "countries.cti"
+  ],
+  "critical-apparatus.uti": [
+   "critical-apparatus.uti"
+  ],
+  "cs-chardefs.cti": [
+   "cs-chardefs.cti",
+   "spaces.uti",
+   "digits6Dots.uti"
+  ],
+  "cs-comp8.utb": [
+   "cs-comp8.utb",
+   "digits8Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "cs-g1.ctb": [
+   "cs-g1.ctb",
+   "cs-chardefs.cti",
+   "braille-patterns.cti",
+   "cs-translation.cti",
+   "spaces.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti"
+  ],
+  "cs-translation.cti": [
+   "cs-translation.cti",
+   "litdigits6Dots.uti"
+  ],
+  "cs.tbl": [
+   "cs.tbl",
+   "cs-g1.ctb",
+   "cs-chardefs.cti",
+   "braille-patterns.cti",
+   "cs-translation.cti",
+   "spaces.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti"
+  ],
+  "cuneiform-transliterated-compact.utb": [
+   "cuneiform-transliterated-compact.utb",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti",
+   "en-ueb-chardefs.uti"
+  ],
+  "cuneiform-transliterated.utb": [
+   "cuneiform-transliterated.utb",
+   "spaces.uti",
+   "litdigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "en-ueb-chardefs.uti",
+   "text_nabcc.dis",
+   "latinUppercaseComp6.uti"
+  ],
+  "cy-cy-g1.utb": [
+   "cy-cy-g1.utb",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti",
+   "litdigits6Dots.uti",
+   "countries.cti"
+  ],
+  "cy-cy-g2.ctb": [
+   "cy-cy-g2.ctb",
+   "cy-cy-g1.utb",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti",
+   "litdigits6Dots.uti",
+   "countries.cti"
+  ],
+  "cy.tbl": [
+   "cy.tbl",
+   "cy-cy-g2.ctb",
+   "braille-patterns.cti",
+   "cy-cy-g1.utb",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti",
+   "litdigits6Dots.uti",
+   "countries.cti"
+  ],
+  "da-dk-6miscChars.cti": [
+   "da-dk-6miscChars.cti"
+  ],
+  "da-dk-6miscChars_1993.cti": [
+   "da-dk-6miscChars_1993.cti"
+  ],
+  "da-dk-8miscChars.cti": [
+   "da-dk-8miscChars.cti"
+  ],
+  "da-dk-8miscChars_1993.cti": [
+   "da-dk-8miscChars_1993.cti"
+  ],
+  "da-dk-g08.ctb": [
+   "da-dk-g08.ctb",
+   "da-dk-octobraille.dis",
+   "digits8Dots.uti",
+   "latinLetterDef8Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "da-dk-g08_1993.ctb": [
+   "da-dk-g08_1993.ctb",
+   "da-dk-octobraille_1993.dis",
+   "digits8Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "da-dk-g16-lit_1993.ctb": [
+   "da-dk-g16-lit_1993.ctb",
+   "da-dk-octobraille_1993.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "braille-patterns.cti",
+   "da-dk-6miscChars_1993.cti",
+   "litdigits6Dots.uti"
+  ],
+  "da-dk-g16.ctb": [
+   "da-dk-g16.ctb",
+   "da-dk-octobraille.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "braille-patterns.cti",
+   "da-dk-6miscChars.cti",
+   "litdigits6Dots.uti"
+  ],
+  "da-dk-g16_1993.ctb": [
+   "da-dk-g16_1993.ctb",
+   "da-dk-octobraille_1993.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "braille-patterns.cti",
+   "da-dk-6miscChars_1993.cti",
+   "litdigits6Dots.uti"
+  ],
+  "da-dk-g18.ctb": [
+   "da-dk-g18.ctb",
+   "da-dk-octobraille.dis",
+   "spaces.uti",
+   "digits8Dots.uti",
+   "latinLetterDef8Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "da-dk-g18_1993.ctb": [
+   "da-dk-g18_1993.ctb",
+   "da-dk-octobraille_1993.dis",
+   "digits8Dots.uti",
+   "braille-patterns.cti",
+   "da-dk-8miscChars_1993.cti"
+  ],
+  "da-dk-g2.dic": [
+   "da-dk-g2.dic"
+  ],
+  "da-dk-g26-lit_1993.ctb": [
+   "da-dk-g26-lit_1993.ctb",
+   "da-dk-octobraille_1993.dis",
+   "spaces.uti",
+   "digits6Dots.uti",
+   "braille-patterns.cti",
+   "da-dk-6miscChars_1993.cti",
+   "litdigits6Dots.uti",
+   "da-dk-g2.dic"
+  ],
+  "da-dk-g26.ctb": [
+   "da-dk-g26.ctb",
+   "da-dk-octobraille.dis",
+   "spaces.uti",
+   "digits6Dots.uti",
+   "braille-patterns.cti",
+   "da-dk-6miscChars.cti",
+   "litdigits6Dots.uti",
+   "da-dk-g2.dic"
+  ],
+  "da-dk-g26_1993.ctb": [
+   "da-dk-g26_1993.ctb",
+   "da-dk-octobraille_1993.dis",
+   "spaces.uti",
+   "digits6Dots.uti",
+   "braille-patterns.cti",
+   "da-dk-6miscChars_1993.cti",
+   "litdigits6Dots.uti",
+   "da-dk-g2.dic"
+  ],
+  "da-dk-g26l-lit_1993.ctb": [
+   "da-dk-g26l-lit_1993.ctb",
+   "da-dk-octobraille_1993.dis",
+   "spaces.uti",
+   "digits6Dots.uti",
+   "braille-patterns.cti",
+   "da-dk-6miscChars_1993.cti",
+   "litdigits6Dots.uti"
+  ],
+  "da-dk-g26l_1993.ctb": [
+   "da-dk-g26l_1993.ctb",
+   "da-dk-octobraille_1993.dis",
+   "spaces.uti",
+   "digits6Dots.uti",
+   "braille-patterns.cti",
+   "da-dk-6miscChars_1993.cti",
+   "litdigits6Dots.uti"
+  ],
+  "da-dk-g28.ctb": [
+   "da-dk-g28.ctb",
+   "da-dk-octobraille.dis",
+   "spaces.uti",
+   "digits8Dots.uti",
+   "braille-patterns.cti",
+   "da-dk-g2.dic"
+  ],
+  "da-dk-g28_1993.ctb": [
+   "da-dk-g28_1993.ctb",
+   "da-dk-octobraille_1993.dis",
+   "digits8Dots.uti",
+   "braille-patterns.cti",
+   "da-dk-8miscChars_1993.cti",
+   "da-dk-g2.dic"
+  ],
+  "da-dk-g28l_1993.ctb": [
+   "da-dk-g28l_1993.ctb",
+   "da-dk-octobraille_1993.dis",
+   "digits8Dots.uti",
+   "braille-patterns.cti",
+   "da-dk-8miscChars_1993.cti"
+  ],
+  "da-dk-octobraille.dis": [
+   "da-dk-octobraille.dis"
+  ],
+  "da-dk-octobraille_1993.dis": [
+   "da-dk-octobraille_1993.dis"
+  ],
+  "de-accents-detailed.cti": [
+   "de-accents-detailed.cti"
+  ],
+  "de-accents.cti": [
+   "de-accents.cti"
+  ],
+  "de-chardefs6.cti": [
+   "de-chardefs6.cti",
+   "spaces.uti",
+   "digits6DotsPlusDot6.uti",
+   "latinLetterDef6Dots.uti"
+  ],
+  "de-chardefs8.cti": [
+   "de-chardefs8.cti",
+   "digits6DotsPlusDot6.uti"
+  ],
+  "de-chess.ctb": [
+   "de-chess.ctb"
+  ],
+  "de-comp6.utb": [
+   "de-comp6.utb",
+   "digits6DotsPlusDot6.uti"
+  ],
+  "de-de-comp8.ctb": [
+   "de-de-comp8.ctb",
+   "braille-patterns.cti"
+  ],
+  "de-de.dis": [
+   "de-de.dis"
+  ],
+  "de-eurobrl6.dis": [
+   "de-eurobrl6.dis"
+  ],
+  "de-eurobrl6u.dis": [
+   "de-eurobrl6u.dis"
+  ],
+  "de-g0-core.uti": [
+   "de-g0-core.uti",
+   "litdigits6Dots.uti",
+   "countries.cti"
+  ],
+  "de-g0-detailed.utb": [
+   "de-g0-detailed.utb",
+   "de-eurobrl6.dis",
+   "de-chardefs6.cti",
+   "de-accents-detailed.cti",
+   "de-g0-core.uti",
+   "spaces.uti",
+   "digits6DotsPlusDot6.uti",
+   "latinLetterDef6Dots.uti",
+   "litdigits6Dots.uti",
+   "countries.cti"
+  ],
+  "de-g0.utb": [
+   "de-g0.utb",
+   "de-eurobrl6.dis",
+   "de-chardefs6.cti",
+   "de-accents.cti",
+   "de-g0-core.uti",
+   "latinLowercase.uti",
+   "spaces.uti",
+   "digits6DotsPlusDot6.uti",
+   "latinLetterDef6Dots.uti",
+   "litdigits6Dots.uti",
+   "countries.cti"
+  ],
+  "de-g1-core-patterns.dic": [
+   "de-g1-core-patterns.dic"
+  ],
+  "de-g1-core.cti": [
+   "de-g1-core.cti",
+   "de-g1-core-patterns.dic"
+  ],
+  "de-g1-detailed.ctb": [
+   "de-g1-detailed.ctb",
+   "de-g0-detailed.utb",
+   "de-g1-core.cti",
+   "de-eurobrl6.dis",
+   "de-chardefs6.cti",
+   "de-accents-detailed.cti",
+   "de-g0-core.uti",
+   "de-g1-core-patterns.dic",
+   "spaces.uti",
+   "digits6DotsPlusDot6.uti",
+   "latinLetterDef6Dots.uti",
+   "litdigits6Dots.uti",
+   "countries.cti"
+  ],
+  "de-g1.ctb": [
+   "de-g1.ctb",
+   "de-g0.utb",
+   "de-g1-core.cti",
+   "de-eurobrl6.dis",
+   "de-chardefs6.cti",
+   "de-accents.cti",
+   "de-g0-core.uti",
+   "latinLowercase.uti",
+   "de-g1-core-patterns.dic",
+   "spaces.uti",
+   "digits6DotsPlusDot6.uti",
+   "latinLetterDef6Dots.uti",
+   "litdigits6Dots.uti",
+   "countries.cti"
+  ],
+  "de-g2-core-patterns.dic": [
+   "de-g2-core-patterns.dic"
+  ],
+  "de-g2-core.cti": [
+   "de-g2-core.cti",
+   "de-g2-core-patterns.dic"
+  ],
+  "de-g2-detailed.ctb": [
+   "de-g2-detailed.ctb",
+   "de-g1-detailed.ctb",
+   "de-g2-core.cti",
+   "de-g0-detailed.utb",
+   "de-g1-core.cti",
+   "de-g2-core-patterns.dic",
+   "de-eurobrl6.dis",
+   "de-chardefs6.cti",
+   "de-accents-detailed.cti",
+   "de-g0-core.uti",
+   "de-g1-core-patterns.dic",
+   "spaces.uti",
+   "digits6DotsPlusDot6.uti",
+   "latinLetterDef6Dots.uti",
+   "litdigits6Dots.uti",
+   "countries.cti"
+  ],
+  "de-g2.ctb": [
+   "de-g2.ctb",
+   "de-g0.utb",
+   "de-g2-core.cti",
+   "braille-patterns.cti",
+   "de-eurobrl6.dis",
+   "de-chardefs6.cti",
+   "de-accents.cti",
+   "de-g0-core.uti",
+   "latinLowercase.uti",
+   "de-g2-core-patterns.dic",
+   "spaces.uti",
+   "digits6DotsPlusDot6.uti",
+   "latinLetterDef6Dots.uti",
+   "litdigits6Dots.uti",
+   "countries.cti"
+  ],
+  "devanagari.cti": [
+   "devanagari.cti",
+   "braille-patterns.cti"
+  ],
+  "digits6Dots.uti": [
+   "digits6Dots.uti"
+  ],
+  "digits6DotsPlusDot6.uti": [
+   "digits6DotsPlusDot6.uti"
+  ],
+  "digits8Dots.uti": [
+   "digits8Dots.uti"
+  ],
+  "dra.ctb": [
+   "dra.ctb",
+   "tamil.cti",
+   "text_nabcc.dis"
+  ],
+  "dra.tbl": [
+   "dra.tbl",
+   "dra.ctb",
+   "braille-patterns.cti",
+   "tamil.cti",
+   "text_nabcc.dis"
+  ],
+  "el.ctb": [
+   "el.ctb",
+   "spaces.uti",
+   "braille-patterns.cti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti"
+  ],
+  "en-GB-g2.ctb": [
+   "en-GB-g2.ctb",
+   "en-gb-g1.utb",
+   "text_nabcc.dis",
+   "ukchardefs.cti",
+   "litdigits6Dots.uti",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti"
+  ],
+  "en-chardefs.cti": [
+   "en-chardefs.cti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "en-chess.ctb": [
+   "en-chess.ctb"
+  ],
+  "en-g3-patterns.dic": [
+   "en-g3-patterns.dic"
+  ],
+  "en-g3.ctb": [
+   "en-g3.ctb",
+   "text_nabcc.dis",
+   "en-chardefs.cti",
+   "litdigits6Dots.uti",
+   "en-g3-patterns.dic",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "en-gb-comp8.ctb": [
+   "en-gb-comp8.ctb",
+   "latinLetterDef8Dots.uti"
+  ],
+  "en-gb-g1.utb": [
+   "en-gb-g1.utb",
+   "text_nabcc.dis",
+   "ukchardefs.cti",
+   "litdigits6Dots.uti",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti"
+  ],
+  "en-in-g1.ctb": [
+   "en-in-g1.ctb",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "en-nabcc.utb": [
+   "en-nabcc.utb"
+  ],
+  "en-nz-g1.utb": [
+   "en-nz-g1.utb",
+   "text_nabcc.dis",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "en-nz-g2.ctb": [
+   "en-nz-g2.ctb",
+   "en-nz-g1.utb",
+   "en-ueb-g2.ctb",
+   "text_nabcc.dis",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "en-ueb-chardefs.uti": [
+   "en-ueb-chardefs.uti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "en-ueb-g1.ctb": [
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "en-ueb-g2.ctb": [
+   "en-ueb-g2.ctb",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "en-ueb-math.ctb": [
+   "en-ueb-math.ctb"
+  ],
+  "en-us-brf.dis": [
+   "en-us-brf.dis"
+  ],
+  "en-us-comp6.ctb": [
+   "en-us-comp6.ctb",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "loweredDigits6Dots.uti"
+  ],
+  "en-us-comp8-ext.utb": [
+   "en-us-comp8-ext.utb",
+   "latinLetterDef8Dots.uti",
+   "loweredDigits6Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "en-us-comp8.ctb": [
+   "en-us-comp8.ctb",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef8Dots.uti"
+  ],
+  "en-us-compbrl.uti": [
+   "en-us-compbrl.uti"
+  ],
+  "en-us-emphasis.uti": [
+   "en-us-emphasis.uti"
+  ],
+  "en-us-g1.ctb": [
+   "en-us-g1.ctb",
+   "en-chardefs.cti",
+   "en-us-compbrl.uti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "en-us-g2.ctb": [
+   "en-us-g2.ctb",
+   "en-us-g1.ctb",
+   "en-chardefs.cti",
+   "en-us-compbrl.uti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "en-us-interline.ctb": [
+   "en-us-interline.ctb",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "en-us-mathtext.ctb": [
+   "en-us-mathtext.ctb",
+   "en-chardefs.cti",
+   "nemethdefs.cti",
+   "corrections.cti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "en_CA.ctb": [
+   "en_CA.ctb",
+   "loweredDigits6Dots.uti"
+  ],
+  "en_CA.tbl": [
+   "en_CA.tbl",
+   "en_CA.ctb",
+   "braille-patterns.cti",
+   "loweredDigits6Dots.uti"
+  ],
+  "en_GB.tbl": [
+   "en_GB.tbl",
+   "en-GB-g2.ctb",
+   "braille-patterns.cti",
+   "en-gb-g1.utb",
+   "text_nabcc.dis",
+   "ukchardefs.cti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti"
+  ],
+  "en_US-comp8-ext.tbl": [
+   "en_US-comp8-ext.tbl",
+   "en-us-comp8-ext.utb",
+   "latinLetterDef8Dots.uti",
+   "loweredDigits6Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "en_US.tbl": [
+   "en_US.tbl",
+   "en-us-g2.ctb",
+   "braille-patterns.cti",
+   "en-us-g1.ctb",
+   "en-chardefs.cti",
+   "en-us-compbrl.uti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "eo-g1-x-system.ctb": [
+   "eo-g1-x-system.ctb",
+   "eo-g1.ctb",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "eo-g1.ctb": [
+   "eo-g1.ctb",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "eo.tbl": [
+   "eo.tbl",
+   "eo-g1.ctb",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti"
+  ],
+  "es-chardefs.cti": [
+   "es-chardefs.cti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti"
+  ],
+  "es-g1.ctb": [
+   "es-g1.ctb",
+   "es-chardefs.cti",
+   "braille-patterns.cti",
+   "litdigits6Dots.uti",
+   "digits6Dots.uti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti"
+  ],
+  "es-g2.ctb": [
+   "es-g2.ctb",
+   "es-g1.ctb",
+   "es-chardefs.cti",
+   "braille-patterns.cti",
+   "litdigits6Dots.uti",
+   "digits6Dots.uti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti"
+  ],
+  "es-new.dis": [
+   "es-new.dis"
+  ],
+  "es-no.utb": [
+   "es-no.utb",
+   "no-no-g0.utb",
+   "no-no.dis",
+   "no-no-chardefs6.uti",
+   "litdigits6Dots.uti",
+   "braille-patterns.cti",
+   "no-no-cyrillic6dot.uti",
+   "spaces.uti",
+   "digits8Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "no-no-latinLetterDef6Dots_diacritics.uti"
+  ],
+  "es-old.dis": [
+   "es-old.dis"
+  ],
+  "es.tbl": [
+   "es.tbl",
+   "es-g1.ctb",
+   "braille-patterns.cti",
+   "es-chardefs.cti",
+   "litdigits6Dots.uti",
+   "digits6Dots.uti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti"
+  ],
+  "et-6dot.utb": [
+   "et-6dot.utb",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "et-g0.utb": [
+   "et-g0.utb",
+   "digits8Dots.uti",
+   "latinLetterDef8Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "ethio-g1.ctb": [
+   "ethio-g1.ctb",
+   "en-chardefs.cti",
+   "litdigits6Dots.uti",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "eurodefs.cti": [
+   "eurodefs.cti",
+   "digits6DotsPlusDot6.uti",
+   "latinLetterDef6Dots.uti"
+  ],
+  "fa-ir-comp8.ctb": [
+   "fa-ir-comp8.ctb"
+  ],
+  "fa-ir-g1.utb": [
+   "fa-ir-g1.utb",
+   "spaces.uti",
+   "braille-patterns.cti",
+   "digits6Dots.uti"
+  ],
+  "fi-fi-8dot.ctb": [
+   "fi-fi-8dot.ctb",
+   "text_nabcc.dis",
+   "digits8Dots.uti"
+  ],
+  "fi.utb": [
+   "fi.utb",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "fil-g2.ctb": [
+   "fil-g2.ctb",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "fr-bfu-comp6-puncs-math.uti": [
+   "fr-bfu-comp6-puncs-math.uti"
+  ],
+  "fr-bfu-comp6.utb": [
+   "fr-bfu-comp6.utb",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6DotsPlusDot6.uti",
+   "litdigits6DotsPlusDot6.uti",
+   "braille-patterns.cti",
+   "fr-bfu-comp68.cti",
+   "fr-bfu-comp6-puncs-math.uti",
+   "IPA-unicode-range.uti"
+  ],
+  "fr-bfu-comp68.cti": [
+   "fr-bfu-comp68.cti",
+   "IPA-unicode-range.uti"
+  ],
+  "fr-bfu-comp8.utb": [
+   "fr-bfu-comp8.utb",
+   "latinLetterDef8Dots.uti",
+   "braille-patterns.cti",
+   "fr-bfu-comp68.cti",
+   "IPA-unicode-range.uti"
+  ],
+  "fr-bfu-g2.ctb": [
+   "fr-bfu-g2.ctb",
+   "fr-bfu-comp6.utb",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6DotsPlusDot6.uti",
+   "litdigits6DotsPlusDot6.uti",
+   "braille-patterns.cti",
+   "fr-bfu-comp68.cti",
+   "fr-bfu-comp6-puncs-math.uti",
+   "IPA-unicode-range.uti"
+  ],
+  "ga-g1.utb": [
+   "ga-g1.utb",
+   "text_nabcc.dis",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "ga-g2.ctb": [
+   "ga-g2.ctb",
+   "ga-g1.utb",
+   "text_nabcc.dis",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "gd.ctb": [
+   "gd.ctb",
+   "digits8Dots.uti"
+  ],
+  "gd.tbl": [
+   "gd.tbl",
+   "gd.ctb",
+   "braille-patterns.cti",
+   "digits8Dots.uti"
+  ],
+  "gez.tbl": [
+   "gez.tbl",
+   "ethio-g1.ctb",
+   "braille-patterns.cti",
+   "en-chardefs.cti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "gon.ctb": [
+   "gon.ctb",
+   "spaces.uti",
+   "devanagari.cti",
+   "telugu.cti",
+   "text_nabcc.dis",
+   "braille-patterns.cti"
+  ],
+  "gon.tbl": [
+   "gon.tbl",
+   "gon.ctb",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "devanagari.cti",
+   "telugu.cti",
+   "text_nabcc.dis"
+  ],
+  "gr-pl-comp8.uti": [
+   "gr-pl-comp8.uti"
+  ],
+  "grc-international-common.uti": [
+   "grc-international-common.uti"
+  ],
+  "grc-international-composed.uti": [
+   "grc-international-composed.uti",
+   "grc-international-common.uti"
+  ],
+  "grc-international-decomposed.uti": [
+   "grc-international-decomposed.uti",
+   "grc-international-common.uti"
+  ],
+  "grc-international-en-composed.utb": [
+   "grc-international-en-composed.utb",
+   "grc-international-composed.uti",
+   "en-ueb-g1.ctb",
+   "grc-international-common.uti",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "grc-international-en.utb": [
+   "grc-international-en.utb",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "litdigits6Dots.uti",
+   "grc-international-decomposed.uti",
+   "grc-international-common.uti"
+  ],
+  "grc-international-es.utb": [
+   "grc-international-es.utb",
+   "Es-Es-G0.utb",
+   "grc-international-composed.uti",
+   "digits6DotsPlusDot6.uti",
+   "latinLetterDef8Dots.uti",
+   "grc-international-common.uti"
+  ],
+  "gu-in-g1.utb": [
+   "gu-in-g1.utb",
+   "gujarati.cti",
+   "en-in-g1.ctb",
+   "braille-patterns.cti",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "gu.tbl": [
+   "gu.tbl",
+   "gu-in-g1.utb",
+   "braille-patterns.cti",
+   "gujarati.cti",
+   "en-in-g1.ctb",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "gujarati.cti": [
+   "gujarati.cti",
+   "braille-patterns.cti"
+  ],
+  "gurumuki.cti": [
+   "gurumuki.cti",
+   "braille-patterns.cti"
+  ],
+  "haw-us-g1.ctb": [
+   "haw-us-g1.ctb",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "hbo-cantillated-rules.uti": [
+   "hbo-cantillated-rules.uti",
+   "hbo-common-rules.uti",
+   "he-common-consonants.uti",
+   "he-common-vowels-ihbc.uti",
+   "spaces.uti"
+  ],
+  "hbo-cantillated.utb": [
+   "hbo-cantillated.utb",
+   "braille-patterns.cti",
+   "hbo-cantillated-rules.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "en-ueb-chardefs.uti",
+   "hbo-common-rules.uti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinUppercaseComp6.uti",
+   "he-common-consonants.uti",
+   "he-common-vowels-ihbc.uti"
+  ],
+  "hbo-common-rules.uti": [
+   "hbo-common-rules.uti",
+   "he-common-consonants.uti",
+   "he-common-vowels-ihbc.uti",
+   "spaces.uti"
+  ],
+  "hbo-ihbc-rules.uti": [
+   "hbo-ihbc-rules.uti",
+   "hbo-common-rules.uti",
+   "he-common-consonants.uti",
+   "he-common-vowels-ihbc.uti",
+   "spaces.uti"
+  ],
+  "hbo-slim-rules.uti": [
+   "hbo-slim-rules.uti",
+   "hbo-common-rules.uti",
+   "he-common-consonants.uti",
+   "he-common-vowels-ihbc.uti",
+   "spaces.uti"
+  ],
+  "hbo-slim.utb": [
+   "hbo-slim.utb",
+   "braille-patterns.cti",
+   "hbo-slim-rules.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "en-ueb-chardefs.uti",
+   "hbo-common-rules.uti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinUppercaseComp6.uti",
+   "he-common-consonants.uti",
+   "he-common-vowels-ihbc.uti"
+  ],
+  "hbo.utb": [
+   "hbo.utb",
+   "braille-patterns.cti",
+   "hbo-ihbc-rules.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "en-ueb-chardefs.uti",
+   "hbo-common-rules.uti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinUppercaseComp6.uti",
+   "he-common-consonants.uti",
+   "he-common-vowels-ihbc.uti"
+  ],
+  "he-IL-comp8.utb": [
+   "he-IL-comp8.utb",
+   "text_nabcc.dis",
+   "braille-patterns.cti"
+  ],
+  "he-IL.utb": [
+   "he-IL.utb",
+   "litdigits6Dots.uti",
+   "braille-patterns.cti",
+   "en-chardefs.cti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "he-common-consonants.uti": [
+   "he-common-consonants.uti"
+  ],
+  "he-common-vowels-ihbc.uti": [
+   "he-common-vowels-ihbc.uti"
+  ],
+  "hi-in-g1.utb": [
+   "hi-in-g1.utb",
+   "devanagari.cti",
+   "en-in-g1.ctb",
+   "braille-patterns.cti",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "hi.tbl": [
+   "hi.tbl",
+   "hi-in-g1.utb",
+   "braille-patterns.cti",
+   "devanagari.cti",
+   "en-in-g1.ctb",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "hr-chardefs.cti": [
+   "hr-chardefs.cti",
+   "spaces.uti",
+   "hr-digits.uti",
+   "latinLetterDef6Dots.uti"
+  ],
+  "hr-comp8.tbl": [
+   "hr-comp8.tbl",
+   "hr-comp8.utb",
+   "braille-patterns.cti"
+  ],
+  "hr-comp8.utb": [
+   "hr-comp8.utb"
+  ],
+  "hr-digits.uti": [
+   "hr-digits.uti"
+  ],
+  "hr-g1.ctb": [
+   "hr-g1.ctb",
+   "text_nabcc.dis",
+   "hr-chardefs.cti",
+   "hr-translation.cti",
+   "spaces.uti",
+   "hr-digits.uti",
+   "latinLetterDef6Dots.uti",
+   "litdigits6Dots.uti"
+  ],
+  "hr-g1.tbl": [
+   "hr-g1.tbl",
+   "hr-g1.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "hr-chardefs.cti",
+   "hr-translation.cti",
+   "spaces.uti",
+   "hr-digits.uti",
+   "latinLetterDef6Dots.uti",
+   "litdigits6Dots.uti"
+  ],
+  "hr-translation.cti": [
+   "hr-translation.cti",
+   "litdigits6Dots.uti"
+  ],
+  "ht-frenchcompatibility.uti": [
+   "ht-frenchcompatibility.uti"
+  ],
+  "ht-g1.utb": [
+   "ht-g1.utb",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "ht-frenchcompatibility.uti",
+   "digits6DotsPlusDot6.uti",
+   "litdigits6DotsPlusDot6.uti",
+   "braille-patterns.cti",
+   "fr-bfu-comp68.cti",
+   "fr-bfu-comp6-puncs-math.uti",
+   "IPA-unicode-range.uti"
+  ],
+  "hu-backtranslate-correction.dis": [
+   "hu-backtranslate-correction.dis"
+  ],
+  "hu-backtranslate-word-corrections.cti": [
+   "hu-backtranslate-word-corrections.cti"
+  ],
+  "hu-chardefs.cti": [
+   "hu-chardefs.cti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6DotsPlusDot6.uti"
+  ],
+  "hu-exceptionwords.cti": [
+   "hu-exceptionwords.cti"
+  ],
+  "hu-hu-comp8.ctb": [
+   "hu-hu-comp8.ctb",
+   "boxes.ctb",
+   "digits6DotsPlusDot6.uti",
+   "latinLetterDef8Dots.uti",
+   "spaces.uti",
+   "braille-patterns.cti"
+  ],
+  "hu-hu-g1.ctb": [
+   "hu-hu-g1.ctb",
+   "hu-backtranslate-correction.dis",
+   "hu-chardefs.cti",
+   "hu-exceptionwords.cti",
+   "hu-backtranslate-word-corrections.cti",
+   "braille-patterns.cti",
+   "litdigits6Dots.uti",
+   "hu-hu-g1_braille_input.cti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6DotsPlusDot6.uti"
+  ],
+  "hu-hu-g1_braille_input.cti": [
+   "hu-hu-g1_braille_input.cti"
+  ],
+  "hu-hu-g2.ctb": [
+   "hu-hu-g2.ctb",
+   "hu-backtranslate-correction.dis",
+   "hu-chardefs.cti",
+   "hu-hu-g2_exceptions.cti",
+   "hu-exceptionwords.cti",
+   "hu-backtranslate-word-corrections.cti",
+   "braille-patterns.cti",
+   "litdigits6Dots.uti",
+   "hu-hu-g1_braille_input.cti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6DotsPlusDot6.uti"
+  ],
+  "hu-hu-g2_exceptions.cti": [
+   "hu-hu-g2_exceptions.cti"
+  ],
+  "hy.ctb": [
+   "hy.ctb",
+   "digits8Dots.uti"
+  ],
+  "hy.tbl": [
+   "hy.tbl",
+   "hy.ctb",
+   "braille-patterns.cti",
+   "digits8Dots.uti"
+  ],
+  "hyph_cs_CZ.dic": [
+   "hyph_cs_CZ.dic"
+  ],
+  "hyph_da_DK.dic": [
+   "hyph_da_DK.dic"
+  ],
+  "hyph_de_DE.dic": [
+   "hyph_de_DE.dic"
+  ],
+  "hyph_en_US.dic": [
+   "hyph_en_US.dic"
+  ],
+  "hyph_eo.dic": [
+   "hyph_eo.dic"
+  ],
+  "hyph_es_ES.dic": [
+   "hyph_es_ES.dic"
+  ],
+  "hyph_fr_FR.dic": [
+   "hyph_fr_FR.dic"
+  ],
+  "hyph_hu_HU.dic": [
+   "hyph_hu_HU.dic"
+  ],
+  "hyph_it_IT.dic": [
+   "hyph_it_IT.dic"
+  ],
+  "hyph_nb_NO.dic": [
+   "hyph_nb_NO.dic"
+  ],
+  "hyph_nl_NL.dic": [
+   "hyph_nl_NL.dic"
+  ],
+  "hyph_nn_NO.dic": [
+   "hyph_nn_NO.dic"
+  ],
+  "hyph_pl_PL.dic": [
+   "hyph_pl_PL.dic"
+  ],
+  "hyph_pt_PT.dic": [
+   "hyph_pt_PT.dic"
+  ],
+  "hyph_ru.dic": [
+   "hyph_ru.dic"
+  ],
+  "hyph_sv_SE.dic": [
+   "hyph_sv_SE.dic"
+  ],
+  "is-chardefs6.cti": [
+   "is-chardefs6.cti",
+   "spaces.uti",
+   "litdigits6Dots.uti",
+   "latinLetterDef6Dots.uti"
+  ],
+  "is-chardefs8.cti": [
+   "is-chardefs8.cti",
+   "digits8Dots.uti"
+  ],
+  "is.ctb": [
+   "is.ctb",
+   "digits8Dots.uti"
+  ],
+  "is.tbl": [
+   "is.tbl",
+   "is-chardefs6.cti",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "litdigits6Dots.uti",
+   "latinLetterDef6Dots.uti"
+  ],
+  "it-it-comp6.utb": [
+   "it-it-comp6.utb",
+   "latinLetterDef6Dots.uti",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti"
+  ],
+  "it-it-comp8.utb": [
+   "it-it-comp8.utb",
+   "digits6DotsPlusDot6.uti",
+   "latinLetterDef8Dots.uti",
+   "gr-pl-comp8.uti",
+   "braille-patterns.cti"
+  ],
+  "iu-ca-g1.ctb": [
+   "iu-ca-g1.ctb",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "ja-kantenji-ucs2.utb": [
+   "ja-kantenji-ucs2.utb"
+  ],
+  "ja-kantenji.utb": [
+   "ja-kantenji.utb",
+   "ja-kantenji-ucs2.utb"
+  ],
+  "ja-rokutenkanji.utb": [
+   "ja-rokutenkanji.utb"
+  ],
+  "ka-in-g1.utb": [
+   "ka-in-g1.utb",
+   "kannada.cti",
+   "en-in-g1.ctb",
+   "braille-patterns.cti",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "ka.utb": [
+   "ka.utb",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti"
+  ],
+  "kannada.cti": [
+   "kannada.cti",
+   "braille-patterns.cti"
+  ],
+  "kh-in-g1.utb": [
+   "kh-in-g1.utb",
+   "en-in-g1.ctb",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "kha.tbl": [
+   "kha.tbl",
+   "kh-in-g1.utb",
+   "braille-patterns.cti",
+   "en-in-g1.ctb",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "kk.utb": [
+   "kk.utb",
+   "ru-litbrl.ctb",
+   "ru-unicode.dis",
+   "spaces.uti",
+   "litdigits6Dots.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "ru-math.uti",
+   "braille-patterns.cti",
+   "IPA-unicode-range.uti",
+   "unicode.dis"
+  ],
+  "km-g1.utb": [
+   "km-g1.utb",
+   "braille-patterns.cti"
+  ],
+  "kmr.tbl": [
+   "kmr.tbl",
+   "en-ueb-g1.ctb",
+   "digits6Dots.uti",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "kn.tbl": [
+   "kn.tbl",
+   "ka-in-g1.utb",
+   "braille-patterns.cti",
+   "kannada.cti",
+   "en-in-g1.ctb",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "ko-2006-g1.ctb": [
+   "ko-2006-g1.ctb",
+   "ko-2006.cti",
+   "ko-g1-rules.cti",
+   "en-chardefs.cti",
+   "braille-patterns.cti",
+   "litdigits6Dots.uti",
+   "ko-chars.cti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "ko-2006-g2.ctb": [
+   "ko-2006-g2.ctb",
+   "ko-2006.cti",
+   "ko-g2-rules.cti",
+   "en-chardefs.cti",
+   "braille-patterns.cti",
+   "litdigits6Dots.uti",
+   "ko-chars.cti",
+   "en-us-g2.ctb",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti",
+   "en-us-g1.ctb",
+   "en-us-compbrl.uti",
+   "en-us-emphasis.uti"
+  ],
+  "ko-2006.cti": [
+   "ko-2006.cti",
+   "en-chardefs.cti",
+   "braille-patterns.cti",
+   "litdigits6Dots.uti",
+   "ko-chars.cti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "ko-chars.cti": [
+   "ko-chars.cti"
+  ],
+  "ko-g1-rules.cti": [
+   "ko-g1-rules.cti"
+  ],
+  "ko-g1.ctb": [
+   "ko-g1.ctb",
+   "ko.cti",
+   "ko-g1-rules.cti",
+   "en-chardefs.cti",
+   "braille-patterns.cti",
+   "litdigits6Dots.uti",
+   "ko-chars.cti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "ko-g2-rules.cti": [
+   "ko-g2-rules.cti",
+   "en-us-g2.ctb",
+   "en-us-g1.ctb",
+   "en-chardefs.cti",
+   "en-us-compbrl.uti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "ko-g2.ctb": [
+   "ko-g2.ctb",
+   "ko.cti",
+   "ko-g2-rules.cti",
+   "en-chardefs.cti",
+   "braille-patterns.cti",
+   "litdigits6Dots.uti",
+   "ko-chars.cti",
+   "en-us-g2.ctb",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti",
+   "en-us-g1.ctb",
+   "en-us-compbrl.uti",
+   "en-us-emphasis.uti"
+  ],
+  "ko.cti": [
+   "ko.cti",
+   "en-chardefs.cti",
+   "braille-patterns.cti",
+   "litdigits6Dots.uti",
+   "ko-chars.cti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "kok.ctb": [
+   "kok.ctb",
+   "spaces.uti",
+   "devanagari.cti",
+   "text_nabcc.dis",
+   "braille-patterns.cti"
+  ],
+  "kok.tbl": [
+   "kok.tbl",
+   "kok.ctb",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "devanagari.cti",
+   "text_nabcc.dis"
+  ],
+  "kru.ctb": [
+   "kru.ctb",
+   "spaces.uti",
+   "devanagari.cti",
+   "text_nabcc.dis",
+   "braille-patterns.cti"
+  ],
+  "kru.tbl": [
+   "kru.tbl",
+   "kru.ctb",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "devanagari.cti",
+   "text_nabcc.dis"
+  ],
+  "ks-in-g1.utb": [
+   "ks-in-g1.utb",
+   "devanagari.cti",
+   "en-in-g1.ctb",
+   "braille-patterns.cti",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "latinLetterDef6Dots.uti": [
+   "latinLetterDef6Dots.uti"
+  ],
+  "latinLetterDef8Dots.uti": [
+   "latinLetterDef8Dots.uti"
+  ],
+  "latinLowercase.uti": [
+   "latinLowercase.uti"
+  ],
+  "latinUppercaseComp6.uti": [
+   "latinUppercaseComp6.uti"
+  ],
+  "lg-ug-g1.utb": [
+   "lg-ug-g1.utb",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "litdigits6Dots.uti": [
+   "litdigits6Dots.uti"
+  ],
+  "litdigits6DotsPlusDot6.uti": [
+   "litdigits6DotsPlusDot6.uti"
+  ],
+  "lo-g1.utb": [
+   "lo-g1.utb",
+   "en-ueb-chardefs.uti",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "loweredDigits6Dots.uti": [
+   "loweredDigits6Dots.uti"
+  ],
+  "loweredDigits8Dots.uti": [
+   "loweredDigits8Dots.uti"
+  ],
+  "lt-6dot.utb": [
+   "lt-6dot.utb",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "lt-8dot.utb": [
+   "lt-8dot.utb",
+   "spaces.uti",
+   "latinLetterDef8Dots.uti",
+   "digits8Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "lt.ctb": [
+   "lt.ctb",
+   "spaces.uti",
+   "digits8Dots.uti",
+   "latinLetterDef8Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "lv.tbl": [
+   "lv.tbl",
+   "Lv-Lv-g1.utb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti"
+  ],
+  "malayalam.cti": [
+   "malayalam.cti",
+   "braille-patterns.cti",
+   "en-in-g1.ctb",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "mao-nz-g1.ctb": [
+   "mao-nz-g1.ctb",
+   "text_nabcc.dis",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "marburg_single_cell_defs.cti": [
+   "marburg_single_cell_defs.cti",
+   "digits6DotsPlusDot6.uti",
+   "latinLetterDef8Dots.uti"
+  ],
+  "marburg_unicode_defs.cti": [
+   "marburg_unicode_defs.cti"
+  ],
+  "mk-g1.utb": [
+   "mk-g1.utb",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti"
+  ],
+  "ml-in-g1.utb": [
+   "ml-in-g1.utb",
+   "malayalam.cti",
+   "en-in-g1.ctb",
+   "braille-patterns.cti",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "ml.tbl": [
+   "ml.tbl",
+   "ml-in-g1.utb",
+   "braille-patterns.cti",
+   "malayalam.cti",
+   "en-in-g1.ctb",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "mn-MN-common.cti": [
+   "mn-MN-common.cti",
+   "litdigits6Dots.uti"
+  ],
+  "mn-MN-g1.utb": [
+   "mn-MN-g1.utb",
+   "mn-MN-common.cti",
+   "en-ueb-g1.ctb",
+   "litdigits6Dots.uti",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "mn-MN-g2.ctb": [
+   "mn-MN-g2.ctb",
+   "mn-MN-common.cti",
+   "en-ueb-g2.ctb",
+   "litdigits6Dots.uti",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "mn-in-g1.utb": [
+   "mn-in-g1.utb",
+   "bengali.cti",
+   "en-in-g1.ctb",
+   "braille-patterns.cti",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "mni.tbl": [
+   "mni.tbl",
+   "mn-in-g1.utb",
+   "braille-patterns.cti",
+   "bengali.cti",
+   "en-in-g1.ctb",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "mr-in-g1.utb": [
+   "mr-in-g1.utb",
+   "devanagari.cti",
+   "en-in-g1.ctb",
+   "braille-patterns.cti",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "mr.tbl": [
+   "mr.tbl",
+   "mr-in-g1.utb",
+   "braille-patterns.cti",
+   "devanagari.cti",
+   "en-in-g1.ctb",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "ms-my-g2.ctb": [
+   "ms-my-g2.ctb",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "mt.ctb": [
+   "mt.ctb",
+   "digits8Dots.uti"
+  ],
+  "mt.tbl": [
+   "mt.tbl",
+   "mt.ctb",
+   "braille-patterns.cti",
+   "digits8Dots.uti"
+  ],
+  "mun.ctb": [
+   "mun.ctb",
+   "spaces.uti",
+   "bengali.cti",
+   "text_nabcc.dis",
+   "braille-patterns.cti"
+  ],
+  "mun.tbl": [
+   "mun.tbl",
+   "mun.ctb",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "bengali.cti",
+   "text_nabcc.dis"
+  ],
+  "mwr.ctb": [
+   "mwr.ctb",
+   "spaces.uti",
+   "devanagari.cti",
+   "text_nabcc.dis",
+   "braille-patterns.cti"
+  ],
+  "mwr.tbl": [
+   "mwr.tbl",
+   "mwr.ctb",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "devanagari.cti",
+   "text_nabcc.dis"
+  ],
+  "my-g1.utb": [
+   "my-g1.utb",
+   "braille-patterns.cti"
+  ],
+  "my-g2.ctb": [
+   "my-g2.ctb",
+   "my-g1.utb",
+   "braille-patterns.cti"
+  ],
+  "ne.ctb": [
+   "ne.ctb",
+   "devanagari.cti",
+   "text_nabcc.dis",
+   "braille-patterns.cti"
+  ],
+  "ne.tbl": [
+   "ne.tbl",
+   "np-in-g1.utb",
+   "braille-patterns.cti",
+   "devanagari.cti",
+   "en-in-g1.ctb",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "nemethdefs.cti": [
+   "nemethdefs.cti"
+  ],
+  "nl-BE.dis": [
+   "nl-BE.dis"
+  ],
+  "nl-NL-g0.utb": [
+   "nl-NL-g0.utb",
+   "nl-print.dis",
+   "nl-chardefs.uti",
+   "quotation-marks.uti",
+   "unicode.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti"
+  ],
+  "nl-chardefs.uti": [
+   "nl-chardefs.uti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti"
+  ],
+  "nl-comp8.utb": [
+   "nl-comp8.utb",
+   "spaces.uti",
+   "digits6DotsPlusDot6.uti",
+   "latinLetterDef8Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "nl-print.dis": [
+   "nl-print.dis",
+   "unicode.dis"
+  ],
+  "nl-unicode.dis": [
+   "nl-unicode.dis"
+  ],
+  "no-no-8dot-fallback-6dot-g0.utb": [
+   "no-no-8dot-fallback-6dot-g0.utb",
+   "no-no-8dot.utb",
+   "no-no-chardefs6.uti",
+   "no-no-comp8.ctb",
+   "unicode-braille.utb",
+   "spaces.uti",
+   "digits8Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "no-no-latinLetterDef6Dots_diacritics.uti"
+  ],
+  "no-no-8dot.utb": [
+   "no-no-8dot.utb",
+   "no-no-comp8.ctb",
+   "unicode-braille.utb"
+  ],
+  "no-no-braillo-047-01.dis": [
+   "no-no-braillo-047-01.dis"
+  ],
+  "no-no-chardefs6.uti": [
+   "no-no-chardefs6.uti",
+   "spaces.uti",
+   "digits8Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "no-no-latinLetterDef6Dots_diacritics.uti"
+  ],
+  "no-no-comp8.ctb": [
+   "no-no-comp8.ctb"
+  ],
+  "no-no-cyrillic6dot.uti": [
+   "no-no-cyrillic6dot.uti"
+  ],
+  "no-no-g0.utb": [
+   "no-no-g0.utb",
+   "no-no.dis",
+   "no-no-chardefs6.uti",
+   "litdigits6Dots.uti",
+   "braille-patterns.cti",
+   "no-no-cyrillic6dot.uti",
+   "spaces.uti",
+   "digits8Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "no-no-latinLetterDef6Dots_diacritics.uti"
+  ],
+  "no-no-g1.ctb": [
+   "no-no-g1.ctb",
+   "no-no-g0.utb",
+   "no-no.dis",
+   "no-no-chardefs6.uti",
+   "litdigits6Dots.uti",
+   "braille-patterns.cti",
+   "no-no-cyrillic6dot.uti",
+   "spaces.uti",
+   "digits8Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "no-no-latinLetterDef6Dots_diacritics.uti"
+  ],
+  "no-no-g2.ctb": [
+   "no-no-g2.ctb",
+   "no-no-g1.ctb",
+   "no-no-g0.utb",
+   "no-no.dis",
+   "no-no-chardefs6.uti",
+   "litdigits6Dots.uti",
+   "braille-patterns.cti",
+   "no-no-cyrillic6dot.uti",
+   "spaces.uti",
+   "digits8Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "no-no-latinLetterDef6Dots_diacritics.uti"
+  ],
+  "no-no-g3.ctb": [
+   "no-no-g3.ctb",
+   "no-no-g2.ctb",
+   "no-no-g1.ctb",
+   "no-no-g0.utb",
+   "no-no.dis",
+   "no-no-chardefs6.uti",
+   "litdigits6Dots.uti",
+   "braille-patterns.cti",
+   "no-no-cyrillic6dot.uti",
+   "spaces.uti",
+   "digits8Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "no-no-latinLetterDef6Dots_diacritics.uti"
+  ],
+  "no-no-generic.ctb": [
+   "no-no-generic.ctb"
+  ],
+  "no-no-generic.dis": [
+   "no-no-generic.dis"
+  ],
+  "no-no-latinLetterDef6Dots_diacritics.uti": [
+   "no-no-latinLetterDef6Dots_diacritics.uti"
+  ],
+  "no-no.dis": [
+   "no-no.dis"
+  ],
+  "np-in-g1.utb": [
+   "np-in-g1.utb",
+   "devanagari.cti",
+   "en-in-g1.ctb",
+   "braille-patterns.cti",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "nso-za-g1.utb": [
+   "nso-za-g1.utb",
+   "sot-za-g1.ctb",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "nso-za-g2.ctb": [
+   "nso-za-g2.ctb",
+   "sot-za-g2.ctb",
+   "sot-za-g1.ctb",
+   "IPA-unicode-range.uti",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "ny-mw.utb": [
+   "ny-mw.utb",
+   "sw-ke-g1.utb",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "litdigits6Dots.uti",
+   "digits6Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "or-in-g1.utb": [
+   "or-in-g1.utb",
+   "oriya.cti",
+   "en-in-g1.ctb",
+   "braille-patterns.cti",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "or.tbl": [
+   "or.tbl",
+   "or-in-g1.utb",
+   "braille-patterns.cti",
+   "oriya.cti",
+   "en-in-g1.ctb",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "oriya.cti": [
+   "oriya.cti",
+   "braille-patterns.cti"
+  ],
+  "ovd-6g0.utb": [
+   "ovd-6g0.utb",
+   "sv-6common.uti",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "sv-phon.uti"
+  ],
+  "ovd-8g0.utb": [
+   "ovd-8g0.utb",
+   "sv-8g0n.utb",
+   "braille-patterns.cti",
+   "digits8Dots.uti",
+   "latinLetterDef8Dots.uti",
+   "spaces.uti",
+   "sv-1996.ctb",
+   "sv-phon.uti"
+  ],
+  "pa.tbl": [
+   "pa.tbl",
+   "pu-in-g1.utb",
+   "braille-patterns.cti",
+   "gurumuki.cti",
+   "en-in-g1.ctb",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "pi.ctb": [
+   "pi.ctb",
+   "spaces.uti",
+   "devanagari.cti",
+   "text_nabcc.dis",
+   "braille-patterns.cti"
+  ],
+  "pi.tbl": [
+   "pi.tbl",
+   "pi.ctb",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "devanagari.cti",
+   "text_nabcc.dis"
+  ],
+  "pl-pl-comp8.ctb": [
+   "pl-pl-comp8.ctb",
+   "latinLetterDef8Dots.uti",
+   "digits8Dots.uti"
+  ],
+  "pl.tbl": [
+   "pl.tbl",
+   "Pl-Pl-g1.utb",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "text_nabcc.dis",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti"
+  ],
+  "printables.cti": [
+   "printables.cti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti"
+  ],
+  "pt-comp6.utb": [
+   "pt-comp6.utb",
+   "spaces.uti",
+   "text_nabcc.dis",
+   "latinLetterDef6Dots.uti",
+   "litdigits6Dots.uti",
+   "digits6Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "pt-pt-comp8.ctb": [
+   "pt-pt-comp8.ctb",
+   "spaces.uti",
+   "latinLetterDef8Dots.uti",
+   "digits8Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "pt-pt-g1.utb": [
+   "pt-pt-g1.utb",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "pt-pt-g2.ctb": [
+   "pt-pt-g2.ctb",
+   "pt-pt-g1.utb",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "pt.tbl": [
+   "pt.tbl",
+   "pt-pt-g2.ctb",
+   "braille-patterns.cti",
+   "pt-pt-g1.utb",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti"
+  ],
+  "pu-in-g1.utb": [
+   "pu-in-g1.utb",
+   "gurumuki.cti",
+   "en-in-g1.ctb",
+   "braille-patterns.cti",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "quotation-marks.uti": [
+   "quotation-marks.uti"
+  ],
+  "ro-g0.utb": [
+   "ro-g0.utb",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "fr-bfu-comp6.utb",
+   "spaces.uti",
+   "digits6DotsPlusDot6.uti",
+   "litdigits6DotsPlusDot6.uti",
+   "braille-patterns.cti",
+   "fr-bfu-comp68.cti",
+   "fr-bfu-comp6-puncs-math.uti",
+   "IPA-unicode-range.uti"
+  ],
+  "ro.ctb": [
+   "ro.ctb",
+   "digits8Dots.uti"
+  ],
+  "ro.tbl": [
+   "ro.tbl",
+   "ro.ctb",
+   "braille-patterns.cti",
+   "digits8Dots.uti"
+  ],
+  "ru-brf.dis": [
+   "ru-brf.dis",
+   "en-us-brf.dis"
+  ],
+  "ru-comp6.utb": [
+   "ru-comp6.utb",
+   "ru-letters.dis",
+   "en-chardefs.cti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "ru-comp8.utb": [
+   "ru-comp8.utb",
+   "loweredDigits6Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "ru-letters.dis": [
+   "ru-letters.dis"
+  ],
+  "ru-litbrl-detailed.utb": [
+   "ru-litbrl-detailed.utb",
+   "ru-litbrl.ctb",
+   "ru-unicode.dis",
+   "spaces.uti",
+   "litdigits6Dots.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "ru-math.uti",
+   "braille-patterns.cti",
+   "IPA-unicode-range.uti",
+   "unicode.dis"
+  ],
+  "ru-litbrl.ctb": [
+   "ru-litbrl.ctb",
+   "ru-unicode.dis",
+   "spaces.uti",
+   "litdigits6Dots.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "ru-math.uti",
+   "braille-patterns.cti",
+   "IPA-unicode-range.uti",
+   "unicode.dis"
+  ],
+  "ru-math.uti": [
+   "ru-math.uti"
+  ],
+  "ru-ru-g1.ctb": [
+   "ru-ru-g1.ctb",
+   "ru-litbrl.ctb",
+   "ru-unicode.dis",
+   "spaces.uti",
+   "litdigits6Dots.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "ru-math.uti",
+   "braille-patterns.cti",
+   "IPA-unicode-range.uti",
+   "unicode.dis"
+  ],
+  "ru-unicode.dis": [
+   "ru-unicode.dis",
+   "unicode.dis"
+  ],
+  "rw-rw-g1.utb": [
+   "rw-rw-g1.utb",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti"
+  ],
+  "sa-in-g1.utb": [
+   "sa-in-g1.utb",
+   "devanagari.cti",
+   "en-in-g1.ctb",
+   "braille-patterns.cti",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "sa.tbl": [
+   "sa.tbl",
+   "sa-in-g1.utb",
+   "braille-patterns.cti",
+   "devanagari.cti",
+   "en-in-g1.ctb",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "sah.utb": [
+   "sah.utb",
+   "ru-litbrl.ctb",
+   "ru-unicode.dis",
+   "spaces.uti",
+   "litdigits6Dots.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "ru-math.uti",
+   "braille-patterns.cti",
+   "IPA-unicode-range.uti",
+   "unicode.dis"
+  ],
+  "sd.tbl": [
+   "sd.tbl",
+   "si-in-g1.utb",
+   "braille-patterns.cti",
+   "devanagari.cti",
+   "en-in-g1.ctb",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "se-se.ctb": [
+   "se-se.ctb",
+   "digits8Dots.uti"
+  ],
+  "se-se.dis": [
+   "se-se.dis"
+  ],
+  "si-in-g1.utb": [
+   "si-in-g1.utb",
+   "devanagari.cti",
+   "en-in-g1.ctb",
+   "braille-patterns.cti",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "sin.cti": [
+   "sin.cti",
+   "braille-patterns.cti"
+  ],
+  "sin.utb": [
+   "sin.utb",
+   "sin.cti",
+   "en-in-g1.ctb",
+   "tamil.cti",
+   "text_nabcc.dis",
+   "braille-patterns.cti",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "sk-g1.ctb": [
+   "sk-g1.ctb",
+   "spaces.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "sk-sk-g1.utb": [
+   "sk-sk-g1.utb",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti",
+   "litdigits6Dots.uti"
+  ],
+  "sk-sk.utb": [
+   "sk-sk.utb",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "eurodefs.cti",
+   "litdigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6DotsPlusDot6.uti"
+  ],
+  "sl-si-comp8.ctb": [
+   "sl-si-comp8.ctb",
+   "digits8Dots.uti",
+   "latinLetterDef8Dots.uti"
+  ],
+  "sl-si-g1.utb": [
+   "sl-si-g1.utb",
+   "text_nabcc.dis",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "countries.cti",
+   "litdigits6Dots.uti"
+  ],
+  "sl.tbl": [
+   "sl.tbl",
+   "sl-si-g1.utb",
+   "text_nabcc.dis",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "countries.cti",
+   "litdigits6Dots.uti"
+  ],
+  "smi-6g0.utb": [
+   "smi-6g0.utb",
+   "sv-6common.uti",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "sv-phon.uti"
+  ],
+  "smi-8g0.utb": [
+   "smi-8g0.utb",
+   "sv-8g0n.utb",
+   "braille-patterns.cti",
+   "digits8Dots.uti",
+   "latinLetterDef8Dots.uti",
+   "spaces.uti",
+   "sv-1996.ctb",
+   "sv-phon.uti"
+  ],
+  "sot-za-g1.ctb": [
+   "sot-za-g1.ctb",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "sot-za-g2.ctb": [
+   "sot-za-g2.ctb",
+   "sot-za-g1.ctb",
+   "IPA-unicode-range.uti",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "spaces.uti": [
+   "spaces.uti"
+  ],
+  "sr-Cyrl.ctb": [
+   "sr-Cyrl.ctb",
+   "spaces.uti",
+   "sr-cyrletters.cti",
+   "sr-latletters.cti",
+   "sr-common.cti",
+   "braille-patterns.cti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti"
+  ],
+  "sr-common.cti": [
+   "sr-common.cti",
+   "braille-patterns.cti"
+  ],
+  "sr-cyrletters.cti": [
+   "sr-cyrletters.cti"
+  ],
+  "sr-g1.ctb": [
+   "sr-g1.ctb",
+   "spaces.uti",
+   "sr-latletters.cti",
+   "sr-cyrletters.cti",
+   "sr-common.cti",
+   "braille-patterns.cti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti"
+  ],
+  "sr-latletters.cti": [
+   "sr-latletters.cti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti"
+  ],
+  "sv-1989.ctb": [
+   "sv-1989.ctb",
+   "digits8Dots.uti",
+   "latinLetterDef8Dots.uti"
+  ],
+  "sv-1996.ctb": [
+   "sv-1996.ctb",
+   "digits8Dots.uti",
+   "latinLetterDef8Dots.uti"
+  ],
+  "sv-6common.uti": [
+   "sv-6common.uti",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "sv-phon.uti"
+  ],
+  "sv-6g0d.utb": [
+   "sv-6g0d.utb",
+   "sv-g0.utb",
+   "sv-6common.uti",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "sv-phon.uti"
+  ],
+  "sv-6g0p.utb": [
+   "sv-6g0p.utb",
+   "sv-phon.uti",
+   "sv-6g0d.utb",
+   "sv-g0.utb",
+   "sv-6common.uti",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti"
+  ],
+  "sv-6g1.uti": [
+   "sv-6g1.uti"
+  ],
+  "sv-6g1d.ctb": [
+   "sv-6g1d.ctb",
+   "sv-6g0d.utb",
+   "sv-6g1.uti",
+   "sv-g0.utb",
+   "sv-6common.uti",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "sv-phon.uti"
+  ],
+  "sv-6g2.uti": [
+   "sv-6g2.uti",
+   "sv-6g1.uti"
+  ],
+  "sv-6g2d.ctb": [
+   "sv-6g2d.ctb",
+   "sv-6g0d.utb",
+   "sv-6g2.uti",
+   "sv-g0.utb",
+   "sv-6g1.uti",
+   "sv-6common.uti",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "sv-phon.uti"
+  ],
+  "sv-8g0d.utb": [
+   "sv-8g0d.utb",
+   "sv-8g0n.utb",
+   "braille-patterns.cti",
+   "digits8Dots.uti",
+   "latinLetterDef8Dots.uti",
+   "spaces.uti",
+   "sv-1996.ctb",
+   "sv-phon.uti"
+  ],
+  "sv-8g0n.utb": [
+   "sv-8g0n.utb",
+   "braille-patterns.cti",
+   "digits8Dots.uti",
+   "latinLetterDef8Dots.uti",
+   "spaces.uti",
+   "sv-1996.ctb",
+   "sv-phon.uti"
+  ],
+  "sv-8g1.uti": [
+   "sv-8g1.uti"
+  ],
+  "sv-8g1d.ctb": [
+   "sv-8g1d.ctb",
+   "sv-8g0d.utb",
+   "sv-8g1.uti",
+   "sv-8g0n.utb",
+   "braille-patterns.cti",
+   "digits8Dots.uti",
+   "latinLetterDef8Dots.uti",
+   "spaces.uti",
+   "sv-1996.ctb",
+   "sv-phon.uti"
+  ],
+  "sv-8g1n.ctb": [
+   "sv-8g1n.ctb",
+   "sv-8g0n.utb",
+   "sv-8g1.uti",
+   "braille-patterns.cti",
+   "digits8Dots.uti",
+   "latinLetterDef8Dots.uti",
+   "spaces.uti",
+   "sv-1996.ctb",
+   "sv-phon.uti"
+  ],
+  "sv-8g2.uti": [
+   "sv-8g2.uti",
+   "sv-8g1.uti"
+  ],
+  "sv-8g2d.ctb": [
+   "sv-8g2d.ctb",
+   "sv-8g0d.utb",
+   "sv-8g2.uti",
+   "sv-8g0n.utb",
+   "sv-8g1.uti",
+   "braille-patterns.cti",
+   "digits8Dots.uti",
+   "latinLetterDef8Dots.uti",
+   "spaces.uti",
+   "sv-1996.ctb",
+   "sv-phon.uti"
+  ],
+  "sv-8g2n.ctb": [
+   "sv-8g2n.ctb",
+   "sv-8g0n.utb",
+   "sv-8g2.uti",
+   "braille-patterns.cti",
+   "digits8Dots.uti",
+   "latinLetterDef8Dots.uti",
+   "spaces.uti",
+   "sv-1996.ctb",
+   "sv-phon.uti",
+   "sv-8g1.uti"
+  ],
+  "sv-g0.utb": [
+   "sv-g0.utb",
+   "sv-6common.uti",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "sv-phon.uti"
+  ],
+  "sv-g1.ctb": [
+   "sv-g1.ctb",
+   "sv-g0.utb",
+   "sv-6g1.uti",
+   "sv-6common.uti",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "sv-phon.uti"
+  ],
+  "sv-g2.ctb": [
+   "sv-g2.ctb",
+   "sv-g0.utb",
+   "sv-6g2.uti",
+   "sv-6common.uti",
+   "sv-6g1.uti",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "sv-phon.uti"
+  ],
+  "sv-phon.uti": [
+   "sv-phon.uti"
+  ],
+  "sw-ke-g1-2.ctb": [
+   "sw-ke-g1-2.ctb",
+   "sw-ke-g1.utb",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "litdigits6Dots.uti",
+   "digits6Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "sw-ke-g1-3.ctb": [
+   "sw-ke-g1-3.ctb",
+   "sw-ke-g1-2.ctb",
+   "sw-ke-g1.utb",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "litdigits6Dots.uti",
+   "digits6Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "sw-ke-g1-4.ctb": [
+   "sw-ke-g1-4.ctb",
+   "sw-ke-g1-3.ctb",
+   "sw-ke-g1-2.ctb",
+   "sw-ke-g1.utb",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "litdigits6Dots.uti",
+   "digits6Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "sw-ke-g1-5.ctb": [
+   "sw-ke-g1-5.ctb",
+   "sw-ke-g1-4.ctb",
+   "sw-ke-g1-3.ctb",
+   "sw-ke-g1-2.ctb",
+   "sw-ke-g1.utb",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "litdigits6Dots.uti",
+   "digits6Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "sw-ke-g1.utb": [
+   "sw-ke-g1.utb",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "litdigits6Dots.uti",
+   "digits6Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "sw-ke-g2.ctb": [
+   "sw-ke-g2.ctb",
+   "sw-ke-g1-5.ctb",
+   "sw-ke-g1-4.ctb",
+   "sw-ke-g1-3.ctb",
+   "sw-ke-g1-2.ctb",
+   "sw-ke-g1.utb",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "litdigits6Dots.uti",
+   "digits6Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "syc.utb": [
+   "syc.utb",
+   "spaces.uti",
+   "litdigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "en-ueb-chardefs.uti",
+   "text_nabcc.dis",
+   "latinUppercaseComp6.uti"
+  ],
+  "ta-ta-g1.ctb": [
+   "ta-ta-g1.ctb",
+   "text_nabcc.dis",
+   "braille-patterns.cti",
+   "en-us-g1.ctb",
+   "en-chardefs.cti",
+   "en-us-compbrl.uti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "ta.ctb": [
+   "ta.ctb",
+   "spaces.uti",
+   "tamil.cti",
+   "text_nabcc.dis"
+  ],
+  "ta.tbl": [
+   "ta.tbl",
+   "ta.ctb",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "tamil.cti",
+   "text_nabcc.dis"
+  ],
+  "tamil.cti": [
+   "tamil.cti"
+  ],
+  "te-in-g1.utb": [
+   "te-in-g1.utb",
+   "telugu.cti",
+   "en-in-g1.ctb",
+   "braille-patterns.cti",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "te.tbl": [
+   "te.tbl",
+   "te-in-g1.utb",
+   "braille-patterns.cti",
+   "telugu.cti",
+   "en-in-g1.ctb",
+   "en-chardefs.cti",
+   "en-us-emphasis.uti",
+   "litdigits6Dots.uti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "telugu.cti": [
+   "telugu.cti",
+   "braille-patterns.cti"
+  ],
+  "text_nabcc.dis": [
+   "text_nabcc.dis"
+  ],
+  "th-comp8-backward.utb": [
+   "th-comp8-backward.utb",
+   "spaces.uti"
+  ],
+  "th-g0.utb": [
+   "th-g0.utb",
+   "en-ueb-g1.ctb",
+   "spaces.uti",
+   "th-comp8-backward.utb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "th-g1.utb": [
+   "th-g1.utb",
+   "en-ueb-g1.ctb",
+   "th-g1.uti",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "text_nabcc.dis",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "th-g1.uti": [
+   "th-g1.uti",
+   "spaces.uti"
+  ],
+  "th-g2.ctb": [
+   "th-g2.ctb",
+   "en-ueb-g2.ctb",
+   "th-g1.uti",
+   "en-ueb-g1.ctb",
+   "spaces.uti",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "tr-g1.ctb": [
+   "tr-g1.ctb",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "tr-g2.ctb": [
+   "tr-g2.ctb",
+   "litdigits6Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "tr-g2.tbl": [
+   "tr-g2.tbl",
+   "tr-g2.ctb",
+   "braille-patterns.cti",
+   "litdigits6Dots.uti"
+  ],
+  "tr.ctb": [
+   "tr.ctb",
+   "digits8Dots.uti"
+  ],
+  "tr.tbl": [
+   "tr.tbl",
+   "tr.ctb",
+   "braille-patterns.cti",
+   "digits8Dots.uti"
+  ],
+  "tsn-za-g1.ctb": [
+   "tsn-za-g1.ctb",
+   "sot-za-g1.ctb",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "tsn-za-g2.ctb": [
+   "tsn-za-g2.ctb",
+   "sot-za-g2.ctb",
+   "sot-za-g1.ctb",
+   "IPA-unicode-range.uti",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "tt.utb": [
+   "tt.utb",
+   "ru-litbrl.ctb",
+   "ru-unicode.dis",
+   "spaces.uti",
+   "litdigits6Dots.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "ru-math.uti",
+   "braille-patterns.cti",
+   "IPA-unicode-range.uti",
+   "unicode.dis"
+  ],
+  "uga.utb": [
+   "uga.utb",
+   "spaces.uti",
+   "litdigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "en-ueb-chardefs.uti",
+   "text_nabcc.dis",
+   "latinUppercaseComp6.uti"
+  ],
+  "uk-comp.utb": [
+   "uk-comp.utb",
+   "ru-comp8.utb",
+   "loweredDigits6Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "uk-detailed.utb": [
+   "uk-detailed.utb",
+   "uk.utb",
+   "ru-litbrl-detailed.utb",
+   "ru-litbrl.ctb",
+   "ru-unicode.dis",
+   "spaces.uti",
+   "litdigits6Dots.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "ru-math.uti",
+   "braille-patterns.cti",
+   "IPA-unicode-range.uti",
+   "unicode.dis"
+  ],
+  "uk.utb": [
+   "uk.utb",
+   "ru-litbrl.ctb",
+   "ru-unicode.dis",
+   "spaces.uti",
+   "litdigits6Dots.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "ru-math.uti",
+   "braille-patterns.cti",
+   "IPA-unicode-range.uti",
+   "unicode.dis"
+  ],
+  "ukchardefs.cti": [
+   "ukchardefs.cti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti"
+  ],
+  "ukmaths_single_cell_defs.cti": [
+   "ukmaths_single_cell_defs.cti",
+   "digits6DotsPlusDot6.uti",
+   "latinLetterDef8Dots.uti"
+  ],
+  "ukmaths_unicode_defs.cti": [
+   "ukmaths_unicode_defs.cti"
+  ],
+  "uni-text.dis": [
+   "uni-text.dis"
+  ],
+  "unicode-braille.utb": [
+   "unicode-braille.utb"
+  ],
+  "unicode-without-blank.dis": [
+   "unicode-without-blank.dis",
+   "unicode.dis"
+  ],
+  "unicode.dis": [
+   "unicode.dis"
+  ],
+  "ur-pk-g1.utb": [
+   "ur-pk-g1.utb",
+   "spaces.uti",
+   "braille-patterns.cti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti"
+  ],
+  "ur-pk-g2.ctb": [
+   "ur-pk-g2.ctb",
+   "ur-pk-g1.utb",
+   "spaces.uti",
+   "braille-patterns.cti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti"
+  ],
+  "us-table.dis": [
+   "us-table.dis"
+  ],
+  "uz-g1.utb": [
+   "uz-g1.utb",
+   "ru-unicode.dis",
+   "spaces.uti",
+   "ru-litbrl.ctb",
+   "unicode.dis",
+   "litdigits6Dots.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "ru-math.uti",
+   "braille-patterns.cti",
+   "IPA-unicode-range.uti"
+  ],
+  "ve-za-g1.utb": [
+   "ve-za-g1.utb",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "ve-za-g2.ctb": [
+   "ve-za-g2.ctb",
+   "ve-za-g1.utb",
+   "IPA-unicode-range.uti",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "vi-cb8.utb": [
+   "vi-cb8.utb",
+   "vi-lettersdef.uti",
+   "en-us-comp8-ext.utb",
+   "latinLetterDef8Dots.uti",
+   "loweredDigits6Dots.uti",
+   "braille-patterns.cti"
+  ],
+  "vi-charsdef.uti": [
+   "vi-charsdef.uti",
+   "unicode.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "vi-lettersdef.uti",
+   "vi-puncsdef.uti",
+   "braille-patterns.cti"
+  ],
+  "vi-lettersdef.uti": [
+   "vi-lettersdef.uti"
+  ],
+  "vi-puncsdef.uti": [
+   "vi-puncsdef.uti"
+  ],
+  "vi-saigon-g1.ctb": [
+   "vi-saigon-g1.ctb",
+   "vi-charsdef.uti",
+   "unicode.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "vi-lettersdef.uti",
+   "vi-puncsdef.uti",
+   "braille-patterns.cti"
+  ],
+  "vi-vn-g0.utb": [
+   "vi-vn-g0.utb",
+   "vi-charsdef.uti",
+   "unicode.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "vi-lettersdef.uti",
+   "vi-puncsdef.uti",
+   "braille-patterns.cti"
+  ],
+  "vi-vn-g1.ctb": [
+   "vi-vn-g1.ctb",
+   "vi-charsdef.uti",
+   "unicode.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "vi-lettersdef.uti",
+   "vi-puncsdef.uti",
+   "braille-patterns.cti"
+  ],
+  "vi-vn-g2.ctb": [
+   "vi-vn-g2.ctb",
+   "vi-charsdef.uti",
+   "unicode.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "digits6Dots.uti",
+   "litdigits6Dots.uti",
+   "vi-lettersdef.uti",
+   "vi-puncsdef.uti",
+   "braille-patterns.cti"
+  ],
+  "wiskunde-chardefs.cti": [
+   "wiskunde-chardefs.cti",
+   "digits6Dots.uti"
+  ],
+  "wordcx.dis": [
+   "wordcx.dis"
+  ],
+  "xh-za-g1.utb": [
+   "xh-za-g1.utb",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "xh-za-g2.ctb": [
+   "xh-za-g2.ctb",
+   "xh-za-g1.utb",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "yi.utb": [
+   "yi.utb",
+   "litdigits6Dots.uti",
+   "braille-patterns.cti",
+   "he-IL.utb",
+   "en-chardefs.cti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "zh-chn.ctb": [
+   "zh-chn.ctb",
+   "spaces.uti",
+   "braille-patterns.cti",
+   "ukmaths_unicode_defs.cti"
+  ],
+  "zh-hk.ctb": [
+   "zh-hk.ctb",
+   "en-us-comp8.ctb",
+   "braille-patterns.cti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef8Dots.uti"
+  ],
+  "zh-tw.ctb": [
+   "zh-tw.ctb",
+   "en-us-comp8.ctb",
+   "IPA-unicode-range.uti",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "loweredDigits6Dots.uti",
+   "latinLetterDef8Dots.uti"
+  ],
+  "zh_CHN.tbl": [
+   "zh_CHN.tbl",
+   "zh-chn.ctb",
+   "braille-patterns.cti",
+   "spaces.uti",
+   "ukmaths_unicode_defs.cti"
+  ],
+  "zhcn-cbs.ctb": [
+   "zhcn-cbs.ctb",
+   "braille-patterns.cti",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "en-ueb-g1.ctb",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "zhcn-g1.ctb": [
+   "zhcn-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "zhcn-g2.ctb": [
+   "zhcn-g2.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "zu-za-g1.utb": [
+   "zu-za-g1.utb",
+   "xh-za-g1.utb",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ],
+  "zu-za-g2.ctb": [
+   "zu-za-g2.ctb",
+   "xh-za-g2.ctb",
+   "xh-za-g1.utb",
+   "en-ueb-g1.ctb",
+   "en-ueb-chardefs.uti",
+   "en-ueb-math.ctb",
+   "braille-patterns.cti",
+   "text_nabcc.dis",
+   "spaces.uti",
+   "latinLetterDef6Dots.uti",
+   "latinUppercaseComp6.uti"
+  ]
+ },
+ "missing": {}
+}

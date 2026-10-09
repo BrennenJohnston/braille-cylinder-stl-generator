@@ -1,3 +1,9 @@
+# The vendored liblouis 3.39.0 engine and tables are upstream bytes, checked
+# against recorded SHA-256s (tests/test_vendored_liblouis.py): no hook may
+# rewrite them, and three Chinese tables are over the 1000 KB limit below
+# (Brennen, 2026-10-09).
+exclude: ^static/vendor/liblouis-3\.39\.0/
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0

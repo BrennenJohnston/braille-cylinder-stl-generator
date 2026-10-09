@@ -31,3 +31,39 @@ def test_the_engine_files_are_the_recorded_bytes():
 
 def test_the_lgpl_text_ships_beside_the_engine():
     assert 'GNU LESSER GENERAL PUBLIC LICENSE' in (VENDOR / 'COPYING.LESSER.liblouis').read_text(encoding='utf-8')
+
+
+def test_every_table_is_the_recorded_bytes_and_nothing_else_ships():
+    import json
+
+    index = json.loads((VENDOR / 'tables.json').read_text(encoding='utf-8'))
+    assert index['liblouis'] == '3.39.0'
+    shipped = sorted(path.name for path in (VENDOR / 'tables').iterdir())
+    assert shipped == sorted(index['files'])
+    assert len(shipped) == 478
+    for name, record in index['files'].items():
+        path = VENDOR / 'tables' / name
+        assert path.stat().st_size == record['bytes'], name
+        assert _sha256(path) == record['sha256'], name
+
+
+def test_every_tables_include_closure_ships():
+    import json
+
+    index = json.loads((VENDOR / 'tables.json').read_text(encoding='utf-8'))
+    assert index['missing'] == {}
+    for name, closure in index['closures'].items():
+        assert closure[0] == name
+        assert set(closure) <= set(index['files']), name
+    # The forge ships exactly this closure for contracted UEB.
+    assert set(index['closures']['en-ueb-g2.ctb']) == {
+        'en-ueb-g2.ctb',
+        'en-ueb-g1.ctb',
+        'en-ueb-chardefs.uti',
+        'en-ueb-math.ctb',
+        'braille-patterns.cti',
+        'text_nabcc.dis',
+        'spaces.uti',
+        'latinLetterDef6Dots.uti',
+        'latinUppercaseComp6.uti',
+    }
