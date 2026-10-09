@@ -17,7 +17,9 @@ from app.utils import braille_to_dots, get_logger
 
 # Import validation from app.validation
 from app.validation import (
+    requested_rows,
     validate_braille_lines,
+    validate_braille_rows_fit,
     validate_embosser_version_settings,
     validate_gear_rollers_settings,
     validate_line_lengths,
@@ -501,13 +503,16 @@ def geometry_spec():
         # saved-settings spelling only).
         back_lines = data.get('back_lines', None)
 
-        # Validate inputs
-        validate_lines(lines)
-        validate_original_lines(original_lines)
+        # Validate inputs. Each list may fill the request's own Rows (a line
+        # past it must be empty); whether those rows fit is checked below,
+        # once the settings are parsed.
+        rows = requested_rows(settings_data)
+        validate_lines(lines, rows)
+        validate_original_lines(original_lines, rows)
         validate_settings(settings_data)
         validate_braille_lines(lines, plate_type)
         if back_lines is not None:
-            validate_lines(back_lines)
+            validate_lines(back_lines, rows)
             # Back braille is real geometry on BOTH plates (recesses on Cylinder
             # A, raised dots on Cylinder B), so unlike the front lines there is
             # no counter-plate case to skip: always validate as braille.
@@ -534,6 +539,8 @@ def geometry_spec():
         validate_tactile_arrow_fit(settings_data, shape_type, cylinder_params)
 
         settings = CardSettings(**settings_data)
+        # The rows must stay on the card and the arrows on the barrel.
+        validate_braille_rows_fit(settings, shape_type, cylinder_params)
 
         # SAFETY-CRITICAL: Validate line lengths BEFORE geometry extraction
         # This prevents silent truncation (S0 bug) where characters exceeding
