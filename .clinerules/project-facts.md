@@ -653,6 +653,49 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      #b0b8c4 / #7fd67f = 5.72 / 5.15 / 9.8:1 on --bg-input), opacity 1,
      italic for text boxes, upright for textarea[lang="und-Brai"].
 
+6j. Transcriber tools (2026-10-09, ported from openscad-assistive-forge
+   5.2.0 after a braille transcriber's review; plan and decisions in
+   Research/.../New Developement_2026_10_09/01_TRANSCRIBER_TOOLS_PLAN.md).
+   Both Braille (Unicode) fields, front and back, one set of helpers
+   (wireBrailleEntryTools(side)):
+   - SIX-KEY ENTRY: checkbox #braille_six_key / #back_braille_six_key
+     before the field; static/braille-six-key.js (KeyboardEvent.code, chord
+     emitted on the last release, Space = U+2800). An INPUT METHOD, not a
+     setting: never persisted (test_text_privacy pins no
+     braille_prefs_*six_key), off on every load, off after Reset, and its
+     input/change events stop at the box so the form delegate never
+     invalidates a built STL. Each cell announced once as its dots from
+     the field's live region (the field's "edited" sentence is skipped
+     while sixKeyInserting).
+   - CONVERT BRAILLE ASCII: #convert-braille-ascii-btn /
+     #back-convert-braille-ascii-btn after Translate to Text;
+     static/braille-ascii.js, the en-us-brf.dis map. A SPACE STAYS U+0020
+     (invariant 4), never U+2800; the lowercase NABCC forms are refused.
+   - REPEAT RULE: announceInBrailleRegion() empties a field region that
+     holds the same words and rewrites them after 100 ms (NVDA drops an
+     identical rewrite). EXPOSED_STATUS_NODES stays 7 - no new region.
+   - WHOLE-LINE AUTO PLACEMENT: banaAutoWrap lays each typed line out with
+     layoutParagraph() (static/braille-wrap.js): translated once, cut only
+     between braille words, an over-long address/number divided in its own
+     braille with dot 5 (U+2810) ending each row but the last, ONE number
+     sign across a divided number (UEB 6.10, Brennen's decision), the sign
+     dropped only as BANA's last resort. The engine has no inputPos, so a
+     division point is accepted when the head alone is a prefix OR the
+     tail alone is a suffix of the word's braille (both must agree). What
+     it cannot place falls back per line to wrapParagraphLegacy (the old
+     per-row algorithm, unchanged). The dot-5 note (S-DC1) rides in
+     wrap.notes, NEVER in warnings: the S0 "extra content was not placed"
+     gate and #error-text are untouched. A pristine field keeps its notes
+     on its status line (brailleFieldMirrorNotes).
+   - Strings S-SK1..S-SK4, S-BA1..S-BA5, S-BF3, S-BF4, S-DC1, S-NS1 are
+     DRAFT until Brennen signs them.
+   - RULE 16 EXCEPTION (his decision 2026-10-09): these are input methods
+     for a browser field, not layout, and the Customizer's Line_N fields
+     already take Unicode braille - the OpenSCAD repo gets NO change. Do
+     not "fix" the gap.
+   - Follow-up recorded, not built: the liblouis 3.39.0 engine upgrade (a
+     separate round) would give inputPos and retire the prefix/suffix cut.
+
 ## Settings changes — order of operations
 7. settings.schema.json is the single source of truth. When adding or changing
    any parameter/default: update settings.schema.json FIRST, then
