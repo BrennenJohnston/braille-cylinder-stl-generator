@@ -1,6 +1,6 @@
 [project]
 name = "braille-stl-generator"
-version = "2.2.0"
+version = "2.3.0"
 description = "Braille card and cylinder STL generator"
 requires-python = ">=3.12"
 

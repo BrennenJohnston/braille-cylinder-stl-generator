@@ -515,6 +515,9 @@ test.describe('Embosser Version 2', () => {
   });
 
   test('downloads carry the V2 segment and the ready message says so', async ({ page }) => {
+    // Two real Version 2 generations (Cylinder A, then Cylinder B): the 60 s
+    // default ran out in local full-suite runs once the suite grew (2026-10-09).
+    test.setTimeout(120_000);
     await openApp(page);
     await page.locator('#auto-text').fill('abc');
     await selectVersion2(page);

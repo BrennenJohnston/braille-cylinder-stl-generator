@@ -23,6 +23,12 @@ def test_no_text_or_braille_input_is_persisted():
     assert reads == [], reads
 
 
+def test_six_key_entry_is_never_persisted():
+    # An input method for one visit (Brennen, 2026-10-09): off on every load.
+    assert re.findall(r'braille_prefs_\w*six_key', HTML) == []
+    assert 'id="braille_six_key"' in HTML
+
+
 def test_the_old_back_text_key_is_scrubbed_on_load_and_by_reset():
     assert "localStorage.removeItem('braille_prefs_back_text')" in HTML
     assert "'braille_prefs_back_text'," in HTML  # still in the Reset list, so older values go too

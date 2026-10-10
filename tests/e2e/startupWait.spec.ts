@@ -21,7 +21,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { selectCylinders } from './helpers/cylinders';
 
-const TRANSLATOR_SCRIPT = '**/static/liblouis-worker.js';
+const TRANSLATOR_SCRIPT = '**/static/liblouis-module-worker.js';
 const TRANSLATOR_DELAY_MS = 4000;
 const ENGINE_SCRIPT = '**/static/workers/csg-worker-manifold.js';
 const ENGINE_DELAY_MS = 6000;

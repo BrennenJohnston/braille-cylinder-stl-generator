@@ -13,6 +13,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Batch processing
 - OpenSCAD export option
 
+## [2.3.0] - 2026-10-10
+
+Version 2.3.0 translates braille with liblouis 3.39.0, the current release, and offers every one of its tables under its own name, grouped by language. It adds transcriber tools to both braille fields (six-key entry and braille ASCII conversion), lays out Auto Placement a whole line at a time, and generates five or more rows when they fit the card and the cylinder.
+
+### Added
+- **Transcriber tools on both Braille (Unicode) fields**, front and back, ported from the OpenSCAD Assistive Forge's 5.2.0 build after a braille transcriber's review. **Six-key entry**: a checkbox before the field; with it on, f, d, s and j, k, l type braille as on a Perkins brailler (keys held together make one cell, Space a blank cell, every other key works as usual), and a screen reader hears each cell's dots. It is an input method, so it is never saved and starts off on every visit. **Convert braille ASCII**: a button beside Translate to Text that turns braille ASCII, as BRF files and braille keyboard programs write it (letters and the five symbols `` ` { | } ~ `` in either case), into braille cells in place; anything that is not braille ASCII is refused with the character named and the field left as it was. Wording signed off by Brennen on 2026-10-09.
+
+### Changed
+- **Braille is translated by liblouis 3.39.0, the current release, instead of a 2017 build of liblouis 3.2.0.** It runs as WebAssembly in a background worker and downloads only the tables of the language you pick. On the English corpus and three samples in every one of its 323 translation tables it gives exactly the native 3.39.0 engine's braille. Two English texts now come out differently, as the current engine writes them: two numbers separated by a space each take a number sign (`building 3 100`), and two single capital letters joined by `&` are no longer treated as a capital passage. Long addresses and numbers in Auto Placement are now divided using the engine's record of which letter each braille cell came from. The language list offers the new engine's 323 translation tables: some names from the old build are gone (a saved choice of one returns to contracted UEB), others are new, and files that are only parts of other tables are no longer listed.
+- **Auto Placement translates each typed line whole, then divides it into rows only between braille words.** A capital passage that wraps keeps one opening indicator and one terminator: `ROOM ROOM ROOM ROOM` over two rows is now one passage (24 cells) instead of four capitalised words. A web or e-mail address or a long number divided across rows ends each row but the last with the dot-5 line continuation sign, and a divided number keeps one number sign (UEB 6.10); the field's status line notes each division. A line that cannot be laid out this way is wrapped as before.
+- **The Translate to Braille and Translate to Text buttons are 44 px tall on desktop too**, like the new Convert braille ASCII buttons beside them (they were 32 px on desktop and 44 px only on phones).
+- **CI's accessibility check now requires a Lighthouse score of 100** (2026-10-05, Brennen's decision after the 2.2.0 release). `lighthouserc.json` asked for 90 or more, while the release procedure and the accessibility SOP ask for 100, so a drop from 100 to anything from 90 up passed CI unnoticed. The page scores 100 (measured for 2.2.0 on mobile and desktop); any lower score now turns CI's accessibility-tests job red.
+- **The vendored OpenSCAD copy is refreshed to upstream v2.12.0** (`OpenSCAD/`, 2026-10-10; released on Brennen's word 2026-10-09). The Version 1 single-file build stops with this app's own sentence when rows would run off the card or the cylinder, and its Customizer follows this app's layout with every description on one line; the MakerWorld quick start (Markdown and PDF) names each setting's Expert Mode group, and the parameter mapping follows. `VENDORED.json` records the tag (commit `705fe9a`) and the new hashes, and `PARAMETER_MAPPING.md` keeps its one edit on copy.
+
+### Removed
+- **The old liblouis 3.2.0 engine**: its asm.js build, `easy-api.js`, its 370 tables, its worker and the npm `liblouis` package. The page no longer downloads about 1.7 MB of that build on every visit.
+
+### Fixed
+- **Every braille table can be chosen again, under its liblouis name.** Since January 2026 the language list showed only the first table of each file-name prefix (UK contracted English, for one, could not be chosen) and named tables after their files. It now offers each of liblouis 3.39.0's tables once, with the name liblouis gives it ("German contracted braille"), in a group for each language; the few tables liblouis does not describe are listed by file name under Other. Wording signed off by Brennen on 2026-10-09.
+- **Five or more braille rows can be generated again.** The Rows dial allows up to 200, but the server refused any request with more than four lines ("Too many lines provided. Maximum is 4 lines."), a limit left over from the original card. A request may now fill its own Rows. How many rows actually fit is checked instead: rows whose dots would run off the card, or whose tactile arrows would run off the cylinder, are refused with a sentence that says how much height they need, and the Braille Spacing panel shows the same sentence before you press Generate. At the default spacing 5 rows fit a 52 mm cylinder with visual markers and 4 with tactile arrows. Wording signed off by Brennen on 2026-10-09.
+
+### Security
+- **The test tooling's `source-map-js` is updated to 1.2.2** (2026-10-10, Brennen's decision), which fixes advisory GHSA-68fv-2mgg-jv7q (high). Only the test tool Vitest uses it, so it never reached the page; `npm audit` now reports no known vulnerabilities.
+
 ## [2.2.0] - 2026-10-05
 
 Version 2.2.0 gathers the embosser choices into one Embosser setup item and adds Embosser Version 2 with keyed gear pegs, double-sided (interpoint) cards, Simplified gears fixed to the cylinders, a slicer seam channel on every cylinder, and one Generate STL and one Download STL for the pair. It was released after Brennen tested the development build and 3D-printed and tested the cylinders.
@@ -303,6 +327,7 @@ First stable release.
 
 Thanks to Tobi Weinberg for kick-starting the project. Based on [tobiwg/braile-card-generator](https://github.com/tobiwg/braile-card-generator).
 
+[2.3.0]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v2.3.0
 [2.2.0]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v2.2.0
 [2.1.0]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v2.1.0
 [2.0.0]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v2.0.0
@@ -310,4 +335,4 @@ Thanks to Tobi Weinberg for kick-starting the project. Based on [tobiwg/braile-c
 [1.2.0]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v1.2.0
 [1.1.0]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v1.1.0
 [1.0.0]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v1.0.0
-[Unreleased]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/BrennenJohnston/braille-cylinder-stl-generator/compare/v2.3.0...HEAD

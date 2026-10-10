@@ -30,6 +30,7 @@ This document specifies the "Enter Text for Braille Translation" text input syst
 6. [Per-Line Language Selection (Manual Mode)](#6-per-line-language-selection-manual-mode)
    - 6.1 [Capitalized Letters Toggle](#61-capitalized-letters-toggle)
    - 6.2 [Repeat Number Sign Toggle](#62-repeat-number-sign-toggle)
+   - 6.3 [Editable Unicode Braille Field](#63-editable-unicode-braille-field) (six-key entry and braille ASCII included)
 7. [Translation Pipeline](#7-translation-pipeline)
 8. [Backend Request Structure](#8-backend-request-structure)
 9. [BANA Auto-Wrap Algorithm](#9-bana-auto-wrap-algorithm)
@@ -262,6 +263,7 @@ if (placementMode !== 'manual') {
     textLines: ['John Smith', '123 Main St', '', ''],     // Original text per row
     brailleLines: ['⠚⠕⠓⠝ ⠎⠍⠊⠞⠓', '⠼⠁⠃⠉ ⠍⠁⠊⠝ ⠌', '', ''],  // Translated braille per row
     warnings: [],                // Any overflow/wrap warnings
+    notes: [],                   // Informational only: a word divided with dot 5 (Section 9)
     rowsNeeded: 2,               // Rows the full text needs (may exceed the plate)
     rowsNeededIsExact: true      // False when the simulation stopped early (rows + 8 cap)
 }
@@ -456,7 +458,8 @@ The master language selection dropdown controls:
 The default is fixed by `DEFAULT_LANGUAGE_TABLE` in `public/index.html`; every fallback in
 that file resolves to the same constant. It is the first-run value only — a table the user
 picks is persisted under `braille_prefs_language_table` and restored ahead of the default on
-later visits.
+later visits, if the dropdown still offers it; a name it no longer offers (a liblouis 3.2.0
+table, or `en_US.tbl`) falls back to `DEFAULT_LANGUAGE_TABLE`.
 
 **Rationale (BANA):** *Guidelines for Brailling Business Cards*, approved March 2024,
 instructs transcribers to "Follow *The Rules of Unified English Braille*" and to "Work with a
@@ -466,78 +469,16 @@ transcription.
 
 ### Dynamic Table Loading
 
-The dropdown is populated dynamically from the backend's available tables:
+**Source:** `public/index.html` — `loadLanguageOptions()`
 
-**Source:** `public/index.html` (lines 2426-2624)
+After the four defaults, whose group (**Default**) keeps the labels above, the dropdown offers each table `GET /liblouis/tables` lists once (`LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md` Section 10 describes the list and its fields). Dropdown plan 08, decisions M1-M3; the wording was signed off by Brennen on 2026-10-09.
 
-```javascript
-async function loadLanguageOptions() {
-    const select = document.getElementById('language-table');
+- **Label:** the table's liblouis display name, e.g. `de-g2.ctb` "German contracted braille". Where liblouis gives two tables the same name (three Danish 1993 pairs and the two Kantenji tables), each label adds its file name: "Kantenji (ja-kantenji.utb)".
+- **Group:** one `<optgroup>` per language, named by the part of the table's liblouis index name before the first comma ("German, contracted" gives **German**), in alphabetical order after Default. The names are liblouis's, so they read the same in every browser.
+- **Other:** the 13 tables liblouis does not describe, labelled by file name, in a last group named **Other**.
+- `en_US.tbl` is not offered: it wraps `en-us-g2.ctb` and gives the same braille, which the Default group already offers.
 
-    // Fetch available tables from backend
-    const resp = await fetch('/liblouis/tables', { credentials: 'same-origin' });
-    const data = await resp.json();
-
-    // Sort: English first, then by locale
-    data.tables.sort((a, b) => {
-        const aEn = (a.locale || '').toLowerCase().startsWith('en') ? 0 : 1;
-        const bEn = (b.locale || '').toLowerCase().startsWith('en') ? 0 : 1;
-        if (aEn !== bEn) return aEn - bEn;
-        return (a.locale || '').localeCompare(b.locale || '');
-    });
-
-    // Build optgroups: Default, English, Other Languages
-    // ... (detailed optgroup construction)
-}
-```
-
-### Backend Table Discovery
-
-**Source:** `backend.py` (lines 2051-2078)
-
-```python
-@app.route('/liblouis/tables')
-def list_liblouis_tables():
-    """List available liblouis translation tables from static assets.
-
-    This powers the frontend language dropdown dynamically so it stays in sync
-    with the actual shipped tables.
-    """
-    base = app.root_path
-    candidate_dirs = [
-        os.path.join(base, 'static', 'liblouis', 'tables'),
-        os.path.join(base, 'node_modules', 'liblouis-build', 'tables'),
-        os.path.join(base, 'third_party', 'liblouis', 'tables'),
-        os.path.join(base, 'third_party', 'liblouis', 'share', 'liblouis', 'tables'),
-    ]
-
-    merged = {}
-    for d in candidate_dirs:
-        for t in _scan_liblouis_tables(d):
-            key = t.get('file')
-            if key and key not in merged:
-                merged[key] = t
-
-    tables = list(merged.values())
-    tables.sort(key=lambda t: (t.get('locale') or '', t.get('file') or ''))
-    return jsonify({'tables': tables})
-```
-
-### Table Metadata Structure
-
-Each table entry returned by `/liblouis/tables`:
-
-```javascript
-{
-    file: "en-ueb-g2.ctb",       // Liblouis table filename
-    locale: "en-US",             // Language/region code
-    type: "literary",            // Type (literary, computer)
-    grade: "2",                  // Grade level (0, 1, 2)
-    contraction: "full",         // Contraction level
-    dots: 6,                     // Dot count (6 or 8)
-    variant: "UEB"               // Standard variant (UEB, EBAE, etc.)
-}
-```
+In all, 265 options in 118 groups. The per-row and Back of Card language menus copy the main menu's options (`syncLineLanguageSelects()`).
 
 ---
 
@@ -922,8 +863,10 @@ Inside the "Enter Text for Braille Translation" fieldset, directly below the tex
 | Element | ID | Role |
 |---------|----|------|
 | Translate to Braille ↓ | `translate-to-braille-btn` | Under the text box: fills the braille field from the English inputs |
+| Six-key entry | `braille_six_key` | Checkbox before the field, help `braille-six-key-help` under it (see Six-Key Entry below) |
 | Textarea | `braille-unicode` | 4 rows, `lang="und-Brai"`, `aria-describedby="braille-unicode-help braille-unicode-status"` |
 | Translate to Text ↑ | `translate-to-text-btn` | Under the braille box: back-translates the braille into the English inputs |
+| Convert braille ASCII | `convert-braille-ascii-btn` | Beside Translate to Text (see Braille ASCII below) |
 | Visible status | `braille-unicode-status` | Current state in plain words |
 | Help text | `braille-unicode-help` | A `<span>` around the FIRST SENTENCE only — the allowed range. The rest of the paragraph (how the field is used) stays visible in the same div, unwired: the textarea's description is this span **plus** `#braille-unicode-status`, so its budget is the 25-word ceiling minus a live status of 8–12 words (ADA SOP Step 6.8; audit F-C) |
 | Live region | `braille-unicode-live` | `class="sr-only" role="status" aria-live="polite"` |
@@ -981,6 +924,30 @@ Three properties matter:
 The same back-translation supplies the `{name}` segment of the STL file name when braille was
 pasted with no source text (`STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS.md` §7).
 
+### Six-Key Entry
+
+Since 2026-10-09 (transcriber tools, ported from the OpenSCAD Assistive Forge's 5.2.0 build). With the **Six-key entry** box on, the field takes braille as a Perkins brailler does: f, d and s are dots 1, 2 and 3, j, k and l are dots 4, 5 and 6, keys held together make one cell when the last of them is released (in any order), and Space alone makes a blank cell (U+2800). Keys are read by `KeyboardEvent.code`, so the home row works on any keyboard layout. A key pressed with Ctrl, Alt or Meta, or during IME composition, is left alone, and so is every other key: Tab leaves the field, Enter starts a row, Backspace deletes. The chord logic is `static/braille-six-key.js` (no DOM).
+
+- **A cell is a hand edit.** It goes in at the caret (`setRangeText`) and the field's own `input` event fires, so the state machine above treats it like a paste.
+- **Each cell is announced once, as its dots** ("dots 1 2 5", or "space"), at once and from the field's live region; the field's "Braille field edited…" sentence is skipped while a cell goes in. A problem the cell causes (a row grown past the plate) is said after the dots. A repeated cell is heard again because the region is emptied and rewritten (`UI_INTERFACE_CORE_SPECIFICATIONS.md` §4.10).
+- **An input method, not a design setting.** Never saved, off on every load (also against a browser restoring form state), turned off by Reset. Its `input` and `change` events stop at the box, so turning it on or off never invalidates a built STL.
+- Turning it on or off writes S-SK3 "Six-key entry is on." / S-SK4 "Six-key entry is off." to the status line and the live region; a problem the status line is reporting stays there.
+- The help under the box (S-SK2) is visible and not wired as a description: at 37 words it is over the ADA SOP Step 6.8 ceiling. The box's label row is its 44 px target.
+
+### Braille ASCII
+
+**Convert braille ASCII** converts the field's content in place from braille ASCII (the North American code that BRF files and braille keyboard programs write) to Unicode cells, with the 64-character map of liblouis's `en-us-brf.dis` (`static/braille-ascii.js`). Letters may be in either case, Unicode braille already in the field passes through, line breaks stay, and a space stays the ASCII space the request carries between words (`.clinerules/project-facts.md` invariant 4). The lowercase NABCC forms `` ` { | } ~ ``, which some BRF files and braille keyboard programs write, are read as the cells of `@ [ \ ] ^`, just as lowercase letters are read as capitals (Brennen, 2026-10-09), so every printable ASCII character converts and only other characters are refused.
+
+| Result | Field | Status line and announcement |
+|--------|-------|------------------------------|
+| Converted | Rewritten, then its `input` event fires (hand-edited, validated, Generate reset) | S-BA2 "Converted 1 line of braille ASCII to braille cells." / S-BA3 "Converted {n} lines of braille ASCII to braille cells." |
+| A character that is neither printable ASCII nor braille (for example `é`, or a tab) | Untouched | S-BA4 `Line {i} contains "{char}", which is not a braille ASCII character.` |
+| Empty field | Untouched | S-BA5 "Paste braille ASCII in the Braille (Unicode) field first, then press Convert braille ASCII." |
+
+When the converted braille breaks one of the field's own rules (a row longer than the plate), the validation message is the one said. Focus stays on the button.
+
+Both tools sit on the Back of Card field too, mirrored (`back_braille_six_key`, `back-convert-braille-ascii-btn`), each field with its own six-key state, status line and live region. The non-braille validation error and the Translate to Text refusal end with S-BF3, naming both routes: "Press Translate to Braille to convert text, or Convert braille ASCII if you pasted braille typed as keyboard characters." The help paragraph under each field names the two tools (S-BF4). Strings S-SK1 to S-SK6 (S-SK5 / S-SK6 are the "dots …" and "space" words), S-BA1 to S-BA5, S-BF3 and S-BF4 were signed by Brennen on 2026-10-09 as drafted.
+
 ### Validation Before Generation
 
 `validateBrailleFieldLines(lines, availableColumns, availableRows)` runs in `form.onsubmit` before any request is made, and returns the first problem as a message for `#error-message` (`role="alert"`):
@@ -1018,6 +985,8 @@ if (plateType === 'positive' && useBrailleField) {
 
 `tests/e2e/brailleField.spec.ts` intercepts `/geometry_spec` and asserts on the braille lines actually sent: the 15-cell hyphenated phone number, a hand-edit down to 13 cells surviving verbatim, direct paste with empty English inputs, both validation blocks, the pristine-clears / dirty-survives behavior, and the Translate to Text round trip (pasted braille reaches `line1` as English while the braille field stays byte-identical). It also pins the `original_lines` contract: the English lines are still sent for indicator letters when the field was filled from them, and `null` is sent for direct paste with empty English inputs.
 
+The transcriber tools are pinned by `tests/frontend/braille-six-key.test.js` and `tests/frontend/braille-ascii.test.js` (the map read against `en-us-brf.dis`) and, in three browsers, by `tests/e2e/brailleEntryTools.spec.ts`: chords at the caret, the dots announced in order and a repeated cell announced again, the box's events kept from the form, Reset, conversion sent verbatim to `/geometry_spec`, and refusals leaving the field untouched, on both fields.
+
 ---
 
 ## 7. Translation Pipeline
@@ -1045,9 +1014,9 @@ if (plateType === 'positive' && useBrailleField) {
 │                          ▼                                                   │
 │  ┌──────────────────────────────────────────────┐                           │
 │  │      LIBLOUIS WEB WORKER                      │                           │
-│  │  (static/liblouis-worker.js)                  │                           │
-│  │  • Loads liblouis WASM/JS                     │                           │
-│  │  • Loads translation table                    │                           │
+│  │  (static/liblouis-module-worker.js)           │                           │
+│  │  • Loads liblouis 3.39.0 (WebAssembly)        │                           │
+│  │  • Fetches the table and its includes         │                           │
 │  │  • Translates text → Unicode braille          │                           │
 │  └───────────────────────┬──────────────────────┘                           │
 │                          │                                                   │
@@ -1211,103 +1180,40 @@ Back text fails **closed** — the generate handler blocks with an error and sen
 
 ### Overview
 
-The BANA (Braille Authority of North America) auto-wrap algorithm intelligently wraps text across available rows while following braille formatting guidelines.
-
-**Source:** `public/index.html` (`banaAutoWrap()`)
+`banaAutoWrap(src, cols, rows, tableName)` in `public/index.html` lays Auto Placement text, and the Back of Card text, out in rows of at most `cols` cells. Since 2026-10-09 each typed line is laid out from its whole-line braille by `layoutParagraph()` in `static/braille-wrap.js`; a line that cannot be laid out that way keeps the per-row layout the app used before (`wrapParagraphLegacy`).
 
 ### Algorithm Principles
 
-1. **Newlines Are Hard Row Breaks** — The source is split on `\r?\n` first; each input line starts on a new row and is wrapped independently
-2. **Word Preservation** — Avoid dividing words across lines when possible
-3. **Greedy Fitting** — Fill each line with as many words as will fit
-4. **Smart Breaks** — When a word must be split, prefer natural break points
-5. **Translation-Aware** — Calculate lengths after braille translation (not source text), with the capitalization setting applied
+1. **Newlines are hard row breaks.** The source is split on `\r?\n` first; each input line starts on a new row and is laid out by itself.
+2. **Each line is translated whole**, with the capitalization setting applied, and its braille is cut into rows only between braille words, so wrapping never changes a cell. An indicator that spans words keeps its one opening and one closing sign: a capital passage of three or more capitalised words (UEB 8.5.7) is one ⠠⠠⠠ and one ⠠⠄ however many rows it covers. Before 2026-10-09 each candidate row was translated by itself, so `ROOM ROOM ROOM ROOM` over two rows became four ⠠⠠ words.
+3. **Greedy fitting.** Each row takes as many words as fit, one blank cell (an ASCII space) between them.
+4. **A word longer than a row is divided in its own braille**, never translated again:
 
-### Preferred Break Points (Priority Order)
+| Kind (`wordKind`) | Divides after | Each row but the last ends with |
+|-------------------|---------------|---------------------------------|
+| Address: holds `@` or `://`, starts with `www.`, or is a domain followed by `/` | `@ . - / : _` | ⠐, the line continuation sign (dot 5) |
+| Number: digits joined by `.` or `,` | `. ,` | ⠐ |
+| Any other word | `. - / :` | Nothing: a hyphen or a slash already ends its row (UEB 10.13.2, 7.4.1) |
 
-When a single word is too long for a line:
+The sign counts toward its row. When it does not fit on every row, the word is divided without it, the last resort in BANA's business card guidelines. A divided number keeps one number sign (UEB 6.10; decided 2026-10-09): `206.555.0147` at 8 cells is `⠼⠃⠚⠋⠲⠐` then `⠑⠑⠑⠲⠚⠁⠙⠛`. Each word divided with the sign adds one note to `notes` (S-DC1, signed 2026-10-09): `"{word}" is divided across rows. Each row but the last ends with the line continuation sign (dot 5).`
 
-1. **Hyphen Characters** — Break after `-`, `–`, `—`, `‑`, `‒`, `−`
-2. **Email/URL Characters** — Break after `@` or `.`
-3. **Syllable Heuristics** — Vowel-consonant boundaries
+5. **Finding a division point.** liblouis 3.39.0 reports, for each cell, the typed character it came from (its input positions; the engine round, 2026-10-09). A word may be divided at the first cell past each division character in its typed text, and each braille word's typed text is read from the same positions. The optional repeated number sign (Section 6.2) inserts cells, and each inserted ⠼ takes the position of the digit it introduces. Before that engine, a point was found by translating the text on each side of it alone (the head/tail cut, retired by Brennen's decision E4).
+6. **Fallback.** A line whose typed and braille words do not pair up, or that holds a long word with no usable point or with a piece still longer than a row, is laid out as before 2026-10-09: words are added while the translated candidate row fits; an over-long word is split after a hyphen, `@` or `.`, then at a vowel/consonant boundary, its pieces translated separately and given no sign; and when no split exists, the error below.
 
-### Implementation
+### Return Value
 
-```javascript
-async function banaAutoWrap(src, cols, rows, tableName) {
-    const warnings = [];
-    const textLines = [];
-    const brailleLines = [];
+The result structure and the overflow rule are in Section 3 (How Auto Placement Processes Text); a word that cannot be divided returns `{ error: true, warnings }` (below).
 
-    // Normalize whitespace
-    const normalizeSpaces = (s) => s.replace(/\s+/g, ' ').trim();
+`notes` are informational and only for rows that are placed. Translate to Braille and Generate show them after the field's status (`showTranslationInBrailleField(lines, warnings, notes)`), and a pristine field keeps them on its status line while it holds that translation. They never reach `#error-text` and never block Generate; the S0 gate reads `warnings` only.
 
-    // Character classification helpers
-    const isHyphenChar = (ch) => /[-\u2010\u2011\u2012\u2013\u2014\u2212]/.test(ch);
-    const isEmailBreakChar = (ch) => ch === '@' || ch === '.';
-
-    // Find preferred break positions in a word
-    function findPreferredBreakPositions(word) {
-        const positions = [];
-        for (let i = 0; i < word.length; i++) {
-            const ch = word[i];
-            if (isHyphenChar(ch) || isEmailBreakChar(ch)) {
-                if (i + 1 < word.length) positions.push(i);
-            }
-        }
-        return positions;
-    }
-
-    // Heuristic syllable breaks (vowel-consonant boundaries)
-    function findHeuristicSyllableBreaks(word) {
-        const breaks = [];
-        const vowels = /[aeiouyAEIOUY]/;
-        for (let i = 1; i < word.length - 1; i++) {
-            const prev = word[i - 1];
-            const cur = word[i];
-            const next = word[i + 1];
-            if (vowels.test(prev) && !vowels.test(cur)) {
-                breaks.push(i);
-            } else if (vowels.test(cur) && !vowels.test(next)) {
-                breaks.push(i + 1);
-            }
-        }
-        return Array.from(new Set(breaks)).sort((a,b) => a-b);
-    }
-
-    // Translation helpers (capitalization setting applied, same as generation)
-    async function translateLen(text) {
-        const b = await translateWithLiblouis(applyCapitalizationSetting(text), 'g2', tableName);
-        return b.length;
-    }
-
-    // 1. Split on user newlines: each input line is an independent paragraph
-    const paragraphs = String(src ?? '').split(/\r?\n/).map(normalizeSpaces);
-    // (trailing blank paragraphs dropped; blank lines in the middle keep a row)
-
-    // 2. Word-wrap each paragraph in order, starting it on a new row:
-    //    - append words greedily while the translated candidate fits `cols`
-    //    - finalize the row and retry the word when it would overflow
-    //    - split overlong words at preferred breaks / syllable heuristics,
-    //      or return { error: true } when no BANA-safe split exists
-    //    The simulation continues up to rows + 8 so overflow warnings can
-    //    report an exact "needs N rows" figure (rowsNeededIsExact = false
-    //    when even that cap was hit).
-
-    // 3. Warn when rowsNeeded > rows, identifying the input line where the
-    //    overflow starts. The phrase "extra content was not placed" is
-    //    load-bearing: the generate handler blocks on it (S0 gate).
-
-    return { textLines, brailleLines, warnings, rowsNeeded, rowsNeededIsExact };
-}
-```
+Pinned by `tests/frontend/braille-wrap.test.js`, whose translator is a table of the real worker's output captured on 2026-10-09, and by the Auto Placement cases in `tests/e2e/brailleEntryTools.spec.ts`.
 
 ### Error Conditions
 
 If a word cannot fit on a single line and has no valid break points:
 
 ```javascript
-// Source: public/index.html (banaAutoWrap > wrapParagraph)
+// Source: public/index.html (banaAutoWrap > wrapParagraphLegacy)
 warnings.push(`Word "${word}" requires ${wordBrailleLen} cells but only ${cols} fit per row. ` +
               `It cannot be divided per BANA; increase columns/rows or use Manual Placement.`);
 return { error: true };
@@ -1538,21 +1444,9 @@ uncontracted (grade 1) only if your reader has asked for it.</span></div>
 
 All components use the same table chain format:
 
-**Frontend (liblouis-worker.js):**
-```javascript
-const tableChain = selectedTable.indexOf('unicode.dis') !== -1
-    ? selectedTable
-    : ('unicode.dis,' + selectedTable);
-```
+**Worker:** `static/liblouis-engine.js` gives liblouis `/tables/unicode.dis,/tables/<table>` (`LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md` Section 5).
 
-**Backend Table Resolution:**
-```python
-candidate_dirs = [
-    os.path.join(base, 'static', 'liblouis', 'tables'),
-    os.path.join(base, 'node_modules', 'liblouis-build', 'tables'),
-    os.path.join(base, 'third_party', 'liblouis', 'tables'),
-]
-```
+**Backend table list:** `/liblouis/tables` offers exactly the translation tables in `static/vendor/liblouis-3.39.0/tables.json` (`LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md` Section 10).
 
 ### Original Lines Consistency
 
@@ -1649,7 +1543,7 @@ for (let i = 0; i < lines.length; i++) {
 
 1. Verify the per-line select has the correct value before form submit
 2. Check that `syncLineLanguageSelects()` was called when switching to manual mode
-3. Ensure the selected table file exists in `/static/liblouis/tables/`
+3. Ensure the selected table is one `/liblouis/tables` lists (only those can be loaded)
 
 ### Overflow Warnings Not Appearing
 
@@ -1695,6 +1589,8 @@ for (let i = 0; i < lines.length; i++) {
 ---
 
 ## Appendix D: Implementation Verification Report
+
+> **Note added 2026-10-09:** its rows for `static/liblouis-worker.js` name the liblouis 3.2.0 worker that the engine round removed; they are left as recorded. `LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md` Sections 3 and 7 describe its successor.
 
 This section documents the cross-check verification performed against actual implementations.
 
@@ -1931,8 +1827,15 @@ None required. All implementations match the specification exactly.
 
 ---
 
-*Document Version: 1.10*
-*Last Updated: 2026-09-30 - Documentation review after the approved build: Section 1 shows the main form as it is (Row Indicator Style and Card Thickness are Expert Mode submenus since 2026-09-24, Cylinders to Generate since 2026-09-21; the Back of Card section sits between the boxes); the `back_lines` section names the Card sides choice and the `#a11y-status` announcement; the storage table describes `braille_prefs_plate_type` (Cylinders to Generate) and `braille_prefs_double_sided_enabled` (the Card sides choice).*
+*Document Version: 1.17*
+*Last Updated: 2026-10-09 - Section 5: the dropdown offers every liblouis 3.39.0 table once, under its liblouis display name, grouped by language (dropdown plan 08, decisions M1-M3, wording signed by Brennen); the saved-choice fallback is described here.*
+*Previous: 1.16, 2026-10-09 - the engine round's phase 8: the diagram (Section 7) and Section 13 name the liblouis 3.39.0 worker, Appendix B no longer points at the removed 3.2.0 tables, and the dated Appendix D gains a note.*
+*Previous: 1.15, 2026-10-09 - Sections 5 and 13: the backend table list is described once, in LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md Section 10 (the engine round's phase 7).*
+*Previous: 1.14, 2026-10-09 - Section 9 point 5: division points come from liblouis 3.39.0's input positions (the engine round, decision E4); the head/tail cut is retired.*
+*Previous: 1.13, 2026-10-09 - Convert braille ASCII reads the lowercase NABCC forms `` ` { | } ~ `` as `@ [ \ ] ^` (Brennen's decision); only characters outside printable ASCII and braille are refused (Section 6.3).*
+*Previous: 1.12, 2026-10-09 - Brennen signed every transcriber-tool string as drafted (Section 6.3, S-DC1 in Section 9) and kept both refinements of the division-point search: a point found from either side, and the per-line fallback when none is usable.*
+*Previous: 1.11, 2026-10-09 - Transcriber tools, ported from the OpenSCAD Assistive Forge's 5.2.0 build. Section 6.3 gains Six-Key Entry and Braille ASCII (both braille fields; strings DRAFT), and Section 9 is rewritten: each typed line is translated whole and cut only between braille words (a capital passage keeps one indicator), a long address or number divides with the dot-5 line continuation sign and one number sign (UEB 6.10, Brennen's decision), and the per-row layout remains as the fallback.*
+*Previous: 1.10, 2026-09-30 - Documentation review after the approved build: Section 1 shows the main form as it is (Row Indicator Style and Card Thickness are Expert Mode submenus since 2026-09-24, Cylinders to Generate since 2026-09-21; the Back of Card section sits between the boxes); the `back_lines` section names the Card sides choice and the `#a11y-status` announcement; the storage table describes `braille_prefs_plate_type` (Cylinders to Generate) and `braille_prefs_double_sided_enabled` (the Card sides choice).*
 *Previous: 1.9, 2026-09-28 - Three of Brennen's user-testing findings. (1) Privacy: no text or braille input is persisted any more - `braille_prefs_back_text` retired and scrubbed (Section 11's rule). (2) Generate fills the Braille (Unicode) field with the translation it embosses, front and back, announced from the field's live region (D-U4); a pristine field is now also emptied when an effective translation setting changes (Section 6.3; S-BF1 / S-BF2 signed). (3) Placeholders: the text box carries the sample S-P3 "Type the text you want in braille here.", the back box its shortened sample, and the braille boxes their exact translations S-P4 / S-P5, styled with the new `--text-placeholder` token (Section 3). All five strings signed by Brennen 2026-09-28.*
 *Previous: 1.8, 2026-09-21 - Back of Card parity (programme sub-plan D, decision D-11): Section 2 records the back's own placement toggle, Section 8's double-sided subsection the Manual Placement rows with per-line tables (`back_per_line_language_tables` / `text.back_languages`, sent only for a manually placed back), and the Section 11 table the `braille_prefs_back_placement_mode` key. Strings S-D1 and S-D3 signed 2026-09-21.*
 *Previous: 1.7, 2026-08-23 - `lang="und-Brai"` on the braille field investigated and KEPT (new note in Section 8 UI Structure). NVDA says "und (not supported)" on every visit - 17 times in a 30-minute walkthrough - and it is kept anyway: the tag is correct, nothing in the code reads it, the announcement is a user-configurable NVDA setting, and removing it would trade a switchable annoyance for an untested risk to braille-display users. Brennen decided after the investigation; the note records that a braille display, not a speech test, is what would settle it. No markup changed.*

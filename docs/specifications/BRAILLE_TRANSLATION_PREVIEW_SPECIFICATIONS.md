@@ -15,7 +15,7 @@ This document specifies the Braille Translation Preview feature in the applicati
 1. `backend.py` — Primary authoritative source (braille validation, table scanning)
 2. `wsgi.py` — Entry point configuration
 3. `static/workers/csg-worker.js` — Client-side geometry (consumes translated braille)
-4. `static/liblouis-worker.js` — Translation web worker
+4. `static/liblouis-module-worker.js` — Translation web worker
 
 ---
 
@@ -135,7 +135,7 @@ The preview is **hidden by default** and appears only after clicking the preview
 │                     ▼                                                        │
 │  ┌──────────────────────────────────────┐                                   │
 │  │      LIBLOUIS WEB WORKER              │                                   │
-│  │  (static/liblouis-worker.js)          │                                   │
+│  │  (static/liblouis-module-worker.js)   │                                   │
 │  │  • Loads liblouis WASM/JS             │                                   │
 │  │  • Loads translation tables           │                                   │
 │  │  • Translates text → Unicode braille  │                                   │
@@ -172,106 +172,7 @@ The preview is **hidden by default** and appears only after clicking the preview
 
 ## 3. Liblouis Web Worker Integration
 
-### Worker Initialization
-
-**Source:** `static/liblouis-worker.js`
-
-```javascript
-// Web Worker for liblouis translation
-// Uses enableOnDemandTableLoading which only works in web workers
-
-let liblouisInstance = null;
-let liblouisReady = false;
-
-// Import liblouis scripts
-importScripts('/static/liblouis/build-no-tables-utf16.js');
-importScripts('/static/liblouis/easy-api.js');
-```
-
-### Initialization Sequence
-
-```
-1. Load build-no-tables-utf16.js (liblouis WASM/JS core)
-2. Load easy-api.js (JavaScript API wrapper)
-3. Create LiblouisEasyApi instance
-4. Enable on-demand table loading from /static/liblouis/tables/
-5. Preload core tables (unicode.dis, en-ueb-g1.ctb, en-ueb-g2.ctb)
-6. Run test translation to verify functionality
-```
-
-### Worker Message Protocol
-
-**Request Format:**
-
-```javascript
-{
-    id: Number,           // Unique message ID for response matching
-    type: 'translate',    // Message type
-    data: {
-        text: String,     // Original text to translate
-        grade: String,    // 'g1' or 'g2' (only used if tableName is null)
-        tableName: String // Liblouis table file (e.g., 'en-ueb-g2.ctb')
-    }
-}
-```
-
-**Response Format:**
-
-```javascript
-{
-    id: Number,           // Matches request ID
-    type: 'translate',    // Message type
-    result: {
-        success: Boolean,
-        translation: String,  // Unicode braille output (on success)
-        error: String         // Error message (on failure)
-    }
-}
-```
-
-### Translation Function
-
-**Source:** `static/liblouis-worker.js` (lines 135-181)
-
-```javascript
-case 'translate':
-    if (!liblouisReady || !liblouisInstance) {
-        throw new Error('Liblouis not initialized');
-    }
-
-    const { text, grade, tableName } = data;
-
-    // Use provided table or default based on grade
-    // DEFAULT_TABLE = 'en-ueb-g2.ctb' (contracted UEB, the app's first-run default)
-    let selectedTable = tableName || (grade === 'g1' ? 'en-ueb-g1.ctb' : DEFAULT_TABLE);
-
-    // Ensure unicode braille output by prepending unicode.dis
-    const tableChain = selectedTable.indexOf('unicode.dis') !== -1
-        ? selectedTable
-        : ('unicode.dis,' + selectedTable);
-
-    const result = liblouisInstance.translateString(tableChain, text);
-
-    // Validate result contains braille Unicode
-    const hasBrailleChars = result.split('').some(char => {
-        const code = char.charCodeAt(0);
-        return code >= 0x2800 && code <= 0x28FF;
-    });
-
-    if (!hasBrailleChars) {
-        throw new Error('Translation produced no braille Unicode output');
-    }
-```
-
-### Table Chain Construction
-
-The translation always uses a table chain to ensure Unicode braille output:
-
-| Input Table | Resulting Chain |
-|-------------|-----------------|
-| `en-ueb-g2.ctb` | `unicode.dis,en-ueb-g2.ctb` |
-| `en-ueb-g1.ctb` | `unicode.dis,en-ueb-g1.ctb` |
-| `unicode.dis,en-ueb-g2.ctb` | `unicode.dis,en-ueb-g2.ctb` (unchanged) |
+The preview translates through the same worker as every other caller: `static/liblouis-module-worker.js`, liblouis 3.39.0 compiled to WebAssembly. Its start-up, message protocol, table list and output check are described once, in `LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md` Sections 3, 5 and 7.
 
 ---
 
@@ -566,50 +467,9 @@ line against `getAvailableColumns()`. See section 10 of
 
 ## 7. Language Table System
 
-### Backend Table Discovery
+### Backend Table List
 
-**Source:** `backend.py` (lines 2051-2078)
-
-```python
-@app.route('/liblouis/tables')
-def list_liblouis_tables():
-    """List available liblouis translation tables from static assets."""
-    base = app.root_path
-    candidate_dirs = [
-        os.path.join(base, 'static', 'liblouis', 'tables'),
-        os.path.join(base, 'node_modules', 'liblouis-build', 'tables'),
-        os.path.join(base, 'third_party', 'liblouis', 'tables'),
-        os.path.join(base, 'third_party', 'liblouis', 'share', 'liblouis', 'tables'),
-    ]
-
-    merged = {}
-    for d in candidate_dirs:
-        for t in _scan_liblouis_tables(d):
-            key = t.get('file')
-            if key and key not in merged:
-                merged[key] = t
-
-    tables = list(merged.values())
-    tables.sort(key=lambda t: (t.get('locale') or '', t.get('file') or ''))
-    return jsonify({'tables': tables})
-```
-
-### Table Metadata Structure
-
-Each table entry contains:
-
-```javascript
-{
-    file: "en-ueb-g2.ctb",       // Table filename
-    locale: "en-US",             // Language/region code
-    name: "Unified English Braille Grade 2",  // Display name
-    grade: "2",                  // Grade level (0, 1, 2)
-    type: "literary",            // Type (literary, computer)
-    contraction: "full",         // Contraction level
-    dots: 6,                     // Dot count (6 or 8)
-    variant: "UEB"               // Standard variant (UEB, EBAE, etc.)
-}
-```
+`GET /liblouis/tables` offers the liblouis 3.39.0 translation tables; the list and the shape of each entry are in `LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md` Section 10.
 
 ### Default Tables (Hardcoded)
 
@@ -623,42 +483,11 @@ const defaultValues = new Set([
 ```
 
 The selected entry is `DEFAULT_LANGUAGE_TABLE` (`en-ueb-g2.ctb`) unless
-`localStorage.braille_prefs_language_table` holds a table the user picked earlier.
+`localStorage.braille_prefs_language_table` holds a table the user picked earlier that the list still offers.
 
 ### Frontend Table Loading
 
-**Source:** `public/index.html` (lines 2411-2500)
-
-```javascript
-async function loadLanguageOptions() {
-    const select = document.getElementById('language-table');
-
-    // Preserve defaults
-    const defaultGroup = document.createElement('optgroup');
-    defaultGroup.label = 'Default';
-    // ... add default options
-
-    // Fetch additional tables from backend
-    const resp = await fetch('/liblouis/tables', { credentials: 'same-origin' });
-    const data = await resp.json();
-
-    // Sort: English first, then by locale
-    data.tables.sort((a, b) => {
-        const aEn = (a.locale || '').toLowerCase().startsWith('en') ? 0 : 1;
-        const bEn = (b.locale || '').toLowerCase().startsWith('en') ? 0 : 1;
-        if (aEn !== bEn) return aEn - bEn;
-        // ... additional sorting
-    });
-
-    // Build options with autonym labels
-    for (const entry of data.tables) {
-        const opt = document.createElement('option');
-        opt.value = entry.file;
-        opt.textContent = buildLabel(entry);
-        otherGroup.appendChild(opt);
-    }
-}
-```
+How the dropdown is built from that list (labels, language groups, the saved-choice fallback) is in `BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md` Section 5.
 
 ---
 
@@ -924,7 +753,7 @@ async function translateWithLiblouis(text, grade, tableName = null) {
 | Stage | Component | Verification Method |
 |-------|-----------|---------------------|
 | Input | Frontend | Collect text from input fields |
-| Translation | liblouis-worker.js | Uses `unicode.dis` chain for Unicode output |
+| Translation | liblouis-module-worker.js | Uses `unicode.dis` first in the table list for Unicode output |
 | Validation | backend.py | Checks U+2800–U+28FF range |
 | Conversion | app/utils.py | `braille_to_dots()` for geometry |
 | Rendering | csg-worker.js | Consumes dot patterns, not text |
@@ -933,10 +762,9 @@ async function translateWithLiblouis(text, grade, tableName = null) {
 
 All components agree on braille Unicode handling:
 
-**Frontend (liblouis-worker.js):**
+**Frontend (liblouis-module-worker.js):**
 ```javascript
-const code = char.charCodeAt(0);
-return code >= 0x2800 && code <= 0x28FF;
+[...braille].some((ch) => ch.codePointAt(0) >= 0x2800 && ch.codePointAt(0) <= 0x28ff)
 ```
 
 **Backend (app/utils.py):**
@@ -952,26 +780,7 @@ has_braille_chars = any(ord(char) >= 0x2800 and ord(char) <= 0x28FF for char in 
 
 ### Table Path Consistency
 
-**Note:** There is a difference in table path resolution between the worker and backend:
-
-**Worker (`liblouis-worker.js`) table paths:**
-
-| Priority | Path |
-|----------|------|
-| 1 | `{origin}/static/liblouis/tables/` |
-| 2 | `/node_modules/liblouis-build/tables/` |
-| 3 | `static/liblouis/tables/` (relative fallback) |
-
-**Backend (`backend.py`) table paths:**
-
-| Priority | Path |
-|----------|------|
-| 1 | `{app_root}/static/liblouis/tables/` |
-| 2 | `{app_root}/node_modules/liblouis-build/tables/` |
-| 3 | `{app_root}/third_party/liblouis/tables/` |
-| 4 | `{app_root}/third_party/liblouis/share/liblouis/tables/` |
-
-The backend has additional fallback paths for alternative deployment configurations. Both prioritize `/static/liblouis/tables/` as the primary location.
+The worker (`static/liblouis-module-worker.js`) fetches a table and the files it includes from `static/vendor/liblouis-3.39.0/tables/`, as `tables.json` lists them, and `/liblouis/tables` offers exactly the translation tables that index names (`LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md` Section 10), so the two cannot disagree. Until the engine round (2026-10-09) they read different folders.
 
 ---
 
@@ -1052,6 +861,8 @@ added the back section, since changing it would alter single-sided behavior.
 
 This section documents the cross-check verification performed against actual implementations.
 
+> **Note added 2026-10-09:** its rows for `static/liblouis-worker.js` name the liblouis 3.2.0 worker that the engine round removed; they are left as recorded. `LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md` Sections 3 and 7 describe its successor.
+
 ### Verification Date
 
 2024-12-06
@@ -1130,7 +941,7 @@ Unicode Code Point = 0x2800 + (dot1 × 1) + (dot2 × 2) + (dot3 × 4) +
 Liblouis tables use a specific format with directives for translation rules:
 
 ```
-# Table metadata (parsed by backend)
+# Table metadata
 #+language: en
 #+type: literary
 #+contraction: full
@@ -1147,7 +958,7 @@ word the 2346
 word and 12346
 ```
 
-The backend's `_scan_liblouis_tables()` function parses these metadata lines to populate the language dropdown.
+The table list reads these lines (`LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md` Section 10).
 
 ---
 
@@ -1156,7 +967,7 @@ The backend's `_scan_liblouis_tables()` function parses these metadata lines to 
 ### Preview Button Not Working
 
 1. Check browser console for liblouis worker errors
-2. Verify `/static/liblouis/` files are accessible
+2. Verify `/static/liblouis-module-worker.js` and the files in `/static/vendor/liblouis-3.39.0/` are accessible
 3. Ensure web workers are supported in the browser
 
 ### Translation Returns Empty
@@ -1182,6 +993,9 @@ If backend returns "does not contain proper braille Unicode characters":
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-10-09 | 1.5 | Dropdown plan 08: Section 7's copy of `loadLanguageOptions()` is replaced by a pointer to BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md Section 5, which describes the menu once; the appendix says the table list reads the tables' metadata lines. |
+| 2026-10-09 | 1.4 | The engine round's phase 8: Section 3's copy of the worker's start-up, protocol and translation code is replaced by a pointer to LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md, which describes the liblouis 3.39.0 worker once; the diagram, Section 12 and Appendix D name the new worker; Appendix A (dated) gains a note. |
+| 2026-10-09 | 1.3 | The engine round's phase 7: Section 7's copy of the backend table list is replaced by a pointer to LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md Section 10 (the list is now the translation tables of the vendored liblouis 3.39.0 index); Table Path Consistency describes the one folder the worker and the list share; the appendix no longer says the backend parses table metadata. |
 | 2026-09-30 | 1.2 | Documentation review after the approved build: §13 names the Card sides choice (`isDoubleSidedOn()`) in place of the retired `#double_sided_enabled` beta toggle, and the layout diagram lists Cylinders to Generate and Card Thickness as the first Expert Mode submenus. |
 | 2026-08-17 | 1.1 | Added §13: with the double-sided (interpoint) beta ON the preview shows both sides - the existing front output under an h3 "Front of Card" heading, then an h3 "Back of Card" section whose rows come from the same `banaAutoWrap()` call the generate handler makes. Beta OFF is byte-identical (verified by comparing `#preview-content.innerHTML` before and after). §11 gained the `.preview-section-heading` rule. Back-of-card preview errors render inline as `.preview-line-error` blocks rather than in the `#error-message` overlay, so they cannot overwrite a front warning. |
 | (pre-history) | 1.0 | Original specification: UI layout, translation architecture, liblouis worker integration, computer shorthand conversion, manual and auto placement previews, language tables, backend validation, braille Unicode handling, error states, styling and accessibility, cross-implementation consistency, and Appendices A-D. This document carried no version footer before 2026-08-17. |

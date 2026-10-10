@@ -10,6 +10,17 @@ The OpenSCAD version has been updated to match the web-based generator's UI para
 1. OpenSCAD requires **pre-translated Unicode braille** characters (no automatic translation). The web app can now take pre-translated braille too — it has a Braille (Unicode) field that is used verbatim — so this is a one-way gap: translation is web-only, direct braille input works in both.
 2. OpenSCAD is **cylinder-only** (card support removed)
 
+Since 2026-10-07 the Customizer also follows the web app's **layout**, top to
+bottom: Gears and Card Sides (the web app's Embosser setup), the front text,
+the back text, then one "Expert Mode - " tab per web Expert Mode submenu in the
+web app's order — Cylinders to Generate, Card Thickness, Row Indicator Style,
+Shape Selection, Braille Spacing, Braille Dot Adjustments, Surface Dimensions
+and, in the Version 2 file, Version 2 Keyed Cutouts. Two OpenSCAD-only tabs
+follow: Expert Mode - Card Sides (the interpoint offsets) and Expert Mode -
+Rendering Quality. `tests/test_customizer_layout.py` pins the order; when the
+web app's layout changes, the Customizer follows. The headings below name the
+tab each parameter sits in.
+
 ## Translation Workflow
 
 1. **Web App**: Automatic translation using Liblouis (Grade 1 or Grade 2), or
@@ -22,7 +33,7 @@ The OpenSCAD version has been updated to match the web-based generator's UI para
 
 ## Parameter Mapping
 
-### Version 2 Keyed Cutouts
+### Expert Mode - Version 2 Keyed Cutouts
 
 These apply to `Braille_Cylinder_STL_Generator_EmbosserV2.scad` only. The
 Version 1 file has no such tab.
@@ -65,7 +76,6 @@ file's shared `key_clearance_mm` dial was retired for the four in 2.11.0.
 | `Line_6` | Line 6 text input | Must be pre-translated Unicode braille |
 | `Line_7` | Line 7 text input | Must be pre-translated Unicode braille |
 | `Line_8` | Line 8 text input | Must be pre-translated Unicode braille |
-| `text_limit_check` | *(OpenSCAD-only)* | `"On"` (default) shows the `TEXT TOO LONG` warning and clips rows to the cell capacity; `"Off"` renders every pasted cell (rows may crowd the seam). The web app validates cell counts before generation instead. |
 
 ### More Braille Lines (Advanced)
 
@@ -85,7 +95,11 @@ triggers a `TOO MANY LINES: n/grid_rows` warning — a console `echo()` plus red
 text above the cylinder for the MakerWorld preview, which has no console. The
 web app blocks the same case before generation instead of warning after.
 
-### Card Sides
+### Card Sides, Back of Card and Expert Mode - Card Sides
+
+`double_sided` sits in Card Sides, `Back_Line_1`–`Back_Line_10` in Back of Card -
+Pre-Translated Braille, and the two interpoint offsets in Expert Mode - Card
+Sides: the web app has no dial for them and always uses 1.25 mm.
 
 Emboss BOTH faces of one card in a single pass. Turning `double_sided` On forces
 Tactile row indicators, replaces the counter plate's universal recess grid with
@@ -104,7 +118,7 @@ at all, so this is the one place the two versions work identically by necessity.
 | `interpoint_offset_x_mm` | `interpoint_offset_x` | Circumferential half of the diagonal shift between the front and back grids, measured around the cylinder. Default **1.25 mm**, range **1.15–1.35 mm**. Web schema home `double_sided.interpoint_offset_x_mm`. |
 | `interpoint_offset_y_mm` | `interpoint_offset_y` | Axial half of the same diagonal shift, measured along the cylinder: back rows sit this far above the front rows. Default **1.25 mm**, range **1.15–1.35 mm**. Web schema home `double_sided.interpoint_offset_y_mm`; the web repo's `app/geometry/interpoint.py` calls this same number `offset_z`. |
 
-All ten back rows stay in this one tab, unlike the front's `Line_1`–`Line_8` /
+All ten back rows stay in the one Back of Card tab, unlike the front's `Line_1`–`Line_8` /
 `Line_9`–`Line_10` split. That split exists only to keep the always-visible main
 text tab at eight fields; this tab is opt-in, so splitting it would send a
 double-sided user to a second tab — one that also holds single-sided fields — to
@@ -126,7 +140,7 @@ preset** — there are no double-sided dial parameters to map. See
 `paper_thickness_preset` below and `docs/specifications/INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md`
 in the web repository for the two packages.
 
-### Cylinders to Generate
+### Expert Mode - Cylinders to Generate
 | OpenSCAD Parameter | Web App Equivalent | Values |
 |--------------------|-------------------|--------|
 | `plate_type` | Cylinders to Generate: Cylinder A (Embossing Plate) / Cylinder B (Universal Counter Plate) | `"Embossing Plate"`, `"Counter Plate"`; used while `render_both_plates` is Off |
@@ -158,10 +172,13 @@ pegs and pins are inside the imported solids — and each top gear's anti-rotati
 notch is filled by hidden material (the measured notch outline grown 0.05 mm as
 an exact parallel curve, capped at r 13.95 mm) so no void is sealed in. The seam
 channel is still cut. On the web the same roller is `gear_rollers_enabled: 1`
-with `embosser_version: 2`. The MakerWorld Version 2 upload hides the switch
-exactly as the Version 1 build does.
+with `embosser_version: 2`. The standard MakerWorld Version 2 upload hides the
+switch exactly as the Version 1 build does; the fixed-gear upload,
+`makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v2_Fixed_Gears.scad`,
+carries the two meshes inside the file and has the switch on (since
+2026-10-07).
 
-### Row Indicator Style
+### Expert Mode - Row Indicator Style
 
 This mode originated here and the web app has since ported it, so every
 parameter below now has a web equivalent under the same name. The web app's
@@ -194,7 +211,7 @@ user switches preset. The one exception, since 2026-09-20, is the arrow
 places three of them instead of one per row, precisely so the preset can be
 recognised by touch.
 
-### Card Thickness
+### Expert Mode - Card Thickness
 | OpenSCAD Parameter | Web App Equivalent | Default | Values |
 |--------------------|-------------------|---------|--------|
 | `paper_thickness_preset` | Card Thickness | `"0.4mm"` | `"0.4mm"`, `"0.3mm"`, `"Custom"` |
@@ -207,7 +224,10 @@ recognised by touch.
 | `dot_shape` | Braille Dot Shape | `"Rounded"` (default), `"Cone"` |
 | `indicators` | Indicator Letters (Emboss and Counter) | `"On"` (default), `"Off"` — gates only the square marker; the triangle alignment indicator is always generated. **Visual indicator mode only** — ignored when `indicator_mode = "Tactile"` |
 
-### Expert Mode - Cylinder Dimensions
+### Expert Mode - Surface Dimensions
+
+The web app's Surface Dimensions submenu.
+
 | OpenSCAD Parameter | Web App Equivalent | Default | Range |
 |--------------------|-------------------|---------|-------|
 | `cylinder_diameter_mm` | Diameter | 30.8 mm | 10-100 mm |
@@ -242,6 +262,7 @@ on the 30.8 mm cylinder); see
 | `cell_spacing` | Braille Cell Spacing | 6.5 mm | 2-15 mm |
 | `line_spacing` | Braille Line Spacing | 10.0 mm | 5-25 mm |
 | `dot_spacing` | Braille Dot Spacing | 2.5 mm | 1-5 mm |
+| `text_limit_check` | *(OpenSCAD-only)* | `"On"` | `"On"` (default) shows the `TEXT TOO LONG` warning and clips rows to the cell capacity; `"Off"` renders every pasted cell (rows may crowd the seam). The web app validates cell counts before generation instead. Last in the tab, after `braille_y_adjust`. |
 
 ### Expert Mode - Braille Positioning
 | OpenSCAD Parameter | Web App Equivalent | Default | Range |
@@ -250,7 +271,7 @@ on the 30.8 mm cylinder); see
 
 > Removed in v2.2.0: `braille_x_adjust`. On a cylinder the X axis is the angular
 > wrap around the seam, so a linear "X adjust" had no useful meaning.
-> `seam_offset_degrees` (Cylinder Dimensions) turns only the polygonal cutout;
+> `seam_offset_degrees` (Surface Dimensions) turns only the polygonal cutout;
 > it does not move the pattern.
 
 ### Expert Mode - Emboss Dot Dimensions (Rounded Shape)
@@ -281,7 +302,7 @@ on the 30.8 mm cylinder); see
 | `cone_counter_dot_height` | Cone recess height | 0.7 mm | 0.3-2 mm |
 | `cone_counter_dot_flat_hat` | Cone recess flat hat diameter | 1.0 mm | 0.1-2 mm |
 
-### Rendering Quality
+### Expert Mode - Rendering Quality
 | OpenSCAD Parameter | Web App Equivalent | Default | Values |
 |--------------------|-------------------|---------|--------|
 | `render_quality` | Render Quality | `"Medium"` | `"Low"` (24 segments), `"Medium"` (32 segments), `"High"` (64 segments) |

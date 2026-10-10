@@ -52,6 +52,51 @@ async function expectTargetsAtFloor(page: Page) {
   }
 }
 
+/**
+ * Diagnostics for the narrowing test below (R1-Q-40, 2026-10-05). It has
+ * failed once and passed on retry in five CI runs, all on Linux, and never in
+ * 70 local trials on Windows under seven conditions (R1-Q-38). The page opens
+ * the drawer when the compact layout's change event finds focus inside the
+ * controls, so these record, from the first byte, the order of focus moves,
+ * resizes and that change event, and a failure prints the record.
+ */
+const COMPACT_QUERY = '(max-width: 768px), (min-width: 769px) and (max-height: 500px)';
+
+async function recordFocusTimeline(page: Page) {
+  await page.addInitScript((query) => {
+    const timeline: unknown[] = [];
+    (window as unknown as { __focusTimeline: unknown[] }).__focusTimeline = timeline;
+    const name = (target: EventTarget | null) => (target instanceof Element ? target.id || target.tagName : null);
+    const log = (...entry: unknown[]) => timeline.push([Math.round(performance.now()), ...entry]);
+    document.addEventListener('focusin', (event) => log('focusin', name(event.target)), true);
+    document.addEventListener('focusout', (event) => log('focusout', name(event.target), name(event.relatedTarget)), true);
+    window.addEventListener('resize', () => log('resize', window.innerWidth, window.innerHeight));
+    // Registered before the page's own listener, so it sees what the page's handler sees.
+    window.matchMedia(query).addEventListener('change', (event) => {
+      log('compact-change', event.matches, 'focus=' + name(document.activeElement));
+    });
+  }, COMPACT_QUERY);
+}
+
+async function withFocusTimeline(page: Page, check: () => Promise<void>) {
+  try {
+    await check();
+  } catch (error) {
+    const state = await page
+      .evaluate(() => ({
+        focus: document.activeElement ? document.activeElement.id || document.activeElement.tagName : null,
+        expanded: document.getElementById('preview-display-toggle')?.getAttribute('aria-expanded') ?? null,
+        size: [window.innerWidth, window.innerHeight],
+        timeline: (window as unknown as { __focusTimeline?: unknown[] }).__focusTimeline ?? [],
+      }))
+      .catch((readError: unknown) => ({ unavailable: String(readError) }));
+    if (error instanceof Error) error.message += `
+
+Focus timeline (R1-Q-38): ${JSON.stringify(state)}`;
+    throw error;
+  }
+}
+
 test.describe('Preview Display settings drawer', () => {
   test('on a wide screen the controls stay the overlay and there is no button', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
@@ -199,13 +244,16 @@ test.describe('Preview Display settings drawer', () => {
 
   test('narrowing the window while a control has focus opens the drawer instead of hiding it', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
+    await recordFocusTimeline(page);
     await openApp(page);
 
     await page.locator('#brightness-increase').focus();
     await page.setViewportSize({ width: 390, height: 844 });
 
-    await expect(page.locator('#preview-display-toggle')).toHaveAttribute('aria-expanded', 'true');
-    await expect(page.locator('#brightness-increase')).toBeVisible();
-    await expect(page.locator('#brightness-increase')).toBeFocused();
+    await withFocusTimeline(page, async () => {
+      await expect(page.locator('#preview-display-toggle')).toHaveAttribute('aria-expanded', 'true');
+      await expect(page.locator('#brightness-increase')).toBeVisible();
+      await expect(page.locator('#brightness-increase')).toBeFocused();
+    });
   });
 });
