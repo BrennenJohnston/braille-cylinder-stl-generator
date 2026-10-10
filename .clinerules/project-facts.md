@@ -705,9 +705,13 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      478 tables, tables.json closures; byte-pinned by
      tests/test_vendored_liblouis.py; verified against native 3.39.0 by
      tests/frontend/liblouis-engine.test.js). Blank cells come back as the
-     ASCII space. /liblouis/tables (the dropdown) lists the .ctb/.utb/.tbl
-     names in that tables.json - the 323 tables checked against native -
-     and nothing else (phase 7). The old asm.js 3.2.0 engine, its 370
+     ASCII space. /liblouis/tables (the dropdown) lists, from that
+     tables.json, the 252 tables liblouis describes + the 13 undescribed
+     standalone ones (never the 58 building blocks, never an include
+     file), each with its own #- / #+ metadata; the page labels each by
+     display_name, groups by index_name up to the first comma, Other
+     last, en_US.tbl hidden (plan 08, M1-M3, wording signed 2026-10-09).
+     The old asm.js 3.2.0 engine, its 370
      tables, static/liblouis-worker.js and npm liblouis are GONE (phase 8,
      decision E5); never bring them back.
 

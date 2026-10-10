@@ -469,7 +469,7 @@ line against `getAvailableColumns()`. See section 10 of
 
 ### Backend Table List
 
-`GET /liblouis/tables` offers the liblouis 3.39.0 translation tables. The list, the shape of each entry and the saved-choice fallback are in `LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md` Section 10.
+`GET /liblouis/tables` offers the liblouis 3.39.0 translation tables; the list and the shape of each entry are in `LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md` Section 10.
 
 ### Default Tables (Hardcoded)
 
@@ -487,38 +487,7 @@ The selected entry is `DEFAULT_LANGUAGE_TABLE` (`en-ueb-g2.ctb`) unless
 
 ### Frontend Table Loading
 
-**Source:** `public/index.html` (lines 2411-2500)
-
-```javascript
-async function loadLanguageOptions() {
-    const select = document.getElementById('language-table');
-
-    // Preserve defaults
-    const defaultGroup = document.createElement('optgroup');
-    defaultGroup.label = 'Default';
-    // ... add default options
-
-    // Fetch additional tables from backend
-    const resp = await fetch('/liblouis/tables', { credentials: 'same-origin' });
-    const data = await resp.json();
-
-    // Sort: English first, then by locale
-    data.tables.sort((a, b) => {
-        const aEn = (a.locale || '').toLowerCase().startsWith('en') ? 0 : 1;
-        const bEn = (b.locale || '').toLowerCase().startsWith('en') ? 0 : 1;
-        if (aEn !== bEn) return aEn - bEn;
-        // ... additional sorting
-    });
-
-    // Build options with autonym labels
-    for (const entry of data.tables) {
-        const opt = document.createElement('option');
-        opt.value = entry.file;
-        opt.textContent = buildLabel(entry);
-        otherGroup.appendChild(opt);
-    }
-}
-```
+How the dropdown is built from that list (labels, language groups, the saved-choice fallback) is in `BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md` Section 5.
 
 ---
 
@@ -989,7 +958,7 @@ word the 2346
 word and 12346
 ```
 
-The backend does not read these lines (`LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md` Section 10).
+The table list reads these lines (`LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md` Section 10).
 
 ---
 
@@ -1024,6 +993,7 @@ If backend returns "does not contain proper braille Unicode characters":
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-10-09 | 1.5 | Dropdown plan 08: Section 7's copy of `loadLanguageOptions()` is replaced by a pointer to BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md Section 5, which describes the menu once; the appendix says the table list reads the tables' metadata lines. |
 | 2026-10-09 | 1.4 | The engine round's phase 8: Section 3's copy of the worker's start-up, protocol and translation code is replaced by a pointer to LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md, which describes the liblouis 3.39.0 worker once; the diagram, Section 12 and Appendix D name the new worker; Appendix A (dated) gains a note. |
 | 2026-10-09 | 1.3 | The engine round's phase 7: Section 7's copy of the backend table list is replaced by a pointer to LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md Section 10 (the list is now the translation tables of the vendored liblouis 3.39.0 index); Table Path Consistency describes the one folder the worker and the list share; the appendix no longer says the backend parses table metadata. |
 | 2026-09-30 | 1.2 | Documentation review after the approved build: §13 names the Card sides choice (`isDoubleSidedOn()`) in place of the retired `#double_sided_enabled` beta toggle, and the layout diagram lists Cylinders to Generate and Card Thickness as the first Expert Mode submenus. |

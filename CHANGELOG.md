@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Every braille table can be chosen again, under its liblouis name.** Since January 2026 the language list showed only the first table of each file-name prefix (UK contracted English, for one, could not be chosen) and named tables after their files. It now offers each of liblouis 3.39.0's tables once, with the name liblouis gives it ("German contracted braille"), in a group for each language; the few tables liblouis does not describe are listed by file name under Other. Wording signed off by Brennen on 2026-10-09.
 - **Five or more braille rows can be generated again.** The Rows dial allows up to 200, but the server refused any request with more than four lines ("Too many lines provided. Maximum is 4 lines."), a limit left over from the original card. A request may now fill its own Rows. How many rows actually fit is checked instead: rows whose dots would run off the card, or whose tactile arrows would run off the cylinder, are refused with a sentence that says how much height they need, and the Braille Spacing panel shows the same sentence before you press Generate. At the default spacing 5 rows fit a 52 mm cylinder with visual markers and 4 with tactile arrows. Wording signed off by Brennen on 2026-10-09.
 
 ### Added

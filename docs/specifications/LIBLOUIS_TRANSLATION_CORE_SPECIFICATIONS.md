@@ -320,7 +320,7 @@ The language list offers the `.ctb`, `.utb` and `.tbl` files (Section 10).
 
 ### Table File Format
 
-A table opens with metadata lines; these are `en-ueb-g2.ctb`'s. Nothing in the app reads them today (Section 10).
+A table opens with metadata lines; these are `en-ueb-g2.ctb`'s. The table list reads them (Section 10).
 
 ```
 #-display-name: Unified English contracted braille
@@ -862,9 +862,9 @@ for col_num, braille_char in enumerate(braille_text):
 
 ### Backend Table List
 
-**Source:** `backend.py` — `list_liblouis_tables()`
+**Source:** `backend.py` — `list_liblouis_tables()`, `_offered_liblouis_tables()`
 
-`GET /liblouis/tables` lists the translation tables (`.ctb`, `.utb`, `.tbl`) named in `static/vendor/liblouis-3.39.0/tables.json`, the index the translation worker fetches tables by, so every table it offers can be loaded. They are the 323 tables compared with native liblouis 3.39.0 (decision E2); `tests/test_vendored_liblouis.py` pins the list to `tests/fixtures/liblouis-reference/table-samples-3.39.0.json`. Include files (`.cti`, `.uti`, `.dis`, `.dic`) are not offered. Until the engine round's phase 7 (2026-10-09) the list was scanned from `static/liblouis/tables`, `node_modules/liblouis-build/tables` and a native 3.34.0 copy in `third_party/liblouis`, and offered include files and tables the worker could not load.
+`GET /liblouis/tables` offers translation tables (`.ctb`, `.utb`, `.tbl`) named in `static/vendor/liblouis-3.39.0/tables.json`, the index the translation worker fetches tables by, so every table it offers can be loaded: each table liblouis describes (252, carrying a `#-display-name`) and each undescribed one that no described table includes (13). The 58 left out are building blocks of a described table, such as `en-GB-g2.ctb` inside `en_GB.tbl` (dropdown plan 08, decision M1, 2026-10-09). Every table offered is one of the 323 compared with native liblouis 3.39.0 (decision E2), and include files (`.cti`, `.uti`, `.dis`, `.dic`) are never offered; `tests/test_vendored_liblouis.py` pins the list. The tables are read once per server process. Until the engine round's phase 7 (2026-10-09) the list was scanned from `static/liblouis/tables`, `node_modules/liblouis-build/tables` and a native 3.34.0 copy in `third_party/liblouis`, and offered include files and tables the worker could not load.
 
 ### Table Entry
 
@@ -873,37 +873,23 @@ for col_num, braille_char in enumerate(braille_text):
     "file": "en-ueb-g2.ctb",
     "path": "en-ueb-g2.ctb",
     "locale": "en-ueb",
-    "description": "en-ueb-g2.ctb"
+    "description": "en-ueb-g2.ctb",
+    "display_name": "Unified English contracted braille",
+    "index_name": "English, unified, contracted",
+    "language": "en",
+    "region": null,
+    "type": "literary",
+    "grade": "2",
+    "contraction": "full",
+    "dots": null
 }
 ```
 
-`locale` is the file name's first two hyphen-separated parts, or `null` when the name has no hyphen. No metadata is read from the tables. The parser that read their `#+` lines (grade, type, contraction, dots) was removed with server-side generation on 2026-01-05 (`8939c2d`). `loadLanguageOptions()` still reads those fields, so without them it labels a table by its `locale` and offers only the first table of each `locale`.
+`locale` is the file name's first two hyphen-separated parts, or `null` when the name has no hyphen. The other new fields are the table's own metadata lines (`#-display-name`, `#-index-name`, `#+language`, `#+region`, `#+type`, `#+grade`, `#+contraction`, `#+dots`), read from the comment block the table opens with; `null` where it gives none, and `dots` is a number. They replace the parser lost with server-side generation on 2026-01-05 (`8939c2d`), which read `#+locale`, a key only 3 of the 3.39.0 tables use; without it the page had offered only the first table of each `locale`.
 
 ### Frontend Table Loading
 
-**Source:** `public/index.html` — `loadLanguageOptions()`
-
-```javascript
-async function loadLanguageOptions() {
-    const select = document.getElementById('language-table');
-
-    // Fetch available tables from backend
-    const resp = await fetch('/liblouis/tables', { credentials: 'same-origin' });
-    const data = await resp.json();
-
-    // Sort: English first, then by locale
-    data.tables.sort((a, b) => {
-        const aEn = (a.locale || '').toLowerCase().startsWith('en') ? 0 : 1;
-        const bEn = (b.locale || '').toLowerCase().startsWith('en') ? 0 : 1;
-        if (aEn !== bEn) return aEn - bEn;
-        return (a.locale || '').localeCompare(b.locale || '');
-    });
-
-    // Build optgroups and options...
-}
-```
-
-A saved choice (`localStorage.braille_prefs_language_table`) that is not among the options, such as a 3.2.0 table name that 3.39.0 does not ship, falls back to `DEFAULT_LANGUAGE_TABLE` (`en-ueb-g2.ctb`).
+How `loadLanguageOptions()` turns the list into the dropdown (labels, language groups, the saved-choice fallback) is in `BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md` Section 5.
 
 ---
 
@@ -1324,8 +1310,9 @@ Tables are processed left-to-right:
 
 ---
 
-*Document Version: 1.8*
-*Last Updated: 2026-10-09 — the engine round's phase 8: the liblouis 3.2.0 engine is removed, and Sections 1-5, 7, 11 and 12 and Appendices A-C describe liblouis 3.39.0 (the module worker, the engine module, the vendored build and tables); the engine status note is gone; Sections 13-14 stay as recorded, with notes.*
+*Document Version: 1.9*
+*Last Updated: 2026-10-09 — Section 10: the list offers the tables liblouis describes plus the undescribed standalone ones, and each entry carries the table's own metadata (dropdown plan 08); the frontend part points to the text-input spec, Section 5.*
+*Previous: 1.8, 2026-10-09 — the engine round's phase 8: the liblouis 3.2.0 engine is removed, and Sections 1-5, 7, 11 and 12 and Appendices A-C describe liblouis 3.39.0 (the module worker, the engine module, the vendored build and tables); the engine status note is gone; Sections 13-14 stay as recorded, with notes.*
 *Previous: 1.7, 2026-10-09 — Section 10: the table list is the translation tables of the vendored 3.39.0 index (the engine round's phase 7); the old folder scan, and Section 4's copy of it, are gone.*
 *Previous: 1.6, 2026-10-09 — the engine status note: translation runs on liblouis 3.39.0 (WebAssembly) in a module worker; the 3.2.0 sections are rewritten in the engine round's part 3.*
 *Previous: 1.5, 2026-10-09 — the line count follows the request's own Rows (a line past it must be empty; 200 at most) instead of a fixed four, which refused Rows 5+; the fit of those rows is checked separately (BRAILLE_SPACING_SPECIFICATIONS.md §12).*

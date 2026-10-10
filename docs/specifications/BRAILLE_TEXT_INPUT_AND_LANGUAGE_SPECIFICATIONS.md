@@ -458,7 +458,8 @@ The master language selection dropdown controls:
 The default is fixed by `DEFAULT_LANGUAGE_TABLE` in `public/index.html`; every fallback in
 that file resolves to the same constant. It is the first-run value only — a table the user
 picks is persisted under `braille_prefs_language_table` and restored ahead of the default on
-later visits.
+later visits, if the dropdown still offers it; a name it no longer offers (a liblouis 3.2.0
+table, or `en_US.tbl`) falls back to `DEFAULT_LANGUAGE_TABLE`.
 
 **Rationale (BANA):** *Guidelines for Brailling Business Cards*, approved March 2024,
 instructs transcribers to "Follow *The Rules of Unified English Braille*" and to "Work with a
@@ -468,34 +469,16 @@ transcription.
 
 ### Dynamic Table Loading
 
-The dropdown is populated dynamically from the backend's available tables:
+**Source:** `public/index.html` — `loadLanguageOptions()`
 
-**Source:** `public/index.html` (lines 2426-2624)
+After the four defaults, whose group (**Default**) keeps the labels above, the dropdown offers each table `GET /liblouis/tables` lists once (`LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md` Section 10 describes the list and its fields). Dropdown plan 08, decisions M1-M3; the wording was signed off by Brennen on 2026-10-09.
 
-```javascript
-async function loadLanguageOptions() {
-    const select = document.getElementById('language-table');
+- **Label:** the table's liblouis display name, e.g. `de-g2.ctb` "German contracted braille". Where liblouis gives two tables the same name (three Danish 1993 pairs and the two Kantenji tables), each label adds its file name: "Kantenji (ja-kantenji.utb)".
+- **Group:** one `<optgroup>` per language, named by the part of the table's liblouis index name before the first comma ("German, contracted" gives **German**), in alphabetical order after Default. The names are liblouis's, so they read the same in every browser.
+- **Other:** the 13 tables liblouis does not describe, labelled by file name, in a last group named **Other**.
+- `en_US.tbl` is not offered: it wraps `en-us-g2.ctb` and gives the same braille, which the Default group already offers.
 
-    // Fetch available tables from backend
-    const resp = await fetch('/liblouis/tables', { credentials: 'same-origin' });
-    const data = await resp.json();
-
-    // Sort: English first, then by locale
-    data.tables.sort((a, b) => {
-        const aEn = (a.locale || '').toLowerCase().startsWith('en') ? 0 : 1;
-        const bEn = (b.locale || '').toLowerCase().startsWith('en') ? 0 : 1;
-        if (aEn !== bEn) return aEn - bEn;
-        return (a.locale || '').localeCompare(b.locale || '');
-    });
-
-    // Build optgroups: Default, English, Other Languages
-    // ... (detailed optgroup construction)
-}
-```
-
-### Backend Table List
-
-`GET /liblouis/tables` offers the liblouis 3.39.0 translation tables. The list, the shape of each entry and the saved-choice fallback are in `LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md` Section 10.
+In all, 265 options in 118 groups. The per-row and Back of Card language menus copy the main menu's options (`syncLineLanguageSelects()`).
 
 ---
 
@@ -1844,8 +1827,9 @@ None required. All implementations match the specification exactly.
 
 ---
 
-*Document Version: 1.16*
-*Last Updated: 2026-10-09 - the engine round's phase 8: the diagram (Section 7) and Section 13 name the liblouis 3.39.0 worker, Appendix B no longer points at the removed 3.2.0 tables, and the dated Appendix D gains a note.*
+*Document Version: 1.17*
+*Last Updated: 2026-10-09 - Section 5: the dropdown offers every liblouis 3.39.0 table once, under its liblouis display name, grouped by language (dropdown plan 08, decisions M1-M3, wording signed by Brennen); the saved-choice fallback is described here.*
+*Previous: 1.16, 2026-10-09 - the engine round's phase 8: the diagram (Section 7) and Section 13 name the liblouis 3.39.0 worker, Appendix B no longer points at the removed 3.2.0 tables, and the dated Appendix D gains a note.*
 *Previous: 1.15, 2026-10-09 - Sections 5 and 13: the backend table list is described once, in LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md Section 10 (the engine round's phase 7).*
 *Previous: 1.14, 2026-10-09 - Section 9 point 5: division points come from liblouis 3.39.0's input positions (the engine round, decision E4); the head/tail cut is retired.*
 *Previous: 1.13, 2026-10-09 - Convert braille ASCII reads the lowercase NABCC forms `` ` { | } ~ `` as `@ [ \ ] ^` (Brennen's decision); only characters outside printable ASCII and braille are refused (Section 6.3).*
