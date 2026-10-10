@@ -117,6 +117,7 @@ def test_each_table_carries_its_own_liblouis_metadata(client):
         'locale': 'en-ueb',
         'description': 'en-ueb-g2.ctb',
         'display_name': 'Unified English contracted braille',
+        'index_name': 'English, unified, contracted',
         'language': 'en',
         'region': None,
         'type': 'literary',
@@ -128,6 +129,7 @@ def test_each_table_carries_its_own_liblouis_metadata(client):
     assert by_file['en_GB.tbl']['region'] == 'en-GB'
     assert by_file['en_GB.tbl']['locale'] is None
     assert by_file['de-g2.ctb']['display_name'] == 'German contracted braille'
+    assert by_file['de-g2.ctb']['index_name'] == 'German, contracted'
     assert by_file['no-no-comp8.ctb']['dots'] == 8
     assert by_file['no-no-comp8.ctb']['type'] == 'computer'
     assert all(value is None for key, value in by_file['sin.utb'].items() if key not in ('file', 'path', 'description'))

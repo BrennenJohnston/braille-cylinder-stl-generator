@@ -284,6 +284,7 @@ TRANSLATION_TABLE_EXTENSIONS = ('.ctb', '.utb', '.tbl')
 TABLE_METADATA_LINE = re.compile(r'^#[+-]([A-Za-z-]+)\s*:\s*(.*?)\s*$')
 TABLE_METADATA_FIELDS = {
     'display-name': 'display_name',
+    'index-name': 'index_name',
     'language': 'language',
     'region': 'region',
     'type': 'type',
@@ -352,6 +353,7 @@ def list_liblouis_tables():
                     "locale": "en-ueb",
                     "description": "en-ueb-g2.ctb",
                     "display_name": "Unified English contracted braille",
+                    "index_name": "English, unified, contracted",
                     "language": "en",
                     "region": null,
                     "type": "literary",
