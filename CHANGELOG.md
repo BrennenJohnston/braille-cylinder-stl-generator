@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The Translate to Braille and Translate to Text buttons are 44 px tall on desktop too**, like the new Convert braille ASCII buttons beside them (they were 32 px on desktop and 44 px only on phones).
 - **CI's accessibility check now requires a Lighthouse score of 100** (2026-10-05, Brennen's decision after the 2.2.0 release). `lighthouserc.json` asked for 90 or more, while the release procedure and the accessibility SOP ask for 100, so a drop from 100 to anything from 90 up passed CI unnoticed. The page scores 100 (measured for 2.2.0 on mobile and desktop); any lower score now turns CI's accessibility-tests job red.
 
+### Removed
+- **The old liblouis 3.2.0 engine**: its asm.js build, `easy-api.js`, its 370 tables, its worker and the npm `liblouis` package. The page no longer downloads about 1.7 MB of that build on every visit.
+
 ### Planned
 - Additional language support
 - Custom dot shape options

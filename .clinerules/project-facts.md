@@ -707,8 +707,9 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      tests/frontend/liblouis-engine.test.js). Blank cells come back as the
      ASCII space. /liblouis/tables (the dropdown) lists the .ctb/.utb/.tbl
      names in that tables.json - the 323 tables checked against native -
-     and nothing else (phase 7). The old asm.js 3.2.0 files stay until
-     part 3's phase 8 removes them.
+     and nothing else (phase 7). The old asm.js 3.2.0 engine, its 370
+     tables, static/liblouis-worker.js and npm liblouis are GONE (phase 8,
+     decision E5); never bring them back.
 
 6k. Rows limit (2026-10-09, Brennen's decisions; plan 04 in the 2026_10_09
    research folder). MAX_LINES in app/validation.py is the dial's 200, not
@@ -730,12 +731,13 @@ translation, Three.js preview. Working branch: develop — never commit to main.
    SPECIFICATIONS_INDEX.md if adding a new system).
 8. Source priority when implementations disagree — Settings/Validation:
    settings.schema.json > app/models.py > backend.py. Translation: backend.py >
-   static/liblouis-worker.js. Geometry: app/geometry_spec.py > app/geometry/*.
+   static/liblouis-module-worker.js. Geometry: app/geometry_spec.py > app/geometry/*.
 
 ## High-risk files — tests must pass before AND after touching these
 9. CRITICAL (browser-tested, all users break if wrong): static/workers/
    csg-worker.js, static/workers/csg-worker-manifold.js,
-   static/liblouis-worker.js, app/geometry/braille_layout.py,
+   static/liblouis-module-worker.js, static/liblouis-engine.js,
+   app/geometry/braille_layout.py,
    app/geometry/cylinder.py, app/geometry_spec.py.
    HIGH: app/geometry/{dot_shapes,plates,booleans}.py, app/validation.py,
    backend.py (security headers!), public/index.html.

@@ -209,7 +209,7 @@ def serve_static(filename):
 
     Files served:
     - liblouis translation tables and WASM binaries
-    - Web Workers (csg-worker.js, csg-worker-manifold.js, liblouis-worker.js)
+    - Web Workers (csg-worker.js, csg-worker-manifold.js, liblouis-module-worker.js)
     - Vendor libraries (three.module.js, OrbitControls.js, STLLoader.js)
     """
     # Handle CORS preflight

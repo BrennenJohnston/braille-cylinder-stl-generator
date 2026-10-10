@@ -6,7 +6,7 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 
 > **v2.0.0 Architecture (2026-01-05):** This project uses a **100% client-side STL generation** architecture. Server-side STL generation was removed. The caching system (Redis + Vercel Blob) was also removed. See [CODEBASE_AUDIT_AND_RENOVATION_PLAN.md](../development/CODEBASE_AUDIT_AND_RENOVATION_PLAN.md) for migration details.
 
-**Last Updated:** 2026-10-02
+**Last Updated:** 2026-10-09
 **Total Specification Documents:** 16
 
 ---
@@ -421,7 +421,7 @@ Index of all specification documents for the Braille Card and Cylinder STL Gener
 
 | Worker | Purpose | Shape Routing | Documentation |
 |--------|---------|---------------|---------------|
-| `static/liblouis-worker.js` | Braille translation | All | LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS (Section 3) |
+| `static/liblouis-module-worker.js` | Braille translation (liblouis 3.39.0) | All | LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS (Section 3) |
 | `static/workers/csg-worker.js` | CSG operations (three-bvh-csg) | **Cards only** | STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS (Section 4), CLIENT_SIDE_CSG_DOCUMENTATION |
 | `static/workers/csg-worker-manifold.js` | CSG with Manifold WASM | **Cylinders only** | CLIENT_SIDE_CSG_DOCUMENTATION, STL_EXPORT_AND_DOWNLOAD_SPECIFICATIONS (MANIFOLD_CYLINDER_FIX and MANIFOLD_WORKER_VALIDATION are historical records) |
 
@@ -755,6 +755,7 @@ These sit beside the specifications and are not counted among them:
 | 2026-08-16 | Added INTERPOINT_DOUBLE_SIDED_SPECIFICATIONS.md documenting the Double-Sided Card (BETA): paired Cylinder A/B generation with 1:1 recesses, the interpoint offset, validation gates, worker dot partition, and UI. Incremented total spec count to 14; related updates already in BRAILLE_TEXT_INPUT v1.3, UI_INTERFACE v1.10, STL_EXPORT v1.5, SETTINGS_SCHEMA §5, and BRAILLE_SPACING v1.4. |
 | 2026-09-30 | Documentation review after Brennen approved the build: present-tense beta wording, the retired double-sided toggle, the Version 2 preset height (54 mm) and per-key clearance dials, and the fused rollers' axis vent brought up to date across the specs; the gear entry gains the axis cuts |
 | 2026-10-02 | Second documentation pass (round R1): new section "Other documents in this folder" linking VERIFICATION_GUIDE.md and the two verification reports (the count of 16 specifications is unchanged and right); the "Start Here" link points to the project README (it pointed to a `docs/specifications/README.md` that does not exist); the CLIENT_SIDE_CSG bundle sizes, the MAJOR_FEATURE_IMPLEMENTATION_SOP description and the historical status of MANIFOLD_CYLINDER_FIX and MANIFOLD_WORKER_VALIDATION brought up to date |
+| 2026-10-09 | The liblouis engine round: the Web Worker Coverage table names the liblouis 3.39.0 translation worker, `static/liblouis-module-worker.js`, which replaced `static/liblouis-worker.js` |
 
 ---
 

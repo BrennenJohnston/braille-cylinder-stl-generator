@@ -1031,9 +1031,9 @@ The transcriber tools are pinned by `tests/frontend/braille-six-key.test.js` and
 │                          ▼                                                   │
 │  ┌──────────────────────────────────────────────┐                           │
 │  │      LIBLOUIS WEB WORKER                      │                           │
-│  │  (static/liblouis-worker.js)                  │                           │
-│  │  • Loads liblouis WASM/JS                     │                           │
-│  │  • Loads translation table                    │                           │
+│  │  (static/liblouis-module-worker.js)           │                           │
+│  │  • Loads liblouis 3.39.0 (WebAssembly)        │                           │
+│  │  • Fetches the table and its includes         │                           │
 │  │  • Translates text → Unicode braille          │                           │
 │  └───────────────────────┬──────────────────────┘                           │
 │                          │                                                   │
@@ -1461,12 +1461,7 @@ uncontracted (grade 1) only if your reader has asked for it.</span></div>
 
 All components use the same table chain format:
 
-**Frontend (liblouis-worker.js):**
-```javascript
-const tableChain = selectedTable.indexOf('unicode.dis') !== -1
-    ? selectedTable
-    : ('unicode.dis,' + selectedTable);
-```
+**Worker:** `static/liblouis-engine.js` gives liblouis `/tables/unicode.dis,/tables/<table>` (`LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md` Section 5).
 
 **Backend table list:** `/liblouis/tables` offers exactly the translation tables in `static/vendor/liblouis-3.39.0/tables.json` (`LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md` Section 10).
 
@@ -1565,7 +1560,7 @@ for (let i = 0; i < lines.length; i++) {
 
 1. Verify the per-line select has the correct value before form submit
 2. Check that `syncLineLanguageSelects()` was called when switching to manual mode
-3. Ensure the selected table file exists in `/static/liblouis/tables/`
+3. Ensure the selected table is one `/liblouis/tables` lists (only those can be loaded)
 
 ### Overflow Warnings Not Appearing
 
@@ -1611,6 +1606,8 @@ for (let i = 0; i < lines.length; i++) {
 ---
 
 ## Appendix D: Implementation Verification Report
+
+> **Note added 2026-10-09:** its rows for `static/liblouis-worker.js` name the liblouis 3.2.0 worker that the engine round removed; they are left as recorded. `LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md` Sections 3 and 7 describe its successor.
 
 This section documents the cross-check verification performed against actual implementations.
 
@@ -1847,8 +1844,9 @@ None required. All implementations match the specification exactly.
 
 ---
 
-*Document Version: 1.15*
-*Last Updated: 2026-10-09 - Sections 5 and 13: the backend table list is described once, in LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md Section 10 (the engine round's phase 7).*
+*Document Version: 1.16*
+*Last Updated: 2026-10-09 - the engine round's phase 8: the diagram (Section 7) and Section 13 name the liblouis 3.39.0 worker, Appendix B no longer points at the removed 3.2.0 tables, and the dated Appendix D gains a note.*
+*Previous: 1.15, 2026-10-09 - Sections 5 and 13: the backend table list is described once, in LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md Section 10 (the engine round's phase 7).*
 *Previous: 1.14, 2026-10-09 - Section 9 point 5: division points come from liblouis 3.39.0's input positions (the engine round, decision E4); the head/tail cut is retired.*
 *Previous: 1.13, 2026-10-09 - Convert braille ASCII reads the lowercase NABCC forms `` ` { | } ~ `` as `@ [ \ ] ^` (Brennen's decision); only characters outside printable ASCII and braille are refused (Section 6.3).*
 *Previous: 1.12, 2026-10-09 - Brennen signed every transcriber-tool string as drafted (Section 6.3, S-DC1 in Section 9) and kept both refinements of the division-point search: a point found from either side, and the per-line fallback when none is usable.*
