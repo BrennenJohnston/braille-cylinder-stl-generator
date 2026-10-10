@@ -105,26 +105,32 @@ end of the first line is preferred; omit it only as a last resort. Tip: omit
      the same tab and lines 9–10 under **More Braille Lines (Advanced)**; if you
      use any line past the fourth, raise `grid_rows` to match or that text will
      not be rendered.
-   - `paper_thickness_preset`: keep `0.4mm` (default) for typical card stock,
-     `0.3mm` for thinner paper, or `Custom` to use your own slider values.
-     Presets control dot, spacing and cylinder dimensions; they never change
-     the `grid_columns` / `grid_rows` capacity sliders.
-   - `dot_shape`: `Rounded` (default) or `Cone`.
-   - `indicator_mode`: `Visual` (the Version 1 default) or `Tactile` (the
-     Version 2 file's default since v2.10.0) — see section 5.
-   - `indicators` (Indicator Letters): Visual mode only. `On` adds a square
-     marker next to the triangle alignment indicator at each row's start. The
-     triangle is always present — it is critical to the mechanical device the
-     cylinder mounts into. On widens the grid by 2 marker cells, Off by 1
-     (triangle only) — your 13-cell text capacity is unchanged either way.
+   - The settings below sit in the **Expert Mode** groups under the text, in
+     the web app's order.
+   - `paper_thickness_preset` (**Expert Mode - Card Thickness**): keep `0.4mm`
+     (default) for typical card stock, `0.3mm` for thinner paper, or `Custom`
+     to use your own slider values. Presets control dot, spacing and cylinder
+     dimensions; they never change the `grid_columns` / `grid_rows` capacity
+     sliders.
+   - `dot_shape` (**Expert Mode - Shape Selection**): `Rounded` (default) or
+     `Cone`.
+   - `indicator_mode` (**Expert Mode - Row Indicator Style**): `Visual` (the
+     Version 1 default) or `Tactile` (the Version 2 file's default since
+     v2.10.0) — see section 5.
+   - `indicators` (Indicator Letters, **Expert Mode - Shape Selection**):
+     Visual mode only. `On` adds a square marker next to the triangle alignment
+     indicator at each row's start. The triangle is always present — it is
+     critical to the mechanical device the cylinder mounts into. On widens the
+     grid by 2 marker cells, Off by 1 (triangle only) — your 13-cell text
+     capacity is unchanged either way.
 3. Generate and download the STL. By default one render builds **both
    cylinders** side by side — Cylinder A, the **Embossing Plate**, on the left
    and Cylinder B, the **Counter Plate**, on the right — so one download holds
    the pair. The two plates form a matching pair: paper goes between them, and
    pressing the embossing plate's dots into the counter plate's recesses forms
    readable braille.
-4. To download the plates separately instead, set `render_both_plates` to
-   `Off`, generate with `plate_type = Embossing Plate`, then switch
+4. To download the plates separately instead, set `render_both_plates`
+   (**Expert Mode - Cylinders to Generate**) to `Off`, generate with `plate_type = Embossing Plate`, then switch
    `plate_type` to **Counter Plate** — change nothing else — and generate
    again.
 
@@ -205,7 +211,7 @@ Fixes, in order of preference:
    pattern above).
 2. **Raise `grid_columns`** (Expert Mode - Braille Spacing section) if your cylinder is
    large enough.
-3. **Set `text_limit_check` to `Off`** (Text Input section) to bypass the
+3. **Set `text_limit_check` to `Off`** (Expert Mode - Braille Spacing section) to bypass the
    check entirely: every pasted cell renders and no warning appears, but rows
    longer than the capacity may crowd the seam gap.
 
@@ -218,7 +224,7 @@ cylinder size the gap is 18.8 mm at 13 text cells and 12.3 mm at 14; 15 cells
 leaves only 5.8 mm and trips the warning. Fixes, in order of preference:
 
 1. **Lower `grid_columns`** back to 14 or fewer.
-2. **Narrow `tactile_indicator_width`** (Row Indicator Style section) — but a
+2. **Narrow `tactile_indicator_width`** (Expert Mode - Row Indicator Style section) — but a
    narrower arrow is harder to find by touch, so treat this as a last resort.
 
 ### The plates bind or the indicator crushes the paper

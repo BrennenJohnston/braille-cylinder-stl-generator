@@ -69,9 +69,9 @@
 //  7. DOUBLE-SIDED only — the back of the card is translated exactly the
 //     same way: same site, same grade, Unicode Braille output. Paste that
 //     output into the Back_Line_1, Back_Line_2, … fields under the
-//     [Card Sides] tab. Back lines obey the same rules as the
-//     front — pre-translated Unicode braille only, same cell capacity per row,
-//     same row limit — and the same warnings cover them.
+//     [Back of Card - Pre-Translated Braille] tab. Back lines obey the same
+//     rules as the front — pre-translated Unicode braille only, same cell
+//     capacity per row, same row limit — and the same warnings cover them.
 //
 //  IMPORTANT: If you paste ordinary English letters or see "INVALID CHARACTERS"
 //  warning, re-translate on Branah and ensure Unicode Braille is selected.
@@ -87,8 +87,8 @@
 //     [More Braille Lines (Advanced)] tab.
 //  4. Both cylinders render side by side by default: Cylinder A (the Embossing
 //     Plate) on the left, Cylinder B (the Counter Plate) on the right. For one
-//     plate, set render_both_plates Off under [Cylinders to Generate] and
-//     choose plate_type.
+//     plate, set render_both_plates Off under
+//     [Expert Mode - Cylinders to Generate] and choose plate_type.
 //  5. Choose dot_shape: Rounded or Cone (affects both plates)
 //  6. Adjust dimensions in Expert Mode if needed
 //  7. Render (F6) → File → Export → STL
@@ -103,25 +103,33 @@
 // =============================================================================
 // PARAMETER ORGANIZATION
 // =============================================================================
-//  Parameters are organized to match the web-based generator:
+//  The Customizer follows the web-based generator's layout: its sections in
+//  its top-down order, under its names, and every dial the web app keeps in
+//  Expert Mode under an "Expert Mode - " tab. tests/test_customizer_layout.py
+//  pins the order; when the web app's layout changes, this file follows.
 //
-//  MAIN CONTROLS (always visible):
+//  MAIN CONTROLS, the web app's Embosser setup and text entry:
+//  • Card Sides (the double_sided switch)
 //  • Text Input - Pre-Translated Braille (Line_1 - Line_8)
 //  • More Braille Lines (Advanced) (Line_9 - Line_10, the grid_rows maximum)
-//  • Card Sides (the double_sided switch, Back_Line_1 - Back_Line_10, and the
-//    two interpoint offsets)
-//  • Cylinders to Generate (both cylinders by default, or one plate)
-//  • Row Indicator Style (Visual markers or the Tactile seam arrow)
-//  • Card Thickness (the 0.4mm and 0.3mm card presets, or Custom)
+//  • Back of Card - Pre-Translated Braille (Back_Line_1 - Back_Line_10)
 //
-//  EXPERT MODE (expandable submenus matching web UI):
+//  EXPERT MODE, the web app's Expert Mode submenus in its order:
+//  • Expert Mode - Cylinders to Generate (both cylinders by default, or one
+//    plate, and the print spacing between them)
+//  • Expert Mode - Card Thickness (the 0.4mm and 0.3mm card presets, or Custom)
+//  • Expert Mode - Row Indicator Style (Visual markers or the Tactile seam
+//    arrow, and the arrow's sizes)
 //  • Expert Mode - Shape Selection (dot shapes, indicators)
-//  • Expert Mode - Cylinder Dimensions (including the slicer seam channel)
-//  • Expert Mode - Braille Spacing (grid layout + positioning)
+//  • Expert Mode - Braille Spacing (grid layout, positioning and the TEXT TOO
+//    LONG check)
 //  • Expert Mode - Braille Dot Adjustments (emboss/counter dimensions)
+//  • Expert Mode - Surface Dimensions (including the slicer seam channel)
 //
-//  OPENSCAD-SPECIFIC:
-//  • Rendering Quality
+//  OPENSCAD-SPECIFIC, after the web app's sections (no web app dial):
+//  • Expert Mode - Card Sides (the two interpoint offsets; the web app keeps
+//    them at 1.25 mm)
+//  • Expert Mode - Rendering Quality
 //
 // =============================================================================
 // REFERENCES
@@ -145,8 +153,12 @@
 //  translator: https://liblouis.io/
 // =============================================================================
 
+/* [Card Sides] */
+// On embosses both faces of the card in one pass; the back's braille goes in the Back of Card group. Each cylinder then carries raised dots and recesses, and the rows get the tactile arrows.
+double_sided = "Off"; // [Off, On]
+
 /* [Text Input - Pre-Translated Braille] */
-// Paste Unicode braille characters from https://www.branah.com/braille-translator
+// Paste Unicode braille characters from www.branah.com/braille-translator
 Line_1 = "⠓⠑⠇⠇⠕"; // First line of braille text
 Line_2 = "⠺⠕⠗⠇⠙"; // Second line of braille text
 Line_3 = ""; // Third line of braille text
@@ -155,36 +167,19 @@ Line_5 = ""; // Fifth line of braille text
 Line_6 = ""; // Sixth line of braille text
 Line_7 = ""; // Seventh line of braille text
 Line_8 = ""; // Eighth line of braille text
-// Show TEXT TOO LONG warning and clip rows to the cell capacity. Off = render every pasted character (rows may crowd the seam).
-text_limit_check = "On"; // [On, Off]
 
 /* [More Braille Lines (Advanced)] */
-// Lines 9 and 10 reach the grid_rows maximum of 10. The Customizer cannot add
-// fields on demand, so these live in their own tab rather than lengthening the
-// text input above. Raise grid_rows under [Expert Mode - Braille Spacing] to
-// match, and give the cylinder the height to hold them: 10 rows at the default
-// 10 mm line_spacing needs about 100 mm.
+// Lines 9 and 10 reach the grid_rows maximum of 10. The Customizer cannot add fields on demand, so these live in their own tab rather than lengthening the text input above. Raise grid_rows under [Expert Mode - Braille Spacing] to match, and give the cylinder the height to hold them: 10 rows at the default 10 mm line_spacing needs about 100 mm.
 Line_9 = ""; // Ninth line of braille text
 Line_10 = ""; // Tenth line of braille text
 
-/* [Card Sides] */
-// Emboss BOTH faces of one card in a single pass. On turns the two
-// plates into a matched pair: the Embossing Plate becomes Cylinder A (front
-// text raised, one seat per back dot) and the Counter Plate becomes Cylinder B
-// (back text raised, one seat per front dot). Row indicators are forced to
-// Tactile and the counter plate's universal recess grid is replaced by 1:1
-// paired seats. Off is the normal single-sided workflow, unchanged.
-double_sided = "Off"; // [Off, On]
-
-// The BACK face's braille, one field per row, in the same row order as
-// Line_1..Line_10 above. Pre-translated Unicode braille, translated exactly the
-// way the front is (see BRANAH WORKFLOW at the top of this file). Read only
-// while double_sided is On, so filling these changes nothing until you do.
-//
+/* [Back of Card - Pre-Translated Braille] */
 // All ten rows live in this tab, unlike the front's 8 + 2 split. That split
 // exists to keep the always-visible main text tab at eight fields; this tab is
 // opt-in, so splitting it would only send a double-sided user to a second tab -
 // one that also holds single-sided fields - to finish one job.
+
+// The back of the card, one row per field, in the same order as the front: Unicode braille, translated the same way. Used only while double sided is On.
 Back_Line_1 = ""; // First line of back-of-card braille text
 Back_Line_2 = ""; // Second line of back-of-card braille text
 Back_Line_3 = ""; // Third line of back-of-card braille text
@@ -196,40 +191,20 @@ Back_Line_8 = ""; // Eighth line of back-of-card braille text
 Back_Line_9 = ""; // Ninth line of back-of-card braille text
 Back_Line_10 = ""; // Tenth line of back-of-card braille text
 
-// How far the back grid is shifted from the front grid, so a front dot and a
-// back dot never land on the same patch of paper and flatten each other. The
-// shift is diagonal: this is the part measured AROUND the cylinder (mm). The
-// 1.25 / 1.25 default is the industry interpoint offset and the value the
-// printed pairs were validated at; the 1.15-1.35 range is enforced, and a
-// value outside it stops the render.
-interpoint_offset_x_mm = 1.25; // [1.15:0.01:1.35]
-// The other half of the same diagonal shift, measured ALONG the cylinder axis
-// (mm) - back rows sit this far above the front rows.
-interpoint_offset_y_mm = 1.25; // [1.15:0.01:1.35]
-
-/* [Cylinders to Generate] */
-// Choose which plate to generate while render_both_plates below is Off. In
-// DOUBLE-SIDED mode the two names take on the paired roles the web app uses:
-// "Embossing Plate" IS Cylinder A and "Counter Plate" IS Cylinder B, exported
-// as Cylinder_A_*.stl and Cylinder_B_*.stl. Single-sided keeps these names
-// exactly as they are.
-plate_type = "Embossing Plate"; // [Embossing Plate, Counter Plate]
-
-// Render BOTH plates in one go, standing side by side and spaced apart for
-// printing on one plate: Embossing Plate (Cylinder A) on the left, Counter
-// Plate (Cylinder B) on the right. While this is On the plate_type choice
-// above is ignored; turn it Off to generate only that plate. Suggested export
-// name: Cylinder_Pair_<your text>.stl.
+/* [Expert Mode - Cylinders to Generate] */
+// On builds Cylinder A (left) and Cylinder B (right) in one file, spaced for one print plate. Off builds only the one that plate type names.
 render_both_plates = "On"; // [Off, On]
-// Gap between the two cylinders' surfaces (mm) - PRINT spacing only, not the
-// meshed-gear assembly distance (32.0473 mm axis to axis); a printed pair is
-// separated for assembly anyway. With Integrated Gears On, the gear tips
-// overhang the barrel by 0.71 mm each side, so the tip-to-tip gap comes out
-// about 1.4 mm less than this number.
+// Choose which plate to generate while render_both_plates above is Off. In DOUBLE-SIDED mode the two names take on the paired roles the web app uses: "Embossing Plate" IS Cylinder A and "Counter Plate" IS Cylinder B, exported as Cylinder_A_*.stl and Cylinder_B_*.stl. Single-sided keeps these names exactly as they are.
+plate_type = "Embossing Plate"; // [Embossing Plate, Counter Plate]
+// Gap between the two cylinders' surfaces (mm) - PRINT spacing only, not the meshed-gear assembly distance (32.0473 mm axis to axis); a printed pair is separated for assembly anyway. With Integrated Gears On, the gear tips overhang the barrel by 0.71 mm each side, so the tip-to-tip gap comes out about 1.4 mm less than this number.
 pair_spacing_mm = 10; // [2:1:50]
 
-/* [Row Indicator Style] */
-// How each row is marked for alignment. Visual = today's recessed triangle (plus the optional letter square) in marker cells at the start of every row. Tactile = a raised arrow on the embossing plate and a matching recess on the counter plate, centred in the seam gap and pointing at the cylinder top, so a blind user can find the alignment point and tell which end is up by touch. Tactile removes the marker cells (freeing them for text) and ignores the Indicator Letters toggle.
+/* [Expert Mode - Card Thickness] */
+// Preset optimized for card thickness (sets multiple parameters below)
+paper_thickness_preset = "0.4mm"; // [0.4mm, 0.3mm, Custom]
+
+/* [Expert Mode - Row Indicator Style] */
+// Visual (default): a recessed triangle, plus the optional letter square, at the start of each row. Tactile: a raised arrow on Cylinder A and a matching recess on Cylinder B, found by touch; uses no braille cells.
 indicator_mode = "Visual"; // [Visual, Tactile]
 // Tactile only: indicator width measured around the cylinder (mm)
 tactile_indicator_width = 4.0; // [2:0.1:10]
@@ -242,24 +217,81 @@ tactile_recess_clearance = 0.2; // [0:0.05:1]
 // Tactile only: counter recess depth added on top of the arrow raise (mm). 0 = exact same-depth nesting. Large values thin the wall between the recess and the polygonal cutout.
 tactile_recess_extra_depth = 0.2; // [0:0.05:1]
 
-/* [Card Thickness] */
-// Preset optimized for card thickness (sets multiple parameters below)
-paper_thickness_preset = "0.4mm"; // [0.4mm, 0.3mm, Custom]
-
 /* [Expert Mode - Shape Selection] */
-// Braille Dot Shape (Emboss and Counter) - affects both plate types
-// Defaults to "Rounded" (matching the canonical desktop file and the 0.4mm/0.3mm
-// presets). The dropdown still offers both shapes.
+// Braille Dot Shape (Emboss and Counter) - affects both plate types. Defaults to "Rounded" (matching the canonical desktop file and the 0.4mm/0.3mm presets). The dropdown still offers both shapes.
 dot_shape = "Rounded"; // [Rounded, Cone]
 // Indicator Letters (Emboss and Counter) - VISUAL INDICATOR MODE ONLY (Tactile mode has no marker cells and ignores this). Square marker cutout next to the alignment triangle. Off frees 1 cell per row for braille text; the triangle alignment indicators are always included (they are critical to the mechanical device the cylinder mounts into).
 indicators = "On"; // [On, Off]
 
-/* [Expert Mode - Cylinder Dimensions] */
-cylinder_diameter_mm = 30.8; // [10:0.1:100] Cylinder outer diameter in mm
-cylinder_height_mm = 52; // [20:1:150] Cylinder height in mm
-polygon_cutout_radius_mm = 13.0; // [0:0.1:50] Polygonal cutout circumscribed radius (0 = no cutout)
-polygon_cutout_points = 12; // [3:1:24] Number of sides/points for polygonal cutout
-seam_offset_degrees = 0.0; // [0:1:360] Seam offset (degrees) — Turns the polygonal cutout around the cylinder's axis. The braille does not move.
+/* [Expert Mode - Braille Spacing] */
+// --- Braille Dimensions ---
+
+// Text capacity in braille cells per row (matches the web app default of 13 text cells; in Visual indicator mode, 2 extra marker cells are added when Indicator Letters are On, or 1 extra cell for the always-present alignment triangle when Off — up to 14 text cells fit the default cylinder with Indicator Letters Off. Tactile indicator mode adds no marker cells, so 14 text cells fit the default cylinder, but a 90 mm card loaded at the alignment arrow holds only 13 - 14 run off its end, and the model says so; 15 leaves too little seam gap for the indicator)
+grid_columns = 13; // [1:1:20]
+// Number of lines of braille
+grid_rows = 4; // [1:1:10]
+// Horizontal spacing between cells (mm)
+cell_spacing = 6.5; // [2:0.1:15]
+// Vertical spacing between lines (mm)
+line_spacing = 10.0; // [5:0.1:25]
+// Spacing between dots within a cell (mm)
+dot_spacing = 2.5; // [1:0.1:5]
+
+// --- Braille Positioning ---
+
+// Vertical adjustment of braille pattern (mm). Note: on a cylinder, X = angular wrap around the seam — a linear "X adjust" has no useful meaning, so only the vertical adjust is exposed.
+braille_y_adjust = 0.0; // [-10:0.1:10]
+// Show TEXT TOO LONG warning and clip rows to the cell capacity. Off = render every pasted character (rows may crowd the seam).
+text_limit_check = "On"; // [On, Off]
+
+/* [Expert Mode - Braille Dot Adjustments] */
+// --- Embossing Braille Dot Dimensions (Rounded Shape) ---
+
+// Rounded dot base diameter (cone base) (mm)
+rounded_dot_base_diameter = 1.5; // [0.5:0.1:3]
+// Rounded dot base height (cone height) (mm)
+rounded_dot_base_height = 0.5; // [0:0.1:2]
+// Rounded dome diameter (linked to cone flat top) (mm)
+rounded_dot_dome_diameter = 1.0; // [0.5:0.1:3]
+// Rounded dot dome height (mm)
+rounded_dot_dome_height = 0.5; // [0.1:0.1:2]
+
+// --- Embossing Braille Dot Dimensions (Cone Shape) ---
+
+// Cone dot base diameter (mm)
+emboss_dot_base_diameter = 1.5; // [0.5:0.1:3]
+// Cone dot height (mm)
+emboss_dot_height = 0.8; // [0.3:0.1:2]
+// Cone dot flat hat diameter (mm)
+emboss_dot_flat_hat = 0.4; // [0.1:0.1:2]
+
+// --- Counter Braille Recessed Dot Dimensions (Rounded Shape / Bowl) ---
+
+// Bowl recess base diameter (mm)
+bowl_counter_dot_base_diameter = 1.8; // [0.5:0.1:5]
+// Bowl recess depth (mm)
+counter_dot_depth = 0.8; // [0.1:0.1:2]
+
+// --- Counter Braille Recessed Dot Dimensions (Cone Shape) ---
+
+// Cone recess base diameter (mm)
+cone_counter_dot_base_diameter = 1.9; // [0.5:0.1:3]
+// Cone recess height (mm)
+cone_counter_dot_height = 0.7; // [0.3:0.1:2]
+// Cone recess flat hat diameter (mm)
+cone_counter_dot_flat_hat = 1.0; // [0.1:0.1:2]
+
+/* [Expert Mode - Surface Dimensions] */
+// Cylinder outer diameter in mm
+cylinder_diameter_mm = 30.8; // [10:0.1:100]
+// Cylinder height in mm
+cylinder_height_mm = 52; // [20:1:150]
+// Polygonal cutout circumscribed radius (0 = no cutout)
+polygon_cutout_radius_mm = 13.0; // [0:0.1:50]
+// Number of sides/points for polygonal cutout
+polygon_cutout_points = 12; // [3:1:24]
+// Seam offset (degrees) — Turns the polygonal cutout around the cylinder's axis. The braille does not move.
+seam_offset_degrees = 0.0; // [0:1:360]
 
 // Slicer seam channel (OpenSCAD parity plan phase O1, 2026-09-21; web decisions
 // D-1, D-2, D-13..D-15). Size is not a dial: the six SEAM_CHANNEL_* constants
@@ -270,41 +302,13 @@ seam_offset_degrees = 0.0; // [0:1:360] Seam offset (degrees) — Turns the poly
 // A shallow groove beside the row markers where the slicer hides its layer seam, keeping it off the dots. Turn Off for a plain surface.
 seam_channel = "On"; // [On, Off]
 
-/* [Expert Mode - Braille Spacing] */
-// --- Braille Dimensions ---
-grid_columns = 13; // [1:1:20] Text capacity in braille cells per row (matches the web app default of 13 text cells; in Visual indicator mode, 2 extra marker cells are added when Indicator Letters are On, or 1 extra cell for the always-present alignment triangle when Off — up to 14 text cells fit the default cylinder with Indicator Letters Off. Tactile indicator mode adds no marker cells, so 14 text cells fit the default cylinder, but a 90 mm card loaded at the alignment arrow holds only 13 - 14 run off its end, and the model says so; 15 leaves too little seam gap for the indicator)
-grid_rows = 4; // [1:1:10] Number of lines of braille
-cell_spacing = 6.5; // [2:0.1:15] Horizontal spacing between cells (mm)
-line_spacing = 10.0; // [5:0.1:25] Vertical spacing between lines (mm)
-dot_spacing = 2.5; // [1:0.1:5] Spacing between dots within a cell (mm)
+/* [Expert Mode - Card Sides] */
+// How far the back grid is shifted from the front grid, so a front dot and a back dot never land on the same patch of paper and flatten each other. The shift is diagonal: this is the part measured AROUND the cylinder (mm). The 1.25 / 1.25 default is the industry interpoint offset and the value the printed pairs were validated at; the 1.15-1.35 range is enforced, and a value outside it stops the render.
+interpoint_offset_x_mm = 1.25; // [1.15:0.01:1.35]
+// The other half of the same diagonal shift, measured ALONG the cylinder axis (mm) - back rows sit this far above the front rows.
+interpoint_offset_y_mm = 1.25; // [1.15:0.01:1.35]
 
-// --- Braille Positioning ---
-// Note: on a cylinder, X = angular wrap around the seam — a linear "X adjust"
-// has no useful meaning, so only the vertical adjust is exposed.
-braille_y_adjust = 0.0; // [-10:0.1:10] Vertical adjustment of braille pattern (mm)
-
-/* [Expert Mode - Braille Dot Adjustments] */
-// --- Embossing Braille Dot Dimensions (Rounded Shape) ---
-rounded_dot_base_diameter = 1.5; // [0.5:0.1:3] Rounded dot base diameter (cone base) (mm)
-rounded_dot_base_height = 0.5; // [0:0.1:2] Rounded dot base height (cone height) (mm)
-rounded_dot_dome_diameter = 1.0; // [0.5:0.1:3] Rounded dome diameter (linked to cone flat top) (mm)
-rounded_dot_dome_height = 0.5; // [0.1:0.1:2] Rounded dot dome height (mm)
-
-// --- Embossing Braille Dot Dimensions (Cone Shape) ---
-emboss_dot_base_diameter = 1.5; // [0.5:0.1:3] Cone dot base diameter (mm)
-emboss_dot_height = 0.8; // [0.3:0.1:2] Cone dot height (mm)
-emboss_dot_flat_hat = 0.4; // [0.1:0.1:2] Cone dot flat hat diameter (mm)
-
-// --- Counter Braille Recessed Dot Dimensions (Rounded Shape / Bowl) ---
-bowl_counter_dot_base_diameter = 1.8; // [0.5:0.1:5] Bowl recess base diameter (mm)
-counter_dot_depth = 0.8; // [0.1:0.1:2] Bowl recess depth (mm)
-
-// --- Counter Braille Recessed Dot Dimensions (Cone Shape) ---
-cone_counter_dot_base_diameter = 1.9; // [0.5:0.1:3] Cone recess base diameter (mm)
-cone_counter_dot_height = 0.7; // [0.3:0.1:2] Cone recess height (mm)
-cone_counter_dot_flat_hat = 1.0; // [0.1:0.1:2] Cone recess flat hat diameter (mm)
-
-/* [Rendering Quality] */
+/* [Expert Mode - Rendering Quality] */
 // Sphere quality for rounded shapes
 render_quality = "Medium"; // [Low, Medium, High]
 // Cone segments for cone shapes (8-32 range recommended)
@@ -453,7 +457,8 @@ function preset_value(preset, key, fallback) =
 // guards. The geometry that reads them lives further down, in
 // ds_back_placements() and the two plate modules. The user-facing controls -
 // `double_sided`, `Back_Line_1..10` and the two interpoint offsets - are in the
-// [Card Sides] Customizer tab near the top of this file; the gate
+// [Card Sides], [Back of Card - Pre-Translated Braille] and
+// [Expert Mode - Card Sides] Customizer tabs near the top of this file; the gate
 // defaults to "Off", and with it Off nothing here changes a single byte of the
 // rendered model.
 //
@@ -465,7 +470,7 @@ function preset_value(preset, key, fallback) =
 // Everything from that marker to EOF must stay byte-identical to the MakerWorld
 // flattened build (tests/test_makerworld_sync.py), and that build is re-flattened
 // in its own phase. Anything added below the marker breaks that guard - which is
-// also why the Customizer tab above holds the parameters, and this block holds
+// also why the Customizer tabs above hold the parameters, and this block holds
 // only what derives from them.
 
 /* [Hidden] */
@@ -1280,6 +1285,44 @@ if (tactile_card_too_long) {
              " mm of card from the alignment arrow; the card is ", CARD_LENGTH_MM,
              " mm. Lower grid_columns to ", tactile_card_max_cells, " or fewer."));
 }
+
+// Rows fit (Brennen, 2026-10-09): the braille rows' dots must stay on the card
+// and the per-row tactile arrows on the barrel, or the model stops with the
+// same sentence the web generator refuses with (its app/validation.py
+// validate_braille_rows_fit, measured by app/geometry_spec.py
+// braille_rows_extent). Rows are centred on the height and moved by
+// braille_y_adjust. The outer dots reach the dot spacing plus the widest dot or
+// bowl radius past the outer row centre (seam_channel_footprint_mm's radius).
+// The arrows are measured on the counter plate's recess, grown by
+// tactile_recess_clearance (or the gear weld, if larger) with a sharp tip, which
+// moves the tip delta * sqrt(1 + (2 * length / width)^2) - 6.02 mm above the row
+// centre at the defaults. The card is the limit when it is the shorter of the
+// two (the 52 mm card sits in the middle of Version 2's 54 mm barrel). At the
+// defaults 5 Visual and 4 Tactile rows fit 52 mm. tests/test_rows_fit.py pins
+// the rule and both sentences against the web repo.
+CARD_HEIGHT_MM = 52;
+function rows_fit_mm(x) = str(round(x * 1000) / 1000);
+rows_fit_span = (active_grid_rows - 1) * active_line_spacing;
+rows_fit_top_row = rows_fit_span / 2 + active_braille_y_adjust;
+rows_fit_bottom_row = rows_fit_top_row - rows_fit_span;
+rows_fit_dot_reach = seam_channel_footprint_mm + active_dot_spacing / 2;
+rows_fit_dots_need = 2 * max(rows_fit_top_row + rows_fit_dot_reach, rows_fit_dot_reach - rows_fit_bottom_row);
+rows_fit_card_limits = CARD_HEIGHT_MM < active_cylinder_height_mm;
+rows_fit_arrow_delta = gears_on ? max(tactile_recess_clearance, GEAR_ARROW_WELD_MM) : tactile_recess_clearance;
+rows_fit_arrows_need = (tactile_on && !tactile_three_spaced)
+    ? 2 * max(rows_fit_top_row + tactile_indicator_length / 2
+                  + rows_fit_arrow_delta * sqrt(1 + pow(2 * tactile_indicator_length / tactile_indicator_width, 2)),
+              tactile_indicator_length / 2 + rows_fit_arrow_delta - rows_fit_bottom_row)
+    : 0;
+rows_fit_barrel_need = max(rows_fit_card_limits ? 0 : rows_fit_dots_need, rows_fit_arrows_need);
+assert(!(rows_fit_card_limits && rows_fit_dots_need > CARD_HEIGHT_MM + 1e-9),
+       str("These ", active_grid_rows, " rows need ", rows_fit_mm(rows_fit_dots_need), " mm of the card's ",
+           rows_fit_mm(CARD_HEIGHT_MM), " mm height, so the top and bottom rows would run off the card. ",
+           "Use fewer rows or a smaller line spacing."));
+assert(rows_fit_barrel_need <= active_cylinder_height_mm + 1e-9,
+       str("These ", active_grid_rows, " rows need ", rows_fit_mm(rows_fit_barrel_need), " mm of the cylinder's ",
+           rows_fit_mm(active_cylinder_height_mm), " mm height, so the top and bottom rows would run off the ends. ",
+           "Use fewer rows, a smaller line spacing, or a taller cylinder."));
 
 // The groove's window, Visual mode: between the last cell's dots and column 0's
 // triangle. Tactile mode has no window - the groove runs down the arrow column
