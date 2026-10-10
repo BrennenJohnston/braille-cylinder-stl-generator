@@ -12,18 +12,21 @@
  * fit on every row the word divides without it, the guidelines' last resort.
  * No DOM.
  *
- * The app's liblouis build reports no input positions, so a division point
- * is found by translating the text on each side of it alone: the point is
- * usable when the head's braille is how the word's braille begins, or the
- * tail's braille is how it ends, and both agree when both hold. Whatever
- * this cannot place cleanly - typed and braille words that do not pair up,
- * a long word with no usable point, a piece still longer than a row - is
- * given back (layoutParagraph returns null) for the caller's per-row layout.
+ * liblouis 3.39.0 reports, for each cell, the typed character it came from
+ * (lou_translate's input positions), so each braille word's typed text and
+ * the cells a word may be divided at come from those positions, as in the
+ * forge (the engine round, decision E4, 2026-10-09; until then the 3.2.0
+ * engine had none, and each division point was found by translating the
+ * text on either side of it alone). A translator that answers with the
+ * braille alone pairs braille and typed words by count. Whatever this cannot
+ * place cleanly - words that do not pair up, a long word with no division
+ * point, a piece still longer than a row - is given back (layoutParagraph
+ * returns null) for the caller's per-row layout.
  *
- * wordKind, DIVIDE_AFTER, divideWord and the note are ported from
- * openscad-assistive-forge src/js/braille-wrap.js (release 5.2.0, 4355e8a),
- * the same author's code. Words are joined with the ASCII space the request
- * carries (.clinerules/project-facts.md invariant 4).
+ * wordKind, DIVIDE_AFTER, wordRanges, divisionPoints, divideWord and the note
+ * are ported from openscad-assistive-forge src/js/braille-wrap.js (release
+ * 5.2.0, 4355e8a), the same author's code. Words are joined with the ASCII
+ * space the request carries (.clinerules/project-facts.md invariant 4).
  */
 
 /** The line continuation sign (dot 5). */
@@ -126,57 +129,114 @@ export function divideWord(start, end, points, cellsPerLine, signCells = 0) {
 }
 
 /**
- * Where a word's braille may be cut: for each division character in its
- * typed text, the cell where the text after that character begins.
- * @returns {Promise<Map<number, number>>} Cell index -> typed index
+ * A translator may answer with `{ braille, inputPos }` or with the braille
+ * alone; positions are used only when there is one for every cell.
+ * @param {string|{ braille: string, inputPos?: number[]|null }} answer
+ * @returns {{ braille: string, inputPos: number[]|null }}
  */
-async function divisionPoints(source, braille, divideAfter, translate) {
-  const total = cellCount(braille);
-  const points = new Map();
-  for (let i = 0; i < source.length - 1; i++) {
-    if (!divideAfter.includes(source[i])) continue;
-    const at = i + 1;
-    const head = await translate(source.slice(0, at));
-    const tail = await translate(source.slice(at));
-    const fromHead = braille.startsWith(head) ? cellCount(head) : null;
-    const fromTail = braille.endsWith(tail) ? total - cellCount(tail) : null;
-    if (fromHead !== null && fromTail !== null && fromHead !== fromTail) continue;
-    const cut = fromHead ?? fromTail;
-    if (cut === null || cut <= 0 || cut >= total || points.has(cut)) continue;
-    points.set(cut, at);
+function asTranslation(answer) {
+  if (typeof answer === 'string') return { braille: answer, inputPos: null };
+  const braille = String(answer.braille);
+  const inputPos = Array.isArray(answer.inputPos) && answer.inputPos.length === cellCount(braille)
+    ? answer.inputPos
+    : null;
+  return { braille, inputPos };
+}
+
+/**
+ * The braille words of a translated line: [start, end) cell ranges between
+ * blank cells.
+ * @param {string[]} cells
+ * @returns {Array<[number, number]>}
+ */
+function wordSpans(cells) {
+  const spans = [];
+  let start = -1;
+  cells.forEach((cell, i) => {
+    if (cell === ' ') {
+      if (start >= 0) spans.push([start, i]);
+      start = -1;
+    } else if (start < 0) {
+      start = i;
+    }
+  });
+  if (start >= 0) spans.push([start, cells.length]);
+  return spans;
+}
+
+/**
+ * Where each braille word's typed text lies in the line: from the character
+ * its first cell came from to the next word's (the first word from the
+ * line's start, the last to its end). Null when the positions do not run
+ * forward from word to word.
+ * @returns {Array<[number, number]>|null}
+ */
+function wordRanges(line, spans, inputPos) {
+  const starts = spans.map(([start]) => inputPos[start]);
+  if (starts.some((p, k) => k > 0 && !(p > starts[k - 1]))) return null;
+  return starts.map((p, k) => [k === 0 ? 0 : p, starts[k + 1] ?? line.length]);
+}
+
+/**
+ * The same ranges from the typed words, for a translator without positions:
+ * only when there are as many braille words as typed ones.
+ * @returns {Array<[number, number]>|null}
+ */
+function rangesByCount(line, spans) {
+  const typed = line.split(' ');
+  if (typed.length !== spans.length) return null;
+  let at = 0;
+  return typed.map((word) => {
+    const range = [at, at + word.length];
+    at += word.length + 1;
+    return range;
+  });
+}
+
+/**
+ * Cells of a braille word at which a new row may start: the first cell past
+ * each of `divideAfter` in the word's typed text.
+ * @returns {number[]} Cell indexes, ascending, inside (start, end)
+ */
+function divisionPoints(line, inputPos, start, end, divideAfter) {
+  const points = new Set();
+  for (let i = start; i < end; i++) {
+    if (!divideAfter.includes(line[inputPos[i]])) continue;
+    let j = i + 1;
+    while (j < end && inputPos[j] <= inputPos[i]) j++;
+    if (j < end) points.add(j);
   }
-  return points;
+  return [...points].sort((a, b) => a - b);
 }
 
 /**
  * A word longer than a row, divided in its own braille into pieces that
  * each fit one, or null when it cannot be.
- * @returns {Promise<Array<{ braille: string, cells: number, source: string, note: string|null }>|null>}
+ * @returns {Array<{ braille: string, cells: number, source: string, note: string|null }>|null}
  */
-async function divideLongWord(source, braille, cols, translate) {
+function divideLongWord(line, cells, inputPos, [start, end], [wordFrom, wordTo], cols) {
+  const source = line.slice(wordFrom, wordTo).trim();
   const kind = wordKind(source);
-  const points = await divisionPoints(source, braille, DIVIDE_AFTER[kind], translate);
-  if (points.size === 0) return null;
-  const cells = [...braille];
-  const end = cells.length;
-  const cuts = [...points.keys()].sort((a, b) => a - b);
+  const points = divisionPoints(line, inputPos, start, end, DIVIDE_AFTER[kind]);
+  if (points.length === 0) return null;
   const overflows = (pieces, signCells) => pieces.some(
     ([from, to], i) => to - from + (i < pieces.length - 1 ? signCells : 0) > cols
   );
   let sign = kind === 'other' ? '' : LINE_CONTINUATION;
-  let pieces = divideWord(0, end, cuts, cols, cellCount(sign));
+  let pieces = divideWord(start, end, points, cols, cellCount(sign));
   if (sign && overflows(pieces, cellCount(sign))) {
     sign = '';
-    pieces = divideWord(0, end, cuts, cols);
+    pieces = divideWord(start, end, points, cols);
   }
   if (overflows(pieces, cellCount(sign))) return null;
-  const typedAt = (cell) => (cell === 0 ? 0 : cell === end ? source.length : points.get(cell));
   return pieces.map(([from, to], i) => {
     const rowSign = i < pieces.length - 1 ? sign : '';
+    const textFrom = from === start ? wordFrom : inputPos[from];
+    const textTo = to === end ? wordTo : inputPos[to];
     return {
       braille: cells.slice(from, to).join('') + rowSign,
       cells: to - from + cellCount(rowSign),
-      source: source.slice(typedAt(from), typedAt(to)),
+      source: line.slice(textFrom, textTo).trim(),
       note: i === 0 && sign ? continuationNote(source) : null,
     };
   });
@@ -187,27 +247,29 @@ async function divideLongWord(source, braille, cols, translate) {
  * in rows of at most `cols` cells.
  * @param {string} paragraph
  * @param {number} cols
- * @param {(text: string) => Promise<string>} translate - Typed text to
- *   braille, words separated by ASCII spaces
+ * @param {(text: string) => Promise<string|{ braille: string, inputPos: number[] }>} translate -
+ *   Typed text to braille, words separated by ASCII spaces, ideally with
+ *   each cell's position in the text
  * @param {number} [maxRows=Infinity] - Rows wanted at most; a paragraph
  *   needing more comes back cut to this many and marked truncated
  * @returns {Promise<{ rows: Array<{ braille: string, text: string, notes: string[] }>, truncated: boolean }|null>}
  *   Null when the paragraph cannot be laid out from its whole-line braille
  */
 export async function layoutParagraph(paragraph, cols, translate, maxRows = Infinity) {
-  const typed = paragraph.split(' ');
-  const brailleWords = (await translate(paragraph)).split(' ');
-  if (brailleWords.length !== typed.length || brailleWords.some((word) => word === '')) {
-    return null;
-  }
+  const { braille, inputPos } = asTranslation(await translate(paragraph));
+  const cells = [...braille];
+  const spans = wordSpans(cells);
+  const ranges = (inputPos && wordRanges(paragraph, spans, inputPos)) || rangesByCount(paragraph, spans);
+  if (!ranges || spans.length === 0) return null;
   const words = [];
-  for (let k = 0; k < typed.length; k++) {
-    const cells = cellCount(brailleWords[k]);
-    if (cells <= cols) {
-      words.push({ braille: brailleWords[k], cells, source: typed[k], note: null });
+  for (let k = 0; k < spans.length; k++) {
+    const [start, end] = spans[k];
+    if (end - start <= cols) {
+      const [from, to] = ranges[k];
+      words.push({ braille: cells.slice(start, end).join(''), cells: end - start, source: paragraph.slice(from, to).trim(), note: null });
       continue;
     }
-    const pieces = await divideLongWord(typed[k], brailleWords[k], cols, translate);
+    const pieces = inputPos && divideLongWord(paragraph, cells, inputPos, spans[k], ranges[k], cols);
     if (!pieces) return null;
     words.push(...pieces);
   }

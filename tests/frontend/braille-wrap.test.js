@@ -4,15 +4,17 @@
  * than a row is divided inside its own braille, with the line continuation
  * sign (dot 5) for an address or a number.
  *
- * The translator is a table of the app's real liblouis worker output
- * (en-ueb-g2.ctb, capitals kept), captured 2026-10-09 through
- * /static/liblouis-worker.js on the vendored 3.2.0 engine and kept in
- * fixtures/ueb-g2-captured-3.2.0.json, which liblouis-engine.test.js also
- * checks against the 3.39.0 engine. It throws on any text it does not hold,
- * so a test cannot pass on a translation nobody checked.
+ * The translator is the app's own liblouis 3.39.0 engine
+ * (static/liblouis-engine.js on the vendored wasm and tables, contracted UEB,
+ * capitals kept), which reports each cell's input position; the expected rows
+ * are the ones the 3.2.0 engine's captured translations gave, unchanged by the
+ * engine round. A table translator without positions checks the fallback.
  */
 
-import { describe, it, expect } from 'vitest';
+// @vitest-environment node
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { beforeAll, describe, it, expect } from 'vitest';
 import {
   DIVIDE_AFTER,
   LINE_CONTINUATION,
@@ -22,16 +24,28 @@ import {
   packWords,
   wordKind,
 } from '../../static/braille-wrap.js';
-import captured from './fixtures/ueb-g2-captured-3.2.0.json';
+import { installTables, loadLiblouis, translate as engineTranslate } from '../../static/liblouis-engine.js';
 
-const UEB_G2 = captured;
+const VENDOR = new URL('../../static/vendor/liblouis-3.39.0/', import.meta.url);
+let engine;
 
-/** A translator answering only from a table. */
+beforeAll(async () => {
+  engine = await loadLiblouis(() => import('../../static/vendor/liblouis-3.39.0/liblouis.js'), {
+    wasmUrl: fileURLToPath(new URL('liblouis.wasm', VENDOR)),
+  });
+  const index = JSON.parse(readFileSync(new URL('tables.json', VENDOR), 'utf8'));
+  const files = new Set([...index.closures['unicode.dis'], ...index.closures['en-ueb-g2.ctb']]);
+  installTables(engine, [...files].map((name) => ({ name, bytes: readFileSync(new URL(`tables/${name}`, VENDOR)) })));
+});
+
+/** The real engine: braille and each cell's input position. */
+const translate = async (text) => engineTranslate(engine, 'en-ueb-g2.ctb', text);
+
+/** A translator answering only from a table, with no positions. */
 const tableTranslator = (table) => async (text) => {
-  if (!(text in table)) throw new Error(`no captured translation for ${JSON.stringify(text)}`);
+  if (!(text in table)) throw new Error(`no translation for ${JSON.stringify(text)}`);
   return table[text];
 };
-const translate = tableTranslator(UEB_G2);
 
 const brailleRows = (layout) => layout.rows.map((row) => row.braille);
 
@@ -41,7 +55,7 @@ describe('layoutParagraph: whole-line translation', () => {
     expect(brailleRows(layout)).toEqual(['⠠⠠⠠⠗⠕⠕⠍ ⠗⠕⠕⠍', '⠗⠕⠕⠍ ⠗⠕⠕⠍⠠⠄']);
     expect(layout.rows.map((row) => row.text)).toEqual(['ROOM ROOM', 'ROOM ROOM']);
     // Every cell of the whole line, cut at one blank: 24 cells in all
-    expect(brailleRows(layout).join(' ')).toBe(UEB_G2['ROOM ROOM ROOM ROOM']);
+    expect(brailleRows(layout).join(' ')).toBe((await translate('ROOM ROOM ROOM ROOM')).braille);
     expect(layout.truncated).toBe(false);
   });
 
@@ -60,6 +74,15 @@ describe('layoutParagraph: whole-line translation', () => {
   it('gives the paragraph back when typed and braille words do not pair up', async () => {
     const merged = tableTranslator({ 'a b': '⠁⠃' });
     expect(await layoutParagraph('a b', 13, merged)).toBeNull();
+  });
+
+  it('pairs words by count when the translator gives no positions', async () => {
+    const plain = tableTranslator({ 'Hello world': '⠠⠓⠑⠇⠇⠕ ⠸⠺' });
+    const layout = await layoutParagraph('Hello world', 6, plain);
+    expect(layout.rows).toEqual([
+      { braille: '⠠⠓⠑⠇⠇⠕', text: 'Hello', notes: [] },
+      { braille: '⠸⠺', text: 'world', notes: [] },
+    ]);
   });
 });
 
@@ -129,28 +152,15 @@ describe('layoutParagraph: dividing a word longer than a row', () => {
     expect(layout.rows.flatMap((row) => row.notes)).toEqual([]);
   });
 
-  it('finds a point from the tail when the head alone translates differently', async () => {
-    // "first" alone is a whole-word contraction; inside the address it is not.
-    const layout = await layoutParagraph('first.last@example.com', 6, translate);
-    // Every piece still too long for 6 cells: the paragraph is given back.
-    expect(layout).toBeNull();
-    const fake = tableTranslator({
-      'ab.cdefgh': '⠁⠃⠲⠉⠙⠑⠋⠛⠓',
-      'ab.': '⠰⠁⠃⠲',
-      'cdefgh': '⠉⠙⠑⠋⠛⠓',
-    });
-    const divided = await layoutParagraph('ab.cdefgh', 6, fake);
-    expect(brailleRows(divided)).toEqual(['⠁⠃⠲', '⠉⠙⠑⠋⠛⠓']);
-    expect(divided.rows.map((row) => row.text)).toEqual(['ab.', 'cdefgh']);
+  it('gives the paragraph back when every piece is still too long for a row', async () => {
+    expect(await layoutParagraph('first.last@example.com', 6, translate)).toBeNull();
   });
 
-  it('skips a point where the head and the tail disagree about the cut', async () => {
-    const fake = tableTranslator({
-      'ab.cdefgh': '⠁⠃⠲⠉⠙⠑⠋⠛⠓',
-      'ab.': '⠁⠃⠲',
-      'cdefgh': '⠑⠋⠛⠓',
-    });
-    expect(await layoutParagraph('ab.cdefgh', 6, fake)).toBeNull();
+  it('takes a division point from the cell positions, even where a head alone translates differently', async () => {
+    // "first" alone is a whole-word contraction (three cells); inside the
+    // address it is spelled out, and the positions still find the point after it.
+    const layout = await layoutParagraph('first.last@example.com', 10, translate);
+    expect(layout.rows[0]).toEqual({ braille: '⠋⠊⠗⠌⠲⠐', text: 'first.', notes: [continuationNote('first.last@example.com')] });
   });
 
   it('gives the paragraph back for a word with no division point', async () => {

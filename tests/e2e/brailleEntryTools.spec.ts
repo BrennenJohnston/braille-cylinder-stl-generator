@@ -382,6 +382,21 @@ test.describe('Auto Placement translates each typed line whole', () => {
     await expect(page.locator('#error-text')).not.toContainText('line continuation sign');
   });
 
+  test('with the repeated number sign chosen, each continued row starts with its own sign', async ({ page }) => {
+    await openApp(page);
+    // Expert Mode, Translation Options: the non-standard option, set at its
+    // source with the change event a click sends (the panel is collapsed).
+    await page.evaluate(() => {
+      const radio = document.querySelector('input[name="repeat_number_sign"][value="on"]') as HTMLInputElement;
+      radio.checked = true;
+      radio.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await page.locator('#auto-text').fill('1,000,000,000,000');
+    await translateToBraille(page);
+    const rows = (await page.locator('#braille-unicode').inputValue()).split('\n');
+    expect(rows).toEqual(['⠼⠁⠂⠼⠚⠚⠚⠂⠐', '⠼⠚⠚⠚⠂⠼⠚⠚⠚⠂⠐', '⠼⠚⠚⠚']);
+  });
+
   test('a divided number keeps one number sign', async ({ page }) => {
     await openApp(page);
     // 13 cells: the 13-cell number fits whole, so a longer one is needed.
