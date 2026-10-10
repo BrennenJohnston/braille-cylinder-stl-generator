@@ -10,21 +10,21 @@ import { describe, it, expect } from 'vitest';
 import { BRAILLE_ASCII, asciiToCells } from '../../static/braille-ascii.js';
 
 const TABLE = fileURLToPath(
-  new URL('../../static/liblouis/tables/en-us-brf.dis', import.meta.url)
+  new URL('../../static/vendor/liblouis-3.39.0/tables/en-us-brf.dis', import.meta.url)
 );
 
 /**
  * Each character the table displays and the dots of its cell. The table
- * escapes the backslash as `\\`; it lists no entry for the blank cell, which
- * braille ASCII writes as a space.
+ * escapes the backslash as `\\` and the space as `\s`, the blank cell, whose
+ * dots it writes as 0.
  */
 function readBrfTable() {
-  const dots = { ' ': '' };
+  const dots = {};
   for (const line of readFileSync(TABLE, 'utf8').split(/\r?\n/)) {
     const match = /^display\s+(\S+)\s+(\d+)\s*$/.exec(line);
     if (!match) continue;
-    const ch = match[1] === '\\\\' ? '\\' : match[1];
-    dots[ch] = match[2];
+    const ch = { '\\\\': '\\', '\\s': ' ' }[match[1]] ?? match[1];
+    dots[ch] = match[2] === '0' ? '' : match[2];
   }
   return dots;
 }

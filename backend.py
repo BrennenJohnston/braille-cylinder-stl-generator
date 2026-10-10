@@ -1,3 +1,4 @@
+import json
 import os
 from datetime import UTC, datetime
 
@@ -208,7 +209,7 @@ def serve_static(filename):
 
     Files served:
     - liblouis translation tables and WASM binaries
-    - Web Workers (csg-worker.js, csg-worker-manifold.js, liblouis-worker.js)
+    - Web Workers (csg-worker.js, csg-worker-manifold.js, liblouis-module-worker.js)
     - Vendor libraries (three.module.js, OrbitControls.js, STLLoader.js)
     """
     # Handle CORS preflight
@@ -270,84 +271,45 @@ def serve_static(filename):
         return jsonify({'error': 'File not found'}), 404
 
 
-def _scan_liblouis_tables(directory):
-    """Recursively scan a directory for liblouis table files (.ctb, .tbl, .utb, etc.).
-    Returns a list of table metadata dicts with 'file', 'path', 'locale', 'description'.
-    """
-    tables = []
-    try:
-        for root, _dirs, files in os.walk(directory):
-            for filename in files:
-                # Check for liblouis table extensions
-                if not filename.endswith(('.ctb', '.tbl', '.utb', '.cti', '.uti', '.dis')):
-                    continue
-
-                # Construct relative path from the base directory
-                full_path = os.path.join(root, filename)
-                rel_path = os.path.relpath(full_path, directory)
-
-                # Extract locale from filename (heuristic)
-                # Format: lang-region-variant.ctb (e.g., en-us-g2.ctb)
-                locale = None
-                description = filename
-                if '-' in filename:
-                    parts = filename.split('-')
-                    if len(parts) >= 2:
-                        locale = f'{parts[0]}-{parts[1]}'  # e.g., en-us
-
-                tables.append(
-                    {
-                        'file': rel_path.replace('\\', '/'),  # Normalize path separators
-                        'path': rel_path.replace('\\', '/'),
-                        'locale': locale,
-                        'description': description,
-                    }
-                )
-    except OSError:
-        # Directory not found or not accessible
-        pass
-    return tables
+# The index the translation worker fetches tables by (static/liblouis-module-worker.js);
+# listing from it means every table offered can be loaded.
+LIBLOUIS_TABLE_INDEX = os.path.join('static', 'vendor', 'liblouis-3.39.0', 'tables.json')
+# The other files in the index (.cti, .uti, .dis, .dic) are included by these, not translated with.
+TRANSLATION_TABLE_EXTENSIONS = ('.ctb', '.utb', '.tbl')
 
 
 @app.route('/liblouis/tables')
 def list_liblouis_tables():
-    """Return a JSON list of available liblouis translation tables.
-    Scans all candidate directories and deduplicates by file name.
+    """Return a JSON list of the liblouis 3.39.0 translation tables.
 
     Returns:
         {
             "tables": [
                 {
-                    "file": "en-us-g2.ctb",
-                    "path": "en-us-g2.ctb",
-                    "locale": "en-us",
-                    "description": "en-us-g2.ctb"
+                    "file": "en-ueb-g2.ctb",
+                    "path": "en-ueb-g2.ctb",
+                    "locale": "en-ueb",
+                    "description": "en-ueb-g2.ctb"
                 },
                 ...
             ]
         }
 
-    This is used by the frontend to populate the language/table selection dropdown
-    with the actual shipped tables.
+    This is used by the frontend to populate the language/table selection dropdown.
     """
-    # Resolve candidate directories relative to app root
-    base = app.root_path
-    candidate_dirs = [
-        os.path.join(base, 'static', 'liblouis', 'tables'),
-        os.path.join(base, 'node_modules', 'liblouis-build', 'tables'),
-        os.path.join(base, 'third_party', 'liblouis', 'tables'),
-        os.path.join(base, 'third_party', 'liblouis', 'share', 'liblouis', 'tables'),
-    ]
+    with open(os.path.join(app.root_path, LIBLOUIS_TABLE_INDEX), encoding='utf-8') as index_file:
+        index = json.load(index_file)
 
-    merged = {}
-    for d in candidate_dirs:
-        for t in _scan_liblouis_tables(d):
-            # Deduplicate by file name, prefer the first occurrence
-            key = t.get('file')
-            if key and key not in merged:
-                merged[key] = t
+    tables = []
+    for name in index['closures']:
+        if not name.endswith(TRANSLATION_TABLE_EXTENSIONS):
+            continue
+        # Extract locale from filename (heuristic)
+        # Format: lang-region-variant.ctb (e.g., en-us-g2.ctb)
+        parts = name.split('-')
+        locale = f'{parts[0]}-{parts[1]}' if len(parts) >= 2 else None
+        tables.append({'file': name, 'path': name, 'locale': locale, 'description': name})
 
-    tables = list(merged.values())
     # Sort deterministically by locale then file name
     tables.sort(key=lambda t: (t.get('locale') or '', t.get('file') or ''))
     return jsonify({'tables': tables})

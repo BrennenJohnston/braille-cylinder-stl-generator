@@ -2,8 +2,6 @@
 
 ## Document Purpose
 
-> **Engine status (2026-10-09).** The app translates with **liblouis 3.39.0 compiled to WebAssembly**: `static/liblouis-module-worker.js` (a module worker) runs `static/liblouis-engine.js` on the vendored build and tables in `static/vendor/liblouis-3.39.0/` (provenance in its README.txt), fetches a table and its include closure (`tables.json`) before first use, writes blank cells as the ASCII space, and returns each cell's input position beside the braille. The message protocol (init, translate, backTranslate) is unchanged. Sections 2, 3 and 4 below still describe the retired asm.js 3.2.0 worker (`static/liblouis-worker.js`, `easy-api.js`); they are rewritten when the old engine is removed (the engine round's part 3). Plan: `05_LIBLOUIS_3_39_UPGRADE_PLAN.md`.
-
 This document specifies the core translation process that converts user input text to braille using the **Liblouis** open-source braille translation library. It serves as an authoritative reference for future development by documenting:
 
 1. **Translation Architecture** — Client-side translation via Web Worker with WASM backend
@@ -21,7 +19,8 @@ This document specifies the core translation process that converts user input te
 4. Manifold WASM — Mesh repair operations (no direct translation involvement)
 
 **Additional Critical Sources:**
-- `static/liblouis-worker.js` — Web Worker implementation of Liblouis translation
+- `static/liblouis-module-worker.js` — the translation worker (a module worker)
+- `static/liblouis-engine.js` — the liblouis 3.39.0 engine module the worker runs
 - `app/validation.py` — Backend validation module for braille Unicode
 - `app/utils.py` — Utility functions including `braille_to_dots()` conversion
 
@@ -82,14 +81,14 @@ This design choice provides:
 │                          ▼                                                   │
 │  ┌──────────────────────────────────────────────┐                           │
 │  │      LIBLOUIS WEB WORKER                      │                           │
-│  │  (static/liblouis-worker.js)                  │                           │
+│  │  (static/liblouis-module-worker.js)           │                           │
 │  │                                               │                           │
-│  │  1. Load liblouis WASM/JS core                │                           │
-│  │  2. Load translation table via HTTP           │                           │
+│  │  1. Load liblouis 3.39.0 (WebAssembly)        │                           │
+│  │  2. Fetch the table + includes via HTTP       │                           │
 │  │  3. Construct table chain (unicode.dis + X)   │                           │
-│  │  4. Execute translateString()                 │                           │
+│  │  4. Call lou_translate()                      │                           │
 │  │  5. Validate output has U+2800–U+28FF chars   │                           │
-│  │  6. Return Unicode braille string             │                           │
+│  │  6. Return braille + input positions          │                           │
 │  └───────────────────────┬──────────────────────┘                           │
 │                          │                                                   │
 │                          ▼                                                   │
@@ -135,66 +134,46 @@ else:
 
 ### Library Components
 
-The application uses the **liblouis-build** npm package which provides:
+The engine is **liblouis 3.39.0 compiled to WebAssembly**, vendored in `static/vendor/liblouis-3.39.0/` and copied byte for byte from openscad-assistive-forge `4355e8a` (decision E3). Its `README.txt` records the source, the build flags, the checksums and the licences, and `tests/test_vendored_liblouis.py` checks every byte.
 
 | Component | File | Purpose |
 |-----------|------|---------|
-| Core Engine | `build-no-tables-utf16.js` | Emscripten-compiled Liblouis WASM/JS |
-| Easy API | `easy-api.js` | JavaScript wrapper for core engine |
-| Tables | `tables/*.ctb` `*.utb` `*.dis` | Translation rules for languages |
-
-### File Locations
-
-**Source:** `static/liblouis-worker.js` (lines 10-27)
-
-```javascript
-// Import liblouis scripts with error handling
-try {
-    console.log('Worker: Attempting to load liblouis scripts from static directory...');
-    importScripts('/static/liblouis/build-no-tables-utf16.js');
-    console.log('Worker: Loaded build-no-tables-utf16.js');
-    importScripts('/static/liblouis/easy-api.js');
-    console.log('Worker: Loaded easy-api.js');
-} catch (error) {
-    console.error('Worker: Failed to load liblouis scripts from static:', error);
-    // Try original paths as fallback
-    try {
-        console.log('Worker: Trying original node_modules paths...');
-        importScripts('/node_modules/liblouis-build/build-no-tables-utf16.js');
-        importScripts('/node_modules/liblouis/easy-api.js');
-        console.log('Worker: Loaded scripts with node_modules paths');
-    } catch (altError) {
-        console.error('Worker: All paths failed:', altError);
-        throw new Error('Could not load liblouis scripts: ' + error.message);
-    }
-}
-```
+| Engine | `static/vendor/liblouis-3.39.0/liblouis.wasm` | liblouis 3.39.0, built with 32-bit characters (`--enable-ucs4`) and no `eval` (`DYNAMIC_EXECUTION=0`) |
+| Loader | `static/vendor/liblouis-3.39.0/liblouis.js` | The emscripten ES module that instantiates the wasm |
+| Tables | `static/vendor/liblouis-3.39.0/tables/` | The release's 478 table files: 323 translation tables and the files they include |
+| Table index | `static/vendor/liblouis-3.39.0/tables.json` | Each file's size and SHA-256, and each table's include closure; written only by `scripts/build_liblouis_tables_index.py` |
+| Engine module | `static/liblouis-engine.js` | Loads the wasm once, installs tables in its file system, translates and back-translates |
+| Worker | `static/liblouis-module-worker.js` | The module worker the page talks to |
 
 ### Static File Directory Structure
 
 ```
 static/
-└── liblouis/
-    ├── build-no-tables-utf16.js    # Emscripten-compiled core (UTF-16 mode)
-    ├── easy-api.js                  # JavaScript API wrapper
-    └── tables/                      # Translation tables
-        ├── unicode.dis              # Unicode display table (CRITICAL)
-        ├── en-ueb-g1.ctb            # English UEB Grade 1
-        ├── en-ueb-g2.ctb            # English UEB Grade 2
-        ├── en-ueb-math.ctb          # English UEB Math
-        ├── en-us-g1.ctb             # English EBAE Grade 1
-        ├── en-us-g2.ctb             # English EBAE Grade 2
-        ├── fr-bfu-g2.ctb            # French Grade 2
-        └── ... (169 total tables)
+├── liblouis-engine.js
+├── liblouis-module-worker.js
+└── vendor/
+    └── liblouis-3.39.0/
+        ├── liblouis.wasm
+        ├── liblouis.js
+        ├── README.txt                # source, build, checksums, licences
+        ├── COPYING.LESSER.liblouis
+        ├── tables.json               # sizes, checksums, include closures
+        └── tables/                   # 478 files
+            ├── unicode.dis           # Unicode display table (CRITICAL)
+            ├── en-ueb-g1.ctb
+            ├── en-ueb-g2.ctb
+            └── ...
 ```
+
+The release is in the folder name so that the 24-hour `immutable` cache `serve_static()` in `backend.py` sets on `.js`, `.wasm`, `.json` and table files can never mix two releases.
 
 ### Library Version Information
 
-The library uses **liblouis-build** with UTF-16 mode enabled for proper Unicode handling:
-
-- Build variant: `build-no-tables-utf16.js` (no embedded tables, UTF-16 strings)
-- Table loading: On-demand via HTTP (not pre-bundled)
-- String encoding: UTF-16 for proper handling of non-ASCII characters
+- liblouis 3.39.0: `version()` in `static/liblouis-engine.js` reads it from the engine, and the worker's `init` answer names it.
+- Tables are not built into the wasm. Each is fetched over HTTP, with the files it includes, before its first use (Section 3).
+- Text crosses into liblouis as code points (32-bit characters), so an emoji counts as one character, not two.
+- Checked against native liblouis 3.39.0 (`lou_translate` from the official Windows release): the 145-row English corpus in both UEB grades, and three samples in each of the 323 translation tables, give the same cells (`tests/frontend/liblouis-engine.test.js`, decision E2).
+- Until 2026-10-09 the app ran a 2017 asm.js build of liblouis 3.2.0 (npm `liblouis-build` with `easy-api.js`); the engine round removed it.
 
 ---
 
@@ -202,63 +181,26 @@ The library uses **liblouis-build** with UTF-16 mode enabled for proper Unicode 
 
 ### Why a Web Worker?
 
-The translation runs in a dedicated Web Worker because:
+The translation runs in a dedicated module worker (`new Worker('/static/liblouis-module-worker.js', { type: 'module' })`) because:
 
-1. **On-demand table loading** — `enableOnDemandTableLoading()` only works in workers
-2. **Non-blocking UI** — Heavy translation operations don't freeze the main thread
-3. **Isolation** — Worker crashes don't affect main application
+1. **Non-blocking UI** — compiling a table and translating never hold up the page
+2. **Isolation** — a failure inside liblouis cannot take the page down with it
+3. **Modules** — the worker imports `static/liblouis-engine.js` and the vendored loader as ES modules, as the Manifold worker does
 
 ### Worker Initialization Sequence
 
-**Source:** `static/liblouis-worker.js` (lines 30-121)
+**Source:** `static/liblouis-module-worker.js` — `initialize()`
 
 ```javascript
-async function initializeLiblouis() {
-    try {
-        console.log('Worker: Initializing liblouis...');
-
-        // Wait for scripts to load
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        if (typeof liblouisBuild !== 'undefined' && typeof LiblouisEasyApi !== 'undefined') {
-            console.log('Worker: Creating LiblouisEasyApi instance');
-            liblouisInstance = new LiblouisEasyApi(liblouisBuild);
-
-            // Register log callback for debugging
-            liblouisInstance.registerLogCallback(function(level, msg){
-                recentLogs.push(`[${level}] ${msg}`);
-                if (recentLogs.length > 50) recentLogs.shift();
-            });
-
-            // Enable on-demand table loading
-            if (liblouisInstance.enableOnDemandTableLoading) {
-                var origin = (self && self.location && self.location.origin) || '';
-                var tableBase = origin + '/static/liblouis/tables/';
-                liblouisInstance.enableOnDemandTableLoading(tableBase);
-            }
-
-            // Clear data path (use dynamic loader)
-            if (liblouisInstance.setDataPath) {
-                liblouisInstance.setDataPath('');
-            }
-
-            liblouisReady = true;
-
-            // Preload core tables
-            try { liblouisInstance.loadTable('unicode.dis'); } catch (_) {}
-            try { liblouisInstance.loadTable('en-ueb-g1.ctb'); } catch (_) {}
-            try { liblouisInstance.loadTable('en-ueb-g2.ctb'); } catch (_) {}
-            try { liblouisInstance.loadTable('en-ueb-math.ctb'); } catch (_) {}
-
-            // Test translation to verify it works
-            const testResult = liblouisInstance.translateString('unicode.dis,en-ueb-g1.ctb', 'test');
-            console.log('Worker: Test translation attempt (UEB g1):', testResult);
-
-            return { success: true, message: 'Liblouis initialized successfully' };
-        }
-    } catch (error) {
-        return { success: false, error: error.message };
-    }
+async function initialize() {
+    mod = await loadLiblouis(() => import(`${VENDOR}liblouis.js`));
+    const response = await fetch(`${VENDOR}tables.json`);
+    if (!response.ok) throw new Error(`Could not load the table index: HTTP ${response.status}`);
+    index = await response.json();
+    await ensureTable(DEFAULT_TABLE);
+    // One translation proves the engine and the default table work end to end.
+    translate(mod, DEFAULT_TABLE, 'test');
+    return { success: true, message: `liblouis ${version(mod)} ready` };
 }
 ```
 
@@ -266,13 +208,19 @@ async function initializeLiblouis() {
 
 | Step | Action | Purpose |
 |------|--------|---------|
-| 1 | Wait 100ms | Allow Emscripten module to fully initialize |
-| 2 | Create LiblouisEasyApi | Instantiate API wrapper with WASM module |
-| 3 | Register log callback | Capture liblouis internal logs for debugging |
-| 4 | Enable on-demand loading | Set HTTP base URL for table fetching |
-| 5 | Clear data path | Prevent file system path conflicts |
-| 6 | Preload core tables | Warm cache for common tables |
-| 7 | Test translation | Verify end-to-end functionality |
+| 1 | The page fetches the worker file, then starts it as a module worker | A missing file fails before the worker exists |
+| 2 | `loadLiblouis()` imports the loader and instantiates the wasm | Once per worker; a failed load does not block a later attempt |
+| 3 | Fetch `tables.json` | Which files each table needs |
+| 4 | `ensureTable('en-ueb-g2.ctb')` | Fetch the default table's closure, and `unicode.dis`'s, into the module's file system |
+| 5 | Test translation | Proves the engine and the default table work end to end |
+
+The page waits up to 30 s for `init`. Until it answers, a Translate press waits for start-up to end (`liblouisSettled`) instead of failing; if start-up fails, `#error-text` says so and translation stays off.
+
+### Loading a Table
+
+**Source:** `static/liblouis-module-worker.js` — `ensureTable()`
+
+Before a table's first use the worker fetches each file of its closure (and of `unicode.dis`'s) that it does not have yet from `/static/vendor/liblouis-3.39.0/tables/`, and writes them into the module's file system under `/tables`, where liblouis finds a table's includes beside it. A table that `tables.json` does not list is refused ("Unknown liblouis table"), and a file that does not arrive fails the request with its HTTP status. A table nobody picks is never downloaded.
 
 ### Worker Message Protocol
 
@@ -284,7 +232,7 @@ async function initializeLiblouis() {
 | `translate` | Translate text to braille | `text`, `grade`, `tableName` |
 | `backTranslate` | Translate braille back to text | `braille`, `tableName` |
 
-`ALLOWED_TYPES` in `static/liblouis-worker.js` is the allowlist; a type outside it is
+`ALLOWED_TYPES` in `static/liblouis-module-worker.js` is the allowlist; a type outside it is
 rejected before any liblouis call, and each type validates its own required data field.
 
 **Request Format:**
@@ -296,7 +244,8 @@ rejected before any liblouis call, and each type validates its own required data
     data: {
         text: String,     // Original text to translate
         grade: String,    // 'g1' or 'g2' (fallback if tableName is null)
-        tableName: String // Liblouis table filename (e.g., 'en-ueb-g2.ctb')
+        tableName: String // Liblouis table filename (e.g., 'en-ueb-g2.ctb'); a
+                          // 'unicode.dis,<table>' chain from an older caller names the same table
     }
 }
 ```
@@ -309,7 +258,8 @@ rejected before any liblouis call, and each type validates its own required data
     type: 'translate',    // Message type
     result: {
         success: Boolean,
-        translation: String,  // Unicode braille output (on success)
+        translation: String,  // Unicode braille output (on success); a blank cell is the ASCII space
+        inputPos: Number[],   // for each cell, the index in text of the character it came from
         error: String         // Error message (on failure)
     }
 }
@@ -317,10 +267,10 @@ rejected before any liblouis call, and each type validates its own required data
 
 ### Back-Translation (`backTranslate`)
 
-Calls `liblouisInstance.backTranslateString(tableChain, braille)` — exposed by
-`static/liblouis/easy-api.js`, which routes it to `lou_backTranslateString`. The table chain
-is built exactly as the forward pass builds it, `unicode.dis` first, because that is what
-makes liblouis read the U+2800 block as braille cells rather than as literal characters.
+Calls `backTranslate(mod, table, braille)` in `static/liblouis-engine.js`, which calls
+`lou_backTranslateString` with the same table list as the forward pass, `unicode.dis` first,
+because that is what makes liblouis read the U+2800 block as braille cells rather than as
+literal characters.
 
 ```javascript
 // Request
@@ -351,9 +301,14 @@ the geometry that gets produced.
 
 | Extension | Type | Purpose |
 |-----------|------|---------|
-| `.ctb` | Contraction Table | Full translation rules for a language |
-| `.utb` | Translation Table | Basic character mappings |
-| `.dis` | Display Table | Output character encoding |
+| `.ctb` | Contraction table | Full translation rules for a language |
+| `.utb` | Translation table | Character mappings, usually uncontracted |
+| `.tbl` | Translation table | The same, under an older naming |
+| `.cti` / `.uti` | Include file | Part of other tables; never offered alone |
+| `.dis` | Display table | Output character encoding |
+| `.dic` | Hyphenation dictionary | Included by some tables |
+
+The language list offers the `.ctb`, `.utb` and `.tbl` files (Section 10).
 
 ### Critical Tables
 
@@ -365,85 +320,23 @@ the geometry that gets produced.
 
 ### Table File Format
 
-Tables contain directives in a specific format. Key metadata directives:
+A table opens with metadata lines; these are `en-ueb-g2.ctb`'s. Nothing in the app reads them today (Section 10).
 
 ```
-#+locale: en-US
-#+type: literary
-#+grade: 1
-#+contraction: no
-#+dots: 6
+#-display-name: Unified English contracted braille
+#+language:en
+#+type:literary
+#+contraction:full
+#+grade:2
+#+system:ueb
 
 # Translation rules follow...
-include en-chardefs.cti
-include en-us-patterns.cti
+include en-ueb-g1.ctb
 ```
 
-### Backend Table Scanning
+### Backend Table List
 
-**Source:** `backend.py` (lines 1919-2048)
-
-```python
-def _scan_liblouis_tables(directory: str):
-    """Scan a directory for liblouis translation tables and extract basic metadata.
-
-    Returns a list of dicts with keys: file, locale, type, grade, contraction, dots, variant.
-    """
-    tables_info = []
-
-    if not os.path.isdir(directory):
-        return tables_info
-
-    # Walk recursively to find tables in subfolders
-    for root, dirs, files in os.walk(directory):
-        for fname in files:
-            if not (fname.endswith('.ctb') or fname.endswith('.utb')):
-                continue
-
-            fpath = os.path.join(root, fname)
-            meta = {
-                'file': fname,
-                'locale': None,
-                'type': None,
-                'grade': None,
-                'contraction': None,
-                'dots': None,
-                'variant': None
-            }
-
-            # Parse first 200 lines for metadata directives
-            try:
-                with open(fpath, encoding='utf-8', errors='ignore') as f:
-                    for _ in range(200):
-                        line = f.readline()
-                        if not line:
-                            break
-                        m = re.match(r'^\s*#\+\s*([A-Za-z_-]+)\s*:\s*(.+?)\s*$', line)
-                        if not m:
-                            continue
-                        key = m.group(1).strip().lower()
-                        val = m.group(2).strip()
-
-                        if key == 'locale' and not meta['locale']:
-                            meta['locale'] = normalize_locale(val)
-                        elif key == 'type' and not meta['type']:
-                            meta['type'] = val.lower()
-                        elif key == 'grade' and not meta['grade']:
-                            meta['grade'] = str(val)
-                        elif key == 'contraction' and not meta['contraction']:
-                            meta['contraction'] = val.lower()
-                        elif key == 'dots' and not meta['dots']:
-                            meta['dots'] = int(val)
-            except Exception:
-                pass
-
-            # Derive missing metadata from filename
-            # ... (heuristic extraction)
-
-            tables_info.append(meta)
-
-    return tables_info
-```
+The language dropdown's list of tables comes from `GET /liblouis/tables`; see Section 10.
 
 ---
 
@@ -451,27 +344,27 @@ def _scan_liblouis_tables(directory: str):
 
 ### The Unicode Display Table Requirement
 
-**CRITICAL:** For proper braille Unicode output, `unicode.dis` must be the **first** table in the chain.
+**CRITICAL:** For proper braille Unicode output, `unicode.dis` must be the **first** table in the list liblouis is given.
 
-**Source:** `static/liblouis-worker.js` (lines 152-158)
+**Source:** `static/liblouis-engine.js` — `tableList()`
 
 ```javascript
-// Ensure unicode braille output by adding unicode-braille.utb to the table chain
-// Use unicode.dis as first table to force Unicode Braille output
-const tableChain = selectedTable.indexOf('unicode.dis') !== -1
-    ? selectedTable
-    : ('unicode.dis,' + selectedTable);
-const result = liblouisInstance.translateString(tableChain, text);
+function tableList(table) {
+  checkTableName(table);
+  return `${TABLE_DIR}/${DISPLAY_TABLE},${TABLE_DIR}/${table}`;
+}
 ```
+
+The page sends one table file name. The worker's `tableOf()` drops a `unicode.dis` an older caller put first, so the list never names it twice, and refuses anything that is not exactly one table.
 
 ### Table Chain Examples
 
-| User-Selected Table | Final Table Chain |
+| User-Selected Table | Table list given to liblouis |
 |--------------------|-------------------|
-| `en-ueb-g1.ctb` | `unicode.dis,en-ueb-g1.ctb` |
-| `en-ueb-g2.ctb` | `unicode.dis,en-ueb-g2.ctb` |
-| `fr-bfu-g2.ctb` | `unicode.dis,fr-bfu-g2.ctb` |
-| `unicode.dis,en-ueb-g2.ctb` | `unicode.dis,en-ueb-g2.ctb` (unchanged) |
+| `en-ueb-g1.ctb` | `/tables/unicode.dis,/tables/en-ueb-g1.ctb` |
+| `en-ueb-g2.ctb` | `/tables/unicode.dis,/tables/en-ueb-g2.ctb` |
+| `fr-bfu-g2.ctb` | `/tables/unicode.dis,/tables/fr-bfu-g2.ctb` |
+| `unicode.dis,en-ueb-g2.ctb` | `/tables/unicode.dis,/tables/en-ueb-g2.ctb` |
 
 ### Why Table Chain Matters
 
@@ -659,64 +552,27 @@ async function translateText(text) {
 }
 ```
 
+The whole-line layout (`layoutParagraph()`, `static/braille-wrap.js`) translates through `translateForLayout()`, which asks the worker for each cell's input position too (`translateWithLiblouisPositions()`); see `BRAILLE_TEXT_INPUT_AND_LANGUAGE_SPECIFICATIONS.md` Section 9.
+
 ### Worker-Side Translation Execution
 
-**Source:** `static/liblouis-worker.js` (lines 135-181)
+**Source:** `static/liblouis-module-worker.js` — `handle()`
 
 ```javascript
-case 'translate':
-    if (!liblouisReady || !liblouisInstance) {
-        throw new Error('Liblouis not initialized');
+case 'translate': {
+    requireReady();
+    const table = tableOf(data.tableName, data.grade);
+    await ensureTable(table);
+    const { braille, inputPos } = translate(mod, table, data.text);
+    if (braille.length === 0) throw new Error(`Translation failed for table ${table}: liblouis returned an empty result`);
+    if (![...braille].some((ch) => ch.codePointAt(0) >= 0x2800 && ch.codePointAt(0) <= 0x28ff)) {
+        throw new Error(`Translation failed for table ${table}: no braille in the output`);
     }
-
-    const { text, grade, tableName } = data;
-
-    // Use the provided table name or default UEB based on grade
-    let selectedTable;
-    if (tableName) {
-        selectedTable = tableName;
-    } else {
-        selectedTable = grade === 'g1' ? 'en-ueb-g1.ctb' : DEFAULT_TABLE;  // DEFAULT_TABLE = 'en-ueb-g2.ctb'
-    }
-
-    console.log('Worker: Translating text:', text, 'with table:', selectedTable);
-
-    try {
-        // Ensure unicode braille output
-        const tableChain = selectedTable.indexOf('unicode.dis') !== -1
-            ? selectedTable
-            : ('unicode.dis,' + selectedTable);
-        const result = liblouisInstance.translateString(tableChain, text);
-
-        if (typeof result !== 'string' || result.length === 0) {
-            throw new Error('Liblouis returned empty result');
-        }
-
-        // Validate output contains braille Unicode
-        const hasBrailleChars = result.split('').some(function(char){
-            const code = char.charCodeAt(0);
-            return code >= 0x2800 && code <= 0x28FF;
-        });
-
-        if (!hasBrailleChars) {
-            throw new Error('Translation produced no braille Unicode output');
-        }
-
-        self.postMessage({ id, type: 'translate', result: { success: true, translation: result } });
-    } catch (e) {
-        // Include recent liblouis logs in error message
-        var logTail = '';
-        try {
-            var tail = recentLogs.slice(-8).join('\n');
-            if (tail) logTail = '\nRecent liblouis logs:\n' + tail;
-        } catch (_) {}
-
-        const message = 'Translation failed for table ' + selectedTable + ': ' +
-                       (e && e.message ? e.message : 'Unknown error') + logTail;
-        throw new Error(message);
-    }
-    break;
+    return { success: true, translation: braille, inputPos };
+}
 ```
+
+With no table name, `grade` picks `en-ueb-g1.ctb` (`'g1'`) or `en-ueb-g2.ctb`. `translate()` in `static/liblouis-engine.js` sizes its output from the text and doubles it, up to three times, when liblouis stops short; a translation that did not consume the whole text is an error, never returned as if it were whole. A blank cell comes back as the ASCII space (project-facts invariant 4): `unicode.dis` writes it as U+2800 in 3.39.0 (and wrote a space in 3.2.0). `inputPos` gives, for each cell, the index in `text` of the character it came from, in JavaScript string units.
 
 ---
 
@@ -1004,66 +860,24 @@ for col_num, braille_char in enumerate(braille_text):
 
 ## 10. Table Discovery and Metadata
 
-### Backend Table Discovery API
+### Backend Table List
 
-**Source:** `backend.py` (lines 2051-2078)
+**Source:** `backend.py` — `list_liblouis_tables()`
 
-```python
-@app.route('/liblouis/tables')
-def list_liblouis_tables():
-    """List available liblouis translation tables from static assets.
+`GET /liblouis/tables` lists the translation tables (`.ctb`, `.utb`, `.tbl`) named in `static/vendor/liblouis-3.39.0/tables.json`, the index the translation worker fetches tables by, so every table it offers can be loaded. They are the 323 tables compared with native liblouis 3.39.0 (decision E2); `tests/test_vendored_liblouis.py` pins the list to `tests/fixtures/liblouis-reference/table-samples-3.39.0.json`. Include files (`.cti`, `.uti`, `.dis`, `.dic`) are not offered. Until the engine round's phase 7 (2026-10-09) the list was scanned from `static/liblouis/tables`, `node_modules/liblouis-build/tables` and a native 3.34.0 copy in `third_party/liblouis`, and offered include files and tables the worker could not load.
 
-    This powers the frontend language dropdown dynamically so it stays in sync
-    with the actual shipped tables.
-    """
-    base = app.root_path
-    candidate_dirs = [
-        os.path.join(base, 'static', 'liblouis', 'tables'),
-        os.path.join(base, 'node_modules', 'liblouis-build', 'tables'),
-        os.path.join(base, 'third_party', 'liblouis', 'tables'),
-        os.path.join(base, 'third_party', 'liblouis', 'share', 'liblouis', 'tables'),
-    ]
-
-    merged = {}
-    for d in candidate_dirs:
-        for t in _scan_liblouis_tables(d):
-            # Deduplicate by file name, prefer the first occurrence
-            key = t.get('file')
-            if key and key not in merged:
-                merged[key] = t
-
-    tables = list(merged.values())
-    # Sort deterministically by locale then file name
-    tables.sort(key=lambda t: (t.get('locale') or '', t.get('file') or ''))
-    return jsonify({'tables': tables})
-```
-
-### Table Metadata Structure
-
-Each table entry returned by `/liblouis/tables`:
+### Table Entry
 
 ```json
 {
     "file": "en-ueb-g2.ctb",
-    "locale": "en-US",
-    "type": "literary",
-    "grade": "2",
-    "contraction": "full",
-    "dots": 6,
-    "variant": "UEB"
+    "path": "en-ueb-g2.ctb",
+    "locale": "en-ueb",
+    "description": "en-ueb-g2.ctb"
 }
 ```
 
-### Metadata Extraction Logic
-
-| Metadata | Primary Source | Fallback Source |
-|----------|---------------|-----------------|
-| `locale` | `#+locale:` directive | Filename parsing (`en-ueb` → `en`) |
-| `type` | `#+type:` directive | Filename heuristics (`comp` → computer) |
-| `grade` | `#+grade:` directive | Filename parsing (`-g2` → grade 2) |
-| `contraction` | `#+contraction:` directive | Grade inference (g2 → full) |
-| `dots` | `#+dots:` directive | Filename parsing (`8dot` → 8) |
-| `variant` | N/A | Filename heuristics (`ueb` → UEB) |
+`locale` is the file name's first two hyphen-separated parts, or `null` when the name has no hyphen. No metadata is read from the tables. The parser that read their `#+` lines (grade, type, contraction, dots) was removed with server-side generation on 2026-01-05 (`8939c2d`). `loadLanguageOptions()` still reads those fields, so without them it labels a table by its `locale` and offers only the first table of each `locale`.
 
 ### Frontend Table Loading
 
@@ -1089,6 +903,8 @@ async function loadLanguageOptions() {
 }
 ```
 
+A saved choice (`localStorage.braille_prefs_language_table`) that is not among the options, such as a 3.2.0 table name that 3.39.0 does not ship, falls back to `DEFAULT_LANGUAGE_TABLE` (`en-ueb-g2.ctb`).
+
 ---
 
 ## 11. Error Handling and Recovery
@@ -1097,31 +913,16 @@ async function loadLanguageOptions() {
 
 | Error | Cause | Recovery |
 |-------|-------|----------|
-| Worker not initialized | Scripts failed to load | Display error, suggest refresh |
-| Table not found | Missing table file | Fall back to UEB or display error |
+| Worker not initialized | The worker, wasm or table index failed to load | Display error, suggest refresh |
+| Table not found | A name `tables.json` does not list, or a file that did not arrive | Display the error; a saved choice the list no longer offers falls back to UEB (Section 10) |
 | Empty result | Invalid input or table issue | Display error with liblouis logs |
 | No braille output | Table misconfiguration | Include recent logs in error |
 
 ### Worker Error Handling
 
-**Source:** `static/liblouis-worker.js` (lines 170-180)
+**Source:** `static/liblouis-engine.js` — `failure()`; `static/liblouis-module-worker.js` — `onmessage`
 
-```javascript
-} catch (e) {
-    // Include recent liblouis logs in error message for debugging
-    var logTail = '';
-    try {
-        var tail = recentLogs.slice(-8).join('\n');
-        if (tail) {
-            logTail = '\nRecent liblouis logs:\n' + tail;
-        }
-    } catch (_) {}
-
-    const message = 'Translation failed for table ' + selectedTable + ': ' +
-                   (e && e.message ? e.message : 'Unknown error') + logTail;
-    throw new Error(message);
-}
-```
+The engine keeps the last 20 lines liblouis writes to stderr, and an error from a failed call ends with the last three of them, e.g. `liblouis could not translate this text with xx.ctb (…)`. The worker answers every failure as `{ success: false, error }`, and the page rejects the waiting request with that message.
 
 ### Backend Validation Errors
 
@@ -1183,7 +984,7 @@ All implementations use identical Unicode braille range constants:
 | `app/geometry/plates.py` (line 318) | `0x2800` | `0x28FF` | ✅ Matches |
 | `app/geometry/cylinder.py` (line 153) | `0x2800` | `0x28FF` | ✅ Matches |
 | `geometry_spec.py` (line 594) | `0x2800` | `0x28FF` | ✅ Matches |
-| `static/liblouis-worker.js` (line 164) | `0x2800` | `0x28FF` | ✅ Matches |
+| `static/liblouis-module-worker.js` (`handle()`, translate) | `0x2800` | `0x28FF` | ✅ Matches |
 
 **Total: 9 locations verified consistent**
 
@@ -1193,7 +994,7 @@ All paths that invoke translation use the same chain construction:
 
 | Location | Table Chain Logic |
 |----------|------------------|
-| `liblouis-worker.js` | `unicode.dis,` + tableName (unless already has unicode.dis) |
+| `static/liblouis-engine.js` (`tableList()`) | `/tables/unicode.dis,/tables/` + the table; `tableOf()` drops a leading `unicode.dis` first |
 | Frontend preview | Uses worker (same logic) |
 | Form submission | Uses worker (same logic) |
 
@@ -1225,6 +1026,8 @@ All geometry generation modules use the canonical `braille_to_dots` function fro
 ## 13. Implementation Verification Report
 
 > **Note added 2026-08-21:** `templates/index.html` was removed from the repository after this verification ran; `public/index.html` is now the only HTML build. The tables in this section are left exactly as recorded on the verification date and have not been re-checked against `public/index.html`. For current locations see Appendix C and Section 7.
+
+> **Note added 2026-10-09:** the worker rows below name `static/liblouis-worker.js`, the liblouis 3.2.0 worker removed by the engine round. They are left as recorded; Sections 3, 5, 7 and 11 describe its successor.
 
 ### Verification Date
 
@@ -1316,6 +1119,8 @@ All geometry modules correctly import and use the canonical function:
 
 This section documents the cross-check of all systems that use the Liblouis translation process.
 
+> **Note added 2026-10-09:** recorded with Section 13; its rows for `liblouis-worker.js` name the removed 3.2.0 worker (see the note there).
+
 ### Systems Using Braille Unicode Validation
 
 | System | File | Line(s) | Validation Logic | Compliant |
@@ -1402,21 +1207,22 @@ This section documents the cross-check of all systems that use the Liblouis tran
 
 ## Appendix A: Liblouis API Reference
 
-### LiblouisEasyApi Methods Used
+### Engine Functions Used
 
-| Method | Purpose | Parameters |
-|--------|---------|------------|
-| `enableOnDemandTableLoading(basePath)` | Enable HTTP table loading | Base URL for tables |
-| `setDataPath(path)` | Set virtual filesystem path | Path string |
-| `loadTable(tableName)` | Preload a table | Table filename |
-| `checkTable(tableChain)` | Verify table is valid | Comma-separated table chain |
-| `translateString(tableChain, text)` | Translate text to braille | Table chain, input text |
-| `registerLogCallback(fn)` | Register log handler | Callback function |
+**Source:** `static/liblouis-engine.js`
+
+| Function | Purpose | liblouis call |
+|----------|---------|---------------|
+| `loadLiblouis(loader)` | Instantiate the wasm, once per worker | — |
+| `installTables(mod, files)` | Write table files into the module's file system under `/tables` | — |
+| `translate(mod, table, text)` | Text to braille, with each cell's input position | `lou_translate` |
+| `backTranslate(mod, table, braille)` | Braille to text | `lou_backTranslateString` |
+| `version(mod)` | The liblouis release | `lou_version` |
 
 ### Table Chain Format
 
 ```
-tableChain = "table1.dis,table2.ctb,table3.utb"
+tableList = "/tables/unicode.dis,/tables/en-ueb-g2.ctb"
 ```
 
 Tables are processed left-to-right:
@@ -1435,12 +1241,12 @@ Tables are processed left-to-right:
 - Translation button shows error
 
 **Possible Causes:**
-1. WASM/JS files not found at `/static/liblouis/`
-2. CORS blocking script loading
+1. `liblouis.js`, `liblouis.wasm` or `tables.json` not found at `/static/vendor/liblouis-3.39.0/`
+2. A Content Security Policy without 'wasm-unsafe-eval' in script-src
 3. Browser doesn't support Web Workers with modules
 
 **Solutions:**
-1. Verify files exist: `build-no-tables-utf16.js`, `easy-api.js`
+1. Verify those files and `static/liblouis-module-worker.js`, `static/liblouis-engine.js` exist
 2. Check browser console for 404 errors
 3. Ensure server sets proper CORS headers
 
@@ -1456,7 +1262,7 @@ Tables are processed left-to-right:
 3. Table doesn't support input characters
 
 **Solutions:**
-1. Check `/static/liblouis/tables/` for table file
+1. Check that `tables.json` lists the table and its files load from `/static/vendor/liblouis-3.39.0/tables/`
 2. Verify non-empty input
 3. Try different language table
 
@@ -1484,7 +1290,7 @@ Tables are processed left-to-right:
 
 | File | Purpose |
 |------|---------|
-| `static/liblouis-worker.js` | Validates translation output |
+| `static/liblouis-module-worker.js` | Validates translation output |
 | `app/validation.py` | Backend request validation |
 | `app/utils.py` | `is_braille_char()` helper |
 | `backend.py` | Inline validation in mesh generation |
@@ -1506,19 +1312,22 @@ Tables are processed left-to-right:
 
 | File | Purpose |
 |------|---------|
-| `static/liblouis-worker.js` | Web Worker with Liblouis |
+| `static/liblouis-module-worker.js` | The translation worker |
+| `static/liblouis-engine.js` | The liblouis 3.39.0 engine module |
 | `public/index.html` | `translateWithLiblouis()` wrapper |
 
 ### Files That Discover/Scan Tables
 
 | File | Purpose |
 |------|---------|
-| `backend.py` | `_scan_liblouis_tables()`, `/liblouis/tables` API |
+| `backend.py` | `list_liblouis_tables()`, the `/liblouis/tables` API (reads `static/vendor/liblouis-3.39.0/tables.json`) |
 
 ---
 
-*Document Version: 1.6*
-*Last Updated: 2026-10-09 — the engine status note: translation runs on liblouis 3.39.0 (WebAssembly) in a module worker; the 3.2.0 sections are rewritten in the engine round's part 3.*
+*Document Version: 1.8*
+*Last Updated: 2026-10-09 — the engine round's phase 8: the liblouis 3.2.0 engine is removed, and Sections 1-5, 7, 11 and 12 and Appendices A-C describe liblouis 3.39.0 (the module worker, the engine module, the vendored build and tables); the engine status note is gone; Sections 13-14 stay as recorded, with notes.*
+*Previous: 1.7, 2026-10-09 — Section 10: the table list is the translation tables of the vendored 3.39.0 index (the engine round's phase 7); the old folder scan, and Section 4's copy of it, are gone.*
+*Previous: 1.6, 2026-10-09 — the engine status note: translation runs on liblouis 3.39.0 (WebAssembly) in a module worker; the 3.2.0 sections are rewritten in the engine round's part 3.*
 *Previous: 1.5, 2026-10-09 — the line count follows the request's own Rows (a line past it must be empty; 200 at most) instead of a fixed four, which refused Rows 5+; the fit of those rows is checked separately (BRAILLE_SPACING_SPECIFICATIONS.md §12).*
 *Previous: 1.4, 2026-09-30 — documentation review: the Braille (Unicode) field is also filled by every Generate STL (2026-09-28) and an unedited one empties when the text or a translation setting changes*
 *Previous: 1.3, 2026-07-30 — added the `backTranslate` worker message (braille → text) used by the "Translate to Text" button and by STL file naming*

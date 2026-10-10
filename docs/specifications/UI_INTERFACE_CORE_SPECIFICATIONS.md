@@ -2757,7 +2757,7 @@ the Embosser setup notes (§4.8).
 ### 4.14 Waiting for a Worker at Start-up
 
 Two web workers do the heavy lifting: the braille translator (liblouis,
-`static/liblouis-worker.js`) and the 3D engine (Manifold,
+`static/liblouis-module-worker.js`) and the 3D engine (Manifold,
 `static/workers/csg-worker-manifold.js`). The page starts them one after another after
 the `load` event (the translator, then the card worker, then the 3D engine), which takes
 a few seconds, longer on a slow device. Since 2026-10-01 (Brennen's decision R1-Q-04,
@@ -3436,6 +3436,7 @@ Low vision users benefit from enhanced depth perception:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.42 | 2026-10-09 | §4.14 names the translation worker that replaced the liblouis 3.2.0 one (`static/liblouis-module-worker.js`, the engine round). The wait itself is unchanged. |
 | 1.41 | 2026-10-09 | **Brennen's decisions on the transcriber tools.** Every transcriber-tool string signed as drafted. §4.7: all `.btn-translate` buttons are 44 px tall at every width (the Translate buttons were 32 px on desktop); the `.btn-convert-ascii` rule is gone. The target-size test now measures all eight braille-field targets. |
 | 1.40 | 2026-10-09 | **Transcriber tools on both braille fields** (ported from the OpenSCAD Assistive Forge's 5.2.0 build). §4.7: a Six-key entry checkbox before each field and a Convert braille ASCII button after Translate to Text; the checkbox's label row and the button are 44 px targets (the button's 32 px desktop neighbours reported, not changed). §4.10: a field region that already holds a message empties and rewrites it after 100 ms, so a repeated six-key cell is heard; still 7 status nodes. §4.13: the help paragraphs' unwired remainder names the two tools. Strings DRAFT. Pinned by `tests/e2e/brailleEntryTools.spec.ts` and `tests/e2e/targetSize.spec.ts`. |
 | 1.39 | 2026-10-04 | **§4.7: the four Translate buttons keep keyboard focus** (round R1, phase F4; finding R1-F-11 of walk F, Brennen's R1-Q-31). Each disabled itself while working and so dropped focus to the page body, and the next Tab repeated the page's landmarks. Each handler now gives focus back to its button in its `finally` while focus is still on the body. Pinned by `tests/e2e/brailleField.spec.ts`. |
