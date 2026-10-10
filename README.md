@@ -1,6 +1,6 @@
 # Braille Cylinder STL Generator
 
-[![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v2.2.0)
+[![Version](https://img.shields.io/badge/version-2.3.0-blue.svg)](https://github.com/BrennenJohnston/braille-cylinder-stl-generator/releases/tag/v2.3.0)
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial-red.svg)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 
