@@ -69,32 +69,65 @@ def test_every_tables_include_closure_ships():
     }
 
 
-def test_the_table_list_offers_exactly_the_translation_tables_verified_against_native(client):
-    """/liblouis/tables (the language dropdown) lists the 3.39.0 translation
-    tables and nothing else: no include file (.cti, .uti, .dis, .dic) and no
-    table from the 3.2.0 or native 3.34.0 folders it scanned before phase 7,
-    which the worker cannot load. Each listed table is one the engine was
-    compared with native 3.39.0 on (decision E2)."""
+def _table_list(client):
+    response = client.get('/liblouis/tables')
+    assert response.status_code == 200
+    return response.get_json()['tables']
+
+
+def test_the_table_list_offers_every_usable_translation_table_once(client):
+    """/liblouis/tables (the language dropdown) offers each 3.39.0 translation
+    table liblouis describes (a #-display-name), and each undescribed one that no
+    described table includes (decision M1, 2026-10-09): 252 + 13. The 58 left out
+    are building blocks of a described table, such as en-GB-g2.ctb inside
+    en_GB.tbl. No include file, nothing from the 3.2.0 or native 3.34.0 folders,
+    and every table offered was compared with native 3.39.0 (decision E2)."""
     import json
 
     index = json.loads((VENDOR / 'tables.json').read_text(encoding='utf-8'))
     reference_path = Path(__file__).resolve().parent / 'fixtures' / 'liblouis-reference' / 'table-samples-3.39.0.json'
     verified = json.loads(reference_path.read_text(encoding='utf-8'))['tables']
-
-    response = client.get('/liblouis/tables')
-    assert response.status_code == 200
-    tables = response.get_json()['tables']
+    tables = _table_list(client)
     files = [table['file'] for table in tables]
 
-    translation_tables = sorted(name for name in index['closures'] if name.endswith(('.ctb', '.utb', '.tbl')))
-    assert sorted(files) == translation_tables == sorted(verified)
-    assert len(files) == 323
-    assert {'en-ueb-g2.ctb', 'en-ueb-g1.ctb', 'en-us-g2.ctb', 'en-us-g1.ctb'} <= set(files)
-    for gone in ('fr-fr-g1.utb', 'UEBC-g2.ctb', 'de-de-accents.cti'):
-        assert gone not in files
-    for table in tables:
-        assert table['path'] == table['file']
-        assert table['description'] == table['file']
-    by_file = {table['file']: table for table in tables}
-    assert by_file['en-ueb-g2.ctb']['locale'] == 'en-ueb'
-    assert by_file['en_US.tbl']['locale'] is None
+    assert len(files) == len(set(files)) == 265
+    assert sum(1 for table in tables if table['display_name']) == 252
+    assert set(files) <= set(verified)
+    translation_tables = {name for name in index['closures'] if name.endswith(('.ctb', '.utb', '.tbl'))}
+    left_out = translation_tables - set(files)
+    assert len(left_out) == 58
+    described = [table['file'] for table in tables if table['display_name']]
+    included = {part for name in described for part in index['closures'][name][1:]}
+    assert left_out <= included
+    assert {'en_GB.tbl', 'en-ueb-g2.ctb', 'en-ueb-g1.ctb', 'en-us-g1.ctb', 'sin.utb', 'ks-in-g1.utb'} <= set(files)
+    # en-us-g2.ctb is a building block of en_US.tbl; the page still offers it as a default.
+    for absent in ('en-GB-g2.ctb', 'en-us-g2.ctb', 'fr-fr-g1.utb', 'UEBC-g2.ctb', 'de-de-accents.cti'):
+        assert absent not in files
+
+
+def test_each_table_carries_its_own_liblouis_metadata(client):
+    """The fields come from the table's opening '#-' / '#+' lines, null where it
+    gives none; file, path, locale and description keep their earlier meaning."""
+    by_file = {table['file']: table for table in _table_list(client)}
+    for table in by_file.values():
+        assert table['path'] == table['description'] == table['file']
+    assert by_file['en-ueb-g2.ctb'] == {
+        'file': 'en-ueb-g2.ctb',
+        'path': 'en-ueb-g2.ctb',
+        'locale': 'en-ueb',
+        'description': 'en-ueb-g2.ctb',
+        'display_name': 'Unified English contracted braille',
+        'language': 'en',
+        'region': None,
+        'type': 'literary',
+        'grade': '2',
+        'contraction': 'full',
+        'dots': None,
+    }
+    assert by_file['en_GB.tbl']['display_name'] == 'English contracted braille as used in the U.K.'
+    assert by_file['en_GB.tbl']['region'] == 'en-GB'
+    assert by_file['en_GB.tbl']['locale'] is None
+    assert by_file['de-g2.ctb']['display_name'] == 'German contracted braille'
+    assert by_file['no-no-comp8.ctb']['dots'] == 8
+    assert by_file['no-no-comp8.ctb']['type'] == 'computer'
+    assert all(value is None for key, value in by_file['sin.utb'].items() if key not in ('file', 'path', 'description'))

@@ -1,6 +1,8 @@
 import json
 import os
+import re
 from datetime import UTC, datetime
+from functools import lru_cache
 
 from flask import Flask, jsonify, make_response, request, send_from_directory
 from flask_cors import CORS
@@ -274,13 +276,72 @@ def serve_static(filename):
 # The index the translation worker fetches tables by (static/liblouis-module-worker.js);
 # listing from it means every table offered can be loaded.
 LIBLOUIS_TABLE_INDEX = os.path.join('static', 'vendor', 'liblouis-3.39.0', 'tables.json')
+LIBLOUIS_TABLE_DIR = os.path.join('static', 'vendor', 'liblouis-3.39.0', 'tables')
 # The other files in the index (.cti, .uti, .dis, .dic) are included by these, not translated with.
 TRANSLATION_TABLE_EXTENSIONS = ('.ctb', '.utb', '.tbl')
+# liblouis table metadata: '#-key: value' and '#+key: value' lines in the comment
+# block a table opens with. Each wanted key and the field it fills in an entry.
+TABLE_METADATA_LINE = re.compile(r'^#[+-]([A-Za-z-]+)\s*:\s*(.*?)\s*$')
+TABLE_METADATA_FIELDS = {
+    'display-name': 'display_name',
+    'language': 'language',
+    'region': 'region',
+    'type': 'type',
+    'grade': 'grade',
+    'contraction': 'contraction',
+    'dots': 'dots',
+}
+
+
+def _table_metadata(path):
+    """The metadata lines a liblouis table opens with, before its first rule."""
+    found = {}
+    with open(path, encoding='utf-8', errors='replace') as table:
+        for line in table:
+            line = line.strip()
+            if line and not line.startswith('#'):
+                break
+            match = TABLE_METADATA_LINE.match(line)
+            if match:
+                found.setdefault(match.group(1).lower(), match.group(2))
+    return found
+
+
+@lru_cache(maxsize=1)
+def _offered_liblouis_tables():
+    """Every translation table liblouis describes (it has a display name), and every
+    undescribed one no described table includes - the 58 left out are building blocks
+    of a described table (en-GB-g2.ctb inside en_GB.tbl), so offering them would list
+    one table twice. The tables do not change while the app runs, so this is read once."""
+    with open(os.path.join(app.root_path, LIBLOUIS_TABLE_INDEX), encoding='utf-8') as index_file:
+        closures = json.load(index_file)['closures']
+    names = [name for name in closures if name.endswith(TRANSLATION_TABLE_EXTENSIONS)]
+    metadata = {name: _table_metadata(os.path.join(app.root_path, LIBLOUIS_TABLE_DIR, name)) for name in names}
+    described = {name for name in names if 'display-name' in metadata[name]}
+    included = {part for name in described for part in closures[name][1:]}
+
+    tables = []
+    for name in names:
+        if name not in described and name in included:
+            continue
+        # Extract locale from filename (heuristic)
+        # Format: lang-region-variant.ctb (e.g., en-us-g2.ctb)
+        parts = name.split('-')
+        locale = f'{parts[0]}-{parts[1]}' if len(parts) >= 2 else None
+        entry = {'file': name, 'path': name, 'locale': locale, 'description': name}
+        for key, field in TABLE_METADATA_FIELDS.items():
+            entry[field] = metadata[name].get(key)
+        entry['dots'] = int(entry['dots']) if entry['dots'] and entry['dots'].isdigit() else None
+        tables.append(entry)
+
+    # Sort deterministically by locale then file name
+    tables.sort(key=lambda t: (t.get('locale') or '', t.get('file') or ''))
+    return tables
 
 
 @app.route('/liblouis/tables')
 def list_liblouis_tables():
-    """Return a JSON list of the liblouis 3.39.0 translation tables.
+    """Return a JSON list of the liblouis 3.39.0 translation tables offered for translation.
 
     Returns:
         {
@@ -289,30 +350,23 @@ def list_liblouis_tables():
                     "file": "en-ueb-g2.ctb",
                     "path": "en-ueb-g2.ctb",
                     "locale": "en-ueb",
-                    "description": "en-ueb-g2.ctb"
+                    "description": "en-ueb-g2.ctb",
+                    "display_name": "Unified English contracted braille",
+                    "language": "en",
+                    "region": null,
+                    "type": "literary",
+                    "grade": "2",
+                    "contraction": "full",
+                    "dots": null
                 },
                 ...
             ]
         }
 
-    This is used by the frontend to populate the language/table selection dropdown.
+    The metadata fields are the table's own (null where it gives none). This is used
+    by the frontend to populate the language/table selection dropdown.
     """
-    with open(os.path.join(app.root_path, LIBLOUIS_TABLE_INDEX), encoding='utf-8') as index_file:
-        index = json.load(index_file)
-
-    tables = []
-    for name in index['closures']:
-        if not name.endswith(TRANSLATION_TABLE_EXTENSIONS):
-            continue
-        # Extract locale from filename (heuristic)
-        # Format: lang-region-variant.ctb (e.g., en-us-g2.ctb)
-        parts = name.split('-')
-        locale = f'{parts[0]}-{parts[1]}' if len(parts) >= 2 else None
-        tables.append({'file': name, 'path': name, 'locale': locale, 'description': name})
-
-    # Sort deterministically by locale then file name
-    tables.sort(key=lambda t: (t.get('locale') or '', t.get('file') or ''))
-    return jsonify({'tables': tables})
+    return jsonify({'tables': _offered_liblouis_tables()})
 
 
 # =============================================================================
