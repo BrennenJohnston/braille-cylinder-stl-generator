@@ -2,6 +2,8 @@
 
 ## Document Purpose
 
+> **Engine status (2026-10-09).** The app translates with **liblouis 3.39.0 compiled to WebAssembly**: `static/liblouis-module-worker.js` (a module worker) runs `static/liblouis-engine.js` on the vendored build and tables in `static/vendor/liblouis-3.39.0/` (provenance in its README.txt), fetches a table and its include closure (`tables.json`) before first use, writes blank cells as the ASCII space, and returns each cell's input position beside the braille. The message protocol (init, translate, backTranslate) is unchanged. Sections 2, 3 and 4 below still describe the retired asm.js 3.2.0 worker (`static/liblouis-worker.js`, `easy-api.js`); they are rewritten when the old engine is removed (the engine round's part 3). Plan: `05_LIBLOUIS_3_39_UPGRADE_PLAN.md`.
+
 This document specifies the core translation process that converts user input text to braille using the **Liblouis** open-source braille translation library. It serves as an authoritative reference for future development by documenting:
 
 1. **Translation Architecture** — Client-side translation via Web Worker with WASM backend
@@ -1515,8 +1517,9 @@ Tables are processed left-to-right:
 
 ---
 
-*Document Version: 1.5*
-*Last Updated: 2026-10-09 — the line count follows the request's own Rows (a line past it must be empty; 200 at most) instead of a fixed four, which refused Rows 5+; the fit of those rows is checked separately (BRAILLE_SPACING_SPECIFICATIONS.md §12).*
+*Document Version: 1.6*
+*Last Updated: 2026-10-09 — the engine status note: translation runs on liblouis 3.39.0 (WebAssembly) in a module worker; the 3.2.0 sections are rewritten in the engine round's part 3.*
+*Previous: 1.5, 2026-10-09 — the line count follows the request's own Rows (a line past it must be empty; 200 at most) instead of a fixed four, which refused Rows 5+; the fit of those rows is checked separately (BRAILLE_SPACING_SPECIFICATIONS.md §12).*
 *Previous: 1.4, 2026-09-30 — documentation review: the Braille (Unicode) field is also filled by every Generate STL (2026-09-28) and an unedited one empties when the text or a translation setting changes*
 *Previous: 1.3, 2026-07-30 — added the `backTranslate` worker message (braille → text) used by the "Translate to Text" button and by STL file naming*
 *Revised 2026-08-21 (v1.3) — `templates/index.html` reference sweep (Phase 07b). Section 7 and Appendix C now cite `public/index.html` by function name (`translateWithLiblouis()`, `loadLanguageOptions()`) instead of a deleted file with stale line numbers. Section 13's dated verification tables are left exactly as recorded, with a note that `templates/index.html` has since been removed.*
