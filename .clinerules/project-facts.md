@@ -681,25 +681,31 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      between braille words, an over-long address/number divided in its own
      braille with dot 5 (U+2810) ending each row but the last, ONE number
      sign across a divided number (UEB 6.10, Brennen's decision), the sign
-     dropped only as BANA's last resort. The engine has no inputPos, so a
-     division point is accepted when the head alone is a prefix OR the
-     tail alone is a suffix of the word's braille (both must agree). What
-     it cannot place falls back per line to wrapParagraphLegacy (the old
+     dropped only as BANA's last resort. Division points and each word's
+     typed text come from liblouis 3.39.0's input positions (since the
+     engine round; the head/tail cut is retired, decision E4); an
+     inserted repeated number sign takes its digit's position. What it
+     cannot place falls back per line to wrapParagraphLegacy (the old
      per-row algorithm, unchanged). The dot-5 note (S-DC1) rides in
      wrap.notes, NEVER in warnings: the S0 "extra content was not placed"
      gate and #error-text are untouched. A pristine field keeps its notes
      on its status line (brailleFieldMirrorNotes).
    - Strings S-SK1..S-SK6, S-BA1..S-BA5, S-BF3, S-BF4, S-DC1, S-NS1 and
      S-H15 signed by Brennen 2026-10-09 as drafted; reword only with his
-     sign-off. He also kept both refinements (head-or-tail point test, the
-     per-line fallback instead of an error) and raised every .btn-translate
-     to 44 px on desktop (all 2026-10-09).
+     sign-off. He kept the per-line fallback instead of an error (the
+     head-or-tail point test it came with was retired by the engine round)
+     and raised every .btn-translate to 44 px on desktop (all 2026-10-09).
    - RULE 16 EXCEPTION (his decision 2026-10-09): these are input methods
      for a browser field, not layout, and the Customizer's Line_N fields
      already take Unicode braille - the OpenSCAD repo gets NO change. Do
      not "fix" the gap.
-   - Follow-up recorded, not built: the liblouis 3.39.0 engine upgrade (a
-     separate round) would give inputPos and retire the prefix/suffix cut.
+   - The liblouis 3.39.0 engine round (plan 05, decisions E1-E6): the
+     page translates with static/liblouis-module-worker.js (module worker)
+     -> static/liblouis-engine.js -> static/vendor/liblouis-3.39.0/ (wasm,
+     478 tables, tables.json closures; byte-pinned by
+     tests/test_vendored_liblouis.py; verified against native 3.39.0 by
+     tests/frontend/liblouis-engine.test.js). Blank cells come back as the
+     ASCII space. The old asm.js 3.2.0 files stay until part 3 removes them.
 
 6k. Rows limit (2026-10-09, Brennen's decisions; plan 04 in the 2026_10_09
    research folder). MAX_LINES in app/validation.py is the dial's 200, not

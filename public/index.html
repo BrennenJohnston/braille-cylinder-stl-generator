@@ -6589,6 +6589,21 @@
             return out;
         }
 
+        // The same, carrying each cell's input position along: an inserted
+        // number sign takes the position of the digit it introduces, so the
+        // whole-line layout still knows every cell's typed character.
+        function applyNumberSignRepeatWithPositions(braille, inputPos) {
+            const repeated = applyNumberSignRepeat(braille);
+            if (repeated === braille || !inputPos) return { braille: repeated, inputPos: repeated === braille ? inputPos : null };
+            const positions = [];
+            let j = 0;
+            for (let i = 0; i < repeated.length; i++) {
+                positions.push(inputPos[j]);
+                if (j < braille.length && repeated[i] === braille[j]) j++;
+            }
+            return { braille: repeated, inputPos: positions };
+        }
+
         // =====================================================================
         // EDITABLE UNICODE BRAILLE FIELD
         // =====================================================================
@@ -7891,6 +7906,15 @@
                 return await translateWithLiblouis(applyCapitalizationSetting(text), 'g2', tableName);
             }
 
+            // The positions index the text the translator saw: when the
+            // capital-letter setting changes its length (a rare letter that
+            // lower-cases to two), only the braille is passed on.
+            async function translateForLayout(text) {
+                const typed = applyCapitalizationSetting(text);
+                const result = await translateWithLiblouisPositions(typed, 'g2', tableName);
+                return typed.length === text.length ? result : result.braille;
+            }
+
             // User newlines are hard row breaks: each input line ("paragraph")
             // starts on a new row and is word-wrapped independently. Trailing
             // blank lines are dropped; blank lines in the middle keep their row.
@@ -8014,7 +8038,7 @@
                     continue;
                 }
                 const remainingRows = maxTrackedRows - rowsNeeded;
-                const wrapped = await layoutParagraph(paragraph, cols, translateText, remainingRows)
+                const wrapped = await layoutParagraph(paragraph, cols, translateForLayout, remainingRows)
                     ?? await wrapParagraphLegacy(paragraph, remainingRows);
                 if (wrapped.error) {
                     return { error: true, warnings };
@@ -12240,6 +12264,8 @@
             });
         }
 
+        const LIBLOUIS_WORKER_URL = '/static/liblouis-module-worker.js';
+
         window.addEventListener('load', async () => {
             try {
                 // Initialize liblouis web worker
@@ -12247,7 +12273,7 @@
 
                 // Test if worker file is accessible first
                 try {
-                    const workerResponse = await fetch('/static/liblouis-worker.js');
+                    const workerResponse = await fetch(LIBLOUIS_WORKER_URL);
                     if (!workerResponse.ok) {
                         throw new Error(`Worker file not accessible: ${workerResponse.status}`);
                     }
@@ -12257,7 +12283,9 @@
                     throw new Error('Cannot access worker file: ' + fetchError.message);
                 }
 
-                liblouisWorker = new Worker('/static/liblouis-worker.js');
+                // A module worker: it imports static/liblouis-engine.js, which runs
+                // liblouis 3.39.0 as WebAssembly (the engine round, 2026-10-09).
+                liblouisWorker = new Worker(LIBLOUIS_WORKER_URL, { type: 'module' });
 
                 // Handle worker messages
                 liblouisWorker.onmessage = function(e) {
@@ -12505,7 +12533,7 @@
         });
 
         // Function to translate text using liblouis web worker
-        async function translateWithLiblouis(text, grade, tableName = null) {
+        async function requestTranslation(text, grade, tableName) {
             // A press during start-up waits for it to end instead of failing.
             if (liblouisState === 'loading') await liblouisSettled;
             if (!liblouisReady || !liblouisWorker) {
@@ -12518,10 +12546,7 @@
 
                 if (result.success && result.translation) {
                     log.debug('Translation successful:', result.translation);
-                    // Optional non-standard post-processing (repeat number sign toggle).
-                    // Applied here so preview, shorthand, auto-wrap measurement, and
-                    // STL generation all see the same braille string.
-                    return applyNumberSignRepeat(result.translation);
+                    return result;
                 } else {
                     throw new Error('Translation failed: ' + (result.error || 'Unknown error'));
                 }
@@ -12529,6 +12554,22 @@
                 log.error('Worker translation failed:', error);
                 throw error;
             }
+        }
+
+        async function translateWithLiblouis(text, grade, tableName = null) {
+            const result = await requestTranslation(text, grade, tableName);
+            // Optional non-standard post-processing (repeat number sign toggle).
+            // Applied here so preview, shorthand, auto-wrap measurement, and
+            // STL generation all see the same braille string.
+            return applyNumberSignRepeat(result.translation);
+        }
+
+        // Braille and each cell's input position in `text` (the liblouis 3.39.0
+        // worker reports them), for the whole-line layout in
+        // static/braille-wrap.js; the same post-processing as above.
+        async function translateWithLiblouisPositions(text, grade, tableName = null) {
+            const result = await requestTranslation(text, grade, tableName);
+            return applyNumberSignRepeatWithPositions(result.translation, Array.isArray(result.inputPos) ? result.inputPos : null);
         }
 
         // Braille -> English, using the same liblouis table chain as the forward

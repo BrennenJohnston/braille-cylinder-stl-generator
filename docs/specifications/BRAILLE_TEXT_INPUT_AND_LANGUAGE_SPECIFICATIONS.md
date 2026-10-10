@@ -1258,7 +1258,7 @@ Back text fails **closed** — the generate handler blocks with an error and sen
 
 The sign counts toward its row. When it does not fit on every row, the word is divided without it, the last resort in BANA's business card guidelines. A divided number keeps one number sign (UEB 6.10; decided 2026-10-09): `206.555.0147` at 8 cells is `⠼⠃⠚⠋⠲⠐` then `⠑⠑⠑⠲⠚⠁⠙⠛`. Each word divided with the sign adds one note to `notes` (S-DC1, signed 2026-10-09): `"{word}" is divided across rows. Each row but the last ends with the line continuation sign (dot 5).`
 
-5. **Finding a division point.** The app's liblouis build reports no input positions, so the text on each side of a candidate point is translated alone. The point is usable when the head's braille is how the word's braille begins, or the tail's braille is how it ends, and both give the same cell when both match. Both sides are needed: translated alone, `first.` contracts to `⠋⠌⠲` and `l.` gains a grade 1 indicator, so only the tail side finds those points.
+5. **Finding a division point.** liblouis 3.39.0 reports, for each cell, the typed character it came from (its input positions; the engine round, 2026-10-09). A word may be divided at the first cell past each division character in its typed text, and each braille word's typed text is read from the same positions. The optional repeated number sign (Section 6.2) inserts cells, and each inserted ⠼ takes the position of the digit it introduces. Before that engine, a point was found by translating the text on each side of it alone (the head/tail cut, retired by Brennen's decision E4).
 6. **Fallback.** A line whose typed and braille words do not pair up, or that holds a long word with no usable point or with a piece still longer than a row, is laid out as before 2026-10-09: words are added while the translated candidate row fits; an over-long word is split after a hyphen, `@` or `.`, then at a vowel/consonant boundary, its pieces translated separately and given no sign; and when no split exists, the error below.
 
 ### Return Value
@@ -1898,8 +1898,9 @@ None required. All implementations match the specification exactly.
 
 ---
 
-*Document Version: 1.13*
-*Last Updated: 2026-10-09 - Convert braille ASCII reads the lowercase NABCC forms `` ` { | } ~ `` as `@ [ \ ] ^` (Brennen's decision); only characters outside printable ASCII and braille are refused (Section 6.3).*
+*Document Version: 1.14*
+*Last Updated: 2026-10-09 - Section 9 point 5: division points come from liblouis 3.39.0's input positions (the engine round, decision E4); the head/tail cut is retired.*
+*Previous: 1.13, 2026-10-09 - Convert braille ASCII reads the lowercase NABCC forms `` ` { | } ~ `` as `@ [ \ ] ^` (Brennen's decision); only characters outside printable ASCII and braille are refused (Section 6.3).*
 *Previous: 1.12, 2026-10-09 - Brennen signed every transcriber-tool string as drafted (Section 6.3, S-DC1 in Section 9) and kept both refinements of the division-point search: a point found from either side, and the per-line fallback when none is usable.*
 *Previous: 1.11, 2026-10-09 - Transcriber tools, ported from the OpenSCAD Assistive Forge's 5.2.0 build. Section 6.3 gains Six-Key Entry and Braille ASCII (both braille fields; strings DRAFT), and Section 9 is rewritten: each typed line is translated whole and cut only between braille words (a capital passage keeps one indicator), a long address or number divides with the dot-5 line continuation sign and one number sign (UEB 6.10, Brennen's decision), and the per-row layout remains as the fallback.*
 *Previous: 1.10, 2026-09-30 - Documentation review after the approved build: Section 1 shows the main form as it is (Row Indicator Style and Card Thickness are Expert Mode submenus since 2026-09-24, Cylinders to Generate since 2026-09-21; the Back of Card section sits between the boxes); the `back_lines` section names the Card sides choice and the `#a11y-status` announcement; the storage table describes `braille_prefs_plate_type` (Cylinders to Generate) and `braille_prefs_double_sided_enabled` (the Card sides choice).*
