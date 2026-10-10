@@ -726,7 +726,8 @@ translation, Three.js preview. Working branch: develop — never commit to main.
    included. S-R1 (barrel) / S-R2 (card) signed 2026-10-09; the page mirrors
    the rule in #rows-fit-warning (Braille Spacing panel), and
    tests/test_rows_limit.py diffs its copy. Defaults: 5 visual / 4 tactile
-   rows fit 52 mm. OpenSCAD gets the same check as a follow-on (his call).
+   rows fit 52 mm. OpenSCAD has the same check since its v2.12.0
+   (released 2026-10-09, vendored here 2026-10-10).
 
 ## Settings changes — order of operations
 7. settings.schema.json is the single source of truth. When adding or changing
@@ -770,9 +771,10 @@ translation, Three.js preview. Working branch: develop — never commit to main.
     named braille-stl-generator-openscad — the two spellings are the same repo;
     OpenSCAD/VENDORED.json and a test both pin the GitHub name). Since
     OpenSCAD v2.9.0 (2026-09-23; v2.9.1 the same day, docs only; vendored
-    from v2.11.0 - 2026-10-01, tag on 8e64e06: per-gear key clearance, the
-    Version 1 gears and fused-roller vent, the S-SO1 Seam Offset wording and a
-    quick start without jar examples) its Customizer uses
+    from v2.12.0 - released 2026-10-09, tag on 705fe9a, copied 2026-10-10:
+    the rows-fit check of 6k, the Customizer in this app's layout with
+    one-line descriptions, a quick start naming each Expert Mode group)
+    its Customizer uses
     this app's section names (Card Sides, Gears, Cylinders to Generate, Row
     Indicator Style, Card Thickness; the last three as "Expert Mode - " tabs
     since 2026-10-07, see 16), carries no BETA or sign-off labels, and

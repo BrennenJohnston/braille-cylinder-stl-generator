@@ -1,15 +1,15 @@
 {
   "$comment": "Provenance for the vendored OpenSCAD copy. Every file below is copied verbatim from the upstream repository at the recorded tag, except where a note says otherwise. Edit them upstream, never here. Each sha256 is of the bytes this repo ships, which for a file with an 'edited on copy' note is deliberately not the upstream hash; tests/test_vendored_openscad.py fails if any file drifts from its record.",
   "upstream_repo": "https://github.com/BrennenJohnston/braille-cylinder-stl-generator-openscad",
-  "upstream_tag": "v2.11.0",
-  "upstream_commit": "8e64e06fed4f966ec2390bc85e10fa33eb3cd354",
-  "upstream_release_date": "2026-10-01",
-  "vendored_on": "2026-10-01",
+  "upstream_tag": "v2.12.0",
+  "upstream_commit": "705fe9ac835401c2cb7576829ec75a2dd74ac401",
+  "upstream_release_date": "2026-10-09",
+  "vendored_on": "2026-10-10",
   "canonical": "upstream",
   "files": {
     "Braille_Cylinder_STL_Generator.scad": {
       "upstream_path": "makerworld/Braille_Cylinder_STL_Generator_MakerWorld_v1.5.scad",
-      "sha256": "2eea6e006d3252494e003cc0d99c8c2f5759d939b6e89ff7f2e2b91d8dbd6bac",
+      "sha256": "4b64534e526bbf69166e34088c9aba4503383ec27fd228579acd5c25b0e25265",
       "note": "The MakerWorld single-file build of the Version 1 model is vendored rather than the dual-file desktop build, so the download is self-contained (no include <presets.scad>). Renamed on copy: this repo ships one file, so the _MakerWorld_v1.5 suffix would only confuse. Upstream renamed this file from _v2 to _v1.5 on 2026-09-01; its _v2 file is now the separate Embosser Version 2 generator, which is NOT vendored here."
     },
     "LICENSE": {
@@ -18,16 +18,16 @@
     },
     "PARAMETER_MAPPING.md": {
       "upstream_path": "docs/PARAMETER_MAPPING.md",
-      "sha256": "24088407fdb4fbe8399287acabdbb92888aabf1050deb1732241effd796ac70c",
+      "sha256": "4c551a4ed989a5067adb1fb66b381d283e7d8ec5a7304836790ee96888bb265a",
       "note": "One sentence edited on copy: upstream says 'this repository contains only the OpenSCAD cylinder generator', which is false here. The hash covers the edited copy, so it still catches later drift."
     },
     "docs/MAKERWORLD_QUICK_START.md": {
       "upstream_path": "docs/MAKERWORLD_QUICK_START.md",
-      "sha256": "d8edb4ac97f434e8d502c9c634412a3903b02b8dbd611c310d96ed503d824079"
+      "sha256": "2f94779696a1f1ebbb84ecc070cbf639c53fa9b3e88fd289e9e14d58181f065a"
     },
     "docs/MakerWorld_Quick_Start_Guide.pdf": {
       "upstream_path": "docs/MakerWorld_Quick_Start_Guide.pdf",
-      "sha256": "97112cdcedae594dd04656e834320dba4b631d72d9bcf29e805809e94ca19520"
+      "sha256": "34b1d75c85c3a991ea6c2ad0d174fd1bae1ad4ab56c578c8c3e1b0f23f644c61"
     },
     "docs/OPENSCAD_COORDINATE_SYSTEM_SPECIFICATIONS.md": {
       "upstream_path": "docs/OPENSCAD_COORDINATE_SYSTEM_SPECIFICATIONS.md",
