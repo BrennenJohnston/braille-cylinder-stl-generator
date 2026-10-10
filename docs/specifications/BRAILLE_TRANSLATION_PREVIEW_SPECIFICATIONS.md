@@ -566,50 +566,9 @@ line against `getAvailableColumns()`. See section 10 of
 
 ## 7. Language Table System
 
-### Backend Table Discovery
+### Backend Table List
 
-**Source:** `backend.py` (lines 2051-2078)
-
-```python
-@app.route('/liblouis/tables')
-def list_liblouis_tables():
-    """List available liblouis translation tables from static assets."""
-    base = app.root_path
-    candidate_dirs = [
-        os.path.join(base, 'static', 'liblouis', 'tables'),
-        os.path.join(base, 'node_modules', 'liblouis-build', 'tables'),
-        os.path.join(base, 'third_party', 'liblouis', 'tables'),
-        os.path.join(base, 'third_party', 'liblouis', 'share', 'liblouis', 'tables'),
-    ]
-
-    merged = {}
-    for d in candidate_dirs:
-        for t in _scan_liblouis_tables(d):
-            key = t.get('file')
-            if key and key not in merged:
-                merged[key] = t
-
-    tables = list(merged.values())
-    tables.sort(key=lambda t: (t.get('locale') or '', t.get('file') or ''))
-    return jsonify({'tables': tables})
-```
-
-### Table Metadata Structure
-
-Each table entry contains:
-
-```javascript
-{
-    file: "en-ueb-g2.ctb",       // Table filename
-    locale: "en-US",             // Language/region code
-    name: "Unified English Braille Grade 2",  // Display name
-    grade: "2",                  // Grade level (0, 1, 2)
-    type: "literary",            // Type (literary, computer)
-    contraction: "full",         // Contraction level
-    dots: 6,                     // Dot count (6 or 8)
-    variant: "UEB"               // Standard variant (UEB, EBAE, etc.)
-}
-```
+`GET /liblouis/tables` offers the liblouis 3.39.0 translation tables. The list, the shape of each entry and the saved-choice fallback are in `LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md` Section 10.
 
 ### Default Tables (Hardcoded)
 
@@ -623,7 +582,7 @@ const defaultValues = new Set([
 ```
 
 The selected entry is `DEFAULT_LANGUAGE_TABLE` (`en-ueb-g2.ctb`) unless
-`localStorage.braille_prefs_language_table` holds a table the user picked earlier.
+`localStorage.braille_prefs_language_table` holds a table the user picked earlier that the list still offers.
 
 ### Frontend Table Loading
 
@@ -952,26 +911,7 @@ has_braille_chars = any(ord(char) >= 0x2800 and ord(char) <= 0x28FF for char in 
 
 ### Table Path Consistency
 
-**Note:** There is a difference in table path resolution between the worker and backend:
-
-**Worker (`liblouis-worker.js`) table paths:**
-
-| Priority | Path |
-|----------|------|
-| 1 | `{origin}/static/liblouis/tables/` |
-| 2 | `/node_modules/liblouis-build/tables/` |
-| 3 | `static/liblouis/tables/` (relative fallback) |
-
-**Backend (`backend.py`) table paths:**
-
-| Priority | Path |
-|----------|------|
-| 1 | `{app_root}/static/liblouis/tables/` |
-| 2 | `{app_root}/node_modules/liblouis-build/tables/` |
-| 3 | `{app_root}/third_party/liblouis/tables/` |
-| 4 | `{app_root}/third_party/liblouis/share/liblouis/tables/` |
-
-The backend has additional fallback paths for alternative deployment configurations. Both prioritize `/static/liblouis/tables/` as the primary location.
+The worker (`static/liblouis-module-worker.js`) fetches a table and the files it includes from `static/vendor/liblouis-3.39.0/tables/`, as `tables.json` lists them, and `/liblouis/tables` offers exactly the translation tables that index names (`LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md` Section 10), so the two cannot disagree. Until the engine round (2026-10-09) they read different folders.
 
 ---
 
@@ -1130,7 +1070,7 @@ Unicode Code Point = 0x2800 + (dot1 × 1) + (dot2 × 2) + (dot3 × 4) +
 Liblouis tables use a specific format with directives for translation rules:
 
 ```
-# Table metadata (parsed by backend)
+# Table metadata
 #+language: en
 #+type: literary
 #+contraction: full
@@ -1147,7 +1087,7 @@ word the 2346
 word and 12346
 ```
 
-The backend's `_scan_liblouis_tables()` function parses these metadata lines to populate the language dropdown.
+The backend does not read these lines (`LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md` Section 10).
 
 ---
 
@@ -1182,6 +1122,7 @@ If backend returns "does not contain proper braille Unicode characters":
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-10-09 | 1.3 | The engine round's phase 7: Section 7's copy of the backend table list is replaced by a pointer to LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md Section 10 (the list is now the translation tables of the vendored liblouis 3.39.0 index); Table Path Consistency describes the one folder the worker and the list share; the appendix no longer says the backend parses table metadata. |
 | 2026-09-30 | 1.2 | Documentation review after the approved build: §13 names the Card sides choice (`isDoubleSidedOn()`) in place of the retired `#double_sided_enabled` beta toggle, and the layout diagram lists Cylinders to Generate and Card Thickness as the first Expert Mode submenus. |
 | 2026-08-17 | 1.1 | Added §13: with the double-sided (interpoint) beta ON the preview shows both sides - the existing front output under an h3 "Front of Card" heading, then an h3 "Back of Card" section whose rows come from the same `banaAutoWrap()` call the generate handler makes. Beta OFF is byte-identical (verified by comparing `#preview-content.innerHTML` before and after). §11 gained the `.preview-section-heading` rule. Back-of-card preview errors render inline as `.preview-line-error` blocks rather than in the `#error-message` overlay, so they cannot overwrite a front warning. |
 | (pre-history) | 1.0 | Original specification: UI layout, translation architecture, liblouis worker integration, computer shorthand conversion, manual and auto placement previews, language tables, backend validation, braille Unicode handling, error states, styling and accessibility, cross-implementation consistency, and Appendices A-D. This document carried no version footer before 2026-08-17. |

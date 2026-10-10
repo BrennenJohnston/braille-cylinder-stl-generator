@@ -379,71 +379,9 @@ include en-chardefs.cti
 include en-us-patterns.cti
 ```
 
-### Backend Table Scanning
+### Backend Table List
 
-**Source:** `backend.py` (lines 1919-2048)
-
-```python
-def _scan_liblouis_tables(directory: str):
-    """Scan a directory for liblouis translation tables and extract basic metadata.
-
-    Returns a list of dicts with keys: file, locale, type, grade, contraction, dots, variant.
-    """
-    tables_info = []
-
-    if not os.path.isdir(directory):
-        return tables_info
-
-    # Walk recursively to find tables in subfolders
-    for root, dirs, files in os.walk(directory):
-        for fname in files:
-            if not (fname.endswith('.ctb') or fname.endswith('.utb')):
-                continue
-
-            fpath = os.path.join(root, fname)
-            meta = {
-                'file': fname,
-                'locale': None,
-                'type': None,
-                'grade': None,
-                'contraction': None,
-                'dots': None,
-                'variant': None
-            }
-
-            # Parse first 200 lines for metadata directives
-            try:
-                with open(fpath, encoding='utf-8', errors='ignore') as f:
-                    for _ in range(200):
-                        line = f.readline()
-                        if not line:
-                            break
-                        m = re.match(r'^\s*#\+\s*([A-Za-z_-]+)\s*:\s*(.+?)\s*$', line)
-                        if not m:
-                            continue
-                        key = m.group(1).strip().lower()
-                        val = m.group(2).strip()
-
-                        if key == 'locale' and not meta['locale']:
-                            meta['locale'] = normalize_locale(val)
-                        elif key == 'type' and not meta['type']:
-                            meta['type'] = val.lower()
-                        elif key == 'grade' and not meta['grade']:
-                            meta['grade'] = str(val)
-                        elif key == 'contraction' and not meta['contraction']:
-                            meta['contraction'] = val.lower()
-                        elif key == 'dots' and not meta['dots']:
-                            meta['dots'] = int(val)
-            except Exception:
-                pass
-
-            # Derive missing metadata from filename
-            # ... (heuristic extraction)
-
-            tables_info.append(meta)
-
-    return tables_info
-```
+The language dropdown's list of tables comes from `GET /liblouis/tables`; see Section 10.
 
 ---
 
@@ -1004,66 +942,24 @@ for col_num, braille_char in enumerate(braille_text):
 
 ## 10. Table Discovery and Metadata
 
-### Backend Table Discovery API
+### Backend Table List
 
-**Source:** `backend.py` (lines 2051-2078)
+**Source:** `backend.py` — `list_liblouis_tables()`
 
-```python
-@app.route('/liblouis/tables')
-def list_liblouis_tables():
-    """List available liblouis translation tables from static assets.
+`GET /liblouis/tables` lists the translation tables (`.ctb`, `.utb`, `.tbl`) named in `static/vendor/liblouis-3.39.0/tables.json`, the index the translation worker fetches tables by, so every table it offers can be loaded. They are the 323 tables compared with native liblouis 3.39.0 (decision E2); `tests/test_vendored_liblouis.py` pins the list to `tests/fixtures/liblouis-reference/table-samples-3.39.0.json`. Include files (`.cti`, `.uti`, `.dis`, `.dic`) are not offered. Until the engine round's phase 7 (2026-10-09) the list was scanned from `static/liblouis/tables`, `node_modules/liblouis-build/tables` and a native 3.34.0 copy in `third_party/liblouis`, and offered include files and tables the worker could not load.
 
-    This powers the frontend language dropdown dynamically so it stays in sync
-    with the actual shipped tables.
-    """
-    base = app.root_path
-    candidate_dirs = [
-        os.path.join(base, 'static', 'liblouis', 'tables'),
-        os.path.join(base, 'node_modules', 'liblouis-build', 'tables'),
-        os.path.join(base, 'third_party', 'liblouis', 'tables'),
-        os.path.join(base, 'third_party', 'liblouis', 'share', 'liblouis', 'tables'),
-    ]
-
-    merged = {}
-    for d in candidate_dirs:
-        for t in _scan_liblouis_tables(d):
-            # Deduplicate by file name, prefer the first occurrence
-            key = t.get('file')
-            if key and key not in merged:
-                merged[key] = t
-
-    tables = list(merged.values())
-    # Sort deterministically by locale then file name
-    tables.sort(key=lambda t: (t.get('locale') or '', t.get('file') or ''))
-    return jsonify({'tables': tables})
-```
-
-### Table Metadata Structure
-
-Each table entry returned by `/liblouis/tables`:
+### Table Entry
 
 ```json
 {
     "file": "en-ueb-g2.ctb",
-    "locale": "en-US",
-    "type": "literary",
-    "grade": "2",
-    "contraction": "full",
-    "dots": 6,
-    "variant": "UEB"
+    "path": "en-ueb-g2.ctb",
+    "locale": "en-ueb",
+    "description": "en-ueb-g2.ctb"
 }
 ```
 
-### Metadata Extraction Logic
-
-| Metadata | Primary Source | Fallback Source |
-|----------|---------------|-----------------|
-| `locale` | `#+locale:` directive | Filename parsing (`en-ueb` → `en`) |
-| `type` | `#+type:` directive | Filename heuristics (`comp` → computer) |
-| `grade` | `#+grade:` directive | Filename parsing (`-g2` → grade 2) |
-| `contraction` | `#+contraction:` directive | Grade inference (g2 → full) |
-| `dots` | `#+dots:` directive | Filename parsing (`8dot` → 8) |
-| `variant` | N/A | Filename heuristics (`ueb` → UEB) |
+`locale` is the file name's first two hyphen-separated parts, or `null` when the name has no hyphen. No metadata is read from the tables. The parser that read their `#+` lines (grade, type, contraction, dots) was removed with server-side generation on 2026-01-05 (`8939c2d`). `loadLanguageOptions()` still reads those fields, so without them it labels a table by its `locale` and offers only the first table of each `locale`.
 
 ### Frontend Table Loading
 
@@ -1088,6 +984,8 @@ async function loadLanguageOptions() {
     // Build optgroups and options...
 }
 ```
+
+A saved choice (`localStorage.braille_prefs_language_table`) that is not among the options, such as a 3.2.0 table name that 3.39.0 does not ship, falls back to `DEFAULT_LANGUAGE_TABLE` (`en-ueb-g2.ctb`).
 
 ---
 
@@ -1513,12 +1411,13 @@ Tables are processed left-to-right:
 
 | File | Purpose |
 |------|---------|
-| `backend.py` | `_scan_liblouis_tables()`, `/liblouis/tables` API |
+| `backend.py` | `list_liblouis_tables()`, the `/liblouis/tables` API (reads `static/vendor/liblouis-3.39.0/tables.json`) |
 
 ---
 
-*Document Version: 1.6*
-*Last Updated: 2026-10-09 — the engine status note: translation runs on liblouis 3.39.0 (WebAssembly) in a module worker; the 3.2.0 sections are rewritten in the engine round's part 3.*
+*Document Version: 1.7*
+*Last Updated: 2026-10-09 — Section 10: the table list is the translation tables of the vendored 3.39.0 index (the engine round's phase 7); the old folder scan, and Section 4's copy of it, are gone.*
+*Previous: 1.6, 2026-10-09 — the engine status note: translation runs on liblouis 3.39.0 (WebAssembly) in a module worker; the 3.2.0 sections are rewritten in the engine round's part 3.*
 *Previous: 1.5, 2026-10-09 — the line count follows the request's own Rows (a line past it must be empty; 200 at most) instead of a fixed four, which refused Rows 5+; the fit of those rows is checked separately (BRAILLE_SPACING_SPECIFICATIONS.md §12).*
 *Previous: 1.4, 2026-09-30 — documentation review: the Braille (Unicode) field is also filled by every Generate STL (2026-09-28) and an unedited one empties when the text or a translation setting changes*
 *Previous: 1.3, 2026-07-30 — added the `backTranslate` worker message (braille → text) used by the "Translate to Text" button and by STL file naming*

@@ -705,7 +705,10 @@ translation, Three.js preview. Working branch: develop — never commit to main.
      478 tables, tables.json closures; byte-pinned by
      tests/test_vendored_liblouis.py; verified against native 3.39.0 by
      tests/frontend/liblouis-engine.test.js). Blank cells come back as the
-     ASCII space. The old asm.js 3.2.0 files stay until part 3 removes them.
+     ASCII space. /liblouis/tables (the dropdown) lists the .ctb/.utb/.tbl
+     names in that tables.json - the 323 tables checked against native -
+     and nothing else (phase 7). The old asm.js 3.2.0 files stay until
+     part 3's phase 8 removes them.
 
 6k. Rows limit (2026-10-09, Brennen's decisions; plan 04 in the 2026_10_09
    research folder). MAX_LINES in app/validation.py is the dial's 200, not

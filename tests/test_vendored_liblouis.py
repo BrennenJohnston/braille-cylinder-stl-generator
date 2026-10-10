@@ -67,3 +67,34 @@ def test_every_tables_include_closure_ships():
         'latinLetterDef6Dots.uti',
         'latinUppercaseComp6.uti',
     }
+
+
+def test_the_table_list_offers_exactly_the_translation_tables_verified_against_native(client):
+    """/liblouis/tables (the language dropdown) lists the 3.39.0 translation
+    tables and nothing else: no include file (.cti, .uti, .dis, .dic) and no
+    table from the 3.2.0 or native 3.34.0 folders it scanned before phase 7,
+    which the worker cannot load. Each listed table is one the engine was
+    compared with native 3.39.0 on (decision E2)."""
+    import json
+
+    index = json.loads((VENDOR / 'tables.json').read_text(encoding='utf-8'))
+    reference_path = Path(__file__).resolve().parent / 'fixtures' / 'liblouis-reference' / 'table-samples-3.39.0.json'
+    verified = json.loads(reference_path.read_text(encoding='utf-8'))['tables']
+
+    response = client.get('/liblouis/tables')
+    assert response.status_code == 200
+    tables = response.get_json()['tables']
+    files = [table['file'] for table in tables]
+
+    translation_tables = sorted(name for name in index['closures'] if name.endswith(('.ctb', '.utb', '.tbl')))
+    assert sorted(files) == translation_tables == sorted(verified)
+    assert len(files) == 323
+    assert {'en-ueb-g2.ctb', 'en-ueb-g1.ctb', 'en-us-g2.ctb', 'en-us-g1.ctb'} <= set(files)
+    for gone in ('fr-fr-g1.utb', 'UEBC-g2.ctb', 'de-de-accents.cti'):
+        assert gone not in files
+    for table in tables:
+        assert table['path'] == table['file']
+        assert table['description'] == table['file']
+    by_file = {table['file']: table for table in tables}
+    assert by_file['en-ueb-g2.ctb']['locale'] == 'en-ueb'
+    assert by_file['en_US.tbl']['locale'] is None

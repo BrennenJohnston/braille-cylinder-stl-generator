@@ -493,53 +493,9 @@ async function loadLanguageOptions() {
 }
 ```
 
-### Backend Table Discovery
+### Backend Table List
 
-**Source:** `backend.py` (lines 2051-2078)
-
-```python
-@app.route('/liblouis/tables')
-def list_liblouis_tables():
-    """List available liblouis translation tables from static assets.
-
-    This powers the frontend language dropdown dynamically so it stays in sync
-    with the actual shipped tables.
-    """
-    base = app.root_path
-    candidate_dirs = [
-        os.path.join(base, 'static', 'liblouis', 'tables'),
-        os.path.join(base, 'node_modules', 'liblouis-build', 'tables'),
-        os.path.join(base, 'third_party', 'liblouis', 'tables'),
-        os.path.join(base, 'third_party', 'liblouis', 'share', 'liblouis', 'tables'),
-    ]
-
-    merged = {}
-    for d in candidate_dirs:
-        for t in _scan_liblouis_tables(d):
-            key = t.get('file')
-            if key and key not in merged:
-                merged[key] = t
-
-    tables = list(merged.values())
-    tables.sort(key=lambda t: (t.get('locale') or '', t.get('file') or ''))
-    return jsonify({'tables': tables})
-```
-
-### Table Metadata Structure
-
-Each table entry returned by `/liblouis/tables`:
-
-```javascript
-{
-    file: "en-ueb-g2.ctb",       // Liblouis table filename
-    locale: "en-US",             // Language/region code
-    type: "literary",            // Type (literary, computer)
-    grade: "2",                  // Grade level (0, 1, 2)
-    contraction: "full",         // Contraction level
-    dots: 6,                     // Dot count (6 or 8)
-    variant: "UEB"               // Standard variant (UEB, EBAE, etc.)
-}
-```
+`GET /liblouis/tables` offers the liblouis 3.39.0 translation tables. The list, the shape of each entry and the saved-choice fallback are in `LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md` Section 10.
 
 ---
 
@@ -1512,14 +1468,7 @@ const tableChain = selectedTable.indexOf('unicode.dis') !== -1
     : ('unicode.dis,' + selectedTable);
 ```
 
-**Backend Table Resolution:**
-```python
-candidate_dirs = [
-    os.path.join(base, 'static', 'liblouis', 'tables'),
-    os.path.join(base, 'node_modules', 'liblouis-build', 'tables'),
-    os.path.join(base, 'third_party', 'liblouis', 'tables'),
-]
-```
+**Backend table list:** `/liblouis/tables` offers exactly the translation tables in `static/vendor/liblouis-3.39.0/tables.json` (`LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md` Section 10).
 
 ### Original Lines Consistency
 
@@ -1898,8 +1847,9 @@ None required. All implementations match the specification exactly.
 
 ---
 
-*Document Version: 1.14*
-*Last Updated: 2026-10-09 - Section 9 point 5: division points come from liblouis 3.39.0's input positions (the engine round, decision E4); the head/tail cut is retired.*
+*Document Version: 1.15*
+*Last Updated: 2026-10-09 - Sections 5 and 13: the backend table list is described once, in LIBLOUIS_TRANSLATION_CORE_SPECIFICATIONS.md Section 10 (the engine round's phase 7).*
+*Previous: 1.14, 2026-10-09 - Section 9 point 5: division points come from liblouis 3.39.0's input positions (the engine round, decision E4); the head/tail cut is retired.*
 *Previous: 1.13, 2026-10-09 - Convert braille ASCII reads the lowercase NABCC forms `` ` { | } ~ `` as `@ [ \ ] ^` (Brennen's decision); only characters outside printable ASCII and braille are refused (Section 6.3).*
 *Previous: 1.12, 2026-10-09 - Brennen signed every transcriber-tool string as drafted (Section 6.3, S-DC1 in Section 9) and kept both refinements of the division-point search: a point found from either side, and the per-line fallback when none is usable.*
 *Previous: 1.11, 2026-10-09 - Transcriber tools, ported from the OpenSCAD Assistive Forge's 5.2.0 build. Section 6.3 gains Six-Key Entry and Braille ASCII (both braille fields; strings DRAFT), and Section 9 is rewritten: each typed line is translated whole and cut only between braille words (a capital passage keeps one indicator), a long address or number divides with the dot-5 line continuation sign and one number sign (UEB 6.10, Brennen's decision), and the per-row layout remains as the fallback.*
