@@ -64,7 +64,7 @@ The server is minimal — just Flask serving static files and one JSON endpoint.
 
 - **`static/workers/csg-worker.js`** — Web Worker using three-bvh-csg for flat cards (parked: the page offers only cylinders)
 - **`static/workers/csg-worker-manifold.js`** — Web Worker using Manifold WASM for cylinders
-- **`static/liblouis-worker.js`** — Web Worker for braille translation
+- **`static/liblouis-module-worker.js`** — Web Worker for braille translation; it runs `static/liblouis-engine.js`
 - **Three.js** — 3D preview rendering
 - **`public/index.html`** — The single HTML build, served both on Vercel and by Flask locally (`send_from_directory('public', 'index.html')`). The former `templates/index.html` twin was an unserved stale copy and has been removed.
 
@@ -93,7 +93,7 @@ Old server-side STL endpoints (`/generate_braille_stl`, `/generate_counter_plate
 - Three.js — 3D rendering
 - three-bvh-csg — CSG for flat cards
 - Manifold WASM — CSG for cylinders (vendored in `static/vendor/manifold-3d/`, version 2.5.1)
-- liblouis — braille translation (an Emscripten build compiled to JavaScript, in `static/liblouis/`)
+- liblouis — braille translation (liblouis 3.39.0 compiled to WebAssembly, with its tables, vendored in `static/vendor/liblouis-3.39.0/`)
 
 ## Configuration files
 
